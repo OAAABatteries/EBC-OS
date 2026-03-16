@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head><title>EBC-OS Icon Generator</title></head>
+<body style="background:#333;color:#fff;font-family:sans-serif;padding:40px;">
+<h2>EBC-OS App Icon Generator</h2>
+<p>Click each button to download the icon as PNG.</p>
+
+<canvas id="c192" width="192" height="192"></canvas>
+<canvas id="c512" width="512" height="512"></canvas>
+<canvas id="c1024" width="1024" height="1024"></canvas>
+
+<br><br>
+<button onclick="download(192)">Download 192x192</button>
+<button onclick="download(512)">Download 512x512</button>
+<button onclick="download(1024)">Download 1024x1024</button>
+
+<script>
+const img = new Image();
+img.crossOrigin = "anonymous";
+img.onload = () => {
+  [192, 512, 1024].forEach(size => {
+    const canvas = document.getElementById('c' + size);
+    const ctx = canvas.getContext('2d');
+
+    // Dark background with subtle gradient
+    const grad = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size*0.7);
+    grad.addColorStop(0, '#0e1020');
+    grad.addColorStop(1, '#06080c');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+
+    // Amber accent ring
+    ctx.strokeStyle = '#e09422';
+    ctx.lineWidth = size * 0.015;
+    ctx.beginPath();
+    ctx.arc(size/2, size/2, size*0.42, 0, Math.PI*2);
+    ctx.stroke();
+
+    // Draw eagle logo centered (the logo is white on transparent)
+    const logoSize = size * 0.65;
+    const pad = (size - logoSize) / 2;
+    ctx.drawImage(img, pad, pad - size*0.02, logoSize, logoSize);
+
+    // "EBC" text at bottom
+    ctx.fillStyle = '#e09422';
+    ctx.font = `bold ${size * 0.08}px "Arial Black", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('EBC-OS', size/2, size * 0.92);
+  });
+};
+img.src = '/logo-ebc.png';
+
+function download(size) {
+  const canvas = document.getElementById('c' + size);
+  const link = document.createElement('a');
+  link.download = `icon-${size}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+</script>
+</body>
+</html>

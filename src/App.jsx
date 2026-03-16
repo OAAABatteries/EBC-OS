@@ -27,6 +27,7 @@ import {
 import { initJSAs } from "./data/jsaConstants";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { initNative } from "./utils/native";
+import { T } from "./data/translations";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · App Component
@@ -220,6 +221,13 @@ const App = () => {
   const [scheduleConflicts, setScheduleConflicts] = useLocalStorage("scheduleConflicts", initScheduleConflicts);
   const [jsas, setJsas] = useLocalStorage("jsas", initJSAs);
   const [tmTickets, setTmTickets] = useLocalStorage("tmTickets", initTmTickets);
+  const [lang, setLang] = useLocalStorage("ebc_lang", "en");
+
+  // ── i18n helper ──
+  const t = useCallback((key) => {
+    if (lang === "en") return key;
+    return T[key]?.[lang] || key;
+  }, [lang]);
 
   // ── hash routing ──
   const [route, setRoute] = useState(() => window.location.hash || "#/");
@@ -293,7 +301,8 @@ const App = () => {
     scheduleConflicts, setScheduleConflicts,
     jsas, setJsas,
     tmTickets, setTmTickets,
-    show, setModal, modal, search, setSearch, tab, setTab, subTab, setSubTab, fmt, fmtK, nextId
+    show, setModal, modal, search, setSearch, tab, setTab, subTab, setSubTab, fmt, fmtK, nextId,
+    lang, setLang, t
   };
 
   // ── KPI computations ──
@@ -1960,6 +1969,14 @@ const App = () => {
           <span className={`hamburger-line ${mobileNav ? "open" : ""}`} />
           <span className={`hamburger-line ${mobileNav ? "open" : ""}`} />
           <span className={`hamburger-line ${mobileNav ? "open" : ""}`} />
+        </button>
+        <button
+          className="btn btn-ghost btn-sm"
+          style={{ fontSize: 11, padding: "4px 8px", borderRadius: 4, marginRight: 4, fontWeight: 600, letterSpacing: 0.5, border: "1px solid var(--border)" }}
+          onClick={() => setLang(lang === "en" ? "es" : "en")}
+          title={lang === "en" ? "Cambiar a Español" : "Switch to English"}
+        >
+          {lang === "en" ? "🌐 ES" : "🌐 EN"}
         </button>
         <nav className="nav">
           {PRIMARY_TABS.map(t => (
