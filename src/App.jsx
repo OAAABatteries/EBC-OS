@@ -294,9 +294,9 @@ function App({ auth, onLogout }) {
     initNative(); // configure status bar, hide native splash, register app events
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
-  const isEmployeeView = route.startsWith("#/employee");
-  const isDriverView = route.startsWith("#/driver");
-  const isForemanView = route.startsWith("#/foreman");
+  const isEmployeeView = route.startsWith("#/employee") || auth?.role === "employee";
+  const isDriverView = route.startsWith("#/driver") || auth?.role === "driver";
+  const isForemanView = route.startsWith("#/foreman") || auth?.role === "foreman";
 
   // ── ephemeral state ──
   const [tab, setTab] = useState("dashboard");

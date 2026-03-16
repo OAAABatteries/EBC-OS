@@ -58,8 +58,12 @@ export function EmployeeView({ app }) {
   useEffect(() => localStorage.setItem("ebc_lang", lang), [lang]);
   const t = (key) => lang === "es" && T[key]?.es ? T[key].es : key;
 
-  // ── session ──
+  // ── session — use main auth if available ──
+  const mainAuth = app.auth;
   const [activeEmp, setActiveEmp] = useState(() => {
+    if (mainAuth && mainAuth.role === "employee") {
+      return { id: mainAuth.id, name: mainAuth.name, email: mainAuth.email, role: "Crew", active: true, phone: "", notifications: { schedule: true, materials: true, deliveries: true }, schedule: { start: "06:00", end: "14:30" } };
+    }
     try {
       const saved = localStorage.getItem(EMP_SESSION_KEY);
       return saved ? JSON.parse(saved) : null;

@@ -2187,6 +2187,8 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 const REPORT_COLORS = { estimating: "#e09422", submitted: "#3b82f6", awarded: "#10b981", lost: "#ef4444" };
 
 function Reports({ app }) {
+  const userRole = app.auth?.role || "owner";
+  const isBizRole = ["owner", "admin", "pm", "office_admin"].includes(userRole);
   const bids = app.bids || [];
   const projects = app.projects || [];
   const [reportSummary, setReportSummary] = useState(null);
@@ -2195,6 +2197,7 @@ function Reports({ app }) {
   const [forecastResult, setForecastResult] = useState(null);
   const [forecastLoading, setForecastLoading] = useState(false);
   const [showForecast, setShowForecast] = useState(false);
+  const [reportSub, setReportSub] = useState("Incidents");
 
   const runForecast = async () => {
     if (!app.apiKey) { app.show("Set API key in Settings first", "err"); return; }
@@ -2284,6 +2287,24 @@ function Reports({ app }) {
   const PHASE_COLORS = ["#3b82f6", "#10b981", "#e09422", "#8b5cf6", "#ef4444", "#06b6d4", "#f59e0b", "#ec4899"];
 
   const tooltipStyle = { background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" };
+
+  // Non-business roles (safety, foreman, etc.) see a simplified reports view
+  if (!isBizRole) {
+    return (
+      <div className="mt-16">
+        <div className="section-title">Reports</div>
+        <div className="text-sm text-muted mb-16">
+          {userRole === "safety" ? "Safety reports, incidents, and daily logs." :
+           userRole === "foreman" ? "Field reports and daily logs." :
+           "Reports available for your role."}
+        </div>
+        <SubTabs tabs={["Incidents", "Toolbox Talks", "Daily Reports"]} active={reportSub} onChange={setReportSub} />
+        {reportSub === "Incidents" && <IncidentsTab app={app} />}
+        {reportSub === "Toolbox Talks" && <ToolboxTalksTab app={app} />}
+        {reportSub === "Daily Reports" && <DailyReportsTab app={app} />}
+      </div>
+    );
+  }
 
   return (
     <div className="mt-16">
@@ -3469,10 +3490,16 @@ function OshaChecklistTab({ app }) {
    SETTINGS
    ══════════════════════════════════════════════════════════════ */
 function Settings({ app }) {
-  const isOwnerOrAdmin = app.auth?.role === "owner" || app.auth?.role === "admin";
-  const tabs = ["Company", "Assemblies", "Equipment", "Margin Tiers", "Data", "Theme", "API", "Account"];
+  const userRole = app.auth?.role || "owner";
+  const isOwnerOrAdmin = userRole === "owner" || userRole === "admin";
+  const isFullAccess = ["owner", "admin", "pm"].includes(userRole);
+
+  // Simplified settings for non-business roles
+  const tabs = isFullAccess
+    ? ["Company", "Assemblies", "Equipment", "Margin Tiers", "Data", "Theme", "API", "Account"]
+    : ["Theme", "Account"];
   if (isOwnerOrAdmin) tabs.push("Users");
-  const [sub, setSub] = useState("Company");
+  const [sub, setSub] = useState(isFullAccess ? "Company" : "Theme");
   return (
     <div>
       <SubTabs tabs={tabs} active={sub} onChange={setSub} />

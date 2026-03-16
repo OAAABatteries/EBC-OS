@@ -19,8 +19,13 @@ export function DriverView({ app }) {
   useEffect(() => localStorage.setItem("ebc_lang", lang), [lang]);
   const t = (key) => lang === "es" && T[key]?.es ? T[key].es : key;
 
-  // ── session ──
+  // ── session — use main auth if available (logged in via main login screen) ──
+  const mainAuth = app.auth;
   const [activeDriver, setActiveDriver] = useState(() => {
+    // If already authenticated through the main app login, use that
+    if (mainAuth && mainAuth.role === "driver") {
+      return { id: mainAuth.id, name: mainAuth.name, email: mainAuth.email, role: "Driver", title: mainAuth.title, phone: "", notifications: { schedule: true, materials: true, deliveries: true } };
+    }
     try {
       const saved = localStorage.getItem(DRIVER_SESSION_KEY);
       return saved ? JSON.parse(saved) : null;
@@ -63,6 +68,8 @@ export function DriverView({ app }) {
     setEmail("");
     setPassword("");
     setDriverTab("queue");
+    // If logged in via main app, use main logout
+    if (app.onLogout) app.onLogout();
   };
 
   // ── delivery lists ──

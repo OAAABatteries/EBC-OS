@@ -31,12 +31,12 @@ export const ROLES = {
   },
   foreman: {
     label: "Superintendent / Foreman",
-    access: ["dashboard", "projects", "schedule", "reports", "safety", "jsa", "materials", "timeclock", "map"],
+    access: ["dashboard", "projects", "schedule", "reports", "safety", "jsa", "materials", "timeclock", "map", "settings"],
     description: "Field operations and crew management"
   },
   safety: {
     label: "Safety Officer",
-    access: ["dashboard", "safety", "jsa", "reports", "schedule"],
+    access: ["dashboard", "safety", "jsa", "reports", "schedule", "settings"],
     description: "Safety compliance, JSAs, incident reporting"
   },
   accounting: {

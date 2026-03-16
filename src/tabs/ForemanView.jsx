@@ -38,8 +38,12 @@ export function ForemanView({ app }) {
   useEffect(() => localStorage.setItem("ebc_lang", lang), [lang]);
   const t = (key) => lang === "es" && T[key]?.es ? T[key].es : key;
 
-  // ── session ──
+  // ── session — use main auth if available ──
+  const mainAuth = app.auth;
   const [activeForeman, setActiveForeman] = useState(() => {
+    if (mainAuth && mainAuth.role === "foreman") {
+      return { id: mainAuth.id, name: mainAuth.name, email: mainAuth.email, role: "Foreman", title: mainAuth.title, active: true, phone: "", notifications: { schedule: true, materials: true, deliveries: true } };
+    }
     try {
       const saved = localStorage.getItem(FOREMAN_SESSION_KEY);
       return saved ? JSON.parse(saved) : null;
