@@ -3,12 +3,26 @@ body {
   margin: 0;
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
+  /* Prevent iOS rubber-band bounce in standalone PWA */
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 #root {
   height: 100vh;
-  height: 100dvh; /* dynamic viewport height for mobile browsers */
+  height: 100dvh;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Standalone PWA — fill status bar area with app bg */
+@media all and (display-mode: standalone) {
+  html { background: var(--bg, #06080c); }
+  body { background: var(--bg, #06080c); }
 }

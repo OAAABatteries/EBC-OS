@@ -2,6 +2,7 @@
 export const styles = `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body,#root{height:100%;overflow:hidden}
+@supports(padding-top:env(safe-area-inset-top)){#root{height:100dvh}}
 body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:8px}::-webkit-scrollbar-thumb:hover{background:var(--text3)}
@@ -334,7 +335,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .mobile-nav-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(6px);
   -webkit-backdrop-filter:blur(6px);z-index:500;animation:fadeIn 0.15s ease;
   padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0}
-.mobile-nav{position:fixed;top:0;right:0;width:min(280px,80vw);height:100vh;height:100dvh;
+.mobile-nav{position:fixed;top:0;right:0;width:min(280px,80vw);height:100%;height:100dvh;
   background:var(--glass-bg);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);
   border-left:1px solid var(--glass-border);padding:0;padding-top:env(safe-area-inset-top);overflow-y:auto;-webkit-overflow-scrolling:touch;animation:slideRight 0.25s cubic-bezier(.4,0,.2,1);
   box-shadow:-4px 0 30px rgba(0,0,0,0.3)}
