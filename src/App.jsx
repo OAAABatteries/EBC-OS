@@ -31,6 +31,7 @@ import { T } from "./data/translations";
 import { LoginScreen } from "./components/LoginScreen";
 import { OnboardingWizard } from "./components/OnboardingWizard";
 import { hasAccess } from "./data/roles";
+import { supabase, isSupabaseConfigured, signOut as supaSignOut, onAuthStateChange } from "./lib/supabase";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · App Component
@@ -198,12 +199,29 @@ function AuthGate() {
     try { return localStorage.getItem("ebc_onboarding_complete") === "true"; } catch { return false; }
   });
 
+  // Listen for Supabase auth state changes (session refresh, sign-out from another tab, etc.)
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    const { data: { subscription } } = onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        localStorage.removeItem("ebc_auth");
+        setAuth(null);
+      }
+      // On token refresh, keep the session alive (no action needed — Supabase handles it)
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   const handleLogin = useCallback((user) => {
     localStorage.setItem("ebc_auth", JSON.stringify(user));
     setAuth(user);
   }, []);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
+    // Sign out of Supabase if configured (clears the JWT session)
+    if (isSupabaseConfigured()) {
+      try { await supaSignOut(); } catch {}
+    }
     localStorage.removeItem("ebc_auth");
     setAuth(null);
   }, []);

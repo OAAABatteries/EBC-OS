@@ -6,6 +6,7 @@
 import { useState, useEffect } from "react";
 import { SEED_ACCOUNTS, seedAccountsIfEmpty } from "../data/seedAccounts";
 import { ROLES } from "../data/roles";
+import { supabase, isSupabaseConfigured, signIn as supaSignIn, signUp as supaSignUp } from "../lib/supabase";
 
 const loginStyles = `
 @keyframes loginFadeIn {
@@ -352,7 +353,55 @@ export function LoginScreen({ onLogin }) {
 
   const simpleHash = (str) => btoa(encodeURIComponent(str));
 
-  const handleLogin = (e) => {
+  // ── Try Supabase Auth, auto-provision if needed, fall back to localStorage ──
+  const authenticateWithSupabase = async (email, password, localUser) => {
+    if (!isSupabaseConfigured()) return null;
+    try {
+      // Try signing in with Supabase Auth
+      const { user, session } = await supaSignIn(email, password);
+      if (user && session) {
+        return {
+          id: localUser.id,
+          name: user.user_metadata?.name || localUser.name,
+          email: user.email,
+          role: user.user_metadata?.role || localUser.role,
+          title: user.user_metadata?.title || localUser.title,
+          supabaseId: user.id,
+        };
+      }
+    } catch (signInErr) {
+      // User doesn't exist in Supabase yet — auto-provision
+      if (signInErr.message?.includes("Invalid login") || signInErr.status === 400) {
+        try {
+          const { user } = await supaSignUp(email, password, {
+            name: localUser.name,
+            role: localUser.role,
+            title: localUser.title,
+            ebc_user_id: localUser.id,
+          });
+          if (user) {
+            // Now sign in with the newly created account
+            try {
+              await supaSignIn(email, password);
+            } catch { /* session may already be set from signUp */ }
+            return {
+              id: localUser.id,
+              name: localUser.name,
+              email: localUser.email,
+              role: localUser.role,
+              title: localUser.title,
+              supabaseId: user.id,
+            };
+          }
+        } catch (signUpErr) {
+          console.warn("Supabase auto-provision failed:", signUpErr.message);
+        }
+      }
+    }
+    return null; // fall back to localStorage-only auth
+  };
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -393,7 +442,18 @@ export function LoginScreen({ onLogin }) {
         return;
       }
 
-      const authUser = { id: user.id, name: user.name, email: user.email, role: user.role, title: user.title };
+      // Try Supabase Auth (auto-provisions on first login)
+      const supaUser = await authenticateWithSupabase(user.email, loginPassword, user);
+
+      const authUser = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        title: user.title,
+        ...(supaUser?.supabaseId ? { supabaseId: supaUser.supabaseId } : {}),
+      };
+
       setTimeout(() => {
         setLoading(false);
         onLogin(authUser);
