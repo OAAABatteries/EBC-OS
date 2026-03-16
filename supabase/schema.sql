@@ -1,619 +1,606 @@
 -- ═══════════════════════════════════════════════════════════════
---  EBC-OS · Supabase Database Schema
+--  EBC-OS · Complete Database Schema
 --  Eagles Brothers Constructors · Houston, TX
---  Run this in the Supabase SQL Editor to create all tables.
+--
+--  Run this in: Supabase Dashboard → SQL Editor → New Query
+--  Then click "Run" (or Ctrl+Enter)
 -- ═══════════════════════════════════════════════════════════════
 
 -- Enable UUID generation
-create extension if not exists "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ═════════════════════════════════════════════════════════════
 --  COMPANY
 -- ═════════════════════════════════════════════════════════════
-
-create table if not exists company (
-  id           uuid primary key default uuid_generate_v4(),
-  name         text not null default '',
-  address      text default '',
-  phone        text default '',
-  email        text default '',
-  license      text default '',
-  logo_url     text default '',
-  tax_rate     numeric(5,2) default 8.25,
-  waste_pct    numeric(5,2) default 5.0,
-  overhead_pct numeric(5,2) default 10.0,
-  profit_pct   numeric(5,2) default 10.0,
-  created_at   timestamptz default now(),
-  updated_at   timestamptz default now()
+CREATE TABLE IF NOT EXISTS company (
+  id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name             TEXT NOT NULL DEFAULT '',
+  address          TEXT DEFAULT '',
+  phone            TEXT DEFAULT '',
+  email            TEXT DEFAULT '',
+  license          TEXT DEFAULT '',
+  default_tax      NUMERIC(5,2) DEFAULT 8.25,
+  default_waste    NUMERIC(5,2) DEFAULT 10,
+  default_overhead NUMERIC(5,2) DEFAULT 10,
+  default_profit   NUMERIC(5,2) DEFAULT 20,
+  created_at       TIMESTAMPTZ DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ═════════════════════════════════════════════════════════════
---  USERS (profiles linked to auth.users)
+--  USERS (profiles — linked to Supabase Auth)
 -- ═════════════════════════════════════════════════════════════
-
-create table if not exists users (
-  id           uuid primary key references auth.users(id) on delete cascade,
-  email        text unique not null,
-  name         text not null default '',
-  role         text not null default 'employee',
-  pin          text default '',
-  phone        text default '',
-  title        text default '',
-  avatar_url   text default '',
-  company_id   uuid references company(id) on delete set null,
-  created_at   timestamptz default now(),
-  updated_at   timestamptz default now()
+CREATE TABLE IF NOT EXISTS users (
+  id                   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  auth_id              UUID UNIQUE REFERENCES auth.users(id) ON DELETE SET NULL,
+  name                 TEXT NOT NULL,
+  email                TEXT UNIQUE,
+  role                 TEXT NOT NULL DEFAULT 'employee',
+  pin                  TEXT DEFAULT '',
+  title                TEXT DEFAULT '',
+  phone                TEXT DEFAULT '',
+  hourly_rate          NUMERIC(10,2) DEFAULT 0,
+  active               BOOLEAN DEFAULT TRUE,
+  avatar               TEXT DEFAULT '',
+  must_change_password BOOLEAN DEFAULT FALSE,
+  notifications        JSONB DEFAULT '{"schedule":true,"materials":true,"deliveries":true}',
+  default_project_id   UUID,
+  schedule             JSONB DEFAULT '{"start":"06:00","end":"14:30"}',
+  created_at           TIMESTAMPTZ DEFAULT NOW(),
+  updated_at           TIMESTAMPTZ DEFAULT NOW()
 );
-
-create index if not exists idx_users_company on users(company_id);
-create index if not exists idx_users_role on users(role);
-
--- ═════════════════════════════════════════════════════════════
---  BIDS
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists bids (
-  id           uuid primary key default uuid_generate_v4(),
-  company_id   uuid references company(id) on delete cascade,
-  name         text not null default '',
-  gc           text default '',
-  value        numeric(14,2) default 0,
-  due          date,
-  status       text default 'estimating',
-  scope        text default '',
-  phase        text default '',
-  risk         text default 'Low',
-  notes        text default '',
-  contact      text default '',
-  month        text default '',
-  close_out    text default '',
-  created_by   uuid references users(id) on delete set null,
-  created_at   timestamptz default now(),
-  updated_at   timestamptz default now()
-);
-
-create index if not exists idx_bids_company on bids(company_id);
-create index if not exists idx_bids_status on bids(status);
-create index if not exists idx_bids_created_by on bids(created_by);
-create index if not exists idx_bids_due on bids(due);
-
--- ═════════════════════════════════════════════════════════════
---  BID ATTACHMENTS
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists bid_attachments (
-  id           uuid primary key default uuid_generate_v4(),
-  bid_id       uuid references bids(id) on delete cascade not null,
-  name         text not null default '',
-  type         text default '',
-  size         bigint default 0,
-  storage_path text not null default '',
-  uploaded_by  uuid references users(id) on delete set null,
-  uploaded_at  timestamptz default now()
-);
-
-create index if not exists idx_bid_attachments_bid on bid_attachments(bid_id);
-
--- ═════════════════════════════════════════════════════════════
---  PROJECTS
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists projects (
-  id           uuid primary key default uuid_generate_v4(),
-  company_id   uuid references company(id) on delete cascade,
-  name         text not null default '',
-  gc           text default '',
-  contract     numeric(14,2) default 0,
-  billed       numeric(14,2) default 0,
-  progress     numeric(5,2) default 0,
-  phase        text default '',
-  start_date   date,
-  end_date     date,
-  status       text default 'active',
-  created_by   uuid references users(id) on delete set null,
-  created_at   timestamptz default now(),
-  updated_at   timestamptz default now()
-);
-
-create index if not exists idx_projects_company on projects(company_id);
-create index if not exists idx_projects_status on projects(status);
-
--- ═════════════════════════════════════════════════════════════
---  CONTACTS
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists contacts (
-  id           uuid primary key default uuid_generate_v4(),
-  company_id   uuid references company(id) on delete cascade,
-  name         text not null default '',
-  company_name text default '',
-  role         text default '',
-  phone        text default '',
-  email        text default '',
-  priority     text default 'med',
-  notes        text default '',
-  bids_count   int default 0,
-  wins_count   int default 0,
-  color        text default '',
-  created_at   timestamptz default now()
-);
-
-create index if not exists idx_contacts_company on contacts(company_id);
-
--- ═════════════════════════════════════════════════════════════
---  CALL LOG
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists call_log (
-  id           uuid primary key default uuid_generate_v4(),
-  company_id   uuid references company(id) on delete cascade,
-  contact_id   uuid references contacts(id) on delete cascade,
-  note         text default '',
-  next_step    text default '',
-  time         timestamptz default now(),
-  logged_by    uuid references users(id) on delete set null
-);
-
-create index if not exists idx_call_log_contact on call_log(contact_id);
-
--- ═════════════════════════════════════════════════════════════
---  TAKEOFFS
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists takeoffs (
-  id           uuid primary key default uuid_generate_v4(),
-  company_id   uuid references company(id) on delete cascade,
-  bid_id       uuid references bids(id) on delete set null,
-  name         text not null default '',
-  created_at   timestamptz default now(),
-  updated_by   uuid references users(id) on delete set null
-);
-
-create index if not exists idx_takeoffs_bid on takeoffs(bid_id);
-
-create table if not exists takeoff_rooms (
-  id           uuid primary key default uuid_generate_v4(),
-  takeoff_id   uuid references takeoffs(id) on delete cascade not null,
-  name         text not null default '',
-  sort_order   int default 0
-);
-
-create index if not exists idx_takeoff_rooms_takeoff on takeoff_rooms(takeoff_id);
-
-create table if not exists takeoff_items (
-  id             uuid primary key default uuid_generate_v4(),
-  room_id        uuid references takeoff_rooms(id) on delete cascade not null,
-  assembly_code  text default '',
-  description    text default '',
-  quantity       numeric(12,2) default 0,
-  unit           text default 'LF',
-  mat_rate       numeric(10,2) default 0,
-  lab_rate       numeric(10,2) default 0,
-  notes          text default ''
-);
-
-create index if not exists idx_takeoff_items_room on takeoff_items(room_id);
-
--- ═════════════════════════════════════════════════════════════
---  INVOICES
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists invoices (
-  id           uuid primary key default uuid_generate_v4(),
-  company_id   uuid references company(id) on delete cascade,
-  project_id   uuid references projects(id) on delete cascade,
-  number       text default '',
-  date         date,
-  amount       numeric(14,2) default 0,
-  status       text default 'draft',
-  paid_date    date,
-  description  text default '',
-  created_by   uuid references users(id) on delete set null,
-  created_at   timestamptz default now()
-);
-
-create index if not exists idx_invoices_project on invoices(project_id);
-create index if not exists idx_invoices_status on invoices(status);
-
--- ═════════════════════════════════════════════════════════════
---  CHANGE ORDERS
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists change_orders (
-  id           uuid primary key default uuid_generate_v4(),
-  company_id   uuid references company(id) on delete cascade,
-  project_id   uuid references projects(id) on delete cascade,
-  number       text default '',
-  description  text default '',
-  amount       numeric(14,2) default 0,
-  status       text default 'pending',
-  date         date,
-  created_by   uuid references users(id) on delete set null,
-  created_at   timestamptz default now()
-);
-
-create index if not exists idx_change_orders_project on change_orders(project_id);
-
--- ═════════════════════════════════════════════════════════════
---  T&M TICKETS
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists tm_tickets (
-  id           uuid primary key default uuid_generate_v4(),
-  company_id   uuid references company(id) on delete cascade,
-  project_id   uuid references projects(id) on delete cascade,
-  number       text default '',
-  date         date,
-  description  text default '',
-  labor_hours  numeric(8,2) default 0,
-  labor_rate   numeric(10,2) default 0,
-  materials    numeric(12,2) default 0,
-  status       text default 'open',
-  approved_by  text default '',
-  created_by   uuid references users(id) on delete set null,
-  created_at   timestamptz default now()
-);
-
-create index if not exists idx_tm_tickets_project on tm_tickets(project_id);
-
--- ═════════════════════════════════════════════════════════════
---  RFIs
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists rfis (
-  id             uuid primary key default uuid_generate_v4(),
-  company_id     uuid references company(id) on delete cascade,
-  project_id     uuid references projects(id) on delete cascade,
-  number         text default '',
-  subject        text default '',
-  question       text default '',
-  answer         text default '',
-  status         text default 'open',
-  date_sent      date,
-  date_received  date,
-  from_name      text default '',
-  to_name        text default '',
-  created_by     uuid references users(id) on delete set null,
-  created_at     timestamptz default now()
-);
-
-create index if not exists idx_rfis_project on rfis(project_id);
-
--- ═════════════════════════════════════════════════════════════
---  SUBMITTALS
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists submittals (
-  id              uuid primary key default uuid_generate_v4(),
-  company_id      uuid references company(id) on delete cascade,
-  project_id      uuid references projects(id) on delete cascade,
-  number          text default '',
-  spec_section    text default '',
-  description     text default '',
-  status          text default 'pending',
-  submitted_date  date,
-  due_date        date,
-  created_by      uuid references users(id) on delete set null,
-  created_at      timestamptz default now()
-);
-
-create index if not exists idx_submittals_project on submittals(project_id);
-
--- ═════════════════════════════════════════════════════════════
---  SCHEDULE TASKS
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists schedule_tasks (
-  id              uuid primary key default uuid_generate_v4(),
-  company_id      uuid references company(id) on delete cascade,
-  project_id      uuid references projects(id) on delete cascade,
-  name            text not null default '',
-  start_date      date,
-  end_date        date,
-  crew            text default '',
-  status          text default 'pending',
-  predecessor_id  uuid references schedule_tasks(id) on delete set null,
-  is_milestone    boolean default false,
-  created_at      timestamptz default now()
-);
-
-create index if not exists idx_schedule_tasks_project on schedule_tasks(project_id);
-
--- ═════════════════════════════════════════════════════════════
---  DAILY REPORTS
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists daily_reports (
-  id              uuid primary key default uuid_generate_v4(),
-  company_id      uuid references company(id) on delete cascade,
-  project_id      uuid references projects(id) on delete cascade,
-  date            date,
-  weather         text default '',
-  temp            text default '',
-  crew_count      int default 0,
-  work_performed  text default '',
-  issues          text default '',
-  photos          jsonb default '[]'::jsonb,
-  created_by      uuid references users(id) on delete set null,
-  created_at      timestamptz default now()
-);
-
-create index if not exists idx_daily_reports_project on daily_reports(project_id);
-create index if not exists idx_daily_reports_date on daily_reports(date);
-
--- ═════════════════════════════════════════════════════════════
---  JSAs (Job Safety Analysis)
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists jsas (
-  id              uuid primary key default uuid_generate_v4(),
-  company_id      uuid references company(id) on delete cascade,
-  project_id      uuid references projects(id) on delete set null,
-  date            date,
-  location        text default '',
-  gc              text default '',
-  environment     text default '',
-  scope           text default '',
-  hazards         jsonb default '[]'::jsonb,
-  crew_members    jsonb default '[]'::jsonb,
-  signatures      jsonb default '[]'::jsonb,
-  created_by      uuid references users(id) on delete set null,
-  created_at      timestamptz default now()
-);
-
-create index if not exists idx_jsas_project on jsas(project_id);
-create index if not exists idx_jsas_date on jsas(date);
-
--- ═════════════════════════════════════════════════════════════
---  EQUIPMENT
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists equipment (
-  id                  uuid primary key default uuid_generate_v4(),
-  company_id          uuid references company(id) on delete cascade,
-  name                text not null default '',
-  type                text default '',
-  daily_rate          numeric(10,2) default 0,
-  weekly_rate         numeric(10,2) default 0,
-  monthly_rate        numeric(10,2) default 0,
-  status              text default 'available',
-  assigned_project_id uuid references projects(id) on delete set null,
-  notes               text default '',
-  created_at          timestamptz default now()
-);
-
-create index if not exists idx_equipment_company on equipment(company_id);
-create index if not exists idx_equipment_status on equipment(status);
-
--- ═════════════════════════════════════════════════════════════
---  ASSEMBLIES (estimating library)
--- ═════════════════════════════════════════════════════════════
-
-create table if not exists assemblies (
-  id           uuid primary key default uuid_generate_v4(),
-  company_id   uuid references company(id) on delete cascade,
-  code         text not null default '',
-  name         text not null default '',
-  category     text default '',
-  unit         text default 'LF',
-  description  text default '',
-  components   jsonb default '[]'::jsonb,
-  notes        text default '',
-  is_custom    boolean default false,
-  created_by   uuid references users(id) on delete set null,
-  created_at   timestamptz default now()
-);
-
-create index if not exists idx_assemblies_company on assemblies(company_id);
-create index if not exists idx_assemblies_code on assemblies(code);
 
 -- ═════════════════════════════════════════════════════════════
 --  MARGIN TIERS
 -- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS margin_tiers (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  bronze     NUMERIC(5,2) DEFAULT 15,
+  silver     NUMERIC(5,2) DEFAULT 20,
+  gold       NUMERIC(5,2) DEFAULT 25,
+  platinum   NUMERIC(5,2) DEFAULT 30,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-create table if not exists margin_tiers (
-  id       uuid primary key default uuid_generate_v4(),
-  company_id uuid references company(id) on delete cascade,
-  bronze   numeric(5,2) default 15.0,
-  silver   numeric(5,2) default 20.0,
-  gold     numeric(5,2) default 25.0,
-  platinum numeric(5,2) default 30.0
+-- ═════════════════════════════════════════════════════════════
+--  CONTACTS
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS contacts (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name       TEXT NOT NULL,
+  company    TEXT DEFAULT '',
+  role       TEXT DEFAULT '',
+  bids       INTEGER DEFAULT 0,
+  wins       INTEGER DEFAULT 0,
+  color      TEXT DEFAULT '#3B82F6',
+  last       TEXT DEFAULT '',
+  priority   TEXT DEFAULT 'med',
+  phone      TEXT DEFAULT '',
+  email      TEXT DEFAULT '',
+  notes      TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ═════════════════════════════════════════════════════════════
+--  BIDS
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS bids (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name       TEXT NOT NULL,
+  gc         TEXT DEFAULT '',
+  value      NUMERIC(14,2) DEFAULT 0,
+  due        TEXT DEFAULT '',
+  status     TEXT DEFAULT 'estimating',
+  scope      JSONB DEFAULT '[]',
+  phase      TEXT DEFAULT '',
+  risk       TEXT DEFAULT 'Low',
+  notes      TEXT DEFAULT '',
+  contact    TEXT DEFAULT '',
+  month      TEXT DEFAULT '',
+  close_out  TEXT,
+  margin     NUMERIC(5,2) DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ── Bid Attachments ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS bid_attachments (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  bid_id     UUID NOT NULL REFERENCES bids(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  type       TEXT DEFAULT '',
+  size       INTEGER DEFAULT 0,
+  data       TEXT DEFAULT '',
+  uploaded   TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_bid_attachments_bid ON bid_attachments(bid_id);
+
+-- ═════════════════════════════════════════════════════════════
+--  PROJECTS
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS projects (
+  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  bid_id            UUID REFERENCES bids(id) ON DELETE SET NULL,
+  name              TEXT NOT NULL,
+  gc                TEXT DEFAULT '',
+  contract          NUMERIC(14,2) DEFAULT 0,
+  billed            NUMERIC(14,2) DEFAULT 0,
+  progress          NUMERIC(5,2) DEFAULT 0,
+  phase             TEXT DEFAULT 'Pre-Construction',
+  start             TEXT DEFAULT '',
+  "end"             TEXT DEFAULT '',
+  am                TEXT DEFAULT '',
+  pm                TEXT DEFAULT '',
+  superintendent    TEXT DEFAULT '',
+  address           TEXT DEFAULT '',
+  labor_budget      NUMERIC(14,2) DEFAULT 0,
+  labor_hours       NUMERIC(10,2) DEFAULT 0,
+  demo              NUMERIC(14,2) DEFAULT 0,
+  drywall           NUMERIC(14,2) DEFAULT 0,
+  act               NUMERIC(14,2) DEFAULT 0,
+  lat               NUMERIC(10,7),
+  lng               NUMERIC(10,7),
+  radius_ft         NUMERIC(10,2) DEFAULT 500,
+  emergency_contact JSONB DEFAULT '{"name":"","phone":"","role":""}',
+  scope             JSONB DEFAULT '[]',
+  margin            NUMERIC(5,2) DEFAULT 0,
+  created_at        TIMESTAMPTZ DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ═════════════════════════════════════════════════════════════
+--  CALL LOG
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS call_log (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  contact    TEXT DEFAULT '',
+  company    TEXT DEFAULT '',
+  time       TIMESTAMPTZ DEFAULT NOW(),
+  note       TEXT DEFAULT '',
+  next       TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ═════════════════════════════════════════════════════════════
+--  ASSEMBLIES
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS assemblies (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  code        TEXT UNIQUE NOT NULL,
+  name        TEXT NOT NULL,
+  unit        TEXT DEFAULT 'LF',
+  p8          NUMERIC(10,2),
+  p10         NUMERIC(10,2),
+  p14         NUMERIC(10,2),
+  p20         NUMERIC(10,2),
+  mat_rate    NUMERIC(10,2) DEFAULT 0,
+  lab_rate    NUMERIC(10,2) DEFAULT 0,
+  verified    BOOLEAN DEFAULT FALSE,
+  category    TEXT DEFAULT '',
+  description TEXT DEFAULT '',
+  components  JSONB DEFAULT '[]',
+  special     TEXT DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ═════════════════════════════════════════════════════════════
 --  SCOPE ITEMS
 -- ═════════════════════════════════════════════════════════════
-
-create table if not exists scope_items (
-  id           uuid primary key default uuid_generate_v4(),
-  company_id   uuid references company(id) on delete cascade,
-  bid_id       uuid references bids(id) on delete set null,
-  category     text default '',
-  item         text default '',
-  checked      boolean default false,
-  flagged      boolean default false,
-  notes        text default ''
+CREATE TABLE IF NOT EXISTS scope_items (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title      TEXT NOT NULL,
+  "desc"     TEXT DEFAULT '',
+  category   TEXT DEFAULT '',
+  status     TEXT DEFAULT 'unchecked',
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-create index if not exists idx_scope_items_bid on scope_items(bid_id);
+-- ═════════════════════════════════════════════════════════════
+--  TAKEOFFS
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS takeoffs (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  bid_id       UUID REFERENCES bids(id) ON DELETE SET NULL,
+  name         TEXT NOT NULL,
+  waste_pct    NUMERIC(5,2) DEFAULT 10,
+  tax_rate     NUMERIC(5,2) DEFAULT 8.25,
+  overhead_pct NUMERIC(5,2) DEFAULT 10,
+  profit_pct   NUMERIC(5,2) DEFAULT 20,
+  created_at   TIMESTAMPTZ DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS takeoff_rooms (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  takeoff_id UUID NOT NULL REFERENCES takeoffs(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  floor      TEXT DEFAULT '',
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_takeoff_rooms_takeoff ON takeoff_rooms(takeoff_id);
+
+CREATE TABLE IF NOT EXISTS takeoff_items (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id    UUID NOT NULL REFERENCES takeoff_rooms(id) ON DELETE CASCADE,
+  code       TEXT DEFAULT '',
+  "desc"     TEXT DEFAULT '',
+  qty        NUMERIC(10,2) DEFAULT 0,
+  unit       TEXT DEFAULT 'LF',
+  height     NUMERIC(10,2) DEFAULT 8,
+  diff       NUMERIC(5,2) DEFAULT 1.0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_takeoff_items_room ON takeoff_items(room_id);
 
 -- ═════════════════════════════════════════════════════════════
---  UPDATED_AT TRIGGER (auto-update timestamps)
+--  INVOICES
 -- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS invoices (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  number     TEXT DEFAULT '',
+  date       TEXT DEFAULT '',
+  amount     NUMERIC(14,2) DEFAULT 0,
+  status     TEXT DEFAULT 'draft',
+  "desc"     TEXT DEFAULT '',
+  paid_date  TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_invoices_project ON invoices(project_id);
 
-create or replace function update_updated_at()
-returns trigger as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$ language plpgsql;
+-- ═════════════════════════════════════════════════════════════
+--  CHANGE ORDERS
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS change_orders (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  number     TEXT DEFAULT '',
+  "desc"     TEXT DEFAULT '',
+  amount     NUMERIC(14,2) DEFAULT 0,
+  status     TEXT DEFAULT 'pending',
+  submitted  TEXT DEFAULT '',
+  approved   TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_change_orders_project ON change_orders(project_id);
 
--- Apply trigger to tables with updated_at
-do $$
-declare
-  t text;
-begin
-  for t in select unnest(array[
-    'company', 'users', 'bids', 'projects'
-  ]) loop
-    execute format(
-      'create trigger set_updated_at before update on %I
-       for each row execute function update_updated_at()', t
+-- ═════════════════════════════════════════════════════════════
+--  T&M TICKETS
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS tm_tickets (
+  id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id       UUID REFERENCES projects(id) ON DELETE CASCADE,
+  ticket_number    TEXT DEFAULT '',
+  date             TEXT DEFAULT '',
+  status           TEXT DEFAULT 'submitted',
+  description      TEXT DEFAULT '',
+  labor_entries    JSONB DEFAULT '[]',
+  material_entries JSONB DEFAULT '[]',
+  submitted_date   TEXT DEFAULT '',
+  approved_date    TEXT,
+  billed_date      TEXT,
+  notes            TEXT DEFAULT '',
+  created_at       TIMESTAMPTZ DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_tm_tickets_project ON tm_tickets(project_id);
+
+-- ═════════════════════════════════════════════════════════════
+--  RFIs
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS rfis (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id    UUID REFERENCES projects(id) ON DELETE CASCADE,
+  number        TEXT DEFAULT '',
+  subject       TEXT DEFAULT '',
+  date_sent     TEXT DEFAULT '',
+  status        TEXT DEFAULT 'open',
+  assigned      TEXT DEFAULT '',
+  response      TEXT DEFAULT '',
+  response_date TEXT,
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_rfis_project ON rfis(project_id);
+
+-- ═════════════════════════════════════════════════════════════
+--  SUBMITTALS
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS submittals (
+  id                    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id            UUID REFERENCES projects(id) ON DELETE CASCADE,
+  number                TEXT DEFAULT '',
+  "desc"                TEXT DEFAULT '',
+  spec_section          TEXT DEFAULT '',
+  status                TEXT DEFAULT 'preparing',
+  submitted_date        TEXT,
+  due                   TEXT DEFAULT '',
+  pdf_key               TEXT,
+  pdf_name              TEXT,
+  pdf_size              INTEGER,
+  linked_material_ids   JSONB DEFAULT '[]',
+  linked_assembly_codes JSONB DEFAULT '[]',
+  created_at            TIMESTAMPTZ DEFAULT NOW(),
+  updated_at            TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_submittals_project ON submittals(project_id);
+
+-- ═════════════════════════════════════════════════════════════
+--  SCHEDULE TASKS
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS schedule_tasks (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  task       TEXT NOT NULL,
+  start_date TEXT DEFAULT '',
+  end_date   TEXT DEFAULT '',
+  crew       TEXT DEFAULT '',
+  status     TEXT DEFAULT 'not-started',
+  milestone  BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_schedule_tasks_project ON schedule_tasks(project_id);
+
+-- ═════════════════════════════════════════════════════════════
+--  DAILY REPORTS
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS daily_reports (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  date       TEXT DEFAULT '',
+  crew_size  INTEGER DEFAULT 0,
+  hours      NUMERIC(6,2) DEFAULT 0,
+  work       TEXT DEFAULT '',
+  issues     TEXT DEFAULT '',
+  weather    TEXT DEFAULT '',
+  safety     TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_daily_reports_project ON daily_reports(project_id);
+
+-- ═════════════════════════════════════════════════════════════
+--  JSAs (Job Safety Analysis)
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS jsas (
+  id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id       UUID REFERENCES projects(id) ON DELETE CASCADE,
+  template_id      TEXT DEFAULT '',
+  title            TEXT NOT NULL,
+  trade            TEXT DEFAULT 'framing',
+  location         TEXT DEFAULT '',
+  date             TEXT DEFAULT '',
+  shift            TEXT DEFAULT 'day',
+  weather          TEXT DEFAULT '',
+  supervisor       TEXT DEFAULT '',
+  competent_person TEXT DEFAULT '',
+  status           TEXT DEFAULT 'draft',
+  steps            JSONB DEFAULT '[]',
+  ppe              JSONB DEFAULT '[]',
+  permits          JSONB DEFAULT '[]',
+  crew_sign_on     JSONB DEFAULT '[]',
+  toolbox_talk     JSONB DEFAULT '{"topic":"","notes":"","discussed":false}',
+  near_misses      JSONB DEFAULT '[]',
+  audit            JSONB DEFAULT '[]',
+  created_by       TEXT DEFAULT '',
+  created_at       TIMESTAMPTZ DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_jsas_project ON jsas(project_id);
+
+-- ═════════════════════════════════════════════════════════════
+--  EQUIPMENT
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS equipment (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name       TEXT NOT NULL,
+  type       TEXT DEFAULT 'lift',
+  status     TEXT DEFAULT 'available',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ═════════════════════════════════════════════════════════════
+--  EQUIPMENT BOOKINGS
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS equipment_bookings (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  equipment_id UUID REFERENCES equipment(id) ON DELETE CASCADE,
+  project_id   UUID REFERENCES projects(id) ON DELETE SET NULL,
+  start_date   TEXT DEFAULT '',
+  end_date     TEXT DEFAULT '',
+  status       TEXT DEFAULT 'confirmed',
+  booked_by    TEXT DEFAULT '',
+  booked_at    TIMESTAMPTZ DEFAULT NOW(),
+  notes        TEXT DEFAULT '',
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_eq_bookings_equipment ON equipment_bookings(equipment_id);
+CREATE INDEX IF NOT EXISTS idx_eq_bookings_project ON equipment_bookings(project_id);
+
+-- ═════════════════════════════════════════════════════════════
+--  CALENDAR EVENTS
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS calendar_events (
+  id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  type                TEXT DEFAULT 'task',
+  title               TEXT NOT NULL,
+  project_id          UUID REFERENCES projects(id) ON DELETE SET NULL,
+  date                TEXT DEFAULT '',
+  start_time          TEXT DEFAULT '',
+  end_time            TEXT DEFAULT '',
+  all_day             BOOLEAN DEFAULT FALSE,
+  assigned_to         JSONB DEFAULT '[]',
+  location            TEXT DEFAULT '',
+  notes               TEXT DEFAULT '',
+  status              TEXT DEFAULT 'scheduled',
+  linked_rfi_id       UUID,
+  linked_submittal_id UUID,
+  linked_co_id        UUID,
+  recurrence          TEXT,
+  created_by          TEXT DEFAULT '',
+  created_at          TIMESTAMPTZ DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_calendar_events_project ON calendar_events(project_id);
+CREATE INDEX IF NOT EXISTS idx_calendar_events_date ON calendar_events(date);
+
+-- ═════════════════════════════════════════════════════════════
+--  CERTIFICATIONS
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS certifications (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  employee_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  issue_date  TEXT DEFAULT '',
+  expiry_date TEXT DEFAULT '',
+  status      TEXT DEFAULT 'active',
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_certifications_employee ON certifications(employee_id);
+
+-- ═════════════════════════════════════════════════════════════
+--  PTO REQUESTS
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS pto_requests (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  employee_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  type        TEXT DEFAULT 'vacation',
+  start_date  TEXT DEFAULT '',
+  end_date    TEXT DEFAULT '',
+  status      TEXT DEFAULT 'pending',
+  reason      TEXT DEFAULT '',
+  reviewed_by TEXT DEFAULT '',
+  reviewed_at TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_pto_requests_employee ON pto_requests(employee_id);
+
+-- ═════════════════════════════════════════════════════════════
+--  CREW SCHEDULE
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS crew_schedule (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  employee_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  project_id  UUID REFERENCES projects(id) ON DELETE SET NULL,
+  week_start  TEXT DEFAULT '',
+  days        JSONB DEFAULT '{"mon":true,"tue":true,"wed":true,"thu":true,"fri":true}',
+  hours       JSONB DEFAULT '{"start":"06:00","end":"14:30"}',
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_crew_schedule_employee ON crew_schedule(employee_id);
+
+-- ═════════════════════════════════════════════════════════════
+--  AUTO-UPDATE updated_at TRIGGER
+-- ═════════════════════════════════════════════════════════════
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DO $$
+DECLARE
+  t TEXT;
+BEGIN
+  FOR t IN
+    SELECT table_name FROM information_schema.columns
+    WHERE column_name = 'updated_at'
+      AND table_schema = 'public'
+  LOOP
+    EXECUTE format(
+      'DROP TRIGGER IF EXISTS set_updated_at ON %I', t
     );
-  end loop;
-exception when duplicate_object then null;
-end;
+    EXECUTE format(
+      'CREATE TRIGGER set_updated_at BEFORE UPDATE ON %I
+       FOR EACH ROW EXECUTE FUNCTION update_updated_at()', t
+    );
+  END LOOP;
+END;
 $$;
 
 -- ═════════════════════════════════════════════════════════════
---  ROW LEVEL SECURITY (RLS)
---  Users can only access rows belonging to their company.
+--  ROW LEVEL SECURITY
+--  Permissive for now — authenticated users get full access.
+--  Tighten with role-based policies later.
 -- ═════════════════════════════════════════════════════════════
-
--- Helper: get the company_id for the currently authenticated user
-create or replace function auth_company_id()
-returns uuid as $$
-  select company_id from users where id = auth.uid();
-$$ language sql security definer stable;
-
--- Enable RLS on all tables and create policies
-do $$
-declare
-  t text;
-begin
-  for t in select unnest(array[
-    'users', 'bids', 'bid_attachments', 'projects', 'contacts', 'call_log',
-    'takeoffs', 'takeoff_rooms', 'takeoff_items',
-    'invoices', 'change_orders', 'tm_tickets', 'rfis', 'submittals',
-    'schedule_tasks', 'daily_reports', 'jsas', 'equipment',
-    'assemblies', 'margin_tiers', 'scope_items', 'company'
-  ]) loop
-    execute format('alter table %I enable row level security', t);
-  end loop;
-end;
+DO $$
+DECLARE
+  t TEXT;
+BEGIN
+  FOR t IN
+    SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+  LOOP
+    EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
+    EXECUTE format(
+      'CREATE POLICY "auth_full_access" ON %I FOR ALL
+       TO authenticated USING (true) WITH CHECK (true)', t
+    );
+    EXECUTE format(
+      'CREATE POLICY "anon_read" ON %I FOR SELECT
+       TO anon USING (true)', t
+    );
+  END LOOP;
+END;
 $$;
 
--- Company: members can read/update their own company
-create policy "company_select" on company for select using (id = auth_company_id());
-create policy "company_update" on company for update using (id = auth_company_id());
+-- ═════════════════════════════════════════════════════════════
+--  STORAGE BUCKET for file uploads
+-- ═════════════════════════════════════════════════════════════
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'ebc-files', 'ebc-files', TRUE, 52428800,
+  ARRAY[
+    'image/png','image/jpeg','image/gif','image/webp',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/csv','text/plain'
+  ]
+) ON CONFLICT (id) DO NOTHING;
 
--- Users: same company
-create policy "users_select" on users for select using (company_id = auth_company_id());
-create policy "users_insert" on users for insert with check (company_id = auth_company_id());
-create policy "users_update" on users for update using (company_id = auth_company_id());
+-- Storage policies
+CREATE POLICY "ebc_files_auth_upload" ON storage.objects
+  FOR INSERT TO authenticated WITH CHECK (bucket_id = 'ebc-files');
 
--- Macro for company-scoped tables (most tables)
-do $$
-declare
-  t text;
-begin
-  for t in select unnest(array[
-    'bids', 'projects', 'contacts', 'call_log', 'takeoffs',
-    'invoices', 'change_orders', 'tm_tickets', 'rfis', 'submittals',
-    'schedule_tasks', 'daily_reports', 'jsas', 'equipment',
-    'assemblies', 'margin_tiers', 'scope_items'
-  ]) loop
-    execute format(
-      'create policy %I on %I for select using (company_id = auth_company_id())',
-      t || '_select', t
-    );
-    execute format(
-      'create policy %I on %I for insert with check (company_id = auth_company_id())',
-      t || '_insert', t
-    );
-    execute format(
-      'create policy %I on %I for update using (company_id = auth_company_id())',
-      t || '_update', t
-    );
-    execute format(
-      'create policy %I on %I for delete using (company_id = auth_company_id())',
-      t || '_delete', t
-    );
-  end loop;
-end;
-$$;
+CREATE POLICY "ebc_files_auth_update" ON storage.objects
+  FOR UPDATE TO authenticated USING (bucket_id = 'ebc-files');
 
--- Bid attachments: access via parent bid's company
-create policy "bid_attachments_select" on bid_attachments
-  for select using (
-    exists (select 1 from bids where bids.id = bid_attachments.bid_id and bids.company_id = auth_company_id())
-  );
-create policy "bid_attachments_insert" on bid_attachments
-  for insert with check (
-    exists (select 1 from bids where bids.id = bid_attachments.bid_id and bids.company_id = auth_company_id())
-  );
-create policy "bid_attachments_delete" on bid_attachments
-  for delete using (
-    exists (select 1 from bids where bids.id = bid_attachments.bid_id and bids.company_id = auth_company_id())
-  );
+CREATE POLICY "ebc_files_auth_delete" ON storage.objects
+  FOR DELETE TO authenticated USING (bucket_id = 'ebc-files');
 
--- Takeoff rooms: access via parent takeoff's company
-create policy "takeoff_rooms_select" on takeoff_rooms
-  for select using (
-    exists (select 1 from takeoffs where takeoffs.id = takeoff_rooms.takeoff_id and takeoffs.company_id = auth_company_id())
-  );
-create policy "takeoff_rooms_insert" on takeoff_rooms
-  for insert with check (
-    exists (select 1 from takeoffs where takeoffs.id = takeoff_rooms.takeoff_id and takeoffs.company_id = auth_company_id())
-  );
-create policy "takeoff_rooms_update" on takeoff_rooms
-  for update using (
-    exists (select 1 from takeoffs where takeoffs.id = takeoff_rooms.takeoff_id and takeoffs.company_id = auth_company_id())
-  );
-create policy "takeoff_rooms_delete" on takeoff_rooms
-  for delete using (
-    exists (select 1 from takeoffs where takeoffs.id = takeoff_rooms.takeoff_id and takeoffs.company_id = auth_company_id())
-  );
-
--- Takeoff items: access via parent room -> takeoff's company
-create policy "takeoff_items_select" on takeoff_items
-  for select using (
-    exists (
-      select 1 from takeoff_rooms r
-      join takeoffs t on t.id = r.takeoff_id
-      where r.id = takeoff_items.room_id and t.company_id = auth_company_id()
-    )
-  );
-create policy "takeoff_items_insert" on takeoff_items
-  for insert with check (
-    exists (
-      select 1 from takeoff_rooms r
-      join takeoffs t on t.id = r.takeoff_id
-      where r.id = takeoff_items.room_id and t.company_id = auth_company_id()
-    )
-  );
-create policy "takeoff_items_update" on takeoff_items
-  for update using (
-    exists (
-      select 1 from takeoff_rooms r
-      join takeoffs t on t.id = r.takeoff_id
-      where r.id = takeoff_items.room_id and t.company_id = auth_company_id()
-    )
-  );
-create policy "takeoff_items_delete" on takeoff_items
-  for delete using (
-    exists (
-      select 1 from takeoff_rooms r
-      join takeoffs t on t.id = r.takeoff_id
-      where r.id = takeoff_items.room_id and t.company_id = auth_company_id()
-    )
-  );
+CREATE POLICY "ebc_files_public_read" ON storage.objects
+  FOR SELECT TO public USING (bucket_id = 'ebc-files');
 
 -- ═════════════════════════════════════════════════════════════
---  STORAGE BUCKET
+--  ENABLE REALTIME on key tables
 -- ═════════════════════════════════════════════════════════════
+ALTER PUBLICATION supabase_realtime ADD TABLE bids;
+ALTER PUBLICATION supabase_realtime ADD TABLE projects;
+ALTER PUBLICATION supabase_realtime ADD TABLE contacts;
+ALTER PUBLICATION supabase_realtime ADD TABLE invoices;
+ALTER PUBLICATION supabase_realtime ADD TABLE change_orders;
+ALTER PUBLICATION supabase_realtime ADD TABLE tm_tickets;
+ALTER PUBLICATION supabase_realtime ADD TABLE rfis;
+ALTER PUBLICATION supabase_realtime ADD TABLE submittals;
+ALTER PUBLICATION supabase_realtime ADD TABLE schedule_tasks;
+ALTER PUBLICATION supabase_realtime ADD TABLE daily_reports;
+ALTER PUBLICATION supabase_realtime ADD TABLE jsas;
+ALTER PUBLICATION supabase_realtime ADD TABLE equipment;
+ALTER PUBLICATION supabase_realtime ADD TABLE equipment_bookings;
+ALTER PUBLICATION supabase_realtime ADD TABLE calendar_events;
 
-insert into storage.buckets (id, name, public)
-values ('ebc-files', 'ebc-files', false)
-on conflict (id) do nothing;
-
--- Storage policy: authenticated users can upload/read/delete their own files
-create policy "ebc_files_select" on storage.objects
-  for select using (bucket_id = 'ebc-files' and auth.role() = 'authenticated');
-
-create policy "ebc_files_insert" on storage.objects
-  for insert with check (bucket_id = 'ebc-files' and auth.role() = 'authenticated');
-
-create policy "ebc_files_delete" on storage.objects
-  for delete using (bucket_id = 'ebc-files' and auth.role() = 'authenticated');
+-- ═════════════════════════════════════════════════════════════
+--  DONE! Your EBC-OS database is ready.
+-- ═════════════════════════════════════════════════════════════

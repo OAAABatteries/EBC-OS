@@ -1,7 +1,7 @@
 // EBC-OS Service Worker — Offline Cache + Notifications
 // Bumping version busts old caches on deploy
-const CACHE_NAME = "ebc-os-v2";
-const STATIC_ASSETS = ["/", "/index.html", "/manifest.json", "/favicon.svg", "/pwa-192x192.svg"];
+const CACHE_NAME = "ebc-os-v3";
+const STATIC_ASSETS = ["/", "/index.html", "/manifest.json", "/favicon-48.png", "/icon-192.png", "/icon-512.png", "/eagle-blue.png"];
 
 // ── Install: pre-cache app shell ──
 self.addEventListener("install", (e) => {
@@ -88,8 +88,8 @@ self.addEventListener("message", (event) => {
       const timer = setTimeout(() => {
         self.registration.showNotification("EBC-OS · Clock In Reminder", {
           body: `${employeeName}, time to clock in${projectName ? " for " + projectName : ""}`,
-          icon: "/pwa-192x192.png",
-          badge: "/pwa-192x192.png",
+          icon: "/icon-192.png",
+          badge: "/icon-192.png",
           tag: `clock-reminder-${employeeId}`,
           requireInteraction: true,
           vibrate: [200, 100, 200],

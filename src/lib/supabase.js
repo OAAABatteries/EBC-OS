@@ -73,6 +73,39 @@ export function onAuthStateChange(callback) {
 }
 
 // ═════════════════════════════════════════════════════════════
+//  CASE CONVERSION (camelCase ↔ snake_case)
+//  App uses camelCase, Postgres uses snake_case
+// ═════════════════════════════════════════════════════════════
+
+function toSnake(str) {
+  return str.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase());
+}
+
+function toCamel(str) {
+  return str.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+function keysToSnake(obj) {
+  if (Array.isArray(obj)) return obj.map(keysToSnake);
+  if (obj !== null && typeof obj === "object" && !(obj instanceof Date)) {
+    return Object.fromEntries(
+      Object.entries(obj).map(([k, v]) => [toSnake(k), v])
+    );
+  }
+  return obj;
+}
+
+function keysToCamel(obj) {
+  if (Array.isArray(obj)) return obj.map(keysToCamel);
+  if (obj !== null && typeof obj === "object" && !(obj instanceof Date)) {
+    return Object.fromEntries(
+      Object.entries(obj).map(([k, v]) => [toCamel(k), v])
+    );
+  }
+  return obj;
+}
+
+// ═════════════════════════════════════════════════════════════
 //  GENERIC DATABASE CRUD
 // ═════════════════════════════════════════════════════════════
 
@@ -88,35 +121,35 @@ async function _getAll(table, options = {}) {
   if (options.limit) query = query.limit(options.limit);
   const { data, error } = await query;
   if (error) throw error;
-  return data || [];
+  return keysToCamel(data || []);
 }
 
 async function _getById(table, id) {
   if (!supabase) return null;
   const { data, error } = await supabase.from(table).select("*").eq("id", id).single();
   if (error) throw error;
-  return data;
+  return keysToCamel(data);
 }
 
 async function _upsert(table, row) {
   if (!supabase) throw new Error("Supabase not configured");
-  const { data, error } = await supabase.from(table).upsert(row).select().single();
+  const { data, error } = await supabase.from(table).upsert(keysToSnake(row)).select().single();
   if (error) throw error;
-  return data;
+  return keysToCamel(data);
 }
 
 async function _insert(table, row) {
   if (!supabase) throw new Error("Supabase not configured");
-  const { data, error } = await supabase.from(table).insert(row).select().single();
+  const { data, error } = await supabase.from(table).insert(keysToSnake(row)).select().single();
   if (error) throw error;
-  return data;
+  return keysToCamel(data);
 }
 
 async function _update(table, id, updates) {
   if (!supabase) throw new Error("Supabase not configured");
-  const { data, error } = await supabase.from(table).update(updates).eq("id", id).select().single();
+  const { data, error } = await supabase.from(table).update(keysToSnake(updates)).eq("id", id).select().single();
   if (error) throw error;
-  return data;
+  return keysToCamel(data);
 }
 
 async function _remove(table, id) {
