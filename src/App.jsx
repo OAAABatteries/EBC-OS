@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { styles } from "./styles";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useToast } from "./hooks/useToast";
@@ -28,6 +28,9 @@ import { initJSAs } from "./data/jsaConstants";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { initNative } from "./utils/native";
 import { T } from "./data/translations";
+import { LoginScreen } from "./components/LoginScreen";
+import { OnboardingWizard } from "./components/OnboardingWizard";
+import { hasAccess } from "./data/roles";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · App Component
@@ -183,7 +186,43 @@ const CyberRain = () => {
   );
 };
 
-const App = () => {
+// ── AUTH WRAPPER (defined after App below, exported as default) ──
+function AuthGate() {
+  const [auth, setAuth] = useState(() => {
+    try {
+      const stored = localStorage.getItem("ebc_auth");
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
+  });
+  const [onboardingDone, setOnboardingDone] = useState(() => {
+    try { return localStorage.getItem("ebc_onboarding_complete") === "true"; } catch { return false; }
+  });
+
+  const handleLogin = useCallback((user) => {
+    localStorage.setItem("ebc_auth", JSON.stringify(user));
+    setAuth(user);
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem("ebc_auth");
+    setAuth(null);
+  }, []);
+
+  const handleOnboardingComplete = useCallback(() => {
+    setOnboardingDone(true);
+  }, []);
+
+  if (!auth) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+  if (!onboardingDone) {
+    return <OnboardingWizard onComplete={handleOnboardingComplete} />;
+  }
+
+  return <App auth={auth} onLogout={handleLogout} />;
+};
+
+function App({ auth, onLogout }) {
   // ── localStorage-backed state ──
   const [theme, setTheme] = useLocalStorage("theme", "steel");
   const [bids, setBids] = useLocalStorage("bids", initBids);
@@ -302,7 +341,8 @@ const App = () => {
     jsas, setJsas,
     tmTickets, setTmTickets,
     show, setModal, modal, search, setSearch, tab, setTab, subTab, setSubTab, fmt, fmtK, nextId,
-    lang, setLang, t
+    lang, setLang, t,
+    auth, onLogout
   };
 
   // ── KPI computations ──
@@ -356,6 +396,13 @@ const App = () => {
     if (scopeFilter === "Unchecked") return scope.filter(s => s.status === "unchecked");
     return scope;
   }, [scope, scopeFilter]);
+
+  // ── role-based tab filtering ──
+  const userRole = auth?.role || "owner";
+  const visiblePrimary = useMemo(() =>
+    PRIMARY_TABS.filter(t => hasAccess(userRole, t.key)), [userRole]);
+  const visibleSecondary = useMemo(() =>
+    SECONDARY_TABS.filter(t => hasAccess(userRole, t.key)), [userRole]);
 
   // ── nav handler ──
   const handleTabClick = (key) => {
@@ -411,11 +458,11 @@ const App = () => {
     <div>
       <div className="section-header">
         <div>
-          <div className="section-title font-head">Dashboard</div>
-          <div className="section-sub">Eagles Brothers Constructors overview</div>
+          <div className="section-title font-head">{t("Dashboard")}</div>
+          <div className="section-sub">{t("Eagles Brothers Constructors overview")}</div>
         </div>
         <button className="btn btn-ghost" onClick={() => { showBrief ? setShowBrief(false) : runMorningBrief(); }} disabled={briefLoading}>
-          {briefLoading ? "Loading..." : "Morning Brief"}
+          {briefLoading ? t("Loading...") : t("Morning Brief")}
         </button>
       </div>
 
@@ -424,7 +471,7 @@ const App = () => {
         <div className="card" style={{ padding: 20, marginBottom: 16, maxHeight: 450, overflow: "auto" }}>
           <div className="flex-between mb-12">
             <div className="text-sm font-semi">{briefResult.greeting || "Good morning!"}</div>
-            <button className="btn btn-ghost btn-sm" onClick={() => setShowBrief(false)}>Close</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowBrief(false)}>{t("Close")}</button>
           </div>
 
           <div className="text-sm text-muted mb-12">{briefResult.summary}</div>
@@ -432,7 +479,7 @@ const App = () => {
           {/* Urgent Alerts */}
           {briefResult.urgentAlerts?.length > 0 && (
             <div style={{ marginBottom: 12 }}>
-              <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Urgent Alerts</div>
+              <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>{t("Urgent Alerts")}</div>
               {briefResult.urgentAlerts.map((a, i) => (
                 <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
                   <div className="flex-between">
@@ -448,7 +495,7 @@ const App = () => {
           {/* Today's Focus */}
           {briefResult.todaysFocus?.length > 0 && (
             <div style={{ marginBottom: 12 }}>
-              <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Today's Focus</div>
+              <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>{t("Today's Focus")}</div>
               {briefResult.todaysFocus.map((f, i) => (
                 <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                   <div className="flex-between">
@@ -464,7 +511,7 @@ const App = () => {
           {/* Money Moves */}
           {briefResult.moneyMoves?.length > 0 && (
             <div style={{ marginBottom: 12 }}>
-              <div className="text-sm font-semi mb-8">Money Moves</div>
+              <div className="text-sm font-semi mb-8">{t("Money Moves")}</div>
               {briefResult.moneyMoves.map((m, i) => (
                 <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                   <div className="flex-between">
@@ -487,22 +534,22 @@ const App = () => {
 
       <div className="kpi-grid">
         <div className="kpi-card">
-          <div className="kpi-label">Pipeline Value</div>
+          <div className="kpi-label">{t("Pipeline Value")}</div>
           <div className="kpi-value">{fmtK(pipeline)}</div>
-          <div className="kpi-sub">{bids.filter(b => b.status === "estimating").length} bids estimating</div>
+          <div className="kpi-sub">{bids.filter(b => b.status === "estimating").length} {t("bids estimating")}</div>
         </div>
         <div className="kpi-card">
-          <div className="kpi-label">Active Projects</div>
+          <div className="kpi-label">{t("Active Projects")}</div>
           <div className="kpi-value">{activeProjects}</div>
-          <div className="kpi-sub">{projects.filter(p => p.progress < 100).length} in progress</div>
+          <div className="kpi-sub">{projects.filter(p => p.progress < 100).length} {t("in progress")}</div>
         </div>
         <div className="kpi-card">
-          <div className="kpi-label">Open Bids</div>
+          <div className="kpi-label">{t("Open Bids")}</div>
           <div className="kpi-value">{openBids}</div>
-          <div className="kpi-sub">{bids.filter(b => b.status === "submitted").length} submitted</div>
+          <div className="kpi-sub">{bids.filter(b => b.status === "submitted").length} {t("submitted")}</div>
         </div>
         <div className="kpi-card">
-          <div className="kpi-label">Win Rate</div>
+          <div className="kpi-label">{t("Win Rate")}</div>
           <div className="kpi-value">{winRate}%</div>
           <div className="kpi-sub">{awarded}W / {lost}L</div>
         </div>
@@ -511,7 +558,7 @@ const App = () => {
       {/* Charts Row */}
       <div className="flex gap-16 mt-24" style={{ flexWrap: "wrap" }}>
         <div className="card" style={{ flex: "1 1 280px", minWidth: 280 }}>
-          <div className="card-header"><div className="card-title font-head">Bids by Status</div></div>
+          <div className="card-header"><div className="card-title font-head">{t("Bids by Status")}</div></div>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie data={statusChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name} (${value})`}>
@@ -523,7 +570,7 @@ const App = () => {
         </div>
 
         <div className="card" style={{ flex: "1 1 400px", minWidth: 300 }}>
-          <div className="card-header"><div className="card-title font-head">Bids by GC (Top 8)</div></div>
+          <div className="card-header"><div className="card-title font-head">{t("Bids by GC (Top 8)")}</div></div>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={gcChartData} layout="vertical" margin={{ left: 10, right: 20 }}>
               <XAxis type="number" tick={{ fill: "var(--text2)", fontSize: 11 }} />
@@ -536,7 +583,7 @@ const App = () => {
       </div>
 
       <div className="card mt-16">
-        <div className="card-header"><div className="card-title font-head">Bids by Month</div></div>
+        <div className="card-header"><div className="card-title font-head">{t("Bids by Month")}</div></div>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={monthChartData} margin={{ left: 0, right: 20 }}>
             <XAxis dataKey="name" tick={{ fill: "var(--text2)", fontSize: 12 }} />
@@ -549,7 +596,7 @@ const App = () => {
 
       <div className="card mt-16">
         <div className="card-header">
-          <div className="card-title font-head">Recent Activity</div>
+          <div className="card-title font-head">{t("Recent Activity")}</div>
         </div>
         {callLog.slice(0, 5).map(c => (
           <div key={c.id} className="flex gap-12 border-b" style={{ padding: "10px 0" }}>
@@ -567,7 +614,7 @@ const App = () => {
         {callLog.length === 0 && (
           <div className="empty-state">
             <div className="empty-icon">📋</div>
-            <div className="empty-text">No recent activity</div>
+            <div className="empty-text">{t("No recent activity")}</div>
           </div>
         )}
       </div>
@@ -575,14 +622,14 @@ const App = () => {
       {/* Weekly Digest */}
       <div className="card mt-16">
         <div className="card-header flex-between">
-          <div className="card-title font-head">PM Weekly Digest</div>
+          <div className="card-title font-head">{t("PM Weekly Digest")}</div>
           <button className="btn btn-primary btn-sm" onClick={runWeeklyDigest} disabled={digestLoading}>
-            {digestLoading ? "Generating..." : "Generate Digest"}
+            {digestLoading ? t("Generating...") : t("Generate Digest")}
           </button>
         </div>
         {!digestResult && !digestLoading && (
           <div className="text-sm text-muted" style={{ padding: "12px 0" }}>
-            AI-powered summary of project health, alerts, and recommendations across your portfolio.
+            {t("AI-powered summary of project health, alerts, and recommendations across your portfolio.")}
           </div>
         )}
         {digestLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Analyzing {projects.length} projects and {bids.length} bids...</div>}
@@ -597,15 +644,15 @@ const App = () => {
             {digestResult.kpis && (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
                 <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", textAlign: "center" }}>
-                  <div className="text-xs text-muted">Avg Margin</div>
+                  <div className="text-xs text-muted">{t("Avg Margin")}</div>
                   <div style={{ fontSize: 18, fontWeight: 700, color: "var(--amber)" }}>{digestResult.kpis.avgMargin}%</div>
                 </div>
                 <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", textAlign: "center" }}>
-                  <div className="text-xs text-muted">Cash Flow</div>
+                  <div className="text-xs text-muted">{t("Cash Flow")}</div>
                   <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>{digestResult.kpis.cashFlowStatus}</div>
                 </div>
                 <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", textAlign: "center" }}>
-                  <div className="text-xs text-muted">Crew Utilization</div>
+                  <div className="text-xs text-muted">{t("Crew Utilization")}</div>
                   <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>{digestResult.kpis.crewUtilization}</div>
                 </div>
               </div>
@@ -614,7 +661,7 @@ const App = () => {
             {/* Alerts */}
             {digestResult.alerts?.length > 0 && (
               <div style={{ marginBottom: 12 }}>
-                <div className="text-sm font-semi mb-8">Alerts</div>
+                <div className="text-sm font-semi mb-8">{t("Alerts")}</div>
                 {digestResult.alerts.map((a, i) => (
                   <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, borderLeft: `3px solid ${a.priority === "high" ? "var(--red)" : a.priority === "medium" ? "var(--amber)" : "var(--blue)"}`, background: "var(--card)", fontSize: 13 }}>
                     <div className="flex-between">
@@ -630,7 +677,7 @@ const App = () => {
             {/* Recommendations */}
             {digestResult.recommendations?.length > 0 && (
               <div style={{ marginBottom: 12 }}>
-                <div className="text-sm font-semi mb-8">Recommendations</div>
+                <div className="text-sm font-semi mb-8">{t("Recommendations")}</div>
                 {digestResult.recommendations.map((r, i) => (
                   <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
                     <div className="flex-between">
@@ -646,7 +693,7 @@ const App = () => {
             {/* Wins */}
             {digestResult.wins?.length > 0 && (
               <div>
-                <div className="text-sm font-semi mb-8">Wins This Week</div>
+                <div className="text-sm font-semi mb-8">{t("Wins This Week")}</div>
                 {digestResult.wins.map((w, i) => (
                   <div key={i} style={{ padding: "4px 0", fontSize: 13, color: "var(--green)" }}>{w}</div>
                 ))}
@@ -657,8 +704,8 @@ const App = () => {
       </div>
 
       <div className="flex gap-8 mt-16">
-        <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>+ Add Bid</button>
-        <button className="btn btn-ghost" onClick={() => handleTabClick("projects")}>View Projects</button>
+        <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>{t("+ Add Bid")}</button>
+        <button className="btn btn-ghost" onClick={() => handleTabClick("projects")}>{t("View Projects")}</button>
       </div>
     </div>
   );
@@ -670,15 +717,15 @@ const App = () => {
     <div>
       <div className="section-header">
         <div>
-          <div className="section-title font-head">Bids</div>
-          <div className="section-sub">{filteredBids.length} bid{filteredBids.length !== 1 ? "s" : ""}</div>
+          <div className="section-title font-head">{t("Bids")}</div>
+          <div className="section-sub">{filteredBids.length} {filteredBids.length !== 1 ? t("bids") : t("bid")}</div>
         </div>
         <div className="flex gap-8">
           <div className="search-wrap">
             <span className="search-icon">🔍</span>
             <input
               className="search-input"
-              placeholder="Search bids..."
+              placeholder={t("Search bids...")}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -696,18 +743,18 @@ const App = () => {
             const a = document.createElement('a'); a.href = url; a.download = 'ebc_bids.csv'; a.click();
             URL.revokeObjectURL(url);
             show("CSV exported");
-          }}>Export CSV</button>
+          }}>{t("Export CSV")}</button>
           <button className="btn btn-ghost" onClick={() => setShowEmailScanner(!showEmailScanner)}>
-            {showEmailScanner ? "Close Scanner" : "Scan Email"}
+            {showEmailScanner ? t("Close Scanner") : t("Scan Email")}
           </button>
-          <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>+ Add Bid</button>
+          <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>{t("+ Add Bid")}</button>
         </div>
       </div>
 
       {/* Email-to-Bid Scanner */}
       {showEmailScanner && (
         <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-          <div className="text-sm font-semi mb-8">Email-to-Bid Scanner</div>
+          <div className="text-sm font-semi mb-8">{t("Email-to-Bid Scanner")}</div>
           <div className="text-xs text-muted mb-8">Paste a bid invite email, forwarded bid package, or any email with project info. AI will extract bids and let you import them.</div>
           <textarea className="form-input" rows={6} placeholder="Paste email content here..."
             value={emailText} onChange={e => setEmailText(e.target.value)}
@@ -715,7 +762,7 @@ const App = () => {
           <div className="flex-between">
             <span className="text-xs text-dim">{emailText.length} chars</span>
             <button className="btn btn-primary btn-sm" onClick={runEmailScan} disabled={emailLoading}>
-              {emailLoading ? "Scanning..." : "Extract Bids"}
+              {emailLoading ? t("Scanning...") : t("Extract Bids")}
             </button>
           </div>
 
@@ -753,14 +800,14 @@ const App = () => {
             className={`btn btn-sm ${bidFilter === f ? "btn-primary" : "btn-ghost"}`}
             onClick={() => setBidFilter(f)}
           >
-            {f}
+            {t(f)}
           </button>
         ))}
       </div>
 
       {selectedBids.size > 0 && (
         <div className="card mt-16" style={{ padding: "10px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-          <span className="text-sm font-semi">{selectedBids.size} selected</span>
+          <span className="text-sm font-semi">{selectedBids.size} {t("selected")}</span>
           <select className="form-select" style={{ width: "auto", fontSize: 12 }} defaultValue="" onChange={e => {
             if (!e.target.value) return;
             setBids(prev => prev.map(b => selectedBids.has(b.id) ? { ...b, status: e.target.value } : b));
@@ -768,26 +815,26 @@ const App = () => {
             setSelectedBids(new Set());
             e.target.value = "";
           }}>
-            <option value="">Set status...</option>
+            <option value="">{t("Set status...")}</option>
             <option value="estimating">Estimating</option>
             <option value="submitted">Submitted</option>
             <option value="awarded">Awarded</option>
             <option value="lost">Lost</option>
           </select>
-          <button className="btn btn-ghost btn-sm" onClick={() => setSelectedBids(new Set())}>Clear</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setSelectedBids(new Set())}>{t("Clear")}</button>
           <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }} onClick={() => {
             if (!confirm(`Delete ${selectedBids.size} bids?`)) return;
             setBids(prev => prev.filter(b => !selectedBids.has(b.id)));
             setSelectedBids(new Set());
             show("Bids deleted");
-          }}>Delete Selected</button>
+          }}>{t("Delete Selected")}</button>
         </div>
       )}
 
       {filteredBids.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">📂</div>
-          <div className="empty-text">No bids match your filter</div>
+          <div className="empty-text">{t("No bids match your filter")}</div>
         </div>
       ) : (
         <div className="bid-grid">
@@ -821,14 +868,14 @@ const App = () => {
                   <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }}
                     onClick={(e) => { e.stopPropagation(); runFollowUp(b); }}
                     disabled={followUpLoading && followUpBid?.id === b.id}>
-                    {followUpLoading && followUpBid?.id === b.id ? "Drafting..." : "Draft Follow-Up"}
+                    {followUpLoading && followUpBid?.id === b.id ? t("Drafting...") : t("Draft Follow-Up")}
                   </button>
                 )}
                 {(b.status === "estimating" || b.status === "submitted") && (
                   <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, color: "var(--amber)" }}
                     onClick={(e) => { e.stopPropagation(); runWinPredict(b); }}
                     disabled={winPredLoading && winPredBid?.id === b.id}>
-                    {winPredLoading && winPredBid?.id === b.id ? "Predicting..." : "Win Predictor"}
+                    {winPredLoading && winPredBid?.id === b.id ? t("Predicting...") : t("Win Predictor")}
                   </button>
                 )}
                 {b.status === "awarded" && !projects.some(p => p.bidId === b.id) && (
@@ -852,11 +899,11 @@ const App = () => {
                       setProjects(prev => [...prev, newProj]);
                       show(`Project created from "${b.name}"`);
                     }}>
-                    Convert to Project
+                    {t("Convert to Project")}
                   </button>
                 )}
                 {b.status === "awarded" && projects.some(p => p.bidId === b.id) && (
-                  <span className="badge badge-green" style={{ fontSize: 10 }}>Project Created</span>
+                  <span className="badge badge-green" style={{ fontSize: 10 }}>{t("Project Created")}</span>
                 )}
               </div>
             </div>
@@ -866,7 +913,7 @@ const App = () => {
       {filteredBids.length > bidPageSize && (
         <div style={{ textAlign: "center", marginTop: 16 }}>
           <button className="btn btn-ghost" onClick={() => setBidPageSize(s => s + 24)}>
-            Show More ({filteredBids.length - bidPageSize} remaining)
+            {t("Show More")} ({filteredBids.length - bidPageSize} {t("remaining")})
           </button>
         </div>
       )}
@@ -877,7 +924,7 @@ const App = () => {
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 600 }}>
             <div className="modal-header flex-between">
               <div className="modal-title">Follow-Up: {followUpBid.name}</div>
-              <button className="btn btn-ghost btn-sm" onClick={() => setFollowUpBid(null)}>Close</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setFollowUpBid(null)}>{t("Close")}</button>
             </div>
             <div style={{ padding: 16 }}>
               <div className="text-xs text-muted mb-8">To: {followUpBid.contact || followUpBid.gc} · Re: {followUpBid.name}</div>
@@ -888,8 +935,8 @@ const App = () => {
                 <button className="btn btn-primary btn-sm" onClick={() => {
                   navigator.clipboard.writeText(followUpText);
                   show("Copied to clipboard", "ok");
-                }}>Copy Email</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => runFollowUp(followUpBid)}>Regenerate</button>
+                }}>{t("Copy Email")}</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => runFollowUp(followUpBid)}>{t("Regenerate")}</button>
               </div>
             </div>
           </div>
@@ -902,12 +949,12 @@ const App = () => {
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 700 }}>
             <div className="modal-header flex-between">
               <div className="modal-title">Win Prediction: {winPredBid.name}</div>
-              <button className="btn btn-ghost btn-sm" onClick={() => setWinPredBid(null)}>Close</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setWinPredBid(null)}>{t("Close")}</button>
             </div>
             <div style={{ padding: 16, maxHeight: 500, overflow: "auto" }}>
               {/* Win Probability */}
               <div className="card" style={{ padding: 16, marginBottom: 12, textAlign: "center" }}>
-                <div className="text-xs text-muted mb-4">Win Probability</div>
+                <div className="text-xs text-muted mb-4">{t("Win Probability")}</div>
                 <div style={{ fontSize: 48, fontWeight: 800, color: winPredResult.winProbability >= 70 ? "var(--green)" : winPredResult.winProbability >= 40 ? "var(--amber)" : "var(--red)" }}>
                   {winPredResult.winProbability}%
                 </div>
@@ -932,7 +979,7 @@ const App = () => {
               {/* Key Factors */}
               {winPredResult.factors?.length > 0 && (
                 <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8">Key Factors</div>
+                  <div className="text-sm font-semi mb-8">{t("Key Factors")}</div>
                   {winPredResult.factors.map((f, i) => (
                     <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                       <div className="flex-between">
@@ -948,7 +995,7 @@ const App = () => {
               {/* Improvements */}
               {winPredResult.improvements?.length > 0 && (
                 <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Improve Win Chances</div>
+                  <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>{t("Improve Win Chances")}</div>
                   {winPredResult.improvements.map((imp, i) => (
                     <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                       <div className="flex-between">
@@ -964,7 +1011,7 @@ const App = () => {
               {/* Pricing Insight */}
               {winPredResult.pricingInsight && (
                 <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-4">Pricing Insight</div>
+                  <div className="text-sm font-semi mb-4">{t("Pricing Insight")}</div>
                   <div className="text-sm text-muted">{winPredResult.pricingInsight}</div>
                 </div>
               )}
@@ -985,12 +1032,12 @@ const App = () => {
     <div>
       <div className="section-header">
         <div>
-          <div className="section-title font-head">Projects</div>
-          <div className="section-sub">{projects.length} project{projects.length !== 1 ? "s" : ""}</div>
+          <div className="section-title font-head">{t("Projects")}</div>
+          <div className="section-sub">{projects.length} {projects.length !== 1 ? t("projects") : t("project")}</div>
         </div>
         <div className="flex gap-8">
           <button className="btn btn-ghost" onClick={runRiskRadar} disabled={riskLoading}>
-            {riskLoading ? "Scanning..." : "Risk Radar"}
+            {riskLoading ? t("Scanning...") : t("Risk Radar")}
           </button>
           <button className="btn btn-ghost" onClick={() => {
             const headers = ["ID","Name","GC","Contract","Billed","Progress","Phase","Start","End","Margin"];
@@ -1004,8 +1051,8 @@ const App = () => {
             const a = document.createElement('a'); a.href = url; a.download = 'ebc_projects.csv'; a.click();
             URL.revokeObjectURL(url);
             show("Projects CSV exported");
-          }}>Export CSV</button>
-          <button className="btn btn-primary" onClick={() => setModal({ type: "editProject", data: null })}>+ Add Project</button>
+          }}>{t("Export CSV")}</button>
+          <button className="btn btn-primary" onClick={() => setModal({ type: "editProject", data: null })}>{t("+ Add Project")}</button>
         </div>
       </div>
 
@@ -1013,8 +1060,8 @@ const App = () => {
       {showRiskRadar && (
         <div className="card" style={{ padding: 16, marginBottom: 16 }}>
           <div className="flex-between mb-12">
-            <div className="text-sm font-semi">Project Risk Radar</div>
-            <button className="btn btn-ghost btn-sm" onClick={() => { setShowRiskRadar(false); setRiskResult(null); }}>Close</button>
+            <div className="text-sm font-semi">{t("Project Risk Radar")}</div>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setShowRiskRadar(false); setRiskResult(null); }}>{t("Close")}</button>
           </div>
           {riskLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Analyzing {projects.length} projects for risks...</div>}
           {riskResult && (
@@ -1046,7 +1093,7 @@ const App = () => {
               {/* Immediate Actions */}
               {riskResult.immediateActions?.length > 0 && (
                 <div style={{ marginTop: 12 }}>
-                  <div className="text-sm font-semi mb-8">Immediate Actions</div>
+                  <div className="text-sm font-semi mb-8">{t("Immediate Actions")}</div>
                   {riskResult.immediateActions.map((a, i) => (
                     <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
                       <div className="flex-between">
@@ -1066,7 +1113,7 @@ const App = () => {
       {filteredProjects.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">🏗️</div>
-          <div className="empty-text">{search ? "No matching projects" : "No projects yet"}</div>
+          <div className="empty-text">{search ? t("No matching projects") : t("No projects yet")}</div>
         </div>
       ) : (
         <div className="project-grid">
@@ -1101,7 +1148,7 @@ const App = () => {
       {filteredProjects.length > projPageSize && (
         <div style={{ textAlign: "center", marginTop: 16 }}>
           <button className="btn btn-ghost" onClick={() => setProjPageSize(s => s + 24)}>
-            Show More ({filteredProjects.length - projPageSize} remaining)
+            {t("Show More")} ({filteredProjects.length - projPageSize} {t("remaining")})
           </button>
         </div>
       )}
@@ -1112,19 +1159,19 @@ const App = () => {
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 700 }}>
             <div className="modal-header flex-between">
               <div className="modal-title">Closeout: {closeoutProj.name}</div>
-              <button className="btn btn-ghost btn-sm" onClick={() => setCloseoutProj(null)}>Close</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setCloseoutProj(null)}>{t("Close")}</button>
             </div>
             <div style={{ padding: 16, maxHeight: 500, overflow: "auto" }}>
               {/* Readiness Score */}
               <div className="flex gap-16 mb-16" style={{ alignItems: "center" }}>
                 <div style={{ textAlign: "center" }}>
-                  <div className="text-xs text-muted">Readiness</div>
+                  <div className="text-xs text-muted">{t("Readiness")}</div>
                   <div style={{ fontSize: 36, fontWeight: 800, color: closeoutResult.readinessScore >= 70 ? "var(--green)" : closeoutResult.readinessScore >= 40 ? "var(--amber)" : "var(--red)" }}>
                     {closeoutResult.readinessScore}/100
                   </div>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div className="text-xs text-muted">Grade</div>
+                  <div className="text-xs text-muted">{t("Grade")}</div>
                   <div style={{ fontSize: 36, fontWeight: 800, color: "var(--amber)" }}>{closeoutResult.grade}</div>
                 </div>
                 <div style={{ flex: 1 }}>
@@ -1145,7 +1192,7 @@ const App = () => {
               {/* Checklist */}
               {closeoutResult.checklist?.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8">Closeout Checklist</div>
+                  <div className="text-sm font-semi mb-8">{t("Closeout Checklist")}</div>
                   {closeoutResult.checklist.map((c, i) => (
                     <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                       <div className="flex-between">
@@ -1164,7 +1211,7 @@ const App = () => {
               {/* Outstanding Items */}
               {closeoutResult.outstandingItems?.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Outstanding Items</div>
+                  <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>{t("Outstanding Items")}</div>
                   {closeoutResult.outstandingItems.map((o, i) => (
                     <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                       <div className="flex-between">
@@ -1180,7 +1227,7 @@ const App = () => {
               {/* Risk of Loss */}
               {closeoutResult.riskOfLoss?.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Risk of Loss</div>
+                  <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>{t("Risk of Loss")}</div>
                   {closeoutResult.riskOfLoss.map((r, i) => (
                     <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                       <div className="flex-between">
@@ -1499,11 +1546,11 @@ const App = () => {
     <div>
       <div className="section-header">
         <div>
-          <div className="section-title font-head">Scope</div>
-          <div className="section-sub">Checklist & AI gap analysis</div>
+          <div className="section-title font-head">{t("Scope")}</div>
+          <div className="section-sub">{t("Checklist & AI gap analysis")}</div>
         </div>
         <button className="btn btn-ghost" onClick={() => { showScopeRisk ? setShowScopeRisk(false) : runScopeRisk(); }} disabled={scopeRiskLoading}>
-          {scopeRiskLoading ? "Analyzing..." : "AI Risk Score"}
+          {scopeRiskLoading ? t("Analyzing...") : t("AI Risk Score")}
         </button>
       </div>
 
@@ -1511,20 +1558,20 @@ const App = () => {
       {showScopeRisk && scopeRiskResult && (
         <div className="card" style={{ padding: 20, marginBottom: 16 }}>
           <div className="flex-between mb-12">
-            <div className="text-sm font-semi">Scope Risk Analysis</div>
-            <button className="btn btn-ghost btn-sm" onClick={() => setShowScopeRisk(false)}>Close</button>
+            <div className="text-sm font-semi">{t("Scope Risk Analysis")}</div>
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowScopeRisk(false)}>{t("Close")}</button>
           </div>
 
           {/* Score + Grade */}
           <div className="flex gap-16 mb-16" style={{ alignItems: "center" }}>
             <div style={{ textAlign: "center" }}>
-              <div className="text-xs text-muted">Risk Score</div>
+              <div className="text-xs text-muted">{t("Risk Score")}</div>
               <div style={{ fontSize: 36, fontWeight: 800, color: scopeRiskResult.overallRisk <= 30 ? "var(--green)" : scopeRiskResult.overallRisk <= 60 ? "var(--amber)" : "var(--red)" }}>
                 {scopeRiskResult.overallRisk}/100
               </div>
             </div>
             <div style={{ textAlign: "center" }}>
-              <div className="text-xs text-muted">Grade</div>
+              <div className="text-xs text-muted">{t("Grade")}</div>
               <div style={{ fontSize: 36, fontWeight: 800, color: "var(--amber)" }}>{scopeRiskResult.grade}</div>
             </div>
             <div style={{ flex: 1 }}>
@@ -1535,7 +1582,7 @@ const App = () => {
           {/* Red Flags */}
           {scopeRiskResult.redFlags?.length > 0 && (
             <div style={{ marginBottom: 12 }}>
-              <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Red Flags ({scopeRiskResult.redFlags.length})</div>
+              <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>{t("Red Flags")} ({scopeRiskResult.redFlags.length})</div>
               {scopeRiskResult.redFlags.map((f, i) => (
                 <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
                   <div className="text-sm font-semi">{f.item}</div>
@@ -1550,7 +1597,7 @@ const App = () => {
           {/* Negotiation Points */}
           {scopeRiskResult.negotiationPoints?.length > 0 && (
             <div style={{ marginBottom: 12 }}>
-              <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Negotiation Points</div>
+              <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>{t("Negotiation Points")}</div>
               {scopeRiskResult.negotiationPoints.map((n, i) => (
                 <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "var(--bg3)", border: "1px solid var(--border)" }}>
                   <div className="flex-between">
@@ -1567,7 +1614,7 @@ const App = () => {
           {/* Hidden Costs */}
           {scopeRiskResult.hiddenCosts?.length > 0 && (
             <div style={{ marginBottom: 12 }}>
-              <div className="text-sm font-semi mb-8">Hidden Cost Risks</div>
+              <div className="text-sm font-semi mb-8">{t("Hidden Cost Risks")}</div>
               {scopeRiskResult.hiddenCosts.map((h, i) => (
                 <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                   <div className="flex-between">
@@ -1583,7 +1630,7 @@ const App = () => {
           {/* Exclusions */}
           {scopeRiskResult.exclusions?.length > 0 && (
             <div style={{ marginBottom: 12 }}>
-              <div className="text-sm font-semi mb-8" style={{ color: "var(--blue)" }}>Recommended Exclusions</div>
+              <div className="text-sm font-semi mb-8" style={{ color: "var(--blue)" }}>{t("Recommended Exclusions")}</div>
               <ul style={{ margin: 0, paddingLeft: 20 }}>
                 {scopeRiskResult.exclusions.map((e, i) => (
                   <li key={i} className="text-sm text-muted" style={{ marginBottom: 4 }}>{e}</li>
@@ -1595,16 +1642,16 @@ const App = () => {
       )}
 
       <div className="flex gap-4 mb-16">
-        {[{ key: "checklist", label: "Checklist" }, { key: "gapchecker", label: "Gap Checker" }].map(t => (
-          <button key={t.key} className={`btn btn-sm ${scopeSubTab === t.key ? "btn-primary" : "btn-ghost"}`}
-            onClick={() => setScopeSubTab(t.key)}>{t.label}</button>
+        {[{ key: "checklist", label: "Checklist" }, { key: "gapchecker", label: "Gap Checker" }].map(st => (
+          <button key={st.key} className={`btn btn-sm ${scopeSubTab === st.key ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => setScopeSubTab(st.key)}>{t(st.label)}</button>
         ))}
       </div>
 
       {scopeSubTab === "checklist" && (<>
         <div className="flex gap-8 mb-16 flex-wrap" style={{ alignItems: "center" }}>
           <div className="form-group" style={{ minWidth: 200 }}>
-            <label className="form-label">Linked Bid</label>
+            <label className="form-label">{t("Linked Bid")}</label>
             <select className="form-select" value={scopeBidId || ""} onChange={e => setScopeBidId(e.target.value || null)}>
               <option value="">-- All / General --</option>
               {bids.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -1613,7 +1660,7 @@ const App = () => {
           <div className="flex gap-4 mt-12">
             {["All", "Flagged", "Unchecked"].map(f => (
               <button key={f} className={`btn btn-sm ${scopeFilter === f ? "btn-primary" : "btn-ghost"}`}
-                onClick={() => setScopeFilter(f)}>{f}</button>
+                onClick={() => setScopeFilter(f)}>{t(f)}</button>
             ))}
           </div>
         </div>
@@ -1621,7 +1668,7 @@ const App = () => {
         {filteredScope.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">📋</div>
-            <div className="empty-text">No items match this filter</div>
+            <div className="empty-text">{t("No items match this filter")}</div>
           </div>
         ) : (
           filteredScope.map(s => (
@@ -1642,20 +1689,20 @@ const App = () => {
             <div className="text-sm font-semi mb-8">Paste your bid scope and contract/spec scope below. AI will identify gaps, extras, and risks.</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div className="form-group">
-                <label className="form-label">Bid Scope (what EBC priced)</label>
+                <label className="form-label">{t("Bid Scope (what EBC priced)")}</label>
                 <textarea className="form-input" rows={8} placeholder="Paste your bid scope, line items, or proposal scope description..."
                   value={gapBidScope} onChange={e => setGapBidScope(e.target.value)} style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
                 <div className="text-xs text-dim mt-4">{gapBidScope.length} chars</div>
               </div>
               <div className="form-group">
-                <label className="form-label">Contract Scope (specs / drawings notes)</label>
+                <label className="form-label">{t("Contract Scope (specs / drawings notes)")}</label>
                 <textarea className="form-input" rows={8} placeholder="Paste contract scope, spec sections, or drawing notes..."
                   value={gapContractScope} onChange={e => setGapContractScope(e.target.value)} style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
                 <div className="text-xs text-dim mt-4">{gapContractScope.length} chars</div>
               </div>
             </div>
             <button className="btn btn-primary mt-12" onClick={runGapCheck} disabled={gapLoading}>
-              {gapLoading ? "Analyzing..." : "Run Gap Analysis"}
+              {gapLoading ? t("Analyzing...") : t("Run Gap Analysis")}
             </button>
           </div>
 
@@ -1664,7 +1711,7 @@ const App = () => {
               {/* Score + Summary */}
               <div className="card" style={{ padding: 16, marginBottom: 12 }}>
                 <div className="flex-between mb-8">
-                  <div className="text-sm font-semi">Coverage Score</div>
+                  <div className="text-sm font-semi">{t("Coverage Score")}</div>
                   <div style={{ fontSize: 28, fontWeight: 800, color: gapResult.score >= 80 ? "var(--green)" : gapResult.score >= 50 ? "var(--amber)" : "var(--red)" }}>
                     {gapResult.score}/100
                   </div>
@@ -1676,7 +1723,7 @@ const App = () => {
               {gapResult.gaps?.length > 0 && (
                 <div className="card" style={{ padding: 16, marginBottom: 12 }}>
                   <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>
-                    Missing from Bid ({gapResult.gaps.length})
+                    {t("Missing from Bid")} ({gapResult.gaps.length})
                   </div>
                   {gapResult.gaps.map((g, i) => (
                     <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
@@ -1694,7 +1741,7 @@ const App = () => {
               {gapResult.extras?.length > 0 && (
                 <div className="card" style={{ padding: 16, marginBottom: 12 }}>
                   <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>
-                    In Bid but Not in Contract ({gapResult.extras.length})
+                    {t("In Bid but Not in Contract")} ({gapResult.extras.length})
                   </div>
                   {gapResult.extras.map((g, i) => (
                     <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
@@ -1709,7 +1756,7 @@ const App = () => {
               {gapResult.risks?.length > 0 && (
                 <div className="card" style={{ padding: 16, marginBottom: 12 }}>
                   <div className="text-sm font-semi mb-8" style={{ color: "var(--blue)" }}>
-                    Risks & Ambiguities ({gapResult.risks.length})
+                    {t("Risks & Ambiguities")} ({gapResult.risks.length})
                   </div>
                   {gapResult.risks.map((g, i) => (
                     <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
@@ -1726,7 +1773,7 @@ const App = () => {
               {gapResult.gaps?.length === 0 && gapResult.extras?.length === 0 && gapResult.risks?.length === 0 && (
                 <div className="empty-state">
                   <div className="empty-icon">✅</div>
-                  <div className="empty-text">No gaps found — scope looks aligned</div>
+                  <div className="empty-text">{t("No gaps found — scope looks aligned")}</div>
                 </div>
               )}
             </div>
@@ -1743,23 +1790,23 @@ const App = () => {
     <div>
       <div className="section-header">
         <div>
-          <div className="section-title font-head">Contacts</div>
-          <div className="section-sub">{contacts.length} contact{contacts.length !== 1 ? "s" : ""}</div>
+          <div className="section-title font-head">{t("Contacts")}</div>
+          <div className="section-sub">{contacts.length} {contacts.length !== 1 ? t("contacts") : t("contact")}</div>
         </div>
         <div className="flex gap-8">
           <div className="search-wrap">
             <span className="search-icon">🔍</span>
             <input
               className="search-input"
-              placeholder="Search contacts..."
+              placeholder={t("Search contacts...")}
               value={contactSearch}
               onChange={e => setContactSearch(e.target.value)}
             />
           </div>
           <button className="btn btn-ghost btn-sm" onClick={runGcIntel} disabled={gcIntelLoading}>
-            {gcIntelLoading ? "Analyzing..." : "GC Intelligence"}
+            {gcIntelLoading ? t("Analyzing...") : t("GC Intelligence")}
           </button>
-          <button className="btn btn-ghost" onClick={() => setModal({ type: "logCall", data: null })}>Log Call</button>
+          <button className="btn btn-ghost" onClick={() => setModal({ type: "logCall", data: null })}>{t("Log Call")}</button>
           <button className="btn btn-ghost btn-sm" onClick={() => {
             const headers = ["ID","Name","Company","Role","Email","Phone","Notes"];
             const rows = contacts.map(c => [
@@ -1772,8 +1819,8 @@ const App = () => {
             const a = document.createElement('a'); a.href = url; a.download = 'ebc_contacts.csv'; a.click();
             URL.revokeObjectURL(url);
             show("Contacts CSV exported");
-          }}>Export CSV</button>
-          <button className="btn btn-primary" onClick={() => setModal({ type: "editContact", data: null })}>+ Add Contact</button>
+          }}>{t("Export CSV")}</button>
+          <button className="btn btn-primary" onClick={() => setModal({ type: "editContact", data: null })}>{t("+ Add Contact")}</button>
         </div>
       </div>
 
@@ -1781,8 +1828,8 @@ const App = () => {
       {showGcIntel && (
         <div className="card mt-16">
           <div className="flex-between">
-            <div className="card-header"><div className="card-title font-head">AI GC Relationship Intelligence</div></div>
-            <button className="btn btn-ghost btn-sm" onClick={() => { setShowGcIntel(false); setGcIntelResult(null); }}>Close</button>
+            <div className="card-header"><div className="card-title font-head">{t("AI GC Relationship Intelligence")}</div></div>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setShowGcIntel(false); setGcIntelResult(null); }}>{t("Close")}</button>
           </div>
           {gcIntelLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Analyzing {contacts.length} contacts and {bids.length} bids...</div>}
           {gcIntelResult && (
@@ -1793,7 +1840,7 @@ const App = () => {
               {/* GC Rankings */}
               {gcIntelResult.gcRankings?.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8">GC Rankings by Relationship Value</div>
+                  <div className="text-sm font-semi mb-8">{t("GC Rankings by Relationship Value")}</div>
                   {gcIntelResult.gcRankings.map((gc, i) => (
                     <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, borderLeft: `3px solid ${gc.score >= 70 ? "var(--green)" : gc.score >= 40 ? "var(--amber)" : "var(--red)"}`, background: "var(--card)", fontSize: 13 }}>
                       <div className="flex-between">
@@ -1812,7 +1859,7 @@ const App = () => {
               {/* Top Opportunities */}
               {gcIntelResult.topOpportunities?.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8">Top BD Opportunities</div>
+                  <div className="text-sm font-semi mb-8">{t("Top BD Opportunities")}</div>
                   {gcIntelResult.topOpportunities.map((opp, i) => (
                     <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
                       <div className="flex-between">
@@ -1828,7 +1875,7 @@ const App = () => {
               {/* At-Risk Relationships */}
               {gcIntelResult.atRiskRelationships?.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8">At-Risk Relationships</div>
+                  <div className="text-sm font-semi mb-8">{t("At-Risk Relationships")}</div>
                   {gcIntelResult.atRiskRelationships.map((r, i) => (
                     <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, background: "rgba(239,68,68,0.06)", borderLeft: "3px solid var(--red)", fontSize: 13 }}>
                       <span className="font-semi">{r.gc}</span>
@@ -1842,7 +1889,7 @@ const App = () => {
               {/* Follow-Up Needed */}
               {gcIntelResult.followUpNeeded?.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8">Follow-Up Needed</div>
+                  <div className="text-sm font-semi mb-8">{t("Follow-Up Needed")}</div>
                   {gcIntelResult.followUpNeeded.map((f, i) => (
                     <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
                       <div className="flex-between">
@@ -1858,7 +1905,7 @@ const App = () => {
               {/* Market Insights */}
               {gcIntelResult.marketInsights?.length > 0 && (
                 <div>
-                  <div className="text-sm font-semi mb-8">Market Insights</div>
+                  <div className="text-sm font-semi mb-8">{t("Market Insights")}</div>
                   {gcIntelResult.marketInsights.map((ins, i) => (
                     <div key={i} style={{ padding: "4px 0", fontSize: 13, color: "var(--text2)" }}>{ins}</div>
                   ))}
@@ -1894,7 +1941,7 @@ const App = () => {
       {callLog.length > 0 && (
         <div className="card mt-24">
           <div className="card-header">
-            <div className="card-title font-head">Recent Calls</div>
+            <div className="card-title font-head">{t("Recent Calls")}</div>
           </div>
           {callLog.slice(0, 8).map(c => (
             <div key={c.id} className="flex gap-12 border-b" style={{ padding: "10px 0" }}>
@@ -1979,36 +2026,38 @@ const App = () => {
           {lang === "en" ? "🌐 ES" : "🌐 EN"}
         </button>
         <nav className="nav">
-          {PRIMARY_TABS.map(t => (
+          {visiblePrimary.map(pt => (
             <button
-              key={t.key}
-              className={`nav-item ${tab === t.key ? "active" : ""}`}
-              onClick={() => handleTabClick(t.key)}
+              key={pt.key}
+              className={`nav-item ${tab === pt.key ? "active" : ""}`}
+              onClick={() => handleTabClick(pt.key)}
             >
-              {t.label}
+              {t(pt.label)}
             </button>
           ))}
+          {visibleSecondary.length > 0 && (
           <div className="nav-more">
             <button
               className={`nav-more-btn ${moreOpen ? "open" : ""} ${isSecondaryActive ? "open" : ""}`}
               onClick={() => setMoreOpen(!moreOpen)}
             >
-              {isSecondaryActive ? SECONDARY_TABS.find(t => t.key === tab)?.label || "More" : "More"} ▾
+              {isSecondaryActive ? t(visibleSecondary.find(st => st.key === tab)?.label || "More") : t("More")} ▾
             </button>
             {moreOpen && (
               <div className="nav-dropdown">
-                {SECONDARY_TABS.map(t => (
+                {visibleSecondary.map(st => (
                   <button
-                    key={t.key}
-                    className={`nav-item ${tab === t.key ? "active" : ""}`}
-                    onClick={() => handleTabClick(t.key)}
+                    key={st.key}
+                    className={`nav-item ${tab === st.key ? "active" : ""}`}
+                    onClick={() => handleTabClick(st.key)}
                   >
-                    {t.label}
+                    {t(st.label)}
                   </button>
                 ))}
               </div>
             )}
           </div>
+          )}
         </nav>
         {mobileNav && (
           <div className="mobile-nav-overlay" onClick={() => setMobileNav(false)}>
@@ -2018,25 +2067,25 @@ const App = () => {
                 <button className="modal-close" onClick={() => setMobileNav(false)}>{"\u2715"}</button>
               </div>
               <div className="mobile-nav-section">
-                {PRIMARY_TABS.map(t => (
+                {visiblePrimary.map(pt => (
                   <button
-                    key={t.key}
-                    className={`mobile-nav-item ${tab === t.key ? "active" : ""}`}
-                    onClick={() => handleTabClick(t.key)}
+                    key={pt.key}
+                    className={`mobile-nav-item ${tab === pt.key ? "active" : ""}`}
+                    onClick={() => handleTabClick(pt.key)}
                   >
-                    {t.label}
+                    {t(pt.label)}
                   </button>
                 ))}
               </div>
               <div className="mobile-nav-divider" />
               <div className="mobile-nav-section">
-                {SECONDARY_TABS.map(t => (
+                {visibleSecondary.map(st => (
                   <button
-                    key={t.key}
-                    className={`mobile-nav-item ${tab === t.key ? "active" : ""}`}
-                    onClick={() => handleTabClick(t.key)}
+                    key={st.key}
+                    className={`mobile-nav-item ${tab === st.key ? "active" : ""}`}
+                    onClick={() => handleTabClick(st.key)}
                   >
-                    {t.label}
+                    {t(st.label)}
                   </button>
                 ))}
               </div>
@@ -2077,15 +2126,15 @@ const App = () => {
         }}>
           <span style={{ fontSize: 24 }}>📲</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600, fontSize: 14 }}>Install EBC-OS</div>
-            <div style={{ fontSize: 12, color: "var(--text2)" }}>Add to home screen for the full app experience</div>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>{t("Install EBC-OS")}</div>
+            <div style={{ fontSize: 12, color: "var(--text2)" }}>{t("Add to home screen for the full app experience")}</div>
           </div>
           <button className="btn btn-primary btn-sm" onClick={async () => {
             installPrompt.prompt();
             const { outcome } = await installPrompt.userChoice;
             if (outcome === "accepted") show("EBC-OS installed!");
             setInstallPrompt(null);
-          }}>Install</button>
+          }}>{t("Install")}</button>
           <button className="btn btn-ghost btn-sm" onClick={() => setInstallPrompt(null)} style={{ padding: "4px 8px", fontSize: 11 }}>✕</button>
         </div>
       )}
@@ -2115,7 +2164,7 @@ const ModalHub = ({ type, data, app }) => {
         return data ? { ...data } : {
           name: "", gc: "", value: 0, due: "", status: "estimating",
           scope: [], phase: "", risk: "Med", notes: "", contact: "",
-          month: "", closeOut: null
+          month: "", closeOut: null, attachments: []
         };
       case "editProject":
         return data ? { ...data } : {
@@ -2443,6 +2492,85 @@ const ModalHub = ({ type, data, app }) => {
               <label className="form-label">Notes</label>
               <textarea className="form-textarea" value={draft.notes} onChange={e => upd("notes", e.target.value)} placeholder="Bid notes, clarifications, exclusions..." />
             </div>
+
+            {/* ── File Attachments ── */}
+            <div className="form-group full">
+              <label className="form-label">Plans, Specs & Documents</label>
+              <div style={{ border: "1px dashed var(--border2)", borderRadius: "var(--radius)", padding: 16, background: "var(--bg2)" }}>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.png,.jpg,.jpeg,.dwg,.xlsx,.xls,.doc,.docx,.csv"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (!files.length) return;
+                    files.forEach(file => {
+                      if (file.size > 10 * 1024 * 1024) {
+                        show(`${file.name} is too large (max 10MB)`, "err");
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const attachment = {
+                          id: Date.now() + Math.random(),
+                          name: file.name,
+                          type: file.type || "application/octet-stream",
+                          size: file.size,
+                          data: reader.result,
+                          uploaded: new Date().toISOString(),
+                        };
+                        setDraft(d => ({ ...d, attachments: [...(d.attachments || []), attachment] }));
+                      };
+                      reader.readAsDataURL(file);
+                    });
+                    e.target.value = "";
+                  }}
+                  style={{ marginBottom: 8 }}
+                />
+                <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 8 }}>
+                  PDF, images, DWG, Excel, Word — max 10MB per file. Stored locally.
+                </div>
+                {(draft.attachments || []).length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {(draft.attachments || []).map((att, i) => (
+                      <div key={att.id || i} style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)",
+                        padding: "8px 12px", fontSize: 12
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
+                          <span style={{ fontSize: 16 }}>
+                            {att.type?.includes("pdf") ? "📄" : att.type?.includes("image") ? "🖼️" : att.type?.includes("sheet") || att.type?.includes("excel") ? "📊" : "📎"}
+                          </span>
+                          <span style={{ color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {att.name}
+                          </span>
+                          <span style={{ color: "var(--text3)", flexShrink: 0 }}>
+                            {att.size < 1024 ? att.size + "B" : att.size < 1048576 ? (att.size / 1024).toFixed(1) + "KB" : (att.size / 1048576).toFixed(1) + "MB"}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          {att.data && (
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              style={{ fontSize: 10, padding: "2px 6px" }}
+                              onClick={() => { const w = window.open(); w.document.write(`<iframe src="${att.data}" style="width:100%;height:100%;border:none"></iframe>`); }}
+                              title="View"
+                            >View</button>
+                          )}
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            style={{ fontSize: 10, padding: "2px 6px", color: "var(--red)" }}
+                            onClick={() => setDraft(d => ({ ...d, attachments: (d.attachments || []).filter((_, j) => j !== i) }))}
+                            title="Remove"
+                          >✕</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           <div className="modal-actions" style={{ justifyContent: "space-between" }}>
             {!isNew && <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>}
@@ -2621,4 +2749,4 @@ const ModalHub = ({ type, data, app }) => {
   return null;
 };
 
-export default App;
+export default AuthGate;

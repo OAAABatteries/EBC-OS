@@ -1,10 +1,115 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { T } from "../data/translations";
 import {
   PPE_ITEMS, RISK_LIKELIHOOD, RISK_SEVERITY, riskColor,
   HAZARD_CATEGORIES, CONTROL_HIERARCHY, PERMIT_TYPES,
   HAZARD_LIBRARY, TRADE_LABELS, JSA_TEMPLATES, WEATHER_HAZARD_MAP,
 } from "../data/jsaConstants";
+
+// ═══════════════════════════════════════════════════════════════
+//  Signature Pad Component — Touch-to-Sign canvas
+// ═══════════════════════════════════════════════════════════════
+function SignaturePad({ signatureData, onSave, onClear, label }) {
+  const canvasRef = useRef(null);
+  const [drawing, setDrawing] = useState(false);
+  const [hasStrokes, setHasStrokes] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    // Set canvas internal resolution to match display size
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * (window.devicePixelRatio || 1);
+    canvas.height = rect.height * (window.devicePixelRatio || 1);
+    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+    ctx.strokeStyle = "#d4dae6";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+  }, []);
+
+  const getPos = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches ? e.touches[0] : e;
+    return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+  };
+
+  const startDraw = (e) => {
+    e.preventDefault();
+    const ctx = canvasRef.current.getContext("2d");
+    const pos = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    setDrawing(true);
+  };
+
+  const draw = (e) => {
+    if (!drawing) return;
+    e.preventDefault();
+    const ctx = canvasRef.current.getContext("2d");
+    const pos = getPos(e);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    setHasStrokes(true);
+  };
+
+  const endDraw = (e) => {
+    if (e) e.preventDefault();
+    setDrawing(false);
+  };
+
+  const handleClear = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasStrokes(false);
+    if (onClear) onClear();
+  };
+
+  const handleSave = () => {
+    if (!hasStrokes) return;
+    const dataUrl = canvasRef.current.toDataURL("image/png");
+    if (onSave) onSave(dataUrl);
+  };
+
+  if (signatureData) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 600 }}>{label}</div>
+        <img src={signatureData} alt="Signature" style={{
+          width: "100%", maxWidth: 280, height: 60, objectFit: "contain",
+          background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: 4
+        }} />
+        <button className="cal-nav-btn" style={{ fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}
+          onClick={handleClear}>Re-sign</button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 600 }}>{label || "Sign here"}</div>
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: "100%", maxWidth: 280, height: 70,
+          background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6,
+          cursor: "crosshair", touchAction: "none"
+        }}
+        onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
+        onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw}
+      />
+      <div style={{ display: "flex", gap: 6 }}>
+        <button className="cal-nav-btn" style={{ fontSize: 10, padding: "2px 8px" }}
+          onClick={handleClear}>Clear</button>
+        <button className="btn btn-primary btn-sm" style={{ fontSize: 10, padding: "2px 10px", opacity: hasStrokes ? 1 : 0.4 }}
+          onClick={handleSave} disabled={!hasStrokes}>Save Signature</button>
+      </div>
+    </div>
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  JSA Module — Job Safety Analysis
@@ -35,10 +140,11 @@ export function JSATab({ app }) {
   // Create form state (hoisted to top level to avoid hooks-in-callbacks)
   const [form, setForm] = useState({
     projectId: "", trade: "framing", templateId: "", title: "",
-    location: "", supervisor: "", competentPerson: "",
+    location: "", supervisor: "", competentPerson: "", gc: "",
     date: new Date().toISOString().slice(0, 10),
-    shift: "day", weather: "clear",
+    shift: "day", weather: "clear", indoorOutdoor: "outdoor",
     steps: [], ppe: [], permits: [],
+    crewMembers: [],
   });
   const updForm = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -189,6 +295,80 @@ export function JSATab({ app }) {
           <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
             {jsa.status === "draft" && <button className="btn btn-primary btn-sm" onClick={() => updateJsa({ status: "active" })}>{t("Activate")}</button>}
             {jsa.status === "active" && <button className="cal-nav-btn" onClick={() => updateJsa({ status: "closed" })}>{t("Close JSA")}</button>}
+            <button className="cal-nav-btn" onClick={() => {
+              const projN = projName(jsa.projectId);
+              const tradeLabel = TRADE_LABELS[jsa.trade]?.label || jsa.trade;
+              const allH = jsa.steps.flatMap(s => s.hazards || []);
+              const maxR = Math.max(0, ...allH.map(h => (h.likelihood||1)*(h.severity||1)));
+              const riskLbl = riskColor(maxR).label;
+              const ppeList = (jsa.ppe || []).map(k => PPE_ITEMS.find(p=>p.key===k)?.label).filter(Boolean).join(", ");
+              const permitList = (jsa.permits || []).map(k => PERMIT_TYPES.find(p=>p.key===k)?.label).filter(Boolean).join(", ");
+              const crewList = (jsa.crewSignOn || []).map(c => c.name);
+              const crewMembersList = (jsa.crewMembers || []).map(c => c.name + (c.role ? ` (${c.role})` : ''));
+              const allCrew = [...new Set([...crewList, ...crewMembersList])];
+              const html = `<!DOCTYPE html><html><head><title>JSA — ${jsa.title}</title><style>
+                body{font-family:Arial,sans-serif;max-width:850px;margin:0 auto;padding:20px;color:#111;font-size:12px}
+                h1{font-size:20px;margin:0 0 2px} h2{font-size:14px;margin:12px 0 6px;border-bottom:1px solid #ccc;padding-bottom:4px}
+                .header{border-bottom:3px solid #333;padding-bottom:10px;margin-bottom:12px}
+                .company{font-size:18px;font-weight:700;color:#b45309}
+                .meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 12px;margin-bottom:12px}
+                .meta-grid div{padding:2px 0} .meta-grid span{color:#666;font-size:11px}
+                .risk-badge{display:inline-block;padding:2px 10px;border-radius:4px;font-weight:700;color:#fff;font-size:11px}
+                table{width:100%;border-collapse:collapse;margin:6px 0 12px}
+                th,td{border:1px solid #ccc;padding:5px 8px;text-align:left;font-size:11px}
+                th{background:#f0f0f0;font-weight:600} .step-hdr{background:#f8f8f8;font-weight:600}
+                .ppe-list{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0}
+                .ppe-item{padding:2px 8px;background:#e8f4fd;border-radius:4px;font-size:11px}
+                .sig-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:24px}
+                .sig-box{border-top:1px solid #666;padding-top:4px;font-size:10px;color:#666;min-height:32px}
+                @media print{body{padding:8px;font-size:11px}}
+              </style></head><body>
+                <div class="header"><div class="company">Eagles Brothers Constructors</div>
+                <h1>JOB SAFETY ANALYSIS (JSA)</h1>
+                <div style="font-size:11px;color:#666">OSHA-Compliant Pre-Task Hazard Planning</div></div>
+                <div class="meta-grid">
+                  <div><span>Title:</span><br/><strong>${jsa.title}</strong></div>
+                  <div><span>Project:</span><br/>${projN}</div>
+                  <div><span>Trade:</span><br/>${tradeLabel}</div>
+                  <div><span>Location:</span><br/>${jsa.location || 'N/A'}</div>
+                  <div><span>Date:</span><br/>${jsa.date}</div>
+                  <div><span>Shift:</span><br/>${jsa.shift || 'Day'}</div>
+                  <div><span>Supervisor:</span><br/>${jsa.supervisor || 'N/A'}</div>
+                  <div><span>GC:</span><br/>${jsa.gc || 'N/A'}</div>
+                  <div><span>Risk Level:</span><br/><span class="risk-badge" style="background:${riskColor(maxR).bg}">${riskLbl} (${maxR})</span></div>
+                </div>
+                <h2>Required PPE</h2>
+                <div class="ppe-list">${ppeList ? ppeList.split(', ').map(p => '<span class="ppe-item">'+p+'</span>').join('') : 'None'}</div>
+                ${permitList ? '<h2>Permits Required</h2><div>'+permitList+'</div>' : ''}
+                <h2>Job Steps & Hazard Analysis</h2>
+                <table><thead><tr><th style="width:30px">#</th><th>Step</th><th>Hazard</th><th>Risk</th><th>Controls</th></tr></thead><tbody>
+                ${jsa.steps.map((s, si) => {
+                  if (!s.hazards || s.hazards.length === 0) return '<tr><td>'+(si+1)+'</td><td>'+s.step+'</td><td colspan="3" style="color:#999">No hazards identified</td></tr>';
+                  return s.hazards.map((h, hi) => '<tr>'+(hi===0?'<td rowspan="'+s.hazards.length+'">'+(si+1)+'</td><td rowspan="'+s.hazards.length+'">'+s.step+'</td>':'')+'<td>'+h.hazard+'</td><td style="text-align:center">'+(h.likelihood||1)*(h.severity||1)+'</td><td>'+(h.controls||[]).map(c=>'- '+c).join('<br/>')+'</td></tr>').join('');
+                }).join('')}
+                </tbody></table>
+                <h2>Crew Members / Signatures</h2>
+                <div class="sig-grid">
+                  ${(() => {
+                    // Build signature map from crewSignOn and crewMembers
+                    const sigMap = {};
+                    (jsa.crewSignOn || []).forEach(c => { if (c.signature) sigMap[c.name] = c.signature; });
+                    (jsa.crewMembers || []).forEach(c => { if (c.signature) sigMap[c.name] = c.signature; });
+                    if (allCrew.length > 0) {
+                      return allCrew.map(n => {
+                        const sig = sigMap[n];
+                        return '<div><strong>'+n+'</strong><div class="sig-box">'+(sig ? '<img src="'+sig+'" style="width:200px;height:50px;object-fit:contain;display:block;margin:4px 0"/>' : 'Signature: ________________')+'<br/>Date: '+jsa.date+'</div></div>';
+                      }).join('');
+                    }
+                    return '<div class="sig-box">Name: ________________<br/>Signature: ________________<br/>Date: ________</div><div class="sig-box">Name: ________________<br/>Signature: ________________<br/>Date: ________</div><div class="sig-box">Name: ________________<br/>Signature: ________________<br/>Date: ________</div>';
+                  })()}
+                </div>
+              </body></html>`;
+              const w = window.open('', '_blank');
+              w.document.write(html);
+              w.document.close();
+              w.setTimeout(() => w.print(), 300);
+            }}>{t("Print PDF")}</button>
             <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }} onClick={() => {
               if (confirm("Delete this JSA?")) { setJsas(prev => prev.filter(j => j.id !== jsa.id)); setSubTab("list"); show("JSA deleted"); }
             }}>{t("Delete")}</button>
@@ -302,14 +482,31 @@ export function JSATab({ app }) {
           ))}
         </div>
 
-        {/* Crew Sign-On */}
+        {/* Crew Sign-On with Signatures */}
         <div className="jsa-section">
           <div className="jsa-section-title">{t("Crew Sign-On")}</div>
           <div className="jsa-crew-list">
             {(jsa.crewSignOn || []).map((c, i) => (
-              <div key={i} className="jsa-crew-item">
-                <span style={{ fontWeight: 600, fontSize: 13 }}>{c.name}</span>
-                <span style={{ fontSize: 11, color: "#10b981" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+              <div key={i} className="jsa-crew-item" style={{ flexDirection: "column", alignItems: "flex-start", gap: 6, padding: "10px 12px" }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", width: "100%" }}>
+                  <span style={{ fontWeight: 600, fontSize: 13 }}>{c.name}</span>
+                  <span style={{ fontSize: 11, color: "#10b981" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                </div>
+                <SignaturePad
+                  label={t("Touch to Sign") + " — " + c.name}
+                  signatureData={c.signature || null}
+                  onSave={(dataUrl) => {
+                    const updated = [...(jsa.crewSignOn || [])];
+                    updated[i] = { ...updated[i], signature: dataUrl, signedAt: new Date().toISOString() };
+                    updateJsa({ crewSignOn: updated });
+                    show(t("Signature saved"));
+                  }}
+                  onClear={() => {
+                    const updated = [...(jsa.crewSignOn || [])];
+                    updated[i] = { ...updated[i], signature: null };
+                    updateJsa({ crewSignOn: updated });
+                  }}
+                />
               </div>
             ))}
             {jsa.status === "active" && (
@@ -323,7 +520,7 @@ export function JSATab({ app }) {
                     if (!emp) return;
                     if ((jsa.crewSignOn || []).some(c => c.employeeId === emp.id)) { show(t("Already signed on")); return; }
                     updateJsa({
-                      crewSignOn: [...(jsa.crewSignOn || []), { employeeId: emp.id, name: emp.name, signedAt: new Date().toISOString() }]
+                      crewSignOn: [...(jsa.crewSignOn || []), { employeeId: emp.id, name: emp.name, signedAt: new Date().toISOString(), signature: null }]
                     });
                     show(t("Crew member signed on"));
                     e.target.value = "";
@@ -349,6 +546,54 @@ export function JSATab({ app }) {
             <div style={{ fontSize: 12, color: "var(--text3)" }}>{t("No toolbox talk recorded")}</div>
           )}
         </div>
+
+        {/* Crew Members / Signatures */}
+        {(jsa.crewMembers || []).length > 0 && (
+          <div className="jsa-section">
+            <div className="jsa-section-title">{t("Crew Members")}</div>
+            <div className="jsa-crew-list">
+              {jsa.crewMembers.map((cm, i) => (
+                <div key={i} className="jsa-crew-item" style={{ flexDirection: "column", alignItems: "flex-start", gap: 6, padding: "10px 12px" }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <span style={{ fontWeight: 600, fontSize: 13 }}>{cm.name}</span>
+                    {cm.role && <span style={{ fontSize: 11, color: "var(--text3)" }}>{cm.role}</span>}
+                  </div>
+                  {jsa.status === "active" && (
+                    <SignaturePad
+                      label={t("Touch to Sign") + " — " + cm.name}
+                      signatureData={cm.signature || null}
+                      onSave={(dataUrl) => {
+                        const updated = [...(jsa.crewMembers || [])];
+                        updated[i] = { ...updated[i], signature: dataUrl };
+                        updateJsa({ crewMembers: updated });
+                        show(t("Signature saved"));
+                      }}
+                      onClear={() => {
+                        const updated = [...(jsa.crewMembers || [])];
+                        updated[i] = { ...updated[i], signature: null };
+                        updateJsa({ crewMembers: updated });
+                      }}
+                    />
+                  )}
+                  {jsa.status !== "active" && cm.signature && (
+                    <img src={cm.signature} alt="Signature" style={{
+                      width: "100%", maxWidth: 280, height: 60, objectFit: "contain",
+                      background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: 4
+                    }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* GC Info */}
+        {jsa.gc && (
+          <div className="jsa-section">
+            <div className="jsa-section-title">{t("General Contractor")}</div>
+            <div style={{ fontSize: 13 }}>{jsa.gc}</div>
+          </div>
+        )}
 
         {/* Near Misses */}
         <div className="jsa-section">
@@ -446,7 +691,7 @@ export function JSATab({ app }) {
       };
       setJsas(prev => [...prev, newJsa]);
       show(t("JSA created"));
-      setForm({ projectId: "", trade: "framing", templateId: "", title: "", location: "", supervisor: "", competentPerson: "", date: new Date().toISOString().slice(0, 10), shift: "day", weather: "clear", steps: [], ppe: [], permits: [] });
+      setForm({ projectId: "", trade: "framing", templateId: "", title: "", location: "", supervisor: "", competentPerson: "", gc: "", date: new Date().toISOString().slice(0, 10), shift: "day", weather: "clear", indoorOutdoor: "outdoor", steps: [], ppe: [], permits: [], crewMembers: [] });
       setActiveJsa(newJsa.id);
       setSubTab("detail");
     };
@@ -503,20 +748,45 @@ export function JSATab({ app }) {
             <input className="form-input" value={form.supervisor} onChange={e => { updForm("supervisor", e.target.value); updForm("competentPerson", e.target.value); }} />
           </div>
           <div className="form-group">
-            <label className="form-label">{t("Weather")}</label>
-            <select className="form-select" value={form.weather} onChange={e => updForm("weather", e.target.value)}>
-              <option value="clear">{t("Clear")}</option>
-              <option value="rain">{t("Rain")}</option>
-              <option value="thunderstorm">{t("Thunderstorm")}</option>
-              <option value="heat">{t("Heat Advisory")}</option>
-              <option value="freeze">{t("Freeze/Cold")}</option>
-              <option value="wind">{t("High Wind")}</option>
-            </select>
+            <label className="form-label">{t("General Contractor (GC)")}</label>
+            <input className="form-input" list="gc-list" value={form.gc} onChange={e => updForm("gc", e.target.value)} placeholder={t("Type or select GC...")} />
+            <datalist id="gc-list">
+              {(app.contacts || []).filter(c => c.role === "GC" || c.company).map((c, i) => (
+                <option key={i} value={c.company ? `${c.name} — ${c.company}` : c.name} />
+              ))}
+            </datalist>
           </div>
+          <div className="form-group">
+            <label className="form-label">{t("Indoor / Outdoor")}</label>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button type="button" className={`cal-nav-btn${form.indoorOutdoor === "indoor" ? " active" : ""}`}
+                style={form.indoorOutdoor === "indoor" ? { background: "var(--amber)", color: "var(--bg)", borderColor: "var(--amber)" } : {}}
+                onClick={() => updForm("indoorOutdoor", "indoor")}>{t("Indoor")}</button>
+              <button type="button" className={`cal-nav-btn${form.indoorOutdoor === "outdoor" ? " active" : ""}`}
+                style={form.indoorOutdoor === "outdoor" ? { background: "var(--amber)", color: "var(--bg)", borderColor: "var(--amber)" } : {}}
+                onClick={() => updForm("indoorOutdoor", "outdoor")}>{t("Outdoor")}</button>
+              <button type="button" className={`cal-nav-btn${form.indoorOutdoor === "both" ? " active" : ""}`}
+                style={form.indoorOutdoor === "both" ? { background: "var(--amber)", color: "var(--bg)", borderColor: "var(--amber)" } : {}}
+                onClick={() => updForm("indoorOutdoor", "both")}>{t("Both")}</button>
+            </div>
+          </div>
+          {form.indoorOutdoor !== "indoor" && (
+            <div className="form-group">
+              <label className="form-label">{t("Weather")}</label>
+              <select className="form-select" value={form.weather} onChange={e => updForm("weather", e.target.value)}>
+                <option value="clear">{t("Clear")}</option>
+                <option value="rain">{t("Rain")}</option>
+                <option value="thunderstorm">{t("Thunderstorm")}</option>
+                <option value="heat">{t("Heat Advisory")}</option>
+                <option value="freeze">{t("Freeze/Cold")}</option>
+                <option value="wind">{t("High Wind")}</option>
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Weather warning */}
-        {weatherHazard && form.weather !== "clear" && (
+        {form.indoorOutdoor !== "indoor" && weatherHazard && form.weather !== "clear" && (
           <div className="jsa-weather-warn">
             ⚠️ {lang === "es" ? weatherHazard.hazardEs : weatherHazard.hazard}
           </div>
@@ -600,12 +870,21 @@ export function JSATab({ app }) {
               })}
 
               {/* Add hazard from library */}
-              <div style={{ padding: "4px 0 0 36px" }}>
+              <div style={{ padding: "4px 0 0 36px", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "end" }}>
                 <select
                   className="form-select"
                   style={{ fontSize: 11, maxWidth: 350 }}
                   onChange={e => {
                     if (!e.target.value) return;
+                    if (e.target.value === "__custom__") {
+                      const desc = prompt(lang === "es" ? "Describa el peligro:" : "Describe the hazard:");
+                      if (desc) {
+                        const ctrl = prompt(lang === "es" ? "Control/mitigación (separar con coma):" : "Control/mitigation (comma-separate multiple):");
+                        addHazardToStep(idx, { hazard: desc, category: "other", likelihood: 3, severity: 3, controls: ctrl ? ctrl.split(",").map(s => s.trim()) : [], controlType: "administrative" });
+                      }
+                      e.target.value = "";
+                      return;
+                    }
                     const [trade, hIdx] = e.target.value.split("|");
                     const h = (HAZARD_LIBRARY[trade] || [])[Number(hIdx)];
                     if (h) addHazardToStep(idx, { hazard: lang === "es" ? h.hazardEs : h.hazard, category: h.category, likelihood: h.likelihood, severity: h.severity, controls: [...h.controls], controlType: h.controlType });
@@ -613,6 +892,7 @@ export function JSATab({ app }) {
                   }}
                 >
                   <option value="">{t("+ Add hazard from library...")}</option>
+                  <option value="__custom__">--- {t("Other (custom hazard)")} ---</option>
                   {Object.entries(HAZARD_LIBRARY).map(([trade, hazards]) => (
                     <optgroup key={trade} label={lang === "es" ? TRADE_LABELS[trade]?.labelEs : TRADE_LABELS[trade]?.label}>
                       {hazards.map((h, i) => (
@@ -624,7 +904,55 @@ export function JSATab({ app }) {
               </div>
             </div>
           ))}
-          <button className="cal-nav-btn" style={{ marginTop: 8 }} onClick={addStep}>{t("+ Add Step")}</button>
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button className="cal-nav-btn" onClick={addStep}>{t("+ Add Step")}</button>
+            <button className="cal-nav-btn" onClick={() => {
+              const desc = prompt(lang === "es" ? "Describa el paso personalizado:" : "Describe the custom step:");
+              if (desc) {
+                updForm("steps", [...form.steps, { id: "s_" + Date.now(), step: desc, hazards: [] }]);
+              }
+            }}>{t("+ Add Custom Step")}</button>
+          </div>
+        </div>
+
+        {/* Crew Members / Signatures */}
+        <div className="jsa-section" style={{ marginTop: 16 }}>
+          <div className="jsa-section-title">{t("Crew Members / Signatures")}</div>
+          <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 8 }}>{t("Add crew members who will acknowledge this JSA")}</div>
+          {(form.crewMembers || []).map((cm, i) => (
+            <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+              <input className="form-input" style={{ flex: 1, fontSize: 12 }} value={cm.name} placeholder={t("Name")}
+                onChange={e => {
+                  const updated = [...form.crewMembers];
+                  updated[i] = { ...updated[i], name: e.target.value };
+                  updForm("crewMembers", updated);
+                }} />
+              <input className="form-input" style={{ flex: 1, fontSize: 12 }} value={cm.role || ""} placeholder={t("Role / Trade")}
+                onChange={e => {
+                  const updated = [...form.crewMembers];
+                  updated[i] = { ...updated[i], role: e.target.value };
+                  updForm("crewMembers", updated);
+                }} />
+              <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)", padding: "2px 8px" }}
+                onClick={() => updForm("crewMembers", form.crewMembers.filter((_, j) => j !== i))}>x</button>
+            </div>
+          ))}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="cal-nav-btn" style={{ fontSize: 12 }}
+              onClick={() => updForm("crewMembers", [...(form.crewMembers || []), { name: "", role: "" }])}>{t("+ Add Crew Member")}</button>
+            {(employees || []).length > 0 && (
+              <select className="form-select" style={{ fontSize: 11, maxWidth: 200 }}
+                onChange={e => {
+                  if (!e.target.value) return;
+                  const emp = employees.find(em => em.id === Number(e.target.value));
+                  if (emp) updForm("crewMembers", [...(form.crewMembers || []), { name: emp.name, role: emp.role || emp.trade || "" }]);
+                  e.target.value = "";
+                }}>
+                <option value="">{t("Pick from employees...")}</option>
+                {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+              </select>
+            )}
+          </div>
         </div>
 
         {/* Save */}

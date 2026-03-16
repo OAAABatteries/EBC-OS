@@ -5,17 +5,39 @@ import { useState, useMemo } from "react";
 //  Track GC rewards based on project profit margins
 // ═══════════════════════════════════════════════════════════════
 
-const REWARD_TIERS = [
-  { name: "Bronze", min: 5, color: "#cd7f32", bg: "rgba(205,127,50,0.10)", perks: ["Thank-you email", "Referral to new GCs", "Priority scheduling"] },
-  { name: "Silver", min: 10, color: "#94a3b8", bg: "rgba(148,163,184,0.10)", perks: ["All Bronze perks", "Lunch on EBC", "Preferred pricing on next bid"] },
-  { name: "Gold", min: 15, color: "#eab308", bg: "rgba(234,179,8,0.10)", perks: ["All Silver perks", "Gift card ($100)", "First-call on new projects"] },
-  { name: "Platinum", min: 20, color: "#a78bfa", bg: "rgba(167,139,250,0.10)", perks: ["All Gold perks", "Annual appreciation dinner", "Exclusive partnership status"] },
-];
+// Load admin-configurable margin tiers from localStorage, fallback to defaults
+function getMarginTiers() {
+  try {
+    const stored = localStorage.getItem("ebc_margin_tiers");
+    if (stored) {
+      const t = JSON.parse(stored);
+      return {
+        bronze: t.bronze ?? 15,
+        silver: t.silver ?? 20,
+        gold: t.gold ?? 25,
+        platinum: t.platinum ?? 30,
+      };
+    }
+  } catch {}
+  return { bronze: 15, silver: 20, gold: 25, platinum: 30 };
+}
+
+function buildRewardTiers() {
+  const mt = getMarginTiers();
+  return [
+    { name: "Bronze", min: mt.bronze, color: "#cd7f32", bg: "rgba(205,127,50,0.10)", perks: ["Thank-you email", "Referral to new GCs", "Priority scheduling"] },
+    { name: "Silver", min: mt.silver, color: "#94a3b8", bg: "rgba(148,163,184,0.10)", perks: ["All Bronze perks", "Lunch on EBC", "Preferred pricing on next bid"] },
+    { name: "Gold", min: mt.gold, color: "#eab308", bg: "rgba(234,179,8,0.10)", perks: ["All Silver perks", "Gift card ($100)", "First-call on new projects"] },
+    { name: "Platinum", min: mt.platinum, color: "#a78bfa", bg: "rgba(167,139,250,0.10)", perks: ["All Gold perks", "Annual appreciation dinner", "Exclusive partnership status"] },
+  ];
+}
 
 const SUB_TABS = ["Project Tracker", "Reward Tiers", "Margin Calculator"];
 
 export function IncentiveTab({ app }) {
   const { incentiveProjects, setIncentiveProjects, show, fmt, apiKey } = app;
+  // Build tier thresholds from admin-configured values in localStorage
+  const REWARD_TIERS = useMemo(() => buildRewardTiers(), []);
   const [subTab, setSubTab] = useState("Project Tracker");
   const [editProj, setEditProj] = useState(null);
   const [calcRevenue, setCalcRevenue] = useState(100000);

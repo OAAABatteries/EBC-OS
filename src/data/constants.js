@@ -3,6 +3,9 @@
 //  Eagles Brothers Constructors · Houston, TX
 // ═══════════════════════════════════════════════════════════════
 
+import { isDemoMode } from "./defaults";
+const _demo = isDemoMode();
+
 // ── THEMES ────────────────────────────────────────────────────
 export const THEMES = {
   steel: {
@@ -220,7 +223,7 @@ export const SCOPE_INIT = [
 ];
 
 // ── SEED: BIDS (70+ real bids) ──
-export const initBids = [
+const _demoBids = [
   {id:1,name:"Memorial Hermann Pearland ICU Expansion",gc:"Tellepsen Builders",value:487000,due:"Mar 17",status:"estimating",scope:["Metal Framing","GWB","Lead-Lined","ACT","ICRA"],phase:"Medical",risk:"High",notes:"ICRA scope unclear — RFI submitted. Confirm lead scope split before closing.",contact:"Chris Morales",month:"Mar",closeOut:null},
   {id:2,name:"Texas Heart Institute Cath Lab Renovation",gc:"Turner Construction",value:312000,due:"Mar 20",status:"estimating",scope:["GWB","Lead-Lined","L5 Finish","Deflection Track"],phase:"Medical",risk:"High",notes:"L5 finish confirmed at all patient-facing walls.",contact:"Sarah Nichols",month:"Mar",closeOut:null},
   {id:3,name:"Houston Methodist Sugar Land MOB Fit-Out",gc:"Linbeck Group",value:156000,due:"Mar 24",status:"estimating",scope:["Metal Framing","GWB","ACT","Insulation"],phase:"Medical",risk:"Med",notes:"Standard TI — low risk. Seismic ACT to verify.",contact:"Mike Trevino",month:"Mar",closeOut:null},
@@ -300,7 +303,7 @@ export const initBids = [
 // ── SEED: PROJECTS ──
 // Real project data extracted from Google Docs proposals
 export const PM_NAMES = { 3: "Emmanuel Aguilar", 4: "Isai Aguilar", 8: "Abner Aguilar" };
-export const initProjects = [
+const _demoProjects = [
   {id:1,name:"Brunello Cucinelli",gc:"WCC",contract:308400,billed:0,progress:0,phase:"Pre-Construction",start:"Feb 20",end:"Jun 30",am:3,pm:"Emmanuel Aguilar",laborBudget:123400,laborHours:3520,demo:78300,drywall:228800,act:1300,lat:29.7365,lng:-95.4613,radiusFt:1000,superintendent:"Joe Martinez",address:"2800 Kirby Dr, Houston, TX 77098",emergencyContact:{name:"Site Safety",phone:"713-555-9901",role:"Safety Manager"}},
   {id:2,name:"United — Escapology San Antonio",gc:"United",contract:187800,billed:0,progress:0,phase:"Pre-Construction",start:"Mar 12",end:"Jul 15",am:4,pm:"Isai Aguilar",laborBudget:75100,laborHours:2146,demo:27500,drywall:141500,act:18800,lat:29.4241,lng:-98.4936,radiusFt:1000,superintendent:"Ray Gutierrez",address:"15900 La Cantera Pkwy, San Antonio, TX 78256",emergencyContact:{name:"United Safety",phone:"210-555-8801",role:"Safety Coordinator"}},
   {id:3,name:"United — 801 Travis Elevator Lobby",gc:"United",contract:35100,billed:0,progress:0,phase:"Pre-Construction",start:"Mar 11",end:"May 1",am:8,pm:"Abner Aguilar",laborBudget:14000,laborHours:400,demo:9200,drywall:24000,act:1900,lat:29.7604,lng:-95.3632,radiusFt:800,superintendent:"Mark Chen",address:"801 Travis St, Houston, TX 77002",emergencyContact:{name:"Building Mgmt",phone:"713-555-8010",role:"Building Manager"}},
@@ -319,7 +322,7 @@ export const initProjects = [
 ];
 
 // ── SEED: CONTACTS ──
-export const initContacts = [
+const _demoContacts = [
   {id:1,name:"Chris Morales",company:"Tellepsen Builders",role:"Senior PM",bids:14,wins:7,color:"#3b82f6",last:"2 days ago",priority:"high",phone:"713-555-0101",email:"chris.morales@tellepsen.com",notes:"First call list. Prefers text for quick questions. Strong relationship."},
   {id:2,name:"Daniel Park",company:"JE Dunn Construction",role:"Estimator",bids:9,wins:5,color:"#10b981",last:"1 week ago",priority:"high",phone:"713-555-0102",email:"d.park@jedunn.com",notes:"Strong relationship. Invited EBC to NICU bid directly."},
   {id:3,name:"Sarah Nichols",company:"Turner Construction",role:"Pre-Con Mgr",bids:6,wins:2,color:"#8b5cf6",last:"3 days ago",priority:"med",phone:"713-555-0103",email:"s.nichols@tcco.com",notes:"Building relationship. Texas Heart bid is key opportunity."},
@@ -329,14 +332,14 @@ export const initContacts = [
 ];
 
 // ── SEED: CALL LOG ──
-export const initCallLog = [
+const _demoCallLog = [
   {id:1,contact:"United PM",company:"United",time:"Mar 12 10:30 AM",note:"Discussed Escapology San Antonio scope — confirmed demo + drywall + ACT. $187,800 total.",next:"Submit final proposal by Mar 15"},
   {id:2,contact:"WCC PM",company:"WCC",time:"Mar 11 2:15 PM",note:"CB&I Lvl 2 & Lvl 7 — confirmed 3 areas. CEO office soundproofing alternate requested.",next:"Submit alternates pricing"},
   {id:3,contact:"Forney PM",company:"Forney",time:"Mar 11 4:00 PM",note:"Fulshear SMR — build back + ACT only, no demo. Armstrong BP355E Optima on 9/16 grid.",next:"Confirm material lead times"},
 ];
 
 // ── SEED: INVOICES ──
-export const initInvoices = [
+const _demoInvoices = [
   {id:1,projectId:1,number:"EBC-2026-001",date:"2026-02-28",amount:92500,status:"pending",desc:"Progress billing #1 — Mobilization + material delivery (Brunello Cucinelli)",paidDate:null},
   {id:2,projectId:4,number:"EBC-2026-002",date:"2026-03-10",amount:94000,status:"pending",desc:"Progress billing #1 — Mobilization (Bayshore FKC San Angelo)",paidDate:null},
   {id:3,projectId:5,number:"EBC-2026-003",date:"2026-02-15",amount:22200,status:"paid",desc:"Progress billing #1 — Heart Care Clinic NW Houston",paidDate:"2026-03-01"},
@@ -346,7 +349,7 @@ export const initInvoices = [
 
 // ── SEED: T&M TICKETS ──
 // Time & Material tracking — separate from original project contract
-export const initTmTickets = [
+const _demoTmTickets = [
   {
     id: 1, projectId: 6, ticketNumber: "TM-001", date: "2026-03-11", status: "submitted",
     description: "MHMC Cancer Center — Drywall patching and shelf installation per owner request",
@@ -393,7 +396,7 @@ export const initTmTickets = [
 
 // ── SEED: CHANGE ORDERS ──
 // Real change orders from Google Docs
-export const initChangeOrders = [
+const _demoChangeOrders = [
   {id:1,projectId:6,number:"CO-001",desc:"MHMC Cancer Center — Drywall patching, painting, shelf installation (T&M)",amount:800,status:"pending",submitted:"2026-03-11",approved:null},
   {id:2,projectId:11,number:"CO-001",desc:"HM Magnolia ECC MRI Buildout — Sleep room door demo, infill, relocate & tape/float",amount:2600,status:"pending",submitted:"2026-03-10",approved:null},
   {id:3,projectId:8,number:"CO-009",desc:"MH Pearland Level 4 Renovation — Install 10 AD Systems sliding doors (after hours)",amount:8400,status:"pending",submitted:"2026-01-29",approved:null},
@@ -401,7 +404,7 @@ export const initChangeOrders = [
 ];
 
 // ── SEED: RFIs ──
-export const initRfis = [
+const _demoRfis = [
   {id:1,projectId:4,number:"RFI-001",subject:"MH League City CCC CT — Equipment exchange scope clarification",submitted:"2026-03-12",status:"open",assigned:"Forney PM",response:"",responseDate:null},
   {id:2,projectId:1,number:"RFI-001",subject:"Brunello Cucinelli — ACT grid layout at display area",submitted:"2026-02-25",status:"open",assigned:"WCC PM",response:"",responseDate:null},
   {id:3,projectId:9,number:"RFI-001",subject:"Ogle School — Metal framing gauge at corridor partitions",submitted:"2026-03-08",status:"answered",assigned:"United PM",response:"20ga per structural, 14ga at impact zones",responseDate:"2026-03-11"},
@@ -409,7 +412,7 @@ export const initRfis = [
 ];
 
 // ── SEED: SUBMITTALS ──
-export const initSubmittals = [
+const _demoSubmittals = [
   {id:1,projectId:1,number:"SUB-001",desc:"Metal stud shop drawings — Level 2",specSection:"09 22 16",status:"approved",submitted:"2026-02-05",due:"2026-02-19",
     pdfKey:null,pdfName:null,pdfSize:null,linkedMaterialIds:["m1","m2"],linkedAssemblyCodes:["A2","B1","DW1"]},
   {id:2,projectId:1,number:"SUB-002",desc:"GWB product data — Type X Firecode",specSection:"09 29 00",status:"submitted",submitted:"2026-03-01",due:"2026-03-15",
@@ -421,7 +424,7 @@ export const initSubmittals = [
 ];
 
 // ── SEED: SCHEDULE ──
-export const initSchedule = [
+const _demoSchedule = [
   {id:1,projectId:1,task:"Mobilization & Material Delivery",start:"2026-01-15",end:"2026-01-22",crew:"Oscar + 2",status:"complete",milestone:false},
   {id:2,projectId:1,task:"Metal Framing — Level 2",start:"2026-01-23",end:"2026-03-15",crew:"Crew A (6)",status:"in-progress",milestone:false},
   {id:3,projectId:1,task:"Metal Framing — Level 3",start:"2026-03-01",end:"2026-04-15",crew:"Crew B (4)",status:"in-progress",milestone:false},
@@ -435,24 +438,24 @@ export const initSchedule = [
 ];
 
 // ── SEED: SAFETY ──
-export const initIncidents = [
+const _demoIncidents = [
   {id:1,projectId:1,date:"2026-03-05",type:"near-miss",desc:"Scaffold wheel unlocked during repositioning on Level 2",corrective:"All scaffold wheels inspected. Refresher training conducted same day.",reportedBy:"Oscar A."},
   {id:2,projectId:3,date:"2026-02-18",type:"first-aid",desc:"Minor cut on hand from sheet metal edge — no stitches required",corrective:"Crew reminded of cut-resistant glove requirement. Gloves restocked.",reportedBy:"Foreman R."},
 ];
 
-export const initToolboxTalks = [
+const _demoToolboxTalks = [
   {id:1,projectId:1,date:"2026-03-13",topic:"Silica Dust Exposure — GWB Sanding",attendees:8,conductor:"Oscar A.",notes:"Reviewed N95 requirements, wet sanding technique"},
   {id:2,projectId:1,date:"2026-03-06",topic:"Scaffold Safety & Fall Protection",attendees:6,conductor:"Oscar A.",notes:"Inspection checklist reviewed, competent person designated"},
   {id:3,projectId:3,date:"2026-03-11",topic:"Electrical Safety — Lockout/Tagout",attendees:5,conductor:"Foreman R.",notes:"All crew signed off on awareness form"},
 ];
 
-export const initDailyReports = [
+const _demoDailyReports = [
   {id:1,projectId:1,date:"2026-03-13",crewSize:6,hours:48,work:"Framing complete rooms 201-204. Board started 201.",issues:"Material delivery delayed — GWB arriving tomorrow.",weather:"Clear 72°F",safety:"No incidents."},
   {id:2,projectId:1,date:"2026-03-12",crewSize:6,hours:48,work:"Framing rooms 205-208. Track layout at corridor C.",issues:"None.",weather:"Overcast 68°F",safety:"Toolbox talk — scaffold safety."},
 ];
 
 // ── SEED: TAKEOFFS ──
-export const initTakeoffs = [
+const _demoTakeoffs = [
   {id:"tk_1",bidId:1,name:"Memorial Hermann Pearland",created:"2026-03-10",
     wastePct:5,taxRate:8.25,overheadPct:10,profitPct:10,
     rooms:[
@@ -504,7 +507,7 @@ export const COMPANY_DEFAULTS = {
 export const MS = ["Award","Submittal","Buyout","Framing","Board","Tape","Punch","CO"];
 
 // ── SEED: EMPLOYEES ──
-export const initEmployees = [
+const _demoEmployees = [
   { id: 1, name: "Oscar Alvarez", role: "Foreman", pin: "1234", phone: "713-555-1001", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 42, active: true, email: "oscar@eaglesbros.com", password: "ebc2026", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
   { id: 2, name: "Ricardo Mendez", role: "Journeyman", pin: "2345", phone: "713-555-1002", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 35, active: true, email: "ricardo@eaglesbros.com", password: "ebc2026", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
   { id: 3, name: "Carlos Fuentes", role: "Apprentice", pin: "3456", phone: "713-555-1003", schedule: { start: "07:00", end: "15:30" }, hourlyRate: 22, active: true, email: "carlos@eaglesbros.com", password: "ebc2026", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
@@ -515,16 +518,16 @@ export const initEmployees = [
 ];
 
 // ── SEED: COMPANY LOCATIONS (geofence) ──
-export const initCompanyLocations = [
+const _demoCompanyLocations = [
   { id: "loc_office", name: "EBC Main Office", lat: 29.7604, lng: -95.3698, radiusFt: 1000, type: "office" },
   { id: "loc_warehouse", name: "EBC Warehouse", lat: 29.7250, lng: -95.4000, radiusFt: 800, type: "warehouse" },
 ];
 
 // ── SEED: MATERIAL REQUESTS ──
-export const initMaterialRequests = [];
+const _demoMaterialRequests = [];
 
 // ── SEED: CREW SCHEDULE ──
-export const initCrewSchedule = [
+const _demoCrewSchedule = [
   { id:1, employeeId:1, projectId:1, weekStart:"2026-03-09", days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
   { id:2, employeeId:2, projectId:1, weekStart:"2026-03-09", days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
   { id:3, employeeId:3, projectId:1, weekStart:"2026-03-09", days:{mon:true,tue:true,wed:false,thu:false,fri:false}, hours:{start:"07:00",end:"15:30"} },
@@ -534,4 +537,25 @@ export const initCrewSchedule = [
 ];
 
 // ── SEED: TIME ENTRIES ──
-export const initTimeEntries = [];
+const _demoTimeEntries = [];
+
+// ── CONDITIONAL EXPORTS: Demo data or empty arrays ──
+export const initBids = _demo ? _demoBids : [];
+export const initProjects = _demo ? _demoProjects : [];
+export const initContacts = _demo ? _demoContacts : [];
+export const initCallLog = _demo ? _demoCallLog : [];
+export const initInvoices = _demo ? _demoInvoices : [];
+export const initTmTickets = _demo ? _demoTmTickets : [];
+export const initChangeOrders = _demo ? _demoChangeOrders : [];
+export const initRfis = _demo ? _demoRfis : [];
+export const initSubmittals = _demo ? _demoSubmittals : [];
+export const initSchedule = _demo ? _demoSchedule : [];
+export const initIncidents = _demo ? _demoIncidents : [];
+export const initToolboxTalks = _demo ? _demoToolboxTalks : [];
+export const initDailyReports = _demo ? _demoDailyReports : [];
+export const initTakeoffs = _demo ? _demoTakeoffs : [];
+export const initEmployees = _demo ? _demoEmployees : [];
+export const initCompanyLocations = _demo ? _demoCompanyLocations : [];
+export const initMaterialRequests = _demo ? _demoMaterialRequests : [];
+export const initCrewSchedule = _demo ? _demoCrewSchedule : [];
+export const initTimeEntries = _demo ? _demoTimeEntries : [];

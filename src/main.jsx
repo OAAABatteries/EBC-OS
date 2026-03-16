@@ -1,11 +1,30 @@
-import { StrictMode } from 'react'
+import { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
+class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, info) { console.error('APP CRASH:', error.message, error.stack); }
+  render() {
+    if (this.state.error) return (
+      <div style={{padding:40,color:'#ff6b6b',background:'#111',minHeight:'100vh',fontFamily:'monospace'}}>
+        <h2>EBC-OS Error</h2>
+        <pre style={{whiteSpace:'pre-wrap',color:'#ffa'}}>{this.state.error.message}</pre>
+        <pre style={{whiteSpace:'pre-wrap',color:'#888',fontSize:12}}>{this.state.error.stack}</pre>
+        <button onClick={()=>location.reload()} style={{marginTop:20,padding:'8px 20px',background:'#e09422',border:'none',borderRadius:6,color:'#000',fontWeight:700,cursor:'pointer'}}>Reload</button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 )
 

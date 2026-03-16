@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · English / Spanish Translations
-//  Employee & Driver Portal i18n
+//  Full App i18n — Admin + Employee + Driver Portals
 // ═══════════════════════════════════════════════════════════════
 
 export const T = {

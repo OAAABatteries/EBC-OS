@@ -82,7 +82,7 @@ function InvoicesTab({ app }) {
   };
 
   const pName = (pid) => app.projects.find(p => p.id === pid)?.name || "Unknown";
-  const badge = (s) => s === "paid" ? "badge-green" : s === "pending" ? "badge-amber" : "badge-red";
+  const badge = (s) => s === "paid" ? "badge-green" : s === "pending" ? "badge-amber" : s === "draft" ? "badge-muted" : "badge-red";
 
   const invFiltered = app.invoices.filter(inv => {
     if (!app.search) return true;
@@ -157,6 +157,7 @@ function InvoicesTab({ app }) {
             <div className="form-group">
               <label className="form-label">Status</label>
               <select className="form-select" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                <option value="draft">Draft</option>
                 <option value="pending">Pending</option>
                 <option value="paid">Paid</option>
                 <option value="overdue">Overdue</option>
@@ -754,6 +755,42 @@ function TmTicketsTab({ app }) {
                     <button className="btn btn-ghost btn-sm" onClick={() => runJustify(t)} disabled={justifyLoading && justifyId === t.id}>
                       {justifyLoading && justifyId === t.id ? "Drafting..." : "AI Justify"}
                     </button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => {
+                      const labTotal = calcLaborTotal(t.laborEntries);
+                      const matTotal = calcMatTotal(t.materialEntries);
+                      const grandTotal = labTotal + matTotal;
+                      const projN = pName(t.projectId);
+                      const html = `<!DOCTYPE html><html><head><title>T&M Ticket ${t.ticketNumber}</title><style>
+                        body{font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:24px;color:#111}
+                        h1{font-size:22px;margin:0 0 4px} .header{border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:16px}
+                        .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;margin-bottom:16px}
+                        .meta span{color:#666} table{width:100%;border-collapse:collapse;margin:8px 0 16px}
+                        th,td{border:1px solid #ccc;padding:6px 10px;font-size:12px;text-align:left}
+                        th{background:#f5f5f5;font-weight:600}
+                        .subtotal{text-align:right;font-size:12px;margin:4px 0 12px;color:#444}
+                        .grand-total{font-size:16px;font-weight:700;text-align:right;border-top:2px solid #333;padding-top:8px;margin-top:8px}
+                        .sig-line{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:48px}
+                        .sig-line div{border-top:1px solid #666;padding-top:4px;font-size:11px;color:#666}
+                        .company{font-size:18px;font-weight:700;color:#b45309} @media print{body{padding:12px}}
+                      </style></head><body>
+                        <div class="header"><div class="company">Eagles Brothers Constructors</div><h1>T&M Ticket: ${t.ticketNumber}</h1></div>
+                        <div class="meta">
+                          <div><span>Project:</span> ${projN}</div>
+                          <div><span>Date:</span> ${t.date}</div>
+                          <div><span>Status:</span> ${t.status}</div>
+                          <div><span>Description:</span> ${t.description || 'N/A'}</div>
+                        </div>
+                        ${t.laborEntries.length > 0 ? '<h3>Labor</h3><table><thead><tr><th>Employee</th><th>Hours</th><th>Rate</th><th>Description</th><th>Total</th></tr></thead><tbody>' + t.laborEntries.map(e => '<tr><td>'+e.employeeName+'</td><td>'+e.hours+'</td><td>$'+e.rate+'/hr</td><td>'+(e.description||'')+'</td><td>$'+(e.hours*e.rate).toFixed(2)+'</td></tr>').join('') + '</tbody></table><div class="subtotal">Labor Subtotal: $'+labTotal.toFixed(2)+'</div>' : ''}
+                        ${t.materialEntries.length > 0 ? '<h3>Materials</h3><table><thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Unit Cost</th><th>Markup</th><th>Total</th></tr></thead><tbody>' + t.materialEntries.map(e => {const b=e.qty*e.unitCost;const wm=b+b*e.markup/100;return '<tr><td>'+e.item+'</td><td>'+e.qty+'</td><td>'+e.unit+'</td><td>$'+e.unitCost.toFixed(2)+'</td><td>'+e.markup+'%</td><td>$'+wm.toFixed(2)+'</td></tr>';}).join('') + '</tbody></table><div class="subtotal">Materials Subtotal: $'+matTotal.toFixed(2)+'</div>' : ''}
+                        <div class="grand-total">TOTAL: $${grandTotal.toFixed(2)}</div>
+                        ${t.notes ? '<div style="margin-top:16px;font-size:12px"><strong>Notes:</strong> '+t.notes+'</div>' : ''}
+                        <div class="sig-line"><div>Contractor Signature / Date</div><div>GC Approval / Date</div></div>
+                      </body></html>`;
+                      const w = window.open('', '_blank');
+                      w.document.write(html);
+                      w.document.close();
+                      w.setTimeout(() => w.print(), 300);
+                    }}>Print PDF</button>
                     <button className="btn btn-ghost btn-sm" onClick={() => deleteTicket(t.id)} style={{ color: "var(--red)" }}>Delete</button>
                   </div>
 
@@ -971,7 +1008,7 @@ function Documents({ app }) {
 /* ── RFIs ─────────────────────────────────────────────────────── */
 function RfisTab({ app }) {
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ projectId: "", number: "", subject: "", status: "open", submitted: "", assigned: "" });
+  const [form, setForm] = useState({ projectId: "", number: "", subject: "", status: "open", submitted: "", assigned: "", attachments: [] });
   const [draftId, setDraftId] = useState(null);
   const [draftText, setDraftText] = useState("");
   const [draftLoading, setDraftLoading] = useState(false);
@@ -1005,6 +1042,8 @@ function RfisTab({ app }) {
 
   const save = () => {
     if (!form.number || !form.subject) return app.show("Fill required fields", "err");
+    // Convert file objects to storable format (name, size, dataURL)
+    const attachmentData = form.attachments.map(a => ({ name: a.name, size: a.size, type: a.type, dataUrl: a.dataUrl }));
     const newItem = {
       id: app.nextId(app.rfis),
       projectId: Number(form.projectId),
@@ -1015,11 +1054,12 @@ function RfisTab({ app }) {
       assigned: form.assigned,
       response: "",
       responseDate: null,
+      attachments: attachmentData,
     };
     app.setRfis(prev => [...prev, newItem]);
     app.show("RFI added", "ok");
     setAdding(false);
-    setForm({ projectId: "", number: "", subject: "", status: "open", submitted: "", assigned: "" });
+    setForm({ projectId: "", number: "", subject: "", status: "open", submitted: "", assigned: "", attachments: [] });
   };
 
   return (
@@ -1074,6 +1114,31 @@ function RfisTab({ app }) {
             <label className="form-label">Subject</label>
             <input className="form-input" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} />
           </div>
+          <div className="form-group">
+            <label className="form-label">Attachments</label>
+            <input className="form-input" type="file" multiple onChange={e => {
+              const files = Array.from(e.target.files || []);
+              if (files.length === 0) return;
+              const readers = files.map(file => new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onload = () => resolve({ name: file.name, size: file.size, type: file.type, dataUrl: reader.result });
+                reader.readAsDataURL(file);
+              }));
+              Promise.all(readers).then(results => {
+                setForm(f => ({ ...f, attachments: [...f.attachments, ...results] }));
+              });
+            }} style={{ fontSize: 12 }} />
+            {form.attachments.length > 0 && (
+              <div className="flex gap-4 flex-wrap mt-8">
+                {form.attachments.map((a, i) => (
+                  <span key={i} style={{ fontSize: 11, padding: "2px 8px", background: "var(--bg3)", borderRadius: 6, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    {a.name} ({(a.size / 1024).toFixed(0)} KB)
+                    <span style={{ cursor: "pointer", color: "var(--red)", fontWeight: 700 }} onClick={() => setForm(f => ({ ...f, attachments: f.attachments.filter((_, j) => j !== i) }))}>x</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="flex gap-8 mt-16">
             <button className="btn btn-primary btn-sm" onClick={save}>Save</button>
             <button className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
@@ -1091,7 +1156,18 @@ function RfisTab({ app }) {
                 <tr>
                   <td>{rfi.number}</td>
                   <td>{pName(rfi.projectId)}</td>
-                  <td>{rfi.subject}</td>
+                  <td>
+                    {rfi.subject}
+                    {(rfi.attachments || []).length > 0 && (
+                      <div className="flex gap-4 flex-wrap" style={{ marginTop: 4 }}>
+                        {rfi.attachments.map((a, ai) => (
+                          <a key={ai} href={a.dataUrl} download={a.name} style={{ fontSize: 10, color: "var(--blue)", textDecoration: "underline", cursor: "pointer" }} onClick={e => e.stopPropagation()}>
+                            {a.name}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </td>
                   <td><span className={badge(rfi.status)}>{rfi.status}</span></td>
                   <td>{rfi.submitted}</td>
                   <td>{rfi.assigned}</td>
@@ -1283,33 +1359,85 @@ function SubmittalsTab({ app }) {
     );
   };
 
+  // Searchable link picker component
+  const SearchableLinkPicker = ({ label, items, selectedIds, onToggle, getKey, getLabel, badgeColor }) => {
+    const [search, setSearch] = useState("");
+    const [open, setOpen] = useState(false);
+    const filtered = search.trim()
+      ? items.filter(item => getLabel(item).toLowerCase().includes(search.toLowerCase()))
+      : items.slice(0, 10);
+    return (
+      <div className="form-group full" style={{ position: "relative" }}>
+        <label className="form-label">{label}</label>
+        {/* Selected pills */}
+        {selectedIds.length > 0 && (
+          <div className="flex gap-4 flex-wrap" style={{ marginBottom: 6 }}>
+            {selectedIds.map(id => {
+              const item = items.find(i => getKey(i) === id);
+              return (
+                <span key={id} style={{ fontSize: 11, padding: "2px 8px", background: badgeColor || "rgba(59,130,246,0.15)", color: badgeColor ? "#fff" : "#3b82f6", borderRadius: 8, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  {item ? (getLabel(item).length > 30 ? getLabel(item).slice(0, 27) + "..." : getLabel(item)) : id}
+                  <span style={{ cursor: "pointer", fontWeight: 700 }} onClick={() => onToggle(id)}>x</span>
+                </span>
+              );
+            })}
+          </div>
+        )}
+        {/* Search input */}
+        <input
+          className="form-input"
+          placeholder={`Type to search ${label.toLowerCase()}...`}
+          value={search}
+          onChange={e => { setSearch(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 200)}
+          style={{ fontSize: 12 }}
+        />
+        {/* Dropdown */}
+        {open && filtered.length > 0 && (
+          <div style={{ position: "absolute", left: 0, right: 0, top: "100%", zIndex: 50, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 6, maxHeight: 180, overflowY: "auto", boxShadow: "var(--shadow)" }}>
+            {filtered.map(item => {
+              const key = getKey(item);
+              const isSelected = selectedIds.includes(key);
+              return (
+                <div key={key}
+                  style={{ padding: "6px 10px", fontSize: 12, cursor: "pointer", background: isSelected ? "var(--amber-dim)" : "transparent", borderBottom: "1px solid var(--border)" }}
+                  onMouseDown={e => { e.preventDefault(); onToggle(key); setSearch(""); }}
+                >
+                  {isSelected ? "✓ " : ""}{getLabel(item)}
+                </div>
+              );
+            })}
+            {search.trim() && filtered.length === 0 && (
+              <div style={{ padding: "8px 10px", fontSize: 12, color: "var(--text3)" }}>No matches</div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Material/Assembly picker (shared by add and edit forms)
   const renderLinkPicker = (linkedMats, linkedAsms, isEdit) => (
     <>
-      <div className="form-group full">
-        <label className="form-label">Link Assemblies</label>
-        <div className="flex gap-4 flex-wrap">
-          {(app.assemblies || ASSEMBLIES).map(a => (
-            <button key={a.code} type="button"
-              className={`btn btn-sm ${linkedAsms.includes(a.code) ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => toggleAsm(a.code, isEdit)}
-              style={{ fontSize: 11 }}
-            >{a.code} — {a.name.length > 25 ? a.name.slice(0, 22) + "..." : a.name}</button>
-          ))}
-        </div>
-      </div>
-      <div className="form-group full">
-        <label className="form-label">Link Materials</label>
-        <div className="flex gap-4 flex-wrap">
-          {(app.materials || []).map(m => (
-            <button key={m.id} type="button"
-              className={`btn btn-sm ${linkedMats.includes(m.id) ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => toggleMat(m.id, isEdit)}
-              style={{ fontSize: 11 }}
-            >{m.name.length > 30 ? m.name.slice(0, 27) + "..." : m.name}</button>
-          ))}
-        </div>
-      </div>
+      <SearchableLinkPicker
+        label="Link Assemblies"
+        items={app.assemblies || ASSEMBLIES}
+        selectedIds={linkedAsms}
+        onToggle={(code) => toggleAsm(code, isEdit)}
+        getKey={a => a.code}
+        getLabel={a => `${a.code} — ${a.name}`}
+        badgeColor="rgba(59,130,246,0.15)"
+      />
+      <SearchableLinkPicker
+        label="Link Materials"
+        items={app.materials || []}
+        selectedIds={linkedMats}
+        onToggle={(id) => toggleMat(id, isEdit)}
+        getKey={m => m.id}
+        getLabel={m => m.name}
+        badgeColor="rgba(16,185,129,0.15)"
+      />
     </>
   );
 
@@ -3341,15 +3469,664 @@ function OshaChecklistTab({ app }) {
    SETTINGS
    ══════════════════════════════════════════════════════════════ */
 function Settings({ app }) {
+  const isOwnerOrAdmin = app.auth?.role === "owner" || app.auth?.role === "admin";
+  const tabs = ["Company", "Assemblies", "Equipment", "Margin Tiers", "Data", "Theme", "API", "Account"];
+  if (isOwnerOrAdmin) tabs.push("Users");
   const [sub, setSub] = useState("Company");
   return (
     <div>
-      <SubTabs tabs={["Company", "Assemblies", "Data", "Theme", "API"]} active={sub} onChange={setSub} />
+      <SubTabs tabs={tabs} active={sub} onChange={setSub} />
       {sub === "Company" && <CompanyTab app={app} />}
       {sub === "Assemblies" && <AssembliesTab app={app} />}
+      {sub === "Equipment" && <EquipmentTab app={app} />}
+      {sub === "Margin Tiers" && <MarginTiersTab app={app} />}
       {sub === "Data" && <DataTab app={app} />}
       {sub === "Theme" && <ThemeTab app={app} />}
       {sub === "API" && <ApiTab app={app} />}
+      {sub === "Account" && <AccountTab app={app} />}
+      {sub === "Users" && isOwnerOrAdmin && <UsersTab app={app} />}
+
+      {/* ── Account / Logout ── */}
+      <div className="card mt-16" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        <div>
+          <div style={{ fontWeight: 600, color: "var(--text)" }}>
+            {app.auth?.name || "User"}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--text2)" }}>
+            {app.auth?.email} &middot; {app.auth?.role?.toUpperCase()}
+          </div>
+        </div>
+        <button
+          className="btn btn-ghost"
+          style={{ color: "var(--red)", borderColor: "var(--red)" }}
+          onClick={() => {
+            if (confirm("Are you sure you want to log out?")) {
+              app.onLogout();
+            }
+          }}
+        >
+          Logout
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Equipment Database ────────────────────────────────────────── */
+const DEFAULT_EQUIPMENT = [
+  { id: "eq_1", name: "Scissor Lift (19ft)", type: "Rented", dailyRate: 150, weeklyRate: 450, monthlyRate: 1200, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_2", name: "Scissor Lift (26ft)", type: "Rented", dailyRate: 200, weeklyRate: 600, monthlyRate: 1600, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_3", name: "Scissor Lift (32ft)", type: "Rented", dailyRate: 275, weeklyRate: 800, monthlyRate: 2200, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_4", name: "Boom Lift (40ft)", type: "Rented", dailyRate: 350, weeklyRate: 1050, monthlyRate: 2800, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_5", name: "Boom Lift (60ft)", type: "Rented", dailyRate: 500, weeklyRate: 1500, monthlyRate: 4000, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_6", name: "Drywall Cart", type: "Owned", dailyRate: 0, weeklyRate: 0, monthlyRate: 0, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_7", name: "Panel Lift (Drywall Jack)", type: "Owned", dailyRate: 25, weeklyRate: 75, monthlyRate: 200, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_8", name: "Scaffolding Set", type: "Owned", dailyRate: 30, weeklyRate: 90, monthlyRate: 250, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_9", name: "Baker Scaffold", type: "Owned", dailyRate: 25, weeklyRate: 75, monthlyRate: 200, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_10", name: "Stilts (pair)", type: "Owned", dailyRate: 15, weeklyRate: 45, monthlyRate: 120, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_11", name: "Screw Gun", type: "Owned", dailyRate: 10, weeklyRate: 30, monthlyRate: 80, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_12", name: "Rotozip", type: "Owned", dailyRate: 10, weeklyRate: 30, monthlyRate: 80, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_13", name: "Laser Level", type: "Owned", dailyRate: 20, weeklyRate: 60, monthlyRate: 160, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_14", name: "Auto Taper", type: "Owned", dailyRate: 35, weeklyRate: 105, monthlyRate: 280, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_15", name: "Flat Box Set", type: "Owned", dailyRate: 30, weeklyRate: 90, monthlyRate: 240, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_16", name: "Corner Roller", type: "Owned", dailyRate: 10, weeklyRate: 30, monthlyRate: 80, status: "Available", assignedProject: "", notes: "" },
+  { id: "eq_17", name: "Mud Pump", type: "Owned", dailyRate: 40, weeklyRate: 120, monthlyRate: 320, status: "Available", assignedProject: "", notes: "" },
+];
+
+const EQ_STATUSES = ["Available", "In Use", "Maintenance"];
+const EQ_TYPES = ["Owned", "Rented"];
+
+function EquipmentTab({ app }) {
+  const [equipment, setEquipment] = useState(() => {
+    try {
+      const stored = localStorage.getItem("ebc_equipment");
+      if (stored) return JSON.parse(stored);
+      localStorage.setItem("ebc_equipment", JSON.stringify(DEFAULT_EQUIPMENT));
+      return DEFAULT_EQUIPMENT;
+    } catch { return DEFAULT_EQUIPMENT; }
+  });
+  const [editId, setEditId] = useState(null);
+  const [form, setForm] = useState(null);
+  const [filter, setFilter] = useState("All");
+  const [adding, setAdding] = useState(false);
+
+  const save = (list) => {
+    setEquipment(list);
+    localStorage.setItem("ebc_equipment", JSON.stringify(list));
+  };
+
+  const startEdit = (eq) => {
+    setEditId(eq.id);
+    setForm({ ...eq });
+    setAdding(false);
+  };
+
+  const startAdd = () => {
+    setForm({
+      id: "eq_" + Date.now(),
+      name: "", type: "Owned", dailyRate: 0, weeklyRate: 0, monthlyRate: 0,
+      status: "Available", assignedProject: "", notes: ""
+    });
+    setEditId(null);
+    setAdding(true);
+  };
+
+  const saveForm = () => {
+    if (!form.name.trim()) { app.show("Equipment name is required", "err"); return; }
+    if (adding) {
+      save([...equipment, form]);
+      app.show("Equipment added", "ok");
+    } else {
+      save(equipment.map(eq => eq.id === editId ? form : eq));
+      app.show("Equipment updated", "ok");
+    }
+    setForm(null);
+    setEditId(null);
+    setAdding(false);
+  };
+
+  const cancelEdit = () => { setForm(null); setEditId(null); setAdding(false); };
+
+  const deleteItem = (id) => {
+    if (!confirm("Delete this equipment?")) return;
+    save(equipment.filter(eq => eq.id !== id));
+    app.show("Equipment deleted", "ok");
+  };
+
+  const resetDefaults = () => {
+    if (!confirm("Reset equipment to defaults? This will overwrite all current data.")) return;
+    save(DEFAULT_EQUIPMENT);
+    app.show("Equipment reset to defaults", "ok");
+  };
+
+  const filtered = filter === "All" ? equipment :
+    filter === "Available" ? equipment.filter(e => e.status === "Available") :
+    filter === "In Use" ? equipment.filter(e => e.status === "In Use") :
+    filter === "Maintenance" ? equipment.filter(e => e.status === "Maintenance") :
+    filter === "Owned" ? equipment.filter(e => e.type === "Owned") :
+    filter === "Rented" ? equipment.filter(e => e.type === "Rented") : equipment;
+
+  const statusColor = (s) => s === "Available" ? "var(--green)" : s === "In Use" ? "var(--amber)" : "var(--red)";
+
+  return (
+    <div className="mt-16">
+      <div className="flex-between mb-16">
+        <div>
+          <div className="section-title">Equipment Database</div>
+          <div className="text-sm text-dim">{equipment.length} items tracked</div>
+        </div>
+        <div className="flex gap-8">
+          <button className="btn btn-ghost btn-sm" onClick={resetDefaults}>Reset Defaults</button>
+          <button className="btn btn-primary btn-sm" onClick={startAdd}>+ Add Equipment</button>
+        </div>
+      </div>
+
+      <div className="flex gap-4 mb-16 flex-wrap">
+        {["All", "Available", "In Use", "Maintenance", "Owned", "Rented"].map(f => (
+          <button key={f} className={`btn btn-sm ${filter === f ? "btn-primary" : "btn-ghost"}`} onClick={() => setFilter(f)}>{f}</button>
+        ))}
+      </div>
+
+      {/* Add / Edit Form */}
+      {form && (
+        <div className="card" style={{ padding: 20, marginBottom: 20 }}>
+          <div className="text-sm font-semi mb-12">{adding ? "Add Equipment" : "Edit Equipment"}</div>
+          <div className="form-grid" style={{ gap: 12 }}>
+            <div className="form-group">
+              <label className="form-label">Name</label>
+              <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Scissor Lift (26ft)" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Type</label>
+              <select className="form-select" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
+                {EQ_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Daily Rate ($)</label>
+              <input className="form-input" type="number" step="0.01" value={form.dailyRate} onChange={e => setForm({ ...form, dailyRate: Number(e.target.value) })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Weekly Rate ($)</label>
+              <input className="form-input" type="number" step="0.01" value={form.weeklyRate} onChange={e => setForm({ ...form, weeklyRate: Number(e.target.value) })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Monthly Rate ($)</label>
+              <input className="form-input" type="number" step="0.01" value={form.monthlyRate} onChange={e => setForm({ ...form, monthlyRate: Number(e.target.value) })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select className="form-select" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                {EQ_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Assigned Project</label>
+              <select className="form-select" value={form.assignedProject} onChange={e => setForm({ ...form, assignedProject: e.target.value })}>
+                <option value="">-- None --</option>
+                {(app.projects || []).map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+              <label className="form-label">Notes</label>
+              <textarea className="form-input" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Serial number, condition, rental company..." style={{ resize: "vertical" }} />
+            </div>
+          </div>
+          <div className="flex gap-8 mt-16">
+            <button className="btn btn-primary btn-sm" onClick={saveForm}>Save</button>
+            <button className="btn btn-ghost btn-sm" onClick={cancelEdit}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Equipment Table */}
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr style={{ borderBottom: "2px solid var(--border)", textAlign: "left" }}>
+              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Name</th>
+              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Type</th>
+              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Daily</th>
+              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Weekly</th>
+              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Monthly</th>
+              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Status</th>
+              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Project</th>
+              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(eq => (
+              <tr key={eq.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                <td style={{ padding: "8px 12px", fontWeight: 600 }}>{eq.name}</td>
+                <td style={{ padding: "8px 12px" }}>
+                  <span className={`badge ${eq.type === "Owned" ? "badge-blue" : "badge-amber"}`}>{eq.type}</span>
+                </td>
+                <td style={{ padding: "8px 12px", fontFamily: "var(--font-mono)" }}>${eq.dailyRate}</td>
+                <td style={{ padding: "8px 12px", fontFamily: "var(--font-mono)" }}>${eq.weeklyRate}</td>
+                <td style={{ padding: "8px 12px", fontFamily: "var(--font-mono)" }}>${eq.monthlyRate}</td>
+                <td style={{ padding: "8px 12px" }}>
+                  <span style={{ color: statusColor(eq.status), fontWeight: 600 }}>{eq.status}</span>
+                </td>
+                <td style={{ padding: "8px 12px", color: eq.assignedProject ? "var(--text)" : "var(--text3)" }}>
+                  {eq.assignedProject || "--"}
+                </td>
+                <td style={{ padding: "8px 12px" }}>
+                  <div className="flex gap-4">
+                    <button className="btn btn-ghost btn-sm" onClick={() => startEdit(eq)} style={{ fontSize: 11, padding: "2px 8px" }}>Edit</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => deleteItem(eq.id)} style={{ fontSize: 11, padding: "2px 8px", color: "var(--red)" }}>Del</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {filtered.length === 0 && (
+        <div className="empty-state mt-16">
+          <div className="empty-icon">🔧</div>
+          <div className="empty-text">No equipment matches this filter</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Margin Tier Rates (Admin-configurable) ────────────────────── */
+const DEFAULT_MARGIN_TIERS = {
+  bronze: 15,
+  silver: 20,
+  gold: 25,
+  platinum: 30,
+};
+
+function MarginTiersTab({ app }) {
+  const [tiers, setTiers] = useState(() => {
+    try {
+      const stored = localStorage.getItem("ebc_margin_tiers");
+      if (stored) return JSON.parse(stored);
+      localStorage.setItem("ebc_margin_tiers", JSON.stringify(DEFAULT_MARGIN_TIERS));
+      return DEFAULT_MARGIN_TIERS;
+    } catch { return DEFAULT_MARGIN_TIERS; }
+  });
+
+  const saveTiers = (updated) => {
+    setTiers(updated);
+    localStorage.setItem("ebc_margin_tiers", JSON.stringify(updated));
+  };
+
+  const handleChange = (key, val) => {
+    const num = parseFloat(val);
+    if (isNaN(num) || num < 0 || num > 100) return;
+    saveTiers({ ...tiers, [key]: num });
+  };
+
+  const resetDefaults = () => {
+    if (!confirm("Reset margin tiers to default values?")) return;
+    saveTiers(DEFAULT_MARGIN_TIERS);
+    app.show("Margin tiers reset to defaults", "ok");
+  };
+
+  const TIER_CONFIG = [
+    { key: "bronze", label: "Bronze", color: "#cd7f32", bg: "rgba(205,127,50,0.10)", perks: "Thank-you email, referrals, priority scheduling" },
+    { key: "silver", label: "Silver", color: "#94a3b8", bg: "rgba(148,163,184,0.10)", perks: "Lunch on EBC, preferred pricing on next bid" },
+    { key: "gold", label: "Gold", color: "#eab308", bg: "rgba(234,179,8,0.10)", perks: "Gift card ($100), first-call on new projects" },
+    { key: "platinum", label: "Platinum", color: "#a78bfa", bg: "rgba(167,139,250,0.10)", perks: "Annual dinner, exclusive partnership status" },
+  ];
+
+  return (
+    <div className="mt-16">
+      <div className="flex-between mb-16">
+        <div>
+          <div className="section-title">Margin Tier Rates</div>
+          <div className="text-sm text-dim">Set the minimum profit margin % to qualify for each incentive/appreciation tier.</div>
+        </div>
+        <button className="btn btn-ghost btn-sm" onClick={resetDefaults}>Reset Defaults</button>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+        {TIER_CONFIG.map(tc => (
+          <div key={tc.key} className="card" style={{ padding: 20, borderLeft: `4px solid ${tc.color}`, background: tc.bg }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 12, height: 12, borderRadius: "50%", background: tc.color }} />
+              <div style={{ fontWeight: 700, fontSize: 16, color: tc.color }}>{tc.label}</div>
+            </div>
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label className="form-label">Minimum Margin (%)</label>
+              <input
+                className="form-input"
+                type="number"
+                step="1"
+                min="0"
+                max="100"
+                value={tiers[tc.key]}
+                onChange={e => handleChange(tc.key, e.target.value)}
+                style={{ fontWeight: 700, fontSize: 18, textAlign: "center", maxWidth: 120 }}
+              />
+            </div>
+            <div className="text-xs text-dim">
+              <span style={{ fontWeight: 600 }}>Perks:</span> {tc.perks}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card mt-16" style={{ padding: 16 }}>
+        <div className="text-sm font-semi mb-8">How It Works</div>
+        <div className="text-sm text-dim">
+          When a project is completed, its profit margin determines the appreciation tier.
+          Projects with a margin at or above the threshold qualify for that tier's perks.
+          These rates are used by the Incentive & Appreciation system.
+        </div>
+        <div className="mt-12" style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+          {TIER_CONFIG.map(tc => (
+            <div key={tc.key} style={{ fontSize: 13 }}>
+              <span style={{ color: tc.color, fontWeight: 700 }}>{tc.label}:</span>{" "}
+              <span style={{ fontFamily: "var(--font-mono)" }}>{tiers[tc.key]}%+</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Account Settings ────────────────────────────────────────── */
+function AccountTab({ app }) {
+  const [name, setName] = useState(app.auth?.name || "");
+  const [email, setEmail] = useState(app.auth?.email || "");
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [msg, setMsg] = useState("");
+  const [msgType, setMsgType] = useState("ok");
+
+  const simpleHash = (str) => btoa(encodeURIComponent(str));
+
+  const saveProfile = () => {
+    try {
+      const users = JSON.parse(localStorage.getItem("ebc_users") || "[]");
+      const idx = users.findIndex(u => u.id === app.auth.id);
+      if (idx < 0) return;
+      users[idx].name = name;
+      users[idx].email = email.toLowerCase();
+      localStorage.setItem("ebc_users", JSON.stringify(users));
+      // Update auth in memory
+      const auth = JSON.parse(localStorage.getItem("ebc_auth") || "{}");
+      auth.name = name;
+      auth.email = email.toLowerCase();
+      localStorage.setItem("ebc_auth", JSON.stringify(auth));
+      setMsg("Profile updated!");
+      setMsgType("ok");
+      app.show("Profile updated", "ok");
+    } catch { setMsg("Error saving"); setMsgType("err"); }
+  };
+
+  const changePassword = () => {
+    if (!currentPw) { setMsg("Enter current password"); setMsgType("err"); return; }
+    if (newPw.length < 6) { setMsg("New password must be at least 6 characters"); setMsgType("err"); return; }
+    if (newPw !== confirmPw) { setMsg("Passwords do not match"); setMsgType("err"); return; }
+
+    try {
+      const users = JSON.parse(localStorage.getItem("ebc_users") || "[]");
+      const idx = users.findIndex(u => u.id === app.auth.id);
+      if (idx < 0) return;
+
+      if (users[idx].password !== simpleHash(currentPw)) {
+        setMsg("Current password is incorrect");
+        setMsgType("err");
+        return;
+      }
+
+      users[idx].password = simpleHash(newPw);
+      if (newPin && newPin.length >= 4) {
+        users[idx].pin = newPin;
+      }
+      localStorage.setItem("ebc_users", JSON.stringify(users));
+      setMsg("Password updated!");
+      setMsgType("ok");
+      setCurrentPw(""); setNewPw(""); setConfirmPw(""); setNewPin("");
+      app.show("Password changed", "ok");
+    } catch { setMsg("Error changing password"); setMsgType("err"); }
+  };
+
+  return (
+    <div className="mt-16">
+      <div className="section-title">My Profile</div>
+      <div className="card mt-16">
+        <div className="form-grid">
+          <div className="form-group">
+            <label className="form-label">Name</label>
+            <input className="form-input" value={name} onChange={e => setName(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Email</label>
+            <input className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+          </div>
+        </div>
+        <div className="mt-16">
+          <button className="btn btn-primary btn-sm" onClick={saveProfile}>Save Profile</button>
+        </div>
+      </div>
+
+      <div className="section-title mt-16">Change Password</div>
+      <div className="card mt-16">
+        <div className="form-grid">
+          <div className="form-group">
+            <label className="form-label">Current Password</label>
+            <input className="form-input" type="password" value={currentPw} onChange={e => setCurrentPw(e.target.value)} placeholder="••••••••" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">New Password</label>
+            <input className="form-input" type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Min 6 characters" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Confirm New Password</label>
+            <input className="form-input" type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="••••••••" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">New PIN (optional)</label>
+            <input className="form-input" type="text" maxLength={6} value={newPin} onChange={e => setNewPin(e.target.value.replace(/\D/g, ""))} placeholder="4-digit PIN" />
+          </div>
+        </div>
+        {msg && (
+          <div className="mt-8" style={{
+            padding: "8px 12px", borderRadius: 6, fontSize: 13,
+            background: msgType === "ok" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
+            color: msgType === "ok" ? "var(--green)" : "var(--red)",
+            border: `1px solid ${msgType === "ok" ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`,
+          }}>
+            {msg}
+          </div>
+        )}
+        <div className="mt-16">
+          <button className="btn btn-primary btn-sm" onClick={changePassword}>Update Password</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── User Management (Owner/Admin only) ──────────────────────── */
+function UsersTab({ app }) {
+  const [users, setUsers] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ebc_users") || "[]"); } catch { return []; }
+  });
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", role: "employee", pin: "" });
+  const [editId, setEditId] = useState(null);
+  const [editRole, setEditRole] = useState("");
+
+  const ROLES_IMPORT = {
+    owner: "Owner", admin: "Admin", pm: "Project Manager", estimator: "Estimator",
+    project_engineer: "Project Engineer", foreman: "Superintendent / Foreman",
+    safety: "Safety Officer", accounting: "Accounting", office_admin: "Office Admin",
+    employee: "Employee / Crew", driver: "Driver"
+  };
+
+  const simpleHash = (str) => btoa(encodeURIComponent(str));
+
+  const refresh = () => {
+    try { setUsers(JSON.parse(localStorage.getItem("ebc_users") || "[]")); } catch {}
+  };
+
+  const addUser = () => {
+    if (!form.name || !form.email) { app.show("Name and email required", "err"); return; }
+    const existing = users.find(u => u.email.toLowerCase() === form.email.toLowerCase());
+    if (existing) { app.show("Email already exists", "err"); return; }
+
+    const newUser = {
+      id: Math.max(0, ...users.map(u => u.id)) + 1,
+      name: form.name,
+      email: form.email.toLowerCase(),
+      password: simpleHash(form.name.split(" ")[0] + "123!"),
+      role: form.role,
+      pin: form.pin || String(1000 + users.length + 1),
+      mustChangePassword: true,
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [...users, newUser];
+    localStorage.setItem("ebc_users", JSON.stringify(updated));
+    setUsers(updated);
+    setForm({ name: "", email: "", role: "employee", pin: "" });
+    setAdding(false);
+    app.show(`Added ${newUser.name} — temp password: ${form.name.split(" ")[0]}123!`, "ok");
+  };
+
+  const resetPassword = (user) => {
+    const tempPw = user.name.split(" ")[0] + "123!";
+    const updated = users.map(u =>
+      u.id === user.id ? { ...u, password: simpleHash(tempPw), mustChangePassword: true } : u
+    );
+    localStorage.setItem("ebc_users", JSON.stringify(updated));
+    setUsers(updated);
+    app.show(`Password reset for ${user.name} — temp: ${tempPw}`, "ok");
+  };
+
+  const updateRole = (userId) => {
+    const updated = users.map(u => u.id === userId ? { ...u, role: editRole } : u);
+    localStorage.setItem("ebc_users", JSON.stringify(updated));
+    setUsers(updated);
+    setEditId(null);
+    app.show("Role updated", "ok");
+  };
+
+  const deleteUser = (user) => {
+    if (user.id === app.auth.id) { app.show("Cannot delete yourself", "err"); return; }
+    if (!confirm(`Remove ${user.name}?`)) return;
+    const updated = users.filter(u => u.id !== user.id);
+    localStorage.setItem("ebc_users", JSON.stringify(updated));
+    setUsers(updated);
+    app.show(`Removed ${user.name}`, "ok");
+  };
+
+  return (
+    <div className="mt-16">
+      <div className="flex-between">
+        <div className="section-title">Team Members ({users.length})</div>
+        <button className="btn btn-primary btn-sm" onClick={() => setAdding(!adding)}>+ Add User</button>
+      </div>
+
+      {adding && (
+        <div className="card mt-16">
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Full Name</label>
+              <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="John Doe" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Email</label>
+              <input className="form-input" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="john@ebconstructors.com" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Role</label>
+              <select className="form-select" value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
+                {Object.entries(ROLES_IMPORT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">PIN (4-digit)</label>
+              <input className="form-input" maxLength={6} value={form.pin} onChange={e => setForm({ ...form, pin: e.target.value.replace(/\D/g, "") })} placeholder="Auto-generated" />
+            </div>
+          </div>
+          <div className="mt-16" style={{ display: "flex", gap: 8 }}>
+            <button className="btn btn-primary btn-sm" onClick={addUser}>Create User</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
+          </div>
+          <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 8 }}>
+            Temp password will be: [FirstName]123! — user will be prompted to change on first login.
+          </div>
+        </div>
+      )}
+
+      <div className="mt-16">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>PIN</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map(u => (
+              <tr key={u.id}>
+                <td style={{ fontWeight: 500 }}>
+                  {u.name}
+                  {u.id === app.auth.id && <span style={{ fontSize: 10, color: "var(--amber)", marginLeft: 6 }}>(you)</span>}
+                  {u.mustChangePassword && <span style={{ fontSize: 10, color: "var(--red)", marginLeft: 6 }}>temp pw</span>}
+                </td>
+                <td style={{ fontSize: 12 }}>{u.email}</td>
+                <td>
+                  {editId === u.id ? (
+                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                      <select className="form-select" style={{ fontSize: 11, padding: "2px 4px" }} value={editRole} onChange={e => setEditRole(e.target.value)}>
+                        {Object.entries(ROLES_IMPORT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                      <button className="btn btn-primary" style={{ fontSize: 10, padding: "2px 8px" }} onClick={() => updateRole(u.id)}>Save</button>
+                      <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px" }} onClick={() => setEditId(null)}>✕</button>
+                    </div>
+                  ) : (
+                    <span
+                      className="badge badge-blue"
+                      style={{ cursor: "pointer", fontSize: 10 }}
+                      onClick={() => { setEditId(u.id); setEditRole(u.role); }}
+                      title="Click to change role"
+                    >
+                      {ROLES_IMPORT[u.role] || u.role}
+                    </span>
+                  )}
+                </td>
+                <td style={{ fontSize: 12, fontFamily: "var(--font-mono)" }}>{u.pin || "—"}</td>
+                <td>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ fontSize: 10, padding: "2px 8px", color: "var(--amber)" }}
+                      onClick={() => resetPassword(u)}
+                      title="Reset to temp password"
+                    >
+                      Reset PW
+                    </button>
+                    {u.id !== app.auth.id && (
+                      <button
+                        className="btn btn-ghost"
+                        style={{ fontSize: 10, padding: "2px 8px", color: "var(--red)" }}
+                        onClick={() => deleteUser(u)}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -3407,29 +4184,8 @@ function CompanyTab({ app }) {
         </div>
       </div>
 
-      <div className="section-title mt-16">Default Markups</div>
-      <div className="card mt-16">
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label">Tax Rate (%)</label>
-            <input className="form-input" type="number" step="0.01" value={form.defaultTax} onChange={e => setForm({ ...form, defaultTax: Number(e.target.value) })} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Waste (%)</label>
-            <input className="form-input" type="number" step="0.01" value={form.defaultWaste} onChange={e => setForm({ ...form, defaultWaste: Number(e.target.value) })} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Overhead (%)</label>
-            <input className="form-input" type="number" step="0.01" value={form.defaultOverhead} onChange={e => setForm({ ...form, defaultOverhead: Number(e.target.value) })} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Profit (%)</label>
-            <input className="form-input" type="number" step="0.01" value={form.defaultProfit} onChange={e => setForm({ ...form, defaultProfit: Number(e.target.value) })} />
-          </div>
-        </div>
-        <div className="mt-16">
-          <button className="btn btn-primary btn-sm" onClick={save}>Save Company Info</button>
-        </div>
+      <div className="mt-16">
+        <button className="btn btn-primary btn-sm" onClick={save}>Save Company Info</button>
       </div>
     </div>
   );

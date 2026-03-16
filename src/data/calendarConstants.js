@@ -2,6 +2,9 @@
 //  Calendar Module — Data Models, Enums, Seed Data
 // ═══════════════════════════════════════════════════════════════
 
+import { isDemoMode } from "./defaults";
+const _demo = isDemoMode();
+
 // ── Event Type Registry ──
 export const EVENT_TYPES = [
   { key: "inspection", label: "Inspection", labelEs: "Inspección", color: "#3b82f6" },
@@ -59,7 +62,7 @@ export const EQUIPMENT_TYPES = [
 ];
 
 // ── Seed Data: Calendar Events ──
-export const initCalendarEvents = [
+const _demoCalendarEvents = [
   {
     id: "ce_1", type: "inspection", title: "Framing Inspection — Level 2",
     projectId: 1, date: "2026-03-20", startTime: "09:00", endTime: "11:00",
@@ -121,7 +124,7 @@ export const initCalendarEvents = [
 ];
 
 // ── Seed Data: PTO Requests ──
-export const initPtoRequests = [
+const _demoPtoRequests = [
   {
     id: "pto_1", employeeId: 3, type: "vacation",
     startDate: "2026-04-06", endDate: "2026-04-10",
@@ -139,7 +142,7 @@ export const initPtoRequests = [
 ];
 
 // ── Seed Data: Equipment ──
-export const initEquipment = [
+const _demoEquipment = [
   { id: "eq_1", name: "Scissor Lift #1", type: "lift", status: "available" },
   { id: "eq_2", name: "Scissor Lift #2", type: "lift", status: "available" },
   { id: "eq_3", name: "Scaffolding Set A", type: "scaffolding", status: "available" },
@@ -153,7 +156,7 @@ export const initEquipment = [
 ];
 
 // ── Seed Data: Equipment Bookings ──
-export const initEquipmentBookings = [
+const _demoEquipmentBookings = [
   {
     id: "eb_1", equipmentId: "eq_1", projectId: 1,
     startDate: "2026-03-16", endDate: "2026-03-21",
@@ -169,7 +172,7 @@ export const initEquipmentBookings = [
 ];
 
 // ── Seed Data: Certifications ──
-export const initCertifications = [
+const _demoCertifications = [
   { id: "cert_1", employeeId: 1, name: "OSHA 30", issueDate: "2025-06-15", expiryDate: "2028-06-15", status: "valid" },
   { id: "cert_2", employeeId: 1, name: "Fall Protection Competent Person", issueDate: "2025-09-01", expiryDate: "2026-09-01", status: "valid" },
   { id: "cert_3", employeeId: 1, name: "First Aid / CPR", issueDate: "2025-04-01", expiryDate: "2027-04-01", status: "valid" },
@@ -186,7 +189,7 @@ export const initCertifications = [
 ];
 
 // ── Seed Data: Subcontractor Schedule ──
-export const initSubSchedule = [
+const _demoSubSchedule = [
   {
     id: "ss_1", projectId: 1, subName: "Lone Star Painting",
     trade: "Painting", startDate: "2026-05-15", endDate: "2026-06-15",
@@ -208,7 +211,7 @@ export const initSubSchedule = [
 ];
 
 // ── Seed Data: Weather Alerts ──
-export const initWeatherAlerts = [
+const _demoWeatherAlerts = [
   {
     id: "wa_1", projectId: 1, date: "2026-03-18",
     condition: "thunderstorm", highTemp: 78,
@@ -224,4 +227,14 @@ export const initWeatherAlerts = [
 ];
 
 // ── Seed Data: Schedule Conflicts (starts empty — computed at runtime) ──
-export const initScheduleConflicts = [];
+const _demoScheduleConflicts = [];
+
+// ── CONDITIONAL EXPORTS: Demo data or empty arrays ──
+export const initCalendarEvents = _demo ? _demoCalendarEvents : [];
+export const initPtoRequests = _demo ? _demoPtoRequests : [];
+export const initEquipment = _demo ? _demoEquipment : [];
+export const initEquipmentBookings = _demo ? _demoEquipmentBookings : [];
+export const initCertifications = _demo ? _demoCertifications : [];
+export const initSubSchedule = _demo ? _demoSubSchedule : [];
+export const initWeatherAlerts = _demo ? _demoWeatherAlerts : [];
+export const initScheduleConflicts = _demo ? _demoScheduleConflicts : [];

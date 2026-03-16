@@ -3,6 +3,9 @@
 //  Based on OSHA 3071, AWCI Safe Work Practices, CPWR guidelines
 // ═══════════════════════════════════════════════════════════════
 
+import { isDemoMode } from "./defaults";
+const _demo = isDemoMode();
+
 // ── PPE Types ──
 export const PPE_ITEMS = [
   { key: "hard_hat", label: "Hard Hat", labelEs: "Casco", icon: "🪖" },
@@ -238,7 +241,7 @@ export const JSA_TEMPLATES = [
 ];
 
 // ── Seed JSAs ──
-export const initJSAs = [
+const _demoJSAs = [
   {
     id: "jsa_1",
     projectId: 1,
@@ -291,6 +294,8 @@ export const initJSAs = [
     audit: [],
   },
 ];
+
+export const initJSAs = _demo ? _demoJSAs : [];
 
 // ── Weather conditions affecting JSA ──
 export const WEATHER_HAZARD_MAP = {
