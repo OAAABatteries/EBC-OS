@@ -51,12 +51,12 @@ export const ROLES = {
   },
   employee: {
     label: "Employee / Crew",
-    access: ["employee_portal"],
-    description: "Clock in/out, schedule, pay stubs"
+    access: ["dashboard", "timeclock", "schedule", "materials", "settings"],
+    description: "Clock in/out, schedule, material requests"
   },
   driver: {
     label: "Driver",
-    access: ["driver_portal"],
+    access: ["dashboard", "deliveries", "materials", "settings"],
     description: "Delivery queue, transit status, material requests"
   }
 };

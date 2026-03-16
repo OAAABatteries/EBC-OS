@@ -3,12 +3,19 @@ import { MAT_CATS, MAT_CLR, ASM_TYPES } from "../data/materials";
 
 // ═══════════════════════════════════════════════════════════════
 //  Materials & Assembly Editor Tab
+//  + Material Requests (for foremen, employees, drivers)
 // ═══════════════════════════════════════════════════════════════
 
-const VIEWS = ["Material Library", "Assembly Editor", "Assembly List"];
+const FULL_VIEWS = ["Material Library", "Assembly Editor", "Assembly List", "Requests"];
+const FIELD_VIEWS = ["Requests"];
+const UNITS = ["EA", "LF", "SF", "BDL", "BOX", "BKT", "BAG", "GAL", "SHT", "PCS", "ROLL"];
+const REQ_STATUS_BADGE = { requested: "badge-amber", approved: "badge-blue", "in-transit": "badge-amber", delivered: "badge-green", denied: "badge-red" };
 
 export function MaterialsTab({ app }) {
   const { materials, setMaterials, customAssemblies, setCustomAssemblies, show, fmt, submittals } = app;
+  const userRole = app.auth?.role || "owner";
+  const isFieldRole = ["foreman", "employee", "driver"].includes(userRole);
+  const VIEWS = isFieldRole ? FIELD_VIEWS : FULL_VIEWS;
   const [optResult, setOptResult] = useState(null);
   const [optLoading, setOptLoading] = useState(false);
   const [showOpt, setShowOpt] = useState(false);
@@ -36,11 +43,58 @@ export function MaterialsTab({ app }) {
   // Helper: find submittals linked to a given material id
   const getSubmittalsForMat = (matId) =>
     (submittals || []).filter(s => (s.linkedMaterialIds || []).includes(matId));
-  const [view, setView] = useState("Material Library");
+  const [view, setView] = useState(isFieldRole ? "Requests" : "Material Library");
   const [catFilter, setCatFilter] = useState("All");
   const [matSearch, setMatSearch] = useState("");
   const [editMat, setEditMat] = useState(null);
   const [editAsm, setEditAsm] = useState(null);
+
+  // ── Material Request state ──
+  const [reqForm, setReqForm] = useState({ projectId: "", material: "", qty: "", unit: "EA", notes: "" });
+  const myRequests = useMemo(() =>
+    (app.materialRequests || []).filter(r => r.employeeId === app.auth?.id),
+    [app.materialRequests, app.auth]
+  );
+  const allRequests = app.materialRequests || [];
+  const visibleRequests = isFieldRole ? myRequests : allRequests;
+
+  const handleRequestSubmit = () => {
+    if (!reqForm.projectId || !reqForm.material || !reqForm.qty) {
+      show("Project, material, and quantity are required", "err");
+      return;
+    }
+    const proj = (app.projects || []).find(p => p.id === reqForm.projectId || p.id === Number(reqForm.projectId));
+    const newReq = {
+      id: "mr_" + Date.now(),
+      employeeId: app.auth?.id,
+      employeeName: app.auth?.name || "Unknown",
+      projectId: proj?.id || reqForm.projectId,
+      projectName: proj?.name || proj?.project || "",
+      material: reqForm.material,
+      qty: Number(reqForm.qty),
+      unit: reqForm.unit,
+      notes: reqForm.notes,
+      status: "requested",
+      requestedAt: new Date().toISOString(),
+    };
+    app.setMaterialRequests(prev => [newReq, ...prev]);
+    setReqForm({ projectId: "", material: "", qty: "", unit: "EA", notes: "" });
+    show("Material request submitted", "ok");
+  };
+
+  const handleApproveRequest = (reqId) => {
+    app.setMaterialRequests(prev => prev.map(r =>
+      r.id === reqId ? { ...r, status: "approved" } : r
+    ));
+    show("Request approved", "ok");
+  };
+
+  const handleDenyRequest = (reqId) => {
+    app.setMaterialRequests(prev => prev.map(r =>
+      r.id === reqId ? { ...r, status: "denied" } : r
+    ));
+    show("Request denied", "ok");
+  };
 
   // ── Filtered Materials ──
   const filtered = useMemo(() => {
@@ -558,6 +612,98 @@ export function MaterialsTab({ app }) {
       {view === "Material Library" && renderLibrary()}
       {view === "Assembly Editor" && renderEditor()}
       {view === "Assembly List" && renderList()}
+
+      {/* ═══ REQUESTS VIEW ═══ */}
+      {view === "Requests" && (
+        <div>
+          {/* Request Form */}
+          <div className="card mb-16" style={{ padding: 16 }}>
+            <div className="text-sm font-semi mb-12">New Material Request</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <select
+                className="input"
+                value={reqForm.projectId}
+                onChange={e => setReqForm(f => ({ ...f, projectId: e.target.value }))}
+              >
+                <option value="">Select Project...</option>
+                {(app.projects || []).map(p => (
+                  <option key={p.id} value={p.id}>{p.name || p.project}</option>
+                ))}
+              </select>
+              <input
+                className="input"
+                placeholder="Material name"
+                value={reqForm.material}
+                onChange={e => setReqForm(f => ({ ...f, material: e.target.value }))}
+              />
+              <div className="flex gap-8">
+                <input
+                  className="input"
+                  type="number"
+                  placeholder="Qty"
+                  style={{ flex: 1 }}
+                  value={reqForm.qty}
+                  onChange={e => setReqForm(f => ({ ...f, qty: e.target.value }))}
+                />
+                <select
+                  className="input"
+                  style={{ width: 80 }}
+                  value={reqForm.unit}
+                  onChange={e => setReqForm(f => ({ ...f, unit: e.target.value }))}
+                >
+                  {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                </select>
+              </div>
+              <input
+                className="input"
+                placeholder="Notes (optional)"
+                value={reqForm.notes}
+                onChange={e => setReqForm(f => ({ ...f, notes: e.target.value }))}
+              />
+            </div>
+            <button
+              className="btn btn-primary btn-sm mt-12"
+              onClick={handleRequestSubmit}
+            >
+              Submit Request
+            </button>
+          </div>
+
+          {/* Request List */}
+          <div className="text-xs text-dim mb-8">{visibleRequests.length} request{visibleRequests.length !== 1 ? "s" : ""}</div>
+          {visibleRequests.length === 0 ? (
+            <div className="empty-state" style={{ padding: "40px 20px" }}>
+              <div className="empty-icon" style={{ fontSize: 40, marginBottom: 8 }}>📋</div>
+              <div className="empty-text">No material requests yet</div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {visibleRequests.map(req => (
+                <div key={req.id} className="card" style={{ padding: 14 }}>
+                  <div className="flex-between mb-4">
+                    <span className="text-sm font-semi">{req.material}</span>
+                    <span className={`badge ${REQ_STATUS_BADGE[req.status] || "badge-amber"}`}>{req.status}</span>
+                  </div>
+                  <div className="text-xs text-muted mb-4">
+                    {req.projectName} — {req.qty} {req.unit}
+                  </div>
+                  <div className="text-xs text-dim mb-4">
+                    {req.employeeName} · {req.requestedAt ? new Date(req.requestedAt).toLocaleDateString() : ""}
+                  </div>
+                  {req.notes && <div className="text-xs text-dim mb-4">{req.notes}</div>}
+                  {/* PM+ can approve/deny pending requests */}
+                  {!isFieldRole && req.status === "requested" && (
+                    <div className="flex gap-8 mt-8">
+                      <button className="btn btn-primary btn-sm" onClick={() => handleApproveRequest(req.id)}>Approve</button>
+                      <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }} onClick={() => handleDenyRequest(req.id)}>Deny</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {renderMatModal()}
     </div>

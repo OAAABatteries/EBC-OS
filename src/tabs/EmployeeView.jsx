@@ -93,6 +93,10 @@ export function EmployeeView({ app }) {
   const [selectedInfoProject, setSelectedInfoProject] = useState(null);
   const [openSections, setOpenSections] = useState({});
 
+  // ── project search for clock-in ──
+  const [projectSearch, setProjectSearch] = useState("");
+  const [showProjectSearch, setShowProjectSearch] = useState(false);
+
   // ── material request state ──
   const [matForm, setMatForm] = useState({ material: "", qty: "", unit: "EA", notes: "" });
   const [matProjectId, setMatProjectId] = useState(null);
@@ -177,6 +181,7 @@ export function EmployeeView({ app }) {
     setGeoStatus(null);
     setSelectedProject(null);
     setSelectedInfoProject(null);
+    if (app.onLogout) app.onLogout();
   };
 
   // ── geolocation check ──
@@ -417,19 +422,13 @@ export function EmployeeView({ app }) {
   // ── role-aware tabs ──
   const tabs = useMemo(() => {
     const base = [
-      { key: "clock", label: t("Clock") },
+      { key: "clock", label: isClockedIn ? `🟢 ${t("Clock")}` : t("Clock") },
       { key: "schedule", label: t("Schedule") },
-      { key: "log", label: t("Time Log") },
-      { key: "jsa", label: t("JSA") },
       { key: "materials", label: t("Materials") },
+      { key: "settings", label: "⚙️" },
     ];
-    if (activeEmp?.role === "Foreman") {
-      base.push({ key: "cos", label: t("COs") });
-      base.push({ key: "rfis", label: t("RFIs") });
-    }
-    base.push({ key: "settings", label: t("Settings") });
     return base;
-  }, [activeEmp, lang]);
+  }, [activeEmp, lang, isClockedIn]);
 
   // ── material request submit ──
   const handleMatSubmit = () => {
@@ -488,7 +487,7 @@ export function EmployeeView({ app }) {
     return (
       <div className="employee-app">
         <header className="employee-header">
-          <div className="employee-logo">EBC-OS</div>
+          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/eagle.png" alt="" style={{ width: 36, height: 36, objectFit: "contain", background: "transparent" }} onError={(e) => e.target.style.display = "none"} />EBC-OS</div>
           <span className="text-sm text-muted">{t("Employee Portal")}</span>
         </header>
         <div className="employee-body">
@@ -536,7 +535,7 @@ export function EmployeeView({ app }) {
       <div className="employee-app">
         <header className="employee-header">
           <div>
-            <div className="employee-logo">EBC-OS</div>
+            <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/eagle.png" alt="" style={{ width: 36, height: 36, objectFit: "contain", background: "transparent" }} onError={(e) => e.target.style.display = "none"} />EBC-OS</div>
             <span className="text-xs text-muted">{activeEmp.name} · {activeEmp.role}</span>
           </div>
           <button className="settings-gear" onClick={() => { setSelectedInfoProject(null); setEmpTab("settings"); }} title={t("Settings")}>
@@ -692,7 +691,7 @@ export function EmployeeView({ app }) {
     <div className="employee-app">
       <header className="employee-header">
         <div>
-          <div className="employee-logo">EBC-OS</div>
+          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/eagle.png" alt="" style={{ width: 36, height: 36, objectFit: "contain", background: "transparent" }} onError={(e) => e.target.style.display = "none"} />EBC-OS</div>
           <span className="text-xs text-muted">{activeEmp.name} · {activeEmp.role}</span>
         </div>
         <button className="settings-gear" onClick={() => setEmpTab("settings")} title={t("Settings")}>
@@ -752,9 +751,9 @@ export function EmployeeView({ app }) {
                 </div>
               )}
 
-              {!isClockedIn && geoStatus?.locationsInRange?.length > 1 && (
+              {!isClockedIn && geoStatus?.locationsInRange?.length > 1 && !showProjectSearch && (
                 <div className="form-group mb-16">
-                  <label className="form-label">{t("Job Site")}</label>
+                  <label className="form-label">{t("Job Site")} (GPS)</label>
                   <select
                     className="form-select"
                     value={selectedProject?.id || ""}
@@ -771,6 +770,78 @@ export function EmployeeView({ app }) {
                       </option>
                     ))}
                   </select>
+                </div>
+              )}
+
+              {/* ── Project Search / Lookup ── */}
+              {!isClockedIn && (
+                <div className="form-group mb-16">
+                  {!showProjectSearch ? (
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      style={{ width: "100%", opacity: 0.7 }}
+                      onClick={() => setShowProjectSearch(true)}
+                    >
+                      🔍 {t("Search project manually")}
+                    </button>
+                  ) : (
+                    <>
+                      <label className="form-label">{t("Search Project")}</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        placeholder={t("Type project name or address...")}
+                        value={projectSearch}
+                        onChange={(e) => setProjectSearch(e.target.value)}
+                        autoFocus
+                        style={{ marginBottom: 8 }}
+                      />
+                      <div style={{ maxHeight: 180, overflowY: "auto", borderRadius: 8, background: "var(--glass-bg)" }}>
+                        {projects
+                          .filter(p => {
+                            if (!projectSearch.trim()) return true;
+                            const q = projectSearch.toLowerCase();
+                            return (p.name || "").toLowerCase().includes(q) ||
+                                   (p.address || "").toLowerCase().includes(q) ||
+                                   (p.gc || "").toLowerCase().includes(q);
+                          })
+                          .slice(0, 8)
+                          .map(p => (
+                            <div
+                              key={p.id}
+                              onClick={() => {
+                                setSelectedProject({ id: p.id, name: p.name, withinGeofence: true });
+                                setShowProjectSearch(false);
+                                setProjectSearch("");
+                              }}
+                              style={{
+                                padding: "10px 14px",
+                                cursor: "pointer",
+                                borderBottom: "1px solid var(--glass-border)",
+                                background: selectedProject?.id === p.id ? "var(--accent-dim)" : "transparent",
+                              }}
+                            >
+                              <div className="text-sm font-semi">{p.name}</div>
+                              <div className="text-xs text-muted">{p.address || p.gc || ""}</div>
+                            </div>
+                          ))}
+                      </div>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        style={{ marginTop: 6, width: "100%" }}
+                        onClick={() => { setShowProjectSearch(false); setProjectSearch(""); }}
+                      >
+                        {t("Cancel")}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Show selected project */}
+              {!isClockedIn && selectedProject && (
+                <div className="text-sm font-semi" style={{ textAlign: "center", marginBottom: 12, color: "var(--accent)" }}>
+                  📍 {selectedProject.name}
                 </div>
               )}
 

@@ -383,7 +383,7 @@ export function OnboardingWizard({ onComplete }) {
           {/* Step 0: Welcome */}
           {step === 0 && (
             <div className="wizard-slide">
-              <img src="/logo-ebc.png" alt="EBC" className="wizard-logo" onError={(e) => { e.target.style.display = "none"; }} />
+              <img src="/eagle.png" alt="EBC" className="wizard-logo" onError={(e) => { e.target.style.display = "none"; }} />
               <div className="wizard-title">Welcome to EBC-OS</div>
               <div className="wizard-desc">
                 Your complete construction management platform.<br />

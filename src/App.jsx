@@ -14,11 +14,12 @@ import { EstimatingTab } from "./tabs/Estimating";
 import { MoreTabs } from "./tabs/MoreTabs";
 import { MaterialsTab } from "./tabs/MaterialsTab";
 import { IncentiveTab } from "./tabs/IncentiveTab";
-import { EmployeeView } from "./tabs/EmployeeView";
 import { DriverView } from "./tabs/DriverView";
+import { EmployeeView } from "./tabs/EmployeeView";
 import { ForemanView } from "./tabs/ForemanView";
 import { CalendarView } from "./tabs/CalendarView";
 import { JSATab } from "./tabs/JSATab";
+import { DeliveriesTab } from "./tabs/DeliveriesTab";
 import { DEFAULT_MATERIALS } from "./data/materials";
 import {
   initCalendarEvents, initPtoRequests, initEquipment, initEquipmentBookings,
@@ -54,6 +55,7 @@ const SECONDARY_TABS = [
   { key: "safety", label: "Safety" },
   { key: "jsa", label: "JSA" },
   { key: "materials", label: "Materials" },
+  { key: "deliveries", label: "Deliveries" },
   { key: "incentives", label: "Incentives" },
   { key: "scope", label: "Scope" },
   { key: "contacts", label: "Contacts" },
@@ -223,6 +225,12 @@ function AuthGate() {
       try { await supaSignOut(); } catch {}
     }
     localStorage.removeItem("ebc_auth");
+    // Clear legacy portal session keys
+    localStorage.removeItem("ebc_activeForeman");
+    localStorage.removeItem("ebc_activeDriver");
+    localStorage.removeItem("ebc_activeEmployee");
+    // Reset hash to root so user returns to main login
+    window.location.hash = "#/";
     setAuth(null);
   }, []);
 
@@ -294,9 +302,10 @@ function App({ auth, onLogout }) {
     initNative(); // configure status bar, hide native splash, register app events
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
-  const isEmployeeView = route.startsWith("#/employee") || auth?.role === "employee";
-  const isDriverView = route.startsWith("#/driver") || auth?.role === "driver";
-  const isForemanView = route.startsWith("#/foreman") || auth?.role === "foreman";
+  // ── portal routing for field roles ──
+  const isDriverView = auth?.role === "driver";
+  const isEmployeeView = auth?.role === "employee";
+  const isForemanView = auth?.role === "foreman";
 
   // ── ephemeral state ──
   const [tab, setTab] = useState("dashboard");
@@ -480,6 +489,9 @@ function App({ auth, onLogout }) {
     office_admin:{ subtitle: "Office Operations",      showKPIs: true,  showCharts: false, showDigest: false, showBrief: true,  showQuickActions: false },
     accounting:  { subtitle: "Financials & Payroll",   showKPIs: true,  showCharts: false, showDigest: false, showBrief: true,  showQuickActions: false },
     safety:      { subtitle: "Safety & Compliance",    showKPIs: false, showCharts: false, showDigest: false, showBrief: true,  showQuickActions: false },
+    foreman:     { subtitle: "Field Operations",       showKPIs: false, showCharts: false, showDigest: false, showBrief: true,  showQuickActions: false },
+    driver:      { subtitle: "Deliveries",             showKPIs: false, showCharts: false, showDigest: false, showBrief: false, showQuickActions: false },
+    employee:    { subtitle: "My Work",                showKPIs: false, showCharts: false, showDigest: false, showBrief: false, showQuickActions: false },
   };
   const dashCfg = ROLE_DASH[userRole] || ROLE_DASH.owner;
 
@@ -810,6 +822,27 @@ function App({ auth, onLogout }) {
           <button className="btn btn-primary" onClick={() => handleTabClick("jsa")}>{t("JSA Forms")}</button>
           <button className="btn btn-ghost" onClick={() => handleTabClick("safety")}>{t("Safety")}</button>
           <button className="btn btn-ghost" onClick={() => handleTabClick("reports")}>{t("Reports")}</button>
+        </div>
+      )}
+      {userRole === "foreman" && (
+        <div className="flex gap-8 mt-16">
+          <button className="btn btn-primary" onClick={() => handleTabClick("projects")}>{t("Projects")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("schedule")}>{t("Schedule")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("materials")}>{t("Materials")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("jsa")}>{t("JSA")}</button>
+        </div>
+      )}
+      {userRole === "driver" && (
+        <div className="flex gap-8 mt-16">
+          <button className="btn btn-primary" onClick={() => handleTabClick("deliveries")}>{t("Deliveries")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("materials")}>{t("Materials")}</button>
+        </div>
+      )}
+      {userRole === "employee" && (
+        <div className="flex gap-8 mt-16">
+          <button className="btn btn-primary" onClick={() => handleTabClick("timeclock")}>{t("Time Clock")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("schedule")}>{t("Schedule")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("materials")}>{t("Materials")}</button>
         </div>
       )}
     </div>
@@ -2072,29 +2105,34 @@ function App({ auth, onLogout }) {
   const isAnime = theme === "anime";
   const isCyber = theme === "cyberpunk";
 
-  if (isForemanView) {
-    return (
-      <div className="app">
-        <style>{styles}</style>
-        <ForemanView app={app} />
-      </div>
-    );
-  }
-
+  // ── Portal views for field roles ──
   if (isDriverView) {
     return (
-      <div className="app">
+      <div className={`app${isAnime ? " anime-glow" : ""}${isCyber ? " cyber-glow" : ""}`}>
         <style>{styles}</style>
+        {isAnime && <SakuraPetals />}
+        {isCyber && <CyberRain />}
         <DriverView app={app} />
       </div>
     );
   }
-
   if (isEmployeeView) {
     return (
-      <div className="app">
+      <div className={`app${isAnime ? " anime-glow" : ""}${isCyber ? " cyber-glow" : ""}`}>
         <style>{styles}</style>
+        {isAnime && <SakuraPetals />}
+        {isCyber && <CyberRain />}
         <EmployeeView app={app} />
+      </div>
+    );
+  }
+  if (isForemanView) {
+    return (
+      <div className={`app${isAnime ? " anime-glow" : ""}${isCyber ? " cyber-glow" : ""}`}>
+        <style>{styles}</style>
+        {isAnime && <SakuraPetals />}
+        {isCyber && <CyberRain />}
+        <ForemanView app={app} />
       </div>
     );
   }
@@ -2110,7 +2148,7 @@ function App({ auth, onLogout }) {
       <header className="header">
         <div className="logo" style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 58, height: 38, overflow: "hidden", position: "relative", flexShrink: 0 }}>
-            <img src="/logo-ebc.png" alt="EBC" style={{ position: "absolute", width: 200, height: 200, top: -81, left: -8, filter: theme === "daylight" ? "invert(1)" : "none", opacity: 0.95 }} onError={(e) => e.target.parentElement.style.display = "none"} />
+            <img src="/eagle.png" alt="EBC" style={{ position: "absolute", width: 48, height: 48, top: -5, left: 5, filter: theme === "daylight" ? "invert(1)" : "none", opacity: 0.95, objectFit: "contain" }} onError={(e) => e.target.parentElement.style.display = "none"} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", lineHeight: 1.2 }}>
             {isAnime ? "EBC-OS ✧" : "EBC-OS"}
@@ -2210,6 +2248,7 @@ function App({ auth, onLogout }) {
         {tab === "incentives" && <IncentiveTab app={app} />}
         {tab === "calendar" && <CalendarView app={app} />}
         {tab === "jsa" && <JSATab app={app} />}
+        {tab === "deliveries" && <DeliveriesTab app={app} />}
         {["financials", "documents", "schedule", "reports", "safety", "timeclock", "map", "settings"].includes(tab) && <MoreTabs app={app} />}
       </main>
 
