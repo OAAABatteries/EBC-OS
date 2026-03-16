@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { styles } from "./styles";
 import { useLocalStorage } from "./hooks/useLocalStorage";
+import { useSyncedState, flushSyncQueue } from "./hooks/useSyncedState";
 import { useToast } from "./hooks/useToast";
 import {
   THEMES, ASSEMBLIES, SCOPE_INIT, initBids, initProjects, initContacts, initCallLog,
@@ -249,44 +250,69 @@ function AuthGate() {
 };
 
 function App({ auth, onLogout }) {
-  // ── localStorage-backed state ──
+  // ── UI preferences (localStorage only, no Supabase sync) ──
   const [theme, setTheme] = useLocalStorage("theme", "steel");
-  const [bids, setBids] = useLocalStorage("bids", initBids);
-  const [projects, setProjects] = useLocalStorage("projects", initProjects);
-  const [contacts, setContacts] = useLocalStorage("contacts", initContacts);
-  const [callLog, setCallLog] = useLocalStorage("callLog", initCallLog);
-  const [scope, setScope] = useLocalStorage("scope", SCOPE_INIT);
-  const [invoices, setInvoices] = useLocalStorage("invoices", initInvoices);
-  const [changeOrders, setChangeOrders] = useLocalStorage("cos", initChangeOrders);
-  const [rfis, setRfis] = useLocalStorage("rfis", initRfis);
-  const [submittals, setSubmittals] = useLocalStorage("subs", initSubmittals);
-  const [schedule, setSchedule] = useLocalStorage("schedule", initSchedule);
-  const [incidents, setIncidents] = useLocalStorage("incidents", initIncidents);
-  const [toolboxTalks, setToolboxTalks] = useLocalStorage("tbtalks", initToolboxTalks);
-  const [dailyReports, setDailyReports] = useLocalStorage("dailyrpts", initDailyReports);
-  const [takeoffs, setTakeoffs] = useLocalStorage("takeoffs", initTakeoffs);
-  const [company, setCompany] = useLocalStorage("company", COMPANY_DEFAULTS);
-  const [assemblies, setAssemblies] = useLocalStorage("assemblies", ASSEMBLIES);
+  const [lang, setLang] = useLocalStorage("ebc_lang", "en");
+  const [apiKey, setApiKey] = useLocalStorage("apiKey", "");
+
+  // ── Business data (synced to localStorage + Supabase) ──
+  const [bids, setBids] = useSyncedState("bids", initBids);
+  const [projects, setProjects] = useSyncedState("projects", initProjects);
+  const [contacts, setContacts] = useSyncedState("contacts", initContacts);
+  const [callLog, setCallLog] = useSyncedState("callLog", initCallLog);
+  const [scope, setScope] = useSyncedState("scope", SCOPE_INIT);
+  const [invoices, setInvoices] = useSyncedState("invoices", initInvoices);
+  const [changeOrders, setChangeOrders] = useSyncedState("changeOrders", initChangeOrders);
+  const [rfis, setRfis] = useSyncedState("rfis", initRfis);
+  const [submittals, setSubmittals] = useSyncedState("submittals", initSubmittals);
+  const [schedule, setSchedule] = useSyncedState("schedule", initSchedule);
+  const [incidents, setIncidents] = useSyncedState("incidents", initIncidents);
+  const [toolboxTalks, setToolboxTalks] = useSyncedState("toolboxTalks", initToolboxTalks);
+  const [dailyReports, setDailyReports] = useSyncedState("dailyReports", initDailyReports);
+  const [takeoffs, setTakeoffs] = useSyncedState("takeoffs", initTakeoffs);
+  const [company, setCompany] = useSyncedState("company", COMPANY_DEFAULTS);
+  const [assemblies, setAssemblies] = useSyncedState("assemblies", ASSEMBLIES);
+  const [employees, setEmployees] = useSyncedState("employees", initEmployees);
+  const [companyLocations, setCompanyLocations] = useSyncedState("companyLocations", initCompanyLocations);
+  const [timeEntries, setTimeEntries] = useSyncedState("timeEntries", initTimeEntries);
+  const [crewSchedule, setCrewSchedule] = useSyncedState("crewSchedule", initCrewSchedule);
+  const [materialRequests, setMaterialRequests] = useSyncedState("materialRequests", initMaterialRequests);
+  const [calendarEvents, setCalendarEvents] = useSyncedState("calendarEvents", initCalendarEvents);
+  const [ptoRequests, setPtoRequests] = useSyncedState("ptoRequests", initPtoRequests);
+  const [calEquipment, setCalEquipment] = useSyncedState("calEquipment", initEquipment);
+  const [equipmentBookings, setEquipmentBookings] = useSyncedState("equipmentBookings", initEquipmentBookings);
+  const [certifications, setCertifications] = useSyncedState("certifications", initCertifications);
+  const [jsas, setJsas] = useSyncedState("jsas", initJSAs);
+  const [tmTickets, setTmTickets] = useSyncedState("tmTickets", initTmTickets);
+
+  // ── Non-synced state (localStorage only, no Supabase table) ──
   const [materials, setMaterials] = useLocalStorage("materials", DEFAULT_MATERIALS);
   const [customAssemblies, setCustomAssemblies] = useLocalStorage("customAssemblies", []);
   const [incentiveProjects, setIncentiveProjects] = useLocalStorage("incentiveProjects", []);
-  const [apiKey, setApiKey] = useLocalStorage("apiKey", "");
-  const [employees, setEmployees] = useLocalStorage("employees", initEmployees);
-  const [companyLocations, setCompanyLocations] = useLocalStorage("companyLocations", initCompanyLocations);
-  const [timeEntries, setTimeEntries] = useLocalStorage("timeEntries", initTimeEntries);
-  const [crewSchedule, setCrewSchedule] = useLocalStorage("crewSchedule", initCrewSchedule);
-  const [materialRequests, setMaterialRequests] = useLocalStorage("materialRequests", initMaterialRequests);
-  const [calendarEvents, setCalendarEvents] = useLocalStorage("calendarEvents", initCalendarEvents);
-  const [ptoRequests, setPtoRequests] = useLocalStorage("ptoRequests", initPtoRequests);
-  const [calEquipment, setCalEquipment] = useLocalStorage("calEquipment", initEquipment);
-  const [equipmentBookings, setEquipmentBookings] = useLocalStorage("equipmentBookings", initEquipmentBookings);
-  const [certifications, setCertifications] = useLocalStorage("certifications", initCertifications);
   const [subSchedule, setSubSchedule] = useLocalStorage("subSchedule", initSubSchedule);
   const [weatherAlerts, setWeatherAlerts] = useLocalStorage("weatherAlerts", initWeatherAlerts);
   const [scheduleConflicts, setScheduleConflicts] = useLocalStorage("scheduleConflicts", initScheduleConflicts);
-  const [jsas, setJsas] = useLocalStorage("jsas", initJSAs);
-  const [tmTickets, setTmTickets] = useLocalStorage("tmTickets", initTmTickets);
-  const [lang, setLang] = useLocalStorage("ebc_lang", "en");
+
+  // ── migrate old localStorage keys to new standardized names ──
+  useEffect(() => {
+    const keyMigrations = {
+      ebc_cos: "ebc_changeOrders",
+      ebc_subs: "ebc_submittals",
+      ebc_tbtalks: "ebc_toolboxTalks",
+      ebc_dailyrpts: "ebc_dailyReports",
+    };
+    for (const [oldKey, newKey] of Object.entries(keyMigrations)) {
+      try {
+        const old = localStorage.getItem(oldKey);
+        if (old && !localStorage.getItem(newKey)) {
+          localStorage.setItem(newKey, old);
+          localStorage.removeItem(oldKey);
+        }
+      } catch {}
+    }
+    // Flush any pending offline sync operations
+    flushSyncQueue();
+  }, []);
 
   // ── i18n helper ──
   const t = useCallback((key) => {

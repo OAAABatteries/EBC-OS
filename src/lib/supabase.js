@@ -272,6 +272,36 @@ export const getScopeItems = (opts) => _getAll("scope_items", { orderBy: "catego
 export const saveScopeItem = (s) => _upsert("scope_items", s);
 export const deleteScopeItem = (id) => _remove("scope_items", id);
 
+// ── Time Entries ────────────────────────────────────────────
+export const getTimeEntries = (opts) => _getAll("time_entries", { orderBy: "clock_in", ascending: false, ...opts });
+export const saveTimeEntry = (t) => _upsert("time_entries", t);
+export const deleteTimeEntry = (id) => _remove("time_entries", id);
+
+// ── Material Requests ───────────────────────────────────────
+export const getMaterialRequests = (opts) => _getAll("material_requests", { orderBy: "created_at", ascending: false, ...opts });
+export const saveMaterialRequest = (m) => _upsert("material_requests", m);
+export const deleteMaterialRequest = (id) => _remove("material_requests", id);
+
+// ── Company Locations ───────────────────────────────────────
+export const getCompanyLocations = (opts) => _getAll("company_locations", { orderBy: "name", ...opts });
+export const saveCompanyLocation = (l) => _upsert("company_locations", l);
+export const deleteCompanyLocation = (id) => _remove("company_locations", id);
+
+// ── Incidents ───────────────────────────────────────────────
+export const getIncidents = (opts) => _getAll("incidents", { orderBy: "created_at", ascending: false, ...opts });
+export const saveIncident = (i) => _upsert("incidents", i);
+export const deleteIncident = (id) => _remove("incidents", id);
+
+// ── Toolbox Talks ───────────────────────────────────────────
+export const getToolboxTalks = (opts) => _getAll("toolbox_talks", { orderBy: "created_at", ascending: false, ...opts });
+export const saveToolboxTalk = (t) => _upsert("toolbox_talks", t);
+export const deleteToolboxTalk = (id) => _remove("toolbox_talks", id);
+
+// ── Crew Schedule ───────────────────────────────────────────
+export const getCrewSchedule = (opts) => _getAll("crew_schedule", { orderBy: "week_start", ...opts });
+export const saveCrewScheduleEntry = (c) => _upsert("crew_schedule", c);
+export const deleteCrewScheduleEntry = (id) => _remove("crew_schedule", id);
+
 // ═════════════════════════════════════════════════════════════
 //  FILE STORAGE
 // ═════════════════════════════════════════════════════════════

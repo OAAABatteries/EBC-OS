@@ -1,6 +1,6 @@
 // EBC-OS Service Worker — Offline Cache + Notifications
 // Bumping version busts old caches on deploy
-const CACHE_NAME = "ebc-os-v6";
+const CACHE_NAME = "ebc-os-v7";
 const STATIC_ASSETS = ["/", "/index.html", "/manifest.json", "/favicon-16.png", "/favicon-32.png", "/favicon-48.png", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/eagle.png"];
 
 // ── Install: pre-cache app shell ──
