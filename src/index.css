@@ -1,0 +1,14 @@
+/* EBC-OS — minimal reset, theme vars applied dynamically */
+body {
+  margin: 0;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+#root {
+  height: 100vh;
+  height: 100dvh; /* dynamic viewport height for mobile browsers */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}

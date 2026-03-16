@@ -1,0 +1,2607 @@
+import { useState, useMemo, useEffect } from "react";
+import { styles } from "./styles";
+import { useLocalStorage } from "./hooks/useLocalStorage";
+import { useToast } from "./hooks/useToast";
+import {
+  THEMES, ASSEMBLIES, SCOPE_INIT, initBids, initProjects, initContacts, initCallLog,
+  initInvoices, initChangeOrders, initRfis, initSubmittals, initSchedule,
+  initIncidents, initToolboxTalks, initDailyReports, initTakeoffs,
+  OSHA_CHECKLIST, COMPANY_DEFAULTS, getHF,
+  initEmployees, initCompanyLocations, initTimeEntries, initCrewSchedule, initMaterialRequests,
+  initTmTickets
+} from "./data/constants";
+import { EstimatingTab } from "./tabs/Estimating";
+import { MoreTabs } from "./tabs/MoreTabs";
+import { MaterialsTab } from "./tabs/MaterialsTab";
+import { IncentiveTab } from "./tabs/IncentiveTab";
+import { EmployeeView } from "./tabs/EmployeeView";
+import { DriverView } from "./tabs/DriverView";
+import { ForemanView } from "./tabs/ForemanView";
+import { CalendarView } from "./tabs/CalendarView";
+import { JSATab } from "./tabs/JSATab";
+import { DEFAULT_MATERIALS } from "./data/materials";
+import {
+  initCalendarEvents, initPtoRequests, initEquipment, initEquipmentBookings,
+  initCertifications, initSubSchedule, initWeatherAlerts, initScheduleConflicts,
+} from "./data/calendarConstants";
+import { initJSAs } from "./data/jsaConstants";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { initNative } from "./utils/native";
+
+// ═══════════════════════════════════════════════════════════════
+//  EBC-OS · App Component
+//  Eagles Brothers Constructors · Houston, TX
+// ═══════════════════════════════════════════════════════════════
+
+const PRIMARY_TABS = [
+  { key: "dashboard", label: "Dashboard" },
+  { key: "bids", label: "Bids" },
+  { key: "projects", label: "Projects" },
+  { key: "estimating", label: "Estimating" },
+];
+
+const SECONDARY_TABS = [
+  { key: "financials", label: "Financials" },
+  { key: "documents", label: "Documents" },
+  { key: "calendar", label: "Calendar" },
+  { key: "schedule", label: "Schedule" },
+  { key: "reports", label: "Reports" },
+  { key: "safety", label: "Safety" },
+  { key: "jsa", label: "JSA" },
+  { key: "materials", label: "Materials" },
+  { key: "incentives", label: "Incentives" },
+  { key: "scope", label: "Scope" },
+  { key: "contacts", label: "Contacts" },
+  { key: "timeclock", label: "Time Clock" },
+  { key: "map", label: "Map" },
+  { key: "settings", label: "Settings" },
+];
+
+const SECONDARY_KEYS = SECONDARY_TABS.map(t => t.key);
+const STATUS_BADGE = { estimating: "badge-amber", submitted: "badge-blue", awarded: "badge-green", lost: "badge-red" };
+const RISK_BADGE = { High: "badge-red", Med: "badge-amber", Low: "badge-green" };
+const PRIORITY_BADGE = { high: "badge-red", med: "badge-amber", low: "badge-green" };
+const SCOPE_ICONS = { unchecked: "\u2b1c", checked: "\u2705", flagged: "\ud83d\udea9" };
+const SCOPE_CYCLE = { unchecked: "checked", checked: "flagged", flagged: "unchecked" };
+const BID_FILTERS = ["All", "Estimating", "Submitted", "Awarded", "Lost"];
+
+// ── Sakura Petals (anime theme only) ──
+const PETAL_COUNT = 28;
+const SakuraPetals = () => {
+  const petals = useMemo(() =>
+    Array.from({ length: PETAL_COUNT }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      dur: 8 + Math.random() * 12,
+      delay: Math.random() * 14,
+      drift: -60 + Math.random() * 120,
+      size: 10 + Math.random() * 14,
+      hue: Math.random() > 0.3 ? 0 : 30,
+    })), []);
+
+  return (
+    <div className="sakura-container">
+      {petals.map(p => (
+        <div
+          key={p.id}
+          className="sakura-petal"
+          style={{
+            left: `${p.left}%`,
+            "--dur": `${p.dur}s`,
+            "--delay": `${p.delay}s`,
+            "--drift": `${p.drift}px`,
+          }}
+        >
+          <svg width={p.size} height={p.size} viewBox="0 0 20 20">
+            <path
+              d="M10 0C10 0 6 5 6 10C6 13 8 15 10 17C12 15 14 13 14 10C14 5 10 0 10 0Z"
+              fill={p.hue === 0
+                ? `rgba(255,${160 + Math.floor(Math.random()*40)},${180 + Math.floor(Math.random()*40)},${0.5 + Math.random() * 0.4})`
+                : `rgba(255,${200 + Math.floor(Math.random()*30)},${210 + Math.floor(Math.random()*30)},${0.4 + Math.random() * 0.3})`
+              }
+            />
+          </svg>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ── Tokyo Skyline (anime theme only) ──
+const TokyoSkyline = () => (
+  <div className="tokyo-skyline">
+    <svg viewBox="0 0 1400 180" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--amber)" stopOpacity="0.6"/>
+          <stop offset="100%" stopColor="var(--amber)" stopOpacity="0.1"/>
+        </linearGradient>
+      </defs>
+      <path fill="url(#skyGrad)" d={
+        // Tokyo Tower + buildings silhouette
+        "M0,180 L0,140 L30,140 L30,100 L40,100 L40,130 L50,130 L50,90 L55,90 L55,130 " +
+        "L80,130 L80,110 L90,110 L90,70 L95,70 L95,110 L100,110 L100,130 " +
+        "L130,130 L130,95 L140,95 L140,130 L160,130 L160,105 L170,105 L170,130 " +
+        "L200,130 L200,80 L205,80 L205,60 L208,45 L210,30 L212,45 L215,60 L220,80 L220,130 " +
+        "L250,130 L250,100 L260,100 L260,85 L270,85 L270,130 " +
+        "L300,130 L300,110 L310,110 L310,75 L320,75 L320,110 L330,110 L330,130 " +
+        "L360,130 L360,90 L370,90 L370,130 " +
+        "L400,130 L400,105 L410,105 L410,65 L420,65 L420,105 L430,105 L430,130 " +
+        "L460,130 L460,95 L465,95 L465,55 L470,40 L475,55 L480,95 L480,130 " +
+        "L510,130 L510,110 L520,110 L520,130 L550,130 L550,85 L560,85 L560,130 " +
+        "L590,130 L590,100 L600,100 L600,70 L610,70 L610,100 L620,100 L620,130 " +
+        "L650,130 L650,115 L660,115 L660,130 " +
+        "L690,130 L690,80 L700,80 L700,50 L705,35 L710,50 L720,80 L720,130 " +
+        "L750,130 L750,105 L760,105 L760,130 " +
+        "L790,130 L790,90 L800,90 L800,60 L810,60 L810,90 L820,90 L820,130 " +
+        "L850,130 L850,110 L860,110 L860,130 " +
+        "L890,130 L890,95 L900,95 L900,75 L910,75 L910,130 " +
+        "L940,130 L940,100 L950,100 L950,130 " +
+        "L980,130 L980,85 L985,85 L985,50 L990,35 L995,50 L1000,85 L1000,130 " +
+        "L1030,130 L1030,110 L1040,110 L1040,130 " +
+        "L1070,130 L1070,90 L1080,90 L1080,65 L1090,65 L1090,90 L1100,90 L1100,130 " +
+        "L1130,130 L1130,105 L1140,105 L1140,130 " +
+        "L1170,130 L1170,95 L1180,95 L1180,130 " +
+        "L1210,130 L1210,80 L1220,80 L1220,55 L1230,55 L1230,80 L1240,80 L1240,130 " +
+        "L1270,130 L1270,110 L1280,110 L1280,130 " +
+        "L1310,130 L1310,100 L1320,100 L1320,130 " +
+        "L1350,130 L1350,115 L1360,115 L1360,130 " +
+        "L1400,130 L1400,180 Z"
+      }/>
+    </svg>
+  </div>
+);
+
+// ── Cyber Rain (cyberpunk theme only) ──
+const RAIN_COUNT = 40;
+const CyberRain = () => {
+  const drops = useMemo(() =>
+    Array.from({ length: RAIN_COUNT }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      dur: 1.5 + Math.random() * 3,
+      delay: Math.random() * 6,
+      height: 30 + Math.random() * 80,
+    })), []);
+
+  return (
+    <div className="cyber-rain">
+      {drops.map(d => (
+        <div
+          key={d.id}
+          className="cyber-drop"
+          style={{
+            left: `${d.left}%`,
+            height: `${d.height}px`,
+            "--dur": `${d.dur}s`,
+            "--delay": `${d.delay}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+const App = () => {
+  // ── localStorage-backed state ──
+  const [theme, setTheme] = useLocalStorage("theme", "steel");
+  const [bids, setBids] = useLocalStorage("bids", initBids);
+  const [projects, setProjects] = useLocalStorage("projects", initProjects);
+  const [contacts, setContacts] = useLocalStorage("contacts", initContacts);
+  const [callLog, setCallLog] = useLocalStorage("callLog", initCallLog);
+  const [scope, setScope] = useLocalStorage("scope", SCOPE_INIT);
+  const [invoices, setInvoices] = useLocalStorage("invoices", initInvoices);
+  const [changeOrders, setChangeOrders] = useLocalStorage("cos", initChangeOrders);
+  const [rfis, setRfis] = useLocalStorage("rfis", initRfis);
+  const [submittals, setSubmittals] = useLocalStorage("subs", initSubmittals);
+  const [schedule, setSchedule] = useLocalStorage("schedule", initSchedule);
+  const [incidents, setIncidents] = useLocalStorage("incidents", initIncidents);
+  const [toolboxTalks, setToolboxTalks] = useLocalStorage("tbtalks", initToolboxTalks);
+  const [dailyReports, setDailyReports] = useLocalStorage("dailyrpts", initDailyReports);
+  const [takeoffs, setTakeoffs] = useLocalStorage("takeoffs", initTakeoffs);
+  const [company, setCompany] = useLocalStorage("company", COMPANY_DEFAULTS);
+  const [assemblies, setAssemblies] = useLocalStorage("assemblies", ASSEMBLIES);
+  const [materials, setMaterials] = useLocalStorage("materials", DEFAULT_MATERIALS);
+  const [customAssemblies, setCustomAssemblies] = useLocalStorage("customAssemblies", []);
+  const [incentiveProjects, setIncentiveProjects] = useLocalStorage("incentiveProjects", []);
+  const [apiKey, setApiKey] = useLocalStorage("apiKey", "");
+  const [employees, setEmployees] = useLocalStorage("employees", initEmployees);
+  const [companyLocations, setCompanyLocations] = useLocalStorage("companyLocations", initCompanyLocations);
+  const [timeEntries, setTimeEntries] = useLocalStorage("timeEntries", initTimeEntries);
+  const [crewSchedule, setCrewSchedule] = useLocalStorage("crewSchedule", initCrewSchedule);
+  const [materialRequests, setMaterialRequests] = useLocalStorage("materialRequests", initMaterialRequests);
+  const [calendarEvents, setCalendarEvents] = useLocalStorage("calendarEvents", initCalendarEvents);
+  const [ptoRequests, setPtoRequests] = useLocalStorage("ptoRequests", initPtoRequests);
+  const [calEquipment, setCalEquipment] = useLocalStorage("calEquipment", initEquipment);
+  const [equipmentBookings, setEquipmentBookings] = useLocalStorage("equipmentBookings", initEquipmentBookings);
+  const [certifications, setCertifications] = useLocalStorage("certifications", initCertifications);
+  const [subSchedule, setSubSchedule] = useLocalStorage("subSchedule", initSubSchedule);
+  const [weatherAlerts, setWeatherAlerts] = useLocalStorage("weatherAlerts", initWeatherAlerts);
+  const [scheduleConflicts, setScheduleConflicts] = useLocalStorage("scheduleConflicts", initScheduleConflicts);
+  const [jsas, setJsas] = useLocalStorage("jsas", initJSAs);
+  const [tmTickets, setTmTickets] = useLocalStorage("tmTickets", initTmTickets);
+
+  // ── hash routing ──
+  const [route, setRoute] = useState(() => window.location.hash || "#/");
+  useEffect(() => {
+    const onHash = () => setRoute(window.location.hash || "#/");
+    window.addEventListener("hashchange", onHash);
+    initNative(); // configure status bar, hide native splash, register app events
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  const isEmployeeView = route.startsWith("#/employee");
+  const isDriverView = route.startsWith("#/driver");
+  const isForemanView = route.startsWith("#/foreman");
+
+  // ── ephemeral state ──
+  const [tab, setTab] = useState("dashboard");
+  const [modal, setModal] = useState(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [subTab, setSubTab] = useState(null);
+  const [mobileNav, setMobileNav] = useState(false);
+  const [selectedBids, setSelectedBids] = useState(new Set());
+  const [bidPageSize, setBidPageSize] = useState(24);
+  const [projPageSize, setProjPageSize] = useState(24);
+  const [installPrompt, setInstallPrompt] = useState(null);
+
+  // ── PWA install prompt ──
+  useEffect(() => {
+    const handler = (e) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  // ── toasts ──
+  const { toasts, show } = useToast();
+
+  // ── bid filter (for bids tab) ──
+  const [bidFilter, setBidFilter] = useState("All");
+
+  // ── scope bid selector ──
+  const [scopeBidId, setScopeBidId] = useState(null);
+
+  // ── contact filter ──
+  const [contactSearch, setContactSearch] = useState("");
+
+  // ── scope filter ──
+  const [scopeFilter, setScopeFilter] = useState("All");
+
+  // ── theme application ──
+  useEffect(() => {
+    const t = THEMES[theme] || THEMES.steel;
+    Object.entries(t.vars).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
+  }, [theme]);
+
+  // ── helpers ──
+  const fmt = n => "$" + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const fmtK = n => n >= 1000000 ? "$" + (n / 1000000).toFixed(1) + "M" : n >= 1000 ? "$" + (n / 1000).toFixed(0) + "K" : fmt(n);
+  const nextId = arr => Math.max(0, ...arr.map(x => x.id)) + 1;
+
+  // ── app bundle ──
+  const app = {
+    bids, setBids, projects, setProjects, contacts, setContacts, callLog, setCallLog,
+    scope, setScope, invoices, setInvoices, changeOrders, setChangeOrders, rfis, setRfis,
+    submittals, setSubmittals, schedule, setSchedule, incidents, setIncidents,
+    toolboxTalks, setToolboxTalks, dailyReports, setDailyReports, takeoffs, setTakeoffs,
+    company, setCompany, assemblies, setAssemblies, theme, setTheme,
+    materials, setMaterials, customAssemblies, setCustomAssemblies, incentiveProjects, setIncentiveProjects, apiKey, setApiKey,
+    employees, setEmployees, companyLocations, setCompanyLocations, timeEntries, setTimeEntries, crewSchedule, setCrewSchedule, materialRequests, setMaterialRequests,
+    calendarEvents, setCalendarEvents, ptoRequests, setPtoRequests,
+    equipment: calEquipment, setEquipment: setCalEquipment, equipmentBookings, setEquipmentBookings,
+    certifications, setCertifications, subSchedule, setSubSchedule, weatherAlerts, setWeatherAlerts,
+    scheduleConflicts, setScheduleConflicts,
+    jsas, setJsas,
+    tmTickets, setTmTickets,
+    show, setModal, modal, search, setSearch, tab, setTab, subTab, setSubTab, fmt, fmtK, nextId
+  };
+
+  // ── KPI computations ──
+  const pipeline = useMemo(() => bids.filter(b => b.status === "estimating").reduce((s, b) => s + (b.value || 0), 0), [bids]);
+  const activeProjects = projects.length;
+  const openBids = bids.filter(b => b.status === "estimating" || b.status === "submitted").length;
+  const awarded = bids.filter(b => b.status === "awarded").length;
+  const lost = bids.filter(b => b.status === "lost").length;
+  const winRate = awarded + lost > 0 ? Math.round((awarded / (awarded + lost)) * 100) : 0;
+
+  // ── filtered bids ──
+  const filteredBids = useMemo(() => {
+    let list = bids;
+    if (bidFilter !== "All") list = list.filter(b => b.status === bidFilter.toLowerCase());
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(b =>
+        b.name.toLowerCase().includes(q) ||
+        b.gc.toLowerCase().includes(q) ||
+        (b.contact || "").toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [bids, bidFilter, search]);
+
+  // ── filtered contacts ──
+  const filteredContacts = useMemo(() => {
+    if (!contactSearch) return contacts;
+    const q = contactSearch.toLowerCase();
+    return contacts.filter(c =>
+      c.name.toLowerCase().includes(q) ||
+      c.company.toLowerCase().includes(q) ||
+      c.role.toLowerCase().includes(q)
+    );
+  }, [contacts, contactSearch]);
+
+  // ── filtered projects ──
+  const filteredProjects = useMemo(() => {
+    if (!search) return projects;
+    const q = search.toLowerCase();
+    return projects.filter(p =>
+      (p.name || "").toLowerCase().includes(q) ||
+      (p.gc || "").toLowerCase().includes(q) ||
+      (p.phase || "").toLowerCase().includes(q)
+    );
+  }, [projects, search]);
+
+  // ── filtered scope ──
+  const filteredScope = useMemo(() => {
+    if (scopeFilter === "Flagged") return scope.filter(s => s.status === "flagged");
+    if (scopeFilter === "Unchecked") return scope.filter(s => s.status === "unchecked");
+    return scope;
+  }, [scope, scopeFilter]);
+
+  // ── nav handler ──
+  const handleTabClick = (key) => {
+    setTab(key);
+    setMoreOpen(false);
+    setMobileNav(false);
+    setSearch("");
+    setBidFilter("All");
+    setSubTab(null);
+  };
+
+  const isSecondaryActive = SECONDARY_KEYS.includes(tab);
+
+  // ── scope cycle handler ──
+  const handleScopeCycle = (id) => {
+    setScope(prev => prev.map(s => s.id === id ? { ...s, status: SCOPE_CYCLE[s.status] } : s));
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  //  RENDER: DASHBOARD
+  // ═══════════════════════════════════════════════════════════════
+  // ── Dashboard chart data ──
+  const statusChartData = useMemo(() => {
+    const counts = { estimating: 0, submitted: 0, awarded: 0, lost: 0 };
+    bids.forEach(b => { if (counts[b.status] !== undefined) counts[b.status]++; });
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [bids]);
+
+  const gcChartData = useMemo(() => {
+    const map = {};
+    bids.forEach(b => { map[b.gc] = (map[b.gc] || 0) + 1; });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, value]) => ({ name: name.length > 18 ? name.slice(0, 16) + "..." : name, value }));
+  }, [bids]);
+
+  const monthChartData = useMemo(() => {
+    const order = ["Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr"];
+    const map = {};
+    bids.forEach(b => { if (b.month) map[b.month] = (map[b.month] || 0) + 1; });
+    return order.filter(m => map[m]).map(m => ({ name: m, value: map[m] }));
+  }, [bids]);
+
+  const STATUS_COLORS = useMemo(() => {
+    const s = getComputedStyle(document.documentElement);
+    return [
+      s.getPropertyValue("--amber").trim() || "#e09422",
+      s.getPropertyValue("--blue").trim() || "#3b82f6",
+      s.getPropertyValue("--green").trim() || "#10b981",
+      s.getPropertyValue("--red").trim() || "#ef4444",
+    ];
+  }, [theme]);
+
+  const renderDashboard = () => (
+    <div>
+      <div className="section-header">
+        <div>
+          <div className="section-title font-head">Dashboard</div>
+          <div className="section-sub">Eagles Brothers Constructors overview</div>
+        </div>
+        <button className="btn btn-ghost" onClick={() => { showBrief ? setShowBrief(false) : runMorningBrief(); }} disabled={briefLoading}>
+          {briefLoading ? "Loading..." : "Morning Brief"}
+        </button>
+      </div>
+
+      {/* Morning Briefing Panel */}
+      {showBrief && briefResult && (
+        <div className="card" style={{ padding: 20, marginBottom: 16, maxHeight: 450, overflow: "auto" }}>
+          <div className="flex-between mb-12">
+            <div className="text-sm font-semi">{briefResult.greeting || "Good morning!"}</div>
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowBrief(false)}>Close</button>
+          </div>
+
+          <div className="text-sm text-muted mb-12">{briefResult.summary}</div>
+
+          {/* Urgent Alerts */}
+          {briefResult.urgentAlerts?.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Urgent Alerts</div>
+              {briefResult.urgentAlerts.map((a, i) => (
+                <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                  <div className="flex-between">
+                    <span className="text-sm">{a.alert}</span>
+                    <span className="badge badge-red">{a.type}</span>
+                  </div>
+                  <div className="text-xs mt-2" style={{ color: "var(--green)" }}>{a.action}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Today's Focus */}
+          {briefResult.todaysFocus?.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Today's Focus</div>
+              {briefResult.todaysFocus.map((f, i) => (
+                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                  <div className="flex-between">
+                    <span className="text-sm">{f.item}</span>
+                    <span className={`badge ${f.priority === "critical" ? "badge-red" : f.priority === "high" ? "badge-amber" : "badge-muted"}`}>{f.priority}</span>
+                  </div>
+                  {f.project && <div className="text-xs text-dim mt-2">{f.project}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Money Moves */}
+          {briefResult.moneyMoves?.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div className="text-sm font-semi mb-8">Money Moves</div>
+              {briefResult.moneyMoves.map((m, i) => (
+                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                  <div className="flex-between">
+                    <span className="text-sm">{m.item}</span>
+                    <span className="font-semi text-sm" style={{ color: "var(--green)" }}>{m.amount}</span>
+                  </div>
+                  <div className="text-xs text-muted mt-2">{m.action} — {m.deadline}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {briefResult.motivationalNote && (
+            <div className="text-sm" style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", fontStyle: "italic", color: "var(--amber)" }}>
+              {briefResult.motivationalNote}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="kpi-grid">
+        <div className="kpi-card">
+          <div className="kpi-label">Pipeline Value</div>
+          <div className="kpi-value">{fmtK(pipeline)}</div>
+          <div className="kpi-sub">{bids.filter(b => b.status === "estimating").length} bids estimating</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-label">Active Projects</div>
+          <div className="kpi-value">{activeProjects}</div>
+          <div className="kpi-sub">{projects.filter(p => p.progress < 100).length} in progress</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-label">Open Bids</div>
+          <div className="kpi-value">{openBids}</div>
+          <div className="kpi-sub">{bids.filter(b => b.status === "submitted").length} submitted</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-label">Win Rate</div>
+          <div className="kpi-value">{winRate}%</div>
+          <div className="kpi-sub">{awarded}W / {lost}L</div>
+        </div>
+      </div>
+
+      {/* Charts Row */}
+      <div className="flex gap-16 mt-24" style={{ flexWrap: "wrap" }}>
+        <div className="card" style={{ flex: "1 1 280px", minWidth: 280 }}>
+          <div className="card-header"><div className="card-title font-head">Bids by Status</div></div>
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie data={statusChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name} (${value})`}>
+                {statusChartData.map((_, i) => <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />)}
+              </Pie>
+              <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="card" style={{ flex: "1 1 400px", minWidth: 300 }}>
+          <div className="card-header"><div className="card-title font-head">Bids by GC (Top 8)</div></div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={gcChartData} layout="vertical" margin={{ left: 10, right: 20 }}>
+              <XAxis type="number" tick={{ fill: "var(--text2)", fontSize: 11 }} />
+              <YAxis type="category" dataKey="name" width={120} tick={{ fill: "var(--text2)", fontSize: 11 }} />
+              <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} />
+              <Bar dataKey="value" fill="var(--amber)" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="card mt-16">
+        <div className="card-header"><div className="card-title font-head">Bids by Month</div></div>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={monthChartData} margin={{ left: 0, right: 20 }}>
+            <XAxis dataKey="name" tick={{ fill: "var(--text2)", fontSize: 12 }} />
+            <YAxis tick={{ fill: "var(--text2)", fontSize: 11 }} />
+            <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} />
+            <Bar dataKey="value" fill="var(--blue)" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="card mt-16">
+        <div className="card-header">
+          <div className="card-title font-head">Recent Activity</div>
+        </div>
+        {callLog.slice(0, 5).map(c => (
+          <div key={c.id} className="flex gap-12 border-b" style={{ padding: "10px 0" }}>
+            <div style={{ width: 6, borderRadius: 3, background: "var(--amber)", flexShrink: 0 }} />
+            <div className="flex-col gap-4" style={{ flex: 1 }}>
+              <div className="flex-between">
+                <span className="font-semi text-sm">{c.contact}</span>
+                <span className="text-xs text-dim">{c.time}</span>
+              </div>
+              <div className="text-sm text-muted">{c.note}</div>
+              {c.next && <div className="text-xs text-dim">Next: {c.next}</div>}
+            </div>
+          </div>
+        ))}
+        {callLog.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-icon">📋</div>
+            <div className="empty-text">No recent activity</div>
+          </div>
+        )}
+      </div>
+
+      {/* Weekly Digest */}
+      <div className="card mt-16">
+        <div className="card-header flex-between">
+          <div className="card-title font-head">PM Weekly Digest</div>
+          <button className="btn btn-primary btn-sm" onClick={runWeeklyDigest} disabled={digestLoading}>
+            {digestLoading ? "Generating..." : "Generate Digest"}
+          </button>
+        </div>
+        {!digestResult && !digestLoading && (
+          <div className="text-sm text-muted" style={{ padding: "12px 0" }}>
+            AI-powered summary of project health, alerts, and recommendations across your portfolio.
+          </div>
+        )}
+        {digestLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Analyzing {projects.length} projects and {bids.length} bids...</div>}
+        {digestResult && (
+          <div style={{ marginTop: 8 }}>
+            {/* Health Summary */}
+            <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12, fontSize: 14 }}>
+              {digestResult.healthSummary}
+            </div>
+
+            {/* KPIs */}
+            {digestResult.kpis && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+                <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", textAlign: "center" }}>
+                  <div className="text-xs text-muted">Avg Margin</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: "var(--amber)" }}>{digestResult.kpis.avgMargin}%</div>
+                </div>
+                <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", textAlign: "center" }}>
+                  <div className="text-xs text-muted">Cash Flow</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>{digestResult.kpis.cashFlowStatus}</div>
+                </div>
+                <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", textAlign: "center" }}>
+                  <div className="text-xs text-muted">Crew Utilization</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>{digestResult.kpis.crewUtilization}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Alerts */}
+            {digestResult.alerts?.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <div className="text-sm font-semi mb-8">Alerts</div>
+                {digestResult.alerts.map((a, i) => (
+                  <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, borderLeft: `3px solid ${a.priority === "high" ? "var(--red)" : a.priority === "medium" ? "var(--amber)" : "var(--blue)"}`, background: "var(--card)", fontSize: 13 }}>
+                    <div className="flex-between">
+                      <span className="font-semi">{a.project}</span>
+                      <span className={`badge ${a.priority === "high" ? "badge-red" : a.priority === "medium" ? "badge-amber" : "badge-blue"}`}>{a.type}</span>
+                    </div>
+                    <div className="text-muted mt-4">{a.message}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Recommendations */}
+            {digestResult.recommendations?.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <div className="text-sm font-semi mb-8">Recommendations</div>
+                {digestResult.recommendations.map((r, i) => (
+                  <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                    <div className="flex-between">
+                      <span>{r.action}</span>
+                      <span className={`badge ${r.urgency === "now" ? "badge-red" : r.urgency === "this_week" ? "badge-amber" : "badge-blue"}`}>{r.urgency}</span>
+                    </div>
+                    <div className="text-xs text-muted mt-2">{r.impact}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Wins */}
+            {digestResult.wins?.length > 0 && (
+              <div>
+                <div className="text-sm font-semi mb-8">Wins This Week</div>
+                {digestResult.wins.map((w, i) => (
+                  <div key={i} style={{ padding: "4px 0", fontSize: 13, color: "var(--green)" }}>{w}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="flex gap-8 mt-16">
+        <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>+ Add Bid</button>
+        <button className="btn btn-ghost" onClick={() => handleTabClick("projects")}>View Projects</button>
+      </div>
+    </div>
+  );
+
+  // ═══════════════════════════════════════════════════════════════
+  //  RENDER: BIDS
+  // ═══════════════════════════════════════════════════════════════
+  const renderBids = () => (
+    <div>
+      <div className="section-header">
+        <div>
+          <div className="section-title font-head">Bids</div>
+          <div className="section-sub">{filteredBids.length} bid{filteredBids.length !== 1 ? "s" : ""}</div>
+        </div>
+        <div className="flex gap-8">
+          <div className="search-wrap">
+            <span className="search-icon">🔍</span>
+            <input
+              className="search-input"
+              placeholder="Search bids..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <button className="btn btn-ghost" onClick={() => {
+            const headers = ["ID","Name","GC","Value","Due","Status","Phase","Risk","Contact","Month","Scope","Notes"];
+            const rows = filteredBids.map(b => [
+              b.id, `"${(b.name||'').replace(/"/g,'""')}"`, `"${(b.gc||'').replace(/"/g,'""')}"`,
+              b.value||0, b.due||'', b.status||'', b.phase||'', b.risk||'', `"${(b.contact||'').replace(/"/g,'""')}"`,
+              b.month||'', `"${(b.scope||[]).join('; ')}"`, `"${(b.notes||'').replace(/"/g,'""')}"`
+            ]);
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'ebc_bids.csv'; a.click();
+            URL.revokeObjectURL(url);
+            show("CSV exported");
+          }}>Export CSV</button>
+          <button className="btn btn-ghost" onClick={() => setShowEmailScanner(!showEmailScanner)}>
+            {showEmailScanner ? "Close Scanner" : "Scan Email"}
+          </button>
+          <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>+ Add Bid</button>
+        </div>
+      </div>
+
+      {/* Email-to-Bid Scanner */}
+      {showEmailScanner && (
+        <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+          <div className="text-sm font-semi mb-8">Email-to-Bid Scanner</div>
+          <div className="text-xs text-muted mb-8">Paste a bid invite email, forwarded bid package, or any email with project info. AI will extract bids and let you import them.</div>
+          <textarea className="form-input" rows={6} placeholder="Paste email content here..."
+            value={emailText} onChange={e => setEmailText(e.target.value)}
+            style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13, marginBottom: 8 }} />
+          <div className="flex-between">
+            <span className="text-xs text-dim">{emailText.length} chars</span>
+            <button className="btn btn-primary btn-sm" onClick={runEmailScan} disabled={emailLoading}>
+              {emailLoading ? "Scanning..." : "Extract Bids"}
+            </button>
+          </div>
+
+          {emailResults && emailResults.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <div className="text-sm font-semi mb-8">Found {emailResults.length} bid{emailResults.length > 1 ? "s" : ""}</div>
+              {emailResults.map((bid, i) => (
+                <div key={i} style={{ padding: 12, marginBottom: 8, borderRadius: 8, background: "var(--bg3)", border: "1px solid var(--border)" }}>
+                  <div className="flex-between mb-4">
+                    <span className="font-semi text-sm">{bid.name || "Unnamed"}</span>
+                    <button className="btn btn-primary btn-sm" onClick={() => importEmailBid(bid)}>Import</button>
+                  </div>
+                  <div className="text-xs text-muted">
+                    {bid.gc && <span>GC: {bid.gc} · </span>}
+                    {bid.value && <span>{fmt(bid.value)} · </span>}
+                    {bid.due && <span>Due: {bid.due} · </span>}
+                    {bid.status && <span className={`badge ${STATUS_BADGE[bid.status] || "badge-muted"}`}>{bid.status}</span>}
+                  </div>
+                  {bid.contact && <div className="text-xs text-dim mt-4">Contact: {bid.contact}</div>}
+                  {bid.notes && <div className="text-xs text-dim mt-4">{bid.notes}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+          {emailResults && emailResults.length === 0 && (
+            <div className="text-sm text-muted" style={{ padding: 12, textAlign: "center" }}>No bid information found in this email.</div>
+          )}
+        </div>
+      )}
+
+      <div className="flex gap-4 mb-16 flex-wrap">
+        {BID_FILTERS.map(f => (
+          <button
+            key={f}
+            className={`btn btn-sm ${bidFilter === f ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => setBidFilter(f)}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+
+      {selectedBids.size > 0 && (
+        <div className="card mt-16" style={{ padding: "10px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+          <span className="text-sm font-semi">{selectedBids.size} selected</span>
+          <select className="form-select" style={{ width: "auto", fontSize: 12 }} defaultValue="" onChange={e => {
+            if (!e.target.value) return;
+            setBids(prev => prev.map(b => selectedBids.has(b.id) ? { ...b, status: e.target.value } : b));
+            show(`${selectedBids.size} bids → ${e.target.value}`);
+            setSelectedBids(new Set());
+            e.target.value = "";
+          }}>
+            <option value="">Set status...</option>
+            <option value="estimating">Estimating</option>
+            <option value="submitted">Submitted</option>
+            <option value="awarded">Awarded</option>
+            <option value="lost">Lost</option>
+          </select>
+          <button className="btn btn-ghost btn-sm" onClick={() => setSelectedBids(new Set())}>Clear</button>
+          <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }} onClick={() => {
+            if (!confirm(`Delete ${selectedBids.size} bids?`)) return;
+            setBids(prev => prev.filter(b => !selectedBids.has(b.id)));
+            setSelectedBids(new Set());
+            show("Bids deleted");
+          }}>Delete Selected</button>
+        </div>
+      )}
+
+      {filteredBids.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">📂</div>
+          <div className="empty-text">No bids match your filter</div>
+        </div>
+      ) : (
+        <div className="bid-grid">
+          {filteredBids.slice(0, bidPageSize).map(b => (
+            <div key={b.id} className="bid-card" onClick={() => setModal({ type: "editBid", data: b })}>
+              <div className="flex-between mb-8">
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input type="checkbox" checked={selectedBids.has(b.id)} onClick={e => e.stopPropagation()} onChange={e => {
+                    setSelectedBids(prev => { const n = new Set(prev); e.target.checked ? n.add(b.id) : n.delete(b.id); return n; });
+                  }} style={{ cursor: "pointer" }} />
+                  <span className={`badge ${STATUS_BADGE[b.status] || "badge-muted"}`}>{b.status}</span>
+                </span>
+                {b.risk && <span className={`badge ${RISK_BADGE[b.risk] || "badge-muted"}`}>{b.risk} Risk</span>}
+              </div>
+              <div className="card-title font-head" style={{ fontSize: 15, marginBottom: 4 }}>{b.name}</div>
+              <div className="text-sm text-muted mb-4">{b.gc}</div>
+              <div className="flex-between mt-8">
+                <span className="font-mono font-bold text-amber">{fmt(b.value)}</span>
+                <span className="text-xs text-dim">Due: {b.due || "TBD"}</span>
+              </div>
+              {b.scope && b.scope.length > 0 && (
+                <div className="flex gap-4 flex-wrap mt-8">
+                  {b.scope.map((s, i) => (
+                    <span key={i} className="badge badge-muted" style={{ fontSize: 10 }}>{s}</span>
+                  ))}
+                </div>
+              )}
+              {b.contact && <div className="text-xs text-dim mt-8">Contact: {b.contact}</div>}
+              <div className="flex gap-4 mt-8 flex-wrap">
+                {b.status === "submitted" && (
+                  <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }}
+                    onClick={(e) => { e.stopPropagation(); runFollowUp(b); }}
+                    disabled={followUpLoading && followUpBid?.id === b.id}>
+                    {followUpLoading && followUpBid?.id === b.id ? "Drafting..." : "Draft Follow-Up"}
+                  </button>
+                )}
+                {(b.status === "estimating" || b.status === "submitted") && (
+                  <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, color: "var(--amber)" }}
+                    onClick={(e) => { e.stopPropagation(); runWinPredict(b); }}
+                    disabled={winPredLoading && winPredBid?.id === b.id}>
+                    {winPredLoading && winPredBid?.id === b.id ? "Predicting..." : "Win Predictor"}
+                  </button>
+                )}
+                {b.status === "awarded" && !projects.some(p => p.bidId === b.id) && (
+                  <button className="btn btn-primary btn-sm" style={{ fontSize: 11 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newProj = {
+                        id: nextId(projects),
+                        bidId: b.id,
+                        name: b.name,
+                        gc: b.gc,
+                        contract: b.value || 0,
+                        billed: 0,
+                        progress: 0,
+                        phase: "Pre-Construction",
+                        start: "",
+                        end: "",
+                        scope: b.scope || [],
+                        margin: 0,
+                      };
+                      setProjects(prev => [...prev, newProj]);
+                      show(`Project created from "${b.name}"`);
+                    }}>
+                    Convert to Project
+                  </button>
+                )}
+                {b.status === "awarded" && projects.some(p => p.bidId === b.id) && (
+                  <span className="badge badge-green" style={{ fontSize: 10 }}>Project Created</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {filteredBids.length > bidPageSize && (
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <button className="btn btn-ghost" onClick={() => setBidPageSize(s => s + 24)}>
+            Show More ({filteredBids.length - bidPageSize} remaining)
+          </button>
+        </div>
+      )}
+
+      {/* Follow-Up Email Modal */}
+      {followUpBid && followUpText && (
+        <div className="modal-overlay" onClick={() => setFollowUpBid(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 600 }}>
+            <div className="modal-header flex-between">
+              <div className="modal-title">Follow-Up: {followUpBid.name}</div>
+              <button className="btn btn-ghost btn-sm" onClick={() => setFollowUpBid(null)}>Close</button>
+            </div>
+            <div style={{ padding: 16 }}>
+              <div className="text-xs text-muted mb-8">To: {followUpBid.contact || followUpBid.gc} · Re: {followUpBid.name}</div>
+              <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 14, lineHeight: 1.6, background: "var(--bg3)", padding: 16, borderRadius: 8, maxHeight: 400, overflow: "auto" }}>
+                {followUpText}
+              </pre>
+              <div className="flex gap-8 mt-12">
+                <button className="btn btn-primary btn-sm" onClick={() => {
+                  navigator.clipboard.writeText(followUpText);
+                  show("Copied to clipboard", "ok");
+                }}>Copy Email</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => runFollowUp(followUpBid)}>Regenerate</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Win Predictor Modal */}
+      {winPredBid && winPredResult && (
+        <div className="modal-overlay" onClick={() => setWinPredBid(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 700 }}>
+            <div className="modal-header flex-between">
+              <div className="modal-title">Win Prediction: {winPredBid.name}</div>
+              <button className="btn btn-ghost btn-sm" onClick={() => setWinPredBid(null)}>Close</button>
+            </div>
+            <div style={{ padding: 16, maxHeight: 500, overflow: "auto" }}>
+              {/* Win Probability */}
+              <div className="card" style={{ padding: 16, marginBottom: 12, textAlign: "center" }}>
+                <div className="text-xs text-muted mb-4">Win Probability</div>
+                <div style={{ fontSize: 48, fontWeight: 800, color: winPredResult.winProbability >= 70 ? "var(--green)" : winPredResult.winProbability >= 40 ? "var(--amber)" : "var(--red)" }}>
+                  {winPredResult.winProbability}%
+                </div>
+                <span className={`badge ${winPredResult.confidence === "high" ? "badge-green" : winPredResult.confidence === "medium" ? "badge-amber" : "badge-red"}`}>
+                  {winPredResult.confidence} confidence
+                </span>
+              </div>
+
+              {/* GC History */}
+              {winPredResult.gcHistory && (
+                <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+                  <div className="text-sm font-semi mb-8">GC Relationship: {winPredBid.gc}</div>
+                  <div className="flex gap-16 flex-wrap">
+                    <div><span className="text-xs text-muted">Bids:</span> <span className="font-semi">{winPredResult.gcHistory.totalBids}</span></div>
+                    <div><span className="text-xs text-muted">Wins:</span> <span className="font-semi">{winPredResult.gcHistory.wins}</span></div>
+                    <div><span className="text-xs text-muted">Win Rate:</span> <span className="font-semi">{winPredResult.gcHistory.winRate}%</span></div>
+                    <div><span className={`badge ${winPredResult.gcHistory.relationship === "strong" ? "badge-green" : winPredResult.gcHistory.relationship === "moderate" ? "badge-amber" : "badge-muted"}`}>{winPredResult.gcHistory.relationship}</span></div>
+                  </div>
+                </div>
+              )}
+
+              {/* Key Factors */}
+              {winPredResult.factors?.length > 0 && (
+                <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+                  <div className="text-sm font-semi mb-8">Key Factors</div>
+                  {winPredResult.factors.map((f, i) => (
+                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                      <div className="flex-between">
+                        <span className="text-sm">{f.factor}</span>
+                        <span className={`badge ${f.impact === "positive" ? "badge-green" : f.impact === "negative" ? "badge-red" : "badge-muted"}`}>{f.impact}</span>
+                      </div>
+                      <div className="text-xs text-muted mt-2">{f.detail}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Improvements */}
+              {winPredResult.improvements?.length > 0 && (
+                <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+                  <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Improve Win Chances</div>
+                  {winPredResult.improvements.map((imp, i) => (
+                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                      <div className="flex-between">
+                        <span className="text-sm font-semi">{imp.suggestion}</span>
+                        <span className={`badge ${imp.effort === "easy" ? "badge-green" : imp.effort === "medium" ? "badge-amber" : "badge-red"}`}>{imp.effort}</span>
+                      </div>
+                      <div className="text-xs text-muted mt-2">{imp.impact}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Pricing Insight */}
+              {winPredResult.pricingInsight && (
+                <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+                  <div className="text-sm font-semi mb-4">Pricing Insight</div>
+                  <div className="text-sm text-muted">{winPredResult.pricingInsight}</div>
+                </div>
+              )}
+
+              {/* Summary */}
+              <div className="text-sm text-muted" style={{ padding: 8 }}>{winPredResult.summary}</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ═══════════════════════════════════════════════════════════════
+  //  RENDER: PROJECTS
+  // ═══════════════════════════════════════════════════════════════
+  const renderProjects = () => (
+    <div>
+      <div className="section-header">
+        <div>
+          <div className="section-title font-head">Projects</div>
+          <div className="section-sub">{projects.length} project{projects.length !== 1 ? "s" : ""}</div>
+        </div>
+        <div className="flex gap-8">
+          <button className="btn btn-ghost" onClick={runRiskRadar} disabled={riskLoading}>
+            {riskLoading ? "Scanning..." : "Risk Radar"}
+          </button>
+          <button className="btn btn-ghost" onClick={() => {
+            const headers = ["ID","Name","GC","Contract","Billed","Progress","Phase","Start","End","Margin"];
+            const rows = filteredProjects.map(p => [
+              p.id, `"${(p.name||'').replace(/"/g,'""')}"`, `"${(p.gc||'').replace(/"/g,'""')}"`,
+              p.contract||0, p.billed||0, p.progress||0, p.phase||'', p.start||'', p.end||'', p.margin||''
+            ]);
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'ebc_projects.csv'; a.click();
+            URL.revokeObjectURL(url);
+            show("Projects CSV exported");
+          }}>Export CSV</button>
+          <button className="btn btn-primary" onClick={() => setModal({ type: "editProject", data: null })}>+ Add Project</button>
+        </div>
+      </div>
+
+      {/* Risk Radar Panel */}
+      {showRiskRadar && (
+        <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+          <div className="flex-between mb-12">
+            <div className="text-sm font-semi">Project Risk Radar</div>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setShowRiskRadar(false); setRiskResult(null); }}>Close</button>
+          </div>
+          {riskLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Analyzing {projects.length} projects for risks...</div>}
+          {riskResult && (
+            <div>
+              <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12, fontSize: 14 }}>
+                {riskResult.portfolioRisk}
+              </div>
+
+              {/* Rankings */}
+              {riskResult.rankings?.map((r, i) => {
+                const riskColor = r.riskLevel === "critical" ? "var(--red)" : r.riskLevel === "high" ? "var(--amber)" : r.riskLevel === "medium" ? "var(--blue)" : "var(--green)";
+                return (
+                  <div key={i} style={{ padding: 12, marginBottom: 8, borderRadius: 8, borderLeft: `4px solid ${riskColor}`, background: "var(--card)" }}>
+                    <div className="flex-between mb-4">
+                      <span className="font-semi text-sm">{r.project}</span>
+                      <div className="flex gap-8" style={{ alignItems: "center" }}>
+                        <span style={{ fontSize: 20, fontWeight: 800, color: riskColor }}>{r.riskScore}</span>
+                        <span className={`badge ${r.riskLevel === "critical" ? "badge-red" : r.riskLevel === "high" ? "badge-amber" : r.riskLevel === "medium" ? "badge-blue" : "badge-green"}`}>{r.riskLevel}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-4 flex-wrap mb-4">
+                      {r.factors?.map((f, j) => <span key={j} className="badge badge-muted" style={{ fontSize: 10 }}>{f}</span>)}
+                    </div>
+                    <div className="text-xs text-muted">{r.recommendation}</div>
+                  </div>
+                );
+              })}
+
+              {/* Immediate Actions */}
+              {riskResult.immediateActions?.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  <div className="text-sm font-semi mb-8">Immediate Actions</div>
+                  {riskResult.immediateActions.map((a, i) => (
+                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                      <div className="flex-between">
+                        <span className="font-semi">{a.project}</span>
+                        <span className="text-xs text-dim">{a.deadline}</span>
+                      </div>
+                      <div className="text-muted mt-2">{a.action}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {filteredProjects.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">🏗️</div>
+          <div className="empty-text">{search ? "No matching projects" : "No projects yet"}</div>
+        </div>
+      ) : (
+        <div className="project-grid">
+          {filteredProjects.slice(0, projPageSize).map(p => (
+            <div key={p.id} className="project-card" onClick={() => setModal({ type: "editProject", data: p })}>
+              <div className="flex-between mb-4">
+                <span className="badge badge-blue">{p.phase}</span>
+              </div>
+              <div className="card-title font-head" style={{ fontSize: 15, marginBottom: 4 }}>{p.name}</div>
+              <div className="text-sm text-muted mb-8">{p.gc}</div>
+              <div className="flex-between text-sm">
+                <span>Contract: <span className="font-mono text-amber">{fmt(p.contract)}</span></span>
+                <span>Billed: <span className="font-mono">{fmt(p.billed)}</span></span>
+              </div>
+              <div className="progress-bar mt-8">
+                <div className="progress-fill" style={{ width: `${p.progress}%` }} />
+              </div>
+              <div className="flex-between mt-4">
+                <div className="text-xs text-dim">{p.progress}% complete</div>
+                {p.progress >= 75 && (
+                  <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 8px", color: "var(--amber)" }}
+                    onClick={(e) => { e.stopPropagation(); runCloseout(p); }}
+                    disabled={closeoutLoading && closeoutProj?.id === p.id}>
+                    {closeoutLoading && closeoutProj?.id === p.id ? "..." : "AI Closeout"}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {filteredProjects.length > projPageSize && (
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <button className="btn btn-ghost" onClick={() => setProjPageSize(s => s + 24)}>
+            Show More ({filteredProjects.length - projPageSize} remaining)
+          </button>
+        </div>
+      )}
+
+      {/* Closeout Modal */}
+      {closeoutProj && closeoutResult && (
+        <div className="modal-overlay" onClick={() => setCloseoutProj(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 700 }}>
+            <div className="modal-header flex-between">
+              <div className="modal-title">Closeout: {closeoutProj.name}</div>
+              <button className="btn btn-ghost btn-sm" onClick={() => setCloseoutProj(null)}>Close</button>
+            </div>
+            <div style={{ padding: 16, maxHeight: 500, overflow: "auto" }}>
+              {/* Readiness Score */}
+              <div className="flex gap-16 mb-16" style={{ alignItems: "center" }}>
+                <div style={{ textAlign: "center" }}>
+                  <div className="text-xs text-muted">Readiness</div>
+                  <div style={{ fontSize: 36, fontWeight: 800, color: closeoutResult.readinessScore >= 70 ? "var(--green)" : closeoutResult.readinessScore >= 40 ? "var(--amber)" : "var(--red)" }}>
+                    {closeoutResult.readinessScore}/100
+                  </div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div className="text-xs text-muted">Grade</div>
+                  <div style={{ fontSize: 36, fontWeight: 800, color: "var(--amber)" }}>{closeoutResult.grade}</div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div className="text-sm text-muted">{closeoutResult.summary}</div>
+                </div>
+              </div>
+
+              {/* Financial Status */}
+              {closeoutResult.financialStatus && (
+                <div className="flex gap-12 mb-12 flex-wrap" style={{ padding: 12, borderRadius: 8, background: "var(--bg3)" }}>
+                  <div><span className="text-xs text-muted">Billed:</span> <span className="font-semi">${(closeoutResult.financialStatus.totalBilled || 0).toLocaleString()}</span></div>
+                  <div><span className="text-xs text-muted">Remaining:</span> <span className="font-semi" style={{ color: "var(--amber)" }}>${(closeoutResult.financialStatus.remaining || 0).toLocaleString()}</span></div>
+                  <div><span className="text-xs text-muted">Open COs:</span> <span className="font-semi">{closeoutResult.financialStatus.openCOs}</span></div>
+                  <div><span className="text-xs text-muted">Margin:</span> <span className="font-semi">{closeoutResult.financialStatus.margin}</span></div>
+                </div>
+              )}
+
+              {/* Checklist */}
+              {closeoutResult.checklist?.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div className="text-sm font-semi mb-8">Closeout Checklist</div>
+                  {closeoutResult.checklist.map((c, i) => (
+                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                      <div className="flex-between">
+                        <span className="text-sm">{c.status === "complete" ? "✅" : c.status === "pending" ? "🔶" : "⬜"} {c.item}</span>
+                        <div className="flex gap-4">
+                          <span className="badge badge-muted">{c.category}</span>
+                          <span className={`badge ${c.priority === "critical" ? "badge-red" : c.priority === "high" ? "badge-amber" : "badge-muted"}`}>{c.priority}</span>
+                        </div>
+                      </div>
+                      {c.notes && <div className="text-xs text-muted mt-2 ml-20">{c.notes}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Outstanding Items */}
+              {closeoutResult.outstandingItems?.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Outstanding Items</div>
+                  {closeoutResult.outstandingItems.map((o, i) => (
+                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                      <div className="flex-between">
+                        <span className="text-sm font-semi">{o.item}</span>
+                        {o.amount && <span className="font-mono text-amber">${o.amount.toLocaleString()}</span>}
+                      </div>
+                      <div className="text-xs text-muted mt-2">{o.action} — Due: {o.deadline}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Risk of Loss */}
+              {closeoutResult.riskOfLoss?.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Risk of Loss</div>
+                  {closeoutResult.riskOfLoss.map((r, i) => (
+                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                      <div className="flex-between">
+                        <span className="text-sm">{r.item}</span>
+                        <div className="flex gap-8">
+                          <span className="font-mono">${(r.amount || 0).toLocaleString()}</span>
+                          <span className={`badge ${r.risk === "high" ? "badge-red" : r.risk === "medium" ? "badge-amber" : "badge-muted"}`}>{r.risk}</span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted mt-2">{r.action}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ═══════════════════════════════════════════════════════════════
+  //  RENDER: SCOPE
+  // ═══════════════════════════════════════════════════════════════
+  // ── digest state ──
+  const [digestResult, setDigestResult] = useState(null);
+  const [digestLoading, setDigestLoading] = useState(false);
+
+  const runWeeklyDigest = async () => {
+    if (!apiKey) { show("Set API key in Settings first", "err"); return; }
+    setDigestLoading(true);
+    setDigestResult(null);
+    try {
+      const { generateWeeklyDigest } = await import("./utils/api.js");
+      const projectData = {
+        projects: projects.map(p => ({
+          name: p.project, gc: p.gc, phase: p.phase,
+          value: p.value, billed: p.billed, margin: p.margin,
+          progress: p.progress, scope: p.scope,
+        })),
+        bids: {
+          estimating: bids.filter(b => b.status === "estimating").length,
+          submitted: bids.filter(b => b.status === "submitted").length,
+          awarded: bids.filter(b => b.status === "awarded").length,
+          lost: bids.filter(b => b.status === "lost").length,
+          pipelineValue: pipeline,
+        },
+        tmTickets: {
+          total: tmTickets.length,
+          pending: tmTickets.filter(t => t.status !== "approved" && t.status !== "billed").length,
+          approvedValue: tmTickets.filter(t => t.status === "approved" || t.status === "billed")
+            .reduce((s, t) => s + (t.laborEntries || []).reduce((a, e) => a + e.hours * e.rate, 0) + (t.materialEntries || []).reduce((a, e) => a + e.qty * e.unitCost * (1 + (e.markupPct || 0) / 100), 0), 0),
+        },
+        weekOf: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      };
+      const result = await generateWeeklyDigest(apiKey, projectData);
+      setDigestResult(result);
+      show("Weekly digest generated", "ok");
+    } catch (e) {
+      show(e.message, "err");
+    } finally {
+      setDigestLoading(false);
+    }
+  };
+
+  // ── morning briefing state ──
+  const [briefResult, setBriefResult] = useState(null);
+  const [briefLoading, setBriefLoading] = useState(false);
+  const [showBrief, setShowBrief] = useState(false);
+
+  const runMorningBrief = async () => {
+    if (!apiKey) { show("Set API key in Settings first", "err"); return; }
+    setBriefLoading(true);
+    setBriefResult(null);
+    try {
+      const { generateMorningBriefing } = await import("./utils/api.js");
+      const dashData = {
+        projects: projects.map(p => ({ name: p.project || p.name, gc: p.gc, progress: p.progress, margin: p.margin, phase: p.phase })),
+        bids: { total: bids.length, estimating: bids.filter(b => b.status === "estimating").length, submitted: bids.filter(b => b.status === "submitted").length, dueSoon: bids.filter(b => b.due && new Date(b.due) - Date.now() < 7 * 86400000 && b.status === "estimating").length },
+        invoices: (invoices || []).filter(i => i.status === "pending" || i.status === "overdue").map(i => ({ number: i.number, amount: i.amount, status: i.status, project: i.projectId })),
+        schedule: (schedule || []).filter(t => t.status === "in-progress").map(t => ({ task: t.task, project: t.projectName, end: t.end })),
+        incidents: (incidents || []).slice(0, 5),
+        today: new Date().toISOString().slice(0, 10),
+      };
+      const res = await generateMorningBriefing(apiKey, dashData);
+      setBriefResult(res);
+      setShowBrief(true);
+      show("Morning briefing ready", "ok");
+    } catch (e) {
+      show(e.message, "err");
+    } finally {
+      setBriefLoading(false);
+    }
+  };
+
+  // ── project closeout state ──
+  const [closeoutProj, setCloseoutProj] = useState(null);
+  const [closeoutResult, setCloseoutResult] = useState(null);
+  const [closeoutLoading, setCloseoutLoading] = useState(false);
+
+  const runCloseout = async (proj) => {
+    if (!apiKey) { show("Set API key in Settings first", "err"); return; }
+    setCloseoutProj(proj);
+    setCloseoutLoading(true);
+    setCloseoutResult(null);
+    try {
+      const { analyzeProjectCloseout } = await import("./utils/api.js");
+      const projInvoices = (invoices || []).filter(i => i.projectId === proj.id);
+      const projCOs = (changeOrders || []).filter(c => c.projectId === proj.id);
+      const projSchedule = (schedule || []).filter(s => s.projectId === proj.id);
+      const res = await analyzeProjectCloseout(apiKey, proj, projInvoices, projCOs, projSchedule);
+      setCloseoutResult(res);
+      show("Closeout analysis complete", "ok");
+    } catch (e) {
+      show(e.message, "err");
+      setCloseoutProj(null);
+    } finally {
+      setCloseoutLoading(false);
+    }
+  };
+
+  // ── follow-up state ──
+  const [followUpText, setFollowUpText] = useState("");
+  const [followUpLoading, setFollowUpLoading] = useState(false);
+  const [followUpBid, setFollowUpBid] = useState(null);
+
+  const runFollowUp = async (bid) => {
+    if (!apiKey) { show("Set API key in Settings first", "err"); return; }
+    setFollowUpBid(bid);
+    setFollowUpLoading(true);
+    setFollowUpText("");
+    try {
+      const { generateBidFollowUp } = await import("./utils/api.js");
+      const days = bid.due ? Math.max(0, Math.round((Date.now() - new Date(bid.due).getTime()) / 86400000)) : 7;
+      const text = await generateBidFollowUp(apiKey, bid, days);
+      setFollowUpText(text);
+      show("Follow-up email generated", "ok");
+    } catch (e) {
+      show(e.message, "err");
+      setFollowUpBid(null);
+    } finally {
+      setFollowUpLoading(false);
+    }
+  };
+
+  // ── bid win predictor state ──
+  const [winPredBid, setWinPredBid] = useState(null);
+  const [winPredResult, setWinPredResult] = useState(null);
+  const [winPredLoading, setWinPredLoading] = useState(false);
+
+  const runWinPredict = async (bid) => {
+    if (!apiKey) { show("Set API key in Settings first", "err"); return; }
+    setWinPredBid(bid);
+    setWinPredLoading(true);
+    setWinPredResult(null);
+    try {
+      const { predictBidWinRate } = await import("./utils/api.js");
+      const res = await predictBidWinRate(apiKey, bid, bids, projects);
+      setWinPredResult(res);
+      show("Win prediction complete", "ok");
+    } catch (e) {
+      show(e.message, "err");
+      setWinPredBid(null);
+    } finally {
+      setWinPredLoading(false);
+    }
+  };
+
+  // ── scope risk scorer state ──
+  const [scopeRiskResult, setScopeRiskResult] = useState(null);
+  const [scopeRiskLoading, setScopeRiskLoading] = useState(false);
+  const [showScopeRisk, setShowScopeRisk] = useState(false);
+
+  const runScopeRisk = async () => {
+    if (!apiKey) { show("Set API key in Settings first", "err"); return; }
+    setScopeRiskLoading(true);
+    setScopeRiskResult(null);
+    try {
+      const { scoreScopeRisks } = await import("./utils/api.js");
+      const linkedBid = scopeBidId ? bids.find(b => b.id === scopeBidId) : null;
+      const res = await scoreScopeRisks(apiKey, filteredScope, linkedBid, projects);
+      setScopeRiskResult(res);
+      setShowScopeRisk(true);
+      show("Scope risk analysis complete", "ok");
+    } catch (e) {
+      show(e.message, "err");
+    } finally {
+      setScopeRiskLoading(false);
+    }
+  };
+
+  // ── risk radar state ──
+  const [riskResult, setRiskResult] = useState(null);
+  const [riskLoading, setRiskLoading] = useState(false);
+  const [showRiskRadar, setShowRiskRadar] = useState(false);
+
+  const runRiskRadar = async () => {
+    if (!apiKey) { show("Set API key in Settings first", "err"); return; }
+    setRiskLoading(true);
+    setRiskResult(null);
+    setShowRiskRadar(true);
+    try {
+      const { analyzeProjectRisks } = await import("./utils/api.js");
+      const projectData = projects.map(p => {
+        const projCOs = (changeOrders || []).filter(c => c.projectId === p.id);
+        const projTM = (tmTickets || []).filter(t => t.projectId === p.id);
+        return {
+          name: p.project || p.name, gc: p.gc, phase: p.phase,
+          value: p.value, billed: p.billed, margin: p.margin, progress: p.progress,
+          scope: p.scope,
+          changeOrders: { count: projCOs.length, totalValue: projCOs.reduce((s, c) => s + (c.amount || 0), 0), pendingCount: projCOs.filter(c => c.status === "pending").length },
+          tmTickets: { count: projTM.length, pendingValue: projTM.filter(t => t.status !== "approved" && t.status !== "billed").reduce((s, t) => s + (t.laborEntries || []).reduce((a, e) => a + e.hours * e.rate, 0) + (t.materialEntries || []).reduce((a, e) => a + e.qty * e.unitCost, 0), 0) },
+        };
+      });
+      const result = await analyzeProjectRisks(apiKey, projectData);
+      setRiskResult(result);
+      show("Risk analysis complete", "ok");
+    } catch (e) {
+      show(e.message, "err");
+    } finally {
+      setRiskLoading(false);
+    }
+  };
+
+  // ── GC intelligence state ──
+  const [gcIntelResult, setGcIntelResult] = useState(null);
+  const [gcIntelLoading, setGcIntelLoading] = useState(false);
+  const [showGcIntel, setShowGcIntel] = useState(false);
+
+  const runGcIntel = async () => {
+    if (!apiKey) { show("Set API key in Settings first", "err"); return; }
+    setGcIntelLoading(true);
+    setGcIntelResult(null);
+    setShowGcIntel(true);
+    try {
+      const { analyzeGcRelationships } = await import("./utils/api.js");
+      const result = await analyzeGcRelationships(apiKey, contacts, bids, projects, callLog.slice(0, 20));
+      setGcIntelResult(result);
+      show("GC intelligence analysis complete", "ok");
+    } catch (e) {
+      show(e.message, "err");
+    } finally {
+      setGcIntelLoading(false);
+    }
+  };
+
+  // ── email scanner state ──
+  const [showEmailScanner, setShowEmailScanner] = useState(false);
+  const [emailText, setEmailText] = useState("");
+  const [emailResults, setEmailResults] = useState(null);
+  const [emailLoading, setEmailLoading] = useState(false);
+
+  const runEmailScan = async () => {
+    if (!apiKey) { show("Set API key in Settings first", "err"); return; }
+    if (!emailText.trim()) { show("Paste email content first", "err"); return; }
+    setEmailLoading(true);
+    setEmailResults(null);
+    try {
+      const { analyzeBidsFromEmail } = await import("./utils/api.js");
+      const results = await analyzeBidsFromEmail(apiKey, emailText);
+      setEmailResults(results);
+      if (results.length === 0) show("No bids found in email", "warn");
+      else show(`Found ${results.length} bid${results.length > 1 ? "s" : ""}`, "ok");
+    } catch (e) {
+      show(e.message, "err");
+    } finally {
+      setEmailLoading(false);
+    }
+  };
+
+  const importEmailBid = (bid) => {
+    const newBid = {
+      id: nextId(bids),
+      name: bid.name || "Unnamed Project",
+      gc: bid.gc || "",
+      value: bid.value || 0,
+      due: bid.due || "",
+      status: bid.status || "estimating",
+      phase: "",
+      risk: "Med",
+      scope: [],
+      contact: bid.contact || "",
+      month: "",
+      notes: bid.notes || "",
+    };
+    setBids(prev => [...prev, newBid]);
+    show(`Imported: ${newBid.name}`, "ok");
+  };
+
+  const [scopeSubTab, setScopeSubTab] = useState("checklist");
+  const [gapBidScope, setGapBidScope] = useState("");
+  const [gapContractScope, setGapContractScope] = useState("");
+  const [gapResult, setGapResult] = useState(null);
+  const [gapLoading, setGapLoading] = useState(false);
+
+  const runGapCheck = async () => {
+    if (!apiKey) { show("Set API key in Settings first", "err"); return; }
+    if (!gapBidScope.trim() || !gapContractScope.trim()) { show("Paste both scopes", "err"); return; }
+    setGapLoading(true);
+    setGapResult(null);
+    try {
+      const { checkScopeGaps } = await import("./utils/api.js");
+      const result = await checkScopeGaps(apiKey, gapBidScope, gapContractScope);
+      setGapResult(result);
+      show("Gap analysis complete", "ok");
+    } catch (e) {
+      show(e.message, "err");
+    } finally {
+      setGapLoading(false);
+    }
+  };
+
+  const SEV_BADGE = { critical: "badge-red", warning: "badge-amber", info: "badge-blue" };
+
+  const renderScope = () => (
+    <div>
+      <div className="section-header">
+        <div>
+          <div className="section-title font-head">Scope</div>
+          <div className="section-sub">Checklist & AI gap analysis</div>
+        </div>
+        <button className="btn btn-ghost" onClick={() => { showScopeRisk ? setShowScopeRisk(false) : runScopeRisk(); }} disabled={scopeRiskLoading}>
+          {scopeRiskLoading ? "Analyzing..." : "AI Risk Score"}
+        </button>
+      </div>
+
+      {/* Scope Risk Panel */}
+      {showScopeRisk && scopeRiskResult && (
+        <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+          <div className="flex-between mb-12">
+            <div className="text-sm font-semi">Scope Risk Analysis</div>
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowScopeRisk(false)}>Close</button>
+          </div>
+
+          {/* Score + Grade */}
+          <div className="flex gap-16 mb-16" style={{ alignItems: "center" }}>
+            <div style={{ textAlign: "center" }}>
+              <div className="text-xs text-muted">Risk Score</div>
+              <div style={{ fontSize: 36, fontWeight: 800, color: scopeRiskResult.overallRisk <= 30 ? "var(--green)" : scopeRiskResult.overallRisk <= 60 ? "var(--amber)" : "var(--red)" }}>
+                {scopeRiskResult.overallRisk}/100
+              </div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div className="text-xs text-muted">Grade</div>
+              <div style={{ fontSize: 36, fontWeight: 800, color: "var(--amber)" }}>{scopeRiskResult.grade}</div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div className="text-sm text-muted">{scopeRiskResult.summary}</div>
+            </div>
+          </div>
+
+          {/* Red Flags */}
+          {scopeRiskResult.redFlags?.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Red Flags ({scopeRiskResult.redFlags.length})</div>
+              {scopeRiskResult.redFlags.map((f, i) => (
+                <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                  <div className="text-sm font-semi">{f.item}</div>
+                  <div className="text-xs text-muted mt-2">{f.risk}</div>
+                  <div className="text-xs mt-2"><span style={{ color: "var(--amber)" }}>Exposure:</span> {f.financialExposure}</div>
+                  <div className="text-xs mt-2"><span style={{ color: "var(--green)" }}>Mitigation:</span> {f.mitigation}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Negotiation Points */}
+          {scopeRiskResult.negotiationPoints?.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Negotiation Points</div>
+              {scopeRiskResult.negotiationPoints.map((n, i) => (
+                <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "var(--bg3)", border: "1px solid var(--border)" }}>
+                  <div className="flex-between">
+                    <span className="text-sm font-semi">{n.point}</span>
+                    <span className={`badge ${n.priority === "must_have" ? "badge-red" : "badge-muted"}`}>{n.priority?.replace("_", " ")}</span>
+                  </div>
+                  <div className="text-xs text-muted mt-2">{n.leverage}</div>
+                  {n.suggestedLanguage && <div className="text-xs mt-2" style={{ fontStyle: "italic", color: "var(--blue)" }}>"{n.suggestedLanguage}"</div>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Hidden Costs */}
+          {scopeRiskResult.hiddenCosts?.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div className="text-sm font-semi mb-8">Hidden Cost Risks</div>
+              {scopeRiskResult.hiddenCosts.map((h, i) => (
+                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                  <div className="flex-between">
+                    <span className="text-sm">{h.item}</span>
+                    <span className={`badge ${h.likelihood === "high" ? "badge-red" : h.likelihood === "medium" ? "badge-amber" : "badge-muted"}`}>{h.likelihood}</span>
+                  </div>
+                  <div className="text-xs text-muted mt-2">Est: {h.estimatedCost} · Trigger: {h.trigger}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Exclusions */}
+          {scopeRiskResult.exclusions?.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div className="text-sm font-semi mb-8" style={{ color: "var(--blue)" }}>Recommended Exclusions</div>
+              <ul style={{ margin: 0, paddingLeft: 20 }}>
+                {scopeRiskResult.exclusions.map((e, i) => (
+                  <li key={i} className="text-sm text-muted" style={{ marginBottom: 4 }}>{e}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex gap-4 mb-16">
+        {[{ key: "checklist", label: "Checklist" }, { key: "gapchecker", label: "Gap Checker" }].map(t => (
+          <button key={t.key} className={`btn btn-sm ${scopeSubTab === t.key ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => setScopeSubTab(t.key)}>{t.label}</button>
+        ))}
+      </div>
+
+      {scopeSubTab === "checklist" && (<>
+        <div className="flex gap-8 mb-16 flex-wrap" style={{ alignItems: "center" }}>
+          <div className="form-group" style={{ minWidth: 200 }}>
+            <label className="form-label">Linked Bid</label>
+            <select className="form-select" value={scopeBidId || ""} onChange={e => setScopeBidId(e.target.value || null)}>
+              <option value="">-- All / General --</option>
+              {bids.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </div>
+          <div className="flex gap-4 mt-12">
+            {["All", "Flagged", "Unchecked"].map(f => (
+              <button key={f} className={`btn btn-sm ${scopeFilter === f ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => setScopeFilter(f)}>{f}</button>
+            ))}
+          </div>
+        </div>
+
+        {filteredScope.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">📋</div>
+            <div className="empty-text">No items match this filter</div>
+          </div>
+        ) : (
+          filteredScope.map(s => (
+            <div key={s.id} className="scope-item" onClick={() => handleScopeCycle(s.id)}>
+              <span className="scope-check">{SCOPE_ICONS[s.status]}</span>
+              <div className="scope-info">
+                <div className="scope-title">{s.title}</div>
+                <div className="scope-desc">{s.desc}</div>
+              </div>
+            </div>
+          ))
+        )}
+      </>)}
+
+      {scopeSubTab === "gapchecker" && (
+        <div>
+          <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+            <div className="text-sm font-semi mb-8">Paste your bid scope and contract/spec scope below. AI will identify gaps, extras, and risks.</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="form-group">
+                <label className="form-label">Bid Scope (what EBC priced)</label>
+                <textarea className="form-input" rows={8} placeholder="Paste your bid scope, line items, or proposal scope description..."
+                  value={gapBidScope} onChange={e => setGapBidScope(e.target.value)} style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
+                <div className="text-xs text-dim mt-4">{gapBidScope.length} chars</div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Contract Scope (specs / drawings notes)</label>
+                <textarea className="form-input" rows={8} placeholder="Paste contract scope, spec sections, or drawing notes..."
+                  value={gapContractScope} onChange={e => setGapContractScope(e.target.value)} style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
+                <div className="text-xs text-dim mt-4">{gapContractScope.length} chars</div>
+              </div>
+            </div>
+            <button className="btn btn-primary mt-12" onClick={runGapCheck} disabled={gapLoading}>
+              {gapLoading ? "Analyzing..." : "Run Gap Analysis"}
+            </button>
+          </div>
+
+          {gapResult && (
+            <div>
+              {/* Score + Summary */}
+              <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+                <div className="flex-between mb-8">
+                  <div className="text-sm font-semi">Coverage Score</div>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: gapResult.score >= 80 ? "var(--green)" : gapResult.score >= 50 ? "var(--amber)" : "var(--red)" }}>
+                    {gapResult.score}/100
+                  </div>
+                </div>
+                <div className="text-sm text-muted">{gapResult.summary}</div>
+              </div>
+
+              {/* Gaps */}
+              {gapResult.gaps?.length > 0 && (
+                <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+                  <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>
+                    Missing from Bid ({gapResult.gaps.length})
+                  </div>
+                  {gapResult.gaps.map((g, i) => (
+                    <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                      <div className="flex-between">
+                        <span className="text-sm font-semi">{g.item}</span>
+                        <span className={`badge ${SEV_BADGE[g.severity] || "badge-muted"}`}>{g.severity}</span>
+                      </div>
+                      <div className="text-xs text-muted mt-4">{g.detail}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Extras */}
+              {gapResult.extras?.length > 0 && (
+                <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+                  <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>
+                    In Bid but Not in Contract ({gapResult.extras.length})
+                  </div>
+                  {gapResult.extras.map((g, i) => (
+                    <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                      <span className="text-sm font-semi">{g.item}</span>
+                      <div className="text-xs text-muted mt-4">{g.detail}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Risks */}
+              {gapResult.risks?.length > 0 && (
+                <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+                  <div className="text-sm font-semi mb-8" style={{ color: "var(--blue)" }}>
+                    Risks & Ambiguities ({gapResult.risks.length})
+                  </div>
+                  {gapResult.risks.map((g, i) => (
+                    <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                      <div className="flex-between">
+                        <span className="text-sm font-semi">{g.item}</span>
+                        <span className={`badge ${SEV_BADGE[g.severity] || "badge-muted"}`}>{g.severity}</span>
+                      </div>
+                      <div className="text-xs text-muted mt-4">{g.detail}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {gapResult.gaps?.length === 0 && gapResult.extras?.length === 0 && gapResult.risks?.length === 0 && (
+                <div className="empty-state">
+                  <div className="empty-icon">✅</div>
+                  <div className="empty-text">No gaps found — scope looks aligned</div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  // ═══════════════════════════════════════════════════════════════
+  //  RENDER: CONTACTS
+  // ═══════════════════════════════════════════════════════════════
+  const renderContacts = () => (
+    <div>
+      <div className="section-header">
+        <div>
+          <div className="section-title font-head">Contacts</div>
+          <div className="section-sub">{contacts.length} contact{contacts.length !== 1 ? "s" : ""}</div>
+        </div>
+        <div className="flex gap-8">
+          <div className="search-wrap">
+            <span className="search-icon">🔍</span>
+            <input
+              className="search-input"
+              placeholder="Search contacts..."
+              value={contactSearch}
+              onChange={e => setContactSearch(e.target.value)}
+            />
+          </div>
+          <button className="btn btn-ghost btn-sm" onClick={runGcIntel} disabled={gcIntelLoading}>
+            {gcIntelLoading ? "Analyzing..." : "GC Intelligence"}
+          </button>
+          <button className="btn btn-ghost" onClick={() => setModal({ type: "logCall", data: null })}>Log Call</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => {
+            const headers = ["ID","Name","Company","Role","Email","Phone","Notes"];
+            const rows = contacts.map(c => [
+              c.id, `"${(c.name||'').replace(/"/g,'""')}"`, `"${(c.company||'').replace(/"/g,'""')}"`,
+              `"${(c.role||'').replace(/"/g,'""')}"`, c.email||'', c.phone||'', `"${(c.notes||'').replace(/"/g,'""')}"`
+            ]);
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'ebc_contacts.csv'; a.click();
+            URL.revokeObjectURL(url);
+            show("Contacts CSV exported");
+          }}>Export CSV</button>
+          <button className="btn btn-primary" onClick={() => setModal({ type: "editContact", data: null })}>+ Add Contact</button>
+        </div>
+      </div>
+
+      {/* GC Intelligence Panel */}
+      {showGcIntel && (
+        <div className="card mt-16">
+          <div className="flex-between">
+            <div className="card-header"><div className="card-title font-head">AI GC Relationship Intelligence</div></div>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setShowGcIntel(false); setGcIntelResult(null); }}>Close</button>
+          </div>
+          {gcIntelLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Analyzing {contacts.length} contacts and {bids.length} bids...</div>}
+          {gcIntelResult && (
+            <div style={{ marginTop: 8 }}>
+              {/* Summary */}
+              <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12, fontSize: 14 }}>{gcIntelResult.summary}</div>
+
+              {/* GC Rankings */}
+              {gcIntelResult.gcRankings?.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div className="text-sm font-semi mb-8">GC Rankings by Relationship Value</div>
+                  {gcIntelResult.gcRankings.map((gc, i) => (
+                    <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, borderLeft: `3px solid ${gc.score >= 70 ? "var(--green)" : gc.score >= 40 ? "var(--amber)" : "var(--red)"}`, background: "var(--card)", fontSize: 13 }}>
+                      <div className="flex-between">
+                        <span className="font-semi">{gc.gc}</span>
+                        <span style={{ fontWeight: 700, color: "var(--amber)" }}>{gc.score}/100</span>
+                      </div>
+                      <div className="text-xs text-muted mt-2">
+                        {gc.totalBids} bids • {gc.wins}W ({gc.winRate}%) • {gc.activeProjects} active • {gc.trend}
+                      </div>
+                      <div className="text-xs mt-2" style={{ color: "var(--blue)" }}>{gc.recommendation}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Top Opportunities */}
+              {gcIntelResult.topOpportunities?.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div className="text-sm font-semi mb-8">Top BD Opportunities</div>
+                  {gcIntelResult.topOpportunities.map((opp, i) => (
+                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                      <div className="flex-between">
+                        <span><span className="font-semi">{opp.gc}</span> — {opp.action}</span>
+                        <span className={opp.priority === "high" ? "badge-red" : opp.priority === "medium" ? "badge-amber" : "badge-blue"}>{opp.priority}</span>
+                      </div>
+                      <div className="text-xs text-muted mt-2">{opp.reason}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* At-Risk Relationships */}
+              {gcIntelResult.atRiskRelationships?.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div className="text-sm font-semi mb-8">At-Risk Relationships</div>
+                  {gcIntelResult.atRiskRelationships.map((r, i) => (
+                    <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, background: "rgba(239,68,68,0.06)", borderLeft: "3px solid var(--red)", fontSize: 13 }}>
+                      <span className="font-semi">{r.gc}</span>
+                      <div className="text-xs text-muted mt-2">{r.concern}</div>
+                      <div className="text-xs mt-2" style={{ color: "var(--blue)" }}>{r.recommendation}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Follow-Up Needed */}
+              {gcIntelResult.followUpNeeded?.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div className="text-sm font-semi mb-8">Follow-Up Needed</div>
+                  {gcIntelResult.followUpNeeded.map((f, i) => (
+                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                      <div className="flex-between">
+                        <span>{f.contact} ({f.gc})</span>
+                        <span className={f.urgency === "this_week" ? "badge-red" : f.urgency === "next_week" ? "badge-amber" : "badge-blue"}>{f.urgency}</span>
+                      </div>
+                      <div className="text-xs text-muted mt-2">{f.reason}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Market Insights */}
+              {gcIntelResult.marketInsights?.length > 0 && (
+                <div>
+                  <div className="text-sm font-semi mb-8">Market Insights</div>
+                  {gcIntelResult.marketInsights.map((ins, i) => (
+                    <div key={i} style={{ padding: "4px 0", fontSize: 13, color: "var(--text2)" }}>{ins}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="contact-grid">
+        {filteredContacts.map(c => (
+          <div key={c.id} className="contact-card" onClick={() => setModal({ type: "editContact", data: c })}>
+            <div className="flex gap-12" style={{ alignItems: "center" }}>
+              <div className="contact-avatar" style={{ background: c.color || "var(--amber)" }}>
+                {c.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+              </div>
+              <div className="flex-col" style={{ flex: 1 }}>
+                <div className="font-semi text-sm">{c.name}</div>
+                <div className="text-xs text-muted">{c.company}</div>
+                <div className="text-xs text-dim">{c.role}</div>
+              </div>
+              <span className={`badge ${PRIORITY_BADGE[c.priority] || "badge-muted"}`}>{c.priority}</span>
+            </div>
+            <div className="flex-between mt-12 text-xs text-dim">
+              <span>Bids: {c.bids} | Wins: {c.wins}</span>
+              <span>Last: {c.last}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {callLog.length > 0 && (
+        <div className="card mt-24">
+          <div className="card-header">
+            <div className="card-title font-head">Recent Calls</div>
+          </div>
+          {callLog.slice(0, 8).map(c => (
+            <div key={c.id} className="flex gap-12 border-b" style={{ padding: "10px 0" }}>
+              <div style={{ width: 4, borderRadius: 2, background: "var(--blue)", flexShrink: 0 }} />
+              <div className="flex-col gap-4" style={{ flex: 1 }}>
+                <div className="flex-between">
+                  <span className="font-semi text-sm">{c.contact} <span className="text-dim">({c.company})</span></span>
+                  <span className="text-xs text-dim">{c.time}</span>
+                </div>
+                <div className="text-sm text-muted">{c.note}</div>
+                {c.next && <div className="text-xs text-dim">Next: {c.next}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  // ═══════════════════════════════════════════════════════════════
+  //  MAIN RENDER
+  // ═══════════════════════════════════════════════════════════════
+  const isAnime = theme === "anime";
+  const isCyber = theme === "cyberpunk";
+
+  if (isForemanView) {
+    return (
+      <div className="app">
+        <style>{styles}</style>
+        <ForemanView app={app} />
+      </div>
+    );
+  }
+
+  if (isDriverView) {
+    return (
+      <div className="app">
+        <style>{styles}</style>
+        <DriverView app={app} />
+      </div>
+    );
+  }
+
+  if (isEmployeeView) {
+    return (
+      <div className="app">
+        <style>{styles}</style>
+        <EmployeeView app={app} />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`app${isAnime ? " anime-glow" : ""}${isCyber ? " cyber-glow" : ""}`}>
+      <style>{styles}</style>
+      {isAnime && <SakuraPetals />}
+      {isAnime && <TokyoSkyline />}
+      {isCyber && <CyberRain />}
+      {isCyber && <div className="cyber-scanlines" />}
+
+      <header className="header">
+        <div className="logo" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 58, height: 38, overflow: "hidden", position: "relative", flexShrink: 0 }}>
+            <img src="/logo-ebc.png" alt="EBC" style={{ position: "absolute", width: 200, height: 200, top: -81, left: -8, filter: theme === "daylight" ? "invert(1)" : "none", opacity: 0.95 }} onError={(e) => e.target.parentElement.style.display = "none"} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", lineHeight: 1.2 }}>
+            {isAnime ? "EBC-OS ✧" : "EBC-OS"}
+            <span className="logo-sub">{isAnime ? "♡ EAGLES BROTHERS CONSTRUCTORS ♡" : "EAGLES BROTHERS CONSTRUCTORS"}</span>
+          </div>
+        </div>
+        <button className="hamburger" onClick={() => setMobileNav(!mobileNav)} aria-label="Menu">
+          <span className={`hamburger-line ${mobileNav ? "open" : ""}`} />
+          <span className={`hamburger-line ${mobileNav ? "open" : ""}`} />
+          <span className={`hamburger-line ${mobileNav ? "open" : ""}`} />
+        </button>
+        <nav className="nav">
+          {PRIMARY_TABS.map(t => (
+            <button
+              key={t.key}
+              className={`nav-item ${tab === t.key ? "active" : ""}`}
+              onClick={() => handleTabClick(t.key)}
+            >
+              {t.label}
+            </button>
+          ))}
+          <div className="nav-more">
+            <button
+              className={`nav-more-btn ${moreOpen ? "open" : ""} ${isSecondaryActive ? "open" : ""}`}
+              onClick={() => setMoreOpen(!moreOpen)}
+            >
+              {isSecondaryActive ? SECONDARY_TABS.find(t => t.key === tab)?.label || "More" : "More"} ▾
+            </button>
+            {moreOpen && (
+              <div className="nav-dropdown">
+                {SECONDARY_TABS.map(t => (
+                  <button
+                    key={t.key}
+                    className={`nav-item ${tab === t.key ? "active" : ""}`}
+                    onClick={() => handleTabClick(t.key)}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </nav>
+        {mobileNav && (
+          <div className="mobile-nav-overlay" onClick={() => setMobileNav(false)}>
+            <nav className="mobile-nav" onClick={e => e.stopPropagation()}>
+              <div className="mobile-nav-header">
+                <div className="logo" style={{ fontSize: 16 }}>{isAnime ? "EBC-OS \u2727" : "EBC-OS"}</div>
+                <button className="modal-close" onClick={() => setMobileNav(false)}>{"\u2715"}</button>
+              </div>
+              <div className="mobile-nav-section">
+                {PRIMARY_TABS.map(t => (
+                  <button
+                    key={t.key}
+                    className={`mobile-nav-item ${tab === t.key ? "active" : ""}`}
+                    onClick={() => handleTabClick(t.key)}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <div className="mobile-nav-divider" />
+              <div className="mobile-nav-section">
+                {SECONDARY_TABS.map(t => (
+                  <button
+                    key={t.key}
+                    className={`mobile-nav-item ${tab === t.key ? "active" : ""}`}
+                    onClick={() => handleTabClick(t.key)}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </nav>
+          </div>
+        )}
+      </header>
+
+      <main className="main-content" onClick={() => moreOpen && setMoreOpen(false)}>
+        {tab === "dashboard" && renderDashboard()}
+        {tab === "bids" && renderBids()}
+        {tab === "projects" && renderProjects()}
+        {tab === "estimating" && <EstimatingTab app={app} />}
+        {tab === "scope" && renderScope()}
+        {tab === "contacts" && renderContacts()}
+        {tab === "materials" && <MaterialsTab app={app} />}
+        {tab === "incentives" && <IncentiveTab app={app} />}
+        {tab === "calendar" && <CalendarView app={app} />}
+        {tab === "jsa" && <JSATab app={app} />}
+        {["financials", "documents", "schedule", "reports", "safety", "timeclock", "map", "settings"].includes(tab) && <MoreTabs app={app} />}
+      </main>
+
+      <div className="toast-wrap">
+        {toasts.map(t => (
+          <div key={t.id} className={`toast toast-${t.type}`}>{t.msg}</div>
+        ))}
+      </div>
+
+      {modal && <ModalHub type={modal.type} data={modal.data} app={app} />}
+
+      {/* PWA Install Banner */}
+      {installPrompt && (
+        <div style={{
+          position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)",
+          background: "var(--bg3)", border: "1px solid var(--amber)", borderRadius: 12,
+          padding: "12px 20px", display: "flex", alignItems: "center", gap: 12,
+          zIndex: 10000, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", maxWidth: 400,
+        }}>
+          <span style={{ fontSize: 24 }}>📲</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>Install EBC-OS</div>
+            <div style={{ fontSize: 12, color: "var(--text2)" }}>Add to home screen for the full app experience</div>
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={async () => {
+            installPrompt.prompt();
+            const { outcome } = await installPrompt.userChoice;
+            if (outcome === "accepted") show("EBC-OS installed!");
+            setInstallPrompt(null);
+          }}>Install</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setInstallPrompt(null)} style={{ padding: "4px 8px", fontSize: 11 }}>✕</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  MODAL HUB COMPONENT
+// ═══════════════════════════════════════════════════════════════
+const SCOPE_OPTIONS = [
+  "Metal Framing", "GWB", "ACT", "Lead-Lined", "ICRA", "Insulation",
+  "L5 Finish", "Deflection Track", "Seismic ACT", "FRP", "Fireproofing", "Shaft Wall"
+];
+
+const ModalHub = ({ type, data, app }) => {
+  const { setModal, show, fmt } = app;
+  const isNew = !data || !data.id;
+  const [aiText, setAiText] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [showAiPanel, setShowAiPanel] = useState(false);
+  const [aiWarnings, setAiWarnings] = useState([]);
+
+  const getInitial = () => {
+    switch (type) {
+      case "editBid":
+        return data ? { ...data } : {
+          name: "", gc: "", value: 0, due: "", status: "estimating",
+          scope: [], phase: "", risk: "Med", notes: "", contact: "",
+          month: "", closeOut: null
+        };
+      case "editProject":
+        return data ? { ...data } : {
+          name: "", gc: "", contract: 0, billed: 0, progress: 0,
+          phase: "", start: "", end: ""
+        };
+      case "editContact":
+        return data ? { ...data } : {
+          name: "", company: "", role: "", phone: "", email: "",
+          priority: "med", notes: "", bids: 0, wins: 0, color: "#3b82f6", last: "Never"
+        };
+      case "logCall":
+        return { contact: "", company: "", note: "", next: "", time: new Date().toLocaleString() };
+      case "viewBid":
+        return data || {};
+      case "viewProject":
+        return data || {};
+      default:
+        return data || {};
+    }
+  };
+
+  const [draft, setDraft] = useState(getInitial);
+
+  const upd = (field, val) => setDraft(d => ({ ...d, [field]: val }));
+
+  const toggleScopeTag = (tag) => {
+    setDraft(d => {
+      const arr = d.scope || [];
+      return { ...d, scope: arr.includes(tag) ? arr.filter(s => s !== tag) : [...arr, tag] };
+    });
+  };
+
+  const handleSave = () => {
+    switch (type) {
+      case "editBid": {
+        if (!draft.name) { show("Bid name is required", "err"); return; }
+        if (!draft.gc) { show("GC name is required", "err"); return; }
+        if (draft.value && isNaN(Number(draft.value))) { show("Value must be a number", "err"); return; }
+        if (isNew) {
+          app.setBids(prev => [...prev, { ...draft, id: app.nextId(prev) }]);
+          show("Bid added");
+        } else {
+          app.setBids(prev => prev.map(b => b.id === draft.id ? { ...draft } : b));
+          show("Bid updated");
+        }
+        break;
+      }
+      case "editProject": {
+        if (!draft.name) { show("Project name is required", "err"); return; }
+        if (!draft.gc) { show("GC name is required", "err"); return; }
+        if (isNew) {
+          app.setProjects(prev => [...prev, { ...draft, id: app.nextId(prev) }]);
+          show("Project added");
+        } else {
+          app.setProjects(prev => prev.map(p => p.id === draft.id ? { ...draft } : p));
+          show("Project updated");
+        }
+        break;
+      }
+      case "editContact": {
+        if (!draft.name) { show("Contact name is required", "err"); return; }
+        if (draft.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email)) { show("Invalid email format", "err"); return; }
+        if (draft.phone && !/^[\d\s\-().+]+$/.test(draft.phone)) { show("Invalid phone format", "err"); return; }
+        if (isNew) {
+          app.setContacts(prev => [...prev, { ...draft, id: app.nextId(prev) }]);
+          show("Contact added");
+        } else {
+          app.setContacts(prev => prev.map(c => c.id === draft.id ? { ...draft } : c));
+          show("Contact updated");
+        }
+        break;
+      }
+      case "logCall": {
+        if (!draft.contact || !draft.note) { show("Contact and note required", "err"); return; }
+        const contact = app.contacts.find(c => c.name === draft.contact);
+        app.setCallLog(prev => [
+          { ...draft, id: app.nextId(prev), company: contact?.company || draft.company, time: draft.time },
+          ...prev
+        ]);
+        show("Call logged");
+        break;
+      }
+      default:
+        break;
+    }
+    setModal(null);
+  };
+
+  const handleDelete = () => {
+    if (!draft.id) return;
+    const label = type === "editBid" || type === "viewBid" ? "bid"
+      : type === "editProject" || type === "viewProject" ? "project"
+      : type === "editContact" ? "contact" : "item";
+    if (!confirm(`Delete this ${label}? This cannot be undone.`)) return;
+    switch (type) {
+      case "editBid": case "viewBid":
+        app.setBids(prev => prev.filter(b => b.id !== draft.id));
+        show("Bid deleted"); break;
+      case "editProject": case "viewProject":
+        app.setProjects(prev => prev.filter(p => p.id !== draft.id));
+        show("Project deleted"); break;
+      case "editContact":
+        app.setContacts(prev => prev.filter(c => c.id !== draft.id));
+        show("Contact deleted"); break;
+      default: break;
+    }
+    setModal(null);
+  };
+
+  const close = () => setModal(null);
+
+  // ── View Bid (read-only) ──
+  if (type === "viewBid") {
+    return (
+      <div className="modal-overlay" onClick={close}>
+        <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <div className="modal-title">Bid Details</div>
+            <button className="modal-close" onClick={close}>✕</button>
+          </div>
+          <div className="flex-col gap-12">
+            <div><span className="text-dim text-xs">NAME</span><div className="font-semi">{draft.name}</div></div>
+            <div><span className="text-dim text-xs">GC</span><div>{draft.gc}</div></div>
+            <div className="flex gap-16">
+              <div><span className="text-dim text-xs">VALUE</span><div className="font-mono text-amber">{fmt(draft.value)}</div></div>
+              <div><span className="text-dim text-xs">DUE</span><div>{draft.due || "TBD"}</div></div>
+              <div><span className="text-dim text-xs">STATUS</span><div className={`badge ${STATUS_BADGE[draft.status]}`}>{draft.status}</div></div>
+            </div>
+            {draft.risk && <div><span className="text-dim text-xs">RISK</span><div className={`badge ${RISK_BADGE[draft.risk]}`}>{draft.risk}</div></div>}
+            {draft.scope?.length > 0 && (
+              <div><span className="text-dim text-xs">SCOPE</span>
+                <div className="flex gap-4 flex-wrap mt-4">{draft.scope.map((s, i) => <span key={i} className="badge badge-muted">{s}</span>)}</div>
+              </div>
+            )}
+            {draft.notes && <div><span className="text-dim text-xs">NOTES</span><div className="text-sm">{draft.notes}</div></div>}
+            {draft.contact && <div><span className="text-dim text-xs">CONTACT</span><div className="text-sm">{draft.contact}</div></div>}
+          </div>
+          <div className="modal-actions" style={{ justifyContent: "space-between" }}>
+            <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>
+            <div className="flex gap-8">
+              <button className="btn btn-ghost" onClick={close}>Close</button>
+              <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: draft })}>Edit</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── View Project (read-only) ──
+  if (type === "viewProject") {
+    return (
+      <div className="modal-overlay" onClick={close}>
+        <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <div className="modal-title">Project Details</div>
+            <button className="modal-close" onClick={close}>✕</button>
+          </div>
+          <div className="flex-col gap-12">
+            <div><span className="text-dim text-xs">NAME</span><div className="font-semi">{draft.name}</div></div>
+            <div><span className="text-dim text-xs">GC</span><div>{draft.gc}</div></div>
+            <div className="flex gap-16">
+              <div><span className="text-dim text-xs">CONTRACT</span><div className="font-mono text-amber">{fmt(draft.contract)}</div></div>
+              <div><span className="text-dim text-xs">BILLED</span><div className="font-mono">{fmt(draft.billed)}</div></div>
+              <div><span className="text-dim text-xs">PROGRESS</span><div>{draft.progress}%</div></div>
+            </div>
+            <div><span className="text-dim text-xs">PHASE</span><div className="badge badge-blue">{draft.phase}</div></div>
+            <div className="flex gap-16">
+              <div><span className="text-dim text-xs">START</span><div>{draft.start || "TBD"}</div></div>
+              <div><span className="text-dim text-xs">END</span><div>{draft.end || "TBD"}</div></div>
+            </div>
+            <div className="progress-bar">
+              <div className="progress-fill" style={{ width: `${draft.progress}%` }} />
+            </div>
+          </div>
+          <div className="modal-actions" style={{ justifyContent: "space-between" }}>
+            <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>
+            <div className="flex gap-8">
+              <button className="btn btn-ghost" onClick={close}>Close</button>
+              <button className="btn btn-primary" onClick={() => setModal({ type: "editProject", data: draft })}>Edit</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Edit Bid ──
+  const runAnalysis = async () => {
+    if (!aiText.trim()) return show("Paste bid invite text first", "err");
+    if (!app.apiKey) return show("Set your API key in Settings first", "err");
+    setAiLoading(true);
+    try {
+      const { analyzeBidPackage } = await import("./utils/api.js");
+      const result = await analyzeBidPackage(app.apiKey, aiText);
+      // Pre-fill form fields from extraction
+      setDraft(d => ({
+        ...d,
+        name: result.name || d.name,
+        gc: result.gc || d.gc,
+        value: result.value || d.value,
+        due: result.due || d.due,
+        phase: result.phase || d.phase,
+        risk: result.risk || d.risk,
+        scope: result.scope?.length > 0 ? result.scope : d.scope,
+        contact: result.contact || d.contact,
+        month: result.month || d.month,
+        notes: result.notes || d.notes,
+        address: result.address || d.address,
+      }));
+      setAiWarnings(result.warnings || []);
+      setShowAiPanel(false);
+      show("Bid fields extracted — review and save", "ok");
+    } catch (err) {
+      show(err.message || "Analysis failed", "err");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  if (type === "editBid") {
+    return (
+      <div className="modal-overlay" onClick={close}>
+        <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <div className="modal-title">{isNew ? "Add Bid" : "Edit Bid"}</div>
+            <div className="flex gap-8" style={{ alignItems: "center" }}>
+              {isNew && <button className="btn btn-sm" style={{ background: "var(--amber-dim)", color: "var(--amber)", border: "1px solid var(--amber)", fontSize: 11 }} onClick={() => setShowAiPanel(!showAiPanel)}>{showAiPanel ? "Hide AI" : "Analyze Bid Package"}</button>}
+              <button className="modal-close" onClick={close}>✕</button>
+            </div>
+          </div>
+
+          {showAiPanel && (
+            <div style={{ marginBottom: 16, padding: 16, background: "var(--bg3)", borderRadius: "var(--radius)", border: "1px solid var(--amber-dim)" }}>
+              <div style={{ fontSize: 12, color: "var(--amber)", fontWeight: 600, marginBottom: 8 }}>PASTE BID INVITE, SPEC EXCERPT, OR EMAIL</div>
+              <textarea className="form-textarea" value={aiText} onChange={e => setAiText(e.target.value)} placeholder={"Paste the bid invite email, spec section, or project description here...\n\nThe AI will extract: project name, GC, due date, scope tags, risk level, phase, and key notes."} style={{ minHeight: 120, fontSize: 12 }} />
+              <div className="flex-between mt-8">
+                <span className="text2" style={{ fontSize: 11 }}>{aiText.length > 0 ? `${aiText.length} characters` : "Paste text to analyze"}</span>
+                <button className="btn btn-primary btn-sm" onClick={runAnalysis} disabled={aiLoading} style={{ minWidth: 140 }}>
+                  {aiLoading ? "Analyzing..." : "Extract Fields"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {aiWarnings.length > 0 && (
+            <div style={{ marginBottom: 12, padding: 10, background: "rgba(255,80,80,0.08)", border: "1px solid rgba(255,80,80,0.2)", borderRadius: "var(--radius)", fontSize: 12 }}>
+              <strong style={{ color: "var(--red)", fontSize: 11 }}>WARNINGS</strong>
+              <ul style={{ margin: "4px 0 0 16px", color: "var(--text2)" }}>
+                {aiWarnings.map((w, i) => <li key={i}>{w}</li>)}
+              </ul>
+            </div>
+          )}
+
+          <div className="form-grid">
+            <div className="form-group full">
+              <label className="form-label">Bid Name</label>
+              <input className="form-input" value={draft.name} onChange={e => upd("name", e.target.value)} placeholder="Project name" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">General Contractor</label>
+              <input className="form-input" value={draft.gc} onChange={e => upd("gc", e.target.value)} placeholder="GC name" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Value ($)</label>
+              <input className="form-input" type="number" value={draft.value} onChange={e => upd("value", Number(e.target.value))} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Due Date</label>
+              <input className="form-input" value={draft.due} onChange={e => upd("due", e.target.value)} placeholder="e.g. Mar 20" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select className="form-select" value={draft.status} onChange={e => upd("status", e.target.value)}>
+                <option value="estimating">Estimating</option>
+                <option value="submitted">Submitted</option>
+                <option value="awarded">Awarded</option>
+                <option value="lost">Lost</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Phase</label>
+              <input className="form-input" value={draft.phase} onChange={e => upd("phase", e.target.value)} placeholder="e.g. Medical, Commercial" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Risk</label>
+              <select className="form-select" value={draft.risk} onChange={e => upd("risk", e.target.value)}>
+                <option value="Low">Low</option>
+                <option value="Med">Med</option>
+                <option value="High">High</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Contact</label>
+              <select className="form-select" value={draft.contact} onChange={e => upd("contact", e.target.value)}>
+                <option value="">-- Select --</option>
+                {app.contacts.map(c => <option key={c.id} value={c.name}>{c.name} ({c.company})</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Month</label>
+              <input className="form-input" value={draft.month || ""} onChange={e => upd("month", e.target.value)} placeholder="e.g. Mar" />
+            </div>
+            <div className="form-group full">
+              <label className="form-label">Close-Out Notes</label>
+              <input className="form-input" value={draft.closeOut || ""} onChange={e => upd("closeOut", e.target.value)} placeholder="Close-out status or notes" />
+            </div>
+            <div className="form-group full">
+              <label className="form-label">Scope Tags</label>
+              <div className="flex gap-4 flex-wrap">
+                {SCOPE_OPTIONS.map(s => (
+                  <button
+                    key={s}
+                    className={`btn btn-sm ${(draft.scope || []).includes(s) ? "btn-primary" : "btn-ghost"}`}
+                    onClick={() => toggleScopeTag(s)}
+                    type="button"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="form-group full">
+              <label className="form-label">Notes</label>
+              <textarea className="form-textarea" value={draft.notes} onChange={e => upd("notes", e.target.value)} placeholder="Bid notes, clarifications, exclusions..." />
+            </div>
+          </div>
+          <div className="modal-actions" style={{ justifyContent: "space-between" }}>
+            {!isNew && <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>}
+            <div className="flex gap-8" style={{ marginLeft: "auto" }}>
+              <button className="btn btn-ghost" onClick={close}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleSave}>{isNew ? "Add Bid" : "Save Changes"}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Edit Project ──
+  if (type === "editProject") {
+    return (
+      <div className="modal-overlay" onClick={close}>
+        <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <div className="modal-title">{isNew ? "Add Project" : "Edit Project"}</div>
+            <button className="modal-close" onClick={close}>✕</button>
+          </div>
+          <div className="form-grid">
+            <div className="form-group full">
+              <label className="form-label">Project Name</label>
+              <input className="form-input" value={draft.name} onChange={e => upd("name", e.target.value)} placeholder="Project name" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">General Contractor</label>
+              <input className="form-input" value={draft.gc} onChange={e => upd("gc", e.target.value)} placeholder="GC name" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Contract Value ($)</label>
+              <input className="form-input" type="number" value={draft.contract} onChange={e => upd("contract", Number(e.target.value))} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Billed Amount ($)</label>
+              <input className="form-input" type="number" value={draft.billed} onChange={e => upd("billed", Number(e.target.value))} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Progress (%)</label>
+              <input className="form-input" type="number" min="0" max="100" value={draft.progress} onChange={e => upd("progress", Number(e.target.value))} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Phase</label>
+              <input className="form-input" value={draft.phase} onChange={e => upd("phase", e.target.value)} placeholder="e.g. Framing, Board Hang" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Start Date</label>
+              <input className="form-input" value={draft.start} onChange={e => upd("start", e.target.value)} placeholder="e.g. Jan 15" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">End Date</label>
+              <input className="form-input" value={draft.end} onChange={e => upd("end", e.target.value)} placeholder="e.g. Jul 30" />
+            </div>
+          </div>
+          <div className="modal-actions" style={{ justifyContent: "space-between" }}>
+            {!isNew && <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>}
+            <div className="flex gap-8" style={{ marginLeft: "auto" }}>
+              <button className="btn btn-ghost" onClick={close}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleSave}>{isNew ? "Add Project" : "Save Changes"}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Edit Contact ──
+  if (type === "editContact") {
+    return (
+      <div className="modal-overlay" onClick={close}>
+        <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <div className="modal-title">{isNew ? "Add Contact" : "Edit Contact"}</div>
+            <button className="modal-close" onClick={close}>✕</button>
+          </div>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Name</label>
+              <input className="form-input" value={draft.name} onChange={e => upd("name", e.target.value)} placeholder="Full name" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Company</label>
+              <input className="form-input" value={draft.company} onChange={e => upd("company", e.target.value)} placeholder="Company" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Role</label>
+              <input className="form-input" value={draft.role} onChange={e => upd("role", e.target.value)} placeholder="e.g. Senior PM" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Priority</label>
+              <select className="form-select" value={draft.priority} onChange={e => upd("priority", e.target.value)}>
+                <option value="high">High</option>
+                <option value="med">Med</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Phone</label>
+              <input className="form-input" value={draft.phone} onChange={e => upd("phone", e.target.value)} placeholder="713-555-0000" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Email</label>
+              <input className="form-input" value={draft.email} onChange={e => upd("email", e.target.value)} placeholder="email@company.com" />
+            </div>
+            <div className="form-group full">
+              <label className="form-label">Notes</label>
+              <textarea className="form-textarea" value={draft.notes} onChange={e => upd("notes", e.target.value)} placeholder="Notes about this contact..." />
+            </div>
+          </div>
+          {!isNew && (
+            <div className="mt-16">
+              <div className="text-xs text-dim mb-8">CALL HISTORY</div>
+              {app.callLog.filter(c => c.contact === draft.name).length === 0 ? (
+                <div className="text-sm text-muted">No calls logged for this contact.</div>
+              ) : (
+                app.callLog.filter(c => c.contact === draft.name).map(c => (
+                  <div key={c.id} className="flex gap-8 border-b" style={{ padding: "8px 0", alignItems: "center" }}>
+                    <div className="text-xs text-dim" style={{ width: 130, flexShrink: 0 }}>{c.time}</div>
+                    <div className="text-sm" style={{ flex: 1 }}>{c.note}</div>
+                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 5px", color: "var(--red)", flexShrink: 0 }}
+                      onClick={() => { if (confirm("Delete this call log?")) { app.setCallLog(prev => prev.filter(cl => cl.id !== c.id)); app.show("Call deleted"); } }}>✕</button>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+          <div className="modal-actions" style={{ justifyContent: "space-between" }}>
+            {!isNew && <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>}
+            <div className="flex gap-8" style={{ marginLeft: "auto" }}>
+              <button className="btn btn-ghost" onClick={close}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleSave}>{isNew ? "Add Contact" : "Save Changes"}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Log Call ──
+  if (type === "logCall") {
+    return (
+      <div className="modal-overlay" onClick={close}>
+        <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <div className="modal-title">Log Call</div>
+            <button className="modal-close" onClick={close}>✕</button>
+          </div>
+          <div className="form-grid">
+            <div className="form-group full">
+              <label className="form-label">Contact</label>
+              <select className="form-select" value={draft.contact} onChange={e => upd("contact", e.target.value)}>
+                <option value="">-- Select Contact --</option>
+                {app.contacts.map(c => <option key={c.id} value={c.name}>{c.name} ({c.company})</option>)}
+              </select>
+            </div>
+            <div className="form-group full">
+              <label className="form-label">Call Note</label>
+              <textarea className="form-textarea" value={draft.note} onChange={e => upd("note", e.target.value)} placeholder="What was discussed..." />
+            </div>
+            <div className="form-group full">
+              <label className="form-label">Next Action</label>
+              <input className="form-input" value={draft.next} onChange={e => upd("next", e.target.value)} placeholder="Follow-up action..." />
+            </div>
+          </div>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={close}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleSave}>Log Call</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+};
+
+export default App;

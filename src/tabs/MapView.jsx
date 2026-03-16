@@ -1,0 +1,331 @@
+import { useRef, useEffect, useState, useMemo } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// ═══════════════════════════════════════════════════════════════
+//  Map View — GTA-style project map with PM filtering
+// ═══════════════════════════════════════════════════════════════
+
+const PHASE_COLORS = {
+  "Pre-Construction": "#3b82f6",
+  "Estimating": "#e09422",
+  "Active": "#10b981",
+  "In-Progress": "#10b981",
+  "Complete": "#6b7280",
+};
+
+const DARK_TILES = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const SATELLITE_TILES = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const STREET_TILES = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+function makeMarkerIcon(project) {
+  const color = PHASE_COLORS[project.phase] || "#e09422";
+  return L.divIcon({
+    className: "map-marker-wrap",
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -16],
+    html: `<div class="map-marker" style="
+      --marker-color: ${color};
+      background: ${color};
+      box-shadow: 0 0 12px ${color}80, 0 0 24px ${color}40;
+    "></div>`,
+  });
+}
+
+function fmtContract(n) {
+  if (n >= 1000000) return "$" + (n / 1000000).toFixed(1) + "M";
+  if (n >= 1000) return "$" + (n / 1000).toFixed(0) + "K";
+  return "$" + n;
+}
+
+export function MapView({ app }) {
+  const { projects, crewSchedule, employees } = app;
+  const mapRef = useRef(null);
+  const mapInstance = useRef(null);
+  const markersRef = useRef([]);
+  const circlesRef = useRef([]);
+  const [viewMode, setViewMode] = useState("ebc");
+  const [mapStyle, setMapStyle] = useState("dark");
+  const [showGeofences, setShowGeofences] = useState(false);
+
+  // ── AI Route state ──
+  const [routeResult, setRouteResult] = useState(null);
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [showRoute, setShowRoute] = useState(false);
+
+  const runRouteOptimize = async () => {
+    if (!app.apiKey) { app.show("Set API key in Settings first", "err"); return; }
+    setRouteLoading(true);
+    setRouteResult(null);
+    try {
+      const { optimizeProjectRoutes } = await import("../utils/api.js");
+      const res = await optimizeProjectRoutes(app.apiKey, projects.slice(0, 15), (crewSchedule || []).slice(0, 30), (employees || []).slice(0, 15));
+      setRouteResult(res);
+      setShowRoute(true);
+      app.show("Route analysis complete", "ok");
+    } catch (e) {
+      app.show(e.message, "err");
+    } finally {
+      setRouteLoading(false);
+    }
+  };
+  const tileLayerRef = useRef(null);
+
+  // Extract unique PMs
+  const pmList = useMemo(() => {
+    return [...new Set(projects.map((p) => p.pm).filter(Boolean))];
+  }, [projects]);
+
+  // Filtered projects
+  const filtered = useMemo(() => {
+    if (viewMode === "ebc") return projects;
+    return projects.filter((p) => p.pm === viewMode);
+  }, [projects, viewMode]);
+
+  // Get crew count per project
+  const crewCounts = useMemo(() => {
+    const counts = {};
+    crewSchedule.forEach((s) => {
+      if (!counts[s.projectId]) counts[s.projectId] = new Set();
+      counts[s.projectId].add(s.employeeId);
+    });
+    const result = {};
+    Object.entries(counts).forEach(([id, set]) => { result[id] = set.size; });
+    return result;
+  }, [crewSchedule]);
+
+  // Init map
+  useEffect(() => {
+    if (!mapRef.current || mapInstance.current) return;
+
+    const map = L.map(mapRef.current, {
+      center: [29.76, -95.40],
+      zoom: 9,
+      zoomControl: true,
+      attributionControl: false,
+    });
+
+    tileLayerRef.current = L.tileLayer(DARK_TILES, { maxZoom: 19 }).addTo(map);
+    mapInstance.current = map;
+
+    // Fix Leaflet sizing issue
+    setTimeout(() => map.invalidateSize(), 100);
+
+    return () => {
+      map.remove();
+      mapInstance.current = null;
+    };
+  }, []);
+
+  // Update tile layer
+  useEffect(() => {
+    if (!mapInstance.current || !tileLayerRef.current) return;
+    const urls = { dark: DARK_TILES, satellite: SATELLITE_TILES, street: STREET_TILES };
+    tileLayerRef.current.setUrl(urls[mapStyle] || DARK_TILES);
+  }, [mapStyle]);
+
+  // Update markers when filter changes
+  useEffect(() => {
+    if (!mapInstance.current) return;
+
+    // Clear old markers and circles
+    markersRef.current.forEach((m) => m.remove());
+    circlesRef.current.forEach((c) => c.remove());
+    markersRef.current = [];
+    circlesRef.current = [];
+
+    const fmt = app.fmt;
+
+    filtered.forEach((p) => {
+      if (!p.lat || !p.lng) return;
+
+      const marker = L.marker([p.lat, p.lng], { icon: makeMarkerIcon(p) });
+      const color = PHASE_COLORS[p.phase] || "#e09422";
+      const crew = crewCounts[p.id] || 0;
+
+      marker.bindPopup(`
+        <div class="map-popup-content">
+          <div class="map-popup-title">${p.name}</div>
+          <div class="map-popup-row"><span class="map-popup-label">GC</span> ${p.gc}</div>
+          <div class="map-popup-row"><span class="map-popup-label">Contract</span> ${fmt(p.contract)}</div>
+          <div class="map-popup-row"><span class="map-popup-label">Phase</span> <span style="color:${color}">${p.phase}</span></div>
+          <div class="map-popup-row"><span class="map-popup-label">PM</span> ${p.pm || "—"}</div>
+          ${crew > 0 ? `<div class="map-popup-row"><span class="map-popup-label">Crew</span> ${crew} assigned</div>` : ""}
+          <div class="map-popup-row"><span class="map-popup-label">Geofence</span> ${p.radiusFt}ft</div>
+        </div>
+      `, { className: "map-popup", maxWidth: 260 });
+
+      marker.addTo(mapInstance.current);
+      markersRef.current.push(marker);
+
+      // Geofence circle
+      if (showGeofences) {
+        const circle = L.circle([p.lat, p.lng], {
+          radius: p.radiusFt * 0.3048, // ft to meters
+          color: color,
+          fillColor: color,
+          fillOpacity: 0.08,
+          weight: 1,
+          opacity: 0.3,
+        }).addTo(mapInstance.current);
+        circlesRef.current.push(circle);
+      }
+    });
+
+    // Fit bounds if we have markers
+    if (markersRef.current.length > 0) {
+      const group = L.featureGroup(markersRef.current);
+      mapInstance.current.fitBounds(group.getBounds().pad(0.1));
+    }
+  }, [filtered, showGeofences, crewCounts, app.fmt]);
+
+  return (
+    <div>
+      <div className="section-header">
+        <div>
+          <div className="section-title">Project Map</div>
+          <div className="section-sub">
+            {filtered.length} project{filtered.length !== 1 ? "s" : ""} — {fmtContract(filtered.reduce((s, p) => s + (p.contract || 0), 0))} total
+          </div>
+        </div>
+        <button className="btn btn-ghost" onClick={() => { showRoute ? setShowRoute(false) : runRouteOptimize(); }} disabled={routeLoading}>
+          {routeLoading ? "Analyzing..." : "AI Route Plan"}
+        </button>
+      </div>
+
+      {/* AI Route Plan Panel */}
+      {showRoute && routeResult && (
+        <div className="card" style={{ padding: 20, marginBottom: 16, maxHeight: 400, overflow: "auto" }}>
+          <div className="flex-between mb-12">
+            <div className="text-sm font-semi">AI Route & Logistics Plan</div>
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowRoute(false)}>Close</button>
+          </div>
+
+          <div className="text-sm text-muted mb-12">{routeResult.summary}</div>
+
+          {/* Travel Metrics */}
+          {routeResult.travelMetrics && (
+            <div className="flex gap-16 mb-12 flex-wrap">
+              <div><span className="text-xs text-muted">Avg Daily Miles:</span> <span className="font-semi">{routeResult.travelMetrics.avgDailyMiles}</span></div>
+              <div><span className="text-xs text-muted">Peak Travel Day:</span> <span className="font-semi">{routeResult.travelMetrics.peakTravelDay}</span></div>
+              <div><span className="text-xs text-muted">Weekly Cost:</span> <span className="font-semi">{routeResult.travelMetrics.estimatedWeeklyCost}</span></div>
+            </div>
+          )}
+
+          {/* Clusters */}
+          {routeResult.clusterAnalysis?.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div className="text-sm font-semi mb-8">Project Clusters</div>
+              {routeResult.clusterAnalysis.map((c, i) => (
+                <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "var(--bg3)", border: "1px solid var(--border)" }}>
+                  <div className="text-sm font-semi">{c.cluster} — {c.area}</div>
+                  <div className="text-xs text-muted mt-2">Projects: {(c.projects || []).join(", ")} · Crew: {c.crewCount}</div>
+                  <div className="text-xs mt-2" style={{ color: "var(--green)" }}>{c.recommendation}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Material Delivery */}
+          {routeResult.materialDelivery?.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Delivery Consolidation</div>
+              {routeResult.materialDelivery.map((m, i) => (
+                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                  <div className="text-sm">{m.suggestion}</div>
+                  <div className="text-xs text-muted mt-2">{(m.projects || []).join(", ")} — {m.benefit}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Hub Recommendation */}
+          {routeResult.hubRecommendation && (
+            <div style={{ padding: 12, borderRadius: 6, background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)", marginBottom: 12 }}>
+              <div className="text-sm font-semi">Staging Hub</div>
+              <div className="text-xs text-muted mt-4">{routeResult.hubRecommendation}</div>
+            </div>
+          )}
+
+          {/* Logistics Alerts */}
+          {routeResult.logisticsAlerts?.length > 0 && (
+            <div>
+              <div className="text-sm font-semi mb-8">Logistics Alerts</div>
+              {routeResult.logisticsAlerts.map((a, i) => (
+                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                  <div className="flex-between">
+                    <span className="text-sm">{a.alert}</span>
+                    <span className={`badge ${a.severity === "critical" ? "badge-red" : a.severity === "warning" ? "badge-amber" : "badge-muted"}`}>{a.severity}</span>
+                  </div>
+                  <div className="text-xs text-muted mt-2">{a.action}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Filter bar */}
+      <div className="map-controls">
+        <div className="map-pm-toggle">
+          <button
+            className={`btn btn-sm ${viewMode === "ebc" ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => setViewMode("ebc")}
+          >
+            EBC View
+          </button>
+          {pmList.map((pm) => (
+            <button
+              key={pm}
+              className={`btn btn-sm ${viewMode === pm ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => setViewMode(pm)}
+            >
+              {pm.split(" ")[0]}
+            </button>
+          ))}
+        </div>
+
+        <div className="map-pm-toggle">
+          <button
+            className={`btn btn-sm ${mapStyle === "dark" ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => setMapStyle("dark")}
+          >
+            Dark
+          </button>
+          <button
+            className={`btn btn-sm ${mapStyle === "satellite" ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => setMapStyle("satellite")}
+          >
+            Satellite
+          </button>
+          <button
+            className={`btn btn-sm ${mapStyle === "street" ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => setMapStyle("street")}
+          >
+            Street
+          </button>
+          <button
+            className={`btn btn-sm ${showGeofences ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => setShowGeofences(!showGeofences)}
+          >
+            Geofences
+          </button>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="map-legend">
+        {Object.entries(PHASE_COLORS).filter(([k]) => k !== "In-Progress").map(([phase, color]) => (
+          <div key={phase} className="map-legend-item">
+            <span className="map-legend-dot" style={{ background: color, boxShadow: `0 0 6px ${color}80` }} />
+            <span>{phase}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Map container */}
+      <div className="map-container" ref={mapRef} />
+    </div>
+  );
+}

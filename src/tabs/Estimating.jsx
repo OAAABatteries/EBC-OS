@@ -1,0 +1,1209 @@
+import { useState } from "react";
+import { getHF } from "../data/constants";
+import { generateProposalPdf } from "../utils/proposalPdf";
+
+/* ── helpers ─────────────────────────────────────────────────── */
+
+function calcItem(item, assemblies) {
+  const asm = assemblies.find((a) => a.code === item.code);
+  if (!asm) return { mat: 0, lab: 0, total: 0 };
+  const hf = getHF(item.height || 10);
+  const matTotal = (item.qty || 0) * (asm.matRate || 0) * (item.diff || 1);
+  const labTotal = (item.qty || 0) * (asm.labRate || 0) * hf.f * (item.diff || 1);
+  return { mat: matTotal, lab: labTotal, total: matTotal + labTotal };
+}
+
+function calcRoom(room, assemblies) {
+  let mat = 0, lab = 0;
+  (room.items || []).forEach((it) => {
+    const c = calcItem(it, assemblies);
+    mat += c.mat;
+    lab += c.lab;
+  });
+  return { mat, lab, total: mat + lab };
+}
+
+function calcSummary(tk, assemblies) {
+  let matSub = 0, labSub = 0;
+  (tk.rooms || []).forEach((rm) => {
+    const c = calcRoom(rm, assemblies);
+    matSub += c.mat;
+    labSub += c.lab;
+  });
+  const subtotal = matSub + labSub;
+  const wasteAmt = subtotal * ((tk.wastePct || 0) / 100);
+  const netCost = subtotal + wasteAmt;
+  const taxAmt = matSub * (1 + (tk.wastePct || 0) / 100) * ((tk.taxRate || 0) / 100);
+  const costWithTax = netCost + taxAmt;
+  const overheadAmt = costWithTax * ((tk.overheadPct || 0) / 100);
+  const costWithOverhead = costWithTax + overheadAmt;
+  const profitAmt = costWithOverhead * ((tk.profitPct || 0) / 100);
+  const grandTotal = costWithOverhead + profitAmt;
+  return { matSub, labSub, subtotal, wasteAmt, netCost, taxAmt, costWithTax, overheadAmt, costWithOverhead, profitAmt, grandTotal };
+}
+
+/* ── main export ─────────────────────────────────────────────── */
+
+export function EstimatingTab({ app }) {
+  const {
+    takeoffs, setTakeoffs,
+    bids, projects, assemblies, company, show, apiKey,
+    fmt, fmtK, search, submittals,
+  } = app;
+
+  // Helper: find submittals linked to a given assembly code
+  const getSubmittalsForCode = (code) =>
+    (submittals || []).filter(s => (s.linkedAssemblyCodes || []).includes(code));
+
+  const [activeTk, setActiveTk] = useState(null);
+  const [openRooms, setOpenRooms] = useState({});
+  const [editingItem, setEditingItem] = useState(null);
+  const [histResult, setHistResult] = useState(null);
+  const [histLoading, setHistLoading] = useState(false);
+  const [showHist, setShowHist] = useState(false);
+
+  // ── OST Import state ──
+  const [ostModal, setOstModal] = useState(false);
+  const [ostRows, setOstRows] = useState([]);       // parsed CSV rows
+  const [ostHeaders, setOstHeaders] = useState([]);  // CSV column headers
+  const [ostMapping, setOstMapping] = useState({});   // column index mappings
+  const [ostName, setOstName] = useState("");          // takeoff name from filename
+  const [ostItemMappings, setOstItemMappings] = useState([]); // per-row assembly mappings
+
+  // ── OST Import handlers ──
+  function handleOstFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    const fname = file.name.replace(/\.\w+$/, "").replace(/[_-]/g, " ");
+    setOstName(fname);
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target.result;
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) { show("CSV file is empty or has no data rows", "err"); return; }
+
+      // Parse CSV — handle proper quoted fields (field must START with ")
+      const parseCSVLine = (line) => {
+        const result = [];
+        let i = 0;
+        while (i < line.length) {
+          if (line[i] === '"') {
+            // Quoted field — find closing quote
+            let j = i + 1;
+            let val = "";
+            while (j < line.length) {
+              if (line[j] === '"' && line[j + 1] === '"') { val += '"'; j += 2; }
+              else if (line[j] === '"') { j++; break; }
+              else { val += line[j]; j++; }
+            }
+            result.push(val.trim());
+            if (line[j] === ',') j++;
+            i = j;
+          } else {
+            // Unquoted field — split on comma (inch marks like 3-5/8" are NOT quote delimiters)
+            const comma = line.indexOf(',', i);
+            if (comma === -1) { result.push(line.slice(i).trim()); break; }
+            result.push(line.slice(i, comma).trim());
+            i = comma + 1;
+          }
+        }
+        return result;
+      };
+
+      const headers = parseCSVLine(lines[0]);
+      const rows = lines.slice(1).map(l => parseCSVLine(l)).filter(r => r.some(c => c));
+
+      // Auto-detect column mappings
+      const mapping = { condition: -1, count: -1, lf: -1, sf: -1, area: -1, page: -1 };
+      headers.forEach((h, i) => {
+        const lc = h.toLowerCase().replace(/[^a-z0-9]/g, "");
+        if (lc.includes("condition") || lc.includes("name") || lc.includes("description") || lc.includes("desc")) mapping.condition = i;
+        else if (lc === "count" || lc === "ea" || lc === "each") mapping.count = i;
+        else if (lc.includes("length") || lc === "lf" || lc.includes("linearfeet") || lc.includes("linear")) mapping.lf = i;
+        else if (lc.includes("area") || lc === "sf" || lc.includes("squarefeet") || lc.includes("square") || lc.includes("sqft")) mapping.sf = i;
+        else if (lc.includes("page") || lc.includes("sheet") || lc.includes("room") || lc.includes("location")) mapping.page = i;
+      });
+      // If no condition col found, use first text column
+      if (mapping.condition === -1) mapping.condition = 0;
+
+      // Build per-row assembly guesses
+      const itemMaps = rows.map(row => {
+        const condName = row[mapping.condition] || "";
+        const lc = condName.toLowerCase();
+        // Try to auto-match assembly
+        let bestCode = "";
+        for (const asm of assemblies) {
+          const asmLc = asm.name.toLowerCase();
+          if (lc.includes("lead") && asm.code === "LL1") { bestCode = asm.code; break; }
+          if (lc.includes("act") && asm.code.startsWith("ACT")) { bestCode = asm.code; break; }
+          if (lc.includes("ceiling") && !lc.includes("act") && asm.code === "GC1") { bestCode = asm.code; break; }
+          if (lc.includes("insul") && asm.code.startsWith("INS")) { bestCode = asm.code; break; }
+          if ((lc.includes("frp") || lc.includes("panel")) && asm.code === "FRP1") { bestCode = asm.code; break; }
+          if (lc.includes("furr") && !lc.includes("down") && asm.code === "C2") { bestCode = asm.code; break; }
+          if ((lc.includes("soffit") || lc.includes("furr-down") || lc.includes("furrdown")) && asm.code === "FD1") { bestCode = asm.code; break; }
+          if (lc.includes("fire") && asm.code === "FP1") { bestCode = asm.code; break; }
+          if (lc.includes("icra") && asm.code === "ICRA1") { bestCode = asm.code; break; }
+          if ((lc.includes("wall") || lc.includes("metal") || lc.includes("stud") || lc.includes("ga ")) && !bestCode) { bestCode = "A2"; }
+        }
+        // Determine which qty to use
+        let qty = 0;
+        let unit = "LF";
+        if (mapping.sf !== -1 && parseFloat(row[mapping.sf])) {
+          qty = parseFloat(row[mapping.sf]);
+          unit = "SF";
+        } else if (mapping.lf !== -1 && parseFloat(row[mapping.lf])) {
+          qty = parseFloat(row[mapping.lf]);
+          unit = "LF";
+        } else if (mapping.count !== -1 && parseFloat(row[mapping.count])) {
+          qty = parseFloat(row[mapping.count]);
+          unit = "EA";
+        }
+        // Override unit from assembly if matched
+        if (bestCode) {
+          const asm = assemblies.find(a => a.code === bestCode);
+          if (asm) unit = asm.unit;
+        }
+        return { condName, qty, unit, assemblyCode: bestCode, include: qty > 0, page: mapping.page !== -1 ? (row[mapping.page] || "") : "" };
+      });
+
+      setOstHeaders(headers);
+      setOstRows(rows);
+      setOstMapping(mapping);
+      setOstItemMappings(itemMaps);
+      setOstModal(true);
+    };
+    reader.readAsText(file);
+  }
+
+  function importOstTakeoff() {
+    const included = ostItemMappings.filter(m => m.include && m.assemblyCode);
+    if (included.length === 0) { show("No items selected for import", "err"); return; }
+
+    // Group by page/room
+    const roomMap = {};
+    included.forEach(m => {
+      const roomKey = m.page || "Imported";
+      if (!roomMap[roomKey]) roomMap[roomKey] = [];
+      const asm = assemblies.find(a => a.code === m.assemblyCode);
+      roomMap[roomKey].push({
+        id: "li_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+        code: m.assemblyCode,
+        desc: asm?.name || m.condName,
+        qty: Math.round(m.qty * 100) / 100,
+        unit: asm?.unit || m.unit,
+        height: 10,
+        diff: 1.0,
+      });
+    });
+
+    const rooms = Object.entries(roomMap).map(([name, items]) => ({
+      id: "rm_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+      name,
+      floor: "",
+      items,
+    }));
+
+    const tk = {
+      id: "tk_" + Date.now(),
+      bidId: null,
+      name: ostName || "OST Import",
+      created: new Date().toISOString().slice(0, 10),
+      wastePct: company.defaultWaste,
+      taxRate: company.defaultTax,
+      overheadPct: company.defaultOverhead,
+      profitPct: company.defaultProfit,
+      rooms,
+    };
+
+    setTakeoffs(prev => [...prev, tk]);
+    setOstModal(false);
+    setActiveTk(tk.id);
+    // Open all rooms
+    const allOpen = {};
+    rooms.forEach(r => { allOpen[r.id] = true; });
+    setOpenRooms(allOpen);
+    show(`Imported ${included.length} items into ${rooms.length} room(s)`, "ok");
+  }
+
+  const runHistComparison = async (tk) => {
+    if (!apiKey) { show("Set API key in Settings first", "err"); return; }
+    setHistLoading(true);
+    setHistResult(null);
+    setShowHist(true);
+    try {
+      const { compareHistoricalEstimate } = await import("../utils/api.js");
+      const s = calcSummary(tk, assemblies);
+      const linkedBid = bids.find(b => b.id === tk.bidId);
+      const currentBid = {
+        name: tk.name,
+        bidName: linkedBid?.name || "Unlinked",
+        phase: linkedBid?.phase || "Unknown",
+        scope: linkedBid?.scope || [],
+        totalEstimate: s.grandTotal,
+        materialCost: s.matSub,
+        laborCost: s.labSub,
+        profitPct: tk.profitPct,
+        overheadPct: tk.overheadPct,
+        roomCount: (tk.rooms || []).length,
+      };
+      const histProjects = projects.map(p => ({
+        name: p.project,
+        gc: p.gc,
+        phase: p.phase,
+        contractValue: p.value,
+        billed: p.billed,
+        margin: p.margin,
+        scope: p.scope || [],
+      }));
+      const result = await compareHistoricalEstimate(apiKey, currentBid, histProjects);
+      setHistResult(result);
+      show("Historical comparison complete", "ok");
+    } catch (e) {
+      show(e.message, "err");
+    } finally {
+      setHistLoading(false);
+    }
+  };
+
+  /* ── takeoff CRUD helpers ────────────────────────────────── */
+
+  function updateTakeoff(id, updater) {
+    setTakeoffs((prev) =>
+      prev.map((tk) => (tk.id === id ? (typeof updater === "function" ? updater(tk) : { ...tk, ...updater }) : tk))
+    );
+  }
+
+  function createTakeoff() {
+    const tk = {
+      id: "tk_" + Date.now(),
+      bidId: null,
+      name: "New Takeoff",
+      created: new Date().toISOString().slice(0, 10),
+      wastePct: company.defaultWaste,
+      taxRate: company.defaultTax,
+      overheadPct: company.defaultOverhead,
+      profitPct: company.defaultProfit,
+      rooms: [],
+    };
+    setTakeoffs((prev) => [...prev, tk]);
+    setActiveTk(tk.id);
+  }
+
+  function cloneTakeoff(tkId) {
+    const src = takeoffs.find((t) => t.id === tkId);
+    if (!src) return;
+    const now = Date.now();
+    const clone = {
+      ...src,
+      id: "tk_" + now,
+      name: (src.name || "Takeoff") + " (Copy)",
+      created: new Date().toISOString().slice(0, 10),
+      rooms: src.rooms.map((r, ri) => ({
+        ...r,
+        id: "rm_" + (now + ri + 1),
+        items: r.items.map((it, ii) => ({
+          ...it,
+          id: "li_" + (now + ri * 1000 + ii + 100),
+        })),
+      })),
+    };
+    setTakeoffs((prev) => [...prev, clone]);
+    setActiveTk(clone.id);
+    show(`Cloned "${src.name}"`);
+  }
+
+  function addRoom(tkId) {
+    const newRoom = { id: "rm_" + Date.now(), name: "New Room", floor: "", items: [] };
+    updateTakeoff(tkId, (tk) => ({ ...tk, rooms: [...tk.rooms, newRoom] }));
+    setOpenRooms((prev) => ({ ...prev, [newRoom.id]: true }));
+  }
+
+  function deleteRoom(tkId, rmId) {
+    if (!confirm("Delete this room and all its line items?")) return;
+    updateTakeoff(tkId, (tk) => ({ ...tk, rooms: tk.rooms.filter((r) => r.id !== rmId) }));
+  }
+
+  function updateRoom(tkId, rmId, patch) {
+    updateTakeoff(tkId, (tk) => ({
+      ...tk,
+      rooms: tk.rooms.map((r) => (r.id === rmId ? { ...r, ...patch } : r)),
+    }));
+  }
+
+  function addLineItem(tkId, rmId) {
+    const first = assemblies[0];
+    const newItem = {
+      id: "li_" + Date.now(),
+      code: first.code,
+      desc: first.name,
+      qty: 0,
+      unit: first.unit,
+      height: 10,
+      diff: 1.0,
+    };
+    updateTakeoff(tkId, (tk) => ({
+      ...tk,
+      rooms: tk.rooms.map((r) =>
+        r.id === rmId ? { ...r, items: [...r.items, newItem] } : r
+      ),
+    }));
+    setEditingItem(newItem.id);
+  }
+
+  function deleteLineItem(tkId, rmId, liId) {
+    updateTakeoff(tkId, (tk) => ({
+      ...tk,
+      rooms: tk.rooms.map((r) =>
+        r.id === rmId ? { ...r, items: r.items.filter((i) => i.id !== liId) } : r
+      ),
+    }));
+    if (editingItem === liId) setEditingItem(null);
+  }
+
+  function updateLineItem(tkId, rmId, liId, patch) {
+    updateTakeoff(tkId, (tk) => ({
+      ...tk,
+      rooms: tk.rooms.map((r) =>
+        r.id === rmId
+          ? { ...r, items: r.items.map((i) => (i.id === liId ? { ...i, ...patch } : i)) }
+          : r
+      ),
+    }));
+  }
+
+  function handleAssemblyChange(tkId, rmId, liId, code) {
+    const asm = assemblies.find((a) => a.code === code);
+    if (!asm) return;
+    updateLineItem(tkId, rmId, liId, { code, desc: asm.name, unit: asm.unit });
+  }
+
+  function toggleRoom(rmId) {
+    setOpenRooms((prev) => ({ ...prev, [rmId]: !prev[rmId] }));
+  }
+
+  /* ── copy proposal ───────────────────────────────────────── */
+
+  function copyProposal(tk) {
+    const bidName = bids.find((b) => b.id === tk.bidId)?.name || "N/A";
+    const s = calcSummary(tk, assemblies);
+    let text = "EAGLES BROTHERS CONSTRUCTORS\n";
+    text += `Estimate: ${tk.name}\n`;
+    text += `Date: ${tk.created}\n`;
+    text += `Linked Bid: ${bidName}\n\n`;
+
+    // Collect all referenced submittal numbers for the summary
+    const allSubmittalRefs = new Set();
+
+    (tk.rooms || []).forEach((rm) => {
+      text += `${rm.name}${rm.floor ? " (" + rm.floor + ")" : ""}\n`;
+      (rm.items || []).forEach((it) => {
+        const c = calcItem(it, assemblies);
+        const subs = getSubmittalsForCode(it.code);
+        const subRef = subs.length > 0 ? `  [${subs.map(s => s.number).join(", ")}]` : "";
+        subs.forEach(s => allSubmittalRefs.add(`${s.number} — ${s.desc} (${s.status})`));
+        text += `  ${it.qty} ${it.unit}  ${it.desc}  ${fmt(c.total)}${subRef}\n`;
+      });
+      const rt = calcRoom(rm, assemblies);
+      text += `  Room Subtotal: ${fmt(rt.total)}\n\n`;
+    });
+
+    text += "---\n";
+    text += `Subtotal Materials: ${fmt(s.matSub)}\n`;
+    text += `Subtotal Labor: ${fmt(s.labSub)}\n`;
+    text += `Waste (${tk.wastePct}%): ${fmt(s.wasteAmt)}\n`;
+    text += `Tax on Materials (${tk.taxRate}%): ${fmt(s.taxAmt)}\n`;
+    text += `Overhead (${tk.overheadPct}%): ${fmt(s.overheadAmt)}\n`;
+    text += `Profit (${tk.profitPct}%): ${fmt(s.profitAmt)}\n`;
+    text += "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n";
+    text += `GRAND TOTAL: ${fmt(s.grandTotal)}\n`;
+
+    // Submittal references section
+    if (allSubmittalRefs.size > 0) {
+      text += "\n═══ SUBMITTALS REFERENCED ═══\n";
+      for (const ref of allSubmittalRefs) {
+        text += `  ${ref}\n`;
+      }
+      text += "\nAll materials per approved submittals. Product data available upon request.\n";
+    }
+
+    navigator.clipboard.writeText(text).then(() => {
+      show("Proposal copied to clipboard", "ok");
+    });
+  }
+
+  /* ── render: list view ───────────────────────────────────── */
+
+  const filtered = (takeoffs || []).filter(
+    (tk) => !search || tk.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (!activeTk) {
+    return (
+      <div>
+        <div className="section-header flex-between">
+          <h2 className="section-title">Estimating</h2>
+          <div className="flex gap-8">
+            <input type="file" id="ost-import" accept=".csv,.txt" style={{ display: "none" }} onChange={handleOstFile} />
+            <button className="btn btn-ghost" onClick={() => document.getElementById("ost-import").click()} style={{ fontSize: 13 }}>Import OST</button>
+            <button className="btn btn-primary" onClick={createTakeoff}>+ New Takeoff</button>
+          </div>
+        </div>
+
+        {filtered.length === 0 && (
+          <p style={{ color: "var(--text2)", padding: 16 }}>No takeoffs yet. Create one to get started.</p>
+        )}
+
+        <div className="flex" style={{ flexWrap: "wrap", gap: 12 }}>
+          {filtered.map((tk) => {
+            const s = calcSummary(tk, assemblies);
+            const bidName = bids.find((b) => b.id === tk.bidId)?.name;
+            const roomCount = (tk.rooms || []).length;
+            return (
+              <div
+                key={tk.id}
+                className="card card-glass"
+                style={{ cursor: "pointer", minWidth: 260, flex: "1 1 280px" }}
+                onClick={() => setActiveTk(tk.id)}
+              >
+                <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{tk.name}</div>
+                {bidName && <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>{bidName}</div>}
+                <div className="flex-between" style={{ fontSize: 13, color: "var(--text2)" }}>
+                  <span>{roomCount} room{roomCount !== 1 ? "s" : ""}</span>
+                  <span>{tk.created}</span>
+                </div>
+                <div className="flex-between" style={{ marginTop: 8, alignItems: "center" }}>
+                  <span style={{ fontWeight: 700, fontSize: 18, color: "var(--amber)" }}>{fmtK(s.grandTotal)}</span>
+                  <span style={{ display: "flex", gap: 4 }}>
+                    <button className="btn btn-ghost btn-sm" title="Clone" onClick={e => { e.stopPropagation(); cloneTakeoff(tk.id); }} style={{ fontSize: 11, padding: "2px 6px" }}>📋</button>
+                    <button className="btn btn-ghost btn-sm" title="Delete" onClick={e => { e.stopPropagation(); if (confirm(`Delete takeoff "${tk.name}"?`)) setTakeoffs(prev => prev.filter(t => t.id !== tk.id)); }} style={{ fontSize: 11, padding: "2px 6px", color: "var(--red)" }}>✕</button>
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ═══ OST IMPORT MODAL ═══ */}
+        {ostModal && (
+          <div className="modal-overlay" onClick={() => setOstModal(false)}>
+            <div className="modal-content" style={{ maxWidth: 900, maxHeight: "85vh", overflow: "auto" }} onClick={e => e.stopPropagation()}>
+              <div className="flex-between" style={{ marginBottom: 16 }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18 }}>Import from OST</h3>
+                  <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 4 }}>Map your OST conditions to EBC assemblies for pricing</div>
+                </div>
+                <button className="btn btn-ghost" onClick={() => setOstModal(false)}>✕</button>
+              </div>
+
+              {/* Takeoff name */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>Takeoff Name</label>
+                <input className="form-input" value={ostName} onChange={e => setOstName(e.target.value)} style={{ width: "100%" }} />
+              </div>
+
+              {/* Column mapping info */}
+              <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 12, padding: "8px 12px", background: "rgba(59,130,246,0.08)", borderRadius: "var(--radius)" }}>
+                Detected columns: {ostHeaders.length} · Data rows: {ostRows.length} · Auto-matched: {ostItemMappings.filter(m => m.assemblyCode).length} items
+              </div>
+
+              {/* Import table */}
+              <div style={{ overflowX: "auto", marginBottom: 16 }}>
+                <table className="data-table" style={{ fontSize: 12 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: 30 }}>Use</th>
+                      <th>OST Condition</th>
+                      <th style={{ width: 80 }}>Qty</th>
+                      <th style={{ width: 50 }}>Unit</th>
+                      <th>Page/Room</th>
+                      <th style={{ width: 180 }}>EBC Assembly</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ostItemMappings.map((m, i) => (
+                      <tr key={i} style={{ opacity: m.include ? 1 : 0.4 }}>
+                        <td>
+                          <input type="checkbox" checked={m.include} onChange={e => {
+                            setOstItemMappings(prev => prev.map((p, j) => j === i ? { ...p, include: e.target.checked } : p));
+                          }} />
+                        </td>
+                        <td style={{ fontWeight: 500 }}>{m.condName || <span style={{ color: "var(--text3)" }}>—</span>}</td>
+                        <td>
+                          <input className="form-input" type="number" value={m.qty} style={{ width: 70, fontSize: 12, padding: "2px 4px" }} onChange={e => {
+                            setOstItemMappings(prev => prev.map((p, j) => j === i ? { ...p, qty: parseFloat(e.target.value) || 0 } : p));
+                          }} />
+                        </td>
+                        <td style={{ color: "var(--text3)" }}>{m.unit}</td>
+                        <td style={{ fontSize: 11, color: "var(--text3)" }}>{m.page || "—"}</td>
+                        <td>
+                          <select className="form-input" value={m.assemblyCode} style={{ fontSize: 12, padding: "2px 4px", width: "100%" }} onChange={e => {
+                            const code = e.target.value;
+                            const asm = assemblies.find(a => a.code === code);
+                            setOstItemMappings(prev => prev.map((p, j) => j === i ? { ...p, assemblyCode: code, unit: asm?.unit || p.unit } : p));
+                          }}>
+                            <option value="">— Skip —</option>
+                            {assemblies.map(a => (
+                              <option key={a.code} value={a.code}>{a.code} — {a.name} ({a.unit})</option>
+                            ))}
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Summary & actions */}
+              <div className="flex-between">
+                <div style={{ fontSize: 13, color: "var(--text2)" }}>
+                  {ostItemMappings.filter(m => m.include && m.assemblyCode).length} items ready to import
+                </div>
+                <div className="flex gap-8">
+                  <button className="btn btn-ghost" onClick={() => setOstModal(false)}>Cancel</button>
+                  <button className="btn btn-primary" onClick={importOstTakeoff} disabled={ostItemMappings.filter(m => m.include && m.assemblyCode).length === 0}>
+                    Import & Price
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ── render: detail view ─────────────────────────────────── */
+
+  const tk = takeoffs.find((t) => t.id === activeTk);
+  if (!tk) {
+    setActiveTk(null);
+    return null;
+  }
+
+  const summary = calcSummary(tk, assemblies);
+  const linkedBid = bids.find((b) => b.id === tk.bidId);
+
+  return (
+    <div>
+      {/* back + header */}
+      <div className="section-header flex-between">
+        <div className="flex gap-8" style={{ alignItems: "center" }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => setActiveTk(null)}>&larr; Back</button>
+          <EditableText
+            value={tk.name}
+            onChange={(v) => updateTakeoff(tk.id, { name: v })}
+            style={{ fontSize: 18, fontWeight: 700 }}
+          />
+        </div>
+        <div className="flex gap-8">
+          <button className="btn btn-ghost btn-sm" onClick={() => runHistComparison(tk)} disabled={histLoading}>
+            {histLoading ? "Comparing..." : "Compare to History"}
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => copyProposal(tk)}>Copy Proposal</button>
+          <button className="btn btn-sm" style={{ background: "var(--gold)", color: "#fff" }} onClick={async () => {
+            const bid = bids.find(b => b.id === tk.bidId);
+            const fileName = await generateProposalPdf({ takeoff: tk, bid, company, assemblies, submittals, calcItem, calcRoom, calcSummary, scopeLines: tk.scopeLines });
+            show(`PDF exported: ${fileName}`, "ok");
+          }}>Export PDF</button>
+        </div>
+      </div>
+
+      {/* bid link + date */}
+      <div className="flex gap-8" style={{ marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <label style={{ fontSize: 13, color: "var(--text2)" }}>Bid:</label>
+        <select
+          className="form-select"
+          style={{ maxWidth: 280 }}
+          value={tk.bidId || ""}
+          onChange={(e) => updateTakeoff(tk.id, { bidId: e.target.value ? Number(e.target.value) : null })}
+        >
+          <option value="">-- None --</option>
+          {bids.map((b) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+        <span style={{ fontSize: 13, color: "var(--text2)", marginLeft: 8 }}>Created: {tk.created}</span>
+      </div>
+
+      {/* markup settings */}
+      <div className="flex gap-8" style={{ marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+        {[
+          { label: "Waste %", key: "wastePct" },
+          { label: "Tax %", key: "taxRate" },
+          { label: "Overhead %", key: "overheadPct" },
+          { label: "Profit %", key: "profitPct" },
+        ].map(({ label, key }) => (
+          <div key={key} className="flex gap-8" style={{ alignItems: "center" }}>
+            <label style={{ fontSize: 12, color: "var(--text2)", whiteSpace: "nowrap" }}>{label}</label>
+            <input
+              className="form-input"
+              type="number"
+              step="0.01"
+              style={{ width: 72 }}
+              value={tk[key]}
+              onChange={(e) => updateTakeoff(tk.id, { [key]: parseFloat(e.target.value) || 0 })}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* rooms accordion */}
+      <div className="takeoff-rooms">
+        {(tk.rooms || []).map((rm) => {
+          const isOpen = !!openRooms[rm.id];
+          const roomTotals = calcRoom(rm, assemblies);
+          return (
+            <div key={rm.id} className="takeoff-room">
+              <RoomHeader
+                rm={rm}
+                isOpen={isOpen}
+                roomTotal={roomTotals.total}
+                onToggle={() => toggleRoom(rm.id)}
+                onUpdateRoom={(patch) => updateRoom(tk.id, rm.id, patch)}
+                onDelete={() => deleteRoom(tk.id, rm.id)}
+                fmt={fmt}
+              />
+              {isOpen && (
+                <div className="room-body">
+                  <div style={{ overflowX: "auto" }}>
+                    <table className="data-table" style={{ width: "100%", fontSize: 13 }}>
+                      <thead>
+                        <tr>
+                          <th>Assembly</th>
+                          <th style={{ width: 64 }}>Qty</th>
+                          <th style={{ width: 44 }}>Unit</th>
+                          <th style={{ width: 56 }}>Height</th>
+                          <th style={{ width: 48 }}>HF</th>
+                          <th style={{ width: 56 }}>Diff</th>
+                          <th style={{ textAlign: "right" }}>Mat Rate</th>
+                          <th style={{ textAlign: "right" }}>Lab Rate</th>
+                          <th style={{ textAlign: "right" }}>Mat Total</th>
+                          <th style={{ textAlign: "right" }}>Lab Total</th>
+                          <th style={{ textAlign: "right" }}>Total</th>
+                          <th style={{ width: 36 }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(rm.items || []).map((item) => {
+                          const c = calcItem(item, assemblies);
+                          const asm = assemblies.find((a) => a.code === item.code);
+                          const hf = getHF(item.height || 10);
+                          const isEditing = editingItem === item.id;
+
+                          return (
+                            <tr key={item.id} onClick={() => setEditingItem(item.id)} style={{ cursor: "pointer" }}>
+                              <td>
+                                {isEditing ? (
+                                  <select
+                                    className="form-select"
+                                    value={item.code}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => handleAssemblyChange(tk.id, rm.id, item.id, e.target.value)}
+                                    style={{ fontSize: 12, maxWidth: 220 }}
+                                  >
+                                    {assemblies.map((a) => (
+                                      <option key={a.code} value={a.code}>
+                                        {a.code} - {a.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <span style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+                                    <span className={asm?.verified ? "badge-green" : "badge-amber"} style={{ marginRight: 4, fontSize: 10 }}>
+                                      {item.code}
+                                    </span>
+                                    {item.desc}
+                                    {getSubmittalsForCode(item.code).length > 0 && (
+                                      <span
+                                        className="sub-linked-badge"
+                                        title={getSubmittalsForCode(item.code).map(s => `${s.number}: ${s.desc} (${s.status})`).join("\n")}
+                                      >
+                                        {getSubmittalsForCode(item.code).length} SUB
+                                      </span>
+                                    )}
+                                  </span>
+                                )}
+                              </td>
+                              <td>
+                                {isEditing ? (
+                                  <input
+                                    className="form-input"
+                                    type="number"
+                                    value={item.qty}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => updateLineItem(tk.id, rm.id, item.id, { qty: parseFloat(e.target.value) || 0 })}
+                                    style={{ width: 60 }}
+                                  />
+                                ) : (
+                                  item.qty
+                                )}
+                              </td>
+                              <td>{item.unit}</td>
+                              <td>
+                                {isEditing ? (
+                                  <input
+                                    className="form-input"
+                                    type="number"
+                                    value={item.height}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => updateLineItem(tk.id, rm.id, item.id, { height: parseFloat(e.target.value) || 10 })}
+                                    style={{ width: 52 }}
+                                  />
+                                ) : (
+                                  item.height
+                                )}
+                              </td>
+                              <td title={hf.l + " \u2014 " + hf.c} style={{ color: hf.f > 1 ? "var(--amber)" : "var(--text2)" }}>
+                                {hf.f.toFixed(2)}
+                              </td>
+                              <td>
+                                {isEditing ? (
+                                  <input
+                                    className="form-input"
+                                    type="number"
+                                    step="0.01"
+                                    value={item.diff}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => updateLineItem(tk.id, rm.id, item.id, { diff: parseFloat(e.target.value) || 1 })}
+                                    style={{ width: 52 }}
+                                  />
+                                ) : (
+                                  item.diff.toFixed(2)
+                                )}
+                              </td>
+                              <td style={{ textAlign: "right" }}>{fmt(asm?.matRate || 0)}</td>
+                              <td style={{ textAlign: "right" }}>{fmt(asm?.labRate || 0)}</td>
+                              <td style={{ textAlign: "right" }}>{fmt(c.mat)}</td>
+                              <td style={{ textAlign: "right" }}>{fmt(c.lab)}</td>
+                              <td style={{ textAlign: "right", fontWeight: 600 }}>{fmt(c.total)}</td>
+                              <td>
+                                <button
+                                  className="btn btn-danger btn-sm"
+                                  style={{ padding: "2px 6px", fontSize: 11 }}
+                                  onClick={(e) => { e.stopPropagation(); deleteLineItem(tk.id, rm.id, item.id); }}
+                                  title="Delete line item"
+                                >
+                                  X
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {(rm.items || []).length === 0 && (
+                          <tr>
+                            <td colSpan={12} style={{ textAlign: "center", color: "var(--text3)", padding: 16 }}>
+                              No line items. Click "Add Item" to begin.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    <button className="btn btn-ghost btn-sm" onClick={() => addLineItem(tk.id, rm.id)}>+ Add Item</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ marginTop: 12 }}>
+        <button className="btn btn-primary btn-sm" onClick={() => addRoom(tk.id)}>+ Add Room</button>
+      </div>
+
+      {/* bid summary */}
+      <div className="takeoff-summary" style={{ marginTop: 24 }}>
+        <h3 style={{ marginBottom: 12, fontSize: 15 }}>Bid Summary</h3>
+        <div className="summary-row">
+          <span>Subtotal Materials</span>
+          <span>{fmt(summary.matSub)}</span>
+        </div>
+        <div className="summary-row">
+          <span>Subtotal Labor</span>
+          <span>{fmt(summary.labSub)}</span>
+        </div>
+        <div className="summary-row">
+          <span>Subtotal</span>
+          <span>{fmt(summary.subtotal)}</span>
+        </div>
+        <div className="summary-row">
+          <span>Waste ({tk.wastePct}%)</span>
+          <span>{fmt(summary.wasteAmt)}</span>
+        </div>
+        <div className="summary-row">
+          <span>Net Cost</span>
+          <span>{fmt(summary.netCost)}</span>
+        </div>
+        <div className="summary-row">
+          <span>Tax on Materials ({tk.taxRate}%)</span>
+          <span>{fmt(summary.taxAmt)}</span>
+        </div>
+        <div className="summary-row">
+          <span>Cost with Tax</span>
+          <span>{fmt(summary.costWithTax)}</span>
+        </div>
+        <div className="summary-row">
+          <span>Overhead ({tk.overheadPct}%)</span>
+          <span>{fmt(summary.overheadAmt)}</span>
+        </div>
+        <div className="summary-row">
+          <span>Cost with Overhead</span>
+          <span>{fmt(summary.costWithOverhead)}</span>
+        </div>
+        <div className="summary-row">
+          <span>Profit ({tk.profitPct}%)</span>
+          <span>{fmt(summary.profitAmt)}</span>
+        </div>
+        <div className="summary-row total">
+          <span>GRAND TOTAL</span>
+          <span>{fmt(summary.grandTotal)}</span>
+        </div>
+      </div>
+
+      {/* Historical Comparison Panel */}
+      {showHist && (
+        <div className="takeoff-summary" style={{ marginTop: 16 }}>
+          <div className="flex-between" style={{ marginBottom: 12 }}>
+            <h3 style={{ fontSize: 15 }}>Historical Comparison</h3>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setShowHist(false); setHistResult(null); }}>Close</button>
+          </div>
+          {histLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Analyzing against {projects.length} historical projects...</div>}
+          {histResult && (
+            <div>
+              {/* Summary */}
+              <div style={{ padding: 12, marginBottom: 12, background: "var(--card)", borderRadius: 8, border: "1px solid var(--border)" }}>
+                <div className="text-sm">{histResult.summary}</div>
+              </div>
+
+              {/* Margin Forecast */}
+              {histResult.marginForecast && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+                  <div className="card" style={{ padding: 10, textAlign: "center" }}>
+                    <div className="text-xs text-muted">Pessimistic</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--red)" }}>{histResult.marginForecast.pessimistic}%</div>
+                  </div>
+                  <div className="card" style={{ padding: 10, textAlign: "center" }}>
+                    <div className="text-xs text-muted">Expected</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--amber)" }}>{histResult.marginForecast.expected}%</div>
+                  </div>
+                  <div className="card" style={{ padding: 10, textAlign: "center" }}>
+                    <div className="text-xs text-muted">Optimistic</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--green)" }}>{histResult.marginForecast.optimistic}%</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Warnings */}
+              {histResult.laborWarning && (
+                <div style={{ padding: 10, marginBottom: 8, borderRadius: 6, background: "rgba(239,68,68,0.1)", border: "1px solid var(--red)", fontSize: 13 }}>
+                  <strong>Labor:</strong> {histResult.laborWarning}
+                </div>
+              )}
+              {histResult.materialWarning && (
+                <div style={{ padding: 10, marginBottom: 8, borderRadius: 6, background: "rgba(245,158,11,0.1)", border: "1px solid var(--amber)", fontSize: 13 }}>
+                  <strong>Material:</strong> {histResult.materialWarning}
+                </div>
+              )}
+
+              {/* Similar Projects */}
+              {histResult.similarProjects?.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div className="text-sm font-semi mb-8">Similar Past Projects</div>
+                  {histResult.similarProjects.map((sp, i) => (
+                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                      <div className="flex-between">
+                        <span className="font-semi">{sp.name}</span>
+                        <span style={{ color: "var(--amber)", fontWeight: 600 }}>{sp.similarity}% match</span>
+                      </div>
+                      <div className="text-xs text-muted mt-4">{sp.reason}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Insights */}
+              {histResult.insights?.length > 0 && (
+                <div>
+                  <div className="text-sm font-semi mb-8">Insights</div>
+                  {histResult.insights.map((ins, i) => (
+                    <div key={i} style={{ padding: 8, marginBottom: 6, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", fontSize: 13 }}>
+                      <div className="font-semi" style={{ color: "var(--blue)" }}>{ins.category}</div>
+                      <div className="mt-4">{ins.finding}</div>
+                      <div className="text-xs text-muted mt-4">{ins.recommendation}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* PDF options: tax breakout */}
+      <div className="takeoff-summary" style={{ marginTop: 16 }}>
+        <h3 style={{ marginBottom: 12, fontSize: 15 }}>Proposal PDF Options</h3>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={tk.showTaxBreakout || false}
+            onChange={(e) => updateTakeoff(tk.id, { showTaxBreakout: e.target.checked })}
+          />
+          Break out tax on materials separately on proposal
+        </label>
+      </div>
+
+      {/* alternates */}
+      <div className="takeoff-summary" style={{ marginTop: 16 }}>
+        <div className="flex-between" style={{ marginBottom: 12 }}>
+          <h3 style={{ fontSize: 15 }}>Alternates</h3>
+          <button className="btn btn-ghost btn-sm" onClick={() => updateTakeoff(tk.id, (prev) => ({
+            ...prev,
+            alternates: [...(prev.alternates || []), { id: "alt_" + Date.now(), description: "", amount: 0, type: "add" }]
+          }))}>+ Add Alternate</button>
+        </div>
+        {(tk.alternates || []).length === 0 && (
+          <p style={{ fontSize: 12, color: "var(--text3)" }}>No alternates. These appear as separate pricing options on the proposal.</p>
+        )}
+        {(tk.alternates || []).map((alt, i) => (
+          <div key={alt.id} className="flex gap-8" style={{ marginBottom: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, minWidth: 80 }}>Alt {i + 1}:</span>
+            <select
+              className="form-select"
+              value={alt.type}
+              style={{ width: 90, fontSize: 12 }}
+              onChange={(e) => updateTakeoff(tk.id, (prev) => ({
+                ...prev,
+                alternates: prev.alternates.map(a => a.id === alt.id ? { ...a, type: e.target.value } : a)
+              }))}
+            >
+              <option value="add">Add</option>
+              <option value="deduct">Deduct</option>
+            </select>
+            <input
+              className="form-input"
+              placeholder="Description"
+              value={alt.description}
+              style={{ flex: 1, minWidth: 180, fontSize: 12 }}
+              onChange={(e) => updateTakeoff(tk.id, (prev) => ({
+                ...prev,
+                alternates: prev.alternates.map(a => a.id === alt.id ? { ...a, description: e.target.value } : a)
+              }))}
+            />
+            <input
+              className="form-input"
+              type="number"
+              placeholder="Amount"
+              value={alt.amount}
+              style={{ width: 100, fontSize: 12 }}
+              onChange={(e) => updateTakeoff(tk.id, (prev) => ({
+                ...prev,
+                alternates: prev.alternates.map(a => a.id === alt.id ? { ...a, amount: parseFloat(e.target.value) || 0 } : a)
+              }))}
+            />
+            <button
+              className="btn btn-danger btn-sm"
+              style={{ padding: "2px 8px", fontSize: 11 }}
+              onClick={() => updateTakeoff(tk.id, (prev) => ({
+                ...prev,
+                alternates: prev.alternates.filter(a => a.id !== alt.id)
+              }))}
+            >X</button>
+          </div>
+        ))}
+      </div>
+
+      {/* add-ons */}
+      <div className="takeoff-summary" style={{ marginTop: 16 }}>
+        <div className="flex-between" style={{ marginBottom: 12 }}>
+          <h3 style={{ fontSize: 15 }}>Add-Ons (Optional Scope)</h3>
+          <button className="btn btn-ghost btn-sm" onClick={() => updateTakeoff(tk.id, (prev) => ({
+            ...prev,
+            addOns: [...(prev.addOns || []), { id: "ao_" + Date.now(), description: "", amount: 0 }]
+          }))}>+ Add Add-On</button>
+        </div>
+        {(tk.addOns || []).length === 0 && (
+          <p style={{ fontSize: 12, color: "var(--text3)" }}>No add-ons. These appear as optional extras the client can choose to include.</p>
+        )}
+        {(tk.addOns || []).map((ao, i) => (
+          <div key={ao.id} className="flex gap-8" style={{ marginBottom: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, minWidth: 80 }}>Add-On {i + 1}:</span>
+            <input
+              className="form-input"
+              placeholder="Description"
+              value={ao.description}
+              style={{ flex: 1, minWidth: 180, fontSize: 12 }}
+              onChange={(e) => updateTakeoff(tk.id, (prev) => ({
+                ...prev,
+                addOns: prev.addOns.map(a => a.id === ao.id ? { ...a, description: e.target.value } : a)
+              }))}
+            />
+            <input
+              className="form-input"
+              type="number"
+              placeholder="Amount"
+              value={ao.amount}
+              style={{ width: 100, fontSize: 12 }}
+              onChange={(e) => updateTakeoff(tk.id, (prev) => ({
+                ...prev,
+                addOns: prev.addOns.map(a => a.id === ao.id ? { ...a, amount: parseFloat(e.target.value) || 0 } : a)
+              }))}
+            />
+            <button
+              className="btn btn-danger btn-sm"
+              style={{ padding: "2px 8px", fontSize: 11 }}
+              onClick={() => updateTakeoff(tk.id, (prev) => ({
+                ...prev,
+                addOns: prev.addOns.filter(a => a.id !== ao.id)
+              }))}
+            >X</button>
+          </div>
+        ))}
+      </div>
+
+      {/* submittal coverage */}
+      {(() => {
+        const allCodes = new Set();
+        const coveredCodes = new Set();
+        (tk.rooms || []).forEach(rm => (rm.items || []).forEach(it => {
+          allCodes.add(it.code);
+          if (getSubmittalsForCode(it.code).length > 0) coveredCodes.add(it.code);
+        }));
+        const total = allCodes.size;
+        const covered = coveredCodes.size;
+        const pct = total > 0 ? Math.round((covered / total) * 100) : 0;
+        const uncovered = [...allCodes].filter(c => !coveredCodes.has(c));
+        if (total === 0) return null;
+        return (
+          <div className="takeoff-summary" style={{ marginTop: 16 }}>
+            <h3 style={{ marginBottom: 12, fontSize: 15 }}>Submittal Coverage</h3>
+            <div className="summary-row">
+              <span>Assembly codes with submittals</span>
+              <span>{covered} / {total} ({pct}%)</span>
+            </div>
+            <div style={{ marginTop: 8, height: 6, borderRadius: 3, background: "var(--bg4)", overflow: "hidden" }}>
+              <div style={{ width: `${pct}%`, height: "100%", borderRadius: 3, background: pct === 100 ? "var(--green)" : "var(--amber)", transition: "width 0.3s" }} />
+            </div>
+            {uncovered.length > 0 && (
+              <div style={{ marginTop: 8, fontSize: 12, color: "var(--text3)" }}>
+                Missing: {uncovered.map(c => (
+                  <span key={c} className="badge-amber" style={{ marginRight: 4, fontSize: 10 }}>{c}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
+
+/* ── sub-components ──────────────────────────────────────────── */
+
+function EditableText({ value, onChange, style }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  if (editing) {
+    return (
+      <input
+        className="form-input"
+        autoFocus
+        style={{ ...style, minWidth: 180 }}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => { onChange(draft); setEditing(false); }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { onChange(draft); setEditing(false); }
+          if (e.key === "Escape") { setDraft(value); setEditing(false); }
+        }}
+      />
+    );
+  }
+
+  return (
+    <span
+      style={{ ...style, cursor: "pointer", borderBottom: "1px dashed var(--border2)" }}
+      onClick={() => { setDraft(value); setEditing(true); }}
+      title="Click to edit"
+    >
+      {value}
+    </span>
+  );
+}
+
+function RoomHeader({ rm, isOpen, roomTotal, onToggle, onUpdateRoom, onDelete, fmt }) {
+  const [editingName, setEditingName] = useState(false);
+  const [nameVal, setNameVal] = useState(rm.name);
+  const [floorVal, setFloorVal] = useState(rm.floor);
+
+  function commitName() {
+    onUpdateRoom({ name: nameVal, floor: floorVal });
+    setEditingName(false);
+  }
+
+  return (
+    <div className="room-header flex-between" onClick={onToggle} style={{ cursor: "pointer" }}>
+      <div className="flex gap-8" style={{ alignItems: "center" }}>
+        <span style={{ fontSize: 14, fontWeight: 600, transform: isOpen ? "rotate(90deg)" : "none", display: "inline-block", transition: "transform 0.15s" }}>
+          &#9654;
+        </span>
+        {editingName ? (
+          <span className="flex gap-8" onClick={(e) => e.stopPropagation()}>
+            <input
+              className="form-input"
+              autoFocus
+              value={nameVal}
+              onChange={(e) => setNameVal(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") commitName(); if (e.key === "Escape") setEditingName(false); }}
+              style={{ width: 140 }}
+              placeholder="Room name"
+            />
+            <input
+              className="form-input"
+              value={floorVal}
+              onChange={(e) => setFloorVal(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") commitName(); if (e.key === "Escape") setEditingName(false); }}
+              style={{ width: 100 }}
+              placeholder="Floor"
+            />
+            <button className="btn btn-primary btn-sm" onClick={commitName}>OK</button>
+          </span>
+        ) : (
+          <span>
+            <strong>{rm.name}</strong>
+            {rm.floor && <span style={{ color: "var(--text2)", marginLeft: 6, fontSize: 12 }}>({rm.floor})</span>}
+          </span>
+        )}
+      </div>
+      <div className="flex gap-8" style={{ alignItems: "center", fontSize: 13 }}>
+        <span style={{ color: "var(--text2)" }}>{(rm.items || []).length} item{(rm.items || []).length !== 1 ? "s" : ""}</span>
+        <span style={{ fontWeight: 600, color: "var(--amber)", minWidth: 80, textAlign: "right" }}>{fmt(roomTotal)}</span>
+        <button
+          className="btn btn-ghost btn-sm"
+          title="Edit room"
+          onClick={(e) => {
+            e.stopPropagation();
+            setNameVal(rm.name);
+            setFloorVal(rm.floor);
+            setEditingName(true);
+          }}
+          style={{ padding: "2px 6px" }}
+        >
+          Edit
+        </button>
+        <button
+          className="btn btn-danger btn-sm"
+          title="Delete room"
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          style={{ padding: "2px 6px" }}
+        >
+          Del
+        </button>
+      </div>
+    </div>
+  );
+}

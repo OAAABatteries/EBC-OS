@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="24" fill="#06080c"/>
+  <rect x="16" y="16" width="160" height="160" rx="16" fill="#0c0f16" stroke="#1c2233" stroke-width="2"/>
+  <text x="96" y="85" font-family="sans-serif" font-weight="700" font-size="36" fill="#e09422" text-anchor="middle">EBC</text>
+  <text x="96" y="120" font-family="sans-serif" font-weight="600" font-size="18" fill="#8494ad" text-anchor="middle">OS</text>
+  <rect x="56" y="130" width="80" height="3" rx="1.5" fill="#e09422" opacity="0.5"/>
+</svg>
