@@ -26,7 +26,7 @@ function getWeekStart(d = new Date()) {
 
 export function ForemanView({ app }) {
   const {
-    employees, projects, crewSchedule, timeEntries,
+    employees, projects, crewSchedule, timeEntries, setTimeEntries,
     materialRequests, setMaterialRequests,
     changeOrders, rfis, submittals,
     jsas, setJsas,
@@ -55,8 +55,11 @@ export function ForemanView({ app }) {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
-  const [foremanTab, setForemanTab] = useState("dashboard");
+  const [foremanTab, setForemanTab] = useState("clock");
   const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [clockEntry, setClockEntry] = useState(null); // { clockIn, lat, lng, projectId }
+  const [gpsStatus, setGpsStatus] = useState("");
+  const [clockProjectSearch, setClockProjectSearch] = useState("");
   const [jsaView, setJsaView] = useState("list"); // list | detail | create
   const [activeJsaId, setActiveJsaId] = useState(null);
   const [jsaForm, setJsaForm] = useState({
@@ -98,7 +101,77 @@ export function ForemanView({ app }) {
     setPassword("");
     setForemanTab("dashboard");
     setSelectedProjectId(null);
+    if (app.onLogout) app.onLogout();
   };
+
+  // ── clock-in/out helpers ──
+  const CLOCK_KEY = `ebc_foremanClock_${activeForeman?.id || "x"}`;
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(CLOCK_KEY);
+      if (saved) setClockEntry(JSON.parse(saved));
+    } catch {}
+  }, [CLOCK_KEY]);
+
+  const isClockedIn = !!clockEntry;
+
+  const getLocation = () =>
+    new Promise((resolve) => {
+      if (!navigator.geolocation) return resolve(null);
+      setGpsStatus(t("Getting location…"));
+      navigator.geolocation.getCurrentPosition(
+        (pos) => { setGpsStatus(""); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
+        () => { setGpsStatus(""); resolve(null); },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+
+  const handleClockIn = async () => {
+    const loc = await getLocation();
+    const entry = {
+      clockIn: new Date().toISOString(),
+      lat: loc?.lat || null,
+      lng: loc?.lng || null,
+      projectId: selectedProjectId,
+    };
+    setClockEntry(entry);
+    localStorage.setItem(CLOCK_KEY, JSON.stringify(entry));
+    show?.(`${t("Clocked in")} ✓`);
+  };
+
+  const handleClockOut = async () => {
+    if (!clockEntry) return;
+    const loc = await getLocation();
+    const totalMs = Date.now() - new Date(clockEntry.clockIn).getTime();
+    const totalHours = +(totalMs / 3600000).toFixed(2);
+    const newEntry = {
+      id: Date.now(),
+      employeeId: activeForeman.id,
+      projectId: clockEntry.projectId || selectedProjectId,
+      clockIn: clockEntry.clockIn,
+      clockInLat: clockEntry.lat,
+      clockInLng: clockEntry.lng,
+      clockOut: new Date().toISOString(),
+      clockOutLat: loc?.lat || null,
+      clockOutLng: loc?.lng || null,
+      totalHours,
+    };
+    // Add to timeEntries
+    if (setTimeEntries) {
+      setTimeEntries(prev => [...prev, newEntry]);
+    }
+    setClockEntry(null);
+    localStorage.removeItem(CLOCK_KEY);
+    show?.(`${t("Clocked out")} · ${totalHours}h ✓`);
+  };
+
+  // ── today's time entries for this foreman ──
+  const todayStr = new Date().toDateString();
+  const myTodayEntries = useMemo(() =>
+    timeEntries.filter(te => te.employeeId === activeForeman?.id && new Date(te.clockIn).toDateString() === todayStr && te.totalHours),
+    [timeEntries, activeForeman, todayStr]
+  );
+  const myTodayHours = myTodayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
 
   // ── computed: my projects ──
   const weekStart = useMemo(() => getWeekStart(), []);
@@ -247,7 +320,7 @@ export function ForemanView({ app }) {
     return (
       <div className="employee-app">
         <header className="employee-header">
-          <div className="employee-logo">EBC-OS</div>
+          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/eagle.png" alt="" style={{ width: 36, height: 36, objectFit: "contain", background: "transparent" }} onError={(e) => e.target.style.display = "none"} />EBC-OS</div>
           <span className="text-sm text-muted">{t("Foreman Portal")}</span>
         </header>
         <div className="employee-body">
@@ -291,6 +364,7 @@ export function ForemanView({ app }) {
   const budgetColor = pctUsed > 90 ? "var(--red)" : pctUsed > 70 ? "var(--yellow)" : "var(--green)";
 
   const tabDefs = [
+    { key: "clock", label: isClockedIn ? `🟢 ${t("Clock")}` : t("Clock") },
     { key: "dashboard", label: t("Dashboard") },
     { key: "crew", label: t("Crew"), count: crewForProject.length },
     { key: "hours", label: t("Hours") },
@@ -304,7 +378,7 @@ export function ForemanView({ app }) {
     <div className="employee-app">
       <header className="employee-header">
         <div>
-          <div className="employee-logo">EBC-OS</div>
+          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/eagle.png" alt="" style={{ width: 36, height: 36, objectFit: "contain", background: "transparent" }} onError={(e) => e.target.style.display = "none"} />EBC-OS</div>
           <span className="text-xs text-muted">{activeForeman.name} · {t("Foreman Portal")}</span>
         </div>
         <button className="settings-gear" onClick={() => setForemanTab("settings")} title={t("Settings")}>
@@ -428,6 +502,135 @@ export function ForemanView({ app }) {
 
         {selectedProject && foremanTab !== "settings" && (
           <>
+            {/* ═══ CLOCK TAB ═══ */}
+            {foremanTab === "clock" && (
+              <div className="emp-content">
+                <div style={{ textAlign: "center", padding: "30px 20px" }}>
+                  {/* Big clock display */}
+                  <div style={{ fontSize: 42, fontWeight: 700, marginBottom: 6, fontFamily: "monospace" }}>
+                    {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </div>
+                  <div className="text-sm text-muted" style={{ marginBottom: 24 }}>
+                    {new Date().toLocaleDateString(lang === "es" ? "es-US" : "en-US", { weekday: "long", month: "long", day: "numeric" })}
+                  </div>
+
+                  {gpsStatus && <div className="text-xs text-muted" style={{ marginBottom: 10 }}>{gpsStatus}</div>}
+
+                  {/* ── Project Lookup for Clock-In ── */}
+                  {!isClockedIn && (
+                    <div style={{ marginBottom: 20, textAlign: "left", maxWidth: 400, margin: "0 auto 20px" }}>
+                      <label className="form-label" style={{ textAlign: "center", display: "block", marginBottom: 8 }}>{t("Select Project")}</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        placeholder={t("Search project name or address...")}
+                        value={clockProjectSearch}
+                        onChange={(e) => setClockProjectSearch(e.target.value)}
+                        style={{ marginBottom: 6, textAlign: "center" }}
+                      />
+                      <div style={{ maxHeight: 200, overflowY: "auto", borderRadius: 8, background: "var(--glass-bg)" }}>
+                        {(myProjects || projects)
+                          .filter(p => {
+                            if (!clockProjectSearch.trim()) return true;
+                            const q = clockProjectSearch.toLowerCase();
+                            return (p.name || "").toLowerCase().includes(q) ||
+                                   (p.address || "").toLowerCase().includes(q) ||
+                                   (p.gc || "").toLowerCase().includes(q);
+                          })
+                          .slice(0, 10)
+                          .map(p => (
+                            <div
+                              key={p.id}
+                              onClick={() => { setSelectedProjectId(p.id); setClockProjectSearch(""); }}
+                              style={{
+                                padding: "10px 14px",
+                                cursor: "pointer",
+                                borderBottom: "1px solid var(--glass-border)",
+                                background: selectedProjectId === p.id ? "var(--accent-dim)" : "transparent",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                              }}
+                            >
+                              <div>
+                                <div className="text-sm font-semi">{p.name}</div>
+                                <div className="text-xs text-muted">{p.address || p.gc || ""}</div>
+                              </div>
+                              {selectedProjectId === p.id && <span style={{ color: "var(--green)", fontSize: 18 }}>✓</span>}
+                            </div>
+                          ))}
+                      </div>
+                      {selectedProject && (
+                        <div className="text-sm font-semi" style={{ textAlign: "center", marginTop: 10, color: "var(--accent)" }}>
+                          📍 {selectedProject.name}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!isClockedIn ? (
+                    <button
+                      className="btn btn-primary"
+                      style={{ width: 200, height: 200, borderRadius: "50%", fontSize: 22, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "0 auto" }}
+                      onClick={handleClockIn}
+                      disabled={!selectedProjectId}
+                    >
+                      <span style={{ fontSize: 40 }}>⏱️</span>
+                      {t("CLOCK IN")}
+                    </button>
+                  ) : (
+                    <>
+                      <div style={{ marginBottom: 16 }}>
+                        <div className="text-xs text-muted">{t("Clocked in at")}</div>
+                        <div style={{ fontSize: 20, fontWeight: 600, color: "var(--green)" }}>
+                          {new Date(clockEntry.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                        <div className="text-xs text-muted" style={{ marginTop: 4 }}>
+                          {(() => {
+                            const elapsed = Date.now() - new Date(clockEntry.clockIn).getTime();
+                            const hrs = Math.floor(elapsed / 3600000);
+                            const mins = Math.floor((elapsed % 3600000) / 60000);
+                            return `${hrs}h ${mins}m ${t("elapsed")}`;
+                          })()}
+                        </div>
+                      </div>
+                      <button
+                        className="btn"
+                        style={{ width: 200, height: 200, borderRadius: "50%", fontSize: 22, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "0 auto", background: "var(--red)", color: "#fff" }}
+                        onClick={handleClockOut}
+                      >
+                        <span style={{ fontSize: 40 }}>🛑</span>
+                        {t("CLOCK OUT")}
+                      </button>
+                    </>
+                  )}
+
+                  {/* Today's entries */}
+                  {myTodayEntries.length > 0 && (
+                    <div style={{ marginTop: 30, textAlign: "left" }}>
+                      <div className="section-title" style={{ fontSize: 14, marginBottom: 8 }}>{t("Today's Time Log")}</div>
+                      {myTodayEntries.map((te, i) => (
+                        <div key={i} className="foreman-crew-row" style={{ padding: "8px 12px", marginBottom: 4 }}>
+                          <div>
+                            <div className="text-sm font-semi">
+                              {new Date(te.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} → {new Date(te.clockOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </div>
+                            <div className="text-xs text-muted">
+                              {projects.find(p => p.id === te.projectId)?.name || t("General")}
+                            </div>
+                          </div>
+                          <div style={{ fontWeight: 600, color: "var(--accent)" }}>{te.totalHours}h</div>
+                        </div>
+                      ))}
+                      <div className="text-sm font-semi" style={{ textAlign: "right", marginTop: 8, color: "var(--accent)" }}>
+                        {t("Total")}: {myTodayHours.toFixed(1)}h
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* ═══ DASHBOARD TAB ═══ */}
             {foremanTab === "dashboard" && (
               <div className="emp-content">

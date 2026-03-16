@@ -139,7 +139,7 @@ export function JSATab({ app }) {
 
   // Create form state (hoisted to top level to avoid hooks-in-callbacks)
   const [form, setForm] = useState({
-    projectId: "", trade: "framing", templateId: "", title: "",
+    projectId: "", trades: ["framing"], templateId: "", title: "",
     location: "", supervisor: "", competentPerson: "", gc: "",
     date: new Date().toISOString().slice(0, 10),
     shift: "day", weather: "clear", indoorOutdoor: "outdoor",
@@ -158,7 +158,7 @@ export function JSATab({ app }) {
     try {
       const { generateJsa } = await import("../utils/api.js");
       const proj = projects.find(p => String(p.id) === String(form.projectId));
-      const res = await generateJsa(app.apiKey, form.trade, proj, form.weather, form.location);
+      const res = await generateJsa(app.apiKey, form.trades.join(", "), proj, form.weather, form.location);
       const steps = (res.steps || []).map((s, i) => ({
         id: "s_" + Date.now() + "_" + i,
         step: s.step,
@@ -199,7 +199,12 @@ export function JSATab({ app }) {
   //  JSA LIST
   // ═══════════════════════════════════════════════════════════
   const renderList = () => {
-    const filtered = (jsas || []).filter(j => tradeFilter === "all" || j.trade === tradeFilter)
+    const filtered = (jsas || []).filter(j => {
+      if (tradeFilter === "all") return true;
+      // Support both old single trade and new multi-trade format
+      const trades = j.trades || (j.trade ? [j.trade] : []);
+      return trades.includes(tradeFilter);
+    })
       .sort((a, b) => b.date.localeCompare(a.date));
 
     return (
@@ -239,7 +244,9 @@ export function JSATab({ app }) {
                   <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
                     <span className="jsa-status-badge" style={{ background: statusClr + "22", color: statusClr }}>{j.status.toUpperCase()}</span>
                     <span className="jsa-risk-badge" style={{ background: rc.bg + "22", color: rc.bg }}>{rc.label} Risk</span>
-                    {j.trade && <span style={{ fontSize: 11, color: "var(--text3)" }}>{lang === "es" ? TRADE_LABELS[j.trade]?.labelEs : TRADE_LABELS[j.trade]?.label}</span>}
+                    {(j.trades || (j.trade ? [j.trade] : [])).map(tr => (
+                      <span key={tr} style={{ fontSize: 11, color: "var(--text3)" }}>{lang === "es" ? TRADE_LABELS[tr]?.labelEs : TRADE_LABELS[tr]?.label}</span>
+                    ))}
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{j.title}</div>
                   <div style={{ fontSize: 12, color: "var(--text3)" }}>
@@ -297,7 +304,7 @@ export function JSATab({ app }) {
             {jsa.status === "active" && <button className="cal-nav-btn" onClick={() => updateJsa({ status: "closed" })}>{t("Close JSA")}</button>}
             <button className="cal-nav-btn" onClick={() => {
               const projN = projName(jsa.projectId);
-              const tradeLabel = TRADE_LABELS[jsa.trade]?.label || jsa.trade;
+              const tradeLabel = (jsa.trades || (jsa.trade ? [jsa.trade] : [])).map(tr => TRADE_LABELS[tr]?.label || tr).join(", ");
               const allH = jsa.steps.flatMap(s => s.hazards || []);
               const maxR = Math.max(0, ...allH.map(h => (h.likelihood||1)*(h.severity||1)));
               const riskLbl = riskColor(maxR).label;
@@ -383,7 +390,7 @@ export function JSATab({ app }) {
             <span>{jsa.date}</span>
             <span>{jsa.location}</span>
             <span>{t("Supervisor")}: {jsa.supervisor}</span>
-            <span>{lang === "es" ? TRADE_LABELS[jsa.trade]?.labelEs : TRADE_LABELS[jsa.trade]?.label}</span>
+            <span>{(jsa.trades || (jsa.trade ? [jsa.trade] : [])).map(tr => lang === "es" ? TRADE_LABELS[tr]?.labelEs : TRADE_LABELS[tr]?.label).join(", ")}</span>
           </div>
         </div>
 
@@ -641,7 +648,7 @@ export function JSATab({ app }) {
       setForm(f => ({
         ...f,
         templateId: tmplId,
-        trade,
+        trades: [...new Set([...(f.trades || []), trade])],
         title: lang === "es" ? tmpl.titleEs : tmpl.title,
         steps,
         ppe: [...tmpl.ppe],
@@ -691,7 +698,7 @@ export function JSATab({ app }) {
       };
       setJsas(prev => [...prev, newJsa]);
       show(t("JSA created"));
-      setForm({ projectId: "", trade: "framing", templateId: "", title: "", location: "", supervisor: "", competentPerson: "", gc: "", date: new Date().toISOString().slice(0, 10), shift: "day", weather: "clear", indoorOutdoor: "outdoor", steps: [], ppe: [], permits: [], crewMembers: [] });
+      setForm({ projectId: "", trades: ["framing"], templateId: "", title: "", location: "", supervisor: "", competentPerson: "", gc: "", date: new Date().toISOString().slice(0, 10), shift: "day", weather: "clear", indoorOutdoor: "outdoor", steps: [], ppe: [], permits: [], crewMembers: [] });
       setActiveJsa(newJsa.id);
       setSubTab("detail");
     };
@@ -724,12 +731,26 @@ export function JSATab({ app }) {
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label">{t("Trade")}</label>
-            <select className="form-select" value={form.trade} onChange={e => updForm("trade", e.target.value)}>
-              {Object.entries(TRADE_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>{lang === "es" ? v.labelEs : v.label}</option>
-              ))}
-            </select>
+            <label className="form-label">{t("Trades")} <span style={{ fontSize: 11, color: "var(--text3)", fontWeight: 400 }}>({t("select all that apply")})</span></label>
+            <div className="flex gap-4 flex-wrap">
+              {Object.entries(TRADE_LABELS).map(([k, v]) => {
+                const selected = (form.trades || []).includes(k);
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    className={`btn btn-sm ${selected ? "btn-primary" : "btn-ghost"}`}
+                    onClick={() => {
+                      const current = form.trades || [];
+                      const next = selected ? current.filter(t => t !== k) : [...current, k];
+                      updForm("trades", next.length > 0 ? next : [k]);
+                    }}
+                  >
+                    {lang === "es" ? v.labelEs : v.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="form-group full">
             <label className="form-label">{t("JSA Title")}</label>
