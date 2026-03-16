@@ -454,16 +454,29 @@ function App({ auth, onLogout }) {
     ];
   }, [theme]);
 
+  // ── role-specific dashboard config ──
+  const ROLE_DASH = {
+    owner:       { subtitle: "Company Overview",       showKPIs: true,  showCharts: true,  showDigest: true,  showBrief: true,  showQuickActions: true },
+    admin:       { subtitle: "Company Overview",       showKPIs: true,  showCharts: true,  showDigest: true,  showBrief: true,  showQuickActions: true },
+    pm:          { subtitle: "Projects & Bids",        showKPIs: true,  showCharts: true,  showDigest: true,  showBrief: true,  showQuickActions: true },
+    office_admin:{ subtitle: "Office Operations",      showKPIs: true,  showCharts: false, showDigest: false, showBrief: true,  showQuickActions: false },
+    accounting:  { subtitle: "Financials & Payroll",   showKPIs: true,  showCharts: false, showDigest: false, showBrief: true,  showQuickActions: false },
+    safety:      { subtitle: "Safety & Compliance",    showKPIs: false, showCharts: false, showDigest: false, showBrief: true,  showQuickActions: false },
+  };
+  const dashCfg = ROLE_DASH[userRole] || ROLE_DASH.owner;
+
   const renderDashboard = () => (
     <div>
       <div className="section-header">
         <div>
           <div className="section-title font-head">{t("Dashboard")}</div>
-          <div className="section-sub">{t("Eagles Brothers Constructors overview")}</div>
+          <div className="section-sub">{auth?.name ? `${auth.name} — ${t(dashCfg.subtitle)}` : t(dashCfg.subtitle)}</div>
         </div>
-        <button className="btn btn-ghost" onClick={() => { showBrief ? setShowBrief(false) : runMorningBrief(); }} disabled={briefLoading}>
-          {briefLoading ? t("Loading...") : t("Morning Brief")}
-        </button>
+        {dashCfg.showBrief && (
+          <button className="btn btn-ghost" onClick={() => { showBrief ? setShowBrief(false) : runMorningBrief(); }} disabled={briefLoading}>
+            {briefLoading ? t("Loading...") : t("Morning Brief")}
+          </button>
+        )}
       </div>
 
       {/* Morning Briefing Panel */}
@@ -532,67 +545,117 @@ function App({ auth, onLogout }) {
         </div>
       )}
 
-      <div className="kpi-grid">
-        <div className="kpi-card">
-          <div className="kpi-label">{t("Pipeline Value")}</div>
-          <div className="kpi-value">{fmtK(pipeline)}</div>
-          <div className="kpi-sub">{bids.filter(b => b.status === "estimating").length} {t("bids estimating")}</div>
+      {dashCfg.showKPIs && userRole === "accounting" ? (
+        <div className="kpi-grid">
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Pipeline Value")}</div>
+            <div className="kpi-value">{fmtK(pipeline)}</div>
+            <div className="kpi-sub">{bids.filter(b => b.status === "awarded").length} {t("awarded")}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Active Projects")}</div>
+            <div className="kpi-value">{activeProjects}</div>
+            <div className="kpi-sub">{t("billing in progress")}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Team Members")}</div>
+            <div className="kpi-value">{(() => { try { return JSON.parse(localStorage.getItem("ebc_users") || "[]").length; } catch { return 0; } })()}</div>
+            <div className="kpi-sub">{t("on payroll")}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Win Rate")}</div>
+            <div className="kpi-value">{winRate}%</div>
+            <div className="kpi-sub">{awarded}W / {lost}L</div>
+          </div>
         </div>
-        <div className="kpi-card">
-          <div className="kpi-label">{t("Active Projects")}</div>
-          <div className="kpi-value">{activeProjects}</div>
-          <div className="kpi-sub">{projects.filter(p => p.progress < 100).length} {t("in progress")}</div>
+      ) : dashCfg.showKPIs && userRole === "office_admin" ? (
+        <div className="kpi-grid">
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Active Projects")}</div>
+            <div className="kpi-value">{activeProjects}</div>
+            <div className="kpi-sub">{projects.filter(p => p.progress < 100).length} {t("in progress")}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Open Bids")}</div>
+            <div className="kpi-value">{openBids}</div>
+            <div className="kpi-sub">{bids.filter(b => b.status === "submitted").length} {t("submitted")}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Contacts")}</div>
+            <div className="kpi-value">{contacts.length}</div>
+            <div className="kpi-sub">{t("in directory")}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Pipeline Value")}</div>
+            <div className="kpi-value">{fmtK(pipeline)}</div>
+            <div className="kpi-sub">{t("total estimating")}</div>
+          </div>
         </div>
-        <div className="kpi-card">
-          <div className="kpi-label">{t("Open Bids")}</div>
-          <div className="kpi-value">{openBids}</div>
-          <div className="kpi-sub">{bids.filter(b => b.status === "submitted").length} {t("submitted")}</div>
+      ) : dashCfg.showKPIs && (
+        <div className="kpi-grid">
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Pipeline Value")}</div>
+            <div className="kpi-value">{fmtK(pipeline)}</div>
+            <div className="kpi-sub">{bids.filter(b => b.status === "estimating").length} {t("bids estimating")}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Active Projects")}</div>
+            <div className="kpi-value">{activeProjects}</div>
+            <div className="kpi-sub">{projects.filter(p => p.progress < 100).length} {t("in progress")}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Open Bids")}</div>
+            <div className="kpi-value">{openBids}</div>
+            <div className="kpi-sub">{bids.filter(b => b.status === "submitted").length} {t("submitted")}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Win Rate")}</div>
+            <div className="kpi-value">{winRate}%</div>
+            <div className="kpi-sub">{awarded}W / {lost}L</div>
+          </div>
         </div>
-        <div className="kpi-card">
-          <div className="kpi-label">{t("Win Rate")}</div>
-          <div className="kpi-value">{winRate}%</div>
-          <div className="kpi-sub">{awarded}W / {lost}L</div>
-        </div>
-      </div>
+      )}
 
-      {/* Charts Row */}
-      <div className="flex gap-16 mt-24" style={{ flexWrap: "wrap" }}>
-        <div className="card" style={{ flex: "1 1 280px", minWidth: 280 }}>
-          <div className="card-header"><div className="card-title font-head">{t("Bids by Status")}</div></div>
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie data={statusChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name} (${value})`}>
-                {statusChartData.map((_, i) => <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />)}
-              </Pie>
-              <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} />
-            </PieChart>
-          </ResponsiveContainer>
+      {/* Charts Row — only for roles that need bid analytics */}
+      {dashCfg.showCharts && (<>
+        <div className="flex gap-16 mt-24" style={{ flexWrap: "wrap" }}>
+          <div className="card" style={{ flex: "1 1 280px", minWidth: 280 }}>
+            <div className="card-header"><div className="card-title font-head">{t("Bids by Status")}</div></div>
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie data={statusChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name} (${value})`}>
+                  {statusChartData.map((_, i) => <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />)}
+                </Pie>
+                <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="card" style={{ flex: "1 1 400px", minWidth: 300 }}>
+            <div className="card-header"><div className="card-title font-head">{t("Bids by GC (Top 8)")}</div></div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={gcChartData} layout="vertical" margin={{ left: 10, right: 20 }}>
+                <XAxis type="number" tick={{ fill: "var(--text2)", fontSize: 11 }} />
+                <YAxis type="category" dataKey="name" width={120} tick={{ fill: "var(--text2)", fontSize: 11 }} />
+                <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} />
+                <Bar dataKey="value" fill="var(--amber)" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        <div className="card" style={{ flex: "1 1 400px", minWidth: 300 }}>
-          <div className="card-header"><div className="card-title font-head">{t("Bids by GC (Top 8)")}</div></div>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={gcChartData} layout="vertical" margin={{ left: 10, right: 20 }}>
-              <XAxis type="number" tick={{ fill: "var(--text2)", fontSize: 11 }} />
-              <YAxis type="category" dataKey="name" width={120} tick={{ fill: "var(--text2)", fontSize: 11 }} />
+        <div className="card mt-16">
+          <div className="card-header"><div className="card-title font-head">{t("Bids by Month")}</div></div>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={monthChartData} margin={{ left: 0, right: 20 }}>
+              <XAxis dataKey="name" tick={{ fill: "var(--text2)", fontSize: 12 }} />
+              <YAxis tick={{ fill: "var(--text2)", fontSize: 11 }} />
               <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} />
-              <Bar dataKey="value" fill="var(--amber)" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="value" fill="var(--blue)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </div>
-
-      <div className="card mt-16">
-        <div className="card-header"><div className="card-title font-head">{t("Bids by Month")}</div></div>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={monthChartData} margin={{ left: 0, right: 20 }}>
-            <XAxis dataKey="name" tick={{ fill: "var(--text2)", fontSize: 12 }} />
-            <YAxis tick={{ fill: "var(--text2)", fontSize: 11 }} />
-            <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} />
-            <Bar dataKey="value" fill="var(--blue)" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      </>)}
 
       <div className="card mt-16">
         <div className="card-header">
@@ -619,8 +682,8 @@ function App({ auth, onLogout }) {
         )}
       </div>
 
-      {/* Weekly Digest */}
-      <div className="card mt-16">
+      {/* Weekly Digest — owner/admin/pm only */}
+      {dashCfg.showDigest && <div className="card mt-16">
         <div className="card-header flex-between">
           <div className="card-title font-head">{t("PM Weekly Digest")}</div>
           <button className="btn btn-primary btn-sm" onClick={runWeeklyDigest} disabled={digestLoading}>
@@ -701,12 +764,36 @@ function App({ auth, onLogout }) {
             )}
           </div>
         )}
-      </div>
+      </div>}
 
-      <div className="flex gap-8 mt-16">
-        <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>{t("+ Add Bid")}</button>
-        <button className="btn btn-ghost" onClick={() => handleTabClick("projects")}>{t("View Projects")}</button>
-      </div>
+      {/* Role-tailored quick actions */}
+      {dashCfg.showQuickActions && (
+        <div className="flex gap-8 mt-16">
+          <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>{t("+ Add Bid")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("projects")}>{t("View Projects")}</button>
+        </div>
+      )}
+      {userRole === "office_admin" && (
+        <div className="flex gap-8 mt-16">
+          <button className="btn btn-primary" onClick={() => handleTabClick("documents")}>{t("Documents")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("calendar")}>{t("Calendar")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("contacts")}>{t("Contacts")}</button>
+        </div>
+      )}
+      {userRole === "accounting" && (
+        <div className="flex gap-8 mt-16">
+          <button className="btn btn-primary" onClick={() => handleTabClick("financials")}>{t("Financials")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("timeclock")}>{t("Time Clock")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("reports")}>{t("Reports")}</button>
+        </div>
+      )}
+      {userRole === "safety" && (
+        <div className="flex gap-8 mt-16">
+          <button className="btn btn-primary" onClick={() => handleTabClick("jsa")}>{t("JSA Forms")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("safety")}>{t("Safety")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("reports")}>{t("Reports")}</button>
+        </div>
+      )}
     </div>
   );
 

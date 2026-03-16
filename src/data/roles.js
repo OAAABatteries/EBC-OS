@@ -16,7 +16,7 @@ export const ROLES = {
   },
   pm: {
     label: "Project Manager",
-    access: ["dashboard", "bids", "projects", "estimating", "financials", "documents", "calendar", "schedule", "reports", "safety", "jsa", "materials", "scope", "contacts", "timeclock", "map"],
+    access: ["dashboard", "bids", "projects", "estimating", "financials", "documents", "calendar", "schedule", "reports", "safety", "jsa", "materials", "incentives", "scope", "contacts", "timeclock", "map", "settings"],
     description: "Manage assigned projects and bids"
   },
   estimator: {
@@ -41,12 +41,12 @@ export const ROLES = {
   },
   accounting: {
     label: "Accounting",
-    access: ["dashboard", "financials", "timeclock", "reports", "contacts"],
+    access: ["dashboard", "financials", "timeclock", "reports", "contacts", "settings"],
     description: "Invoices, change orders, payroll"
   },
   office_admin: {
     label: "Office Admin",
-    access: ["dashboard", "bids", "projects", "financials", "documents", "calendar", "contacts", "timeclock", "reports"],
+    access: ["dashboard", "bids", "projects", "financials", "documents", "calendar", "contacts", "timeclock", "reports", "settings"],
     description: "Office operations, documents, scheduling"
   },
   employee: {
