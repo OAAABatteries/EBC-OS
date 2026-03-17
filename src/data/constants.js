@@ -343,7 +343,12 @@ const _demoBids = [
 // Real project data extracted from Google Docs proposals
 export const PM_NAMES = { 3: "Emmanuel Aguilar", 4: "Isai Aguilar", 8: "Abner Aguilar" };
 const _demoProjects = [
-  // Projects are populated when bids are awarded — start empty
+  // Active EBC projects (awarded bids)
+  {id:1,name:"ROD - Brunello Cucinelli",gc:"ROD",value:92500,status:"in-progress",phase:"Retail",address:"2800 Kirby Dr, Houston TX 77098",pm:"Emmanuel Aguilar",laborHours:1200,progress:35,startDate:"2026-01-15",endDate:"2026-07-30",scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish"]},
+  {id:2,name:"United - Escapology San Antonio",gc:"United",value:187800,status:"in-progress",phase:"Commercial",address:"15900 La Cantera Pkwy, San Antonio TX 78256",pm:"Isai Aguilar",laborHours:800,progress:20,startDate:"2026-02-10",endDate:"2026-06-15",scope:["Demo","Metal Framing","Drywall","ACT Ceilings"]},
+  {id:3,name:"Forney - BSLMC Cath Labs 4 & 9",gc:"Forney",value:145000,status:"in-progress",phase:"Medical",address:"17500 Red Oak Dr, Houston TX 77090",pm:"Emmanuel Aguilar",laborHours:960,progress:55,startDate:"2025-12-01",endDate:"2026-04-30",scope:["Metal Framing","Drywall","Lead-Lined Walls","Tape & Finish"]},
+  {id:4,name:"Memorial Hermann - League City CCC CT",gc:"Memorial Hermann",value:68000,status:"in-progress",phase:"Medical",address:"100 Medical Center Blvd, League City TX 77573",pm:"Abner Aguilar",laborHours:480,progress:10,startDate:"2026-03-01",endDate:"2026-05-30",scope:["Demo","Metal Framing","Drywall","Lead-Lined Walls"]},
+  {id:5,name:"United - Heart Care Clinic NW Houston",gc:"United",value:112000,status:"in-progress",phase:"Medical",address:"17270 Red Oak Dr, Houston TX 77090",pm:"Isai Aguilar",laborHours:720,progress:45,startDate:"2026-01-06",endDate:"2026-05-15",scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish"]},
 ];
 
 // ── SEED: CONTACTS ──
@@ -540,6 +545,9 @@ const _demoEmployees = [
   { id: 5, name: "David Ramirez", role: "Foreman", pin: "5678", phone: "713-555-1005", schedule: { start: "06:00", end: "14:30" }, hourlyRate: 42, active: true, email: "david@eaglesbros.com", password: "ebc2026", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
   { id: 6, name: "Luis Herrera", role: "Apprentice", pin: "6789", phone: "713-555-1006", schedule: { start: "07:00", end: "15:30" }, hourlyRate: 22, active: true, email: "luis@eaglesbros.com", password: "ebc2026", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
   { id: 7, name: "Rigoberto Martinez", role: "Driver", pin: "7890", phone: "713-555-1007", schedule: { start: "07:00", end: "16:00" }, hourlyRate: 25, active: true, email: "rigoberto@eaglesbros.com", password: "ebc2026", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
+  { id: 9, name: "Antonio Hernandez", role: "Foreman", pin: "1009", phone: "713-555-1009", schedule: { start: "06:00", end: "14:30" }, hourlyRate: 42, active: true, email: "antonio@ebconstructors.com", password: "ebc2026", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
+  { id: 10, name: "Jose Perez", role: "Journeyman", pin: "1110", phone: "713-555-1010", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 35, active: true, email: "jose@eaglesbros.com", password: "ebc2026", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
+  { id: 11, name: "Fernando Reyes", role: "Apprentice", pin: "1111", phone: "713-555-1011", schedule: { start: "07:00", end: "15:30" }, hourlyRate: 22, active: true, email: "fernando@eaglesbros.com", password: "ebc2026", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
 ];
 
 // ── SEED: COMPANY LOCATIONS (geofence) ──
@@ -549,20 +557,60 @@ const _demoCompanyLocations = [
 ];
 
 // ── SEED: MATERIAL REQUESTS ──
-const _demoMaterialRequests = [];
+const _demoMaterialRequests = [
+  {id:"mr-1",projectId:1,item:'5/8" Type X Firecode (4x12)',qty:120,unit:"sheets",status:"ordered",requestedBy:"Antonio Hernandez",date:_ws,notes:"Level 2 board hang starting next week",deliveryDate:null},
+  {id:"mr-2",projectId:1,item:"3-5/8\" 25ga Metal Studs (10')",qty:400,unit:"sticks",status:"delivered",requestedBy:"Antonio Hernandez",date:_ws,notes:"Corridor framing",deliveryDate:_ws},
+  {id:"mr-3",projectId:3,item:"Lead-Lined Drywall (1/16\" Pb)",qty:24,unit:"sheets",status:"pending",requestedBy:"Antonio Hernandez",date:_ws,notes:"Cath Lab 4 scan room walls",deliveryDate:null},
+  {id:"mr-4",projectId:1,item:"USG Sheetrock All Purpose Joint Compound (5 gal)",qty:15,unit:"buckets",status:"pending",requestedBy:"Ricardo Mendez",date:_ws,notes:"",deliveryDate:null},
+];
 
 // ── SEED: CREW SCHEDULE ──
+// Dynamic week start so seed data always shows "this week"
+function _currentWeekStart() {
+  const d = new Date(); d.setHours(0,0,0,0);
+  const day = d.getDay(); d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+  return d.toISOString().slice(0, 10);
+}
+const _ws = _currentWeekStart();
 const _demoCrewSchedule = [
-  { id:1, employeeId:1, projectId:1, weekStart:"2026-03-09", days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
-  { id:2, employeeId:2, projectId:1, weekStart:"2026-03-09", days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
-  { id:3, employeeId:3, projectId:1, weekStart:"2026-03-09", days:{mon:true,tue:true,wed:false,thu:false,fri:false}, hours:{start:"07:00",end:"15:30"} },
-  { id:4, employeeId:4, projectId:2, weekStart:"2026-03-09", days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
-  { id:5, employeeId:5, projectId:2, weekStart:"2026-03-09", days:{mon:true,tue:true,wed:true,thu:true,fri:false}, hours:{start:"07:00",end:"15:30"} },
-  { id:6, employeeId:6, projectId:1, weekStart:"2026-03-09", days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
+  // Project 1: Brunello Cucinelli — Antonio's crew
+  { id:1, employeeId:9,  projectId:1, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:00",end:"14:30"} },
+  { id:2, employeeId:2,  projectId:1, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
+  { id:3, employeeId:3,  projectId:1, weekStart:_ws, days:{mon:true,tue:true,wed:false,thu:false,fri:false}, hours:{start:"07:00",end:"15:30"} },
+  { id:4, employeeId:6,  projectId:1, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
+  { id:5, employeeId:10, projectId:1, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
+  { id:6, employeeId:11, projectId:1, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"07:00",end:"15:30"} },
+  // Project 3: BSLMC Cath Labs — Antonio also oversees
+  { id:7, employeeId:9,  projectId:3, weekStart:_ws, days:{mon:false,tue:false,wed:true,thu:true,fri:true}, hours:{start:"06:00",end:"14:30"} },
+  { id:8, employeeId:4,  projectId:3, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
+  // Project 2: Escapology — Oscar's crew
+  { id:9,  employeeId:1, projectId:2, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
+  { id:10, employeeId:5, projectId:2, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:false}, hours:{start:"07:00",end:"15:30"} },
 ];
 
 // ── SEED: TIME ENTRIES ──
-const _demoTimeEntries = [];
+// Generate time entries for Mon-Fri of current week (up to today)
+function _seedTimeEntries() {
+  const entries = [];
+  const ws = new Date(_ws);
+  const today = new Date(); today.setHours(23,59,59,999);
+  const crew = [
+    {eid:9,pid:1,h:8.5},{eid:2,pid:1,h:8.5},{eid:6,pid:1,h:8.5},{eid:10,pid:1,h:8.5},{eid:11,pid:1,h:8.5},
+    {eid:3,pid:1,h:8.5},{eid:4,pid:3,h:8.5},{eid:1,pid:2,h:8.5},{eid:5,pid:2,h:8.5},
+  ];
+  let id = 1;
+  for (let d = 0; d < 5; d++) {
+    const day = new Date(ws); day.setDate(ws.getDate() + d);
+    if (day > today) break;
+    for (const c of crew) {
+      const cin = new Date(day); cin.setHours(6, 30, 0, 0);
+      const cout = new Date(day); cout.setHours(15, 0, 0, 0);
+      entries.push({id:`te-${id++}`,employeeId:c.eid,projectId:c.pid,clockIn:cin.toISOString(),clockOut:cout.toISOString(),totalHours:c.h,clockInLat:29.76,clockInLng:-95.37,clockOutLat:29.76,clockOutLng:-95.37});
+    }
+  }
+  return entries;
+}
+const _demoTimeEntries = _seedTimeEntries();
 
 // ── CONDITIONAL EXPORTS ──
 // Projects & employees ALWAYS load (real EBC data), other seed data is demo-only
@@ -572,16 +620,16 @@ export const initContacts = _demo ? _demoContacts : [];
 export const initCallLog = _demo ? _demoCallLog : [];
 export const initInvoices = _demo ? _demoInvoices : [];
 export const initTmTickets = _demo ? _demoTmTickets : [];
-export const initChangeOrders = _demo ? _demoChangeOrders : [];
-export const initRfis = _demo ? _demoRfis : [];
-export const initSubmittals = _demo ? _demoSubmittals : [];
-export const initSchedule = _demo ? _demoSchedule : [];
+export const initChangeOrders = _demoChangeOrders; // always load — foreman portal needs this
+export const initRfis = _demoRfis; // always load — foreman portal needs this
+export const initSubmittals = _demoSubmittals; // always load — foreman portal needs this
+export const initSchedule = _demoSchedule; // always load
 export const initIncidents = _demo ? _demoIncidents : [];
 export const initToolboxTalks = _demo ? _demoToolboxTalks : [];
 export const initDailyReports = _demo ? _demoDailyReports : [];
 export const initTakeoffs = _demo ? _demoTakeoffs : [];
 export const initEmployees = _demoEmployees; // always load — real EBC crew
 export const initCompanyLocations = _demoCompanyLocations; // always load — office/warehouse
-export const initMaterialRequests = _demo ? _demoMaterialRequests : [];
-export const initCrewSchedule = _demo ? _demoCrewSchedule : [];
-export const initTimeEntries = _demo ? _demoTimeEntries : [];
+export const initMaterialRequests = _demoMaterialRequests; // always load — foreman portal needs this
+export const initCrewSchedule = _demoCrewSchedule; // always load — foreman portal needs this
+export const initTimeEntries = _demoTimeEntries; // always load — foreman portal needs this

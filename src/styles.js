@@ -586,13 +586,23 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 
 /* ── EMPLOYEE SUB-TABS ── */
 .emp-tabs{display:flex;gap:4px;width:100%;max-width:420px;margin-bottom:16px;
-  border-bottom:1px solid var(--border);padding-bottom:8px}
-.emp-tab{flex:1;padding:8px;border:none;background:none;font-family:var(--font-body);
-  font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;
+  border-bottom:1px solid var(--border);padding-bottom:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.emp-tab{flex:0 0 auto;padding:8px 12px;border:none;background:none;font-family:var(--font-body);
+  font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;white-space:nowrap;
   border-radius:var(--radius-sm) var(--radius-sm) 0 0;transition:all 0.15s ease}
 .emp-tab:hover{color:var(--text);background:var(--bg3)}
 .emp-tab.active{color:var(--amber);border-bottom:2px solid var(--amber);background:var(--amber-dim)}
 .emp-content{width:100%;max-width:420px}
+
+/* ── TABLET LAYOUT (768px+) ── */
+@media(min-width:768px){
+  .emp-tabs{max-width:none;gap:2px;justify-content:center}
+  .emp-tab{padding:10px 16px;font-size:13px}
+  .emp-content{max-width:none}
+  .employee-body{padding:20px 24px}
+  .foreman-kpi-grid{grid-template-columns:repeat(4,1fr)}
+  .foreman-project-select{max-width:500px;margin:0 auto 16px;display:block;font-size:14px;padding:10px 14px}
+}
 
 /* ══ MAP VIEW ══ */
 .map-container{height:calc(100vh - 280px);height:calc(100dvh - 280px);min-height:400px;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;z-index:1}

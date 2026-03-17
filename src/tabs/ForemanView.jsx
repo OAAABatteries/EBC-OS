@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
+import { listFiles, getFileUrl, downloadFile } from "../lib/supabase";
 import {
   PPE_ITEMS, RISK_LIKELIHOOD, RISK_SEVERITY, riskColor,
   HAZARD_CATEGORIES, CONTROL_HIERARCHY, PERMIT_TYPES,
@@ -60,6 +61,16 @@ export function ForemanView({ app }) {
   const [clockEntry, setClockEntry] = useState(null); // { clockIn, lat, lng, projectId }
   const [gpsStatus, setGpsStatus] = useState("");
   const [clockProjectSearch, setClockProjectSearch] = useState("");
+  const [crewClocks, setCrewClocks] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ebc_crewClocks") || "{}"); } catch { return {}; }
+  });
+  const [drawingZoom, setDrawingZoom] = useState(1);
+  const [activeDrawingId, setActiveDrawingId] = useState(null);
+  const [cloudDrawings, setCloudDrawings] = useState([]);
+  const [drawingsLoading, setDrawingsLoading] = useState(false);
+  const [downloadedDrawings, setDownloadedDrawings] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ebc_downloadedDrawings") || "{}"); } catch { return {}; }
+  });
   const [jsaView, setJsaView] = useState("list"); // list | detail | create
   const [activeJsaId, setActiveJsaId] = useState(null);
   const [jsaForm, setJsaForm] = useState({
@@ -84,7 +95,7 @@ export function ForemanView({ app }) {
   const handleLogin = () => {
     setLoginError("");
     const emp = employees.find(
-      e => e.email === email.trim().toLowerCase() && e.password === password && e.active && e.role === "Foreman"
+      e => e.email === email.trim().toLowerCase() && e.password === password && e.active && e.role.toLowerCase() === "foreman"
     );
     if (emp) {
       setActiveForeman(emp);
@@ -165,6 +176,44 @@ export function ForemanView({ app }) {
     show?.(`${t("Clocked out")} · ${totalHours}h ✓`);
   };
 
+  // ── crew clock-in/out ──
+  const persistCrewClocks = (updated) => {
+    setCrewClocks(updated);
+    localStorage.setItem("ebc_crewClocks", JSON.stringify(updated));
+  };
+
+  const handleCrewClockIn = async (empId) => {
+    const loc = await getLocation();
+    const entry = { clockIn: new Date().toISOString(), lat: loc?.lat || null, lng: loc?.lng || null, projectId: selectedProjectId };
+    persistCrewClocks({ ...crewClocks, [empId]: entry });
+    const emp = employees.find(e => e.id === empId);
+    show?.(`${emp?.name || "Crew"} ${t("clocked in")} ✓`);
+  };
+
+  const handleCrewClockOut = async (empId) => {
+    const entry = crewClocks[empId];
+    if (!entry) return;
+    const loc = await getLocation();
+    const totalMs = Date.now() - new Date(entry.clockIn).getTime();
+    const totalHours = +(totalMs / 3600000).toFixed(2);
+    const newEntry = {
+      id: crypto.randomUUID(),
+      employeeId: empId,
+      projectId: entry.projectId || selectedProjectId,
+      clockIn: entry.clockIn,
+      clockInLat: entry.lat, clockInLng: entry.lng,
+      clockOut: new Date().toISOString(),
+      clockOutLat: loc?.lat || null, clockOutLng: loc?.lng || null,
+      totalHours,
+    };
+    if (setTimeEntries) setTimeEntries(prev => [...prev, newEntry]);
+    const updated = { ...crewClocks };
+    delete updated[empId];
+    persistCrewClocks(updated);
+    const emp = employees.find(e => e.id === empId);
+    show?.(`${emp?.name || "Crew"} ${t("clocked out")} · ${totalHours}h ✓`);
+  };
+
   // ── today's time entries for this foreman ──
   const todayStr = new Date().toDateString();
   const myTodayEntries = useMemo(() =>
@@ -172,6 +221,52 @@ export function ForemanView({ app }) {
     [timeEntries, activeForeman, todayStr]
   );
   const myTodayHours = myTodayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
+
+  // ── load cloud drawings for selected project ──
+  const loadCloudDrawings = useCallback(async () => {
+    if (!selectedProjectId) return;
+    setDrawingsLoading(true);
+    try {
+      const folder = `drawings/project-${selectedProjectId}`;
+      const files = await listFiles(folder);
+      const drawings = (files || []).filter(f => f.name?.endsWith(".pdf")).map(f => ({
+        id: f.id || f.name,
+        name: f.name.replace(".pdf", "").replace(/_/g, " "),
+        fileName: f.name,
+        path: `${folder}/${f.name}`,
+        size: f.metadata?.size || 0,
+        uploadedAt: f.created_at || f.updated_at || "",
+        cached: !!downloadedDrawings[`${folder}/${f.name}`],
+      }));
+      setCloudDrawings(drawings);
+    } catch {
+      // Supabase not configured or no files — use fallback
+      setCloudDrawings([]);
+    }
+    setDrawingsLoading(false);
+  }, [selectedProjectId, downloadedDrawings]);
+
+  useEffect(() => {
+    if (foremanTab === "drawings") loadCloudDrawings();
+  }, [foremanTab, selectedProjectId]);
+
+  const handleDownloadDrawing = async (drawing) => {
+    try {
+      show?.(t("Downloading..."));
+      const blob = await downloadFile(drawing.path);
+      // Cache in IndexedDB-like localStorage (base64 for small files, or trigger browser download)
+      const url = URL.createObjectURL(blob);
+      // Open in new tab for viewing
+      window.open(url, "_blank");
+      // Mark as downloaded
+      const updated = { ...downloadedDrawings, [drawing.path]: { cachedAt: new Date().toISOString(), size: blob.size } };
+      setDownloadedDrawings(updated);
+      localStorage.setItem("ebc_downloadedDrawings", JSON.stringify(updated));
+      show?.(`${drawing.name} ${t("downloaded")} ✓`);
+    } catch {
+      show?.(t("Download failed — check connection"), "err");
+    }
+  };
 
   // ── computed: my projects ──
   const weekStart = useMemo(() => getWeekStart(), []);
@@ -369,7 +464,8 @@ export function ForemanView({ app }) {
     { key: "crew", label: t("Crew"), count: crewForProject.length },
     { key: "hours", label: t("Hours") },
     { key: "jsa", label: t("JSA"), count: activeJsaCount },
-    { key: "materials", label: t("Materials"), count: projectMatRequests.filter(r => r.status === "requested").length },
+    { key: "materials", label: t("Materials"), count: projectMatRequests.filter(r => r.status === "requested" || r.status === "pending").length },
+    { key: "drawings", label: t("Drawings") },
     { key: "documents", label: t("Documents") },
     { key: "settings", label: t("Settings") },
   ];
@@ -624,6 +720,49 @@ export function ForemanView({ app }) {
                       ))}
                       <div className="text-sm font-semi" style={{ textAlign: "right", marginTop: 8, color: "var(--accent)" }}>
                         {t("Total")}: {myTodayHours.toFixed(1)}h
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Crew Clock-In/Out ── */}
+                  {crewForProject.length > 0 && (
+                    <div style={{ marginTop: 30, textAlign: "left" }}>
+                      <div className="section-title" style={{ fontSize: 14, marginBottom: 12 }}>{t("Crew Time Clock")}</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>
+                        {crewForProject.filter(c => c.id !== activeForeman?.id).map(c => {
+                          const isIn = !!crewClocks[c.id];
+                          const clockData = crewClocks[c.id];
+                          const todayEntries = timeEntries.filter(te => te.employeeId === c.id && new Date(te.clockIn).toDateString() === todayStr && te.totalHours);
+                          const todayTotal = todayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
+                          return (
+                            <div key={c.id} className="foreman-crew-row" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+                              <div style={{ width: 36, height: 36, borderRadius: "50%", background: isIn ? "var(--green)" : "var(--glass-bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: isIn ? "#fff" : "var(--text3)", flexShrink: 0 }}>
+                                {c.name.split(" ").map(n => n[0]).join("")}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div className="text-sm font-semi">{c.name}</div>
+                                <div className="text-xs text-muted">{t(c.role)}{todayTotal > 0 ? ` · ${todayTotal.toFixed(1)}h ${t("today")}` : ""}</div>
+                                {isIn && clockData && (
+                                  <div className="text-xs" style={{ color: "var(--green)", marginTop: 2 }}>
+                                    {t("In since")} {new Date(clockData.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                    {" · "}{(() => { const m = Math.floor((Date.now() - new Date(clockData.clockIn).getTime()) / 60000); return `${Math.floor(m/60)}h ${m%60}m`; })()}
+                                  </div>
+                                )}
+                              </div>
+                              {!isIn ? (
+                                <button className="btn btn-primary btn-sm" style={{ minWidth: 80, fontSize: 12, padding: "8px 12px" }}
+                                  onClick={() => handleCrewClockIn(c.id)}>
+                                  {t("Clock In")}
+                                </button>
+                              ) : (
+                                <button className="btn btn-sm" style={{ minWidth: 80, fontSize: 12, padding: "8px 12px", background: "var(--red)", color: "#fff" }}
+                                  onClick={() => handleCrewClockOut(c.id)}>
+                                  {t("Clock Out")}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -1250,6 +1389,111 @@ export function ForemanView({ app }) {
                     </div>
                   );
                 })()}
+              </div>
+            )}
+
+            {/* ═══ DRAWINGS TAB ═══ */}
+            {foremanTab === "drawings" && (
+              <div className="emp-content">
+                <div className="flex-between" style={{ marginBottom: 12 }}>
+                  <div className="section-title" style={{ fontSize: 16 }}>{t("Project Drawings")}</div>
+                  <button className="cal-nav-btn" style={{ fontSize: 11 }} onClick={loadCloudDrawings}>
+                    {drawingsLoading ? "..." : t("Refresh")}
+                  </button>
+                </div>
+
+                {/* Cloud drawings from Supabase Storage */}
+                {cloudDrawings.length > 0 ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10, marginBottom: 16 }}>
+                    {cloudDrawings.map(d => (
+                      <div key={d.id} className="card" style={{ padding: 14 }}>
+                        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                          <div style={{ fontSize: 28 }}>📄</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="text-sm font-semi" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
+                            <div className="text-xs text-muted">
+                              {d.size > 0 ? `${(d.size / 1048576).toFixed(1)} MB` : ""}{d.uploadedAt ? ` · ${d.uploadedAt.slice(0, 10)}` : ""}
+                            </div>
+                            {d.cached && <div className="text-xs" style={{ color: "var(--green)" }}>{t("Downloaded")}</div>}
+                          </div>
+                          <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: "6px 12px" }}
+                            onClick={() => handleDownloadDrawing(d)}>
+                            {d.cached ? t("View") : t("Download")}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    {drawingsLoading ? (
+                      <div className="empty-state" style={{ padding: "30px 20px" }}>
+                        <div className="empty-text">{t("Loading drawings...")}</div>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Default drawing sets (placeholder when cloud is empty) */}
+                        {(() => {
+                          const defaultSets = [
+                            { id: "d1", name: t("Architectural Plans"), icon: "📐", desc: t("Floor plans, elevations, sections") },
+                            { id: "d2", name: t("Structural Framing Plans"), icon: "🏗️", desc: t("Framing layouts, details") },
+                            { id: "d3", name: t("Reflected Ceiling Plan"), icon: "📐", desc: t("Ceiling grid, fixtures") },
+                            { id: "d4", name: t("Wall Type Details"), icon: "🔍", desc: t("Assembly details, fire ratings") },
+                            { id: "d5", name: t("Door & Hardware Schedule"), icon: "📋", desc: t("Door types, hardware sets") },
+                          ];
+                          return (
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
+                              {defaultSets.map(d => (
+                                <div key={d.id} className="card" style={{ padding: 14, opacity: 0.6 }}>
+                                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                                    <div style={{ fontSize: 28 }}>{d.icon}</div>
+                                    <div style={{ flex: 1 }}>
+                                      <div className="text-sm font-semi">{d.name}</div>
+                                      <div className="text-xs text-muted">{d.desc}</div>
+                                    </div>
+                                    <span className="text-xs text-dim">{t("Not uploaded")}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </>
+                    )}
+                  </>
+                )}
+
+                {/* Downloaded files cache info */}
+                {Object.keys(downloadedDrawings).length > 0 && (
+                  <div style={{ marginTop: 16 }}>
+                    <div className="section-title" style={{ fontSize: 13, marginBottom: 8 }}>{t("Downloaded for Offline")}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {Object.entries(downloadedDrawings).map(([path, info]) => (
+                        <div key={path} className="foreman-crew-row" style={{ padding: "8px 12px" }}>
+                          <div>
+                            <div className="text-sm font-semi">{path.split("/").pop().replace(".pdf", "").replace(/_/g, " ")}</div>
+                            <div className="text-xs text-muted">{t("Cached")} {new Date(info.cachedAt).toLocaleDateString()}{info.size ? ` · ${(info.size / 1048576).toFixed(1)} MB` : ""}</div>
+                          </div>
+                          <button className="cal-nav-btn" style={{ fontSize: 10, color: "var(--red)" }}
+                            onClick={() => {
+                              const updated = { ...downloadedDrawings };
+                              delete updated[path];
+                              setDownloadedDrawings(updated);
+                              localStorage.setItem("ebc_downloadedDrawings", JSON.stringify(updated));
+                              show?.(t("Cache cleared"));
+                            }}>
+                            {t("Remove")}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ marginTop: 16, padding: 16, background: "var(--glass-bg)", borderRadius: 10, textAlign: "center" }}>
+                  <div className="text-sm text-muted">{t("Drawings are stored in the cloud")}</div>
+                  <div className="text-xs text-dim" style={{ marginTop: 4 }}>{t("Download files for offline use on the jobsite. Ask the PM to upload new drawing sets.")}</div>
+                </div>
               </div>
             )}
 
