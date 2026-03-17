@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { getHF } from "../data/constants";
 import { generateProposalPdf } from "../utils/proposalPdf";
 
@@ -51,7 +51,7 @@ const SEV_BADGE = { critical: "badge-red", warning: "badge-amber", info: "badge-
 export function EstimatingTab({ app }) {
   const {
     takeoffs, setTakeoffs,
-    bids, projects, assemblies, company, show, apiKey,
+    bids, setBids, projects, assemblies, company, show, apiKey,
     fmt, fmtK, search, submittals,
     scope, setScope,
   } = app;
@@ -102,6 +102,144 @@ export function EstimatingTab({ app }) {
       setGapLoading(false);
     }
   };
+
+  // ── Local search (takeoffs + bids) ──
+  const [localSearch, setLocalSearch] = useState("");
+  const [showBidBrowser, setShowBidBrowser] = useState(false);
+
+  // ── PDF Scan state ──
+  const [scanModal, setScanModal] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanRawText, setScanRawText] = useState("");
+
+  async function handleScanPdf(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setScanLoading(true);
+    setScanModal(true);
+    setScanResult(null);
+    try {
+      const { extractBidFromPdf } = await import("../utils/pdfBidExtractor.js");
+      const result = await extractBidFromPdf(file);
+      setScanResult(result);
+      setScanRawText(result._rawText || "");
+      show("PDF scanned successfully", "ok");
+    } catch (err) {
+      show("PDF scan failed: " + err.message, "err");
+      setScanModal(false);
+    } finally {
+      setScanLoading(false);
+    }
+  }
+
+  function createBidFromScan() {
+    if (!scanResult) return;
+    const newBid = {
+      id: Date.now(),
+      name: scanResult.name || "Scanned Bid",
+      gc: scanResult.gc || "",
+      value: scanResult.value || 0,
+      due: scanResult.due || "",
+      bidDate: scanResult.bidDate || "",
+      status: "estimating",
+      scope: scanResult.scope || [],
+      phase: scanResult.phase || "Commercial",
+      risk: "",
+      notes: scanResult.notes || "",
+      contact: scanResult.contact || "",
+      month: scanResult.month || "",
+      address: scanResult.address || "",
+      closeOut: null,
+    };
+    setBids(prev => [...prev, newBid]);
+    show(`Bid "${newBid.name}" added to pipeline`, "ok");
+    return newBid.id;
+  }
+
+  function createTakeoffFromScan(bidId) {
+    if (!scanResult) return;
+    // Map extracted line items to assemblies
+    const labelToAssembly = {
+      demo: null, // no assembly for demo
+      "drywall": "A2", "drywall/build back": "A2", "build back": "A2",
+      "metal framing": "A2", "metal stud": "A2", "stud framing": "A2",
+      "framing": "A2", "studs and track": "A2", "studs & track": "A2",
+      "interior framing": "A2", "light gauge": "A2",
+      act: "ACT1",
+      insulation: "INS1",
+      frp: "FRP1",
+      fireproofing: "FP1",
+      "shaft wall": "SW1",
+      "lead-lined": "LL1", "lead lined": "LL1",
+      icra: "ICRA1",
+      "l5 finish": "GC1", "level 5": "GC1",
+    };
+
+    const items = (scanResult.lineItemsRaw || scanResult.lineItems || []).map((li, i) => {
+      const lbl = li.label.toLowerCase().replace(/\s*\(.*\)/, "").trim();
+      let code = "";
+      for (const [key, val] of Object.entries(labelToAssembly)) {
+        if (lbl.includes(key) && val) { code = val; break; }
+      }
+      // Verify assembly exists
+      const asm = code ? assemblies.find(a => a.code === code) : null;
+      return {
+        id: "li_" + Date.now() + "_" + i,
+        code: asm?.code || assemblies[0]?.code || "A2",
+        desc: li.label,
+        qty: 0, // user needs to enter quantities from their takeoff
+        unit: asm?.unit || "LF",
+        height: 10,
+        diff: 1.0,
+        _scannedAmount: li.amount, // keep original amount for reference
+      };
+    }).filter(it => it.code); // skip items with no assembly match
+
+    const rooms = [{
+      id: "rm_" + Date.now(),
+      name: scanResult.name || "Scanned Bid",
+      floor: "",
+      items,
+    }];
+
+    const tk = {
+      id: crypto.randomUUID(),
+      bidId: bidId || null,
+      name: (scanResult.name || "Scanned Bid") + " (Re-estimate)",
+      created: new Date().toISOString().slice(0, 10),
+      wastePct: company.defaultWaste,
+      taxRate: company.defaultTax,
+      overheadPct: company.defaultOverhead,
+      profitPct: company.defaultProfit,
+      rooms,
+      alternates: scanResult.alternate ? [{ id: "alt_" + Date.now(), description: scanResult.alternate, amount: 0, type: "add" }] : [],
+      addOns: [],
+      scopeLines: {
+        includes: scanResult.includes || [],
+        excludes: scanResult.excludes || [],
+      },
+    };
+
+    setTakeoffs(prev => [...prev, tk]);
+    setScanModal(false);
+    setActiveTk(tk.id);
+    setOpenRooms({ [rooms[0].id]: true });
+    show(`Takeoff created from scanned bid — adjust quantities & assemblies`, "ok");
+  }
+
+  // ── Bid search for "re-estimate existing bid" ──
+  const bidSearchResults = useMemo(() => {
+    if (!localSearch.trim()) return [];
+    const q = localSearch.toLowerCase();
+    return bids.filter(b =>
+      b.name?.toLowerCase().includes(q) ||
+      b.gc?.toLowerCase().includes(q) ||
+      b.phase?.toLowerCase().includes(q) ||
+      (b.scope || []).some(s => s.toLowerCase().includes(q))
+    ).slice(0, 20);
+  }, [localSearch, bids]);
 
   // ── OST Import state ──
   const [ostModal, setOstModal] = useState(false);
@@ -476,8 +614,14 @@ export function EstimatingTab({ app }) {
 
   /* ── render: list view ───────────────────────────────────── */
 
+  const q = localSearch.toLowerCase();
   const filtered = (takeoffs || []).filter(
-    (tk) => !search || tk.name.toLowerCase().includes(search.toLowerCase())
+    (tk) => {
+      const matchGlobal = !search || tk.name.toLowerCase().includes(search.toLowerCase());
+      const matchLocal = !q || tk.name.toLowerCase().includes(q) ||
+        bids.find(b => b.id === tk.bidId)?.name?.toLowerCase().includes(q);
+      return matchGlobal && matchLocal;
+    }
   );
 
   if (!activeTk) {
@@ -489,8 +633,99 @@ export function EstimatingTab({ app }) {
             <button className={`btn ${showScopePanel ? "btn-primary" : "btn-ghost"} btn-sm`} onClick={() => setShowScopePanel(!showScopePanel)} style={{ fontSize: 13 }}>Scope Checklist</button>
             <input type="file" id="ost-import" accept=".csv,.txt" style={{ display: "none" }} onChange={handleOstFile} />
             <button className="btn btn-ghost" onClick={() => document.getElementById("ost-import").click()} style={{ fontSize: 13 }}>Import OST</button>
+            <input type="file" id="scan-pdf" accept=".pdf" style={{ display: "none" }} onChange={handleScanPdf} />
+            <button className="btn btn-ghost" onClick={() => document.getElementById("scan-pdf").click()} style={{ fontSize: 13 }}>Scan Bid PDF</button>
             <button className="btn btn-primary" onClick={createTakeoff}>+ New Takeoff</button>
           </div>
+        </div>
+
+        {/* ── Search & Bid Browser ── */}
+        <div style={{ marginBottom: 16 }}>
+          <div className="flex gap-8" style={{ alignItems: "center", marginBottom: 8 }}>
+            <input
+              className="form-input"
+              placeholder="Search takeoffs & bids by name, GC, phase, scope..."
+              value={localSearch}
+              onChange={e => setLocalSearch(e.target.value)}
+              style={{ flex: 1, maxWidth: 480 }}
+            />
+            <button
+              className={`btn btn-sm ${showBidBrowser ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => setShowBidBrowser(!showBidBrowser)}
+            >
+              {showBidBrowser ? "Hide Bids" : "Browse Bids"}
+            </button>
+          </div>
+
+          {/* Bid browser / search results */}
+          {(showBidBrowser || (localSearch && bidSearchResults.length > 0)) && (
+            <div className="card" style={{ padding: 12, marginBottom: 12, maxHeight: 320, overflowY: "auto" }}>
+              <div className="flex-between mb-8">
+                <div className="text-sm font-semi">
+                  {localSearch ? `${bidSearchResults.length} bid${bidSearchResults.length !== 1 ? "s" : ""} matching "${localSearch}"` : "Recent Bids"}
+                </div>
+                <div className="text-xs text-muted">Click a bid to create a new takeoff from it</div>
+              </div>
+              <table className="data-table" style={{ fontSize: 12 }}>
+                <thead>
+                  <tr>
+                    <th>Bid Name</th>
+                    <th>GC</th>
+                    <th>Phase</th>
+                    <th>Value</th>
+                    <th>Status</th>
+                    <th style={{ width: 120 }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(localSearch ? bidSearchResults : bids.slice(0, 15)).map(b => {
+                    const hasTakeoff = takeoffs.some(t => t.bidId === b.id);
+                    return (
+                      <tr key={b.id}>
+                        <td style={{ fontWeight: 500 }}>{b.name}</td>
+                        <td style={{ color: "var(--text2)" }}>{b.gc || "—"}</td>
+                        <td><span className="badge badge-blue" style={{ fontSize: 10 }}>{b.phase || "—"}</span></td>
+                        <td style={{ fontWeight: 600 }}>{b.value ? fmtK(b.value) : "—"}</td>
+                        <td>
+                          <span className={`badge ${b.status === "awarded" ? "badge-green" : b.status === "lost" ? "badge-red" : b.status === "submitted" ? "badge-blue" : "badge-amber"}`} style={{ fontSize: 10 }}>
+                            {b.status}
+                          </span>
+                        </td>
+                        <td>
+                          {hasTakeoff ? (
+                            <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }}
+                              onClick={() => { const t = takeoffs.find(t => t.bidId === b.id); if (t) setActiveTk(t.id); }}>
+                              Open Takeoff
+                            </button>
+                          ) : (
+                            <button className="btn btn-primary btn-sm" style={{ fontSize: 11 }}
+                              onClick={() => {
+                                const tk = {
+                                  id: crypto.randomUUID(),
+                                  bidId: b.id,
+                                  name: b.name,
+                                  created: new Date().toISOString().slice(0, 10),
+                                  wastePct: company.defaultWaste,
+                                  taxRate: company.defaultTax,
+                                  overheadPct: company.defaultOverhead,
+                                  profitPct: company.defaultProfit,
+                                  rooms: [],
+                                };
+                                setTakeoffs(prev => [...prev, tk]);
+                                setActiveTk(tk.id);
+                                show(`Takeoff created for "${b.name}"`);
+                              }}>
+                              + Takeoff
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* ── Scope Checklist Panel (list view) ── */}
@@ -629,6 +864,142 @@ export function EstimatingTab({ app }) {
             );
           })}
         </div>
+
+        {/* ═══ SCAN BID PDF MODAL ═══ */}
+        {scanModal && (
+          <div className="modal-overlay" onClick={() => !scanLoading && setScanModal(false)}>
+            <div className="modal-content" style={{ maxWidth: 800, maxHeight: "85vh", overflow: "auto" }} onClick={e => e.stopPropagation()}>
+              <div className="flex-between" style={{ marginBottom: 16 }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18 }}>Scan Bid PDF</h3>
+                  <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 4 }}>
+                    Extract bid data from an old proposal PDF and re-estimate with current assemblies
+                  </div>
+                </div>
+                <button className="btn btn-ghost" onClick={() => setScanModal(false)} disabled={scanLoading}>✕</button>
+              </div>
+
+              {scanLoading && (
+                <div style={{ textAlign: "center", padding: 40 }}>
+                  <div style={{ fontSize: 32, animation: "spin 1s linear infinite", display: "inline-block" }}>&#8635;</div>
+                  <div style={{ marginTop: 12, color: "var(--text2)" }}>Extracting text from PDF...</div>
+                </div>
+              )}
+
+              {scanResult && (
+                <div>
+                  {/* Extracted bid info */}
+                  <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+                    <div className="text-sm font-semi mb-12" style={{ color: "var(--primary)" }}>Extracted Bid Data</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <div className="form-group">
+                        <label className="form-label">Project Name</label>
+                        <input className="form-input" value={scanResult.name || ""} onChange={e => setScanResult(prev => ({ ...prev, name: e.target.value }))} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">GC</label>
+                        <input className="form-input" value={scanResult.gc || ""} onChange={e => setScanResult(prev => ({ ...prev, gc: e.target.value }))} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Bid Date</label>
+                        <input className="form-input" value={scanResult.bidDate || ""} onChange={e => setScanResult(prev => ({ ...prev, bidDate: e.target.value }))} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Total Value</label>
+                        <input className="form-input" value={scanResult.value || 0} type="number"
+                          onChange={e => setScanResult(prev => ({ ...prev, value: parseFloat(e.target.value) || 0 }))} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Phase</label>
+                        <input className="form-input" value={scanResult.phase || ""} onChange={e => setScanResult(prev => ({ ...prev, phase: e.target.value }))} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Address</label>
+                        <input className="form-input" value={scanResult.address || ""} onChange={e => setScanResult(prev => ({ ...prev, address: e.target.value }))} />
+                      </div>
+                    </div>
+                    {scanResult.scope?.length > 0 && (
+                      <div style={{ marginTop: 8 }}>
+                        <span className="text-xs text-muted">Scope: </span>
+                        {scanResult.scope.map((s, i) => (
+                          <span key={i} className="badge badge-blue" style={{ fontSize: 10, marginRight: 4 }}>{s}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Extracted line items */}
+                  {scanResult.lineItems?.length > 0 && (
+                    <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+                      <div className="text-sm font-semi mb-8">Line Items ({scanResult.lineItems.length})</div>
+                      <table className="data-table" style={{ fontSize: 12 }}>
+                        <thead>
+                          <tr><th>Item</th><th style={{ textAlign: "right" }}>Amount</th></tr>
+                        </thead>
+                        <tbody>
+                          {scanResult.lineItems.map((li, i) => (
+                            <tr key={i}>
+                              <td>{li.label}</td>
+                              <td style={{ textAlign: "right", fontWeight: 600 }}>${li.amount.toLocaleString()}</td>
+                            </tr>
+                          ))}
+                          <tr style={{ borderTop: "2px solid var(--border)", fontWeight: 700 }}>
+                            <td>Total</td>
+                            <td style={{ textAlign: "right", color: "var(--amber)" }}>
+                              ${(scanResult.value || scanResult.lineItems.reduce((s, li) => s + li.amount, 0)).toLocaleString()}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Includes / Excludes */}
+                  {(scanResult.includes?.length > 0 || scanResult.excludes?.length > 0) && (
+                    <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                        {scanResult.includes?.length > 0 && (
+                          <div>
+                            <div className="text-sm font-semi mb-8" style={{ color: "var(--green)" }}>Includes</div>
+                            {scanResult.includes.map((item, i) => (
+                              <div key={i} style={{ fontSize: 12, padding: "3px 0", color: "var(--text2)" }}>{i + 1}. {item}</div>
+                            ))}
+                          </div>
+                        )}
+                        {scanResult.excludes?.length > 0 && (
+                          <div>
+                            <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Excludes</div>
+                            {scanResult.excludes.map((item, i) => (
+                              <div key={i} style={{ fontSize: 12, padding: "3px 0", color: "var(--text2)" }}>{i + 1}. {item}</div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex gap-8" style={{ justifyContent: "flex-end", flexWrap: "wrap" }}>
+                    <button className="btn btn-ghost" onClick={() => setScanModal(false)}>Cancel</button>
+                    <button className="btn btn-ghost" onClick={() => {
+                      const bidId = createBidFromScan();
+                      show("Bid added — you can create a takeoff from the bid browser", "ok");
+                      setScanModal(false);
+                    }}>
+                      Add to Bid Pipeline Only
+                    </button>
+                    <button className="btn btn-primary" onClick={() => {
+                      const bidId = createBidFromScan();
+                      createTakeoffFromScan(bidId);
+                    }}>
+                      Add Bid + Create Takeoff
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ═══ OST IMPORT MODAL ═══ */}
         {ostModal && (
