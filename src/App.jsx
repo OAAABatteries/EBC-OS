@@ -33,6 +33,7 @@ import { T } from "./data/translations";
 import { LoginScreen } from "./components/LoginScreen";
 import { OnboardingWizard } from "./components/OnboardingWizard";
 import { SyncStatus } from "./components/SyncStatus";
+import { UpdateBanner } from "./components/InstallPrompt";
 import { useNetworkStatus } from "./hooks/useNetworkStatus";
 import { hasAccess } from "./data/roles";
 import { supabase, isSupabaseConfigured, signOut as supaSignOut, onAuthStateChange } from "./lib/supabase";
@@ -370,8 +371,10 @@ function App({ auth, onLogout }) {
   const [projPageSize, setProjPageSize] = useState(24);
   const [installPrompt, setInstallPrompt] = useState(null);
 
-  // ── PWA install prompt ──
+  // ── PWA install prompt (24h cooldown after dismiss) ──
   useEffect(() => {
+    const dismissedAt = localStorage.getItem("ebc_install_dismissed");
+    if (dismissedAt && Date.now() - parseInt(dismissedAt) < 24 * 60 * 60 * 1000) return;
     const handler = (e) => { e.preventDefault(); setInstallPrompt(e); };
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
@@ -2335,6 +2338,7 @@ function App({ auth, onLogout }) {
       </header>
 
       <main className="main-content" onClick={() => moreOpen && setMoreOpen(false)}>
+        <UpdateBanner />
         <SyncStatus syncStatus={syncStatus} network={network} />
         {tab === "dashboard" && renderDashboard()}
         {tab === "bids" && renderBids()}
@@ -2359,25 +2363,38 @@ function App({ auth, onLogout }) {
       {modal && <ModalHub type={modal.type} data={modal.data} app={app} />}
 
       {/* PWA Install Banner */}
-      {installPrompt && (
+      {installPrompt && !window.matchMedia("(display-mode: standalone)").matches && (
         <div style={{
           position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)",
-          background: "var(--bg3)", border: "1px solid var(--amber)", borderRadius: 12,
-          padding: "12px 20px", display: "flex", alignItems: "center", gap: 12,
-          zIndex: 10000, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", maxWidth: 400,
+          background: "linear-gradient(135deg, var(--bg3), var(--bg2))",
+          border: "1px solid var(--amber)", borderRadius: 12,
+          padding: "14px 20px", display: "flex", alignItems: "center", gap: 12,
+          zIndex: 10000, boxShadow: "0 8px 32px rgba(0,0,0,0.5)", maxWidth: 420, width: "calc(100% - 32px)",
         }}>
-          <span style={{ fontSize: 24 }}>📲</span>
+          <div style={{ fontSize: 28, lineHeight: 1 }}>&#9881;</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600, fontSize: 14 }}>{t("Install EBC-OS")}</div>
-            <div style={{ fontSize: 12, color: "var(--text2)" }}>{t("Add to home screen for the full app experience")}</div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: "var(--gold, #e09422)" }}>{t("Install EBC-OS")}</div>
+            <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>
+              {t("Works offline, launches instantly — like a real app")}
+            </div>
           </div>
-          <button className="btn btn-primary btn-sm" onClick={async () => {
+          <button style={{
+            background: "var(--gold, #e09422)", color: "#000",
+            border: "none", borderRadius: 8, padding: "8px 18px",
+            fontWeight: 700, fontSize: 13, cursor: "pointer",
+          }} onClick={async () => {
             installPrompt.prompt();
             const { outcome } = await installPrompt.userChoice;
             if (outcome === "accepted") show("EBC-OS installed!");
             setInstallPrompt(null);
           }}>{t("Install")}</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => setInstallPrompt(null)} style={{ padding: "4px 8px", fontSize: 11 }}>✕</button>
+          <button onClick={() => {
+            setInstallPrompt(null);
+            localStorage.setItem("ebc_install_dismissed", String(Date.now()));
+          }} style={{
+            background: "none", border: "none",
+            color: "var(--text3)", cursor: "pointer", fontSize: 18, padding: "0 4px",
+          }}>&times;</button>
         </div>
       )}
     </div>

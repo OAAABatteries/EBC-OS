@@ -1,9 +1,9 @@
 {
   "name": "EBC-OS · Eagles Brothers Constructors",
   "short_name": "EBC-OS",
-  "description": "Construction management operating system for drywall & framing contractors",
+  "description": "Construction management OS for drywall & framing contractors — bids, projects, timeclock, deliveries, safety",
   "theme_color": "#0a0e1a",
-  "background_color": "#0a0e1a",
+  "background_color": "#06080c",
   "display": "standalone",
   "orientation": "any",
   "start_url": "/",
@@ -11,6 +11,7 @@
   "id": "/",
   "categories": ["business", "productivity"],
   "lang": "en-US",
+  "prefer_related_applications": false,
   "icons": [
     { "src": "/favicon-16.png", "sizes": "16x16", "type": "image/png" },
     { "src": "/favicon-32.png", "sizes": "32x32", "type": "image/png" },
@@ -19,18 +20,29 @@
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
-  "screenshots": [],
   "shortcuts": [
     {
       "name": "Dashboard",
-      "short_name": "Dashboard",
-      "url": "/",
+      "short_name": "Home",
+      "url": "/?tab=dashboard",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Bids",
+      "name": "Bids & Estimating",
       "short_name": "Bids",
       "url": "/?tab=bids",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Time Clock",
+      "short_name": "Clock",
+      "url": "/?tab=timeclock",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Deliveries",
+      "short_name": "Deliveries",
+      "url": "/?tab=deliveries",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]

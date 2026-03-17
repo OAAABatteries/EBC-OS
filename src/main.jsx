@@ -40,6 +40,9 @@ requestAnimationFrame(() => {
 // Register service worker for PWA (skip in dev to avoid caching Vite bundles)
 if ('serviceWorker' in navigator && !import.meta.env.DEV) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      // Check for updates every 30 minutes
+      setInterval(() => reg.update(), 30 * 60 * 1000);
+    }).catch(() => {});
   });
 }

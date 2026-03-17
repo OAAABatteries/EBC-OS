@@ -1,53 +1,79 @@
-// EBC-OS Service Worker — Offline Cache + Notifications
-// Bumping version busts old caches on deploy
-const CACHE_NAME = "ebc-os-v7";
-const STATIC_ASSETS = ["/", "/index.html", "/manifest.json", "/favicon-16.png", "/favicon-32.png", "/favicon-48.png", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png", "/eagle.png"];
+// ═══════════════════════════════════════════════════════════════
+//  EBC-OS · Service Worker — Full Offline PWA
+//  Cache strategies: shell pre-cache, runtime cache, offline fallback
+//  Version bump triggers cache bust on deploy
+// ═══════════════════════════════════════════════════════════════
 
-// ── Install: pre-cache app shell ──
+const CACHE_VERSION = "v8";
+const SHELL_CACHE  = "ebc-shell-" + CACHE_VERSION;
+const RUNTIME_CACHE = "ebc-runtime-" + CACHE_VERSION;
+const FONT_CACHE   = "ebc-fonts-v1"; // fonts rarely change, separate long-lived cache
+
+// App shell — pre-cached on install
+const SHELL_ASSETS = [
+  "/",
+  "/index.html",
+  "/manifest.json",
+  "/favicon-16.png",
+  "/favicon-32.png",
+  "/favicon-48.png",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/apple-touch-icon.png",
+  "/eagle.png",
+  "/eagle-gold.png",
+];
+
+// ── Install: pre-cache app shell ──────────────────────────────
 self.addEventListener("install", (e) => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL_ASSETS))
   );
   self.skipWaiting();
 });
 
-// ── Activate: clean old caches ──
+// ── Activate: clean old caches, claim clients ─────────────────
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+      Promise.all(
+        keys
+          .filter((k) => k !== SHELL_CACHE && k !== RUNTIME_CACHE && k !== FONT_CACHE)
+          .map((k) => caches.delete(k))
+      )
+    ).then(() => {
+      // Notify all clients that a new version is active
+      self.clients.matchAll({ type: "window" }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: "SW_UPDATED", version: CACHE_VERSION });
+        });
+      });
+    })
   );
   self.clients.claim();
 });
 
-// ── Fetch: network-first for navigation, cache-first for assets ──
+// ── Fetch: smart caching strategies ───────────────────────────
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
+
   const url = new URL(e.request.url);
 
-  // Navigation requests (HTML pages) — network first, fallback to cache
-  if (e.request.mode === "navigate") {
-    e.respondWith(
-      fetch(e.request)
-        .then((res) => {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
-          return res;
-        })
-        .catch(() => caches.match("/index.html"))
-    );
-    return;
-  }
+  // Skip Supabase API calls — always network
+  if (url.hostname.includes("supabase")) return;
+  // Skip Anthropic API — always network
+  if (url.hostname.includes("anthropic")) return;
+  // Skip chrome-extension and other non-http
+  if (!url.protocol.startsWith("http")) return;
 
-  // Static assets (JS/CSS/fonts/images) — cache first, then network
-  if (url.pathname.startsWith("/assets/") || url.pathname.endsWith(".js") || url.pathname.endsWith(".css") || url.pathname.endsWith(".svg") || url.pathname.endsWith(".png") || url.pathname.endsWith(".woff2")) {
+  // ── Google Fonts: cache-first (long-lived) ──
+  if (url.hostname.includes("fonts.googleapis.com") || url.hostname.includes("fonts.gstatic.com")) {
     e.respondWith(
       caches.match(e.request).then((cached) => {
         if (cached) return cached;
         return fetch(e.request).then((res) => {
           const clone = res.clone();
-          caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
+          caches.open(FONT_CACHE).then((c) => c.put(e.request, clone));
           return res;
         });
       })
@@ -55,22 +81,92 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // API calls (Anthropic) — network only, no caching
-  if (url.hostname.includes("anthropic")) return;
+  // ── Navigation (HTML pages): network-first, fallback to cached shell ──
+  if (e.request.mode === "navigate") {
+    e.respondWith(
+      fetch(e.request)
+        .then((res) => {
+          const clone = res.clone();
+          caches.open(SHELL_CACHE).then((c) => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match("/index.html"))
+    );
+    return;
+  }
 
-  // Everything else — network first with cache fallback
+  // ── Vite hashed assets (/assets/*): cache-first (immutable by hash) ──
+  if (url.pathname.startsWith("/assets/")) {
+    e.respondWith(
+      caches.match(e.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(e.request).then((res) => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(RUNTIME_CACHE).then((c) => c.put(e.request, clone));
+          }
+          return res;
+        });
+      })
+    );
+    return;
+  }
+
+  // ── Static assets (icons, images): stale-while-revalidate ──
+  if (
+    url.pathname.endsWith(".png") ||
+    url.pathname.endsWith(".svg") ||
+    url.pathname.endsWith(".jpg") ||
+    url.pathname.endsWith(".ico") ||
+    url.pathname.endsWith(".woff2")
+  ) {
+    e.respondWith(
+      caches.match(e.request).then((cached) => {
+        const fetchPromise = fetch(e.request).then((res) => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(SHELL_CACHE).then((c) => c.put(e.request, clone));
+          }
+          return res;
+        });
+        return cached || fetchPromise;
+      })
+    );
+    return;
+  }
+
+  // ── Leaflet tiles: cache-first with network fallback ──
+  if (url.hostname.includes("tile.openstreetmap") || url.hostname.includes("basemaps.cartocdn")) {
+    e.respondWith(
+      caches.match(e.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(e.request).then((res) => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(RUNTIME_CACHE).then((c) => c.put(e.request, clone));
+          }
+          return res;
+        }).catch(() => new Response("", { status: 408 }));
+      })
+    );
+    return;
+  }
+
+  // ── Everything else: network-first with cache fallback ──
   e.respondWith(
     fetch(e.request)
       .then((res) => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(RUNTIME_CACHE).then((c) => c.put(e.request, clone));
+        }
         return res;
       })
       .catch(() => caches.match(e.request))
   );
 });
 
-// ── Clock-in reminder scheduling ──
+// ── Clock-in reminder scheduling ──────────────────────────────
 const scheduledReminders = new Map();
 
 self.addEventListener("message", (event) => {
@@ -111,9 +207,14 @@ self.addEventListener("message", (event) => {
       .getNotifications({ tag: `clock-reminder-${id}` })
       .then((notifs) => notifs.forEach((n) => n.close()));
   }
+
+  // Skip waiting when user clicks "Update"
+  if (data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
-// ── Notification click: open/focus app ──
+// ── Notification click: open/focus app ────────────────────────
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = event.notification.data?.url || "/";
