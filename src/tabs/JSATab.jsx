@@ -685,7 +685,7 @@ export function JSATab({ app }) {
       if (!form.title) { show(t("Title required"), "err"); return; }
       if (form.steps.length === 0) { show(t("Add at least one step"), "err"); return; }
       const newJsa = {
-        id: "jsa_" + Date.now(),
+        id: crypto.randomUUID(),
         ...form,
         projectId: Number(form.projectId),
         status: "draft",

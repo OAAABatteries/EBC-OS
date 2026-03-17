@@ -261,6 +261,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .btn-icon:hover{background:var(--bg4);color:var(--text)}.btn-icon:disabled{opacity:0.3;cursor:default}
 
 /* ══ ANIMATIONS ══ */
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}

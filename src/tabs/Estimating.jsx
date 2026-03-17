@@ -247,7 +247,7 @@ export function EstimatingTab({ app }) {
     }));
 
     const tk = {
-      id: "tk_" + Date.now(),
+      id: crypto.randomUUID(),
       bidId: null,
       name: ostName || "OST Import",
       created: new Date().toISOString().slice(0, 10),
@@ -318,7 +318,7 @@ export function EstimatingTab({ app }) {
 
   function createTakeoff() {
     const tk = {
-      id: "tk_" + Date.now(),
+      id: crypto.randomUUID(),
       bidId: null,
       name: "New Takeoff",
       created: new Date().toISOString().slice(0, 10),
@@ -596,33 +596,6 @@ export function EstimatingTab({ app }) {
           </div>
         )}
 
-        {/* ── Default Markups ── */}
-        <div className="card mt-16" style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10, color: "var(--text)" }}>Default Markups</div>
-          <div className="form-grid" style={{ gap: 10 }}>
-            <div className="form-group">
-              <label className="form-label">Tax Rate (%)</label>
-              <input className="form-input" type="number" step="0.01" value={company.defaultTax}
-                onChange={e => app.setCompany(c => ({ ...c, defaultTax: Number(e.target.value) }))} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Waste (%)</label>
-              <input className="form-input" type="number" step="0.01" value={company.defaultWaste}
-                onChange={e => app.setCompany(c => ({ ...c, defaultWaste: Number(e.target.value) }))} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Overhead (%)</label>
-              <input className="form-input" type="number" step="0.01" value={company.defaultOverhead}
-                onChange={e => app.setCompany(c => ({ ...c, defaultOverhead: Number(e.target.value) }))} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Profit (%)</label>
-              <input className="form-input" type="number" step="0.01" value={company.defaultProfit}
-                onChange={e => app.setCompany(c => ({ ...c, defaultProfit: Number(e.target.value) }))} />
-            </div>
-          </div>
-        </div>
-
         {filtered.length === 0 && (
           <p style={{ color: "var(--text2)", padding: 16 }}>No takeoffs yet. Create one to get started.</p>
         )}
@@ -820,6 +793,35 @@ export function EstimatingTab({ app }) {
           </div>
         ))}
       </div>
+
+      {/* ── Default Markups (company-wide defaults for new takeoffs) ── */}
+      <details style={{ marginBottom: 16 }}>
+        <summary style={{ cursor: "pointer", fontSize: 13, color: "var(--text2)", fontWeight: 600 }}>Default Markups (for new takeoffs)</summary>
+        <div className="card mt-8" style={{ padding: 12 }}>
+          <div className="form-grid" style={{ gap: 10 }}>
+            <div className="form-group">
+              <label className="form-label">Tax Rate (%)</label>
+              <input className="form-input" type="number" step="0.01" value={company.defaultTax}
+                onChange={e => app.setCompany(c => ({ ...c, defaultTax: Number(e.target.value) }))} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Waste (%)</label>
+              <input className="form-input" type="number" step="0.01" value={company.defaultWaste}
+                onChange={e => app.setCompany(c => ({ ...c, defaultWaste: Number(e.target.value) }))} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Overhead (%)</label>
+              <input className="form-input" type="number" step="0.01" value={company.defaultOverhead}
+                onChange={e => app.setCompany(c => ({ ...c, defaultOverhead: Number(e.target.value) }))} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Profit (%)</label>
+              <input className="form-input" type="number" step="0.01" value={company.defaultProfit}
+                onChange={e => app.setCompany(c => ({ ...c, defaultProfit: Number(e.target.value) }))} />
+            </div>
+          </div>
+        </div>
+      </details>
 
       {/* ── Scope Checklist & Gap Analysis ── */}
       <div style={{ marginBottom: 16 }}>

@@ -301,7 +301,7 @@ export function EmployeeView({ app }) {
 
   const doClockIn = (pos, target, status, reason) => {
     const entry = {
-      id: "te_" + Date.now(),
+      id: crypto.randomUUID(),
       employeeId: activeEmp.id,
       employeeName: activeEmp.name,
       projectId: target?.id || null,
@@ -435,7 +435,7 @@ export function EmployeeView({ app }) {
     if (!matProjectId || !matForm.material.trim() || !matForm.qty) return;
     const proj = projects.find(p => p.id === matProjectId);
     const newReq = {
-      id: "mr_" + Date.now(),
+      id: crypto.randomUUID(),
       employeeId: activeEmp.id,
       employeeName: activeEmp.name,
       projectId: matProjectId,

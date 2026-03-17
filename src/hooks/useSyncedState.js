@@ -124,6 +124,9 @@ export const TABLE_MAP = {
   incidents:         "incidents",
   toolboxTalks:      "toolbox_talks",
   scope:             "scope_items",
+  materials:         "materials",
+  customAssemblies:  "custom_assemblies",
+  incentiveProjects: "incentive_projects",
 };
 
 /**
@@ -150,37 +153,59 @@ export function useSyncedState(key, initialValue) {
   const hydrated = useRef(false);
   const skipRealtimeUpdate = useRef(false);
 
-  // 2. Hydrate from Supabase on first mount (async, Supabase wins)
+  // 2. Hydrate from Supabase on first mount
+  //    LOCAL data wins if it exists (user may have unsaved edits).
+  //    Supabase only wins on a truly fresh browser (no localStorage).
   useEffect(() => {
     if (!table || !isSupabaseConfigured() || !supabase || hydrated.current) return;
     hydrated.current = true;
+
+    // Check if we already have local data
+    const hasLocalData = (() => {
+      try {
+        const item = localStorage.getItem(lsKey);
+        if (!item) return false;
+        const parsed = JSON.parse(item);
+        return Array.isArray(parsed) ? parsed.length > 0 : !!parsed;
+      } catch { return false; }
+    })();
 
     const fetchData = async () => {
       setLoading(true);
       try {
         const { data, error: err } = await supabase.from(table).select("*");
         if (err) throw err;
+
         if (data && data.length > 0) {
           const camelData = keysToCamel(data);
-          // For singular objects (company), unwrap
-          if (!Array.isArray(initialValue)) {
-            const val = camelData[0] || initialValue;
-            setStored(val);
-            try { localStorage.setItem(lsKey, JSON.stringify(val)); } catch {}
+
+          if (hasLocalData) {
+            // Local data exists — push local to Supabase (local wins),
+            // but don't overwrite local state
+            const localData = (() => {
+              try { return JSON.parse(localStorage.getItem(lsKey)); } catch { return null; }
+            })();
+            if (localData) {
+              pushToSupabase(table, localData, Array.isArray(initialValue)).catch(() => {});
+            }
           } else {
-            setStored(camelData);
-            try { localStorage.setItem(lsKey, JSON.stringify(camelData)); } catch {}
+            // No local data — Supabase is source of truth (first visit)
+            if (!Array.isArray(initialValue)) {
+              const val = camelData[0] || initialValue;
+              setStored(val);
+              try { localStorage.setItem(lsKey, JSON.stringify(val)); } catch {}
+            } else {
+              setStored(camelData);
+              try { localStorage.setItem(lsKey, JSON.stringify(camelData)); } catch {}
+            }
           }
         }
-        // If Supabase is empty but localStorage has data, push localStorage → Supabase
-        else {
+        // Supabase empty but localStorage has data — push up
+        else if (hasLocalData) {
           const localData = (() => {
-            try {
-              const item = localStorage.getItem(lsKey);
-              return item ? JSON.parse(item) : null;
-            } catch { return null; }
+            try { return JSON.parse(localStorage.getItem(lsKey)); } catch { return null; }
           })();
-          if (localData && (Array.isArray(localData) ? localData.length > 0 : localData)) {
+          if (localData) {
             await pushToSupabase(table, localData, Array.isArray(initialValue));
           }
         }

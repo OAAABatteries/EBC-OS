@@ -145,7 +145,7 @@ export function ForemanView({ app }) {
     const totalMs = Date.now() - new Date(clockEntry.clockIn).getTime();
     const totalHours = +(totalMs / 3600000).toFixed(2);
     const newEntry = {
-      id: Date.now(),
+      id: crypto.randomUUID(),
       employeeId: activeForeman.id,
       projectId: clockEntry.projectId || selectedProjectId,
       clockIn: clockEntry.clockIn,
@@ -279,7 +279,7 @@ export function ForemanView({ app }) {
     if (!selectedProjectId || !matForm.material || !matForm.qty) return;
     const proj = projects.find(p => p.id === selectedProjectId);
     const newReq = {
-      id: "mr_" + Date.now(),
+      id: crypto.randomUUID(),
       employeeId: activeForeman.id,
       employeeName: activeForeman.name,
       projectId: selectedProjectId,
@@ -1073,7 +1073,7 @@ export function ForemanView({ app }) {
                     if (!jsaForm.title) { show(t("Title required"), "err"); return; }
                     if (jsaForm.steps.length === 0) { show(t("Add at least one step"), "err"); return; }
                     const newJsa = {
-                      id: "jsa_" + Date.now(),
+                      id: crypto.randomUUID(),
                       ...jsaForm,
                       projectId: Number(jsaForm.projectId),
                       status: "draft",

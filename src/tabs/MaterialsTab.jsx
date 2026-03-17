@@ -65,7 +65,7 @@ export function MaterialsTab({ app }) {
     }
     const proj = (app.projects || []).find(p => p.id === reqForm.projectId || p.id === Number(reqForm.projectId));
     const newReq = {
-      id: "mr_" + Date.now(),
+      id: crypto.randomUUID(),
       employeeId: app.auth?.id,
       employeeName: app.auth?.name || "Unknown",
       projectId: proj?.id || reqForm.projectId,

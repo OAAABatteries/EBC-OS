@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { styles } from "./styles";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useSyncedState, flushSyncQueue } from "./hooks/useSyncedState";
@@ -32,6 +32,7 @@ import { initNative } from "./utils/native";
 import { T } from "./data/translations";
 import { LoginScreen } from "./components/LoginScreen";
 import { OnboardingWizard } from "./components/OnboardingWizard";
+import { SyncStatus } from "./components/SyncStatus";
 import { hasAccess } from "./data/roles";
 import { supabase, isSupabaseConfigured, signOut as supaSignOut, onAuthStateChange } from "./lib/supabase";
 
@@ -255,40 +256,63 @@ function App({ auth, onLogout }) {
   const [lang, setLang] = useLocalStorage("ebc_lang", "en");
   const [apiKey, setApiKey] = useLocalStorage("apiKey", "");
 
-  // ── Business data (synced to localStorage + Supabase) ──
-  const [bids, setBids] = useSyncedState("bids", initBids);
-  const [projects, setProjects] = useSyncedState("projects", initProjects);
-  const [contacts, setContacts] = useSyncedState("contacts", initContacts);
-  const [callLog, setCallLog] = useSyncedState("callLog", initCallLog);
-  const [scope, setScope] = useSyncedState("scope", SCOPE_INIT);
-  const [invoices, setInvoices] = useSyncedState("invoices", initInvoices);
-  const [changeOrders, setChangeOrders] = useSyncedState("changeOrders", initChangeOrders);
-  const [rfis, setRfis] = useSyncedState("rfis", initRfis);
-  const [submittals, setSubmittals] = useSyncedState("submittals", initSubmittals);
-  const [schedule, setSchedule] = useSyncedState("schedule", initSchedule);
-  const [incidents, setIncidents] = useSyncedState("incidents", initIncidents);
-  const [toolboxTalks, setToolboxTalks] = useSyncedState("toolboxTalks", initToolboxTalks);
-  const [dailyReports, setDailyReports] = useSyncedState("dailyReports", initDailyReports);
-  const [takeoffs, setTakeoffs] = useSyncedState("takeoffs", initTakeoffs);
-  const [company, setCompany] = useSyncedState("company", COMPANY_DEFAULTS);
-  const [assemblies, setAssemblies] = useSyncedState("assemblies", ASSEMBLIES);
-  const [employees, setEmployees] = useSyncedState("employees", initEmployees);
-  const [companyLocations, setCompanyLocations] = useSyncedState("companyLocations", initCompanyLocations);
-  const [timeEntries, setTimeEntries] = useSyncedState("timeEntries", initTimeEntries);
-  const [crewSchedule, setCrewSchedule] = useSyncedState("crewSchedule", initCrewSchedule);
-  const [materialRequests, setMaterialRequests] = useSyncedState("materialRequests", initMaterialRequests);
-  const [calendarEvents, setCalendarEvents] = useSyncedState("calendarEvents", initCalendarEvents);
-  const [ptoRequests, setPtoRequests] = useSyncedState("ptoRequests", initPtoRequests);
-  const [calEquipment, setCalEquipment] = useSyncedState("calEquipment", initEquipment);
-  const [equipmentBookings, setEquipmentBookings] = useSyncedState("equipmentBookings", initEquipmentBookings);
-  const [certifications, setCertifications] = useSyncedState("certifications", initCertifications);
-  const [jsas, setJsas] = useSyncedState("jsas", initJSAs);
-  const [tmTickets, setTmTickets] = useSyncedState("tmTickets", initTmTickets);
+  // ── Robust overlay dismiss (prevents close-on-highlight) ──
+  const _overlayDown = useRef(false);
+  const onOverlayDown = (e) => { _overlayDown.current = (e.target === e.currentTarget); };
+  const onOverlayUp = (closeFn) => (e) => {
+    if (_overlayDown.current && e.target === e.currentTarget) closeFn();
+    _overlayDown.current = false;
+  };
 
-  // ── Non-synced state (localStorage only, no Supabase table) ──
-  const [materials, setMaterials] = useLocalStorage("materials", DEFAULT_MATERIALS);
-  const [customAssemblies, setCustomAssemblies] = useLocalStorage("customAssemblies", []);
-  const [incentiveProjects, setIncentiveProjects] = useLocalStorage("incentiveProjects", []);
+  // ── Business data (synced to localStorage + Supabase) ──
+  const [bids, setBids, _syncBids] = useSyncedState("bids", initBids);
+  const [projects, setProjects, _syncProjects] = useSyncedState("projects", initProjects);
+  const [contacts, setContacts, _syncContacts] = useSyncedState("contacts", initContacts);
+  const [callLog, setCallLog, _syncCallLog] = useSyncedState("callLog", initCallLog);
+  const [scope, setScope, _syncScope] = useSyncedState("scope", SCOPE_INIT);
+  const [invoices, setInvoices, _syncInvoices] = useSyncedState("invoices", initInvoices);
+  const [changeOrders, setChangeOrders, _syncChangeOrders] = useSyncedState("changeOrders", initChangeOrders);
+  const [rfis, setRfis, _syncRfis] = useSyncedState("rfis", initRfis);
+  const [submittals, setSubmittals, _syncSubmittals] = useSyncedState("submittals", initSubmittals);
+  const [schedule, setSchedule, _syncSchedule] = useSyncedState("schedule", initSchedule);
+  const [incidents, setIncidents, _syncIncidents] = useSyncedState("incidents", initIncidents);
+  const [toolboxTalks, setToolboxTalks, _syncToolboxTalks] = useSyncedState("toolboxTalks", initToolboxTalks);
+  const [dailyReports, setDailyReports, _syncDailyReports] = useSyncedState("dailyReports", initDailyReports);
+  const [takeoffs, setTakeoffs, _syncTakeoffs] = useSyncedState("takeoffs", initTakeoffs);
+  const [company, setCompany, _syncCompany] = useSyncedState("company", COMPANY_DEFAULTS);
+  const [assemblies, setAssemblies, _syncAssemblies] = useSyncedState("assemblies", ASSEMBLIES);
+  const [employees, setEmployees, _syncEmployees] = useSyncedState("employees", initEmployees);
+  const [companyLocations, setCompanyLocations, _syncLocations] = useSyncedState("companyLocations", initCompanyLocations);
+  const [timeEntries, setTimeEntries, _syncTimeEntries] = useSyncedState("timeEntries", initTimeEntries);
+  const [crewSchedule, setCrewSchedule, _syncCrewSchedule] = useSyncedState("crewSchedule", initCrewSchedule);
+  const [materialRequests, setMaterialRequests, _syncMaterialRequests] = useSyncedState("materialRequests", initMaterialRequests);
+  const [calendarEvents, setCalendarEvents, _syncCalendarEvents] = useSyncedState("calendarEvents", initCalendarEvents);
+  const [ptoRequests, setPtoRequests, _syncPtoRequests] = useSyncedState("ptoRequests", initPtoRequests);
+  const [calEquipment, setCalEquipment, _syncEquipment] = useSyncedState("calEquipment", initEquipment);
+  const [equipmentBookings, setEquipmentBookings, _syncEquipBookings] = useSyncedState("equipmentBookings", initEquipmentBookings);
+  const [certifications, setCertifications, _syncCerts] = useSyncedState("certifications", initCertifications);
+  const [jsas, setJsas, _syncJsas] = useSyncedState("jsas", initJSAs);
+  const [tmTickets, setTmTickets, _syncTmTickets] = useSyncedState("tmTickets", initTmTickets);
+  const [materials, setMaterials, _syncMaterials] = useSyncedState("materials", DEFAULT_MATERIALS);
+  const [customAssemblies, setCustomAssemblies, _syncCustomAssemblies] = useSyncedState("customAssemblies", []);
+  const [incentiveProjects, setIncentiveProjects, _syncIncentiveProjects] = useSyncedState("incentiveProjects", []);
+
+  // ── Aggregate sync status for UI ──
+  const _allSync = [
+    _syncBids, _syncProjects, _syncContacts, _syncCallLog, _syncScope,
+    _syncInvoices, _syncChangeOrders, _syncRfis, _syncSubmittals, _syncSchedule,
+    _syncIncidents, _syncToolboxTalks, _syncDailyReports, _syncTakeoffs,
+    _syncCompany, _syncAssemblies, _syncEmployees, _syncLocations,
+    _syncTimeEntries, _syncCrewSchedule, _syncMaterialRequests,
+    _syncCalendarEvents, _syncPtoRequests, _syncEquipment, _syncEquipBookings,
+    _syncCerts, _syncJsas, _syncTmTickets, _syncMaterials, _syncCustomAssemblies,
+    _syncIncentiveProjects,
+  ];
+  const syncStatus = useMemo(() => ({
+    loading: _allSync.some(s => s.loading),
+    errors: _allSync.filter(s => s.error).map(s => s.error),
+    refreshAll: () => _allSync.forEach(s => s.refresh()),
+  }), [_allSync.map(s => `${s.loading}|${s.error}`).join(",")]);
   const [subSchedule, setSubSchedule] = useLocalStorage("subSchedule", initSubSchedule);
   const [weatherAlerts, setWeatherAlerts] = useLocalStorage("weatherAlerts", initWeatherAlerts);
   const [scheduleConflicts, setScheduleConflicts] = useLocalStorage("scheduleConflicts", initScheduleConflicts);
@@ -376,7 +400,7 @@ function App({ auth, onLogout }) {
   // ── helpers ──
   const fmt = n => "$" + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   const fmtK = n => n >= 1000000 ? "$" + (n / 1000000).toFixed(1) + "M" : n >= 1000 ? "$" + (n / 1000).toFixed(0) + "K" : fmt(n);
-  const nextId = arr => Math.max(0, ...arr.map(x => x.id)) + 1;
+  const nextId = () => crypto.randomUUID();
 
   // ── app bundle ──
   const app = {
@@ -395,7 +419,8 @@ function App({ auth, onLogout }) {
     tmTickets, setTmTickets,
     show, setModal, modal, search, setSearch, tab, setTab, subTab, setSubTab, fmt, fmtK, nextId,
     lang, setLang, t,
-    auth, onLogout
+    auth, onLogout,
+    syncStatus,
   };
 
   // ── KPI computations ──
@@ -434,13 +459,21 @@ function App({ auth, onLogout }) {
 
   // ── filtered projects ──
   const filteredProjects = useMemo(() => {
-    if (!search) return projects;
-    const q = search.toLowerCase();
-    return projects.filter(p =>
-      (p.name || "").toLowerCase().includes(q) ||
-      (p.gc || "").toLowerCase().includes(q) ||
-      (p.phase || "").toLowerCase().includes(q)
-    );
+    let list = projects;
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(p =>
+        (p.name || "").toLowerCase().includes(q) ||
+        (p.gc || "").toLowerCase().includes(q) ||
+        (p.phase || "").toLowerCase().includes(q)
+      );
+    }
+    // Sort by start date (newest first)
+    return [...list].sort((a, b) => {
+      const da = a.start ? new Date(a.start) : new Date(0);
+      const db = b.start ? new Date(b.start) : new Date(0);
+      return db - da;
+    });
   }, [projects, search]);
 
   // ── filtered scope ──
@@ -677,14 +710,22 @@ function App({ auth, onLogout }) {
         <div className="flex gap-16 mt-24" style={{ flexWrap: "wrap" }}>
           <div className="card" style={{ flex: "1 1 280px", minWidth: 280 }}>
             <div className="card-header"><div className="card-title font-head">{t("Bids by Status")}</div></div>
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={200}>
               <PieChart>
-                <Pie data={statusChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name} (${value})`}>
+                <Pie data={statusChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={false}>
                   {statusChartData.map((_, i) => <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} />
               </PieChart>
             </ResponsiveContainer>
+            <div className="flex gap-12 flex-wrap" style={{ justifyContent: "center", padding: "4px 8px" }}>
+              {statusChartData.map((entry, i) => (
+                <div key={entry.name} className="flex gap-4" style={{ alignItems: "center", fontSize: 12 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 2, background: STATUS_COLORS[i % STATUS_COLORS.length], display: "inline-block" }} />
+                  <span style={{ color: "var(--text2)" }}>{entry.name}: <strong style={{ color: "var(--text)" }}>{entry.value}</strong></span>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="card" style={{ flex: "1 1 400px", minWidth: 300 }}>
@@ -1047,7 +1088,7 @@ function App({ auth, onLogout }) {
                     onClick={(e) => {
                       e.stopPropagation();
                       const newProj = {
-                        id: nextId(projects),
+                        id: nextId(),
                         bidId: b.id,
                         name: b.name,
                         gc: b.gc,
@@ -1084,8 +1125,8 @@ function App({ auth, onLogout }) {
 
       {/* Follow-Up Email Modal */}
       {followUpBid && followUpText && (
-        <div className="modal-overlay" onClick={() => setFollowUpBid(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 600 }}>
+        <div className="modal-overlay" onMouseDown={onOverlayDown} onMouseUp={onOverlayUp(() => setFollowUpBid(null))}>
+          <div className="modal-content" style={{ maxWidth: 600 }}>
             <div className="modal-header flex-between">
               <div className="modal-title">Follow-Up: {followUpBid.name}</div>
               <button className="btn btn-ghost btn-sm" onClick={() => setFollowUpBid(null)}>{t("Close")}</button>
@@ -1109,8 +1150,8 @@ function App({ auth, onLogout }) {
 
       {/* Win Predictor Modal */}
       {winPredBid && winPredResult && (
-        <div className="modal-overlay" onClick={() => setWinPredBid(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 700 }}>
+        <div className="modal-overlay" onMouseDown={onOverlayDown} onMouseUp={onOverlayUp(() => setWinPredBid(null))}>
+          <div className="modal-content" style={{ maxWidth: 700 }}>
             <div className="modal-header flex-between">
               <div className="modal-title">Win Prediction: {winPredBid.name}</div>
               <button className="btn btn-ghost btn-sm" onClick={() => setWinPredBid(null)}>{t("Close")}</button>
@@ -1220,6 +1261,18 @@ function App({ auth, onLogout }) {
         </div>
       </div>
 
+      {/* Search Bar */}
+      <div style={{ marginBottom: 16 }}>
+        <input
+          className="form-input"
+          type="text"
+          placeholder={t("Search projects by name, GC, or phase...")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ maxWidth: 500, width: "100%" }}
+        />
+      </div>
+
       {/* Risk Radar Panel */}
       {showRiskRadar && (
         <div className="card" style={{ padding: 16, marginBottom: 16 }}>
@@ -1282,12 +1335,20 @@ function App({ auth, onLogout }) {
       ) : (
         <div className="project-grid">
           {filteredProjects.slice(0, projPageSize).map(p => (
-            <div key={p.id} className="project-card" onClick={() => setModal({ type: "editProject", data: p })}>
+            <div key={p.id} className="project-card" onClick={() => {
+              // Track last accessed
+              setProjects(prev => prev.map(proj => proj.id === p.id ? { ...proj, lastAccessed: new Date().toISOString() } : proj));
+              setModal({ type: "editProject", data: { ...p, lastAccessed: new Date().toISOString() } });
+            }}>
               <div className="flex-between mb-4">
                 <span className="badge badge-blue">{p.phase}</span>
               </div>
               <div className="card-title font-head" style={{ fontSize: 15, marginBottom: 4 }}>{p.name}</div>
-              <div className="text-sm text-muted mb-8">{p.gc}</div>
+              <div className="text-sm text-muted mb-4">{p.gc}</div>
+              <div className="flex-between text-xs text-dim mb-4">
+                <span>📅 Bid: {p.start || "—"}</span>
+                <span>🕐 {p.lastAccessed ? new Date(p.lastAccessed).toLocaleDateString() : "Never opened"}</span>
+              </div>
               <div className="flex-between text-sm">
                 <span>Contract: <span className="font-mono text-amber">{fmt(p.contract)}</span></span>
                 <span>Billed: <span className="font-mono">{fmt(p.billed)}</span></span>
@@ -1319,8 +1380,8 @@ function App({ auth, onLogout }) {
 
       {/* Closeout Modal */}
       {closeoutProj && closeoutResult && (
-        <div className="modal-overlay" onClick={() => setCloseoutProj(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 700 }}>
+        <div className="modal-overlay" onMouseDown={onOverlayDown} onMouseUp={onOverlayUp(() => setCloseoutProj(null))}>
+          <div className="modal-content" style={{ maxWidth: 700 }}>
             <div className="modal-header flex-between">
               <div className="modal-title">Closeout: {closeoutProj.name}</div>
               <button className="btn btn-ghost btn-sm" onClick={() => setCloseoutProj(null)}>{t("Close")}</button>
@@ -1664,7 +1725,7 @@ function App({ auth, onLogout }) {
 
   const importEmailBid = (bid) => {
     const newBid = {
-      id: nextId(bids),
+      id: nextId(),
       name: bid.name || "Unnamed Project",
       gc: bid.gc || "",
       value: bid.value || 0,
@@ -2264,6 +2325,7 @@ function App({ auth, onLogout }) {
       </header>
 
       <main className="main-content" onClick={() => moreOpen && setMoreOpen(false)}>
+        <SyncStatus syncStatus={syncStatus} />
         {tab === "dashboard" && renderDashboard()}
         {tab === "bids" && renderBids()}
         {tab === "projects" && renderProjects()}
@@ -2316,7 +2378,7 @@ function App({ auth, onLogout }) {
 //  MODAL HUB COMPONENT
 // ═══════════════════════════════════════════════════════════════
 const SCOPE_OPTIONS = [
-  "Metal Framing", "GWB", "ACT", "Lead-Lined", "ICRA", "Insulation",
+  "Metal Framing", "GWB", "ACT", "Demo", "Lead-Lined", "ICRA", "Insulation",
   "L5 Finish", "Deflection Track", "Seismic ACT", "FRP", "Fireproofing", "Shaft Wall"
 ];
 
@@ -2327,6 +2389,10 @@ const ModalHub = ({ type, data, app }) => {
   const [aiLoading, setAiLoading] = useState(false);
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiWarnings, setAiWarnings] = useState([]);
+  const [pdfScanning, setPdfScanning] = useState(false);
+  const [quickContact, setQuickContact] = useState(null); // inline add-contact from bid form
+  const [contactFilter, setContactFilter] = useState("");
+  const [contactDropOpen, setContactDropOpen] = useState(false);
 
   const getInitial = () => {
     switch (type) {
@@ -2334,7 +2400,7 @@ const ModalHub = ({ type, data, app }) => {
         return data ? { ...data } : {
           name: "", gc: "", value: 0, due: "", status: "estimating",
           scope: [], phase: "", risk: "Med", notes: "", contact: "",
-          month: "", closeOut: null, attachments: []
+          month: "", address: "", attachments: []
         };
       case "editProject":
         return data ? { ...data } : {
@@ -2368,6 +2434,55 @@ const ModalHub = ({ type, data, app }) => {
     });
   };
 
+  const handlePdfScan = async (file) => {
+    if (!file || !file.name.toLowerCase().endsWith(".pdf")) {
+      show("Please select a PDF file", "err");
+      return;
+    }
+    setPdfScanning(true);
+    try {
+      const { extractBidFromPdf } = await import("./utils/pdfBidExtractor.js");
+      const extracted = await extractBidFromPdf(file);
+
+      // Pre-fill draft fields (only overwrite if extracted value is non-empty)
+      setDraft(d => ({
+        ...d,
+        name: extracted.name || d.name,
+        gc: extracted.gc || d.gc,
+        value: extracted.value || d.value,
+        due: extracted.due || d.due,
+        bidDate: extracted.bidDate || d.bidDate,
+        phase: extracted.phase || d.phase,
+        address: extracted.address || d.address,
+        scope: extracted.scope.length > 0 ? extracted.scope : d.scope,
+        notes: extracted.notes || d.notes,
+        month: extracted.month || d.month,
+      }));
+
+      // Also store the PDF as an attachment
+      const reader = new FileReader();
+      reader.onload = () => {
+        const attachment = {
+          id: Date.now() + Math.random(),
+          name: file.name,
+          type: file.type || "application/pdf",
+          size: file.size,
+          data: reader.result,
+          uploaded: new Date().toISOString(),
+        };
+        setDraft(d => ({ ...d, attachments: [...(d.attachments || []), attachment] }));
+      };
+      reader.readAsDataURL(file);
+
+      show(`Extracted: ${extracted.name || "bid"} — $${(extracted.value || 0).toLocaleString()} — review fields`, "ok");
+    } catch (err) {
+      console.error("[pdf-scan]", err);
+      show("PDF scan failed: " + (err.message || "Unknown error"), "err");
+    } finally {
+      setPdfScanning(false);
+    }
+  };
+
   const handleSave = () => {
     switch (type) {
       case "editBid": {
@@ -2375,7 +2490,7 @@ const ModalHub = ({ type, data, app }) => {
         if (!draft.gc) { show("GC name is required", "err"); return; }
         if (draft.value && isNaN(Number(draft.value))) { show("Value must be a number", "err"); return; }
         if (isNew) {
-          app.setBids(prev => [...prev, { ...draft, id: app.nextId(prev) }]);
+          app.setBids(prev => [...prev, { ...draft, id: app.nextId() }]);
           show("Bid added");
         } else {
           app.setBids(prev => prev.map(b => b.id === draft.id ? { ...draft } : b));
@@ -2387,7 +2502,7 @@ const ModalHub = ({ type, data, app }) => {
         if (!draft.name) { show("Project name is required", "err"); return; }
         if (!draft.gc) { show("GC name is required", "err"); return; }
         if (isNew) {
-          app.setProjects(prev => [...prev, { ...draft, id: app.nextId(prev) }]);
+          app.setProjects(prev => [...prev, { ...draft, id: app.nextId() }]);
           show("Project added");
         } else {
           app.setProjects(prev => prev.map(p => p.id === draft.id ? { ...draft } : p));
@@ -2400,7 +2515,7 @@ const ModalHub = ({ type, data, app }) => {
         if (draft.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email)) { show("Invalid email format", "err"); return; }
         if (draft.phone && !/^[\d\s\-().+]+$/.test(draft.phone)) { show("Invalid phone format", "err"); return; }
         if (isNew) {
-          app.setContacts(prev => [...prev, { ...draft, id: app.nextId(prev) }]);
+          app.setContacts(prev => [...prev, { ...draft, id: app.nextId() }]);
           show("Contact added");
         } else {
           app.setContacts(prev => prev.map(c => c.id === draft.id ? { ...draft } : c));
@@ -2412,7 +2527,7 @@ const ModalHub = ({ type, data, app }) => {
         if (!draft.contact || !draft.note) { show("Contact and note required", "err"); return; }
         const contact = app.contacts.find(c => c.name === draft.contact);
         app.setCallLog(prev => [
-          { ...draft, id: app.nextId(prev), company: contact?.company || draft.company, time: draft.time },
+          { ...draft, id: app.nextId(), company: contact?.company || draft.company, time: draft.time },
           ...prev
         ]);
         show("Call logged");
@@ -2422,6 +2537,48 @@ const ModalHub = ({ type, data, app }) => {
         break;
     }
     setModal(null);
+  };
+
+  // ── Award / Un-award a bid ──
+  const handleAwardBid = () => {
+    if (!draft.id || !draft.name) return;
+    // Update bid status to "awarded"
+    const awardedBid = { ...draft, status: "awarded" };
+    app.setBids(prev => prev.map(b => b.id === awardedBid.id ? awardedBid : b));
+    // Create project from bid data
+    const newProject = {
+      id: app.nextId(),
+      name: awardedBid.name,
+      gc: awardedBid.gc,
+      contract: awardedBid.value || 0,
+      billed: 0,
+      progress: 0,
+      phase: awardedBid.phase || "",
+      start: awardedBid.due || "",
+      end: "",
+      pm: "",
+      laborBudget: 0,
+      laborHours: 0,
+      address: awardedBid.address || "",
+      attachments: awardedBid.attachments || [],
+      bidId: awardedBid.id, // link back to the bid
+      notes: awardedBid.notes || "",
+    };
+    app.setProjects(prev => [...prev, newProject]);
+    show("Bid awarded! Project created.");
+    setModal(null);
+  };
+
+  const handleUnAwardBid = () => {
+    if (!draft.id) return;
+    if (!confirm("Un-award this bid? The linked project will be removed.")) return;
+    // Set bid back to submitted
+    const updBid = { ...draft, status: "submitted" };
+    app.setBids(prev => prev.map(b => b.id === updBid.id ? updBid : b));
+    // Remove linked project
+    app.setProjects(prev => prev.filter(p => p.bidId !== draft.id));
+    show("Bid un-awarded. Project removed.");
+    setDraft(updBid);
   };
 
   const handleDelete = () => {
@@ -2447,11 +2604,19 @@ const ModalHub = ({ type, data, app }) => {
 
   const close = () => setModal(null);
 
+  // Robust overlay dismiss — only close if BOTH mousedown AND mouseup land on the overlay
+  const overlayMouseDown = useRef(false);
+  const handleOverlayDown = (e) => { overlayMouseDown.current = (e.target === e.currentTarget); };
+  const handleOverlayUp = (closeFn) => (e) => {
+    if (overlayMouseDown.current && e.target === e.currentTarget) closeFn();
+    overlayMouseDown.current = false;
+  };
+
   // ── View Bid (read-only) ──
   if (type === "viewBid") {
     return (
-      <div className="modal-overlay" onClick={close}>
-        <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal-overlay" onMouseDown={handleOverlayDown} onMouseUp={handleOverlayUp(close)}>
+        <div className="modal">
           <div className="modal-header">
             <div className="modal-title">Bid Details</div>
             <button className="modal-close" onClick={close}>✕</button>
@@ -2476,6 +2641,16 @@ const ModalHub = ({ type, data, app }) => {
           <div className="modal-actions" style={{ justifyContent: "space-between" }}>
             <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>
             <div className="flex gap-8">
+              {draft.status !== "awarded" && (
+                <button className="btn" style={{ background: "rgba(16,185,129,0.12)", color: "var(--green)", border: "1px solid var(--green)", fontWeight: 600 }} onClick={handleAwardBid}>
+                  Award Bid
+                </button>
+              )}
+              {draft.status === "awarded" && (
+                <button className="btn" style={{ background: "rgba(234,179,8,0.12)", color: "var(--yellow)", border: "1px solid var(--yellow)", fontSize: 11 }} onClick={handleUnAwardBid}>
+                  Un-award
+                </button>
+              )}
               <button className="btn btn-ghost" onClick={close}>Close</button>
               <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: draft })}>Edit</button>
             </div>
@@ -2488,8 +2663,8 @@ const ModalHub = ({ type, data, app }) => {
   // ── View Project (read-only) ──
   if (type === "viewProject") {
     return (
-      <div className="modal-overlay" onClick={close}>
-        <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal-overlay" onMouseDown={handleOverlayDown} onMouseUp={handleOverlayUp(close)}>
+        <div className="modal">
           <div className="modal-header">
             <div className="modal-title">Project Details</div>
             <button className="modal-close" onClick={close}>✕</button>
@@ -2558,11 +2733,15 @@ const ModalHub = ({ type, data, app }) => {
 
   if (type === "editBid") {
     return (
-      <div className="modal-overlay" onClick={close}>
-        <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+      <div className="modal-overlay" onMouseDown={handleOverlayDown} onMouseUp={handleOverlayUp(close)}>
+        <div className="modal modal-lg">
           <div className="modal-header">
             <div className="modal-title">{isNew ? "Add Bid" : "Edit Bid"}</div>
             <div className="flex gap-8" style={{ alignItems: "center" }}>
+              <label className="btn btn-sm" style={{ background: "var(--blue-dim)", color: "var(--blue)", border: "1px solid var(--blue)", fontSize: 11, cursor: "pointer", position: "relative" }}>
+                {pdfScanning ? "Scanning..." : "Scan Proposal PDF"}
+                <input type="file" accept=".pdf" style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} onChange={(e) => { if (e.target.files?.[0]) handlePdfScan(e.target.files[0]); e.target.value = ""; }} disabled={pdfScanning} />
+              </label>
               {isNew && <button className="btn btn-sm" style={{ background: "var(--amber-dim)", color: "var(--amber)", border: "1px solid var(--amber)", fontSize: 11 }} onClick={() => setShowAiPanel(!showAiPanel)}>{showAiPanel ? "Hide AI" : "Analyze Bid Package"}</button>}
               <button className="modal-close" onClick={close}>✕</button>
             </div>
@@ -2630,18 +2809,85 @@ const ModalHub = ({ type, data, app }) => {
             </div>
             <div className="form-group">
               <label className="form-label">Contact</label>
-              <select className="form-select" value={draft.contact} onChange={e => upd("contact", e.target.value)}>
-                <option value="">-- Select --</option>
-                {app.contacts.map(c => <option key={c.id} value={c.name}>{c.name} ({c.company})</option>)}
-              </select>
+              <div className="flex gap-4" style={{ alignItems: "center" }}>
+                <div style={{ flex: 1, position: "relative" }}>
+                  <input
+                    className="form-input"
+                    placeholder="Search contacts..."
+                    value={contactDropOpen ? contactFilter : (draft.contact || "")}
+                    onChange={e => { setContactFilter(e.target.value); setContactDropOpen(true); }}
+                    onFocus={() => { setContactDropOpen(true); setContactFilter(""); }}
+                    onBlur={() => setTimeout(() => setContactDropOpen(false), 200)}
+                  />
+                  {draft.contact && !contactDropOpen && (
+                    <button type="button" style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text2)", cursor: "pointer", fontSize: 14, padding: "2px 4px" }}
+                      onClick={() => { upd("contact", ""); setContactFilter(""); }}>✕</button>
+                  )}
+                  {contactDropOpen && (() => {
+                    const q = contactFilter.toLowerCase();
+                    const filtered = app.contacts.filter(c =>
+                      c.name.toLowerCase().includes(q) || (c.company || "").toLowerCase().includes(q)
+                    );
+                    return (
+                      <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, maxHeight: 200, overflowY: "auto", background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "0 0 var(--radius) var(--radius)", boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}>
+                        {filtered.length === 0 ? (
+                          <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--text2)" }}>No contacts found</div>
+                        ) : filtered.map(c => (
+                          <div key={c.id}
+                            style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid var(--border)" }}
+                            onMouseDown={e => { e.preventDefault(); upd("contact", c.name); setContactDropOpen(false); setContactFilter(""); }}
+                            onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
+                            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                          >
+                            <span style={{ fontWeight: 500 }}>{c.name}</span>
+                            <span style={{ color: "var(--text2)", marginLeft: 8, fontSize: 11 }}>{c.company}{c.role ? ` · ${c.role}` : ""}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+                <button type="button" className="btn btn-ghost btn-sm" style={{ whiteSpace: "nowrap", fontSize: 11, padding: "4px 8px" }}
+                  onClick={() => setQuickContact({ name: "", company: draft.gc || "", role: "", phone: "", email: "" })}>+ New</button>
+              </div>
+              {quickContact && (
+                <div style={{ marginTop: 8, padding: 12, background: "var(--bg3)", borderRadius: "var(--radius)", border: "1px solid var(--border2)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--amber)", marginBottom: 8 }}>QUICK ADD CONTACT</div>
+                  <div className="flex gap-8 mb-8" style={{ flexWrap: "wrap" }}>
+                    <input className="form-input" style={{ flex: "1 1 140px" }} placeholder="Name *" value={quickContact.name}
+                      onChange={e => setQuickContact(prev => ({ ...prev, name: e.target.value }))} />
+                    <input className="form-input" style={{ flex: "1 1 140px" }} placeholder="Company" value={quickContact.company}
+                      onChange={e => setQuickContact(prev => ({ ...prev, company: e.target.value }))} />
+                  </div>
+                  <div className="flex gap-8 mb-8" style={{ flexWrap: "wrap" }}>
+                    <input className="form-input" style={{ flex: "1 1 120px" }} placeholder="Role" value={quickContact.role}
+                      onChange={e => setQuickContact(prev => ({ ...prev, role: e.target.value }))} />
+                    <input className="form-input" style={{ flex: "1 1 120px" }} placeholder="Phone" value={quickContact.phone}
+                      onChange={e => setQuickContact(prev => ({ ...prev, phone: e.target.value }))} />
+                    <input className="form-input" style={{ flex: "1 1 160px" }} placeholder="Email" value={quickContact.email}
+                      onChange={e => setQuickContact(prev => ({ ...prev, email: e.target.value }))} />
+                  </div>
+                  <div className="flex gap-8">
+                    <button type="button" className="btn btn-primary btn-sm" onClick={() => {
+                      if (!quickContact.name.trim()) { app.show("Contact name is required", "err"); return; }
+                      const newContact = { ...quickContact, id: app.nextId(), priority: "med", notes: "", bids: 0, wins: 0, color: "#3b82f6", last: "Never" };
+                      app.setContacts(prev => [...prev, newContact]);
+                      upd("contact", newContact.name);
+                      setQuickContact(null);
+                      app.show("Contact added & selected");
+                    }}>Save & Select</button>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setQuickContact(null)}>Cancel</button>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="form-group">
               <label className="form-label">Month</label>
               <input className="form-input" value={draft.month || ""} onChange={e => upd("month", e.target.value)} placeholder="e.g. Mar" />
             </div>
             <div className="form-group full">
-              <label className="form-label">Close-Out Notes</label>
-              <input className="form-input" value={draft.closeOut || ""} onChange={e => upd("closeOut", e.target.value)} placeholder="Close-out status or notes" />
+              <label className="form-label">Address</label>
+              <input className="form-input" value={draft.address || ""} onChange={e => upd("address", e.target.value)} placeholder="Project address" />
             </div>
             <div className="form-group full">
               <label className="form-label">Scope Tags</label>
@@ -2660,7 +2906,7 @@ const ModalHub = ({ type, data, app }) => {
             </div>
             <div className="form-group full">
               <label className="form-label">Notes</label>
-              <textarea className="form-textarea" value={draft.notes} onChange={e => upd("notes", e.target.value)} placeholder="Bid notes, clarifications, exclusions..." />
+              <textarea className="form-textarea" value={draft.notes} onChange={e => upd("notes", e.target.value)} placeholder="Bid notes, clarifications, exclusions..." style={{ minHeight: 220, resize: "vertical", fontSize: 12, lineHeight: 1.5, fontFamily: "inherit" }} />
             </div>
 
             {/* ── File Attachments ── */}
@@ -2745,6 +2991,16 @@ const ModalHub = ({ type, data, app }) => {
           <div className="modal-actions" style={{ justifyContent: "space-between" }}>
             {!isNew && <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>}
             <div className="flex gap-8" style={{ marginLeft: "auto" }}>
+              {!isNew && draft.status !== "awarded" && (
+                <button className="btn" style={{ background: "rgba(16,185,129,0.12)", color: "var(--green)", border: "1px solid var(--green)", fontWeight: 600 }} onClick={handleAwardBid}>
+                  Award Bid
+                </button>
+              )}
+              {!isNew && draft.status === "awarded" && (
+                <button className="btn" style={{ background: "rgba(234,179,8,0.12)", color: "var(--yellow)", border: "1px solid var(--yellow)", fontSize: 11 }} onClick={handleUnAwardBid}>
+                  Un-award
+                </button>
+              )}
               <button className="btn btn-ghost" onClick={close}>Cancel</button>
               <button className="btn btn-primary" onClick={handleSave}>{isNew ? "Add Bid" : "Save Changes"}</button>
             </div>
@@ -2757,8 +3013,8 @@ const ModalHub = ({ type, data, app }) => {
   // ── Edit Project ──
   if (type === "editProject") {
     return (
-      <div className="modal-overlay" onClick={close}>
-        <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal-overlay" onMouseDown={handleOverlayDown} onMouseUp={handleOverlayUp(close)}>
+        <div className="modal">
           <div className="modal-header">
             <div className="modal-title">{isNew ? "Add Project" : "Edit Project"}</div>
             <button className="modal-close" onClick={close}>✕</button>
@@ -2796,6 +3052,92 @@ const ModalHub = ({ type, data, app }) => {
               <label className="form-label">End Date</label>
               <input className="form-input" value={draft.end} onChange={e => upd("end", e.target.value)} placeholder="e.g. Jul 30" />
             </div>
+            <div className="form-group">
+              <label className="form-label">PM Assigned</label>
+              <select className="form-select" value={draft.pm || ""} onChange={e => upd("pm", e.target.value)}>
+                <option value="">— Select PM —</option>
+                <option value="Emmanuel Aguilar">Emmanuel Aguilar</option>
+                <option value="Abner Aguilar">Abner Aguilar</option>
+                <option value="Isai Aguilar">Isai Aguilar</option>
+              </select>
+            </div>
+            <div className="form-group full">
+              <label className="form-label">Address</label>
+              <input className="form-input" value={draft.address || ""} onChange={e => upd("address", e.target.value)} placeholder="Project address" />
+            </div>
+
+            <div className="form-group full">
+              <label className="form-label">Close-Out Notes</label>
+              <textarea className="form-textarea" value={draft.closeOut || ""} onChange={e => upd("closeOut", e.target.value)} placeholder="Close-out status, punch list, final inspections..." style={{ minHeight: 80, resize: "vertical" }} />
+            </div>
+
+            {/* ── Proposal Attachments ── */}
+            <div className="form-group full">
+              <label className="form-label">Proposal / Attachments</label>
+              <div style={{ border: "1px dashed var(--border)", borderRadius: 8, padding: 16, textAlign: "center" }}>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                  multiple
+                  style={{ display: "none" }}
+                  id="proposal-upload"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files);
+                    files.forEach(file => {
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const attachment = {
+                          id: Date.now() + Math.random(),
+                          name: file.name,
+                          size: file.size,
+                          type: file.type,
+                          data: reader.result,
+                          uploadedAt: new Date().toISOString(),
+                        };
+                        setDraft(d => ({
+                          ...d,
+                          attachments: [...(d.attachments || []), attachment],
+                        }));
+                      };
+                      reader.readAsDataURL(file);
+                    });
+                    e.target.value = "";
+                  }}
+                />
+                <label htmlFor="proposal-upload" className="btn btn-ghost" style={{ cursor: "pointer" }}>
+                  📎 Upload Proposal / Files
+                </label>
+                <div className="text-xs text-dim" style={{ marginTop: 6 }}>PDF, Word, Excel, Images</div>
+              </div>
+
+              {/* List attached files */}
+              {(draft.attachments || []).length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  {draft.attachments.map((att, i) => (
+                    <div key={att.id || i} className="flex-between" style={{ padding: "8px 12px", background: "var(--bg3)", borderRadius: 6, marginBottom: 4 }}>
+                      <div className="flex gap-8" style={{ alignItems: "center" }}>
+                        <span>{att.type?.includes("pdf") ? "📄" : att.type?.includes("image") ? "🖼️" : att.type?.includes("sheet") || att.type?.includes("excel") ? "📊" : "📁"}</span>
+                        <div>
+                          <div className="text-sm font-semi">{att.name}</div>
+                          <div className="text-xs text-dim">{(att.size / 1024).toFixed(0)} KB · {new Date(att.uploadedAt).toLocaleDateString()}</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-4">
+                        <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }}
+                          onClick={() => {
+                            const link = document.createElement("a");
+                            link.href = att.data;
+                            link.download = att.name;
+                            link.click();
+                          }}>⬇️</button>
+                        <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, color: "var(--red)" }}
+                          onClick={() => setDraft(d => ({ ...d, attachments: d.attachments.filter((_, j) => j !== i) }))}>✕</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="modal-actions" style={{ justifyContent: "space-between" }}>
             {!isNew && <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>}
@@ -2812,8 +3154,8 @@ const ModalHub = ({ type, data, app }) => {
   // ── Edit Contact ──
   if (type === "editContact") {
     return (
-      <div className="modal-overlay" onClick={close}>
-        <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal-overlay" onMouseDown={handleOverlayDown} onMouseUp={handleOverlayUp(close)}>
+        <div className="modal">
           <div className="modal-header">
             <div className="modal-title">{isNew ? "Add Contact" : "Edit Contact"}</div>
             <button className="modal-close" onClick={close}>✕</button>
@@ -2884,8 +3226,8 @@ const ModalHub = ({ type, data, app }) => {
   // ── Log Call ──
   if (type === "logCall") {
     return (
-      <div className="modal-overlay" onClick={close}>
-        <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal-overlay" onMouseDown={handleOverlayDown} onMouseUp={handleOverlayUp(close)}>
+        <div className="modal">
           <div className="modal-header">
             <div className="modal-title">Log Call</div>
             <button className="modal-close" onClick={close}>✕</button>

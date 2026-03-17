@@ -86,7 +86,7 @@ export function CalendarEquipment({ app, lang }) {
       return;
     }
     const newBooking = {
-      id: "eb_" + Date.now(),
+      id: crypto.randomUUID(),
       equipmentId: form.equipmentId,
       projectId: Number(form.projectId),
       startDate: form.startDate,

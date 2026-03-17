@@ -96,7 +96,7 @@ function InvoicesTab({ app }) {
   const save = () => {
     if (!form.number || !form.amount) return app.show("Fill required fields", "err");
     const newItem = {
-      id: app.nextId(app.invoices),
+      id: app.nextId(),
       projectId: Number(form.projectId),
       number: form.number,
       date: form.date,
@@ -287,7 +287,7 @@ function ChangeOrdersTab({ app }) {
   const save = () => {
     if (!form.number || !form.amount) return app.show("Fill required fields", "err");
     const newItem = {
-      id: app.nextId(app.changeOrders),
+      id: app.nextId(),
       projectId: Number(form.projectId),
       number: form.number,
       desc: form.desc,
@@ -524,7 +524,7 @@ function TmTicketsTab({ app }) {
     if (!form.projectId || !form.ticketNumber) return app.show("Project and ticket # required", "err");
     if (form.laborEntries.every(e => !e.hours) && form.materialEntries.every(e => !e.qty)) return app.show("Add at least one labor or material entry", "err");
     const newTicket = {
-      id: app.nextId(allTickets),
+      id: app.nextId(),
       projectId: Number(form.projectId),
       ticketNumber: form.ticketNumber,
       date: form.date,
@@ -742,7 +742,7 @@ function TmTicketsTab({ app }) {
                         const invNum = `T&M-${t.number || t.id}`;
                         if (app.invoices.some(i => i.number === invNum)) { app.show("Invoice already exists for this T&M", "err"); return; }
                         const newInv = {
-                          id: app.nextId(app.invoices), projectId: t.projectId, number: invNum,
+                          id: app.nextId(), projectId: t.projectId, number: invNum,
                           date: new Date().toISOString().slice(0, 10), amount: Math.round(total * 100) / 100,
                           status: "pending", desc: `T&M Ticket ${t.number || t.id} — ${(t.laborEntries || []).length} labor + ${(t.materialEntries || []).length} material entries`,
                           paidDate: null,
@@ -1045,7 +1045,7 @@ function RfisTab({ app }) {
     // Convert file objects to storable format (name, size, dataURL)
     const attachmentData = form.attachments.map(a => ({ name: a.name, size: a.size, type: a.type, dataUrl: a.dataUrl }));
     const newItem = {
-      id: app.nextId(app.rfis),
+      id: app.nextId(),
       projectId: Number(form.projectId),
       number: form.number,
       subject: form.subject,
@@ -1271,7 +1271,7 @@ function SubmittalsTab({ app }) {
     if (!form.number || !form.desc) return app.show("Fill required fields", "err");
     setUploading(true);
     let pdfData = { pdfKey: null, pdfName: null, pdfSize: null };
-    const newId = app.nextId(app.submittals);
+    const newId = app.nextId();
     if (form.pdfFile) {
       try { pdfData = await storePdf(newId, form.pdfFile); } catch (e) { console.error(e); }
     }
@@ -1798,7 +1798,7 @@ function Schedule({ app }) {
   const save = () => {
     if (!form.task || !form.start || !form.end) return app.show("Fill required fields", "err");
     const newItem = {
-      id: app.nextId(app.schedule),
+      id: app.nextId(),
       projectId: Number(form.projectId),
       task: form.task,
       start: form.start,
@@ -2658,7 +2658,7 @@ function IncidentsTab({ app }) {
   const save = () => {
     if (!form.desc) return app.show("Fill required fields", "err");
     const newItem = {
-      id: app.nextId(app.incidents),
+      id: app.nextId(),
       projectId: Number(form.projectId),
       date: form.date,
       type: form.type,
@@ -2849,7 +2849,7 @@ function ToolboxTalksTab({ app }) {
   const save = () => {
     if (!form.topic) return app.show("Fill required fields", "err");
     const newItem = {
-      id: app.nextId(app.toolboxTalks),
+      id: app.nextId(),
       projectId: Number(form.projectId),
       date: form.date,
       topic: form.topic,
@@ -3113,7 +3113,7 @@ function DailyReportsTab({ app }) {
   const save = () => {
     if (!form.date || !form.work) return app.show("Fill required fields", "err");
     const newItem = {
-      id: app.nextId(app.dailyReports),
+      id: app.nextId(),
       projectId: Number(form.projectId),
       date: form.date,
       crewSize: Number(form.crewSize) || 0,
@@ -3590,7 +3590,7 @@ function EquipmentTab({ app }) {
 
   const startAdd = () => {
     setForm({
-      id: "eq_" + Date.now(),
+      id: crypto.randomUUID(),
       name: "", type: "Owned", dailyRate: 0, weeklyRate: 0, monthlyRate: 0,
       status: "Available", assignedProject: "", notes: ""
     });
@@ -4004,7 +4004,7 @@ function UsersTab({ app }) {
     if (existing) { app.show("Email already exists", "err"); return; }
 
     const newUser = {
-      id: Math.max(0, ...users.map(u => u.id)) + 1,
+      id: crypto.randomUUID(),
       name: form.name,
       email: form.email.toLowerCase(),
       password: simpleHash(form.name.split(" ")[0] + "123!"),

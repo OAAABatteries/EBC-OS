@@ -84,7 +84,7 @@ export function CalendarPTO({ app, lang }) {
   const submitPto = () => {
     if (!form.employeeId || !form.startDate || !form.endDate) return;
     const newPto = {
-      id: "pto_" + Date.now(),
+      id: crypto.randomUUID(),
       employeeId: Number(form.employeeId),
       type: form.type,
       startDate: form.startDate,

@@ -93,7 +93,7 @@ export function IncentiveTab({ app }) {
       setIncentiveProjects(prev => prev.map(p => p.id === proj.id ? proj : p));
       show("Project updated");
     } else {
-      setIncentiveProjects(prev => [...prev, { ...proj, id: "ip_" + Date.now() }]);
+      setIncentiveProjects(prev => [...prev, { ...proj, id: crypto.randomUUID() }]);
       show("Project added");
     }
     setEditProj(null);

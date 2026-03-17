@@ -160,7 +160,7 @@ export function TimeClockAdmin({ app }) {
       setEmployees((prev) => prev.map((e) => (e.id === emp.id ? emp : e)));
       show("Employee updated", "ok");
     } else {
-      const newEmp = { ...emp, id: Math.max(0, ...employees.map((e) => e.id)) + 1 };
+      const newEmp = { ...emp, id: crypto.randomUUID() };
       setEmployees((prev) => [...prev, newEmp]);
       show("Employee added", "ok");
     }
@@ -172,7 +172,7 @@ export function TimeClockAdmin({ app }) {
       setCompanyLocations((prev) => prev.map((l) => (l.id === loc.id ? loc : l)));
       show("Location updated", "ok");
     } else {
-      const newLoc = { ...loc, id: "loc_" + Date.now() };
+      const newLoc = { ...loc, id: crypto.randomUUID() };
       setCompanyLocations((prev) => [...prev, newLoc]);
       show("Location added", "ok");
     }
@@ -206,7 +206,7 @@ export function TimeClockAdmin({ app }) {
       const emp = employees.find(e => e.id === empId);
       const proj = projects.find(p => p.id === projectId);
       const newEntry = {
-        id: "cs_" + Date.now() + "_" + empId + "_" + dayKey,
+        id: crypto.randomUUID(),
         employeeId: empId,
         projectId,
         projectName: proj?.name || "",
@@ -233,7 +233,7 @@ export function TimeClockAdmin({ app }) {
     const cleaned = crewSchedule.filter((s) => s.weekStart !== weekStr);
     const copied = prevSchedule.map((s, i) => ({
       ...s,
-      id: "cs_" + Date.now() + "_" + i,
+      id: crypto.randomUUID(),
       weekStart: weekStr,
     }));
     setCrewSchedule([...cleaned, ...copied]);

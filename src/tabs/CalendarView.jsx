@@ -446,7 +446,7 @@ export function CalendarView({ app }) {
     } else {
       // Create new
       const newEv = {
-        id: "ce_" + Date.now(),
+        id: crypto.randomUUID(),
         type: eventForm.type,
         title: eventForm.title,
         projectId: eventForm.projectId || null,
