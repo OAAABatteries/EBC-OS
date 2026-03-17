@@ -16,7 +16,7 @@ export const ROLES = {
   },
   pm: {
     label: "Project Manager",
-    access: ["dashboard", "bids", "projects", "estimating", "financials", "documents", "calendar", "schedule", "reports", "safety", "jsa", "materials", "incentives", "scope", "contacts", "timeclock", "map", "settings"],
+    access: ["dashboard", "bids", "projects", "estimating", "financials", "documents", "calendar", "schedule", "reports", "safety", "jsa", "materials", "deliveries", "incentives", "scope", "contacts", "timeclock", "map", "settings"],
     description: "Manage assigned projects and bids"
   },
   estimator: {
