@@ -33,6 +33,7 @@ import { T } from "./data/translations";
 import { LoginScreen } from "./components/LoginScreen";
 import { OnboardingWizard } from "./components/OnboardingWizard";
 import { SyncStatus } from "./components/SyncStatus";
+import { useNetworkStatus } from "./hooks/useNetworkStatus";
 import { hasAccess } from "./data/roles";
 import { supabase, isSupabaseConfigured, signOut as supaSignOut, onAuthStateChange } from "./lib/supabase";
 
@@ -378,6 +379,15 @@ function App({ auth, onLogout }) {
 
   // ── toasts ──
   const { toasts, show } = useToast();
+
+  // ── network / offline status ──
+  const network = useNetworkStatus();
+  useEffect(() => {
+    if (network.wasOffline && network.online) {
+      flushSyncQueue().then(() => network.refreshPending());
+      show("Back online — syncing changes...");
+    }
+  }, [network.wasOffline, network.online]);
 
   // ── bid filter (for bids tab) ──
   const [bidFilter, setBidFilter] = useState("All");
@@ -2325,7 +2335,7 @@ function App({ auth, onLogout }) {
       </header>
 
       <main className="main-content" onClick={() => moreOpen && setMoreOpen(false)}>
-        <SyncStatus syncStatus={syncStatus} />
+        <SyncStatus syncStatus={syncStatus} network={network} />
         {tab === "dashboard" && renderDashboard()}
         {tab === "bids" && renderBids()}
         {tab === "projects" && renderProjects()}
