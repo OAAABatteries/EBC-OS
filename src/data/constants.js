@@ -579,10 +579,10 @@ const _ws = _currentWeekStart();
 
 // ── SEED: MATERIAL REQUESTS ──
 const _demoMaterialRequests = [
-  {id:"mr-1",projectId:1,item:'5/8" Type X Firecode (4x12)',qty:120,unit:"sheets",status:"ordered",requestedBy:"Antonio Hernandez",date:_ws,notes:"Level 2 board hang starting next week",deliveryDate:null},
-  {id:"mr-2",projectId:1,item:"3-5/8\" 25ga Metal Studs (10')",qty:400,unit:"sticks",status:"delivered",requestedBy:"Antonio Hernandez",date:_ws,notes:"Corridor framing",deliveryDate:_ws},
-  {id:"mr-3",projectId:3,item:"Lead-Lined Drywall (1/16\" Pb)",qty:24,unit:"sheets",status:"pending",requestedBy:"Antonio Hernandez",date:_ws,notes:"Cath Lab 4 scan room walls",deliveryDate:null},
-  {id:"mr-4",projectId:1,item:"USG Sheetrock All Purpose Joint Compound (5 gal)",qty:15,unit:"buckets",status:"pending",requestedBy:"Ricardo Mendez",date:_ws,notes:"",deliveryDate:null},
+  {id:"mr-1",projectId:1,projectName:"ROD - Brunello Cucinelli",material:'5/8" Type X Firecode (4x12)',qty:120,unit:"sheets",status:"ordered",requestedBy:"Antonio Hernandez",employeeName:"Antonio Hernandez",requestedAt:new Date(_ws+"T07:15:00").toISOString(),notes:"Level 2 board hang starting next week",deliveredAt:null,priority:"normal"},
+  {id:"mr-2",projectId:1,projectName:"ROD - Brunello Cucinelli",material:"3-5/8\" 25ga Metal Studs (10')",qty:400,unit:"sticks",status:"delivered",requestedBy:"Antonio Hernandez",employeeName:"Antonio Hernandez",requestedAt:new Date(_ws+"T06:45:00").toISOString(),notes:"Corridor framing",deliveredAt:new Date(_ws+"T14:00:00").toISOString(),priority:"high"},
+  {id:"mr-3",projectId:3,projectName:"Forney - BSLMC Cath Labs 4 & 9",material:"Lead-Lined Drywall (1/16\" Pb)",qty:24,unit:"sheets",status:"pending",requestedBy:"Antonio Hernandez",employeeName:"Antonio Hernandez",requestedAt:new Date(_ws+"T08:30:00").toISOString(),notes:"Cath Lab 4 scan room walls",deliveredAt:null,priority:"high"},
+  {id:"mr-4",projectId:1,projectName:"ROD - Brunello Cucinelli",material:"USG Sheetrock All Purpose Joint Compound (5 gal)",qty:15,unit:"buckets",status:"pending",requestedBy:"Ricardo Mendez",employeeName:"Ricardo Mendez",requestedAt:new Date(_ws+"T09:00:00").toISOString(),notes:"",deliveredAt:null,priority:"normal"},
 ];
 
 // ── SEED: CREW SCHEDULE ──
@@ -605,6 +605,8 @@ const _demoCrewSchedule = [
 // ── SEED: TIME ENTRIES ──
 // Generate time entries for Mon-Fri of current week (up to today)
 function _seedTimeEntries() {
+  const _empNames = {1:"Oscar Alvarez",2:"Ricardo Mendez",3:"Carlos Fuentes",4:"Miguel Torres",5:"David Ramirez",6:"Luis Herrera",9:"Antonio Hernandez",10:"Jose Perez",11:"Fernando Reyes"};
+  const _projNames = {1:"ROD - Brunello Cucinelli",2:"United - Escapology San Antonio",3:"Forney - BSLMC Cath Labs 4 & 9"};
   const entries = [];
   const ws = new Date(_ws);
   const today = new Date(); today.setHours(23,59,59,999);
@@ -619,7 +621,7 @@ function _seedTimeEntries() {
     for (const c of crew) {
       const cin = new Date(day); cin.setHours(6, 30, 0, 0);
       const cout = new Date(day); cout.setHours(15, 0, 0, 0);
-      entries.push({id:`te-${id++}`,employeeId:c.eid,projectId:c.pid,clockIn:cin.toISOString(),clockOut:cout.toISOString(),totalHours:c.h,clockInLat:29.76,clockInLng:-95.37,clockOutLat:29.76,clockOutLng:-95.37});
+      entries.push({id:`te-${id++}`,employeeId:c.eid,employeeName:_empNames[c.eid],projectId:c.pid,projectName:_projNames[c.pid],clockIn:cin.toISOString(),clockOut:cout.toISOString(),totalHours:c.h,geofenceStatus:"inside",clockInLat:29.76,clockInLng:-95.37,clockOutLat:29.76,clockOutLng:-95.37});
     }
   }
   return entries;

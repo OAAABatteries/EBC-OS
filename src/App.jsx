@@ -36,7 +36,7 @@ import { SyncStatus } from "./components/SyncStatus";
 import { UpdateBanner } from "./components/InstallPrompt";
 import { useNetworkStatus } from "./hooks/useNetworkStatus";
 import { hasAccess } from "./data/roles";
-import { supabase, isSupabaseConfigured, signOut as supaSignOut, onAuthStateChange } from "./lib/supabase";
+import { supabase, isSupabaseConfigured, signOut as supaSignOut, onAuthStateChange, signIn as supaSignIn, signUp as supaSignUp } from "./lib/supabase";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · App Component
@@ -217,6 +217,51 @@ function AuthGate() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Auto-provision Supabase auth for users logged in via localStorage only (no supabaseId)
+  useEffect(() => {
+    if (!auth || auth.supabaseId || !isSupabaseConfigured()) return;
+    (async () => {
+      try {
+        // Look up the seed account password for this user
+        const users = JSON.parse(localStorage.getItem("ebc_users") || "[]");
+        const seed = users.find(u => u.email?.toLowerCase() === auth.email?.toLowerCase());
+        if (!seed) return;
+        // Decode the stored password hash (base64 → original)
+        let password;
+        try { password = decodeURIComponent(atob(seed.password)); } catch { return; }
+        // Try signing in first
+        try {
+          const { user, session } = await supaSignIn(auth.email, password);
+          if (user && session) {
+            const updated = { ...auth, supabaseId: user.id };
+            localStorage.setItem("ebc_auth", JSON.stringify(updated));
+            setAuth(updated);
+            return;
+          }
+        } catch (e) {
+          // User doesn't exist — auto-provision
+          if (e.message?.includes("Invalid login") || e.status === 400) {
+            try {
+              const { user } = await supaSignUp(auth.email, password, {
+                name: auth.name, role: auth.role, title: auth.title, ebc_user_id: auth.id,
+              });
+              if (user) {
+                try { await supaSignIn(auth.email, password); } catch {}
+                const updated = { ...auth, supabaseId: user.id };
+                localStorage.setItem("ebc_auth", JSON.stringify(updated));
+                setAuth(updated);
+              }
+            } catch (signUpErr) {
+              console.warn("[auth] auto-provision failed:", signUpErr.message);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[auth] background Supabase auth failed:", err.message);
+      }
+    })();
+  }, [auth?.email, auth?.supabaseId]);
 
   const handleLogin = useCallback((user) => {
     localStorage.setItem("ebc_auth", JSON.stringify(user));

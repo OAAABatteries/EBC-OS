@@ -8,12 +8,23 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 
+// ── Field aliases: seed/app field names → DB column names ──
+const FIELD_ALIASES = {
+  start_date: "start",
+  end_date: "end",
+  value: "contract",
+};
+
 // ── snake_case ↔ camelCase ──
 function toSnake(str) {
-  return str.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase());
+  const snake = str.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase());
+  return FIELD_ALIASES[snake] || snake;
 }
+// Reverse aliases: DB column names → app field names (snake_case)
+const REVERSE_ALIASES = { start: "start_date", end: "end_date", contract: "value" };
 function toCamel(str) {
-  return str.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+  const mapped = REVERSE_ALIASES[str] || str;
+  return mapped.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 }
 function keysToSnake(obj) {
   if (Array.isArray(obj)) return obj.map(keysToSnake);
@@ -209,6 +220,11 @@ export function useSyncedState(key, initialValue) {
             await pushToSupabase(table, localData, Array.isArray(initialValue));
           }
         }
+        // Both empty — seed initialValue to localStorage + Supabase
+        else if (initialValue && (Array.isArray(initialValue) ? initialValue.length > 0 : true)) {
+          try { localStorage.setItem(lsKey, JSON.stringify(initialValue)); } catch {}
+          await pushToSupabase(table, initialValue, Array.isArray(initialValue));
+        }
       } catch (err) {
         console.warn(`[sync] hydrate ${table} failed:`, err.message);
         setError(err.message);
@@ -292,7 +308,8 @@ export function useSyncedState(key, initialValue) {
           });
 
           if (upserted.length > 0) {
-            const snakeData = upserted.map(row => keysToSnake(row));
+            const cols = _columnCache[table]; // use cached columns if available
+            const snakeData = upserted.map(row => stripUnknownColumns(keysToSnake(row), cols));
             supabase.from(table).upsert(snakeData, { onConflict: "id" })
               .then(({ error }) => {
                 if (error) {
@@ -313,7 +330,8 @@ export function useSyncedState(key, initialValue) {
           }
         } else {
           // Singular object
-          const snakeData = keysToSnake(next);
+          const cols = _columnCache[table];
+          const snakeData = stripUnknownColumns(keysToSnake(next), cols);
           supabase.from(table).upsert(snakeData, { onConflict: "id" })
             .then(({ error }) => {
               if (error) {
@@ -354,19 +372,52 @@ export function useSyncedState(key, initialValue) {
   return [stored, setValue, { loading, error, refresh }];
 }
 
+// ── Column cache: only send fields that exist in the DB table ──
+const _columnCache = {};
+async function getTableColumns(table) {
+  if (_columnCache[table]) return _columnCache[table];
+  try {
+    // Use RPC to query information_schema for column names
+    const { data, error } = await supabase.rpc("get_table_columns", { tbl: table });
+    if (!error && data && data.length > 0) {
+      _columnCache[table] = new Set(data.map(r => r.column_name));
+      return _columnCache[table];
+    }
+    // Fallback: fetch one row to discover columns
+    const { data: rows } = await supabase.from(table).select("*").limit(1);
+    if (rows && rows.length > 0) {
+      _columnCache[table] = new Set(Object.keys(rows[0]));
+      return _columnCache[table];
+    }
+    return null;
+  } catch { return null; }
+}
+
+function stripUnknownColumns(row, columns) {
+  if (!columns) return row;
+  const filtered = {};
+  for (const [k, v] of Object.entries(row)) {
+    if (columns.has(k)) filtered[k] = v;
+  }
+  return filtered;
+}
+
 // ── Helper: push local data to Supabase ──
 async function pushToSupabase(table, data, isArray) {
   if (!supabase) return;
   try {
+    const cols = await getTableColumns(table);
     if (isArray && Array.isArray(data) && data.length > 0) {
-      const snakeData = data.map(row => keysToSnake(row));
+      const snakeData = data.map(row => stripUnknownColumns(keysToSnake(row), cols));
       // Batch in chunks of 100
       for (let i = 0; i < snakeData.length; i += 100) {
         const chunk = snakeData.slice(i, i + 100);
-        await supabase.from(table).upsert(chunk, { onConflict: "id" });
+        const { error } = await supabase.from(table).upsert(chunk, { onConflict: "id" });
+        if (error) console.warn(`[sync] upsert ${table}:`, error.message);
       }
     } else if (!isArray && data) {
-      await supabase.from(table).upsert(keysToSnake(data), { onConflict: "id" });
+      const { error } = await supabase.from(table).upsert(stripUnknownColumns(keysToSnake(data), cols), { onConflict: "id" });
+      if (error) console.warn(`[sync] upsert ${table}:`, error.message);
     }
   } catch (err) {
     console.warn(`[sync] initial push ${table}:`, err.message);
