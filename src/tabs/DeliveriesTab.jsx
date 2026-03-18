@@ -224,6 +224,46 @@ function DeliveryMap({ projects, materialRequests, companyLocations, auth, t }) 
   );
 }
 
+// ── Signature Pad for Proof of Delivery ──
+function PodSignaturePad({ onSave }) {
+  const canvasRef = useRef(null);
+  const drawing = useRef(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = canvas.offsetWidth * dpr;
+    canvas.height = canvas.offsetHeight * dpr;
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    ctx.strokeStyle = "#d4dae6";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+  }, []);
+
+  const getPos = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+  };
+
+  const start = (e) => { e.preventDefault(); drawing.current = true; const ctx = canvasRef.current.getContext("2d"); ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); };
+  const move = (e) => { if (!drawing.current) return; e.preventDefault(); const ctx = canvasRef.current.getContext("2d"); const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+  const end = () => { drawing.current = false; if (onSave) onSave(canvasRef.current.toDataURL("image/png")); };
+  const clear = () => { const c = canvasRef.current; const ctx = c.getContext("2d"); ctx.clearRect(0, 0, c.width, c.height); if (onSave) onSave(null); };
+
+  return (
+    <div>
+      <canvas ref={canvasRef} style={{ width: "100%", height: 120, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, touchAction: "none", cursor: "crosshair" }}
+        onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
+        onTouchStart={start} onTouchMove={move} onTouchEnd={end} />
+      <button type="button" onClick={clear} style={{ marginTop: 4, fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer" }}>Clear Signature</button>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  Main DeliveriesTab
 // ═══════════════════════════════════════════════════════════════
@@ -234,6 +274,10 @@ export function DeliveriesTab({ app }) {
   } = app;
 
   const [subTab, setSubTab] = useState("map");
+  const [podModal, setPodModal] = useState(null); // holds the request being delivered
+  const [podForm, setPodForm] = useState({ recipientName: "", condition: "intact", notes: "" });
+  const [podSignature, setPodSignature] = useState(null);
+  const [expandedPod, setExpandedPod] = useState(null); // track which completed item's POD is expanded
 
   // ── delivery lists ──
   const queueItems = useMemo(
@@ -262,11 +306,29 @@ export function DeliveriesTab({ app }) {
     show(t("Delivery started"), "ok");
   };
 
-  const handleMarkDelivered = (reqId) => {
+  const handleMarkDelivered = (req) => {
+    setPodModal(req);
+  };
+
+  const confirmDelivery = () => {
+    if (!podModal) return;
+    const now = new Date().toISOString();
     setMaterialRequests(prev => prev.map(r =>
-      r.id === reqId ? { ...r, status: "delivered", deliveredAt: new Date().toISOString() } : r
+      r.id === podModal.id ? {
+        ...r,
+        status: "delivered",
+        deliveredAt: now,
+        podRecipientName: podForm.recipientName,
+        podCondition: podForm.condition,
+        podNotes: podForm.notes,
+        podSignature: podSignature,
+        podTimestamp: now,
+      } : r
     ));
     show(t("Marked as delivered"), "ok");
+    setPodModal(null);
+    setPodForm({ recipientName: "", condition: "intact", notes: "" });
+    setPodSignature(null);
   };
 
   // ── format helpers ──
@@ -410,7 +472,7 @@ export function DeliveriesTab({ app }) {
                       <button
                         className="btn btn-primary btn-sm"
                         style={{ flex: 1, background: "var(--green)", boxShadow: "0 2px 8px var(--green-dim)" }}
-                        onClick={() => handleMarkDelivered(req.id)}
+                        onClick={() => handleMarkDelivered(req)}
                       >
                         {t("Mark Delivered")}
                       </button>
@@ -454,10 +516,70 @@ export function DeliveriesTab({ app }) {
                   <div className="text-xs text-dim">
                     {t("Delivered")} {fmtTime(req.deliveredAt)}
                   </div>
+                  {req.podRecipientName && (
+                    <div style={{ marginTop: 8 }}>
+                      <button
+                        onClick={() => setExpandedPod(expandedPod === req.id ? null : req.id)}
+                        style={{ fontSize: 12, color: "var(--amber)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                      >
+                        POD: {t("Received by")} {req.podRecipientName}, {req.podCondition === "intact" ? "Good Condition" : req.podCondition === "partial" ? "Partial" : "Damaged"}
+                        {expandedPod === req.id ? " ▲" : " ▼"}
+                      </button>
+                      {expandedPod === req.id && (
+                        <div style={{ marginTop: 8, padding: 10, background: "var(--bg2)", borderRadius: 8, border: "1px solid var(--border)" }}>
+                          {req.podNotes && (
+                            <div className="text-xs text-muted" style={{ marginBottom: 8 }}>
+                              <strong>{t("Notes")}:</strong> {req.podNotes}
+                            </div>
+                          )}
+                          {req.podSignature && (
+                            <div>
+                              <div className="text-xs text-dim" style={{ marginBottom: 4 }}>{t("Signature")}:</div>
+                              <img src={req.podSignature} alt="Signature" style={{ maxWidth: "100%", height: 80, background: "var(--bg3)", borderRadius: 6, border: "1px solid var(--border)" }} />
+                            </div>
+                          )}
+                          <div className="text-xs text-dim" style={{ marginTop: 6 }}>
+                            {t("Confirmed")} {fmtTime(req.podTimestamp)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ═══ POD MODAL ═══ */}
+      {podModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setPodModal(null)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 12, padding: 24, width: "95%", maxWidth: 480 }}>
+            <h3 style={{ margin: "0 0 4px", color: "var(--amber)" }}>Proof of Delivery</h3>
+            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 16 }}>{podModal.material} — {podModal.qty} {podModal.unit}</div>
+
+            <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>Recipient Name</label>
+            <input value={podForm.recipientName} onChange={e => setPodForm(f => ({...f, recipientName: e.target.value}))} placeholder="Who received the delivery?" style={{ width: "100%", padding: 8, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)", marginBottom: 12, boxSizing: "border-box" }} />
+
+            <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>Condition</label>
+            <select value={podForm.condition} onChange={e => setPodForm(f => ({...f, condition: e.target.value}))} style={{ width: "100%", padding: 8, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)", marginBottom: 12, boxSizing: "border-box" }}>
+              <option value="intact">Intact - Good Condition</option>
+              <option value="partial">Partial - Missing Items</option>
+              <option value="damaged">Damaged</option>
+            </select>
+
+            <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>Delivery Notes</label>
+            <textarea value={podForm.notes} onChange={e => setPodForm(f => ({...f, notes: e.target.value}))} rows={2} placeholder="Any notes about the delivery..." style={{ width: "100%", padding: 8, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)", marginBottom: 12, resize: "vertical", boxSizing: "border-box" }} />
+
+            <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>Recipient Signature</label>
+            <PodSignaturePad onSave={setPodSignature} />
+
+            <div style={{ display: "flex", gap: 8, marginTop: 16, justifyContent: "flex-end" }}>
+              <button onClick={() => { setPodModal(null); setPodForm({ recipientName: "", condition: "intact", notes: "" }); setPodSignature(null); }} style={{ padding: "8px 16px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text2)", cursor: "pointer" }}>Cancel</button>
+              <button onClick={() => confirmDelivery()} style={{ padding: "8px 20px", background: "var(--amber)", border: "none", borderRadius: 6, color: "#000", fontWeight: 600, cursor: "pointer" }}>Confirm Delivery</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

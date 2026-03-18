@@ -609,6 +609,84 @@ export function TimeClockAdmin({ app }) {
       {/* ═══ TIME LOG ═══ */}
       {sub === "Time Log" && (
         <div>
+          {/* ── Payroll Export ── */}
+          <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
+            <span className="font-semi" style={{ fontSize: 13 }}>Payroll Export</span>
+            <input type="date" value={toDateStr(currentWeekStart)}
+              onChange={e => { const d = new Date(e.target.value); if (!isNaN(d)) setWeekOffset(Math.round((getWeekStart(d) - getWeekStart(new Date())) / 604800000)); }}
+              style={{ padding: "4px 8px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)", fontSize: 12 }} />
+            <span className="text-sm text-dim">Week of {fmtWeekDate(currentWeekStart)} — {fmtWeekDate(weekEnd)}</span>
+            <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => {
+                const ws = currentWeekStart; const we = new Date(ws); we.setDate(we.getDate() + 7);
+                const filtered = timeEntries.filter(e => { const d = new Date(e.clockIn); return d >= ws && d < we && e.clockOut; });
+                const byEmp = {};
+                filtered.forEach(e => {
+                  if (!byEmp[e.employeeName]) byEmp[e.employeeName] = { total: 0, projects: {} };
+                  const hrs = (new Date(e.clockOut) - new Date(e.clockIn)) / 3600000;
+                  byEmp[e.employeeName].total += hrs;
+                  byEmp[e.employeeName].projects[e.projectName] = (byEmp[e.employeeName].projects[e.projectName] || 0) + hrs;
+                });
+                const rows = [["Employee","Project","Regular Hours","OT Hours","Total Hours","Week Of"]];
+                Object.entries(byEmp).forEach(([name, d]) => {
+                  Object.entries(d.projects).forEach(([proj, hrs]) => {
+                    rows.push([`"${name}"`, `"${proj}"`, Math.min(hrs, 40).toFixed(2), Math.max(hrs - 40, 0).toFixed(2), hrs.toFixed(2), toDateStr(ws)]);
+                  });
+                });
+                const totH = Object.values(byEmp).reduce((s, d) => s + d.total, 0);
+                rows.push(["TOTAL","",Math.min(totH, 40).toFixed(2), Math.max(totH - 40, 0).toFixed(2), totH.toFixed(2),""]);
+                const csv = rows.map(r => r.join(",")).join("\n");
+                const blob = new Blob([csv], { type: "text/csv" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a"); a.href = url; a.download = `EBC_Payroll_${toDateStr(ws)}.csv`; a.click();
+                URL.revokeObjectURL(url);
+                show("Payroll CSV exported");
+              }}>Export CSV</button>
+            </div>
+          </div>
+
+          {/* Payroll summary for current week */}
+          {(() => {
+            const ws = currentWeekStart; const we = new Date(ws); we.setDate(we.getDate() + 7);
+            const filtered = timeEntries.filter(e => { const d = new Date(e.clockIn); return d >= ws && d < we && e.clockOut; });
+            const byEmp = {};
+            filtered.forEach(e => {
+              if (!byEmp[e.employeeName]) byEmp[e.employeeName] = { total: 0, projects: {} };
+              const hrs = (new Date(e.clockOut) - new Date(e.clockIn)) / 3600000;
+              byEmp[e.employeeName].total += hrs;
+              byEmp[e.employeeName].projects[e.projectName] = (byEmp[e.employeeName].projects[e.projectName] || 0) + hrs;
+            });
+            const empList = Object.entries(byEmp).map(([name, d]) => ({ name, ...d, reg: Math.min(d.total, 40), ot: Math.max(d.total - 40, 0) }));
+            if (empList.length === 0) return null;
+            const totReg = empList.reduce((s, e) => s + e.reg, 0);
+            const totOT = empList.reduce((s, e) => s + e.ot, 0);
+            return (
+              <div className="table-wrap" style={{ marginBottom: 16 }}>
+                <table className="data-table">
+                  <thead><tr><th>Employee</th><th>Projects</th><th style={{ textAlign: "right" }}>Regular</th><th style={{ textAlign: "right" }}>OT</th><th style={{ textAlign: "right" }}>Total</th></tr></thead>
+                  <tbody>
+                    {empList.map(e => (
+                      <tr key={e.name}>
+                        <td className="font-semi">{e.name}</td>
+                        <td className="text-sm text-dim">{Object.keys(e.projects).join(", ")}</td>
+                        <td className="font-mono text-sm" style={{ textAlign: "right" }}>{e.reg.toFixed(1)}h</td>
+                        <td className="font-mono text-sm" style={{ textAlign: "right", color: e.ot > 0 ? "var(--red)" : "var(--text3)" }}>{e.ot.toFixed(1)}h</td>
+                        <td className="font-mono text-sm text-amber" style={{ textAlign: "right" }}>{e.total.toFixed(1)}h</td>
+                      </tr>
+                    ))}
+                    <tr style={{ borderTop: "2px solid var(--amber)", fontWeight: 700 }}>
+                      <td colSpan={2}>TOTAL</td>
+                      <td className="font-mono" style={{ textAlign: "right" }}>{totReg.toFixed(1)}h</td>
+                      <td className="font-mono" style={{ textAlign: "right", color: totOT > 0 ? "var(--red)" : "inherit" }}>{totOT.toFixed(1)}h</td>
+                      <td className="font-mono text-amber" style={{ textAlign: "right" }}>{(totReg + totOT).toFixed(1)}h</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
+
+          <div className="section-title" style={{ marginBottom: 8 }}>All Time Entries</div>
           {allEntries.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">📋</div>
@@ -1339,7 +1417,7 @@ export function TimeClockAdmin({ app }) {
             </div>
 
             <div className="flex gap-8 mb-16">
-              {["All", "Requested", "Approved", "In-Transit", "Delivered"].map(f => (
+              {["All", "Requested", "Approved", "Rejected", "In-Transit", "Delivered"].map(f => (
                 <button key={f} className={`btn btn-sm ${matFilter === f ? "btn-primary" : "btn-ghost"}`} onClick={() => setMatFilter(f)}>
                   {f}
                 </button>
@@ -1376,6 +1454,7 @@ export function TimeClockAdmin({ app }) {
                           <span className={`badge ${
                             req.status === "requested" ? "badge-amber" :
                             req.status === "approved" ? "badge-blue" :
+                            req.status === "rejected" ? "badge-red" :
                             req.status === "in-transit" ? "badge-amber" :
                             "badge-green"
                           }`}>{req.status}</span>
@@ -1385,14 +1464,27 @@ export function TimeClockAdmin({ app }) {
                         </td>
                         <td>
                           {req.status === "requested" && (
-                            <button
-                              className="btn btn-sm btn-primary"
-                              onClick={() => setMaterialRequests(prev => prev.map(r =>
-                                r.id === req.id ? { ...r, status: "approved", approvedAt: new Date().toISOString() } : r
-                              ))}
-                            >
-                              Approve
-                            </button>
+                            <div className="flex gap-4">
+                              <button className="btn btn-sm btn-primary" onClick={() => setMaterialRequests(prev => prev.map(r =>
+                                r.id === req.id ? { ...r, status: "approved", approvedAt: new Date().toISOString(), approvedBy: app.auth?.name || "Admin" } : r
+                              ))}>Approve</button>
+                              <button className="btn btn-sm" style={{ background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)" }} onClick={() => {
+                                const reason = prompt("Rejection reason:");
+                                if (reason !== null) setMaterialRequests(prev => prev.map(r =>
+                                  r.id === req.id ? { ...r, status: "rejected", rejectedAt: new Date().toISOString(), rejectedBy: app.auth?.name || "Admin", rejectReason: reason } : r
+                                ));
+                              }}>Reject</button>
+                            </div>
+                          )}
+                          {req.status === "approved" && req.approvedBy && (
+                            <span className="text-xs text-dim">by {req.approvedBy}</span>
+                          )}
+                          {req.status === "rejected" && (
+                            <div>
+                              <span className="badge badge-red">Rejected</span>
+                              {req.rejectedBy && <div className="text-xs text-dim mt-2">by {req.rejectedBy}</div>}
+                              {req.rejectReason && <div className="text-xs text-dim">{req.rejectReason}</div>}
+                            </div>
                           )}
                         </td>
                       </tr>

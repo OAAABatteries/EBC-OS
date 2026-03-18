@@ -171,21 +171,34 @@ export const THEMES = {
 };
 
 // ── ASSEMBLIES (expanded with ACT, insulation, specialties) ──
+// matRate = material cost per unit, labRate = labor cost per unit
+// Prices updated from EBC price book (2022-2026 supplier quotes)
 export const ASSEMBLIES = [
-  {code:"A2",name:'3-5/8" 20ga Freestanding Wall',unit:"LF",p8:52.93,p10:65.43,p14:97.62,p20:152.55,matRate:24.50,labRate:40.93,verified:true},
-  {code:"B1",name:'6" 20ga Freestanding Wall',unit:"LF",p8:44.71,p10:55.34,p14:82.01,p20:127.03,matRate:22.10,labRate:33.24,verified:true},
-  {code:"DW1",name:'6" Deck Wall 20ga',unit:"LF",p8:44.71,p10:55.34,p14:82.01,p20:127.03,matRate:22.10,labRate:33.24,verified:false},
-  {code:"C2",name:"C2 Furring (One Side)",unit:"LF",p8:26,p10:32,p14:48,p20:76,matRate:12.80,labRate:19.20,verified:false},
-  {code:"FD1",name:"Furr-Down / Soffit",unit:"LF",special:"33% progress rate",matRate:18.00,labRate:36.00,verified:true},
-  {code:"GC1",name:"GWB Suspended Ceiling",unit:"SF",special:"25% progress rate",matRate:2.85,labRate:5.15,verified:true},
-  {code:"ACT1",name:"2x2 ACT Grid + Tile (Std)",unit:"SF",p8:null,p10:8.50,p14:null,p20:null,matRate:4.25,labRate:4.25,verified:true},
-  {code:"ACT2",name:"2x4 ACT Grid + Tile (Std)",unit:"SF",p8:null,p10:7.80,p14:null,p20:null,matRate:3.90,labRate:3.90,verified:true},
-  {code:"INS1",name:"R-11 Batt Insulation (3-5/8\")",unit:"SF",p8:null,p10:1.45,p14:null,p20:null,matRate:0.65,labRate:0.80,verified:true},
-  {code:"INS2",name:"R-19 Batt Insulation (6\")",unit:"SF",p8:null,p10:1.85,p14:null,p20:null,matRate:0.95,labRate:0.90,verified:true},
+  // ── WALLS ──
+  {code:"A2",name:'3-5/8" 20ga Freestanding Wall',unit:"LF",p8:44.02,p10:54.95,p14:82.38,p20:128.89,matRate:14.02,labRate:40.93,verified:true},
+  {code:"A3",name:'2-1/2" 20ga Partition',unit:"LF",p8:42.18,p10:52.66,p14:78.94,p20:123.50,matRate:12.73,labRate:39.93,verified:true},
+  {code:"A4",name:'8" 20ga Partition',unit:"LF",p8:53.66,p10:66.79,p14:99.72,p20:155.42,matRate:20.36,labRate:46.43,verified:true},
+  {code:"B1",name:'6" 20ga Freestanding Wall',unit:"LF",p8:49.27,p10:61.33,p14:91.68,p20:143.09,matRate:16.03,labRate:45.30,verified:true},
+  {code:"DW1",name:'6" Deck Wall 20ga',unit:"LF",p8:49.27,p10:61.33,p14:91.68,p20:143.09,matRate:16.03,labRate:45.30,verified:true},
+  {code:"DW2",name:'6" Deck Wall 16ga (Heavy)',unit:"LF",p8:54.89,p10:68.31,p14:102.00,p20:159.04,matRate:19.51,labRate:48.80,verified:true},
+  {code:"C2",name:"C2 Furring (One Side)",unit:"LF",p8:20.62,p10:25.42,p14:38.06,p20:59.61,matRate:7.82,labRate:17.60,verified:true},
+  // ── CEILINGS / SOFFITS ──
+  {code:"FD1",name:"Furr-Down / Soffit",unit:"LF",special:"33% progress rate",matRate:12.50,labRate:36.00,verified:true},
+  {code:"GC1",name:"GWB Suspended Ceiling",unit:"SF",special:"25% progress rate",matRate:2.20,labRate:5.15,verified:true},
+  {code:"ACT1",name:"2x2 ACT Grid + Tile (Std)",unit:"SF",p8:null,p10:7.27,p14:null,p20:null,matRate:3.02,labRate:4.25,verified:true},
+  {code:"ACT2",name:"2x4 ACT Grid + Tile (Std)",unit:"SF",p8:null,p10:6.72,p14:null,p20:null,matRate:2.82,labRate:3.90,verified:true},
+  // ── INSULATION ──
+  {code:"INS1",name:'R-13 Batt Insulation (3-5/8")',unit:"SF",p8:null,p10:1.25,p14:null,p20:null,matRate:0.45,labRate:0.80,verified:true},
+  {code:"INS2",name:'R-19 Batt Insulation (6")',unit:"SF",p8:null,p10:1.39,p14:null,p20:null,matRate:0.49,labRate:0.90,verified:true},
+  {code:"INS3",name:'R-21 Batt Insulation (6")',unit:"SF",p8:null,p10:1.59,p14:null,p20:null,matRate:0.69,labRate:0.90,verified:true},
+  {code:"INS4",name:'3" Mineral Wool',unit:"SF",p8:null,p10:2.35,p14:null,p20:null,matRate:0.85,labRate:1.50,verified:true},
+  // ── SPECIALTIES ──
   {code:"FP1",name:"Spray Fireproofing (Beam/Col)",unit:"SF",p8:null,p10:4.50,p14:null,p20:null,matRate:2.10,labRate:2.40,verified:false},
   {code:"FRP1",name:"FRP Wall Panel (Glue-Up)",unit:"SF",p8:null,p10:6.20,p14:null,p20:null,matRate:3.50,labRate:2.70,verified:false},
-  {code:"LL1",name:"Lead-Lined GWB (1/32\" Pb)",unit:"SF",p8:null,p10:18.50,p14:null,p20:null,matRate:12.00,labRate:6.50,verified:true},
+  {code:"LL1",name:'Lead-Lined GWB (1/32" Pb)',unit:"SF",p8:null,p10:10.71,p14:null,p20:null,matRate:4.21,labRate:6.50,verified:true},
   {code:"ICRA1",name:"ICRA Dust Barrier (Temp)",unit:"LF",p8:null,p10:22.00,p14:null,p20:null,matRate:8.00,labRate:14.00,verified:true},
+  // ── SHAFT WALL ──
+  {code:"SW1",name:"Shaft Wall System (1-hr)",unit:"LF",p8:null,p10:46.35,p14:null,p20:null,matRate:14.35,labRate:32.00,verified:true},
 ];
 
 // ── HEIGHT FACTOR FUNCTION ──
@@ -556,6 +569,14 @@ const _demoCompanyLocations = [
   { id: "loc_warehouse", name: "EBC Warehouse", lat: 29.7250, lng: -95.4000, radiusFt: 800, type: "warehouse" },
 ];
 
+// ── Dynamic week start so seed data always shows "this week" ──
+function _currentWeekStart() {
+  const d = new Date(); d.setHours(0,0,0,0);
+  const day = d.getDay(); d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+  return d.toISOString().slice(0, 10);
+}
+const _ws = _currentWeekStart();
+
 // ── SEED: MATERIAL REQUESTS ──
 const _demoMaterialRequests = [
   {id:"mr-1",projectId:1,item:'5/8" Type X Firecode (4x12)',qty:120,unit:"sheets",status:"ordered",requestedBy:"Antonio Hernandez",date:_ws,notes:"Level 2 board hang starting next week",deliveryDate:null},
@@ -565,13 +586,6 @@ const _demoMaterialRequests = [
 ];
 
 // ── SEED: CREW SCHEDULE ──
-// Dynamic week start so seed data always shows "this week"
-function _currentWeekStart() {
-  const d = new Date(); d.setHours(0,0,0,0);
-  const day = d.getDay(); d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
-  return d.toISOString().slice(0, 10);
-}
-const _ws = _currentWeekStart();
 const _demoCrewSchedule = [
   // Project 1: Brunello Cucinelli — Antonio's crew
   { id:1, employeeId:9,  projectId:1, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:00",end:"14:30"} },

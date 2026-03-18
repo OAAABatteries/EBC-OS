@@ -40,14 +40,18 @@ function fmtContract(n) {
 }
 
 export function MapView({ app }) {
-  const { projects, crewSchedule, employees } = app;
+  const { projects, crewSchedule, employees, timeEntries = [], materialRequests = [] } = app;
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markersRef = useRef([]);
   const circlesRef = useRef([]);
+  const crewLayerRef = useRef(null);
+  const deliveryLayerRef = useRef(null);
   const [viewMode, setViewMode] = useState("ebc");
   const [mapStyle, setMapStyle] = useState("dark");
   const [showGeofences, setShowGeofences] = useState(false);
+  const [showCrew, setShowCrew] = useState(true);
+  const [showDeliveries, setShowDeliveries] = useState(false);
 
   // ── AI Route state ──
   const [routeResult, setRouteResult] = useState(null);
@@ -180,6 +184,101 @@ export function MapView({ app }) {
     }
   }, [filtered, showGeofences, crewCounts, app.fmt]);
 
+  // ── Crew position markers ──
+  useEffect(() => {
+    if (!mapInstance.current) return;
+
+    // Clear previous crew layer
+    if (crewLayerRef.current) {
+      crewLayerRef.current.clearLayers();
+      mapInstance.current.removeLayer(crewLayerRef.current);
+      crewLayerRef.current = null;
+    }
+
+    if (!showCrew) return;
+
+    const crewGroup = L.layerGroup();
+    const activeClockins = timeEntries.filter(
+      (e) => e.clockIn && !e.clockOut && e.clockInLat && e.clockInLng
+    );
+
+    activeClockins.forEach((entry) => {
+      const emp = employees.find((e) => e.id === entry.employeeId);
+      const proj = projects.find((p) => p.id === entry.projectId);
+      const empName = emp ? emp.name : "Unknown";
+      const projName = proj ? proj.name : "Unknown";
+      const clockTime = new Date(entry.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+      const marker = L.circleMarker([entry.clockInLat, entry.clockInLng], {
+        radius: 6,
+        color: "#3b82f6",
+        fillColor: "#3b82f6",
+        fillOpacity: 0.9,
+        weight: 2,
+        opacity: 1,
+      });
+
+      marker.bindPopup(`
+        <div class="map-popup-content">
+          <div class="map-popup-title">${empName}</div>
+          <div class="map-popup-row"><span class="map-popup-label">Project</span> ${projName}</div>
+          <div class="map-popup-row"><span class="map-popup-label">Clocked in since</span> ${clockTime}</div>
+        </div>
+      `, { className: "map-popup", maxWidth: 240 });
+
+      marker.addTo(crewGroup);
+    });
+
+    crewGroup.addTo(mapInstance.current);
+    crewLayerRef.current = crewGroup;
+  }, [showCrew, timeEntries, employees, projects]);
+
+  // ── Delivery route markers ──
+  useEffect(() => {
+    if (!mapInstance.current) return;
+
+    // Clear previous delivery layer
+    if (deliveryLayerRef.current) {
+      deliveryLayerRef.current.clearLayers();
+      mapInstance.current.removeLayer(deliveryLayerRef.current);
+      deliveryLayerRef.current = null;
+    }
+
+    if (!showDeliveries) return;
+
+    const deliveryGroup = L.layerGroup();
+    const inTransit = materialRequests.filter((r) => r.status === "in-transit");
+
+    inTransit.forEach((req) => {
+      const proj = projects.find((p) => p.id === req.projectId);
+      if (!proj || !proj.lat || !proj.lng) return;
+
+      const marker = L.circleMarker([proj.lat, proj.lng], {
+        radius: 8,
+        color: "#f59e0b",
+        fillColor: "#f59e0b",
+        fillOpacity: 0.85,
+        weight: 2,
+        opacity: 1,
+      });
+
+      marker.bindPopup(`
+        <div class="map-popup-content">
+          <div class="map-popup-title" style="color:#f59e0b">Delivery In-Transit</div>
+          <div class="map-popup-row"><span class="map-popup-label">Material</span> ${req.material || req.item || "—"}</div>
+          <div class="map-popup-row"><span class="map-popup-label">Qty</span> ${req.qty || req.quantity || "—"}</div>
+          <div class="map-popup-row"><span class="map-popup-label">Driver</span> ${req.driver || "—"}</div>
+          <div class="map-popup-row"><span class="map-popup-label">Destination</span> ${proj.name}</div>
+        </div>
+      `, { className: "map-popup", maxWidth: 260 });
+
+      marker.addTo(deliveryGroup);
+    });
+
+    deliveryGroup.addTo(mapInstance.current);
+    deliveryLayerRef.current = deliveryGroup;
+  }, [showDeliveries, materialRequests, projects]);
+
   return (
     <div>
       <div className="section-header">
@@ -311,6 +410,18 @@ export function MapView({ app }) {
           >
             Geofences
           </button>
+          <button
+            className={`btn btn-sm ${showCrew ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => setShowCrew(!showCrew)}
+          >
+            Crew
+          </button>
+          <button
+            className={`btn btn-sm ${showDeliveries ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => setShowDeliveries(!showDeliveries)}
+          >
+            Deliveries
+          </button>
         </div>
       </div>
 
@@ -322,6 +433,18 @@ export function MapView({ app }) {
             <span>{phase}</span>
           </div>
         ))}
+        {showCrew && (
+          <div className="map-legend-item">
+            <span className="map-legend-dot" style={{ background: "#3b82f6", boxShadow: "0 0 6px #3b82f680", width: 8, height: 8 }} />
+            <span>Crew</span>
+          </div>
+        )}
+        {showDeliveries && (
+          <div className="map-legend-item">
+            <span className="map-legend-dot" style={{ background: "#f59e0b", boxShadow: "0 0 6px #f59e0b80", width: 8, height: 8 }} />
+            <span>Delivery</span>
+          </div>
+        )}
       </div>
 
       {/* Map container */}

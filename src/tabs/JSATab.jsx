@@ -5,6 +5,7 @@ import {
   HAZARD_CATEGORIES, CONTROL_HIERARCHY, PERMIT_TYPES,
   HAZARD_LIBRARY, TRADE_LABELS, JSA_TEMPLATES, WEATHER_HAZARD_MAP,
 } from "../data/jsaConstants";
+import { generateJsaPdf } from "../utils/jsaPdf";
 
 // ═══════════════════════════════════════════════════════════════
 //  Signature Pad Component — Touch-to-Sign canvas
@@ -375,7 +376,28 @@ export function JSATab({ app }) {
               w.document.write(html);
               w.document.close();
               w.setTimeout(() => w.print(), 300);
-            }}>{t("Print PDF")}</button>
+            }}>{t("Print")}</button>
+            <button className="btn btn-primary btn-sm" onClick={() => {
+              const projN = projName(jsa.projectId);
+              const tradeLabel2 = (jsa.trades || (jsa.trade ? [jsa.trade] : [])).map(tr => TRADE_LABELS[tr]?.label || tr).join(", ");
+              const allH2 = jsa.steps.flatMap(s => s.hazards || []);
+              const maxR2 = Math.max(0, ...allH2.map(h => (h.likelihood||1)*(h.severity||1)));
+              const ppeLabels = (jsa.ppe || []).map(k => PPE_ITEMS.find(p=>p.key===k)?.label || k).filter(Boolean);
+              const permitLabels = (jsa.permits || []).map(k => PERMIT_TYPES.find(p=>p.key===k)?.label || k).filter(Boolean);
+              // Build crew list with signatures from both crewSignOn and crewMembers
+              const crewMap = {};
+              (jsa.crewSignOn || []).forEach(c => { crewMap[c.name] = { name: c.name, signature: c.signature || null }; });
+              (jsa.crewMembers || []).forEach(c => { if (!crewMap[c.name]) crewMap[c.name] = { name: c.name, signature: c.signature || null }; else if (c.signature) crewMap[c.name].signature = c.signature; });
+              generateJsaPdf({
+                ...jsa,
+                projectName: projN,
+                trade: tradeLabel2,
+                riskLevel: maxR2 <= 6 ? "Low" : maxR2 <= 12 ? "Medium" : maxR2 <= 19 ? "High" : "Critical",
+                ppe: ppeLabels,
+                permits: permitLabels,
+                crewMembers: Object.values(crewMap),
+              });
+            }}>{t("Export PDF")}</button>
             <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }} onClick={() => {
               if (confirm("Delete this JSA?")) { setJsas(prev => prev.filter(j => j.id !== jsa.id)); setSubTab("list"); show("JSA deleted"); }
             }}>{t("Delete")}</button>
@@ -744,6 +766,11 @@ export function JSATab({ app }) {
                       const current = form.trades || [];
                       const next = selected ? current.filter(t => t !== k) : [...current, k];
                       updForm("trades", next.length > 0 ? next : [k]);
+                      // Auto-apply matching template when adding a trade and no steps exist yet
+                      if (!selected && (form.steps || []).length === 0) {
+                        const match = JSA_TEMPLATES.find(t => t.trade === k);
+                        if (match) applyTemplate(match.id);
+                      }
                     }}
                   >
                     {lang === "es" ? v.labelEs : v.label}

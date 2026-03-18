@@ -75,6 +75,23 @@ export function IncentiveTab({ app }) {
     return null;
   };
 
+  // ── Auto-calculated margins from real project data ──
+  const DEFAULT_LABOR_RATE = 45; // $/hr blended rate
+  const liveProjectMargins = useMemo(() => {
+    const projects = app.projects || [];
+    const timeEntries = app.timeEntries || [];
+    return projects.filter(p => p.contract > 0).map(p => {
+      const projEntries = timeEntries.filter(te => te.projectName === p.name && te.clockIn && te.clockOut);
+      const totalHours = projEntries.reduce((s, te) => {
+        return s + (new Date(te.clockOut) - new Date(te.clockIn)) / 3600000;
+      }, 0);
+      const laborCost = totalHours * DEFAULT_LABOR_RATE;
+      const revenue = p.contract;
+      const margin = revenue > 0 ? ((revenue - laborCost) / revenue * 100) : 0;
+      return { id: p.id, name: p.name, gc: p.gc, revenue, laborCost, totalHours, margin: Math.round(margin * 10) / 10, phase: p.phase };
+    });
+  }, [app.projects, app.timeEntries]);
+
   // ── Stats ──
   const stats = useMemo(() => {
     const completed = incentiveProjects.filter(p => p.status === "complete");
@@ -122,6 +139,48 @@ export function IncentiveTab({ app }) {
         })}>+ Add Project</button>
       </div>
 
+      {/* ── Live Project Margins (auto-calculated from time entries) ── */}
+      {liveProjectMargins.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--amber)", marginBottom: 8 }}>Live Project Margins (auto-calculated from labor hours)</div>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Project</th>
+                  <th>GC</th>
+                  <th style={{ textAlign: "right" }}>Contract</th>
+                  <th style={{ textAlign: "right" }}>Labor Hours</th>
+                  <th style={{ textAlign: "right" }}>Labor Cost</th>
+                  <th style={{ textAlign: "right" }}>Margin</th>
+                  <th>Tier</th>
+                </tr>
+              </thead>
+              <tbody>
+                {liveProjectMargins.map(p => {
+                  const tier = getTier(p.margin);
+                  return (
+                    <tr key={p.id}>
+                      <td className="font-semi">{p.name}</td>
+                      <td>{p.gc}</td>
+                      <td style={{ textAlign: "right" }} className="font-mono">{fmt(p.revenue)}</td>
+                      <td style={{ textAlign: "right" }} className="font-mono">{p.totalHours.toFixed(1)}h</td>
+                      <td style={{ textAlign: "right" }} className="font-mono">{fmt(p.laborCost)}</td>
+                      <td style={{ textAlign: "right" }}>
+                        <span className="font-mono" style={{ color: tier ? tier.color : p.margin > 0 ? "#10b981" : "var(--red)" }}>{p.margin}%</span>
+                      </td>
+                      <td>{tier ? <span style={{ color: tier.color, fontWeight: 600, fontSize: 13 }}>{tier.name}</span> : <span className="text-dim text-xs">—</span>}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>Based on ${DEFAULT_LABOR_RATE}/hr blended labor rate. Material costs not included.</div>
+        </div>
+      )}
+
+      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text2)", marginBottom: 8, marginTop: 8 }}>Manual Project Tracking</div>
       {incentiveProjects.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">🏆</div>

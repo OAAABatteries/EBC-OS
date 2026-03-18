@@ -31,6 +31,7 @@ export function ForemanView({ app }) {
     materialRequests, setMaterialRequests,
     changeOrders, rfis, submittals,
     jsas, setJsas,
+    dailyReports, setDailyReports,
     theme, setTheme, show
   } = app;
 
@@ -81,6 +82,12 @@ export function ForemanView({ app }) {
     steps: [], ppe: [], permits: [],
   });
   const updJsaForm = (k, v) => setJsaForm(f => ({ ...f, [k]: v }));
+
+  // ── daily report form state ──
+  const [reportForm, setReportForm] = useState({ date: new Date().toISOString().slice(0, 10), weather: "Clear", crewCount: "", workPerformed: "", issues: "", materialsUsed: "" });
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [crewSearch, setCrewSearch] = useState("");
+  const [expandedReportId, setExpandedReportId] = useState(null);
 
   // ── persist session ──
   useEffect(() => {
@@ -154,11 +161,16 @@ export function ForemanView({ app }) {
     if (!clockEntry) return;
     const loc = await getLocation();
     const totalMs = Date.now() - new Date(clockEntry.clockIn).getTime();
-    const totalHours = +(totalMs / 3600000).toFixed(2);
+    const rawHours = totalMs / 3600000;
+    // Auto-deduct 30-min unpaid lunch for shifts over 6 hours
+    const totalHours = +(rawHours >= 6 ? rawHours - 0.5 : rawHours).toFixed(2);
+    const proj = projects.find(p => p.id === (clockEntry.projectId || selectedProjectId));
     const newEntry = {
       id: crypto.randomUUID(),
       employeeId: activeForeman.id,
+      employeeName: activeForeman.name,
       projectId: clockEntry.projectId || selectedProjectId,
+      projectName: proj?.name || "Unknown",
       clockIn: clockEntry.clockIn,
       clockInLat: clockEntry.lat,
       clockInLng: clockEntry.lng,
@@ -166,8 +178,8 @@ export function ForemanView({ app }) {
       clockOutLat: loc?.lat || null,
       clockOutLng: loc?.lng || null,
       totalHours,
+      geofenceStatus: "inside",
     };
-    // Add to timeEntries
     if (setTimeEntries) {
       setTimeEntries(prev => [...prev, newEntry]);
     }
@@ -195,22 +207,28 @@ export function ForemanView({ app }) {
     if (!entry) return;
     const loc = await getLocation();
     const totalMs = Date.now() - new Date(entry.clockIn).getTime();
-    const totalHours = +(totalMs / 3600000).toFixed(2);
+    const rawHours = totalMs / 3600000;
+    // Auto-deduct 30-min unpaid lunch for shifts over 6 hours
+    const totalHours = +(rawHours >= 6 ? rawHours - 0.5 : rawHours).toFixed(2);
+    const emp = employees.find(e => e.id === empId);
+    const proj = projects.find(p => p.id === (entry.projectId || selectedProjectId));
     const newEntry = {
       id: crypto.randomUUID(),
       employeeId: empId,
+      employeeName: emp?.name || "Unknown",
       projectId: entry.projectId || selectedProjectId,
+      projectName: proj?.name || "Unknown",
       clockIn: entry.clockIn,
       clockInLat: entry.lat, clockInLng: entry.lng,
       clockOut: new Date().toISOString(),
       clockOutLat: loc?.lat || null, clockOutLng: loc?.lng || null,
       totalHours,
+      geofenceStatus: "inside",
     };
     if (setTimeEntries) setTimeEntries(prev => [...prev, newEntry]);
     const updated = { ...crewClocks };
     delete updated[empId];
     persistCrewClocks(updated);
-    const emp = employees.find(e => e.id === empId);
     show?.(`${emp?.name || "Crew"} ${t("clocked out")} · ${totalHours}h ✓`);
   };
 
@@ -466,6 +484,7 @@ export function ForemanView({ app }) {
     { key: "jsa", label: t("JSA"), count: activeJsaCount },
     { key: "materials", label: t("Materials"), count: projectMatRequests.filter(r => r.status === "requested" || r.status === "pending").length },
     { key: "drawings", label: t("Drawings") },
+    { key: "reports", label: t("Daily Report"), count: (dailyReports || []).filter(r => r.projectId === selectedProjectId && r.date === new Date().toISOString().slice(0, 10)).length },
     { key: "documents", label: t("Documents") },
     { key: "settings", label: t("Settings") },
   ];
@@ -520,6 +539,8 @@ export function ForemanView({ app }) {
         {/* ═══ SETTINGS TAB ═══ */}
         {foremanTab === "settings" && (
           <div className="settings-wrap">
+            {/* Back button */}
+            <button className="btn btn-ghost btn-sm" style={{ marginBottom: 12 }} onClick={() => setForemanTab("clock")}>&#9664; {t("Back")}</button>
             {/* Profile */}
             <div className="settings-section">
               <div className="settings-section-title">{t("Profile")}</div>
@@ -725,47 +746,148 @@ export function ForemanView({ app }) {
                   )}
 
                   {/* ── Crew Clock-In/Out ── */}
-                  {crewForProject.length > 0 && (
-                    <div style={{ marginTop: 30, textAlign: "left" }}>
-                      <div className="section-title" style={{ fontSize: 14, marginBottom: 12 }}>{t("Crew Time Clock")}</div>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>
-                        {crewForProject.filter(c => c.id !== activeForeman?.id).map(c => {
-                          const isIn = !!crewClocks[c.id];
-                          const clockData = crewClocks[c.id];
-                          const todayEntries = timeEntries.filter(te => te.employeeId === c.id && new Date(te.clockIn).toDateString() === todayStr && te.totalHours);
-                          const todayTotal = todayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
-                          return (
-                            <div key={c.id} className="foreman-crew-row" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-                              <div style={{ width: 36, height: 36, borderRadius: "50%", background: isIn ? "var(--green)" : "var(--glass-bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: isIn ? "#fff" : "var(--text3)", flexShrink: 0 }}>
-                                {c.name.split(" ").map(n => n[0]).join("")}
+                  <div style={{ marginTop: 30, textAlign: "left" }}>
+                    <div className="section-title" style={{ fontSize: 14, marginBottom: 12 }}>{t("Crew Time Clock")}</div>
+
+                    {/* Add crew member — searchable dropdown */}
+                    <div style={{ position: "relative", marginBottom: 16 }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <div style={{ flex: 1, position: "relative" }}>
+                          <input
+                            type="text"
+                            placeholder={t("Search or select crew member...")}
+                            value={crewSearch || ""}
+                            onChange={e => setCrewSearch(e.target.value)}
+                            onFocus={() => setCrewSearch(crewSearch || "")}
+                            style={{ width: "100%", padding: "10px 14px", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 8, color: "var(--text)", fontSize: 14 }}
+                          />
+                          {/* Dropdown list */}
+                          {crewSearch !== null && crewSearch !== undefined && (() => {
+                            const q = (crewSearch || "").toLowerCase().trim();
+                            const allEmp = employees.filter(e => e.id !== activeForeman?.id);
+                            const filtered = q.length > 0
+                              ? allEmp.filter(e => e.name.toLowerCase().includes(q))
+                              : allEmp;
+                            if (filtered.length === 0 && q.length > 0) return (
+                              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "0 0 8px 8px", padding: "10px 14px" }}>
+                                <span className="text-sm text-muted">{t("No employees found")}</span>
                               </div>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div className="text-sm font-semi">{c.name}</div>
-                                <div className="text-xs text-muted">{t(c.role)}{todayTotal > 0 ? ` · ${todayTotal.toFixed(1)}h ${t("today")}` : ""}</div>
-                                {isIn && clockData && (
-                                  <div className="text-xs" style={{ color: "var(--green)", marginTop: 2 }}>
-                                    {t("In since")} {new Date(clockData.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                                    {" · "}{(() => { const m = Math.floor((Date.now() - new Date(clockData.clockIn).getTime()) / 60000); return `${Math.floor(m/60)}h ${m%60}m`; })()}
-                                  </div>
-                                )}
+                            );
+                            if (q.length === 0 && !document.activeElement?.matches?.('input[placeholder*="Search"]')) return null;
+                            return (
+                              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "0 0 8px 8px", maxHeight: 260, overflowY: "auto" }}>
+                                {filtered.slice(0, 15).map(c => {
+                                  const isIn = !!crewClocks[c.id];
+                                  const isAssigned = crewForProject.some(cp => cp.id === c.id);
+                                  return (
+                                    <div key={c.id}
+                                      style={{ padding: "8px 14px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+                                      onMouseDown={e => e.preventDefault()}
+                                      onClick={() => {
+                                        if (!isIn) { handleCrewClockIn(c.id); }
+                                        else { handleCrewClockOut(c.id); }
+                                        setCrewSearch(null);
+                                      }}
+                                    >
+                                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: isIn ? "var(--green)" : "var(--bg4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: isIn ? "#fff" : "var(--text3)", flexShrink: 0 }}>
+                                        {c.name.split(" ").map(n => n[0]).join("")}
+                                      </div>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div className="text-sm font-semi">{c.name}</div>
+                                        <div className="text-xs text-muted">
+                                          {c.role || c.title || ""}
+                                          {isAssigned && <span style={{ color: "var(--amber)", marginLeft: 4 }}>· {t("Assigned")}</span>}
+                                        </div>
+                                      </div>
+                                      <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 6, background: isIn ? "var(--red)" : "var(--amber)", color: isIn ? "#fff" : "#000", whiteSpace: "nowrap" }}>
+                                        {isIn ? t("Clock Out") : t("Clock In")}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
                               </div>
-                              {!isIn ? (
-                                <button className="btn btn-primary btn-sm" style={{ minWidth: 80, fontSize: 12, padding: "8px 12px" }}
-                                  onClick={() => handleCrewClockIn(c.id)}>
-                                  {t("Clock In")}
-                                </button>
-                              ) : (
-                                <button className="btn btn-sm" style={{ minWidth: 80, fontSize: 12, padding: "8px 12px", background: "var(--red)", color: "#fff" }}
-                                  onClick={() => handleCrewClockOut(c.id)}>
-                                  {t("Clock Out")}
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })}
+                            );
+                          })()}
+                        </div>
                       </div>
                     </div>
-                  )}
+
+                    {/* Currently clocked-in crew */}
+                    {(() => {
+                      const clockedInIds = Object.keys(crewClocks).map(Number);
+                      const clockedIn = clockedInIds.map(id => employees.find(e => e.id === id)).filter(Boolean);
+                      if (clockedIn.length === 0) return null;
+                      return (
+                        <div style={{ marginBottom: 16 }}>
+                          <div className="text-xs text-muted" style={{ marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{t("Clocked In")} ({clockedIn.length})</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>
+                            {clockedIn.map(c => {
+                              const clockData = crewClocks[c.id];
+                              const isAssigned = crewForProject.some(cp => cp.id === c.id);
+                              const todayEntries = timeEntries.filter(te => te.employeeId === c.id && new Date(te.clockIn).toDateString() === todayStr && te.totalHours);
+                              const todayTotal = todayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
+                              return (
+                                <div key={c.id} className="foreman-crew-row" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, borderLeft: "3px solid var(--green)" }}>
+                                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                                    {c.name.split(" ").map(n => n[0]).join("")}
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div className="text-sm font-semi">{c.name}</div>
+                                    <div className="text-xs text-muted">
+                                      {c.role || c.title || ""}{!isAssigned && <span style={{ color: "var(--amber)" }}> · {t("Other crew")}</span>}
+                                      {todayTotal > 0 ? ` · ${todayTotal.toFixed(1)}h ${t("today")}` : ""}
+                                    </div>
+                                    {clockData && (
+                                      <div className="text-xs" style={{ color: "var(--green)", marginTop: 2 }}>
+                                        {t("In since")} {new Date(clockData.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                        {" · "}{(() => { const m = Math.floor((Date.now() - new Date(clockData.clockIn).getTime()) / 60000); return `${Math.floor(m/60)}h ${m%60}m`; })()}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <button className="btn btn-sm" style={{ minWidth: 80, fontSize: 12, padding: "8px 12px", background: "var(--red)", color: "#fff" }}
+                                    onClick={() => handleCrewClockOut(c.id)}>
+                                    {t("Clock Out")}
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Assigned crew not yet clocked in */}
+                    {(() => {
+                      const notIn = crewForProject.filter(c => c.id !== activeForeman?.id && !crewClocks[c.id]);
+                      if (notIn.length === 0) return null;
+                      return (
+                        <div>
+                          <div className="text-xs text-muted" style={{ marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{t("Not Clocked In")} ({notIn.length})</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>
+                            {notIn.map(c => {
+                              const todayEntries = timeEntries.filter(te => te.employeeId === c.id && new Date(te.clockIn).toDateString() === todayStr && te.totalHours);
+                              const todayTotal = todayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
+                              return (
+                                <div key={c.id} className="foreman-crew-row" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, opacity: 0.7 }}>
+                                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--glass-bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "var(--text3)", flexShrink: 0 }}>
+                                    {c.name.split(" ").map(n => n[0]).join("")}
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div className="text-sm font-semi">{c.name}</div>
+                                    <div className="text-xs text-muted">{t(c.role)}{todayTotal > 0 ? ` · ${todayTotal.toFixed(1)}h ${t("today")}` : ""}</div>
+                                  </div>
+                                  <button className="btn btn-primary btn-sm" style={{ minWidth: 80, fontSize: 12, padding: "8px 12px" }}
+                                    onClick={() => handleCrewClockIn(c.id)}>
+                                    {t("Clock In")}
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
             )}
@@ -1493,6 +1615,159 @@ export function ForemanView({ app }) {
                 <div style={{ marginTop: 16, padding: 16, background: "var(--glass-bg)", borderRadius: 10, textAlign: "center" }}>
                   <div className="text-sm text-muted">{t("Drawings are stored in the cloud")}</div>
                   <div className="text-xs text-dim" style={{ marginTop: 4 }}>{t("Download files for offline use on the jobsite. Ask the PM to upload new drawing sets.")}</div>
+                </div>
+              </div>
+            )}
+
+            {/* ═══ DAILY REPORT TAB ═══ */}
+            {foremanTab === "reports" && (
+              <div className="emp-content">
+                <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div className="section-title" style={{ fontSize: 16 }}>{t("Daily Reports")}</div>
+                  <button className="btn btn-primary btn-sm" onClick={() => setShowReportForm(!showReportForm)}>
+                    {showReportForm ? t("Cancel") : `+ ${t("New Report")}`}
+                  </button>
+                </div>
+
+                {/* ── Report Creation Form ── */}
+                {showReportForm && (
+                  <div className="card" style={{ padding: 16, marginTop: 12, background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 10 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <div>
+                        <label className="form-label">{t("Date")}</label>
+                        <input type="date" className="form-input" value={reportForm.date}
+                          onChange={e => setReportForm(f => ({ ...f, date: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="form-label">{t("Weather")}</label>
+                        <select className="form-input" value={reportForm.weather}
+                          onChange={e => setReportForm(f => ({ ...f, weather: e.target.value }))}>
+                          {["Clear", "Cloudy", "Rain", "Storm", "Wind", "Hot", "Cold"].map(w => (
+                            <option key={w} value={w}>{t(w)}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: 10 }}>
+                      <label className="form-label">{t("Project")}</label>
+                      <input type="text" className="form-input" value={selectedProject?.name || ""} disabled
+                        style={{ opacity: 0.7 }} />
+                    </div>
+
+                    <div style={{ marginTop: 10 }}>
+                      <label className="form-label">{t("Crew Count")}</label>
+                      <input type="number" className="form-input" placeholder="0" value={reportForm.crewCount}
+                        onChange={e => setReportForm(f => ({ ...f, crewCount: e.target.value }))} />
+                    </div>
+
+                    <div style={{ marginTop: 10 }}>
+                      <label className="form-label">{t("Work Performed Today")} *</label>
+                      <textarea className="form-input" rows={4} placeholder={t("Describe work completed...")}
+                        value={reportForm.workPerformed}
+                        onChange={e => setReportForm(f => ({ ...f, workPerformed: e.target.value }))}
+                        style={{ resize: "vertical" }} />
+                    </div>
+
+                    <div style={{ marginTop: 10 }}>
+                      <label className="form-label">{t("Issues / Delays")}</label>
+                      <textarea className="form-input" rows={2} placeholder={t("Any issues or delays...")}
+                        value={reportForm.issues}
+                        onChange={e => setReportForm(f => ({ ...f, issues: e.target.value }))}
+                        style={{ resize: "vertical" }} />
+                    </div>
+
+                    <div style={{ marginTop: 10 }}>
+                      <label className="form-label">{t("Materials Used")}</label>
+                      <textarea className="form-input" rows={2} placeholder={t("Materials consumed today...")}
+                        value={reportForm.materialsUsed}
+                        onChange={e => setReportForm(f => ({ ...f, materialsUsed: e.target.value }))}
+                        style={{ resize: "vertical" }} />
+                    </div>
+
+                    <button className="btn btn-primary" style={{ width: "100%", marginTop: 14 }}
+                      onClick={() => {
+                        if (!reportForm.workPerformed.trim()) { show(t("Describe work performed"), "warn"); return; }
+                        const report = {
+                          id: "dr-" + Date.now(),
+                          projectId: selectedProjectId,
+                          projectName: selectedProject?.name || "",
+                          foremanId: activeForeman?.id,
+                          foremanName: activeForeman?.name,
+                          date: reportForm.date,
+                          weather: reportForm.weather,
+                          crewCount: parseInt(reportForm.crewCount) || 0,
+                          workPerformed: reportForm.workPerformed,
+                          issues: reportForm.issues,
+                          materialsUsed: reportForm.materialsUsed,
+                          createdAt: new Date().toISOString(),
+                        };
+                        setDailyReports(prev => [...prev, report]);
+                        setReportForm({ date: new Date().toISOString().slice(0, 10), weather: "Clear", crewCount: "", workPerformed: "", issues: "", materialsUsed: "" });
+                        setShowReportForm(false);
+                        show(t("Daily report submitted"));
+                      }}>
+                      {t("Submit Report")}
+                    </button>
+                  </div>
+                )}
+
+                {/* ── Report List ── */}
+                <div style={{ marginTop: 16 }}>
+                  {(dailyReports || [])
+                    .filter(r => myProjectIds.has(r.projectId))
+                    .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || ""))
+                    .map(r => {
+                      const isExpanded = expandedReportId === r.id;
+                      const weatherIcon = { Clear: "\u2600\uFE0F", Cloudy: "\u2601\uFE0F", Rain: "\uD83C\uDF27\uFE0F", Storm: "\u26C8\uFE0F", Wind: "\uD83C\uDF2C\uFE0F", Hot: "\uD83D\uDD25", Cold: "\u2744\uFE0F" }[r.weather] || "";
+                      return (
+                        <div key={r.id} className="card" style={{ padding: "12px 14px", marginBottom: 8, cursor: "pointer", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 10 }}
+                          onClick={() => setExpandedReportId(isExpanded ? null : r.id)}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div>
+                              <div className="text-sm font-semi">{r.date} {weatherIcon}</div>
+                              <div className="text-xs text-muted">{r.projectName || t("Project")} · {r.crewCount || 0} {t("crew")} · {r.foremanName || ""}</div>
+                            </div>
+                            <span style={{ fontSize: 12, color: "var(--text3)" }}>{isExpanded ? "\u25BE" : "\u25B8"}</span>
+                          </div>
+                          {!isExpanded && (
+                            <div className="text-xs text-muted" style={{ marginTop: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {r.workPerformed?.slice(0, 100)}{(r.workPerformed?.length || 0) > 100 ? "..." : ""}
+                            </div>
+                          )}
+                          {isExpanded && (
+                            <div style={{ marginTop: 10, borderTop: "1px solid var(--glass-border)", paddingTop: 10 }}>
+                              <div style={{ marginBottom: 8 }}>
+                                <div className="text-xs font-semi" style={{ color: "var(--accent)", marginBottom: 2 }}>{t("Work Performed")}</div>
+                                <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.workPerformed}</div>
+                              </div>
+                              {r.issues && (
+                                <div style={{ marginBottom: 8 }}>
+                                  <div className="text-xs font-semi" style={{ color: "var(--amber)", marginBottom: 2 }}>{t("Issues / Delays")}</div>
+                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.issues}</div>
+                                </div>
+                              )}
+                              {r.materialsUsed && (
+                                <div style={{ marginBottom: 8 }}>
+                                  <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 2 }}>{t("Materials Used")}</div>
+                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.materialsUsed}</div>
+                                </div>
+                              )}
+                              <div className="text-xs text-muted" style={{ marginTop: 6 }}>
+                                {t("Submitted")}: {new Date(r.createdAt).toLocaleString()}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  {(dailyReports || []).filter(r => myProjectIds.has(r.projectId)).length === 0 && !showReportForm && (
+                    <div className="empty-state" style={{ padding: "30px 20px" }}>
+                      <div className="empty-icon">{"\uD83D\uDCCB"}</div>
+                      <div className="empty-text">{t("No daily reports yet")}</div>
+                      <div className="text-xs text-muted">{t("Tap + New Report to get started")}</div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

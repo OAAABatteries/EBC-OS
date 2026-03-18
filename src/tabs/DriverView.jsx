@@ -407,6 +407,8 @@ export function DriverView({ app }) {
         {/* ═══ SETTINGS TAB ═══ */}
         {driverTab === "settings" && (
           <div className="settings-wrap">
+            {/* Back button */}
+            <button className="btn btn-ghost btn-sm" style={{ marginBottom: 12 }} onClick={() => setDriverTab("queue")}>&#9664; {t("Back")}</button>
             <div className="settings-section">
               <div className="settings-section-title">{t("Profile")}</div>
               <div className="settings-avatar">{getInitials(activeDriver.name)}</div>

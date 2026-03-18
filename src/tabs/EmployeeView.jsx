@@ -346,7 +346,9 @@ export function EmployeeView({ app }) {
     } catch {}
     const clockIn = new Date(activeEntry.clockIn);
     const clockOut = new Date();
-    const totalHours = Math.round(((clockOut - clockIn) / 3600000) * 100) / 100;
+    const rawHours = (clockOut - clockIn) / 3600000;
+    // Auto-deduct 30-min unpaid lunch for shifts over 6 hours
+    const totalHours = Math.round((rawHours >= 6 ? rawHours - 0.5 : rawHours) * 100) / 100;
     setTimeEntries((prev) =>
       prev.map((e) =>
         e.id === activeEntry.id
@@ -1313,6 +1315,8 @@ export function EmployeeView({ app }) {
         {/* ═══ SETTINGS TAB ═══ */}
         {empTab === "settings" && (
           <div className="settings-wrap">
+            {/* Back button */}
+            <button className="btn btn-ghost btn-sm" style={{ marginBottom: 12 }} onClick={() => setEmpTab("clock")}>&#9664; {t("Back")}</button>
             {/* Profile */}
             <div className="settings-section">
               <div className="settings-section-title">{t("Profile")}</div>

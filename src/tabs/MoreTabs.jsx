@@ -962,6 +962,12 @@ function JobCostingTab({ app }) {
         const adjustedContract = proj.contract + cos;
         const remaining = adjustedContract - billed;
         const pct = adjustedContract > 0 ? Math.round((billed / adjustedContract) * 100) : 0;
+        // Labor cost rollup from time entries
+        const BLENDED_RATE = 45;
+        const projEntries = (app.timeEntries || []).filter(te => te.projectName === proj.name && te.clockIn && te.clockOut);
+        const laborHours = projEntries.reduce((s, te) => s + (new Date(te.clockOut) - new Date(te.clockIn)) / 3600000, 0);
+        const laborCost = laborHours * BLENDED_RATE;
+        const laborVariance = adjustedContract > 0 ? adjustedContract - laborCost : 0;
         return (
           <div className="card mt-16" key={proj.id}>
             <div className="flex-between">
@@ -973,6 +979,13 @@ function JobCostingTab({ app }) {
               <div><span className="text2">Approved COs</span><br />{app.fmt(cos)}</div>
               <div><span className="text2">Total Billed</span><br />{app.fmt(billed)}</div>
               <div><span className="text2">Remaining</span><br />{app.fmt(remaining)}</div>
+            </div>
+            {/* Labor Cost Rollup */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border)" }}>
+              <div><span className="text2">Labor Hours</span><br /><span className="font-mono">{laborHours.toFixed(1)}h</span></div>
+              <div><span className="text2">Labor Cost</span><br /><span className="font-mono" style={{ color: "var(--amber)" }}>{app.fmt(laborCost)}</span></div>
+              <div><span className="text2">Budget Remaining</span><br /><span className="font-mono" style={{ color: laborVariance >= 0 ? "var(--green)" : "var(--red)" }}>{app.fmt(laborVariance)}</span></div>
+              <div><span className="text2">Labor Margin</span><br /><span className="font-mono" style={{ color: adjustedContract > 0 && laborCost / adjustedContract < 0.7 ? "var(--green)" : "var(--amber)" }}>{adjustedContract > 0 ? Math.round((1 - laborCost / adjustedContract) * 100) : 0}%</span></div>
             </div>
             {(tmApproved > 0 || tmPending > 0) && (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border)" }}>
