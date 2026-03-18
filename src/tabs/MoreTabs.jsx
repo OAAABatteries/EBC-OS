@@ -3999,6 +3999,13 @@ function NotificationSettings({ userId }) {
     }
   });
   const [permission, setPermission] = useState(() => "Notification" in window ? Notification.permission : "unsupported");
+  const [pushSubscribed, setPushSubscribed] = useState(() => {
+    try {
+      const { useNotifications } = require("../hooks/useNotifications");
+      return !!localStorage.getItem(`ebc_push_sub_${userId}`);
+    } catch { return false; }
+  });
+  const [pushLoading, setPushLoading] = useState(false);
 
   const toggle = (key) => {
     const updated = { ...prefs, [key]: !prefs[key] };
@@ -4021,6 +4028,51 @@ function NotificationSettings({ userId }) {
   const requestPerm = async () => {
     const result = await Notification.requestPermission();
     setPermission(result);
+  };
+
+  const togglePush = async () => {
+    setPushLoading(true);
+    try {
+      const mod = await import("../hooks/useNotifications");
+      // We need the functions directly, not the hook
+      if (pushSubscribed) {
+        const { useNotifications } = mod;
+        // Unsubscribe inline
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) await sub.unsubscribe();
+        localStorage.removeItem(`ebc_push_sub_${userId}`);
+        setPushSubscribed(false);
+      } else {
+        // Subscribe
+        const VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
+        if (!VAPID_KEY) { setPushLoading(false); return; }
+        const perm = await Notification.requestPermission();
+        if (perm !== "granted") { setPermission(perm); setPushLoading(false); return; }
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          const padding = "=".repeat((4 - (VAPID_KEY.length % 4)) % 4);
+          const b64 = (VAPID_KEY + padding).replace(/-/g, "+").replace(/_/g, "/");
+          const raw = atob(b64);
+          const key = Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+          sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+        }
+        localStorage.setItem(`ebc_push_sub_${userId}`, JSON.stringify(sub.toJSON()));
+        try {
+          await fetch("/.netlify/functions/push-subscribe", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ subscription: sub.toJSON(), userId, action: "subscribe" }),
+          });
+        } catch {}
+        setPushSubscribed(true);
+        setPermission("granted");
+      }
+    } catch (err) {
+      console.warn("[push] toggle failed:", err.message);
+    } finally {
+      setPushLoading(false);
+    }
   };
 
   const toggleStyle = (on) => ({
@@ -4061,6 +4113,19 @@ function NotificationSettings({ userId }) {
             <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Reminder time</span>
             <input type="time" value={prefs.dailyReportTime} onChange={e => setTime(e.target.value)}
               style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "4px 8px", color: "var(--text-primary)", fontSize: 13 }} />
+          </div>
+        )}
+        {"PushManager" in window && (
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
+              <div>
+                <span style={{ fontSize: 14, color: "var(--text-primary)" }}>Background push</span>
+                <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2 }}>Receive alerts even when app is closed</div>
+              </div>
+              <button style={toggleStyle(pushSubscribed)} onClick={togglePush} disabled={pushLoading}>
+                <div style={dotStyle(pushSubscribed)} />
+              </button>
+            </div>
           </div>
         )}
       </div>

@@ -267,6 +267,34 @@ self.addEventListener("message", (event) => {
   }
 });
 
+// ── Real push events (from VAPID/web-push server) ────────────
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+  try {
+    const payload = event.data.json();
+    const { title, body, tag, url, icon } = payload;
+    event.waitUntil(
+      self.registration.showNotification(title || "EBC-OS", {
+        body: body || "",
+        icon: icon || "/icon-192.png",
+        badge: "/icon-192.png",
+        tag: tag || "ebc-push",
+        vibrate: [200, 100, 200],
+        data: { url: url || "/" },
+      })
+    );
+  } catch {
+    // Fallback for plain text payloads
+    event.waitUntil(
+      self.registration.showNotification("EBC-OS", {
+        body: event.data.text(),
+        icon: "/icon-192.png",
+        badge: "/icon-192.png",
+      })
+    );
+  }
+});
+
 // ── Notification click: open/focus app ────────────────────────
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();

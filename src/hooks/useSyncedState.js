@@ -8,6 +8,16 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 
+/** Deduplicate an array by `id`, keeping the last occurrence (most recent write wins). */
+const dedup = (arr) => {
+  if (!Array.isArray(arr) || arr.length === 0) return arr;
+  const seen = new Map();
+  for (const item of arr) {
+    if (item && item.id != null) seen.set(item.id, item);
+  }
+  return seen.size === arr.length ? arr : [...seen.values()];
+};
+
 // ── Field aliases: seed/app field names → DB column names ──
 const FIELD_ALIASES = {
   start_date: "start",
@@ -151,11 +161,13 @@ export function useSyncedState(key, initialValue) {
   const table = TABLE_MAP[key];
   const lsKey = "ebc_" + key;
 
-  // 1. Initialize from localStorage (instant)
+  // 1. Initialize from localStorage (instant), dedup arrays by id
   const [stored, setStored] = useState(() => {
     try {
       const item = window.localStorage.getItem(lsKey);
-      return item ? JSON.parse(item) : initialValue;
+      if (!item) return initialValue;
+      const parsed = JSON.parse(item);
+      return Array.isArray(parsed) ? dedup(parsed) : parsed;
     } catch { return initialValue; }
   });
 
@@ -206,8 +218,9 @@ export function useSyncedState(key, initialValue) {
               setStored(val);
               try { localStorage.setItem(lsKey, JSON.stringify(val)); } catch {}
             } else {
-              setStored(camelData);
-              try { localStorage.setItem(lsKey, JSON.stringify(camelData)); } catch {}
+              const dedupedData = dedup(camelData);
+              setStored(dedupedData);
+              try { localStorage.setItem(lsKey, JSON.stringify(dedupedData)); } catch {}
             }
           }
         }

@@ -1,6 +1,10 @@
 import { useCallback } from "react";
 
 const PREFS_KEY = (userId) => `ebc_notification_prefs_${userId}`;
+const PUSH_SUB_KEY = (userId) => `ebc_push_sub_${userId}`;
+
+// VAPID public key for web-push subscription
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
 
 const DEFAULT_PREFS = {
   clockReminders: true,
@@ -94,6 +98,61 @@ export function useNotifications() {
     return target.getTime();
   }, []);
 
+  // ── Web Push subscription (VAPID) ──
+  const subscribeToPush = useCallback(async (userId) => {
+    if (!VAPID_PUBLIC_KEY || !("serviceWorker" in navigator) || !("PushManager" in window)) return null;
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") return null;
+
+      const reg = await navigator.serviceWorker.ready;
+      // Check for existing subscription
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+        sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
+      }
+
+      // Send subscription to backend
+      const subJSON = sub.toJSON();
+      localStorage.setItem(PUSH_SUB_KEY(userId), JSON.stringify(subJSON));
+      try {
+        await fetch("/.netlify/functions/push-subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subscription: subJSON, userId, action: "subscribe" }),
+        });
+      } catch {} // Offline — subscription is still stored locally
+
+      return subJSON;
+    } catch (err) {
+      console.warn("[push] subscribe failed:", err.message);
+      return null;
+    }
+  }, []);
+
+  const unsubscribeFromPush = useCallback(async (userId) => {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) await sub.unsubscribe();
+      localStorage.removeItem(PUSH_SUB_KEY(userId));
+      try {
+        await fetch("/.netlify/functions/push-subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, action: "unsubscribe" }),
+        });
+      } catch {}
+    } catch (err) {
+      console.warn("[push] unsubscribe failed:", err.message);
+    }
+  }, []);
+
+  const isPushSubscribed = useCallback((userId) => {
+    return !!localStorage.getItem(PUSH_SUB_KEY(userId));
+  }, []);
+
   return {
     requestPermission,
     scheduleClockReminder,
@@ -104,5 +163,16 @@ export function useNotifications() {
     scheduleDailyReportReminder,
     cancelDailyReportReminder,
     getNextScheduledTime,
+    subscribeToPush,
+    unsubscribeFromPush,
+    isPushSubscribed,
   };
+}
+
+// Convert VAPID base64 URL key to Uint8Array for PushManager
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }

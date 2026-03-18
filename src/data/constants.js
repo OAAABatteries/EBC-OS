@@ -348,8 +348,6 @@ const _demoBids = [
   {id:206,name:"C120",gc:"",value:0,due:"Jan 20, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 20, 2026"},
   {id:207,name:"Power House",gc:"",value:0,due:"Jan 20, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 20, 2026"},
   {id:208,name:"New Project 566",gc:"",value:0,due:"Oct 31, 2025",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Oct",closeOut:null,bidDate:"Oct 31, 2025"},
-  {id:209,name:"United - Orion Medical PET/CT Project (2)",gc:"United",value:0,due:"Jan 22, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"Duplicate entry",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 22, 2026"},
-  {id:210,name:"Warwick - Octapharma Plasma - Little York (2)",gc:"Warwick",value:0,due:"Feb 4, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 4, 2026"},
 ];
 
 // ── SEED: PROJECTS ──

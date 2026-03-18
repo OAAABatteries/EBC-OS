@@ -280,7 +280,7 @@ export function ForemanView({ app }) {
     try {
       // Check cache first
       const { useDrawingCache } = await import("../hooks/useDrawingCache");
-      const { getCachedDrawing } = useDrawingCache();
+      const { getCachedDrawing, cacheDrawing } = useDrawingCache();
       const cached = await getCachedDrawing(drawing.path);
       if (cached) {
         setActiveDrawingData(cached);
@@ -295,6 +295,12 @@ export function ForemanView({ app }) {
       setActiveDrawingData(arrayBuffer);
       setActiveDrawingName(drawing.name);
       setActiveDrawingId(drawing.id);
+      // Auto-cache viewed drawing for offline access
+      cacheDrawing(drawing.path, blob).then(() => {
+        const updated = { ...downloadedDrawings, [drawing.path]: { cachedAt: new Date().toISOString(), size: blob.size } };
+        setDownloadedDrawings(updated);
+        localStorage.setItem("ebc_downloadedDrawings", JSON.stringify(updated));
+      }).catch(() => {});
     } catch {
       show?.(t("Failed to load drawing — check connection"), "err");
     }

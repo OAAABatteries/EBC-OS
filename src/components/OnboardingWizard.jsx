@@ -5,6 +5,7 @@
 
 import { useState, useCallback } from "react";
 import { ROLES } from "../data/roles";
+import { hashPasswordSync } from "../utils/passwordHash";
 
 const wizardStyles = `
 @keyframes wizFadeIn {
@@ -322,8 +323,6 @@ export function OnboardingWizard({ onComplete }) {
 
   const STEPS = 4;
 
-  const simpleHash = (str) => btoa(encodeURIComponent(str));
-
   const handleAddMember = useCallback(() => {
     if (!memberName || !memberEmail) return;
 
@@ -332,9 +331,10 @@ export function OnboardingWizard({ onComplete }) {
       id: users.length + 1,
       name: memberName,
       email: memberEmail.toLowerCase(),
-      password: memberPin ? simpleHash(memberPin) : simpleHash("ebc2026"),
+      password: hashPasswordSync(memberPin || "ebc2026"),
       role: memberRole,
-      pin: memberPin || null,
+      pin: memberPin ? hashPasswordSync(memberPin) : null,
+      mustChangePassword: true,
       createdAt: new Date().toISOString(),
     };
 

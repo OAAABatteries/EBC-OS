@@ -227,7 +227,9 @@ function AuthGate() {
         const users = JSON.parse(localStorage.getItem("ebc_users") || "[]");
         const seed = users.find(u => u.email?.toLowerCase() === auth.email?.toLowerCase());
         if (!seed) return;
-        // Decode the stored password hash (base64 → original)
+        // Only auto-provision if user has a legacy base64 password we can decode.
+        // Bcrypt hashes (start with "$2") can't be reversed — user must re-login.
+        if (!seed.password || seed.password.startsWith("$2")) return;
         let password;
         try { password = decodeURIComponent(atob(seed.password)); } catch { return; }
         // Try signing in first
