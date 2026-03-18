@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { SEED_ACCOUNTS, seedAccountsIfEmpty } from "../data/seedAccounts";
 import { ROLES } from "../data/roles";
 import { supabase, isSupabaseConfigured, signIn as supaSignIn, signUp as supaSignUp } from "../lib/supabase";
+import { verifyAndMigrate, hashPassword, verifyPassword } from "../utils/passwordHash";
 
 const loginStyles = `
 @keyframes loginFadeIn {
@@ -351,8 +352,6 @@ export function LoginScreen({ onLogin }) {
     return translations[key]?.[lang] || key;
   };
 
-  const simpleHash = (str) => btoa(encodeURIComponent(str));
-
   // ── Try Supabase Auth, auto-provision if needed, fall back to localStorage ──
   const authenticateWithSupabase = async (email, password, localUser) => {
     if (!isSupabaseConfigured()) return null;
@@ -414,17 +413,33 @@ export function LoginScreen({ onLogin }) {
 
     try {
       const users = JSON.parse(localStorage.getItem("ebc_users") || "[]");
-      const hashed = simpleHash(loginPassword);
-      const user = users.find(u =>
-        (u.email.toLowerCase() === loginEmail.toLowerCase() ||
-         u.name.toLowerCase() === loginEmail.toLowerCase()) &&
-        u.password === hashed
+
+      // Find user by email/name, then verify password with bcrypt (auto-migrates legacy hashes)
+      const candidate = users.find(u =>
+        u.email.toLowerCase() === loginEmail.toLowerCase() ||
+        u.name.toLowerCase() === loginEmail.toLowerCase()
       );
 
-      if (!user) {
+      if (!candidate) {
         setLoading(false);
         setError(t("Invalid credentials"));
         return;
+      }
+
+      const { match, newHash } = await verifyAndMigrate(loginPassword, candidate.password);
+      if (!match) {
+        setLoading(false);
+        setError(t("Invalid credentials"));
+        return;
+      }
+
+      // Auto-migrate legacy Base64 hash to bcrypt
+      if (newHash) {
+        const idx = users.findIndex(u => u.id === candidate.id);
+        if (idx >= 0) {
+          users[idx].password = newHash;
+          localStorage.setItem("ebc_users", JSON.stringify(users));
+        }
       }
 
       // Remember email
@@ -435,22 +450,22 @@ export function LoginScreen({ onLogin }) {
       }
 
       // Check if must change password
-      if (user.mustChangePassword) {
+      if (candidate.mustChangePassword) {
         setLoading(false);
-        setChangingUser(user);
+        setChangingUser(candidate);
         setMode("changePassword");
         return;
       }
 
       // Try Supabase Auth (auto-provisions on first login)
-      const supaUser = await authenticateWithSupabase(user.email, loginPassword, user);
+      const supaUser = await authenticateWithSupabase(candidate.email, loginPassword, candidate);
 
       const authUser = {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        title: user.title,
+        id: candidate.id,
+        name: candidate.name,
+        email: candidate.email,
+        role: candidate.role,
+        title: candidate.title,
         ...(supaUser?.supabaseId ? { supabaseId: supaUser.supabaseId } : {}),
       };
 
@@ -464,7 +479,7 @@ export function LoginScreen({ onLogin }) {
     }
   };
 
-  const handlePinLogin = (e) => {
+  const handlePinLogin = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -477,7 +492,11 @@ export function LoginScreen({ onLogin }) {
 
     try {
       const users = JSON.parse(localStorage.getItem("ebc_users") || "[]");
-      const user = users.find(u => u.pin === pinValue);
+      let user = null;
+      for (const u of users) {
+        const ok = await verifyPassword(pinValue, u.pin);
+        if (ok) { user = u; break; }
+      }
 
       if (!user) {
         setLoading(false);
@@ -503,7 +522,7 @@ export function LoginScreen({ onLogin }) {
     }
   };
 
-  const handleChangePassword = (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -520,10 +539,10 @@ export function LoginScreen({ onLogin }) {
       const users = JSON.parse(localStorage.getItem("ebc_users") || "[]");
       const idx = users.findIndex(u => u.id === changingUser.id);
       if (idx >= 0) {
-        users[idx].password = simpleHash(newPassword);
+        users[idx].password = await hashPassword(newPassword);
         users[idx].mustChangePassword = false;
         if (newPin && newPin.length >= 4) {
-          users[idx].pin = newPin;
+          users[idx].pin = await hashPassword(newPin);
         }
         localStorage.setItem("ebc_users", JSON.stringify(users));
       }

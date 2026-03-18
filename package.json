@@ -24,6 +24,7 @@
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.1",
     "@supabase/supabase-js": "^2.99.1",
+    "bcryptjs": "^3.0.3",
     "jspdf": "^4.2.0",
     "leaflet": "^1.9.4",
     "pdfjs-dist": "^5.5.207",

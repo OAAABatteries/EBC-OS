@@ -1,7 +1,9 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
 import { listFiles, getFileUrl, downloadFile } from "../lib/supabase";
+
+const PdfViewer = lazy(() => import("../components/PdfViewer").then(m => ({ default: m.PdfViewer })));
 import {
   PPE_ITEMS, RISK_LIKELIHOOD, RISK_SEVERITY, riskColor,
   HAZARD_CATEGORIES, CONTROL_HIERARCHY, PERMIT_TYPES,
@@ -67,6 +69,8 @@ export function ForemanView({ app }) {
   });
   const [drawingZoom, setDrawingZoom] = useState(1);
   const [activeDrawingId, setActiveDrawingId] = useState(null);
+  const [activeDrawingData, setActiveDrawingData] = useState(null);
+  const [activeDrawingName, setActiveDrawingName] = useState("");
   const [cloudDrawings, setCloudDrawings] = useState([]);
   const [drawingsLoading, setDrawingsLoading] = useState(false);
   const [downloadedDrawings, setDownloadedDrawings] = useState(() => {
@@ -99,11 +103,15 @@ export function ForemanView({ app }) {
   }, [activeForeman]);
 
   // ── login handler ──
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setLoginError("");
-    const emp = employees.find(
-      e => e.email === email.trim().toLowerCase() && e.password === password && e.active && e.role.toLowerCase() === "foreman"
-    );
+    const { verifyPassword } = await import("../utils/passwordHash");
+    let emp = null;
+    for (const e of employees) {
+      if (e.email === email.trim().toLowerCase() && e.active && e.role.toLowerCase() === "foreman") {
+        if (await verifyPassword(password, e.password)) { emp = e; break; }
+      }
+    }
     if (emp) {
       setActiveForeman(emp);
       setEmail("");
@@ -268,19 +276,42 @@ export function ForemanView({ app }) {
     if (foremanTab === "drawings") loadCloudDrawings();
   }, [foremanTab, selectedProjectId]);
 
+  const handleViewDrawing = async (drawing) => {
+    try {
+      // Check cache first
+      const { useDrawingCache } = await import("../hooks/useDrawingCache");
+      const { getCachedDrawing } = useDrawingCache();
+      const cached = await getCachedDrawing(drawing.path);
+      if (cached) {
+        setActiveDrawingData(cached);
+        setActiveDrawingName(drawing.name);
+        setActiveDrawingId(drawing.id);
+        return;
+      }
+      // Download from Supabase
+      show?.(t("Loading drawing..."));
+      const blob = await downloadFile(drawing.path);
+      const arrayBuffer = await blob.arrayBuffer();
+      setActiveDrawingData(arrayBuffer);
+      setActiveDrawingName(drawing.name);
+      setActiveDrawingId(drawing.id);
+    } catch {
+      show?.(t("Failed to load drawing — check connection"), "err");
+    }
+  };
+
   const handleDownloadDrawing = async (drawing) => {
     try {
-      show?.(t("Downloading..."));
+      show?.(t("Downloading for offline..."));
       const blob = await downloadFile(drawing.path);
-      // Cache in IndexedDB-like localStorage (base64 for small files, or trigger browser download)
-      const url = URL.createObjectURL(blob);
-      // Open in new tab for viewing
-      window.open(url, "_blank");
-      // Mark as downloaded
+      // Cache in service worker Cache API
+      const { useDrawingCache } = await import("../hooks/useDrawingCache");
+      const { cacheDrawing } = useDrawingCache();
+      await cacheDrawing(drawing.path, blob);
       const updated = { ...downloadedDrawings, [drawing.path]: { cachedAt: new Date().toISOString(), size: blob.size } };
       setDownloadedDrawings(updated);
       localStorage.setItem("ebc_downloadedDrawings", JSON.stringify(updated));
-      show?.(`${drawing.name} ${t("downloaded")} ✓`);
+      show?.(`${drawing.name} ${t("saved for offline")} ✓`);
     } catch {
       show?.(t("Download failed — check connection"), "err");
     }
@@ -491,6 +522,16 @@ export function ForemanView({ app }) {
 
   return (
     <div className="employee-app">
+      {/* PDF Viewer overlay */}
+      {activeDrawingData && (
+        <Suspense fallback={null}>
+          <PdfViewer
+            pdfData={activeDrawingData}
+            fileName={activeDrawingName}
+            onClose={() => { setActiveDrawingData(null); setActiveDrawingId(null); setActiveDrawingName(""); }}
+          />
+        </Suspense>
+      )}
       <header className="employee-header">
         <div>
           <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/eagle.png" alt="" style={{ width: 36, height: 36, objectFit: "contain", background: "transparent" }} onError={(e) => e.target.style.display = "none"} />EBC-OS</div>
@@ -1536,12 +1577,20 @@ export function ForemanView({ app }) {
                             <div className="text-xs text-muted">
                               {d.size > 0 ? `${(d.size / 1048576).toFixed(1)} MB` : ""}{d.uploadedAt ? ` · ${d.uploadedAt.slice(0, 10)}` : ""}
                             </div>
-                            {d.cached && <div className="text-xs" style={{ color: "var(--green)" }}>{t("Downloaded")}</div>}
+                            {d.cached && <div className="text-xs" style={{ color: "var(--green)" }}>{t("Saved offline")}</div>}
                           </div>
-                          <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: "6px 12px" }}
-                            onClick={() => handleDownloadDrawing(d)}>
-                            {d.cached ? t("View") : t("Download")}
-                          </button>
+                          <div style={{ display: "flex", gap: 4 }}>
+                            <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: "6px 10px" }}
+                              onClick={() => handleViewDrawing(d)}>
+                              {t("View")}
+                            </button>
+                            {!d.cached && (
+                              <button className="btn btn-sm" style={{ fontSize: 11, padding: "6px 10px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}
+                                onClick={() => handleDownloadDrawing(d)}>
+                                {t("Save")}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}

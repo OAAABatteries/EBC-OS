@@ -3882,8 +3882,6 @@ function AccountTab({ app }) {
   const [msg, setMsg] = useState("");
   const [msgType, setMsgType] = useState("ok");
 
-  const simpleHash = (str) => btoa(encodeURIComponent(str));
-
   const saveProfile = () => {
     try {
       const users = JSON.parse(localStorage.getItem("ebc_users") || "[]");
@@ -3892,7 +3890,6 @@ function AccountTab({ app }) {
       users[idx].name = name;
       users[idx].email = email.toLowerCase();
       localStorage.setItem("ebc_users", JSON.stringify(users));
-      // Update auth in memory
       const auth = JSON.parse(localStorage.getItem("ebc_auth") || "{}");
       auth.name = name;
       auth.email = email.toLowerCase();
@@ -3903,25 +3900,27 @@ function AccountTab({ app }) {
     } catch { setMsg("Error saving"); setMsgType("err"); }
   };
 
-  const changePassword = () => {
+  const changePassword = async () => {
     if (!currentPw) { setMsg("Enter current password"); setMsgType("err"); return; }
     if (newPw.length < 6) { setMsg("New password must be at least 6 characters"); setMsgType("err"); return; }
     if (newPw !== confirmPw) { setMsg("Passwords do not match"); setMsgType("err"); return; }
 
     try {
+      const { verifyPassword: vp, hashPassword: hp } = await import("../utils/passwordHash");
       const users = JSON.parse(localStorage.getItem("ebc_users") || "[]");
       const idx = users.findIndex(u => u.id === app.auth.id);
       if (idx < 0) return;
 
-      if (users[idx].password !== simpleHash(currentPw)) {
+      const ok = await vp(currentPw, users[idx].password);
+      if (!ok) {
         setMsg("Current password is incorrect");
         setMsgType("err");
         return;
       }
 
-      users[idx].password = simpleHash(newPw);
+      users[idx].password = await hp(newPw);
       if (newPin && newPin.length >= 4) {
-        users[idx].pin = newPin;
+        users[idx].pin = await hp(newPin);
       }
       localStorage.setItem("ebc_users", JSON.stringify(users));
       setMsg("Password updated!");
@@ -3984,6 +3983,87 @@ function AccountTab({ app }) {
           <button className="btn btn-primary btn-sm" onClick={changePassword}>Update Password</button>
         </div>
       </div>
+      <NotificationSettings userId={app.auth?.id} />
+    </div>
+  );
+}
+
+/* ── Notification Settings ──────────────────────────────────── */
+function NotificationSettings({ userId }) {
+  const [prefs, setPrefs] = useState(() => {
+    try {
+      const { getNotificationPrefs } = require("../hooks/useNotifications");
+      return getNotificationPrefs(userId);
+    } catch {
+      return { clockReminders: true, materialUpdates: true, scheduleChanges: true, dailyReportReminder: true, dailyReportTime: "16:30" };
+    }
+  });
+  const [permission, setPermission] = useState(() => "Notification" in window ? Notification.permission : "unsupported");
+
+  const toggle = (key) => {
+    const updated = { ...prefs, [key]: !prefs[key] };
+    setPrefs(updated);
+    try {
+      const { saveNotificationPrefs } = require("../hooks/useNotifications");
+      saveNotificationPrefs(userId, updated);
+    } catch {}
+  };
+
+  const setTime = (val) => {
+    const updated = { ...prefs, dailyReportTime: val };
+    setPrefs(updated);
+    try {
+      const { saveNotificationPrefs } = require("../hooks/useNotifications");
+      saveNotificationPrefs(userId, updated);
+    } catch {}
+  };
+
+  const requestPerm = async () => {
+    const result = await Notification.requestPermission();
+    setPermission(result);
+  };
+
+  const toggleStyle = (on) => ({
+    width: 44, height: 24, borderRadius: 12, cursor: "pointer", border: "none",
+    background: on ? "var(--ebc-gold, #e09422)" : "rgba(255,255,255,0.15)",
+    position: "relative", transition: "background 0.2s",
+  });
+  const dotStyle = (on) => ({
+    width: 18, height: 18, borderRadius: "50%", background: "#fff",
+    position: "absolute", top: 3, left: on ? 22 : 3, transition: "left 0.2s",
+  });
+
+  return (
+    <div className="mt-16">
+      <div className="section-title">Notifications</div>
+      <div className="card mt-8" style={{ padding: 16 }}>
+        {permission !== "granted" && permission !== "unsupported" && (
+          <div style={{ marginBottom: 12, padding: "8px 12px", borderRadius: 6, background: "rgba(224,148,34,0.1)", border: "1px solid rgba(224,148,34,0.3)", fontSize: 13 }}>
+            Notifications are {permission === "denied" ? "blocked" : "not enabled"}.
+            {permission === "default" && <button className="btn btn-sm" style={{ marginLeft: 8 }} onClick={requestPerm}>Enable</button>}
+          </div>
+        )}
+        {[
+          { key: "clockReminders", label: "Clock-in reminders" },
+          { key: "materialUpdates", label: "Material request updates" },
+          { key: "scheduleChanges", label: "Schedule change alerts" },
+          { key: "dailyReportReminder", label: "Daily report reminder" },
+        ].map(({ key, label }) => (
+          <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <span style={{ fontSize: 14, color: "var(--text-primary)" }}>{label}</span>
+            <button style={toggleStyle(prefs[key])} onClick={() => toggle(key)}>
+              <div style={dotStyle(prefs[key])} />
+            </button>
+          </div>
+        ))}
+        {prefs.dailyReportReminder && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
+            <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Reminder time</span>
+            <input type="time" value={prefs.dailyReportTime} onChange={e => setTime(e.target.value)}
+              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "4px 8px", color: "var(--text-primary)", fontSize: 13 }} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -4005,24 +4085,23 @@ function UsersTab({ app }) {
     employee: "Employee / Crew", driver: "Driver"
   };
 
-  const simpleHash = (str) => btoa(encodeURIComponent(str));
-
   const refresh = () => {
     try { setUsers(JSON.parse(localStorage.getItem("ebc_users") || "[]")); } catch {}
   };
 
-  const addUser = () => {
+  const addUser = async () => {
     if (!form.name || !form.email) { app.show("Name and email required", "err"); return; }
     const existing = users.find(u => u.email.toLowerCase() === form.email.toLowerCase());
     if (existing) { app.show("Email already exists", "err"); return; }
 
+    const { hashPasswordSync: hps } = await import("../utils/passwordHash");
     const newUser = {
       id: crypto.randomUUID(),
       name: form.name,
       email: form.email.toLowerCase(),
-      password: simpleHash(form.name.split(" ")[0] + "123!"),
+      password: hps(form.name.split(" ")[0] + "123!"),
       role: form.role,
-      pin: form.pin || String(1000 + users.length + 1),
+      pin: hps(form.pin || String(1000 + users.length + 1)),
       mustChangePassword: true,
       createdAt: new Date().toISOString(),
     };
@@ -4034,10 +4113,11 @@ function UsersTab({ app }) {
     app.show(`Added ${newUser.name} — temp password: ${form.name.split(" ")[0]}123!`, "ok");
   };
 
-  const resetPassword = (user) => {
+  const resetPassword = async (user) => {
+    const { hashPasswordSync: hps } = await import("../utils/passwordHash");
     const tempPw = user.name.split(" ")[0] + "123!";
     const updated = users.map(u =>
-      u.id === user.id ? { ...u, password: simpleHash(tempPw), mustChangePassword: true } : u
+      u.id === user.id ? { ...u, password: hps(tempPw), mustChangePassword: true } : u
     );
     localStorage.setItem("ebc_users", JSON.stringify(updated));
     setUsers(updated);

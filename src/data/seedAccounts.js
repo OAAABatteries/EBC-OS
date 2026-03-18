@@ -4,7 +4,8 @@
 //  ⚠️ TEMP PASSWORDS — All users should change on first login
 // ═══════════════════════════════════════════════════════════════
 
-const hash = (str) => btoa(encodeURIComponent(str));
+import { hashPasswordSync, isBcryptHash } from "../utils/passwordHash";
+const hash = (str) => hashPasswordSync(str);
 
 export const SEED_ACCOUNTS = [
   {
@@ -13,7 +14,7 @@ export const SEED_ACCOUNTS = [
     email: "emmanuel@ebconstructors.com",
     password: hash("Emmanuel123!"),
     role: "owner",
-    pin: "1001",
+    pin: hash("1001"),
     title: "Owner / Senior PM / Senior Estimator",
     mustChangePassword: true,
     createdAt: "2026-03-16T00:00:00.000Z",
@@ -24,7 +25,7 @@ export const SEED_ACCOUNTS = [
     email: "oscar@ebconstructors.com",
     password: hash("Oscar123!"),
     role: "owner",
-    pin: "1002",
+    pin: hash("1002"),
     title: "Senior Superintendent / Owner",
     mustChangePassword: true,
     createdAt: "2026-03-16T00:00:00.000Z",
@@ -35,7 +36,7 @@ export const SEED_ACCOUNTS = [
     email: "abner@ebconstructors.com",
     password: hash("Abner123!"),
     role: "admin",
-    pin: "1003",
+    pin: hash("1003"),
     title: "Estimator / PM / Admin",
     mustChangePassword: true,
     createdAt: "2026-03-16T00:00:00.000Z",
@@ -46,7 +47,7 @@ export const SEED_ACCOUNTS = [
     email: "isai@ebconstructors.com",
     password: hash("Isai123!"),
     role: "pm",
-    pin: "1004",
+    pin: hash("1004"),
     title: "Estimator / PM",
     mustChangePassword: true,
     createdAt: "2026-03-16T00:00:00.000Z",
@@ -57,7 +58,7 @@ export const SEED_ACCOUNTS = [
     email: "gema@ebconstructors.com",
     password: hash("Gema123!"),
     role: "office_admin",
-    pin: "1005",
+    pin: hash("1005"),
     title: "Office Admin / Project Engineer",
     mustChangePassword: true,
     createdAt: "2026-03-16T00:00:00.000Z",
@@ -68,7 +69,7 @@ export const SEED_ACCOUNTS = [
     email: "office@ebconstructors.com",
     password: hash("Anna123!"),
     role: "accounting",
-    pin: "1006",
+    pin: hash("1006"),
     title: "Accounting / Office Admin",
     mustChangePassword: true,
     createdAt: "2026-03-16T00:00:00.000Z",
@@ -79,7 +80,7 @@ export const SEED_ACCOUNTS = [
     email: "sacra@ebconstructors.com",
     password: hash("Sacra123!"),
     role: "safety",
-    pin: "1007",
+    pin: hash("1007"),
     title: "Safety Officer / Delivery",
     mustChangePassword: true,
     createdAt: "2026-03-16T00:00:00.000Z",
@@ -90,7 +91,7 @@ export const SEED_ACCOUNTS = [
     email: "rigo@ebconstructors.com",
     password: hash("Rigo123!"),
     role: "driver",
-    pin: "1008",
+    pin: hash("1008"),
     title: "Delivery Driver",
     mustChangePassword: true,
     createdAt: "2026-03-16T00:00:00.000Z",
@@ -101,7 +102,7 @@ export const SEED_ACCOUNTS = [
     email: "antonio@ebconstructors.com",
     password: hash("Antonio123!"),
     role: "foreman",
-    pin: "1009",
+    pin: hash("1009"),
     title: "Foreman",
     mustChangePassword: true,
     createdAt: "2026-03-16T00:00:00.000Z",
@@ -112,7 +113,7 @@ export const SEED_ACCOUNTS = [
     email: "haza@ebconstructors.com",
     password: hash("Haza123!"),
     role: "employee",
-    pin: "1010",
+    pin: hash("1010"),
     title: "Crew",
     mustChangePassword: true,
     createdAt: "2026-03-16T00:00:00.000Z",
@@ -120,7 +121,7 @@ export const SEED_ACCOUNTS = [
 ];
 
 // Increment this when seed data changes so existing installs get updated
-const SEED_VERSION = 2;
+const SEED_VERSION = 3;
 
 /**
  * Seed accounts into localStorage if none exist.
@@ -145,13 +146,23 @@ export function seedAccountsIfEmpty() {
         const idx = merged.findIndex(u => u.id === seed.id);
         if (idx >= 0) {
           // Update email (fix typos) but preserve user-changed passwords/pins
+          const u = merged[idx];
           merged[idx] = {
-            ...merged[idx],
+            ...u,
             email: seed.email,
             name: seed.name,
             role: seed.role,
             title: seed.title,
           };
+          // Migrate legacy Base64 passwords to bcrypt (v3 upgrade)
+          if (u.password && !isBcryptHash(u.password)) {
+            merged[idx].password = seed.password; // replace with bcrypt seed hash
+            merged[idx].mustChangePassword = true;
+          }
+          // Hash plain-text PINs
+          if (u.pin && !isBcryptHash(u.pin)) {
+            merged[idx].pin = hashPasswordSync(u.pin);
+          }
         } else {
           // New account not in localStorage — add it
           merged.push(seed);

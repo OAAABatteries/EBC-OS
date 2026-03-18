@@ -141,11 +141,15 @@ export function EmployeeView({ app }) {
   }, [activeEmp]);
 
   // ── login handler ──
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setLoginError("");
-    const emp = employees.find(
-      e => e.email === email.trim().toLowerCase() && e.password === password && e.active && e.role !== "Driver"
-    );
+    const { verifyPassword } = await import("../utils/passwordHash");
+    let emp = null;
+    for (const e of employees) {
+      if (e.email === email.trim().toLowerCase() && e.active && e.role !== "Driver") {
+        if (await verifyPassword(password, e.password)) { emp = e; break; }
+      }
+    }
     if (emp) {
       setActiveEmp(emp);
       setEmail("");

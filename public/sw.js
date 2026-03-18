@@ -8,6 +8,7 @@ const CACHE_VERSION = "v8";
 const SHELL_CACHE  = "ebc-shell-" + CACHE_VERSION;
 const RUNTIME_CACHE = "ebc-runtime-" + CACHE_VERSION;
 const FONT_CACHE   = "ebc-fonts-v1"; // fonts rarely change, separate long-lived cache
+const DRAWINGS_CACHE = "ebc-drawings-v1"; // cached PDFs for offline viewing
 
 // App shell — pre-cached on install
 const SHELL_ASSETS = [
@@ -38,7 +39,7 @@ self.addEventListener("activate", (e) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((k) => k !== SHELL_CACHE && k !== RUNTIME_CACHE && k !== FONT_CACHE)
+          .filter((k) => k !== SHELL_CACHE && k !== RUNTIME_CACHE && k !== FONT_CACHE && k !== DRAWINGS_CACHE)
           .map((k) => caches.delete(k))
       )
     ).then(() => {
@@ -205,6 +206,58 @@ self.addEventListener("message", (event) => {
     }
     self.registration
       .getNotifications({ tag: `clock-reminder-${id}` })
+      .then((notifs) => notifs.forEach((n) => n.close()));
+  }
+
+  // ── Generic one-shot notification ──
+  if (data?.type === "SHOW_NOTIFICATION") {
+    const { title, body, tag, url, icon } = data;
+    self.registration.showNotification(title || "EBC-OS", {
+      body: body || "",
+      icon: icon || "/icon-192.png",
+      badge: "/icon-192.png",
+      tag: tag || "ebc-general",
+      vibrate: [200, 100, 200],
+      data: { url: url || "/" },
+    });
+  }
+
+  // ── Daily report reminder ──
+  const reportReminders = self._reportReminders || (self._reportReminders = new Map());
+
+  if (data?.type === "SCHEDULE_DAILY_REPORT_REMINDER") {
+    const { employeeId, employeeName, scheduledTime } = data;
+    const delay = scheduledTime - Date.now();
+
+    if (reportReminders.has(employeeId)) {
+      clearTimeout(reportReminders.get(employeeId));
+    }
+
+    if (delay > 0 && delay < 12 * 60 * 60 * 1000) {
+      const timer = setTimeout(() => {
+        self.registration.showNotification("EBC-OS · Daily Report", {
+          body: `${employeeName}, don't forget to submit your daily report before leaving`,
+          icon: "/icon-192.png",
+          badge: "/icon-192.png",
+          tag: `report-reminder-${employeeId}`,
+          requireInteraction: true,
+          vibrate: [200, 100, 200],
+          data: { url: "/#/foreman" },
+        });
+        reportReminders.delete(employeeId);
+      }, delay);
+      reportReminders.set(employeeId, timer);
+    }
+  }
+
+  if (data?.type === "CANCEL_DAILY_REPORT_REMINDER") {
+    const id = data.employeeId;
+    if (reportReminders.has(id)) {
+      clearTimeout(reportReminders.get(id));
+      reportReminders.delete(id);
+    }
+    self.registration
+      .getNotifications({ tag: `report-reminder-${id}` })
       .then((notifs) => notifs.forEach((n) => n.close()));
   }
 

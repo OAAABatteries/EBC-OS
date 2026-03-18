@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { MAT_CATS, MAT_CLR, ASM_TYPES } from "../data/materials";
+import { useNotifications, getNotificationPrefs } from "../hooks/useNotifications";
 
 // ═══════════════════════════════════════════════════════════════
 //  Materials & Assembly Editor Tab
@@ -13,6 +14,7 @@ const REQ_STATUS_BADGE = { requested: "badge-amber", approved: "badge-blue", "in
 
 export function MaterialsTab({ app }) {
   const { materials, setMaterials, customAssemblies, setCustomAssemblies, show, fmt, submittals } = app;
+  const { notifyMaterialStatus } = useNotifications();
   const userRole = app.auth?.role || "owner";
   const isFieldRole = ["foreman", "employee", "driver"].includes(userRole);
   const VIEWS = isFieldRole ? FIELD_VIEWS : FULL_VIEWS;
@@ -83,10 +85,17 @@ export function MaterialsTab({ app }) {
   };
 
   const handleApproveRequest = (reqId) => {
+    const req = (app.materialRequests || []).find(r => r.id === reqId);
     app.setMaterialRequests(prev => prev.map(r =>
       r.id === reqId ? { ...r, status: "approved" } : r
     ));
     show("Request approved", "ok");
+    if (req) {
+      const prefs = getNotificationPrefs(app.auth?.id);
+      if (prefs.materialUpdates) {
+        notifyMaterialStatus({ material: req.material || req.item, status: "approved", projectName: req.projectName, requestId: reqId });
+      }
+    }
   };
 
   const handleDenyRequest = (reqId) => {

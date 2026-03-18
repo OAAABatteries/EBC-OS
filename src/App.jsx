@@ -266,6 +266,10 @@ function AuthGate() {
   const handleLogin = useCallback((user) => {
     localStorage.setItem("ebc_auth", JSON.stringify(user));
     setAuth(user);
+    // Request notification permission after login
+    if ("Notification" in window && Notification.permission === "default") {
+      setTimeout(() => Notification.requestPermission(), 2000);
+    }
   }, []);
 
   const handleLogout = useCallback(async () => {
