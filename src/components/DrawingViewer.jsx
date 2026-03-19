@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import * as pdfjsLib from "pdfjs-dist";
+import * as XLSX from "xlsx";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.mjs",
@@ -104,7 +105,13 @@ function createCondition(template, index) {
   };
 }
 
-export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, assemblies }) {
+export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, assemblies, initialTakeoffState, onTakeoffStateChange }) {
+  // ── Multi-PDF management ──
+  // pdfFiles: [{ name, data (Uint8Array), doc (pdfjs doc), numPages }]
+  const [pdfFiles, setPdfFiles] = useState([]);
+  const [activePdfIdx, setActivePdfIdx] = useState(0);
+  const addPdfInputRef = useRef(null);
+
   const [pdf, setPdf] = useState(null);
   const [page, setPage] = useState(1);
   const [numPages, setNumPages] = useState(0);
@@ -112,40 +119,50 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const [rendering, setRendering] = useState(false);
   const [mode, setMode] = useState(MODE.PAN);
 
+  // Composite page key — unique across PDFs: "pdfIdx:pageNum"
+  const pageKey = activePdfIdx + ":" + page;
+
+  // ── Shorthand for initial state restoration ──
+  const _init = initialTakeoffState || {};
+
   // Calibration
-  const [calibrations, setCalibrations] = useState({});
+  const [calibrations, setCalibrations] = useState(_init.calibrations || {});
   const [calPoints, setCalPoints] = useState([]);
   const [calInput, setCalInput] = useState("");
   const [showCalPrompt, setShowCalPrompt] = useState(false);
   const [showVerify, setShowVerify] = useState(false);
 
   // Sheet management
-  const [sheetNames, setSheetNames] = useState({});
+  const [sheetNames, setSheetNames] = useState(_init.sheetNames || {});
   const [showSheets, setShowSheets] = useState(true);
   const [editingSheet, setEditingSheet] = useState(null);
 
   // Conditions system
   const [conditions, setConditions] = useState(() =>
-    DRYWALL_TEMPLATE.map((t, i) => createCondition(t, i))
+    _init.conditions && _init.conditions.length > 0
+      ? _init.conditions
+      : DRYWALL_TEMPLATE.map((t, i) => createCondition(t, i))
   );
-  const [activeCondId, setActiveCondId] = useState(null);
+  const [activeCondId, setActiveCondId] = useState(_init.activeCondId || null);
   const [openFolders, setOpenFolders] = useState({ Walls: true, Ceilings: true, Counts: true, Insulation: false, "Add-Ons": false });
   const [showAddCond, setShowAddCond] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
-  const [hiddenFolders, setHiddenFolders] = useState({}); // { folderName: true } = hidden
+  const [hiddenFolders, setHiddenFolders] = useState(_init.hiddenFolders || {}); // { folderName: true } = hidden
 
   // Bid Areas
-  const [bidAreas, setBidAreas] = useState([
-    { id: "ba_default", name: "Unassigned" },
-  ]);
-  const [activeBidAreaId, setActiveBidAreaId] = useState("ba_default");
+  const [bidAreas, setBidAreas] = useState(
+    _init.bidAreas && _init.bidAreas.length > 0
+      ? _init.bidAreas
+      : [{ id: "ba_default", name: "Unassigned" }]
+  );
+  const [activeBidAreaId, setActiveBidAreaId] = useState(_init.activeBidAreaId || "ba_default");
   const [showBidAreaAdd, setShowBidAreaAdd] = useState(false);
   const [newBidAreaName, setNewBidAreaName] = useState("");
 
   // Multi-Condition links — when a linear condition is drawn, auto-create linked measurements
   // Format: { parentCondId: [{ condId, calcType }] }
   // calcType: "sf_both_sides" = LF * height * 2, "sf_one_side" = LF * height, "pct" = LF * pct
-  const [condLinks, setCondLinks] = useState({});
+  const [condLinks, setCondLinks] = useState(_init.condLinks || {});
   const [showLinkSetup, setShowLinkSetup] = useState(false);
 
   // View mode (drawing vs summary)
@@ -157,10 +174,56 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const [condSearch, setCondSearch] = useState("");
 
   // Measurements — now linked to conditions + bid areas
-  const [measurements, setMeasurements] = useState({});
+  const [measurements, setMeasurements] = useState(_init.measurements || {});
   const [activeVertices, setActiveVertices] = useState([]);
   const [mousePos, setMousePos] = useState(null);
   const [undoStack, setUndoStack] = useState([]);
+
+  // ── Change Order Overlay ──
+  // revisionDocs: { [pageKey]: { doc, revPage, name } } — revision PDF docs mapped to specific sheets
+  const [revisionDocs, setRevisionDocs] = useState({});
+  const [revisionOpacity, setRevisionOpacity] = useState(0.4);
+  const [showRevision, setShowRevision] = useState(true);
+  const [coMode, setCoMode] = useState(null); // null = off, "add" = additions, "delete" = deletions
+  const [coMeasurements, setCoMeasurements] = useState(_init.coMeasurements || {}); // { [pageKey]: [{ ...measurement, coType }] }
+  const revisionCanvasRef = useRef(null);
+  const revisionInputRef = useRef(null);
+
+  // ── Typical Groups ──
+  // { id, name, sourceMeasurementIds: string[], sourcePageKey, instances: [{ id, pageKey, offset:{x,y}, multiplier }] }
+  const [typicalGroups, setTypicalGroups] = useState(_init.typicalGroups || []);
+  const [selectedMeasIds, setSelectedMeasIds] = useState(new Set()); // for multi-select before "Create Typical"
+  const [showTypicalCreate, setShowTypicalCreate] = useState(false);
+  const [typicalName, setTypicalName] = useState("");
+  const [placingTypicalId, setPlacingTypicalId] = useState(null); // ID of typical being placed
+  const [showTypicalPanel, setShowTypicalPanel] = useState(false);
+
+  // ── Auto-save: debounced state change notification ──
+  const saveTimerRef = useRef(null);
+  const [lastSaved, setLastSaved] = useState(null); // timestamp for save indicator
+  useEffect(() => {
+    if (!onTakeoffStateChange) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      onTakeoffStateChange({
+        measurements,
+        conditions,
+        condLinks,
+        sheetNames,
+        calibrations,
+        bidAreas,
+        hiddenFolders,
+        activeCondId,
+        activeBidAreaId,
+        pdfFileNames: pdfFiles.map(pf => pf.name),
+        activePdfIdx,
+        typicalGroups,
+        coMeasurements,
+      });
+      setLastSaved(Date.now());
+    }, 800); // 800ms debounce
+    return () => clearTimeout(saveTimerRef.current);
+  }, [measurements, conditions, condLinks, sheetNames, calibrations, bidAreas, hiddenFolders, activeCondId, activeBidAreaId, typicalGroups, coMeasurements]);
 
   // Refs
   const pdfCanvasRef = useRef(null);
@@ -169,11 +232,11 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const fitScaleRef = useRef(1);
   const touchRef = useRef({ startDist: 0, startScale: 1 });
 
-  const ppf = calibrations[page] || null;
-  const pageMeasurements = measurements[page] || [];
+  const ppf = calibrations[pageKey] || null;
+  const pageMeasurements = measurements[pageKey] || [];
   const activeCond = conditions.find(c => c.id === activeCondId) || null;
 
-  // Compute condition totals from all measurements
+  // Compute condition totals from all measurements + typical group instances
   const condTotals = useMemo(() => {
     const totals = {};
     conditions.forEach(c => { totals[c.id] = { qty: 0, cost: 0 }; });
@@ -187,8 +250,23 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
         if (asm) totals[m.conditionId].cost += qty * ((asm.matRate || 0) + (asm.labRate || 0));
       });
     });
+    // Add typical group instance quantities (instances multiply source measurements)
+    typicalGroups.forEach(tg => {
+      const totalInstMultiplier = tg.instances.reduce((s, inst) => s + (inst.multiplier || 1), 0);
+      if (totalInstMultiplier === 0) return;
+      const sourceMeas = (measurements[tg.sourcePageKey] || []).filter(m => tg.sourceMeasurementIds.includes(m.id));
+      sourceMeas.forEach(m => {
+        if (!totals[m.conditionId]) return;
+        const baseQty = m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0);
+        const extraQty = baseQty * totalInstMultiplier;
+        totals[m.conditionId].qty += extraQty;
+        const cond = conditions.find(c => c.id === m.conditionId);
+        const asm = cond ? (assemblies || []).find(a => a.code === cond.asmCode) : null;
+        if (asm) totals[m.conditionId].cost += extraQty * ((asm.matRate || 0) + (asm.labRate || 0));
+      });
+    });
     return totals;
-  }, [measurements, conditions, assemblies]);
+  }, [measurements, conditions, assemblies, typicalGroups]);
 
   // Summary table data (grouped by various dimensions)
   const summaryRows = useMemo(() => {
@@ -226,7 +304,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
           const q = m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0);
           return s + (asm ? q * ((asm.matRate || 0) + (asm.labRate || 0)) : 0);
         }, 0);
-        rows.push({ key: pg, name: getSheetName(Number(pg)), folder: "", color: "#888", unit: "mixed", qty: meas.length, matCost: 0, labCost: 0, total: cost, measCount: meas.length });
+        rows.push({ key: pg, name: getKeyName(pg), folder: "", color: "#888", unit: "mixed", qty: meas.length, matCost: 0, labCost: 0, total: cost, measCount: meas.length });
       });
     } else if (summaryGroupBy === "folder") {
       const folderMap = {};
@@ -249,7 +327,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     return rows;
   }, [measurements, conditions, assemblies, bidAreas, summaryGroupBy, sheetNames]);
 
-  // Grand total with mat/lab split
+  // Grand total with mat/lab split (includes typical group instances)
   const { grandTotal, totalMat, totalLab } = useMemo(() => {
     let mat = 0, lab = 0;
     Object.values(measurements).flat().forEach(m => {
@@ -260,8 +338,169 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       mat += qty * (asm.matRate || 0);
       lab += qty * (asm.labRate || 0);
     });
+    // Add typical group instance multiplier costs
+    typicalGroups.forEach(tg => {
+      const totalInstMultiplier = tg.instances.reduce((s, inst) => s + (inst.multiplier || 1), 0);
+      if (totalInstMultiplier === 0) return;
+      const sourceMeas = (measurements[tg.sourcePageKey] || []).filter(m => tg.sourceMeasurementIds.includes(m.id));
+      sourceMeas.forEach(m => {
+        const cond = conditions.find(c => c.id === m.conditionId);
+        const asm = cond ? (assemblies || []).find(a => a.code === cond.asmCode) : null;
+        if (!asm) return;
+        const baseQty = m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0);
+        const extraQty = baseQty * totalInstMultiplier;
+        mat += extraQty * (asm.matRate || 0);
+        lab += extraQty * (asm.labRate || 0);
+      });
+    });
     return { grandTotal: mat + lab, totalMat: mat, totalLab: lab };
-  }, [measurements, conditions, assemblies]);
+  }, [measurements, conditions, assemblies, typicalGroups]);
+
+  // ── Excel Export ──
+  const exportToExcel = useCallback(() => {
+    const wb = XLSX.utils.book_new();
+    const allMeas = Object.values(measurements).flat();
+    const today = new Date().toLocaleDateString();
+
+    // ── Sheet 1: Condition Detail (the main takeoff sheet) ──
+    const condRows = [];
+    let currentFolder = "";
+    // Sort conditions by folder then name for clean grouping
+    const sortedConds = [...conditions].sort((a, b) => a.folder.localeCompare(b.folder) || a.name.localeCompare(b.name));
+    sortedConds.forEach(c => {
+      const meas = allMeas.filter(m => m.conditionId === c.id);
+      if (meas.length === 0) return;
+      const qty = meas.reduce((s, m) => s + (m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0)), 0);
+      const unit = c.type === "count" ? "EA" : c.type === "area" ? "SF" : "LF";
+      const asm = (assemblies || []).find(a => a.code === c.asmCode);
+      const matCost = asm ? qty * (asm.matRate || 0) : 0;
+      const labCost = asm ? qty * (asm.labRate || 0) : 0;
+      // Add folder header row when folder changes
+      if (c.folder !== currentFolder) {
+        condRows.push({ Folder: c.folder, Condition: "", Code: "", Qty: "", Unit: "", "Mat $": "", "Lab $": "", "Total $": "" });
+        currentFolder = c.folder;
+      }
+      condRows.push({
+        Folder: "",
+        Condition: c.name,
+        Code: c.asmCode || "",
+        Qty: Math.round(qty),
+        Unit: unit,
+        "Mat $": Math.round(matCost * 100) / 100,
+        "Lab $": Math.round(labCost * 100) / 100,
+        "Total $": Math.round((matCost + labCost) * 100) / 100,
+      });
+    });
+    // Grand total row
+    condRows.push({
+      Folder: "",
+      Condition: "GRAND TOTAL",
+      Code: "",
+      Qty: "",
+      Unit: "",
+      "Mat $": Math.round(totalMat * 100) / 100,
+      "Lab $": Math.round(totalLab * 100) / 100,
+      "Total $": Math.round(grandTotal * 100) / 100,
+    });
+
+    const ws1 = XLSX.utils.json_to_sheet(condRows);
+    // Set column widths
+    ws1["!cols"] = [
+      { wch: 14 }, // Folder
+      { wch: 30 }, // Condition
+      { wch: 8 },  // Code
+      { wch: 10 }, // Qty
+      { wch: 6 },  // Unit
+      { wch: 12 }, // Mat $
+      { wch: 12 }, // Lab $
+      { wch: 12 }, // Total $
+    ];
+    XLSX.utils.book_append_sheet(wb, ws1, "Takeoff Detail");
+
+    // ── Sheet 2: By Bid Area ──
+    if (bidAreas.length > 1 || (bidAreas.length === 1 && bidAreas[0].id !== "ba_default")) {
+      const areaRows = [];
+      bidAreas.forEach(ba => {
+        const baMeas = allMeas.filter(m => m.bidAreaId === ba.id);
+        if (baMeas.length === 0) return;
+        areaRows.push({ "Bid Area": ba.name, Condition: "", Qty: "", Unit: "", "Total $": "" });
+        // Group by condition within each bid area
+        conditions.forEach(c => {
+          const meas = baMeas.filter(m => m.conditionId === c.id);
+          if (meas.length === 0) return;
+          const qty = meas.reduce((s, m) => s + (m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0)), 0);
+          const unit = c.type === "count" ? "EA" : c.type === "area" ? "SF" : "LF";
+          const asm = (assemblies || []).find(a => a.code === c.asmCode);
+          const cost = asm ? qty * ((asm.matRate || 0) + (asm.labRate || 0)) : 0;
+          areaRows.push({
+            "Bid Area": "",
+            Condition: c.name,
+            Qty: Math.round(qty),
+            Unit: unit,
+            "Total $": Math.round(cost * 100) / 100,
+          });
+        });
+      });
+      const ws2 = XLSX.utils.json_to_sheet(areaRows);
+      ws2["!cols"] = [{ wch: 18 }, { wch: 30 }, { wch: 10 }, { wch: 6 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, ws2, "By Bid Area");
+    }
+
+    // ── Sheet 3: By Sheet/Page ──
+    const sheetRows = [];
+    Object.entries(measurements).forEach(([pg, meas]) => {
+      if (meas.length === 0) return;
+      const sName = getKeyName(pg);
+      sheetRows.push({ Sheet: sName, Condition: "", Qty: "", Unit: "", "Total $": "" });
+      conditions.forEach(c => {
+        const cMeas = meas.filter(m => m.conditionId === c.id);
+        if (cMeas.length === 0) return;
+        const qty = cMeas.reduce((s, m) => s + (m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0)), 0);
+        const unit = c.type === "count" ? "EA" : c.type === "area" ? "SF" : "LF";
+        const asm = (assemblies || []).find(a => a.code === c.asmCode);
+        const cost = asm ? qty * ((asm.matRate || 0) + (asm.labRate || 0)) : 0;
+        sheetRows.push({ Sheet: "", Condition: c.name, Qty: Math.round(qty), Unit: unit, "Total $": Math.round(cost * 100) / 100 });
+      });
+    });
+    if (sheetRows.length > 0) {
+      const ws3 = XLSX.utils.json_to_sheet(sheetRows);
+      ws3["!cols"] = [{ wch: 22 }, { wch: 30 }, { wch: 10 }, { wch: 6 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, ws3, "By Sheet");
+    }
+
+    // ── Sheet 4: Change Orders ──
+    const allCo = Object.values(coMeasurements).flat();
+    if (allCo.length > 0) {
+      const coRows = [];
+      allCo.forEach(m => {
+        const cond = conditions.find(c => c.id === m.conditionId);
+        const qty = m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0);
+        const unit = m.type === "count" ? "EA" : m.type === "area" ? "SF" : "LF";
+        const asm = cond ? (assemblies || []).find(a => a.code === cond.asmCode) : null;
+        const cost = asm ? qty * ((asm.matRate || 0) + (asm.labRate || 0)) : 0;
+        coRows.push({
+          Type: m.coType === "delete" ? "DELETION" : "ADDITION",
+          Condition: cond?.name || "Unknown",
+          Qty: Math.round(qty),
+          Unit: unit,
+          "Cost $": Math.round(cost * 100) / 100,
+          Sheet: getKeyName(m.page || ""),
+        });
+      });
+      // Net summary rows
+      coRows.push({ Type: "", Condition: "", Qty: "", Unit: "", "Cost $": "", Sheet: "" });
+      coRows.push({ Type: "ADDITIONS TOTAL", Condition: "", Qty: "", Unit: "", "Cost $": Math.round(coSummary.adds.cost * 100) / 100, Sheet: "" });
+      coRows.push({ Type: "DELETIONS TOTAL", Condition: "", Qty: "", Unit: "", "Cost $": Math.round(coSummary.dels.cost * 100) / 100, Sheet: "" });
+      coRows.push({ Type: "NET CHANGE", Condition: "", Qty: "", Unit: "", "Cost $": Math.round(coSummary.net * 100) / 100, Sheet: "" });
+      const ws4 = XLSX.utils.json_to_sheet(coRows);
+      ws4["!cols"] = [{ wch: 14 }, { wch: 28 }, { wch: 10 }, { wch: 6 }, { wch: 12 }, { wch: 22 }];
+      XLSX.utils.book_append_sheet(wb, ws4, "Change Orders");
+    }
+
+    // ── Download ──
+    const safeName = (fileName || "takeoff").replace(/\.pdf$/i, "").replace(/[^a-zA-Z0-9_\- ]/g, "");
+    XLSX.writeFile(wb, `${safeName}_Takeoff_${today.replace(/\//g, "-")}.xlsx`);
+  }, [measurements, conditions, assemblies, bidAreas, grandTotal, totalMat, totalLab, fileName, coMeasurements, coSummary]);
 
   // Folders
   const folders = useMemo(() => {
@@ -273,15 +512,46 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     return map;
   }, [conditions]);
 
-  // ── Load PDF ──
+  // ── Load initial PDF into pdfFiles on mount ──
   useEffect(() => {
     if (!pdfData) return;
     let cancelled = false;
     pdfjsLib.getDocument({ data: pdfData }).promise.then((doc) => {
-      if (!cancelled) { setPdf(doc); setNumPages(doc.numPages); setPage(1); }
+      if (!cancelled) {
+        setPdfFiles([{ name: fileName || "Drawing", data: pdfData, doc, numPages: doc.numPages }]);
+        setPdf(doc);
+        setNumPages(doc.numPages);
+        setPage(1);
+        setActivePdfIdx(0);
+      }
     });
     return () => { cancelled = true; };
   }, [pdfData]);
+
+  // ── Switch active PDF when activePdfIdx changes ──
+  useEffect(() => {
+    const pf = pdfFiles[activePdfIdx];
+    if (!pf) return;
+    setPdf(pf.doc);
+    setNumPages(pf.numPages);
+    setPage(1);
+    setActiveVertices([]);
+  }, [activePdfIdx, pdfFiles.length]);
+
+  // ── Add additional PDF files ──
+  const handleAddPdf = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const data = new Uint8Array(ev.target.result);
+      pdfjsLib.getDocument({ data }).promise.then((doc) => {
+        const newIdx = pdfFiles.length;
+        setPdfFiles(prev => [...prev, { name: file.name, data, doc, numPages: doc.numPages }]);
+        setActivePdfIdx(newIdx);
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  };
 
   // ── Render page ──
   useEffect(() => {
@@ -315,6 +585,84 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     });
     return () => { cancelled = true; };
   }, [pdf, page, zoom]);
+
+  // ── Render revision PDF overlay ──
+  useEffect(() => {
+    const revCanvas = revisionCanvasRef.current;
+    if (!revCanvas) return;
+    const rev = revisionDocs[pageKey];
+    if (!rev || !rev.doc || !showRevision) {
+      // Clear revision canvas
+      const ctx = revCanvas.getContext("2d");
+      ctx.clearRect(0, 0, revCanvas.width, revCanvas.height);
+      return;
+    }
+    let cancelled = false;
+    rev.doc.getPage(rev.revPage || 1).then(p => {
+      if (cancelled) return;
+      const container = containerRef.current;
+      const cw = container ? container.clientWidth - 32 : 800;
+      const base = p.getViewport({ scale: 1 });
+      const fs = cw / base.width;
+      const vp = p.getViewport({ scale: fs * zoom });
+      const dpr = window.devicePixelRatio || 1;
+      revCanvas.width = vp.width * dpr;
+      revCanvas.height = vp.height * dpr;
+      revCanvas.style.width = `${vp.width}px`;
+      revCanvas.style.height = `${vp.height}px`;
+      const ctx = revCanvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, vp.width, vp.height);
+      p.render({ canvasContext: ctx, viewport: vp }).promise;
+    });
+    return () => { cancelled = true; };
+  }, [revisionDocs, pageKey, showRevision, zoom]);
+
+  // ── Upload revision PDF for current sheet ──
+  const handleRevisionUpload = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const data = new Uint8Array(ev.target.result);
+      pdfjsLib.getDocument({ data }).promise.then(doc => {
+        setRevisionDocs(prev => ({
+          ...prev,
+          [pageKey]: { doc, revPage: 1, name: file.name, numPages: doc.numPages },
+        }));
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  // ── CO measurement helpers ──
+  const coPageMeasurements = coMeasurements[pageKey] || [];
+
+  const addCoMeasurement = (m) => {
+    setCoMeasurements(prev => ({ ...prev, [pageKey]: [...(prev[pageKey] || []), m] }));
+  };
+
+  const deleteCoMeasurement = (id) => {
+    setCoMeasurements(prev => ({ ...prev, [pageKey]: (prev[pageKey] || []).filter(m => m.id !== id) }));
+  };
+
+  // CO net delta summary
+  const coSummary = useMemo(() => {
+    const allCo = Object.values(coMeasurements).flat();
+    const adds = { lf: 0, sf: 0, ea: 0, cost: 0 };
+    const dels = { lf: 0, sf: 0, ea: 0, cost: 0 };
+    allCo.forEach(m => {
+      const qty = m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0);
+      const cond = conditions.find(c => c.id === m.conditionId);
+      const asm = cond ? (assemblies || []).find(a => a.code === cond.asmCode) : null;
+      const cost = asm ? qty * ((asm.matRate || 0) + (asm.labRate || 0)) : 0;
+      const bucket = m.coType === "delete" ? dels : adds;
+      if (m.type === "linear") bucket.lf += qty;
+      else if (m.type === "area") bucket.sf += qty;
+      else bucket.ea += qty;
+      bucket.cost += cost;
+    });
+    return { adds, dels, net: adds.cost - dels.cost, total: allCo.length };
+  }, [coMeasurements, conditions, assemblies]);
 
   // ── Draw overlay ──
   const drawOverlay = useCallback(() => {
@@ -436,6 +784,111 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       }
     }
 
+    // Draw selection highlights for Typical Group creation (cyan dashed outline)
+    if (selectedMeasIds.size > 0) {
+      pageMeasurements.filter(m => selectedMeasIds.has(m.id)).forEach(m => {
+        ctx.strokeStyle = "#22d3ee"; ctx.lineWidth = 3; ctx.setLineDash([5, 3]);
+        if (m.vertices) {
+          const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+          ctx.beginPath();
+          pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+          if (m.type === "area") ctx.closePath();
+          ctx.stroke();
+        } else if (m.point) {
+          const pt = { x: m.point.x * scale, y: m.point.y * scale };
+          ctx.beginPath(); ctx.arc(pt.x, pt.y, 14, 0, Math.PI * 2); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+      });
+    }
+
+    // Draw typical group instances on this page (ghost rendering with dashed lines)
+    typicalGroups.forEach(tg => {
+      const sourceMeas = (measurements[tg.sourcePageKey] || []).filter(m => tg.sourceMeasurementIds.includes(m.id));
+      tg.instances.filter(inst => inst.pageKey === pageKey).forEach(inst => {
+        const ox = inst.offset.x * scale, oy = inst.offset.y * scale;
+        sourceMeas.forEach(m => {
+          const cond = conditions.find(c => c.id === m.conditionId);
+          const color = cond?.color || "#888";
+          ctx.globalAlpha = 0.5;
+          ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+          if (m.vertices) {
+            const pts = m.vertices.map(v => ({ x: v.x * scale + ox, y: v.y * scale + oy }));
+            ctx.beginPath();
+            pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+            if (m.type === "area") ctx.closePath();
+            ctx.stroke();
+          } else if (m.point) {
+            const pt = { x: m.point.x * scale + ox, y: m.point.y * scale + oy };
+            ctx.beginPath(); ctx.arc(pt.x, pt.y, 10, 0, Math.PI * 2); ctx.stroke();
+          }
+          ctx.setLineDash([]); ctx.globalAlpha = 1;
+        });
+        // Instance badge
+        const badgeX = tg.sourceCenter.x * scale + ox;
+        const badgeY = tg.sourceCenter.y * scale + oy - 20;
+        const label = `${tg.name} (×${inst.multiplier || 1})`;
+        ctx.font = "10px sans-serif";
+        const tw = ctx.measureText(label).width + 10;
+        ctx.fillStyle = "rgba(34,211,238,0.85)"; ctx.fillRect(badgeX - tw / 2, badgeY - 6, tw, 14);
+        ctx.fillStyle = "#000"; ctx.textAlign = "center"; ctx.fillText(label, badgeX, badgeY + 4);
+      });
+    });
+
+    // Placing-typical cursor indicator
+    if (placingTypicalId && mousePos) {
+      const tg = typicalGroups.find(g => g.id === placingTypicalId);
+      if (tg) {
+        ctx.fillStyle = "rgba(34,211,238,0.85)"; ctx.fillRect(mousePos.x + 12, mousePos.y - 12, 120, 16);
+        ctx.fillStyle = "#000"; ctx.font = "10px sans-serif"; ctx.textAlign = "left";
+        ctx.fillText(`Place: ${tg.name}`, mousePos.x + 16, mousePos.y);
+      }
+    }
+
+    // Draw CO measurements (green = additions, red = deletions)
+    coPageMeasurements.forEach(m => {
+      const coColor = m.coType === "delete" ? "#ef4444" : "#22c55e";
+      ctx.globalAlpha = 0.7;
+      if (m.type === "linear" && m.vertices) {
+        const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+        ctx.strokeStyle = coColor; ctx.lineWidth = 3; ctx.setLineDash([8, 4]);
+        ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.stroke();
+        ctx.setLineDash([]);
+        const mid = pts[Math.floor(pts.length / 2)];
+        const lbl = `${m.coType === "delete" ? "DEL" : "ADD"} ${m.totalFt.toFixed(1)}' LF`;
+        ctx.font = "bold 10px sans-serif"; const tw = ctx.measureText(lbl).width + 8;
+        ctx.fillStyle = coColor; ctx.fillRect(mid.x - tw / 2, mid.y - 18, tw, 16);
+        ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.fillText(lbl, mid.x, mid.y - 6);
+      } else if (m.type === "area" && m.vertices) {
+        const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+        ctx.fillStyle = coColor + "22"; ctx.strokeStyle = coColor; ctx.lineWidth = 2.5; ctx.setLineDash([8, 4]);
+        ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.setLineDash([]);
+        const cx2 = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+        const cy2 = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+        const lbl = `${m.coType === "delete" ? "DEL" : "ADD"} ${m.totalSf.toFixed(0)} SF`;
+        ctx.font = "bold 10px sans-serif"; const tw = ctx.measureText(lbl).width + 8;
+        ctx.fillStyle = coColor; ctx.fillRect(cx2 - tw / 2, cy2 - 8, tw, 16);
+        ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.fillText(lbl, cx2, cy2 + 4);
+      } else if (m.type === "count" && m.point) {
+        const pt = { x: m.point.x * scale, y: m.point.y * scale };
+        ctx.strokeStyle = coColor; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(pt.x, pt.y, 12, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = coColor; ctx.font = "bold 9px sans-serif"; ctx.textAlign = "center";
+        ctx.fillText(m.coType === "delete" ? "DEL" : "ADD", pt.x, pt.y + 3);
+      }
+      ctx.globalAlpha = 1;
+    });
+
+    // CO mode indicator
+    if (coMode) {
+      const ch = canvas.height / dpr;
+      const coColor = coMode === "delete" ? "#ef4444" : "#22c55e";
+      const coLabel = coMode === "delete" ? "CO: DELETIONS (red)" : "CO: ADDITIONS (green)";
+      ctx.fillStyle = coColor + "CC"; ctx.fillRect(8, ch - 50, 160, 18);
+      ctx.fillStyle = "#fff"; ctx.font = "bold 10px sans-serif"; ctx.textAlign = "left";
+      ctx.fillText(coLabel, 14, ch - 37);
+    }
+
     // Scale indicator
     if (ppf) {
       const ch = canvas.height / dpr;
@@ -443,7 +896,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       ctx.fillStyle = "#4ade80"; ctx.font = "10px sans-serif"; ctx.textAlign = "left";
       ctx.fillText(`Scale set (${(1 / ppf).toFixed(4)}'/px)`, 14, ch - 14);
     }
-  }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond, hiddenFolders]);
+  }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond, hiddenFolders, selectedMeasIds, typicalGroups, measurements, pageKey, placingTypicalId, coPageMeasurements, coMode]);
 
   useEffect(() => { requestAnimationFrame(drawOverlay); }, [drawOverlay]);
 
@@ -452,6 +905,31 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const getNormCoords = (e) => { const p = getCanvasCoords(e); const s = fitScaleRef.current * zoom; return { x: p.x / s, y: p.y / s }; };
 
   const handleCanvasClick = (e) => {
+    // Typical Group: placing an instance
+    if (placingTypicalId) {
+      placeTypicalInstance(getNormCoords(e));
+      return;
+    }
+    // Shift+click: toggle measurement selection for Typical Groups
+    if (e.shiftKey && mode === MODE.PAN) {
+      const clickPt = getCanvasCoords(e);
+      const scale = fitScaleRef.current * zoom;
+      // Find the closest measurement within 15px
+      let closest = null, closestDist = 15;
+      pageMeasurements.forEach(m => {
+        if (m.vertices) {
+          m.vertices.forEach(v => {
+            const d = dist({ x: v.x * scale, y: v.y * scale }, clickPt);
+            if (d < closestDist) { closestDist = d; closest = m.id; }
+          });
+        } else if (m.point) {
+          const d = dist({ x: m.point.x * scale, y: m.point.y * scale }, clickPt);
+          if (d < closestDist) { closestDist = d; closest = m.id; }
+        }
+      });
+      if (closest) toggleMeasSelection(closest);
+      return;
+    }
     if (mode === MODE.PAN) return;
     if (mode === MODE.CALIBRATE) {
       const pt = getNormCoords(e);
@@ -461,9 +939,13 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     if (!activeCond) return;
     if (mode === MODE.COUNT && ppf) {
       const pt = getNormCoords(e);
-      const m = { id: "m_" + Date.now(), type: "count", conditionId: activeCond.id, bidAreaId: activeBidAreaId, point: pt, count: 1, page };
-      setMeasurements(prev => ({ ...prev, [page]: [...(prev[page] || []), m] }));
-      setUndoStack(prev => [...prev, { action: "add", page, measurementId: m.id }]);
+      const m = { id: "m_" + Date.now(), type: "count", conditionId: activeCond.id, bidAreaId: activeBidAreaId, point: pt, count: 1, page: pageKey };
+      if (coMode) {
+        addCoMeasurement({ ...m, coType: coMode });
+      } else {
+        setMeasurements(prev => ({ ...prev, [pageKey]: [...(prev[pageKey] || []), m] }));
+        setUndoStack(prev => [...prev, { action: "add", pageKey, measurementId: m.id }]);
+      }
       return;
     }
     if (mode === MODE.LINEAR || mode === MODE.AREA) {
@@ -485,7 +967,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       let totalPx = 0;
       for (let i = 1; i < activeVertices.length; i++) totalPx += dist(activeVertices[i - 1], activeVertices[i]);
       const totalFt = totalPx / ppf;
-      const m = { id: "m_" + ts, type: "linear", conditionId: activeCond.id, bidAreaId: activeBidAreaId, vertices: activeVertices, totalFt, page };
+      const m = { id: "m_" + ts, type: "linear", conditionId: activeCond.id, bidAreaId: activeBidAreaId, vertices: activeVertices, totalFt, page: pageKey };
       newMeasurements.push(m);
 
       // Auto-create linked measurements (Multi-Condition Takeoff)
@@ -495,22 +977,27 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
         if (!linkedCond) return;
         if (link.calcType === "sf_both_sides") {
           const sf = totalFt * (activeCond.height || 10) * 2;
-          newMeasurements.push({ id: "m_" + ts + "_l" + i, type: "area", conditionId: linkedCond.id, bidAreaId: activeBidAreaId, vertices: activeVertices, totalSf: sf, page, autoLinked: true });
+          newMeasurements.push({ id: "m_" + ts + "_l" + i, type: "area", conditionId: linkedCond.id, bidAreaId: activeBidAreaId, vertices: activeVertices, totalSf: sf, page: pageKey, autoLinked: true });
         } else if (link.calcType === "sf_one_side") {
           const sf = totalFt * (activeCond.height || 10);
-          newMeasurements.push({ id: "m_" + ts + "_l" + i, type: "area", conditionId: linkedCond.id, bidAreaId: activeBidAreaId, vertices: activeVertices, totalSf: sf, page, autoLinked: true });
+          newMeasurements.push({ id: "m_" + ts + "_l" + i, type: "area", conditionId: linkedCond.id, bidAreaId: activeBidAreaId, vertices: activeVertices, totalSf: sf, page: pageKey, autoLinked: true });
         } else if (link.calcType === "match_lf") {
-          newMeasurements.push({ id: "m_" + ts + "_l" + i, type: "linear", conditionId: linkedCond.id, bidAreaId: activeBidAreaId, vertices: activeVertices, totalFt, page, autoLinked: true });
+          newMeasurements.push({ id: "m_" + ts + "_l" + i, type: "linear", conditionId: linkedCond.id, bidAreaId: activeBidAreaId, vertices: activeVertices, totalFt, page: pageKey, autoLinked: true });
         }
       });
     } else {
       const areaPx = polyArea(activeVertices);
-      const m = { id: "m_" + ts, type: "area", conditionId: activeCond.id, bidAreaId: activeBidAreaId, vertices: activeVertices, totalSf: areaPx / (ppf * ppf), page };
+      const m = { id: "m_" + ts, type: "area", conditionId: activeCond.id, bidAreaId: activeBidAreaId, vertices: activeVertices, totalSf: areaPx / (ppf * ppf), page: pageKey };
       newMeasurements.push(m);
     }
 
-    setMeasurements(prev => ({ ...prev, [page]: [...(prev[page] || []), ...newMeasurements] }));
-    newMeasurements.forEach(m => setUndoStack(prev => [...prev, { action: "add", page, measurementId: m.id }]));
+    if (coMode) {
+      // CO mode: tag all measurements with coType and store separately
+      newMeasurements.forEach(m => addCoMeasurement({ ...m, coType: coMode }));
+    } else {
+      setMeasurements(prev => ({ ...prev, [pageKey]: [...(prev[pageKey] || []), ...newMeasurements] }));
+      newMeasurements.forEach(m => setUndoStack(prev => [...prev, { action: "add", pageKey, measurementId: m.id }]));
+    }
     setActiveVertices([]);
   };
 
@@ -521,22 +1008,140 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const confirmCalibration = () => {
     const ft = parseFloat(calInput);
     if (!ft || ft <= 0 || calPoints.length < 2) return;
-    setCalibrations(prev => ({ ...prev, [page]: dist(calPoints[0], calPoints[1]) / ft }));
+    setCalibrations(prev => ({ ...prev, [pageKey]: dist(calPoints[0], calPoints[1]) / ft }));
     setCalPoints([]); setCalInput(""); setShowCalPrompt(false); setShowVerify(true); setMode(MODE.PAN);
   };
 
-  // Apply scale to multiple pages
+  // Apply scale to all pages of the current PDF
   const applyScaleToAll = () => {
     if (!ppf) return;
     const newCals = {};
-    for (let i = 1; i <= numPages; i++) newCals[i] = ppf;
+    for (let i = 1; i <= numPages; i++) newCals[activePdfIdx + ":" + i] = ppf;
     setCalibrations(prev => ({ ...prev, ...newCals }));
   };
 
-  const getSheetName = (pg) => sheetNames[pg] || `Page ${pg}`;
-  const setSheetName = (pg, name) => setSheetNames(prev => ({ ...prev, [pg]: name }));
+  // ── Typical Groups Logic ──
+  const toggleMeasSelection = (measId) => {
+    setSelectedMeasIds(prev => {
+      const next = new Set(prev);
+      if (next.has(measId)) next.delete(measId); else next.add(measId);
+      return next;
+    });
+  };
 
-  const deleteMeasurement = (id) => { setMeasurements(prev => ({ ...prev, [page]: (prev[page] || []).filter(m => m.id !== id) })); };
+  const createTypicalGroup = (name) => {
+    if (!name || selectedMeasIds.size === 0) return;
+    // Grab the source measurements
+    const sourceMeas = pageMeasurements.filter(m => selectedMeasIds.has(m.id));
+    if (sourceMeas.length === 0) return;
+    // Calculate center point of the group (average of all vertices/points)
+    let cx = 0, cy = 0, count = 0;
+    sourceMeas.forEach(m => {
+      if (m.vertices) { m.vertices.forEach(v => { cx += v.x; cy += v.y; count++; }); }
+      else if (m.point) { cx += m.point.x; cy += m.point.y; count++; }
+    });
+    if (count > 0) { cx /= count; cy /= count; }
+
+    const tg = {
+      id: "tg_" + Date.now(),
+      name,
+      sourceMeasurementIds: [...selectedMeasIds],
+      sourcePageKey: pageKey,
+      sourceCenter: { x: cx, y: cy },
+      instances: [],
+    };
+    setTypicalGroups(prev => [...prev, tg]);
+    setSelectedMeasIds(new Set());
+    setShowTypicalCreate(false);
+    setTypicalName("");
+  };
+
+  const placeTypicalInstance = (clickPos) => {
+    if (!placingTypicalId) return;
+    const tg = typicalGroups.find(g => g.id === placingTypicalId);
+    if (!tg) return;
+    // Calculate offset from source center to click position (in normalized coords)
+    const offset = { x: clickPos.x - tg.sourceCenter.x, y: clickPos.y - tg.sourceCenter.y };
+    const instance = {
+      id: "ti_" + Date.now(),
+      pageKey,
+      offset,
+      multiplier: 1,
+    };
+    setTypicalGroups(prev => prev.map(g =>
+      g.id === placingTypicalId ? { ...g, instances: [...g.instances, instance] } : g
+    ));
+    setPlacingTypicalId(null);
+    setMode(MODE.PAN);
+  };
+
+  const deleteTypicalInstance = (groupId, instanceId) => {
+    setTypicalGroups(prev => prev.map(g =>
+      g.id === groupId ? { ...g, instances: g.instances.filter(i => i.id !== instanceId) } : g
+    ));
+  };
+
+  const deleteTypicalGroup = (groupId) => {
+    setTypicalGroups(prev => prev.filter(g => g.id !== groupId));
+  };
+
+  const updateInstanceMultiplier = (groupId, instanceId, multiplier) => {
+    setTypicalGroups(prev => prev.map(g =>
+      g.id === groupId ? {
+        ...g,
+        instances: g.instances.map(i => i.id === instanceId ? { ...i, multiplier } : i)
+      } : g
+    ));
+  };
+
+  // Compute typical group quantities for summary — source + all instances
+  const typicalTotals = useMemo(() => {
+    const result = []; // { groupName, condName, condId, qty, unit, matCost, labCost }
+    typicalGroups.forEach(tg => {
+      // Get source measurements
+      const sourceMeas = (measurements[tg.sourcePageKey] || []).filter(m => tg.sourceMeasurementIds.includes(m.id));
+      // Total multiplier = 1 (source) + sum of instance multipliers
+      const totalMultiplier = 1 + tg.instances.reduce((s, inst) => s + (inst.multiplier || 1), 0);
+      // Aggregate by condition
+      const condMap = {};
+      sourceMeas.forEach(m => {
+        const qty = m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0);
+        if (!condMap[m.conditionId]) condMap[m.conditionId] = 0;
+        condMap[m.conditionId] += qty;
+      });
+      Object.entries(condMap).forEach(([condId, baseQty]) => {
+        const cond = conditions.find(c => c.id === condId);
+        if (!cond) return;
+        const totalQty = baseQty * totalMultiplier;
+        const asm = (assemblies || []).find(a => a.code === cond.asmCode);
+        result.push({
+          groupName: tg.name,
+          groupId: tg.id,
+          condName: cond.name,
+          condId,
+          qty: totalQty,
+          unit: cond.type === "count" ? "EA" : cond.type === "area" ? "SF" : "LF",
+          matCost: asm ? totalQty * (asm.matRate || 0) : 0,
+          labCost: asm ? totalQty * (asm.labRate || 0) : 0,
+          instanceCount: tg.instances.length,
+        });
+      });
+    });
+    return result;
+  }, [typicalGroups, measurements, conditions, assemblies]);
+
+  const getSheetName = (pg) => sheetNames[activePdfIdx + ":" + pg] || `Page ${pg}`;
+  const setSheetName = (pg, name) => setSheetNames(prev => ({ ...prev, [activePdfIdx + ":" + pg]: name }));
+  // Get friendly name for any composite key "pdfIdx:page" — used in summary/export
+  const getKeyName = (pk) => {
+    if (sheetNames[pk]) return sheetNames[pk];
+    const [pIdx, pg] = pk.split(":");
+    const pf = pdfFiles[Number(pIdx)];
+    const prefix = pdfFiles.length > 1 && pf ? pf.name.replace(/\.pdf$/i, "") + " — " : "";
+    return prefix + `Page ${pg}`;
+  };
+
+  const deleteMeasurement = (id) => { setMeasurements(prev => ({ ...prev, [pageKey]: (prev[pageKey] || []).filter(m => m.id !== id) })); };
   const cancelActive = () => { setActiveVertices([]); setMousePos(null); setCalPoints([]); setShowCalPrompt(false); };
 
   const undo = () => {
@@ -634,14 +1239,26 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 12px", borderBottom: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.85)", flexShrink: 0, flexWrap: "wrap", gap: 6 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button onClick={onClose} style={{ ...btn, background: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.4)" }}>Close</button>
-          {numPages > 1 && (
+          {(numPages > 1 || pdfFiles.length > 1) && (
             <button onClick={() => setShowSheets(v => !v)} style={{ ...btn, fontSize: 10, padding: "4px 8px" }} title="Toggle sheet list">
               {showSheets ? "Hide" : "Sheets"}
             </button>
           )}
-          <span style={{ color: "#fff", fontSize: 12, fontWeight: 600, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {numPages > 1 ? getSheetName(page) : (fileName || "Drawing")}
+          <span style={{ color: "#fff", fontSize: 12, fontWeight: 600, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {pdfFiles.length > 1
+              ? `${(pdfFiles[activePdfIdx]?.name || "PDF").replace(/\.pdf$/i, "")} — ${getSheetName(page)}`
+              : numPages > 1 ? getSheetName(page) : (fileName || "Drawing")}
           </span>
+          <button onClick={() => addPdfInputRef.current?.click()} style={{ ...btn, fontSize: 9, padding: "3px 7px", background: "rgba(59,130,246,0.15)", borderColor: "rgba(59,130,246,0.3)", color: "#60a5fa" }} title="Add another PDF file">
+            + PDF
+          </button>
+          <input ref={addPdfInputRef} type="file" accept=".pdf" style={{ display: "none" }}
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleAddPdf(f); e.target.value = ""; }} />
+          {onTakeoffStateChange && (
+            <span style={{ color: lastSaved ? "#10b981" : "#666", fontSize: 10, opacity: 0.8 }}>
+              {lastSaved ? "Saved" : ""}
+            </span>
+          )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
           <button onClick={() => { setMode(MODE.PAN); cancelActive(); }} style={mode === MODE.PAN ? btnActive : btn} title="Space">Pan</button>
@@ -664,6 +1281,18 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
             style={viewMode === "summary" ? btnActive : btn} title="Toggle summary view">
             {viewMode === "summary" ? "Drawing" : "Summary"}
           </button>
+          <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
+          {/* CO Mode controls */}
+          <button onClick={() => setCoMode(m => m === "add" ? null : "add")}
+            style={coMode === "add" ? { ...btn, background: "rgba(34,197,94,0.25)", borderColor: "rgba(34,197,94,0.5)", color: "#22c55e", fontWeight: 600 } : { ...btn, fontSize: 10, padding: "4px 8px" }}
+            title="Change Order: Mark additions">
+            CO+
+          </button>
+          <button onClick={() => setCoMode(m => m === "delete" ? null : "delete")}
+            style={coMode === "delete" ? { ...btn, background: "rgba(239,68,68,0.25)", borderColor: "rgba(239,68,68,0.5)", color: "#ef4444", fontWeight: 600 } : { ...btn, fontSize: 10, padding: "4px 8px" }}
+            title="Change Order: Mark deletions">
+            CO−
+          </button>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <button onClick={prevPage} style={page <= 1 ? btnDis : btn} disabled={page <= 1}>Prev</button>
@@ -680,59 +1309,84 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       {/* ── Body: sheets sidebar + canvas + conditions panel ── */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
 
-        {/* ── Left Sidebar: Sheet Navigator ── */}
-        {showSheets && numPages > 1 && (
-          <div style={{ width: 180, flexShrink: 0, borderRight: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.9)", overflow: "auto", padding: "8px 6px" }}>
+        {/* ── Left Sidebar: Sheet Navigator (Multi-PDF) ── */}
+        {showSheets && (numPages > 1 || pdfFiles.length > 1) && (
+          <div style={{ width: 190, flexShrink: 0, borderRight: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.9)", overflow: "auto", padding: "8px 6px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "0 4px" }}>
               <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>Sheets</span>
-              <span style={{ fontSize: 9, color: "#666" }}>{numPages} pages</span>
+              <span style={{ fontSize: 9, color: "#666" }}>{pdfFiles.reduce((s, pf) => s + pf.numPages, 0)} pages</span>
             </div>
-            {Array.from({ length: numPages }, (_, i) => i + 1).map(pg => {
-              const isCurrent = pg === page;
-              const hasScale = !!calibrations[pg];
-              const hasMeasurements = (measurements[pg] || []).length > 0;
-              const measCount = (measurements[pg] || []).length;
+            {pdfFiles.map((pf, pIdx) => {
+              const isActivePdf = pIdx === activePdfIdx;
+              // Count total measurements across all pages of this PDF
+              const pdfMeasCount = Array.from({ length: pf.numPages }, (_, i) => (measurements[pIdx + ":" + (i + 1)] || []).length).reduce((a, b) => a + b, 0);
               return (
-                <div key={pg}
-                  onClick={() => { setPage(pg); setActiveVertices([]); }}
-                  style={{
-                    padding: "6px 8px", marginBottom: 3, borderRadius: 5, cursor: "pointer",
-                    background: isCurrent ? "rgba(224,148,34,0.12)" : "transparent",
-                    border: isCurrent ? "1px solid rgba(224,148,34,0.3)" : "1px solid transparent",
-                    transition: "all 0.15s",
-                  }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    {/* Scale indicator dot */}
-                    <span title={hasScale ? "Scale set" : "No scale"} style={{
-                      width: 6, height: 6, borderRadius: 3, flexShrink: 0,
-                      background: hasScale ? "#4ade80" : "#ef4444",
-                    }} />
-                    {/* Page name */}
-                    {editingSheet === pg ? (
-                      <input autoFocus
-                        value={sheetNames[pg] || ""}
-                        placeholder={`Page ${pg}`}
-                        onChange={e => setSheetName(pg, e.target.value)}
-                        onBlur={() => setEditingSheet(null)}
-                        onKeyDown={e => { if (e.key === "Enter") setEditingSheet(null); }}
-                        onClick={e => e.stopPropagation()}
-                        style={{ flex: 1, padding: "1px 4px", borderRadius: 3, border: "1px solid var(--amber)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 10, minWidth: 0 }}
-                      />
-                    ) : (
-                      <span onDoubleClick={(e) => { e.stopPropagation(); setEditingSheet(pg); }}
-                        style={{ flex: 1, fontSize: 10, color: isCurrent ? "#fff" : "#aaa", fontWeight: isCurrent ? 600 : 400,
-                          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}
-                        title="Double-click to rename">
-                        {getSheetName(pg)}
+                <div key={pIdx} style={{ marginBottom: 6 }}>
+                  {/* PDF file header */}
+                  {pdfFiles.length > 1 && (
+                    <div onClick={() => setActivePdfIdx(pIdx)}
+                      style={{
+                        padding: "4px 6px", marginBottom: 2, borderRadius: 4, cursor: "pointer",
+                        background: isActivePdf ? "rgba(59,130,246,0.12)" : "transparent",
+                        border: isActivePdf ? "1px solid rgba(59,130,246,0.25)" : "1px solid transparent",
+                        display: "flex", alignItems: "center", gap: 5,
+                      }}>
+                      <span style={{ fontSize: 10, color: "#60a5fa" }}>📄</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: isActivePdf ? "#fff" : "#999",
+                        flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {pf.name.replace(/\.pdf$/i, "")}
                       </span>
-                    )}
-                  </div>
-                  {/* Measurement count badge */}
-                  {hasMeasurements && (
-                    <div style={{ fontSize: 9, color: "#888", paddingLeft: 12, marginTop: 2 }}>
-                      {measCount} measurement{measCount !== 1 ? "s" : ""}
+                      {pdfMeasCount > 0 && <span style={{ fontSize: 8, color: "#888" }}>{pdfMeasCount}</span>}
                     </div>
                   )}
+                  {/* Pages for this PDF (only show if this is the active PDF or there's only one PDF) */}
+                  {(isActivePdf || pdfFiles.length === 1) && Array.from({ length: pf.numPages }, (_, i) => i + 1).map(pg => {
+                    const pk = pIdx + ":" + pg;
+                    const isCurrent = isActivePdf && pg === page;
+                    const hasScale = !!calibrations[pk];
+                    const measCount = (measurements[pk] || []).length;
+                    return (
+                      <div key={pk}
+                        onClick={() => { if (!isActivePdf) setActivePdfIdx(pIdx); setPage(pg); setActiveVertices([]); }}
+                        style={{
+                          padding: "5px 8px", marginBottom: 2, borderRadius: 5, cursor: "pointer",
+                          marginLeft: pdfFiles.length > 1 ? 10 : 0,
+                          background: isCurrent ? "rgba(224,148,34,0.12)" : "transparent",
+                          border: isCurrent ? "1px solid rgba(224,148,34,0.3)" : "1px solid transparent",
+                          transition: "all 0.15s",
+                        }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span title={hasScale ? "Scale set" : "No scale"} style={{
+                            width: 6, height: 6, borderRadius: 3, flexShrink: 0,
+                            background: hasScale ? "#4ade80" : "#ef4444",
+                          }} />
+                          {editingSheet === pk ? (
+                            <input autoFocus
+                              value={sheetNames[pk] || ""}
+                              placeholder={`Page ${pg}`}
+                              onChange={e => setSheetName(pg, e.target.value)}
+                              onBlur={() => setEditingSheet(null)}
+                              onKeyDown={e => { if (e.key === "Enter") setEditingSheet(null); }}
+                              onClick={e => e.stopPropagation()}
+                              style={{ flex: 1, padding: "1px 4px", borderRadius: 3, border: "1px solid var(--amber)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 10, minWidth: 0 }}
+                            />
+                          ) : (
+                            <span onDoubleClick={(e) => { e.stopPropagation(); setEditingSheet(pk); }}
+                              style={{ flex: 1, fontSize: 10, color: isCurrent ? "#fff" : "#aaa", fontWeight: isCurrent ? 600 : 400,
+                                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}
+                              title="Double-click to rename">
+                              {sheetNames[pk] || `Page ${pg}`}
+                            </span>
+                          )}
+                        </div>
+                        {measCount > 0 && (
+                          <div style={{ fontSize: 9, color: "#888", paddingLeft: 12, marginTop: 2 }}>
+                            {measCount} measurement{measCount !== 1 ? "s" : ""}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
@@ -753,6 +1407,11 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
               cursor: mode === MODE.PAN ? "grab" : "crosshair" }}>
             <div style={{ position: "relative", display: "inline-block" }}>
               <canvas ref={pdfCanvasRef} />
+              <canvas ref={revisionCanvasRef}
+                style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none",
+                  opacity: revisionDocs[pageKey] && showRevision ? revisionOpacity : 0,
+                  mixBlendMode: "difference",
+                }} />
               <canvas ref={overlayCanvasRef}
                 style={{ position: "absolute", top: 0, left: 0, pointerEvents: mode === MODE.PAN ? "none" : "auto" }}
                 onClick={(e) => { setContextMenu(null); handleCanvasClick(e); }}
@@ -789,6 +1448,11 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
                       {g === "bidArea" ? "Area" : g.charAt(0).toUpperCase() + g.slice(1)}
                     </button>
                   ))}
+                  {summaryRows.length > 0 && (
+                    <button onClick={exportToExcel} style={{ ...btn, fontSize: 10, padding: "3px 10px", marginLeft: 8, background: "rgba(16,185,129,0.15)", borderColor: "rgba(16,185,129,0.4)", color: "#10b981" }}>
+                      Export Excel
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -967,6 +1631,152 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
             })}
           </div>
 
+          {/* ── Typical Groups Section ── */}
+          <div style={{ flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.08)", padding: "8px 10px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <span style={{ color: "#22d3ee", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                onClick={() => setShowTypicalPanel(!showTypicalPanel)}>
+                Typical Groups {typicalGroups.length > 0 ? `(${typicalGroups.length})` : ""} {showTypicalPanel ? "▾" : "▸"}
+              </span>
+              {selectedMeasIds.size > 0 && (
+                <button onClick={() => setShowTypicalCreate(true)}
+                  style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, border: "1px solid rgba(34,211,238,0.3)", background: "rgba(34,211,238,0.1)", color: "#22d3ee", cursor: "pointer" }}>
+                  Create ({selectedMeasIds.size})
+                </button>
+              )}
+            </div>
+            {selectedMeasIds.size > 0 && !showTypicalCreate && (
+              <div style={{ fontSize: 9, color: "#888", marginBottom: 4 }}>
+                {selectedMeasIds.size} measurement{selectedMeasIds.size !== 1 ? "s" : ""} selected (Shift+click)
+                <span onClick={() => setSelectedMeasIds(new Set())} style={{ color: "#ef4444", cursor: "pointer", marginLeft: 6 }}>Clear</span>
+              </div>
+            )}
+            {/* Create Typical modal */}
+            {showTypicalCreate && (
+              <div style={{ padding: 8, borderRadius: 6, background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.2)", marginBottom: 6 }}>
+                <div style={{ fontSize: 10, color: "#22d3ee", marginBottom: 4, fontWeight: 600 }}>Name this Typical Group</div>
+                <input autoFocus value={typicalName} onChange={e => setTypicalName(e.target.value)}
+                  placeholder="e.g. Standard Patient Room"
+                  onKeyDown={e => { if (e.key === "Enter" && typicalName.trim()) createTypicalGroup(typicalName.trim()); }}
+                  style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid rgba(34,211,238,0.3)", background: "rgba(0,0,0,0.3)", color: "#fff", fontSize: 10, marginBottom: 4 }} />
+                <div style={{ display: "flex", gap: 4 }}>
+                  <button onClick={() => { if (typicalName.trim()) createTypicalGroup(typicalName.trim()); }}
+                    style={{ flex: 1, padding: "3px 0", borderRadius: 3, border: "none", background: "#22d3ee", color: "#000", fontSize: 9, fontWeight: 600, cursor: "pointer" }}>
+                    Create
+                  </button>
+                  <button onClick={() => { setShowTypicalCreate(false); setTypicalName(""); }}
+                    style={{ padding: "3px 8px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#888", fontSize: 9, cursor: "pointer" }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* Typical Groups list */}
+            {showTypicalPanel && typicalGroups.map(tg => (
+              <div key={tg.id} style={{ padding: "5px 6px", marginBottom: 4, borderRadius: 5, background: "rgba(34,211,238,0.04)", border: "1px solid rgba(34,211,238,0.1)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 10, color: "#22d3ee", fontWeight: 600 }}>{tg.name}</span>
+                  <div style={{ display: "flex", gap: 3 }}>
+                    <button onClick={() => { setPlacingTypicalId(tg.id); setMode(MODE.PAN); }}
+                      style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, border: "1px solid rgba(34,211,238,0.3)", background: placingTypicalId === tg.id ? "#22d3ee" : "transparent", color: placingTypicalId === tg.id ? "#000" : "#22d3ee", cursor: "pointer" }}>
+                      {placingTypicalId === tg.id ? "Placing..." : "Place"}
+                    </button>
+                    <button onClick={() => deleteTypicalGroup(tg.id)}
+                      style={{ fontSize: 8, padding: "1px 4px", borderRadius: 3, border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "#ef4444", cursor: "pointer" }}>
+                      ✕
+                    </button>
+                  </div>
+                </div>
+                <div style={{ fontSize: 9, color: "#666", marginTop: 2 }}>
+                  {tg.sourceMeasurementIds.length} source meas &middot; {tg.instances.length} instance{tg.instances.length !== 1 ? "s" : ""}
+                </div>
+                {tg.instances.length > 0 && (
+                  <div style={{ marginTop: 3 }}>
+                    {tg.instances.map(inst => (
+                      <div key={inst.id} style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 0" }}>
+                        <span style={{ fontSize: 9, color: "#888", flex: 1 }}>{getKeyName(inst.pageKey)}</span>
+                        <span style={{ fontSize: 9, color: "#aaa" }}>×</span>
+                        <input type="number" min="0.1" step="0.5" value={inst.multiplier || 1}
+                          onChange={e => updateInstanceMultiplier(tg.id, inst.id, parseFloat(e.target.value) || 1)}
+                          style={{ width: 32, padding: "1px 2px", borderRadius: 2, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 9, textAlign: "center" }} />
+                        <button onClick={() => deleteTypicalInstance(tg.id, inst.id)}
+                          style={{ fontSize: 8, padding: "0 3px", border: "none", background: "transparent", color: "#ef4444", cursor: "pointer" }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            {showTypicalPanel && typicalGroups.length === 0 && (
+              <div style={{ fontSize: 9, color: "#555", fontStyle: "italic", padding: "4px 0" }}>
+                Shift+click measurements to select, then "Create" a typical group
+              </div>
+            )}
+          </div>
+
+          {/* ── Change Order Panel ── */}
+          <div style={{ flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.08)", padding: "8px 10px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b" }}>Change Orders</span>
+              <button onClick={() => revisionInputRef.current?.click()}
+                style={{ fontSize: 8, padding: "2px 6px", borderRadius: 3, border: "1px solid rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.08)", color: "#f59e0b", cursor: "pointer" }}>
+                {revisionDocs[pageKey] ? "Replace Rev" : "Upload Rev"}
+              </button>
+              <input ref={revisionInputRef} type="file" accept=".pdf" style={{ display: "none" }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleRevisionUpload(f); e.target.value = ""; }} />
+            </div>
+            {revisionDocs[pageKey] && (
+              <div style={{ marginBottom: 4 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
+                  <input type="checkbox" checked={showRevision} onChange={e => setShowRevision(e.target.checked)}
+                    style={{ width: 12, height: 12 }} />
+                  <span style={{ fontSize: 9, color: "#aaa", flex: 1 }}>
+                    {revisionDocs[pageKey].name?.replace(/\.pdf$/i, "") || "Revision"}
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ fontSize: 8, color: "#666", width: 40 }}>Opacity</span>
+                  <input type="range" min="0" max="1" step="0.05" value={revisionOpacity}
+                    onChange={e => setRevisionOpacity(parseFloat(e.target.value))}
+                    style={{ flex: 1, height: 4 }} />
+                  <span style={{ fontSize: 8, color: "#888", width: 24 }}>{Math.round(revisionOpacity * 100)}%</span>
+                </div>
+                {revisionDocs[pageKey].numPages > 1 && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
+                    <span style={{ fontSize: 8, color: "#666" }}>Rev page:</span>
+                    <select value={revisionDocs[pageKey].revPage || 1}
+                      onChange={e => setRevisionDocs(prev => ({ ...prev, [pageKey]: { ...prev[pageKey], revPage: Number(e.target.value) } }))}
+                      style={{ padding: "1px 4px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 9 }}>
+                      {Array.from({ length: revisionDocs[pageKey].numPages }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>Page {i + 1}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+            {/* CO Summary */}
+            {coSummary.total > 0 && (
+              <div style={{ padding: "6px 8px", borderRadius: 5, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", marginTop: 4 }}>
+                <div style={{ fontSize: 9, fontWeight: 600, color: "#f59e0b", marginBottom: 3 }}>CO Net Delta</div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9 }}>
+                  <span style={{ color: "#22c55e" }}>+ {fmt(coSummary.adds.cost)}</span>
+                  <span style={{ color: "#ef4444" }}>− {fmt(coSummary.dels.cost)}</span>
+                  <span style={{ color: coSummary.net >= 0 ? "#22c55e" : "#ef4444", fontWeight: 700 }}>
+                    Net: {coSummary.net >= 0 ? "+" : ""}{fmt(coSummary.net)}
+                  </span>
+                </div>
+                <div style={{ fontSize: 8, color: "#666", marginTop: 2 }}>
+                  {coSummary.total} CO measurement{coSummary.total !== 1 ? "s" : ""}
+                  {coSummary.adds.lf > 0 && ` · +${Math.round(coSummary.adds.lf)} LF`}
+                  {coSummary.dels.lf > 0 && ` · −${Math.round(coSummary.dels.lf)} LF`}
+                  {coSummary.adds.sf > 0 && ` · +${Math.round(coSummary.adds.sf)} SF`}
+                  {coSummary.dels.sf > 0 && ` · −${Math.round(coSummary.dels.sf)} SF`}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* ── Live Cost Bar (bottom of sidebar) ── */}
           <div style={{ flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.1)", padding: "10px 12px", background: "rgba(0,0,0,0.9)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
@@ -1079,7 +1889,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
             <div key={c.id} onClick={() => {
               setMeasurements(prev => ({
                 ...prev,
-                [page]: (prev[page] || []).map(m => m.id === contextMenu.measurementId ? { ...m, conditionId: c.id } : m)
+                [pageKey]: (prev[pageKey] || []).map(m => m.id === contextMenu.measurementId ? { ...m, conditionId: c.id } : m)
               }));
               setContextMenu(null);
             }}

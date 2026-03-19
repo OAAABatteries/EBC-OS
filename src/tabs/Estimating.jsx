@@ -1042,6 +1042,10 @@ export function EstimatingTab({ app }) {
           pdfData={drawingPdfData}
           fileName={drawingFileName}
           assemblies={assemblies}
+          initialTakeoffState={tk.drawingState || null}
+          onTakeoffStateChange={(state) => {
+            updateTakeoff(tk.id, (prev) => ({ ...prev, drawingState: state }));
+          }}
           onClose={() => setShowDrawing(false)}
           onAddToTakeoff={({ code, qty, unit, label }) => {
             const targetRoom = (tk.rooms || [])[0];
@@ -1083,6 +1087,16 @@ export function EstimatingTab({ app }) {
           <button className="btn btn-ghost btn-sm" onClick={() => {
             if (drawingFileRef.current) drawingFileRef.current.click();
           }}>Open Drawing</button>
+          {tk.drawingState && drawingPdfData && (
+            <button className="btn btn-ghost btn-sm" style={{ color: "#10b981" }} onClick={() => setShowDrawing(true)}>
+              Resume Takeoff ({Object.values(tk.drawingState.measurements || {}).flat().length} meas)
+            </button>
+          )}
+          {tk.drawingState && !drawingPdfData && tk.drawingFileName && (
+            <span style={{ fontSize: 11, color: "#f59e0b" }}>
+              Re-upload "{tk.drawingFileName}" to resume ({Object.values(tk.drawingState.measurements || {}).flat().length} saved measurements)
+            </span>
+          )}
           <input
             ref={drawingFileRef}
             type="file"
@@ -1095,6 +1109,7 @@ export function EstimatingTab({ app }) {
               reader.onload = (ev) => {
                 setDrawingPdfData(new Uint8Array(ev.target.result));
                 setDrawingFileName(file.name);
+                updateTakeoff(tk.id, { drawingFileName: file.name });
                 setShowDrawing(true);
               };
               reader.readAsArrayBuffer(file);
