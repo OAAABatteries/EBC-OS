@@ -726,7 +726,10 @@ export function TimeClockAdmin({ app }) {
                           className={`badge ${entry.isTM ? "badge-amber" : "badge-muted"}`}
                           style={{ cursor: "pointer", fontSize: 10, border: "none", padding: "2px 8px" }}
                           onClick={() => {
-                            app.setTimeEntries(prev => prev.map(e => e.id === entry.id ? { ...e, isTM: !e.isTM } : e));
+                            app.setTimeEntries(prev => prev.map(e => e.id === entry.id ? {
+                              ...e, isTM: !e.isTM,
+                              audit: [...(e.audit || []), { timestamp: new Date().toISOString(), userName: app.auth?.name || "System", field: "isTM", oldValue: String(!!e.isTM), newValue: String(!e.isTM) }],
+                            } : e));
                             app.show(entry.isTM ? "Removed T&M flag" : "Flagged as T&M", "ok");
                           }}
                           title={entry.isTM ? "Click to remove T&M flag" : "Click to flag as T&M extra work"}

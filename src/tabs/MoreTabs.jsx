@@ -8,6 +8,36 @@ import { MapView } from "./MapView";
 //  EBC-OS · MoreTabs — Secondary tab routing & implementations
 // ═══════════════════════════════════════════════════════════════
 
+// ── Audit trail helper ──
+function addAudit(item, field, oldVal, newVal, user) {
+  const audit = [...(item.audit || [])];
+  audit.push({
+    timestamp: new Date().toISOString(),
+    userName: user?.name || "System",
+    field,
+    oldValue: String(oldVal ?? ""),
+    newValue: String(newVal ?? ""),
+  });
+  return audit;
+}
+
+function AuditHistory({ audit }) {
+  if (!audit || audit.length === 0) return null;
+  return (
+    <div style={{ marginTop: 8, padding: 8, borderRadius: 6, background: "var(--bg3)", fontSize: 10 }}>
+      <div style={{ fontWeight: 600, marginBottom: 4 }}>Change History ({audit.length})</div>
+      {audit.slice().reverse().slice(0, 10).map((a, i) => (
+        <div key={i} style={{ padding: "2px 0", borderBottom: "1px solid var(--border)" }}>
+          <span className="text-muted">{new Date(a.timestamp).toLocaleString()}</span>
+          {" — "}<strong>{a.userName}</strong> changed <em>{a.field}</em>
+          {a.oldValue && <> from <span style={{ color: "var(--red)" }}>{a.oldValue}</span></>}
+          {" → "}<span style={{ color: "var(--green)" }}>{a.newValue}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function MoreTabs({ app }) {
   switch (app.tab) {
     case "financials": return <Financials app={app} />;
@@ -204,7 +234,7 @@ function InvoicesTab({ app }) {
                           const paidDate = prompt("Payment date (YYYY-MM-DD):", new Date().toISOString().slice(0, 10));
                           if (!paidDate) return;
                           const checkNum = prompt("Check/Reference # (optional):", "");
-                          app.setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, status: "paid", paidDate, checkNum: checkNum || null } : i));
+                          app.setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, status: "paid", paidDate, checkNum: checkNum || null, audit: addAudit(i, "status", inv.status, "paid", app.auth) } : i));
                           app.show(`Invoice ${inv.number} marked paid`);
                         }}>
                         Mark Paid
@@ -380,7 +410,15 @@ function ChangeOrdersTab({ app }) {
                   <td>{pName(co.projectId)}</td>
                   <td>{co.desc}</td>
                   <td>{app.fmt(co.amount)}</td>
-                  <td><span className={badge(co.status)}>{co.status}</span></td>
+                  <td><span className={badge(co.status)} style={{ cursor: "pointer" }} title="Click to change status" onClick={() => {
+                    const next = co.status === "pending" ? "approved" : co.status === "approved" ? "rejected" : "pending";
+                    app.setChangeOrders(prev => prev.map(c => c.id === co.id ? {
+                      ...c, status: next,
+                      approved: next === "approved" ? new Date().toISOString().slice(0, 10) : c.approved,
+                      audit: addAudit(c, "status", co.status, next, app.auth),
+                    } : c));
+                    app.show(`CO ${co.number} → ${next}`, "ok");
+                  }}>{co.status}</span></td>
                   <td>{co.submitted}</td>
                   <td>{co.approved || "—"}</td>
                   <td>
@@ -555,7 +593,7 @@ function TmTicketsTab({ app }) {
     const now = new Date().toISOString().slice(0, 10);
     app.setTmTickets(prev => prev.map(t => {
       if (t.id !== id) return t;
-      const updates = { status: newStatus };
+      const updates = { status: newStatus, audit: addAudit(t, "status", t.status, newStatus, app.auth) };
       if (newStatus === "submitted") updates.submittedDate = now;
       if (newStatus === "approved") updates.approvedDate = now;
       if (newStatus === "billed") updates.billedDate = now;
@@ -856,6 +894,8 @@ function TmTicketsTab({ app }) {
                     {t.approvedDate && <span className="text2">Approved: {t.approvedDate}</span>}
                     {t.billedDate && <span className="text2">Billed: {t.billedDate}</span>}
                   </div>
+
+                  <AuditHistory audit={t.audit} />
 
                   <div className="flex gap-8 mt-8">
                     {t.status === "draft" && <button className="btn btn-primary btn-sm" onClick={() => updateStatus(t.id, "submitted")}>Mark Submitted</button>}
@@ -2945,7 +2985,7 @@ function Safety({ app }) {
 /* ── Incidents ───────────────────────────────────────────────── */
 function IncidentsTab({ app }) {
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ projectId: "", date: "", type: "near-miss", desc: "", corrective: "", reportedBy: "" });
+  const [form, setForm] = useState({ projectId: "", date: "", type: "near-miss", desc: "", corrective: "", reportedBy: "", photos: [] });
   const [rcaId, setRcaId] = useState(null);
   const [rcaResult, setRcaResult] = useState(null);
   const [rcaLoading, setRcaLoading] = useState(false);
@@ -2989,11 +3029,12 @@ function IncidentsTab({ app }) {
       desc: form.desc,
       corrective: form.corrective,
       reportedBy: form.reportedBy,
+      photos: form.photos || [],
     };
     app.setIncidents(prev => [...prev, newItem]);
     app.show("Incident reported", "ok");
     setAdding(false);
-    setForm({ projectId: "", date: "", type: "near-miss", desc: "", corrective: "", reportedBy: "" });
+    setForm({ projectId: "", date: "", type: "near-miss", desc: "", corrective: "", reportedBy: "", photos: [] });
   };
 
   return (
@@ -3042,6 +3083,28 @@ function IncidentsTab({ app }) {
           <div className="form-group">
             <label className="form-label">Corrective Action</label>
             <textarea className="form-textarea" value={form.corrective} onChange={e => setForm({ ...form, corrective: e.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Photos / Evidence</label>
+            <input className="form-input" type="file" accept="image/*" capture="environment" multiple onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              files.forEach(f => {
+                const reader = new FileReader();
+                reader.onload = () => setForm(prev => ({ ...prev, photos: [...(prev.photos || []), { name: f.name, data: reader.result }] }));
+                reader.readAsDataURL(f);
+              });
+            }} />
+            {(form.photos || []).length > 0 && (
+              <div className="flex gap-4" style={{ marginTop: 6 }}>
+                {form.photos.map((p, i) => (
+                  <div key={i} style={{ position: "relative" }}>
+                    <img src={p.data} alt={p.name} style={{ width: 50, height: 50, objectFit: "cover", borderRadius: 4 }} />
+                    <button style={{ position: "absolute", top: -4, right: -4, background: "var(--red)", color: "#fff", border: "none", borderRadius: "50%", width: 16, height: 16, fontSize: 10, cursor: "pointer", lineHeight: 1 }}
+                      onClick={() => setForm(prev => ({ ...prev, photos: prev.photos.filter((_, j) => j !== i) }))}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div className="flex gap-8 mt-16">
             <button className="btn btn-primary btn-sm" onClick={save}>Save</button>
@@ -4353,9 +4416,10 @@ function Settings({ app }) {
   const isFullAccess = ["owner", "admin", "pm"].includes(userRole);
 
   // Simplified settings for non-business roles
+  const canSeeInsurance = ["owner", "admin", "pm", "office_admin", "accounting"].includes(userRole);
   const tabs = isFullAccess
-    ? ["Company", "Assemblies", "Equipment", "Margin Tiers", "Data", "Theme", "API", "Account"]
-    : ["Theme", "Account"];
+    ? ["Company", ...(canSeeInsurance ? ["Insurance"] : []), "Assemblies", "Equipment", "Margin Tiers", "Data", "Theme", "API", "Account"]
+    : [...(canSeeInsurance ? ["Insurance"] : []), "Theme", "Account"];
   if (isOwnerOrAdmin) tabs.push("Users");
   const [sub, setSub] = useState(isFullAccess ? "Company" : "Theme");
   return (
@@ -4369,6 +4433,7 @@ function Settings({ app }) {
       {sub === "Theme" && <ThemeTab app={app} />}
       {sub === "API" && <ApiTab app={app} />}
       {sub === "Account" && <AccountTab app={app} />}
+      {sub === "Insurance" && <InsuranceTab app={app} />}
       {sub === "Users" && isOwnerOrAdmin && <UsersTab app={app} />}
 
       {/* ── Account / Logout ── */}
@@ -4973,6 +5038,167 @@ function NotificationSettings({ userId }) {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Insurance / COI Tracker ──────────────────────────────────── */
+function InsuranceTab({ app }) {
+  const [adding, setAdding] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [form, setForm] = useState({ type: "General Liability", carrier: "", policyNumber: "", effectiveDate: "", expiryDate: "", coverageLimit: "", notes: "" });
+  const [fileData, setFileData] = useState(null);
+
+  const policies = app.insurancePolicies || [];
+  const now = new Date();
+
+  const POLICY_TYPES = ["General Liability", "Workers Compensation", "Commercial Auto", "Umbrella / Excess", "Professional Liability", "Builders Risk", "Inland Marine", "Pollution Liability"];
+
+  const getStatus = (pol) => {
+    if (!pol.expiryDate) return "active";
+    const exp = new Date(pol.expiryDate);
+    if (exp < now) return "expired";
+    if ((exp - now) / 86400000 <= 30) return "expiring";
+    return "active";
+  };
+
+  const save = () => {
+    if (!form.carrier || !form.policyNumber) { app.show("Carrier and policy number required", "err"); return; }
+    if (editId) {
+      app.setInsurancePolicies(prev => prev.map(p => p.id === editId ? { ...p, ...form, file: fileData || p.file, updatedAt: new Date().toISOString() } : p));
+      app.show("Policy updated", "ok");
+    } else {
+      app.setInsurancePolicies(prev => [...prev, { id: app.nextId(), ...form, file: fileData, uploadedAt: new Date().toISOString() }]);
+      app.show("Policy added", "ok");
+    }
+    setAdding(false); setEditId(null); setFileData(null);
+    setForm({ type: "General Liability", carrier: "", policyNumber: "", effectiveDate: "", expiryDate: "", coverageLimit: "", notes: "" });
+  };
+
+  const startEdit = (pol) => {
+    setForm({ type: pol.type, carrier: pol.carrier, policyNumber: pol.policyNumber, effectiveDate: pol.effectiveDate || "", expiryDate: pol.expiryDate || "", coverageLimit: pol.coverageLimit || "", notes: pol.notes || "" });
+    setFileData(pol.file || null);
+    setEditId(pol.id); setAdding(true);
+  };
+
+  const deletePol = (pol) => {
+    if (!confirm(`Remove ${pol.type} policy?`)) return;
+    app.setInsurancePolicies(prev => prev.filter(p => p.id !== pol.id));
+    app.show("Policy removed", "ok");
+  };
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setFileData({ name: file.name, size: file.size, type: file.type, dataUrl: reader.result });
+    reader.readAsDataURL(file);
+  };
+
+  const shareCOI = (pol) => {
+    const text = `${pol.type}\nCarrier: ${pol.carrier}\nPolicy #: ${pol.policyNumber}\nEffective: ${pol.effectiveDate || "N/A"}\nExpires: ${pol.expiryDate || "N/A"}\nCoverage: ${pol.coverageLimit || "N/A"}`;
+    navigator.clipboard.writeText(text).then(() => app.show("COI info copied to clipboard", "ok")).catch(() => app.show("Copy failed", "err"));
+  };
+
+  const STATUS_BADGE = { active: "badge-green", expiring: "badge-amber", expired: "badge-red" };
+  const activeCount = policies.filter(p => getStatus(p) === "active").length;
+  const expiringCount = policies.filter(p => getStatus(p) === "expiring").length;
+  const expiredCount = policies.filter(p => getStatus(p) === "expired").length;
+
+  return (
+    <div className="mt-16">
+      <div className="flex-between">
+        <div className="section-title">Insurance & COI Tracker</div>
+        <button className="btn btn-primary btn-sm" onClick={() => { setAdding(!adding); setEditId(null); setFileData(null); }}>+ Add Policy</button>
+      </div>
+
+      <div className="flex gap-8 mt-16">
+        <div className="kpi-card"><span className="text2">Total Policies</span><strong>{policies.length}</strong></div>
+        <div className="kpi-card"><span className="text2">Active</span><strong style={{ color: "var(--green)" }}>{activeCount}</strong></div>
+        <div className="kpi-card"><span className="text2">Expiring (&lt;30d)</span><strong style={{ color: "var(--amber)" }}>{expiringCount}</strong></div>
+        <div className="kpi-card"><span className="text2">Expired</span><strong style={{ color: "var(--red)" }}>{expiredCount}</strong></div>
+      </div>
+
+      {adding && (
+        <div className="card mt-16">
+          <div className="card-header"><div className="card-title">{editId ? "Edit Policy" : "Add Insurance Policy"}</div></div>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Policy Type *</label>
+              <select className="form-select" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
+                {POLICY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Carrier *</label>
+              <input className="form-input" value={form.carrier} onChange={e => setForm({ ...form, carrier: e.target.value })} placeholder="e.g. State Farm, Liberty Mutual" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Policy Number *</label>
+              <input className="form-input" value={form.policyNumber} onChange={e => setForm({ ...form, policyNumber: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Coverage Limit</label>
+              <input className="form-input" value={form.coverageLimit} onChange={e => setForm({ ...form, coverageLimit: e.target.value })} placeholder="e.g. $1,000,000 / $2,000,000" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Effective Date</label>
+              <input className="form-input" type="date" value={form.effectiveDate} onChange={e => setForm({ ...form, effectiveDate: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Expiry Date</label>
+              <input className="form-input" type="date" value={form.expiryDate} onChange={e => setForm({ ...form, expiryDate: e.target.value })} />
+            </div>
+            <div className="form-group full">
+              <label className="form-label">COI Document (PDF)</label>
+              <input className="form-input" type="file" accept=".pdf,.png,.jpg" onChange={handleFile} />
+              {fileData && <div className="text-xs text-muted mt-4">{fileData.name} ({Math.round(fileData.size / 1024)}KB)</div>}
+            </div>
+            <div className="form-group full">
+              <label className="form-label">Notes</label>
+              <textarea className="form-textarea" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Additional insured requirements, endorsements, etc." />
+            </div>
+          </div>
+          <div className="mt-16 flex gap-8">
+            <button className="btn btn-primary btn-sm" onClick={save}>{editId ? "Update" : "Add Policy"}</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setEditId(null); }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-16">
+        {policies.length === 0 ? (
+          <div className="card" style={{ textAlign: "center", padding: 40 }}>
+            <div style={{ fontSize: 40 }}>🛡️</div>
+            <div className="text-sm text-muted mt-8">No insurance policies on file. Add your GL, WC, Auto, and Umbrella policies.</div>
+          </div>
+        ) : policies.map(pol => {
+          const status = getStatus(pol);
+          return (
+            <div key={pol.id} className="card" style={{ marginBottom: 8, borderLeft: `4px solid var(--${status === "active" ? "green" : status === "expiring" ? "amber" : "red"})` }}>
+              <div className="flex-between">
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{pol.type}</div>
+                  <div className="text-xs text-muted">{pol.carrier} — Policy #{pol.policyNumber}</div>
+                </div>
+                <span className={`badge ${STATUS_BADGE[status]}`} style={{ fontSize: 10 }}>{status}</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 8, fontSize: 11 }}>
+                <div><span className="text2">Coverage</span><br />{pol.coverageLimit || "—"}</div>
+                <div><span className="text2">Effective</span><br />{pol.effectiveDate || "—"}</div>
+                <div><span className="text2">Expires</span><br />{pol.expiryDate || "—"}</div>
+              </div>
+              {pol.notes && <div className="text-xs text-muted" style={{ marginTop: 6 }}>{pol.notes}</div>}
+              <div className="flex gap-4" style={{ marginTop: 8 }}>
+                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10 }} onClick={() => shareCOI(pol)}>📋 Copy COI Info</button>
+                {pol.file && <button className="btn btn-ghost btn-sm" style={{ fontSize: 10 }} onClick={() => { const a = document.createElement("a"); a.href = pol.file.dataUrl; a.download = pol.file.name; a.click(); }}>⬇️ Download</button>}
+                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, color: "var(--amber)" }} onClick={() => startEdit(pol)}>Edit</button>
+                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, color: "var(--red)" }} onClick={() => deletePol(pol)}>Remove</button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

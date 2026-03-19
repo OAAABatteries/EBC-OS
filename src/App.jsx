@@ -351,6 +351,8 @@ function App({ auth, onLogout }) {
   const [customAssemblies, setCustomAssemblies, _syncCustomAssemblies] = useSyncedState("customAssemblies", []);
   const [incentiveProjects, setIncentiveProjects, _syncIncentiveProjects] = useSyncedState("incentiveProjects", []);
   const [sdsSheets, setSdsSheets, _syncSds] = useSyncedState("sdsSheets", []);
+  const [punchItems, setPunchItems, _syncPunch] = useSyncedState("punchItems", []);
+  const [insurancePolicies, setInsurancePolicies, _syncInsurance] = useSyncedState("insurancePolicies", []);
 
   // ── Aggregate sync status for UI ──
   const _allSync = [
@@ -362,7 +364,7 @@ function App({ auth, onLogout }) {
     _syncCalendarEvents, _syncPtoRequests, _syncEquipment, _syncEquipBookings,
     _syncCerts, _syncJsas, _syncTmTickets, _syncMaterials, _syncCustomAssemblies,
     _syncIncentiveProjects,
-    _syncSds,
+    _syncSds, _syncPunch, _syncInsurance,
   ];
   const syncStatus = useMemo(() => ({
     loading: _allSync.some(s => s.loading),
@@ -432,6 +434,13 @@ function App({ auth, onLogout }) {
       // Pending change orders
       const pendingCOs = (changeOrders || []).filter(co => co.status === "pending");
       if (pendingCOs.length > 0) addCandidate(`co_pending_${now.toISOString().slice(0, 10)}`, "co_pending", "Change Orders Pending", `${pendingCOs.length} change order(s) awaiting approval`, "changeOrders", null);
+      // Insurance policy expirations
+      (insurancePolicies || []).forEach(pol => {
+        if (!pol.expiryDate) return;
+        const daysLeft = Math.floor((new Date(pol.expiryDate) - now) / 86400000);
+        if (daysLeft < 0) addCandidate(`ins_exp_${pol.id}`, "insurance_expired", "Insurance Expired", `${pol.type} policy expired ${Math.abs(daysLeft)} days ago`, "insurance", pol.id);
+        else if (daysLeft <= 30) addCandidate(`ins_30d_${pol.id}`, "insurance_warning", "Insurance Expiring Soon", `${pol.type} policy expires in ${daysLeft} days`, "insurance", pol.id);
+      });
 
       if (candidates.length > 0) {
         // Read directly from localStorage to avoid stale closure issues with React strict mode
@@ -447,7 +456,7 @@ function App({ auth, onLogout }) {
     generateNotifications();
     const interval = setInterval(generateNotifications, 300000); // every 5 min
     return () => clearInterval(interval);
-  }, [certifications?.length, invoices?.length, tmTickets?.length, sdsSheets?.length, changeOrders?.length]);
+  }, [certifications?.length, invoices?.length, tmTickets?.length, sdsSheets?.length, changeOrders?.length, insurancePolicies?.length]);
 
   const unreadCount = (notifications || []).filter(n => !n.read).length;
   const markAllRead = () => setNotifications(prev => (prev || []).map(n => ({ ...n, read: true })));
@@ -546,6 +555,8 @@ function App({ auth, onLogout }) {
     jsas, setJsas,
     tmTickets, setTmTickets,
     sdsSheets, setSdsSheets,
+    punchItems, setPunchItems,
+    insurancePolicies, setInsurancePolicies,
     show, setModal, modal, search, setSearch, tab, setTab, subTab, setSubTab, fmt, fmtK, nextId,
     lang, setLang, t,
     auth, onLogout,
@@ -1523,7 +1534,25 @@ function App({ auth, onLogout }) {
           <div className="modal-content" style={{ maxWidth: 700 }}>
             <div className="modal-header flex-between">
               <div className="modal-title">Closeout: {closeoutProj.name}</div>
-              <button className="btn btn-ghost btn-sm" onClick={() => setCloseoutProj(null)}>{t("Close")}</button>
+              <div className="flex gap-8">
+                <button className="btn btn-ghost btn-sm" onClick={async () => {
+                  const { generateCloseoutPdf } = await import("./utils/closeoutPdf.js");
+                  const pid = closeoutProj.id;
+                  generateCloseoutPdf(closeoutProj, {
+                    rfis: rfis.filter(r => r.projectId === pid),
+                    submittals: submittals.filter(s => s.projectId === pid),
+                    changeOrders: changeOrders.filter(c => c.projectId === pid),
+                    invoices: invoices.filter(i => i.projectId === pid),
+                    dailyReports: dailyReports.filter(d => d.projectId === pid),
+                    jsas: jsas.filter(j => j.projectId === pid),
+                    tmTickets: tmTickets.filter(t => t.projectId === pid),
+                    punchItems: (punchItems || []).filter(p => p.projectId === pid),
+                    closeoutResult,
+                  });
+                  show("Closeout PDF exported", "ok");
+                }}>Export PDF</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setCloseoutProj(null)}>{t("Close")}</button>
+              </div>
             </div>
             <div style={{ padding: 16, maxHeight: 500, overflow: "auto" }}>
               {/* Readiness Score */}
@@ -2600,6 +2629,8 @@ const ModalHub = ({ type, data, app }) => {
   const { setModal, show, fmt } = app;
   const isNew = !data || !data.id;
   const [aiText, setAiText] = useState("");
+  const [punchAdding, setPunchAdding] = useState(false);
+  const [punchForm, setPunchForm] = useState({ description: "", location: "", assignedTo: "", priority: "med" });
   const [aiLoading, setAiLoading] = useState(false);
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiWarnings, setAiWarnings] = useState([]);
@@ -3407,6 +3438,148 @@ const ModalHub = ({ type, data, app }) => {
                     </div>
                   ))}
                 </div>
+              </div>
+            );
+          })()}
+
+          {/* ── Punch List ── */}
+          {!isNew && (() => {
+            const pid = draft.id;
+            const items = (app.punchItems || []).filter(p => p.projectId === pid);
+            const openItems = items.filter(p => p.status === "open").length;
+            const ipItems = items.filter(p => p.status === "in-progress").length;
+            const doneItems = items.filter(p => p.status === "complete").length;
+            const pctDone = items.length > 0 ? Math.round((doneItems / items.length) * 100) : 0;
+
+            const users = (() => { try { return JSON.parse(localStorage.getItem("ebc_users") || "[]"); } catch { return []; } })();
+
+            const addPunch = () => {
+              if (!punchForm.description) { show("Description required", "err"); return; }
+              app.setPunchItems(prev => [...prev, {
+                id: app.nextId(), projectId: pid, ...punchForm,
+                status: "open", photos: [], createdAt: new Date().toISOString(),
+                completedAt: null, signedOffBy: null, signedOffAt: null,
+              }]);
+              show("Punch item added", "ok");
+              setPunchAdding(false);
+              setPunchForm({ description: "", location: "", assignedTo: "", priority: "med" });
+            };
+
+            const cyclePunchStatus = (item) => {
+              const next = item.status === "open" ? "in-progress" : item.status === "in-progress" ? "complete" : "open";
+              app.setPunchItems(prev => prev.map(p => p.id === item.id ? {
+                ...p, status: next, completedAt: next === "complete" ? new Date().toISOString() : null
+              } : p));
+              show(`Punch item → ${next}`, "ok");
+            };
+
+            const deletePunch = (item) => {
+              app.setPunchItems(prev => prev.filter(p => p.id !== item.id));
+              show("Punch item removed", "ok");
+            };
+
+            const signOffPunch = () => {
+              if (openItems + ipItems > 0) { show("Complete all items before sign-off", "err"); return; }
+              app.setPunchItems(prev => prev.map(p => p.projectId === pid ? { ...p, signedOffBy: app.auth?.name, signedOffAt: new Date().toISOString() } : p));
+              show("Punch list signed off", "ok");
+            };
+
+            const addPunchPhoto = (itemId, e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => {
+                app.setPunchItems(prev => prev.map(p => p.id === itemId ? { ...p, photos: [...(p.photos || []), { name: file.name, data: reader.result }] } : p));
+                show("Photo attached", "ok");
+              };
+              reader.readAsDataURL(file);
+            };
+
+            const PRIORITY_BADGE = { high: "badge-red", med: "badge-amber", low: "badge-green" };
+            const STATUS_BADGE = { open: "badge-red", "in-progress": "badge-amber", complete: "badge-green" };
+
+            return (
+              <div style={{ marginTop: 16, borderTop: "2px solid var(--border)", paddingTop: 16 }}>
+                <div className="flex-between" style={{ marginBottom: 12 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>Punch List ({items.length})</div>
+                  <div className="flex gap-8">
+                    {items.length > 0 && doneItems === items.length && !items[0]?.signedOffBy && (
+                      <button className="btn btn-ghost btn-sm" style={{ color: "var(--green)" }} onClick={signOffPunch}>Sign Off</button>
+                    )}
+                    <button className="btn btn-primary btn-sm" onClick={() => setPunchAdding(!punchAdding)}>+ Add Item</button>
+                  </div>
+                </div>
+
+                {items.length > 0 && (
+                  <div className="flex gap-8" style={{ marginBottom: 12 }}>
+                    <div style={{ padding: "4px 10px", borderRadius: 6, background: "var(--bg3)", fontSize: 11 }}>Open: <strong style={{ color: "var(--red)" }}>{openItems}</strong></div>
+                    <div style={{ padding: "4px 10px", borderRadius: 6, background: "var(--bg3)", fontSize: 11 }}>In Progress: <strong style={{ color: "var(--amber)" }}>{ipItems}</strong></div>
+                    <div style={{ padding: "4px 10px", borderRadius: 6, background: "var(--bg3)", fontSize: 11 }}>Complete: <strong style={{ color: "var(--green)" }}>{doneItems}</strong></div>
+                    <div style={{ padding: "4px 10px", borderRadius: 6, background: "var(--bg3)", fontSize: 11 }}>{pctDone}% done</div>
+                  </div>
+                )}
+
+                {punchAdding && (
+                  <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                        <label className="form-label">Description *</label>
+                        <input className="form-input" value={punchForm.description} onChange={e => setPunchForm(f => ({ ...f, description: e.target.value }))} placeholder="e.g. Touch up tape joint at room 201 north wall" />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Location</label>
+                        <input className="form-input" value={punchForm.location} onChange={e => setPunchForm(f => ({ ...f, location: e.target.value }))} placeholder="Room / Area" />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Assigned To</label>
+                        <select className="form-select" value={punchForm.assignedTo} onChange={e => setPunchForm(f => ({ ...f, assignedTo: e.target.value }))}>
+                          <option value="">Unassigned</option>
+                          {users.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Priority</label>
+                        <select className="form-select" value={punchForm.priority} onChange={e => setPunchForm(f => ({ ...f, priority: e.target.value }))}>
+                          <option value="high">High</option>
+                          <option value="med">Medium</option>
+                          <option value="low">Low</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex gap-8" style={{ marginTop: 8 }}>
+                      <button className="btn btn-primary btn-sm" onClick={addPunch}>Add</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setPunchAdding(false)}>Cancel</button>
+                    </div>
+                  </div>
+                )}
+
+                {items.sort((a, b) => { const o = { open: 0, "in-progress": 1, complete: 2 }; return (o[a.status] ?? 0) - (o[b.status] ?? 0); }).map(item => (
+                  <div key={item.id} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, background: "var(--bg3)", border: "1px solid var(--border)" }}>
+                    <div className="flex-between">
+                      <div style={{ flex: 1 }}>
+                        <span style={{ fontWeight: 500, fontSize: 12, textDecoration: item.status === "complete" ? "line-through" : "none" }}>{item.description}</span>
+                        {item.location && <span className="text-xs text-muted" style={{ marginLeft: 8 }}>{item.location}</span>}
+                      </div>
+                      <div className="flex gap-4" style={{ alignItems: "center" }}>
+                        <span className={`badge ${PRIORITY_BADGE[item.priority]}`} style={{ fontSize: 9 }}>{item.priority}</span>
+                        <button className={`badge ${STATUS_BADGE[item.status]}`} style={{ fontSize: 9, cursor: "pointer", border: "none" }} onClick={() => cyclePunchStatus(item)} title="Click to advance status">{item.status}</button>
+                        <label style={{ cursor: "pointer", fontSize: 12 }} title="Attach photo">
+                          📷<input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e) => addPunchPhoto(item.id, e)} />
+                        </label>
+                        <button className="btn btn-ghost" style={{ fontSize: 10, padding: "1px 4px", color: "var(--red)" }} onClick={() => deletePunch(item)}>✕</button>
+                      </div>
+                    </div>
+                    {item.assignedTo && <div className="text-xs text-muted">Assigned: {item.assignedTo}</div>}
+                    {(item.photos || []).length > 0 && (
+                      <div className="flex gap-4" style={{ marginTop: 4 }}>
+                        {item.photos.map((p, i) => <img key={i} src={p.data} alt={p.name} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, border: "1px solid var(--border)" }} />)}
+                      </div>
+                    )}
+                    {item.signedOffBy && <div className="text-xs" style={{ color: "var(--green)", marginTop: 4 }}>Signed off by {item.signedOffBy} on {new Date(item.signedOffAt).toLocaleDateString()}</div>}
+                  </div>
+                ))}
+
+                {items.length === 0 && !punchAdding && <div className="text-xs text-muted">No punch items yet.</div>}
               </div>
             );
           })()}
