@@ -1251,6 +1251,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
 
       if (e.key === "Escape") { if (activeVertices.length > 0 || calPoints.length > 0) cancelActive(); else onClose(); return; }
+      if (e.key === "Enter") { if (activeVertices.length >= 2 && ppf && activeCond) { finishMeasurement(); } return; }
       if (e.ctrlKey && e.key === "z") { e.preventDefault(); undo(); return; }
       if (e.key === " ") { e.preventDefault(); setMode(m => m === MODE.PAN ? (activeCond ? activeCond.type : MODE.PAN) : MODE.PAN); return; }
       if (e.key === "l" || e.key === "L") { if (ppf) { setMode(MODE.LINEAR); cancelActive(); } return; }
@@ -1304,73 +1305,70 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.97)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
       {/* ── Top Toolbar ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 12px", borderBottom: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.85)", flexShrink: 0, flexWrap: "wrap", gap: 6 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button onClick={onClose} style={{ ...btn, background: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.4)" }}>Close</button>
-          {(numPages > 1 || pdfFiles.length > 1) && (
-            <button onClick={() => setShowSheets(v => !v)} style={{ ...btn, fontSize: 10, padding: "4px 8px" }} title="Toggle sheet list">
-              {showSheets ? "Hide" : "Sheets"}
-            </button>
-          )}
-          <span style={{ color: "#fff", fontSize: 12, fontWeight: 600, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {pdfFiles.length > 1
-              ? `${(pdfFiles[activePdfIdx]?.name || "PDF").replace(/\.pdf$/i, "")} — ${getSheetName(page)}`
-              : numPages > 1 ? getSheetName(page) : (fileName || "Drawing")}
-          </span>
-          <button onClick={() => addPdfInputRef.current?.click()} style={{ ...btn, fontSize: 9, padding: "3px 7px", background: "rgba(59,130,246,0.15)", borderColor: "rgba(59,130,246,0.3)", color: "#60a5fa" }} title="Add another PDF file">
-            + PDF
-          </button>
-          <input ref={addPdfInputRef} type="file" accept=".pdf" style={{ display: "none" }}
-            onChange={e => { const f = e.target.files?.[0]; if (f) handleAddPdf(f); e.target.value = ""; }} />
-          {onTakeoffStateChange && (
-            <span style={{ color: lastSaved ? "#10b981" : "#666", fontSize: 10, opacity: 0.8 }}>
-              {lastSaved ? "Saved" : ""}
+      <div style={{ flexShrink: 0, borderBottom: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.85)" }}>
+        {/* Row 1: File info + Tools */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 10px", gap: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <button onClick={onClose} style={{ ...btn, padding: "4px 8px", fontSize: 11, background: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.4)" }}>✕</button>
+            <span style={{ color: "#fff", fontSize: 11, fontWeight: 600, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {pdfFiles.length > 1
+                ? `${(pdfFiles[activePdfIdx]?.name || "PDF").replace(/\.pdf$/i, "")} — ${getSheetName(page)}`
+                : numPages > 1 ? getSheetName(page) : (fileName || "Drawing")}
             </span>
-          )}
+            {onTakeoffStateChange && lastSaved && <span style={{ color: "#10b981", fontSize: 9 }}>✓</span>}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+            <button onClick={() => { setMode(MODE.PAN); cancelActive(); }} style={mode === MODE.PAN ? { ...btnActive, padding: "3px 8px", fontSize: 11 } : { ...btn, padding: "3px 8px", fontSize: 11 }} title="Space">Pan</button>
+            <button onClick={() => { setMode(MODE.CALIBRATE); cancelActive(); }} style={mode === MODE.CALIBRATE ? { ...btnActive, padding: "3px 8px", fontSize: 11 } : { ...btn, padding: "3px 8px", fontSize: 11 }} title="S">{ppf ? "✓ Scale" : "Set Scale"}</button>
+            <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.12)" }} />
+            <button onClick={() => { if (ppf) { setMode(MODE.LINEAR); cancelActive(); }}} style={!ppf ? { ...btnDis, padding: "3px 8px", fontSize: 11 } : mode === MODE.LINEAR ? { ...btnActive, padding: "3px 8px", fontSize: 11 } : { ...btn, padding: "3px 8px", fontSize: 11 }} disabled={!ppf} title="L">Linear</button>
+            <button onClick={() => { if (ppf) { setMode(MODE.AREA); cancelActive(); }}} style={!ppf ? { ...btnDis, padding: "3px 8px", fontSize: 11 } : mode === MODE.AREA ? { ...btnActive, padding: "3px 8px", fontSize: 11 } : { ...btn, padding: "3px 8px", fontSize: 11 }} disabled={!ppf} title="A">Area</button>
+            <button onClick={() => { setMode(MODE.COUNT); cancelActive(); }} style={mode === MODE.COUNT ? { ...btnActive, padding: "3px 8px", fontSize: 11 } : { ...btn, padding: "3px 8px", fontSize: 11 }} title="C">Count</button>
+            <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.12)" }} />
+            <button onClick={undo} style={{ ...btn, padding: "3px 8px", fontSize: 11 }} title="Ctrl+Z">Undo</button>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+            <button onClick={prevPage} style={page <= 1 ? { ...btnDis, padding: "3px 8px", fontSize: 11 } : { ...btn, padding: "3px 8px", fontSize: 11 }} disabled={page <= 1}>◀</button>
+            <span style={{ color: "#ccc", fontSize: 10, minWidth: 40, textAlign: "center" }}>{page}/{numPages}</span>
+            <button onClick={nextPage} style={page >= numPages ? { ...btnDis, padding: "3px 8px", fontSize: 11 } : { ...btn, padding: "3px 8px", fontSize: 11 }} disabled={page >= numPages}>▶</button>
+            <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.12)" }} />
+            <button onClick={zoomOut} style={{ ...btn, padding: "3px 6px", fontSize: 11 }}>−</button>
+            <span style={{ color: "#ccc", fontSize: 10, minWidth: 32, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
+            <button onClick={zoomIn} style={{ ...btn, padding: "3px 6px", fontSize: 11 }}>+</button>
+            <button onClick={resetZoom} style={{ ...btn, padding: "3px 6px", fontSize: 10 }} title="F">Fit</button>
+            <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.12)" }} />
+            <button onClick={() => setViewMode(v => v === "drawing" ? "summary" : "drawing")}
+              style={viewMode === "summary" ? { ...btnActive, padding: "3px 8px", fontSize: 11 } : { ...btn, padding: "3px 8px", fontSize: 11 }} title="Toggle summary view">
+              {viewMode === "summary" ? "Drawing" : "Summary"}
+            </button>
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-          <button onClick={() => { setMode(MODE.PAN); cancelActive(); }} style={mode === MODE.PAN ? btnActive : btn} title="Space">Pan</button>
-          <button onClick={() => { setMode(MODE.CALIBRATE); cancelActive(); }} style={mode === MODE.CALIBRATE ? btnActive : btn} title="S">{ppf ? "Scale" : "Set Scale"}</button>
-          <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
-          <button onClick={() => { if (ppf) { setMode(MODE.LINEAR); cancelActive(); }}} style={!ppf ? btnDis : mode === MODE.LINEAR ? btnActive : btn} disabled={!ppf} title="L">Linear</button>
-          <button onClick={() => { if (ppf) { setMode(MODE.AREA); cancelActive(); }}} style={!ppf ? btnDis : mode === MODE.AREA ? btnActive : btn} disabled={!ppf} title="A">Area</button>
-          <button onClick={() => { setMode(MODE.COUNT); cancelActive(); }} style={mode === MODE.COUNT ? btnActive : btn} title="C">Count</button>
-          <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
-          <button onClick={undo} style={btn} title="Ctrl+Z">Undo</button>
-          <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
-          {/* Bid Area selector */}
-          <select value={activeBidAreaId} onChange={e => setActiveBidAreaId(e.target.value)}
-            style={{ padding: "4px 6px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#fff", fontSize: 10, maxWidth: 120 }}>
-            {bidAreas.map(ba => <option key={ba.id} value={ba.id}>{ba.name}</option>)}
-          </select>
-          <button onClick={() => setShowBidAreaAdd(true)} style={{ ...btn, fontSize: 9, padding: "3px 6px" }} title="Add bid area">+Area</button>
-          <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
-          <button onClick={() => setViewMode(v => v === "drawing" ? "summary" : "drawing")}
-            style={viewMode === "summary" ? btnActive : btn} title="Toggle summary view">
-            {viewMode === "summary" ? "Drawing" : "Summary"}
-          </button>
-          <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
-          {/* CO Mode controls */}
-          <button onClick={() => setCoMode(m => m === "add" ? null : "add")}
-            style={coMode === "add" ? { ...btn, background: "rgba(34,197,94,0.25)", borderColor: "rgba(34,197,94,0.5)", color: "#22c55e", fontWeight: 600 } : { ...btn, fontSize: 10, padding: "4px 8px" }}
-            title="Change Order: Mark additions">
-            CO+
-          </button>
-          <button onClick={() => setCoMode(m => m === "delete" ? null : "delete")}
-            style={coMode === "delete" ? { ...btn, background: "rgba(239,68,68,0.25)", borderColor: "rgba(239,68,68,0.5)", color: "#ef4444", fontWeight: 600 } : { ...btn, fontSize: 10, padding: "4px 8px" }}
-            title="Change Order: Mark deletions">
-            CO−
-          </button>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <button onClick={prevPage} style={page <= 1 ? btnDis : btn} disabled={page <= 1}>Prev</button>
-          <span style={{ color: "#ccc", fontSize: 11, minWidth: 50, textAlign: "center" }}>{page}/{numPages}</span>
-          <button onClick={nextPage} style={page >= numPages ? btnDis : btn} disabled={page >= numPages}>Next</button>
-          <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
-          <button onClick={zoomOut} style={btn}>-</button>
-          <span style={{ color: "#ccc", fontSize: 10, minWidth: 36, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
-          <button onClick={zoomIn} style={btn}>+</button>
-          <button onClick={resetZoom} style={{ ...btn, fontSize: 10 }} title="F">Fit</button>
+        {/* Row 2: Bid area + CO + Add PDF (compact, only shows when needed) */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 10px 4px", gap: 4, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <select value={activeBidAreaId} onChange={e => setActiveBidAreaId(e.target.value)}
+              style={{ padding: "2px 4px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 9, maxWidth: 100 }}>
+              {bidAreas.map(ba => <option key={ba.id} value={ba.id}>{ba.name}</option>)}
+            </select>
+            <button onClick={() => setShowBidAreaAdd(true)} style={{ ...btn, fontSize: 8, padding: "2px 5px" }} title="Add bid area">+Area</button>
+            <span style={{ width: 1, height: 12, background: "rgba(255,255,255,0.08)" }} />
+            <button onClick={() => setCoMode(m => m === "add" ? null : "add")}
+              style={coMode === "add" ? { ...btn, padding: "2px 6px", fontSize: 9, background: "rgba(34,197,94,0.25)", borderColor: "rgba(34,197,94,0.5)", color: "#22c55e", fontWeight: 600 } : { ...btn, fontSize: 9, padding: "2px 6px" }}
+              title="Change Order: Mark additions">CO+</button>
+            <button onClick={() => setCoMode(m => m === "delete" ? null : "delete")}
+              style={coMode === "delete" ? { ...btn, padding: "2px 6px", fontSize: 9, background: "rgba(239,68,68,0.25)", borderColor: "rgba(239,68,68,0.5)", color: "#ef4444", fontWeight: 600 } : { ...btn, fontSize: 9, padding: "2px 6px" }}
+              title="Change Order: Mark deletions">CO−</button>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <button onClick={() => addPdfInputRef.current?.click()} style={{ ...btn, fontSize: 8, padding: "2px 5px", background: "rgba(59,130,246,0.1)", borderColor: "rgba(59,130,246,0.25)", color: "#60a5fa" }} title="Add another PDF file">+ PDF</button>
+            <input ref={addPdfInputRef} type="file" accept=".pdf" style={{ display: "none" }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleAddPdf(f); e.target.value = ""; }} />
+            {(numPages > 1 || pdfFiles.length > 1) && (
+              <button onClick={() => setShowSheets(v => !v)} style={{ ...btn, fontSize: 8, padding: "2px 5px" }}>
+                {showSheets ? "Hide Sheets" : "Show Sheets"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
