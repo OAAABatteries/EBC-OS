@@ -27,7 +27,7 @@ import {
   initCertifications, initSubSchedule, initWeatherAlerts, initScheduleConflicts,
 } from "./data/calendarConstants";
 import { initJSAs } from "./data/jsaConstants";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area, Legend } from "recharts";
 import { initNative } from "./utils/native";
 import { T } from "./data/translations";
 import { LoginScreen } from "./components/LoginScreen";
@@ -571,6 +571,46 @@ function App({ auth, onLogout }) {
   const lost = bids.filter(b => b.status === "lost").length;
   const winRate = awarded + lost > 0 ? Math.round((awarded / (awarded + lost)) * 100) : 0;
 
+  // ── Phase 3 KPI computations ──
+  const gcWinRates = useMemo(() => {
+    const map = {};
+    bids.forEach(b => {
+      if (!b.gc) return;
+      if (!map[b.gc]) map[b.gc] = { gc: b.gc, total: 0, awarded: 0, lost: 0, pending: 0 };
+      map[b.gc].total++;
+      if (b.status === "awarded") map[b.gc].awarded++;
+      else if (b.status === "lost") map[b.gc].lost++;
+      else map[b.gc].pending++;
+    });
+    return Object.values(map).sort((a, b) => b.total - a.total).slice(0, 8);
+  }, [bids]);
+
+  const backlog = useMemo(() => {
+    const awardedNotStarted = bids.filter(b => b.status === "awarded" && !projects.find(p => p.name === b.name)).reduce((s, b) => s + (b.value || 0), 0);
+    const inProgressRemaining = projects.filter(p => (p.progress || 0) < 100).reduce((s, p) => s + ((p.contract || 0) * (1 - (p.progress || 0) / 100)), 0);
+    return awardedNotStarted + inProgressRemaining;
+  }, [bids, projects]);
+
+  const cashFlow = useMemo(() => {
+    const now = new Date();
+    const buckets = { current: 0, net30: 0, net60: 0, net90: 0 };
+    invoices.filter(i => i.status === "pending" || i.status === "overdue").forEach(i => {
+      const d = new Date(i.date);
+      const days = Math.floor((now - d) / 86400000);
+      if (days <= 30) buckets.current += (i.amount || 0);
+      else if (days <= 60) buckets.net30 += (i.amount || 0);
+      else if (days <= 90) buckets.net60 += (i.amount || 0);
+      else buckets.net90 += (i.amount || 0);
+    });
+    return buckets;
+  }, [invoices]);
+
+  const laborUtil = useMemo(() => {
+    const totalHours = projects.reduce((s, p) => s + (p.laborHours || 0), 0);
+    const billableHours = projects.filter(p => (p.progress || 0) > 0 && (p.progress || 0) < 100).reduce((s, p) => s + (p.laborHours || 0) * ((p.progress || 0) / 100), 0);
+    return totalHours > 0 ? Math.round((billableHours / totalHours) * 100) : 0;
+  }, [projects]);
+
   // ── filtered bids ──
   const filteredBids = useMemo(() => {
     let list = bids;
@@ -833,67 +873,110 @@ function App({ auth, onLogout }) {
       ) : dashCfg.showKPIs && (
         <div className="kpi-grid">
           <div className="kpi-card">
-            <div className="kpi-label">{t("Pipeline Value")}</div>
-            <div className="kpi-value">{fmtK(pipeline)}</div>
-            <div className="kpi-sub">{bids.filter(b => b.status === "estimating").length} {t("bids estimating")}</div>
-          </div>
-          <div className="kpi-card">
-            <div className="kpi-label">{t("Active Projects")}</div>
-            <div className="kpi-value">{activeProjects}</div>
-            <div className="kpi-sub">{projects.filter(p => p.progress < 100).length} {t("in progress")}</div>
-          </div>
-          <div className="kpi-card">
-            <div className="kpi-label">{t("Open Bids")}</div>
-            <div className="kpi-value">{openBids}</div>
-            <div className="kpi-sub">{bids.filter(b => b.status === "submitted").length} {t("submitted")}</div>
+            <div className="kpi-label">{t("Backlog")}</div>
+            <div className="kpi-value">{fmtK(backlog)}</div>
+            <div className="kpi-sub">{projects.filter(p => (p.progress || 0) < 100).length} {t("projects remaining")}</div>
           </div>
           <div className="kpi-card">
             <div className="kpi-label">{t("Win Rate")}</div>
             <div className="kpi-value">{winRate}%</div>
-            <div className="kpi-sub">{awarded}W / {lost}L</div>
+            <div className="kpi-sub">{awarded}W / {lost}L — {openBids} {t("open")}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Pipeline")}</div>
+            <div className="kpi-value">{fmtK(pipeline)}</div>
+            <div className="kpi-sub">{bids.filter(b => b.status === "estimating").length} {t("bids estimating")}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Receivables")}</div>
+            <div className="kpi-value">{fmtK(cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90)}</div>
+            <div className="kpi-sub" style={cashFlow.net90 > 0 ? { color: "var(--red)" } : {}}>{cashFlow.net90 > 0 ? fmtK(cashFlow.net90) + " 90+ days" : t("all current")}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Labor Utilization")}</div>
+            <div className="kpi-value" style={{ color: laborUtil >= 70 ? "var(--green)" : laborUtil >= 50 ? "var(--amber)" : "var(--red)" }}>{laborUtil}%</div>
+            <div className="kpi-sub">{t("billable vs total hours")}</div>
           </div>
         </div>
       )}
 
-      {/* Charts Row — only for roles that need bid analytics */}
+      {/* Charts Row — actionable analytics */}
       {dashCfg.showCharts && (<>
         <div className="flex gap-16 mt-24" style={{ flexWrap: "wrap" }}>
-          <div className="card" style={{ flex: "1 1 280px", minWidth: 280 }}>
-            <div className="card-header"><div className="card-title font-head">{t("Bids by Status")}</div></div>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie data={statusChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={false}>
-                  {statusChartData.map((_, i) => <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />)}
-                </Pie>
-                <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex gap-12 flex-wrap" style={{ justifyContent: "center", padding: "4px 8px" }}>
-              {statusChartData.map((entry, i) => (
-                <div key={entry.name} className="flex gap-4" style={{ alignItems: "center", fontSize: 12 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 2, background: STATUS_COLORS[i % STATUS_COLORS.length], display: "inline-block" }} />
-                  <span style={{ color: "var(--text2)" }}>{entry.name}: <strong style={{ color: "var(--text)" }}>{entry.value}</strong></span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="card" style={{ flex: "1 1 400px", minWidth: 300 }}>
-            <div className="card-header"><div className="card-title font-head">{t("Bids by GC (Top 8)")}</div></div>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={gcChartData} layout="vertical" margin={{ left: 10, right: 20 }}>
+          {/* Win Rate by GC — stacked bar */}
+          <div className="card" style={{ flex: "1 1 480px", minWidth: 320 }}>
+            <div className="card-header"><div className="card-title font-head">{t("Win Rate by GC")}</div></div>
+            <ResponsiveContainer width="100%" height={Math.max(160, gcWinRates.length * 32 + 40)}>
+              <BarChart data={gcWinRates.map(g => ({ name: g.gc.length > 18 ? g.gc.slice(0, 16) + "..." : g.gc, Awarded: g.awarded, Lost: g.lost, Pending: g.pending }))} layout="vertical" margin={{ left: 10, right: 20 }}>
                 <XAxis type="number" tick={{ fill: "var(--text2)", fontSize: 11 }} />
                 <YAxis type="category" dataKey="name" width={120} tick={{ fill: "var(--text2)", fontSize: 11 }} />
                 <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} />
-                <Bar dataKey="value" fill="var(--amber)" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="Awarded" stackId="a" fill="var(--green)" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="Lost" stackId="a" fill="var(--red)" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="Pending" stackId="a" fill="var(--amber)" radius={[0, 4, 4, 0]} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Cash Flow Aging */}
+          <div className="card" style={{ flex: "1 1 280px", minWidth: 260 }}>
+            <div className="card-header"><div className="card-title font-head">{t("Receivables Aging")}</div></div>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={[
+                { name: "Current", value: cashFlow.current },
+                { name: "31-60d", value: cashFlow.net30 },
+                { name: "61-90d", value: cashFlow.net60 },
+                { name: "90+d", value: cashFlow.net90 },
+              ]} margin={{ left: 0, right: 10 }}>
+                <XAxis dataKey="name" tick={{ fill: "var(--text2)", fontSize: 11 }} />
+                <YAxis tick={{ fill: "var(--text2)", fontSize: 11 }} tickFormatter={v => fmtK(v)} />
+                <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} formatter={v => fmt(v)} />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  {[
+                    { name: "Current", color: "var(--green)" },
+                    { name: "31-60d", color: "var(--amber)" },
+                    { name: "61-90d", color: "var(--red)" },
+                    { name: "90+d", color: "#dc2626" },
+                  ].map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
+        {/* Backlog Projection */}
         <div className="card mt-16">
-          <div className="card-header"><div className="card-title font-head">{t("Bids by Month")}</div></div>
+          <div className="card-header"><div className="card-title font-head">{t("Backlog Projection")}</div></div>
           <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={(() => {
+              const months = [];
+              const now = new Date();
+              for (let i = 0; i < 6; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+                const label = d.toLocaleString("en", { month: "short" });
+                let remaining = 0;
+                projects.forEach(p => {
+                  if ((p.progress || 0) >= 100) return;
+                  const end = p.end ? new Date(p.end) : null;
+                  if (!end || end >= d) remaining += (p.contract || 0) * (1 - (p.progress || 0) / 100) * (1 - i * 0.15);
+                });
+                months.push({ name: label, Backlog: Math.max(0, Math.round(remaining)) });
+              }
+              return months;
+            })()} margin={{ left: 0, right: 20 }}>
+              <XAxis dataKey="name" tick={{ fill: "var(--text2)", fontSize: 12 }} />
+              <YAxis tick={{ fill: "var(--text2)", fontSize: 11 }} tickFormatter={v => fmtK(v)} />
+              <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} formatter={v => fmt(v)} />
+              <Area type="monotone" dataKey="Backlog" stroke="var(--amber)" fill="var(--amber-dim)" strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Bids by Month — keep this, it's useful context */}
+        <div className="card mt-16">
+          <div className="card-header"><div className="card-title font-head">{t("Bid Volume by Month")}</div></div>
+          <ResponsiveContainer width="100%" height={180}>
             <BarChart data={monthChartData} margin={{ left: 0, right: 20 }}>
               <XAxis dataKey="name" tick={{ fill: "var(--text2)", fontSize: 12 }} />
               <YAxis tick={{ fill: "var(--text2)", fontSize: 11 }} />

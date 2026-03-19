@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
-import { getHF, SCOPE_INIT, SCOPE_ITEM_MAP, DEFAULT_ASSUMPTIONS, DEFAULT_PROPOSAL_TERMS, SCOPE_TEMPLATES } from "../data/constants";
+import { useState, useMemo, useRef } from "react";
+import { getHF, SCOPE_INIT, SCOPE_ITEM_MAP, DEFAULT_ASSUMPTIONS, DEFAULT_PROPOSAL_TERMS, SCOPE_TEMPLATES, PROFIT_SUGGESTIONS } from "../data/constants";
 import { generateProposalPdf, defaultIncludes, defaultExcludes } from "../utils/proposalPdf";
 import { buildScopeLines } from "../utils/scopeBuilder";
+import { DrawingViewer } from "../components/DrawingViewer";
 
 /* ── helpers ─────────────────────────────────────────────────── */
 
@@ -67,6 +68,12 @@ export function EstimatingTab({ app }) {
   const [histResult, setHistResult] = useState(null);
   const [histLoading, setHistLoading] = useState(false);
   const [showHist, setShowHist] = useState(false);
+
+  // ── Drawing Viewer state ──
+  const [showDrawing, setShowDrawing] = useState(false);
+  const [drawingPdfData, setDrawingPdfData] = useState(null);
+  const [drawingFileName, setDrawingFileName] = useState("");
+  const drawingFileRef = useRef();
 
   // ── Scope Checklist & Gap Analysis state ──
   const [showScopePanel, setShowScopePanel] = useState(false);
@@ -520,7 +527,7 @@ export function EstimatingTab({ app }) {
 
   function addRoom(tkId) {
     const newRoom = { id: "rm_" + Date.now(), name: "New Room", floor: "", items: [] };
-    updateTakeoff(tkId, (tk) => ({ ...tk, rooms: [...tk.rooms, newRoom] }));
+    updateTakeoff(tkId, (tk) => ({ ...tk, rooms: [...(tk.rooms || []), newRoom] }));
     setOpenRooms((prev) => ({ ...prev, [newRoom.id]: true }));
   }
 
@@ -1029,6 +1036,39 @@ export function EstimatingTab({ app }) {
 
   return (
     <div>
+      {/* Drawing Viewer overlay */}
+      {showDrawing && drawingPdfData && (
+        <DrawingViewer
+          pdfData={drawingPdfData}
+          fileName={drawingFileName}
+          assemblies={assemblies}
+          onClose={() => setShowDrawing(false)}
+          onAddToTakeoff={({ code, qty, unit, label }) => {
+            const targetRoom = (tk.rooms || [])[0];
+            if (!targetRoom) {
+              show("Add a room first", "err");
+              return;
+            }
+            updateTakeoff(tk.id, (prev) => ({
+              ...prev,
+              rooms: prev.rooms.map(rm => rm.id === targetRoom.id ? {
+                ...rm,
+                items: [...rm.items, {
+                  id: "dv_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+                  code,
+                  desc: label || assemblies.find(a => a.code === code)?.name || code,
+                  qty,
+                  unit,
+                  height: 10,
+                  diff: 1,
+                }]
+              } : rm)
+            }));
+            show(`Added ${qty} ${unit} of ${code}`, "ok");
+          }}
+        />
+      )}
+
       {/* back + header */}
       <div className="section-header flex-between">
         <div className="flex gap-8" style={{ alignItems: "center" }}>
@@ -1040,6 +1080,27 @@ export function EstimatingTab({ app }) {
           />
         </div>
         <div className="flex gap-8">
+          <button className="btn btn-ghost btn-sm" onClick={() => {
+            if (drawingFileRef.current) drawingFileRef.current.click();
+          }}>Open Drawing</button>
+          <input
+            ref={drawingFileRef}
+            type="file"
+            accept=".pdf"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                setDrawingPdfData(new Uint8Array(ev.target.result));
+                setDrawingFileName(file.name);
+                setShowDrawing(true);
+              };
+              reader.readAsArrayBuffer(file);
+              e.target.value = "";
+            }}
+          />
           <button className="btn btn-ghost btn-sm" onClick={() => runHistComparison(tk)} disabled={histLoading}>
             {histLoading ? "Comparing..." : "Compare to History"}
           </button>
@@ -1520,6 +1581,85 @@ export function EstimatingTab({ app }) {
           Break out tax on materials separately on proposal
         </label>
       </div>
+
+      {/* ── Auto-Profit Suggestions ── */}
+      {(() => {
+        const allItems = (tk.rooms || []).flatMap(rm => rm.items || []);
+        if (allItems.length === 0) return null;
+        const wallLF = allItems.filter(it => {
+          const asm = assemblies.find(a => a.code === it.code);
+          return asm && asm.unit === "LF";
+        }).reduce((s, it) => s + (it.qty || 0), 0);
+        const totalSF = allItems.filter(it => {
+          const asm = assemblies.find(a => a.code === it.code);
+          return asm && asm.unit === "SF";
+        }).reduce((s, it) => s + (it.qty || 0), 0);
+        const subtotal = summary.subtotal;
+        const existingCodes = new Set(allItems.map(it => it.code));
+        const addOnCodes = new Set((tk.addOns || []).map(ao => ao.code));
+
+        return (
+          <div className="takeoff-summary" style={{ marginTop: 16, border: "1px dashed var(--amber-dim)", background: "rgba(224,148,34,0.03)" }}>
+            <div className="flex-between" style={{ marginBottom: 12 }}>
+              <h3 style={{ fontSize: 15, color: "var(--amber)" }}>$ Profit Suggestions</h3>
+              <span className="text-xs text-muted">Commonly forgotten add-ons</span>
+            </div>
+            {PROFIT_SUGGESTIONS.map(sg => {
+              const alreadyIn = existingCodes.has(sg.code) || addOnCodes.has(sg.code);
+              let autoQty = 0;
+              if (sg.basis === "wallLF") autoQty = sg.pct ? Math.round(wallLF * sg.pct) : sg.divisor ? Math.round(wallLF / sg.divisor) : 0;
+              else if (sg.basis === "totalSF") autoQty = Math.round(totalSF * (sg.pct || 0));
+              else if (sg.basis === "subtotal") autoQty = Math.round(subtotal * (sg.pct || 0));
+              const estCost = sg.basis === "subtotal"
+                ? autoQty
+                : autoQty * (sg.matRate + sg.labRate);
+              return (
+                <div key={sg.code} style={{
+                  display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", marginBottom: 6,
+                  borderRadius: 6, background: alreadyIn ? "var(--bg3)" : "var(--card)",
+                  border: "1px solid var(--border)", opacity: alreadyIn ? 0.5 : 1,
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{sg.name} <span className="text-xs text-muted">({sg.code})</span></div>
+                    <div className="text-xs text-muted">{sg.desc}</div>
+                  </div>
+                  <div style={{ textAlign: "right", minWidth: 80 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--green)" }}>{fmt(estCost)}</div>
+                    <div className="text-xs text-muted">{sg.basis === "subtotal" ? "lump sum" : `${autoQty} ${sg.unit}`}</div>
+                  </div>
+                  {alreadyIn ? (
+                    <span className="badge badge-muted" style={{ fontSize: 10 }}>Added</span>
+                  ) : (
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      style={{ fontSize: 11, color: "var(--amber)", borderColor: "var(--amber-dim)" }}
+                      onClick={() => {
+                        if (sg.basis === "subtotal") {
+                          updateTakeoff(tk.id, (prev) => ({
+                            ...prev,
+                            addOns: [...(prev.addOns || []), { id: "ao_" + Date.now(), code: sg.code, description: `${sg.name} (${(sg.pct * 100)}%)`, amount: autoQty }]
+                          }));
+                        } else {
+                          const targetRoom = (tk.rooms || [])[0];
+                          if (!targetRoom) return;
+                          updateTakeoff(tk.id, (prev) => ({
+                            ...prev,
+                            rooms: prev.rooms.map(rm => rm.id === targetRoom.id ? {
+                              ...rm,
+                              items: [...rm.items, { id: "sg_" + Date.now(), code: sg.code, desc: sg.name, qty: autoQty, unit: sg.unit, height: 10, diff: 1 }]
+                            } : rm)
+                          }));
+                        }
+                        show(`Added ${sg.name}`, "ok");
+                      }}
+                    >+ Add</button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* alternates */}
       <div className="takeoff-summary" style={{ marginTop: 16 }}>

@@ -199,6 +199,24 @@ export const ASSEMBLIES = [
   {code:"ICRA1",name:"ICRA Dust Barrier (Temp)",unit:"LF",p8:null,p10:22.00,p14:null,p20:null,matRate:8.00,labRate:14.00,verified:true},
   // ── SHAFT WALL ──
   {code:"SW1",name:"Shaft Wall System (1-hr)",unit:"LF",p8:null,p10:46.35,p14:null,p20:null,matRate:14.35,labRate:32.00,verified:true},
+  // ── PROFIT ADD-ONS ──
+  {code:"CB",name:"Corner Bead (Paper-Faced)",unit:"LF",p8:null,p10:2.05,p14:null,p20:null,matRate:0.85,labRate:1.20,verified:true},
+  {code:"CJ",name:"Control Joint (Zinc)",unit:"EA",p8:null,p10:30.00,p14:null,p20:null,matRate:12.00,labRate:18.00,verified:true},
+  {code:"FC",name:"Fire Caulking (Intumescent)",unit:"LF",p8:null,p10:6.00,p14:null,p20:null,matRate:2.50,labRate:3.50,verified:true},
+  {code:"BLK",name:"Blocking Allowance",unit:"SF",p8:null,p10:4.30,p14:null,p20:null,matRate:1.50,labRate:2.80,verified:true},
+  {code:"DF",name:"Door Frame (Metal Stud Header + Jambs)",unit:"EA",p8:null,p10:185.00,p14:null,p20:null,matRate:65.00,labRate:120.00,verified:true},
+  {code:"SL",name:"Sidelight Framing",unit:"EA",p8:null,p10:145.00,p14:null,p20:null,matRate:45.00,labRate:100.00,verified:true},
+];
+
+// ── AUTO-PROFIT SUGGESTIONS (commonly forgotten add-ons) ──
+export const PROFIT_SUGGESTIONS = [
+  { code:"CB",  name:"Corner Bead",        unit:"LF",  matRate:0.85,  labRate:1.20,  pct:0.15, basis:"wallLF", desc:"~15% of wall LF" },
+  { code:"CJ",  name:"Control Joints",     unit:"EA",  matRate:12.00, labRate:18.00, pct:null, divisor:30, basis:"wallLF", desc:"1 per 30 LF of wall" },
+  { code:"FC",  name:"Fire Caulking",      unit:"LF",  matRate:2.50,  labRate:3.50,  pct:0.10, basis:"wallLF", desc:"~10% of wall LF at rated partitions" },
+  { code:"BLK", name:"Blocking Allowance", unit:"SF",  matRate:1.50,  labRate:2.80,  pct:0.05, basis:"totalSF", desc:"5% of total SF for misc blocking" },
+  { code:"DF",  name:"Door Frames",       unit:"EA",  matRate:65.00, labRate:120.00, pct:null, divisor:25, basis:"wallLF", desc:"~1 per 25 LF of wall (adjust to plan count)" },
+  { code:"SL",  name:"Sidelights",        unit:"EA",  matRate:45.00, labRate:100.00, pct:null, divisor:50, basis:"wallLF", desc:"~1 per 50 LF of wall (adjust to plan count)" },
+  { code:"PL",  name:"Punchlist %",        unit:"LS",  matRate:0,     labRate:0,     pct:0.02, basis:"subtotal", desc:"2% of subtotal for punchlist labor" },
 ];
 
 // ── HEIGHT FACTOR FUNCTION ──
