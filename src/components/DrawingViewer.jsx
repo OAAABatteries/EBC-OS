@@ -152,6 +152,10 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const [viewMode, setViewMode] = useState("drawing"); // "drawing" | "summary"
   const [summaryGroupBy, setSummaryGroupBy] = useState("condition"); // "condition" | "bidArea" | "page" | "folder"
 
+  // Context menu for right-click on measurements
+  const [contextMenu, setContextMenu] = useState(null); // { x, y, measurementId }
+  const [condSearch, setCondSearch] = useState("");
+
   // Measurements — now linked to conditions + bid areas
   const [measurements, setMeasurements] = useState({});
   const [activeVertices, setActiveVertices] = useState([]);
@@ -751,7 +755,24 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
               <canvas ref={pdfCanvasRef} />
               <canvas ref={overlayCanvasRef}
                 style={{ position: "absolute", top: 0, left: 0, pointerEvents: mode === MODE.PAN ? "none" : "auto" }}
-                onClick={handleCanvasClick} onDoubleClick={handleCanvasDoubleClick} onMouseMove={handleCanvasMove} />
+                onClick={(e) => { setContextMenu(null); handleCanvasClick(e); }}
+                onDoubleClick={handleCanvasDoubleClick} onMouseMove={handleCanvasMove}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  // Find nearest measurement to right-click point
+                  const pt = getNormCoords(e);
+                  const scale = fitScaleRef.current * zoom;
+                  let nearest = null, nearestDist = 30 / scale; // 30px threshold
+                  pageMeasurements.forEach(m => {
+                    if (m.type === "count") {
+                      const d = dist(pt, m.point);
+                      if (d < nearestDist) { nearest = m; nearestDist = d; }
+                    } else if (m.vertices) {
+                      m.vertices.forEach(v => { const d = dist(pt, v); if (d < nearestDist) { nearest = m; nearestDist = d; } });
+                    }
+                  });
+                  if (nearest) setContextMenu({ x: e.clientX, y: e.clientY, measurementId: nearest.id });
+                }} />
             </div>
           </div>
         ) : (
@@ -844,6 +865,12 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
               </div>
             </div>
 
+            {/* Search conditions */}
+            {conditions.length > 8 && (
+              <input placeholder="Search conditions..." value={condSearch} onChange={e => setCondSearch(e.target.value)}
+                style={{ width: "100%", padding: "4px 8px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: 10, marginBottom: 6 }} />
+            )}
+
             {/* Add condition dropdown */}
             {showAddCond && (
               <select autoFocus value="" onChange={e => { if (e.target.value) addCondition(e.target.value); }}
@@ -859,8 +886,11 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
               </div>
             )}
 
-            {/* Folder-organized conditions */}
-            {Object.entries(folders).map(([folder, conds]) => (
+            {/* Folder-organized conditions (filtered by search) */}
+            {Object.entries(folders).map(([folder, conds]) => {
+              const filteredConds = condSearch ? conds.filter(c => c.name.toLowerCase().includes(condSearch.toLowerCase()) || c.asmCode.toLowerCase().includes(condSearch.toLowerCase())) : conds;
+              if (condSearch && filteredConds.length === 0) return null;
+              return (
               <div key={folder} style={{ marginBottom: 6 }}>
                 <div onClick={() => setOpenFolders(prev => ({ ...prev, [folder]: !prev[folder] }))}
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 6px", cursor: "pointer", borderRadius: 4, background: "rgba(255,255,255,0.03)" }}>
@@ -873,7 +903,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
                   </span>
                   <span style={{ fontSize: 10, color: "#666" }}>{conds.length}</span>
                 </div>
-                {openFolders[folder] && conds.map((c, ci) => {
+                {openFolders[folder] && filteredConds.map((c, ci) => {
                   const isActive = c.id === activeCondId;
                   const totals = condTotals[c.id] || { qty: 0, cost: 0 };
                   const unit = c.type === "count" ? "EA" : c.type === "area" ? "SF" : "LF";
@@ -897,7 +927,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
                         </div>
                         {totals.qty > 0 && (
                           <div style={{ fontSize: 9, color: "#888" }}>
-                            {Math.round(totals.qty)} {unit} &middot; {fmt(totals.cost)}
+                            {Math.round(totals.qty)} {unit} &middot; {fmt(totals.cost)} &middot; {Object.values(measurements).flat().filter(m => m.conditionId === c.id).length}&#x1f4cf;
                           </div>
                         )}
                       </div>
@@ -933,7 +963,8 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
                   );
                 })}
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* ── Live Cost Bar (bottom of sidebar) ── */}
@@ -1029,6 +1060,38 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
           </div>
         </div>
       </div>
+
+      {/* Right-click context menu */}
+      {contextMenu && (
+        <div style={{ position: "fixed", left: contextMenu.x, top: contextMenu.y, background: "rgba(0,0,0,0.95)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 6, padding: 4, zIndex: 10002, minWidth: 140 }}
+          onClick={() => setContextMenu(null)}>
+          <div onClick={() => { deleteMeasurement(contextMenu.measurementId); setContextMenu(null); }}
+            style={{ padding: "6px 12px", fontSize: 11, color: "#ef4444", cursor: "pointer", borderRadius: 4 }}
+            onMouseEnter={e => e.target.style.background = "rgba(239,68,68,0.1)"}
+            onMouseLeave={e => e.target.style.background = "transparent"}>
+            Delete Measurement
+          </div>
+          <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "2px 0" }} />
+          {conditions.filter(c => {
+            const m = pageMeasurements.find(mm => mm.id === contextMenu.measurementId);
+            return m && c.id !== m.conditionId;
+          }).slice(0, 6).map(c => (
+            <div key={c.id} onClick={() => {
+              setMeasurements(prev => ({
+                ...prev,
+                [page]: (prev[page] || []).map(m => m.id === contextMenu.measurementId ? { ...m, conditionId: c.id } : m)
+              }));
+              setContextMenu(null);
+            }}
+            style={{ padding: "5px 12px", fontSize: 10, color: "#ccc", cursor: "pointer", borderRadius: 4, display: "flex", alignItems: "center", gap: 6 }}
+            onMouseEnter={e => e.target.style.background = "rgba(255,255,255,0.05)"}
+            onMouseLeave={e => e.target.style.background = "transparent"}>
+              <span style={{ width: 6, height: 6, borderRadius: 1, background: c.color }} />
+              Move to {c.name}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Template picker modal */}
       {showTemplatePicker && (
