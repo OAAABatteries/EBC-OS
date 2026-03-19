@@ -1712,7 +1712,17 @@ export function EstimatingTab({ app }) {
 /* ── Scope Review Modal (2-step: checklist → edit scope lines) ── */
 function ScopeReviewModal({ tk, bid, step, setStep, onClose, onSave, updateTakeoff, show }) {
   const checklist = tk.scopeChecklist || SCOPE_INIT.map(s => ({ ...s }));
-  const [localChecklist, setLocalChecklist] = useState(checklist.map(s => ({ ...s })));
+
+  // Auto-apply scope template from bid phase if checklist hasn't been touched
+  const [localChecklist, setLocalChecklist] = useState(() => {
+    const cl = checklist.map(s => ({ ...s }));
+    // If checklist is fresh (all unchecked) and bid has a matching phase template, pre-apply it
+    if (!tk.scopeChecklistCompleted && bid?.phase && SCOPE_TEMPLATES[bid.phase]) {
+      const presets = SCOPE_TEMPLATES[bid.phase].presets;
+      return cl.map(s => ({ ...s, status: presets[s.id] || s.status }));
+    }
+    return cl;
+  });
 
   // Build initial edit lines — used when starting at step 2 or after continuing from step 1
   const [editLines, setEditLines] = useState(() => {
