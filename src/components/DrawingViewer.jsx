@@ -23,26 +23,72 @@ function polyArea(pts) {
   return Math.abs(a) / 2;
 }
 
-// ── Default condition templates by trade ──
-const DRYWALL_TEMPLATE = [
-  { type: "linear", folder: "Walls", asmCode: "A2", name: '3-5/8" 20ga Wall', height: 10 },
-  { type: "linear", folder: "Walls", asmCode: "A3", name: '2-1/2" 20ga Partition', height: 10 },
-  { type: "linear", folder: "Walls", asmCode: "B1", name: '6" 20ga Wall', height: 10 },
-  { type: "linear", folder: "Walls", asmCode: "DW1", name: '6" Deck Wall', height: 10 },
-  { type: "linear", folder: "Walls", asmCode: "C2", name: "Furring (One Side)", height: 10 },
-  { type: "linear", folder: "Walls", asmCode: "SW1", name: "Shaft Wall (1-hr)", height: 10 },
-  { type: "area",   folder: "Ceilings", asmCode: "ACT1", name: "2x2 ACT Grid + Tile" },
-  { type: "area",   folder: "Ceilings", asmCode: "ACT2", name: "2x4 ACT Grid + Tile" },
-  { type: "area",   folder: "Ceilings", asmCode: "GC1", name: "GWB Suspended Ceiling" },
-  { type: "linear", folder: "Ceilings", asmCode: "FD1", name: "Furr-Down / Soffit", height: 10 },
-  { type: "area",   folder: "Insulation", asmCode: "INS1", name: 'R-13 Batt (3-5/8")' },
-  { type: "area",   folder: "Insulation", asmCode: "INS2", name: 'R-19 Batt (6")' },
-  { type: "count",  folder: "Counts", asmCode: "DF", name: "Door Frames" },
-  { type: "count",  folder: "Counts", asmCode: "SL", name: "Sidelights" },
-  { type: "count",  folder: "Counts", asmCode: "CJ", name: "Control Joints" },
-  { type: "linear", folder: "Add-Ons", asmCode: "CB", name: "Corner Bead", height: 10 },
-  { type: "linear", folder: "Add-Ons", asmCode: "FC", name: "Fire Caulking", height: 10 },
-];
+// ── Condition Templates by Trade ──
+const TEMPLATES = {
+  "Medical Drywall": {
+    description: "Full medical/hospital scope — walls, ceilings, lead-lined, shaft wall, insulation, counts",
+    items: [
+      { type: "linear", folder: "Walls", asmCode: "A2", name: '3-5/8" 20ga Wall', height: 10 },
+      { type: "linear", folder: "Walls", asmCode: "A3", name: '2-1/2" 20ga Partition', height: 10 },
+      { type: "linear", folder: "Walls", asmCode: "B1", name: '6" 20ga Wall', height: 10 },
+      { type: "linear", folder: "Walls", asmCode: "DW1", name: '6" Deck Wall', height: 10 },
+      { type: "linear", folder: "Walls", asmCode: "C2", name: "Furring (One Side)", height: 10 },
+      { type: "linear", folder: "Walls", asmCode: "SW1", name: "Shaft Wall (1-hr)", height: 10 },
+      { type: "linear", folder: "Walls", asmCode: "LL1", name: 'Lead-Lined GWB (1/32" Pb)', height: 10 },
+      { type: "area",   folder: "Ceilings", asmCode: "ACT1", name: "2x2 ACT Grid + Tile" },
+      { type: "area",   folder: "Ceilings", asmCode: "GC1", name: "GWB Suspended Ceiling" },
+      { type: "linear", folder: "Ceilings", asmCode: "FD1", name: "Furr-Down / Soffit", height: 10 },
+      { type: "area",   folder: "Insulation", asmCode: "INS1", name: 'R-13 Batt (3-5/8")' },
+      { type: "area",   folder: "Insulation", asmCode: "INS2", name: 'R-19 Batt (6")' },
+      { type: "area",   folder: "Insulation", asmCode: "INS4", name: '3" Mineral Wool' },
+      { type: "linear", folder: "Specialties", asmCode: "ICRA1", name: "ICRA Dust Barrier", height: 10 },
+      { type: "count",  folder: "Counts", asmCode: "DF", name: "Door Frames" },
+      { type: "count",  folder: "Counts", asmCode: "SL", name: "Sidelights" },
+      { type: "count",  folder: "Counts", asmCode: "CJ", name: "Control Joints" },
+      { type: "linear", folder: "Add-Ons", asmCode: "CB", name: "Corner Bead", height: 10 },
+      { type: "linear", folder: "Add-Ons", asmCode: "FC", name: "Fire Caulking", height: 10 },
+      { type: "area",   folder: "Add-Ons", asmCode: "BLK", name: "Blocking Allowance" },
+    ],
+  },
+  "Commercial Office": {
+    description: "Standard commercial tenant improvement — walls, ACT ceilings, insulation",
+    items: [
+      { type: "linear", folder: "Walls", asmCode: "A2", name: '3-5/8" 20ga Wall', height: 10 },
+      { type: "linear", folder: "Walls", asmCode: "A3", name: '2-1/2" 20ga Partition', height: 10 },
+      { type: "linear", folder: "Walls", asmCode: "B1", name: '6" 20ga Wall', height: 10 },
+      { type: "linear", folder: "Walls", asmCode: "C2", name: "Furring (One Side)", height: 10 },
+      { type: "area",   folder: "Ceilings", asmCode: "ACT1", name: "2x2 ACT Grid + Tile" },
+      { type: "area",   folder: "Ceilings", asmCode: "ACT2", name: "2x4 ACT Grid + Tile" },
+      { type: "area",   folder: "Ceilings", asmCode: "GC1", name: "GWB Suspended Ceiling" },
+      { type: "linear", folder: "Ceilings", asmCode: "FD1", name: "Furr-Down / Soffit", height: 10 },
+      { type: "area",   folder: "Insulation", asmCode: "INS1", name: 'R-13 Batt (3-5/8")' },
+      { type: "count",  folder: "Counts", asmCode: "DF", name: "Door Frames" },
+      { type: "count",  folder: "Counts", asmCode: "SL", name: "Sidelights" },
+      { type: "linear", folder: "Add-Ons", asmCode: "CB", name: "Corner Bead", height: 10 },
+      { type: "linear", folder: "Add-Ons", asmCode: "FC", name: "Fire Caulking", height: 10 },
+    ],
+  },
+  "Retail": {
+    description: "Retail buildout — standard walls, ACT, minimal insulation",
+    items: [
+      { type: "linear", folder: "Walls", asmCode: "A2", name: '3-5/8" 20ga Wall', height: 10 },
+      { type: "linear", folder: "Walls", asmCode: "B1", name: '6" 20ga Wall', height: 10 },
+      { type: "linear", folder: "Walls", asmCode: "DW1", name: '6" Deck Wall', height: 10 },
+      { type: "linear", folder: "Walls", asmCode: "C2", name: "Furring (One Side)", height: 10 },
+      { type: "area",   folder: "Ceilings", asmCode: "ACT1", name: "2x2 ACT Grid + Tile" },
+      { type: "area",   folder: "Ceilings", asmCode: "GC1", name: "GWB Suspended Ceiling" },
+      { type: "area",   folder: "Insulation", asmCode: "INS1", name: 'R-13 Batt (3-5/8")' },
+      { type: "count",  folder: "Counts", asmCode: "DF", name: "Door Frames" },
+      { type: "linear", folder: "Add-Ons", asmCode: "CB", name: "Corner Bead", height: 10 },
+    ],
+  },
+  "Blank": {
+    description: "Start empty — add conditions as needed",
+    items: [],
+  },
+};
+
+const DRYWALL_TEMPLATE = TEMPLATES["Commercial Office"].items;
 
 function createCondition(template, index) {
   return {
@@ -85,6 +131,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const [activeCondId, setActiveCondId] = useState(null);
   const [openFolders, setOpenFolders] = useState({ Walls: true, Ceilings: true, Counts: true, Insulation: false, "Add-Ons": false });
   const [showAddCond, setShowAddCond] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
   // Bid Areas
   const [bidAreas, setBidAreas] = useState([
@@ -197,10 +244,19 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     return rows;
   }, [measurements, conditions, assemblies, bidAreas, summaryGroupBy, sheetNames]);
 
-  // Grand total
-  const grandTotal = useMemo(() =>
-    Object.values(condTotals).reduce((s, t) => s + t.cost, 0),
-  [condTotals]);
+  // Grand total with mat/lab split
+  const { grandTotal, totalMat, totalLab } = useMemo(() => {
+    let mat = 0, lab = 0;
+    Object.values(measurements).flat().forEach(m => {
+      const cond = conditions.find(c => c.id === m.conditionId);
+      const asm = cond ? (assemblies || []).find(a => a.code === cond.asmCode) : null;
+      if (!asm) return;
+      const qty = m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0);
+      mat += qty * (asm.matRate || 0);
+      lab += qty * (asm.labRate || 0);
+    });
+    return { grandTotal: mat + lab, totalMat: mat, totalLab: lab };
+  }, [measurements, conditions, assemblies]);
 
   // Folders
   const folders = useMemo(() => {
@@ -780,7 +836,10 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
           <div style={{ flex: 1, overflow: "auto", padding: "10px 10px 6px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>Conditions</span>
-              <button onClick={() => setShowAddCond(!showAddCond)} style={{ ...btn, fontSize: 10, padding: "2px 8px" }}>+ Add</button>
+              <div style={{ display: "flex", gap: 3 }}>
+                <button onClick={() => setShowTemplatePicker(true)} style={{ ...btn, fontSize: 9, padding: "2px 6px" }}>Template</button>
+                <button onClick={() => setShowAddCond(!showAddCond)} style={{ ...btn, fontSize: 10, padding: "2px 8px" }}>+ Add</button>
+              </div>
             </div>
 
             {/* Add condition dropdown */}
@@ -849,9 +908,10 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
               <span style={{ fontSize: 16, fontWeight: 700, color: "var(--amber, #e09422)" }}>{fmtK(grandTotal)}</span>
             </div>
             <div style={{ display: "flex", gap: 8, fontSize: 9, color: "#666" }}>
-              <span>{pageMeasurements.length} on page</span>
+              <span style={{ color: "#10b981" }}>Mat {fmtK(totalMat)}</span>
+              <span style={{ color: "#3b82f6" }}>Lab {fmtK(totalLab)}</span>
               <span>&middot;</span>
-              <span>{Object.values(measurements).reduce((s, pm) => s + pm.length, 0)} total</span>
+              <span>{Object.values(measurements).reduce((s, pm) => s + pm.length, 0)} meas</span>
             </div>
             {activeCond && (
               <div style={{ marginTop: 6, padding: "4px 8px", borderRadius: 4, background: "rgba(255,255,255,0.04)", border: `1px solid ${activeCond.color}33` }}>
@@ -934,6 +994,52 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
           </div>
         </div>
       </div>
+
+      {/* Template picker modal */}
+      {showTemplatePicker && (
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.97)", border: "1px solid var(--amber)", borderRadius: 12, padding: 24, zIndex: 10001, minWidth: 420, maxWidth: 520, maxHeight: "80vh", overflow: "auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div style={{ color: "#fff", fontSize: 16, fontWeight: 700 }}>Condition Templates</div>
+            <button onClick={() => setShowTemplatePicker(false)} style={{ ...btn, fontSize: 10, padding: "3px 10px" }}>Close</button>
+          </div>
+          <div style={{ color: "#aaa", fontSize: 11, marginBottom: 16 }}>Apply a template to replace or add conditions. Choose a trade package that matches your project scope.</div>
+          {Object.entries(TEMPLATES).map(([name, tmpl]) => (
+            <div key={name} style={{ padding: "12px 14px", marginBottom: 8, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}
+              onClick={() => {
+                const newConds = tmpl.items.map((t, i) => createCondition(t, conditions.length + i));
+                if (tmpl.items.length === 0) {
+                  setConditions([]);
+                } else {
+                  setConditions(newConds);
+                }
+                setActiveCondId(null);
+                setShowTemplatePicker(false);
+                setOpenFolders(prev => {
+                  const next = {};
+                  newConds.forEach(c => { next[c.folder] = true; });
+                  return next;
+                });
+              }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <span style={{ color: "#fff", fontSize: 14, fontWeight: 600 }}>{name}</span>
+                <span style={{ fontSize: 10, color: "#888" }}>{tmpl.items.length} conditions</span>
+              </div>
+              <div style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>{tmpl.description}</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                {tmpl.items.slice(0, 8).map((it, i) => (
+                  <span key={i} style={{ fontSize: 9, color: "#aaa", padding: "1px 5px", borderRadius: 3, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    {it.asmCode}
+                  </span>
+                ))}
+                {tmpl.items.length > 8 && <span style={{ fontSize: 9, color: "#666" }}>+{tmpl.items.length - 8} more</span>}
+              </div>
+            </div>
+          ))}
+          <div style={{ marginTop: 12, padding: "10px 14px", borderRadius: 8, border: "1px dashed rgba(255,255,255,0.15)", textAlign: "center" }}>
+            <div style={{ fontSize: 11, color: "#888" }}>Or add individual conditions with the + Add button in the panel</div>
+          </div>
+        </div>
+      )}
 
       {/* Bid Area add dialog */}
       {showBidAreaAdd && (
