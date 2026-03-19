@@ -437,7 +437,7 @@ export async function generateJsaPdf(jsa) {
   doc.text("Crew Members — By signing, I acknowledge I have reviewed and understand this JSA", ML, y + 4);
   y += 10;
 
-  const crew = jsa.crewMembers || [];
+  const crew = (jsa.crewSignOn || jsa.crewMembers || []).map(c => ({ name: c.name, signature: c.signature || null }));
   const sigW = (CW - 8) / 2;  // 2 per row with gap
   const sigH = 30;             // ~1.2 inches
   const sigGap = 8;

@@ -297,6 +297,26 @@ const _demoJSAs = [
 
 export const initJSAs = _demo ? _demoJSAs : [];
 
+// ── Trade Cards (for Pre-Task Safety roll call picker) ──
+export const TRADE_CARDS = [
+  { templateId: "tmpl_framing_interior", trade: "framing", icon: "🔩", color: "#3b82f6" },
+  { templateId: "tmpl_drywall_walls", trade: "drywall_hang", icon: "🧱", color: "#10b981", suffix: "Walls", suffixEs: "Paredes" },
+  { templateId: "tmpl_drywall_ceiling", trade: "drywall_hang", icon: "⬆️", color: "#8b5cf6", suffix: "Ceilings", suffixEs: "Techos" },
+  { templateId: "tmpl_finishing", trade: "drywall_finish", icon: "🪣", color: "#f59e0b" },
+  { templateId: "tmpl_act", trade: "act_ceiling", icon: "📐", color: "#06b6d4" },
+  { templateId: "tmpl_demo", trade: "demolition", icon: "🔨", color: "#ef4444" },
+];
+
+// ── Weather Quick-Select (for roll call) ──
+export const WEATHER_QUICK = [
+  { key: "clear", icon: "☀️", label: "Clear", labelEs: "Despejado" },
+  { key: "rain", icon: "🌧️", label: "Rain", labelEs: "Lluvia" },
+  { key: "heat", icon: "🔥", label: "Hot", labelEs: "Calor" },
+  { key: "freeze", icon: "❄️", label: "Cold", labelEs: "Frío" },
+  { key: "wind", icon: "💨", label: "Windy", labelEs: "Viento" },
+  { key: "thunderstorm", icon: "⛈️", label: "Storm", labelEs: "Tormenta" },
+];
+
 // ── Weather conditions affecting JSA ──
 export const WEATHER_HAZARD_MAP = {
   thunderstorm: { hazard: "Lightning strike risk / wet surfaces", hazardEs: "Riesgo de rayo / superficies mojadas", category: "electrical", ppe: [] },

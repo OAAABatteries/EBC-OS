@@ -493,7 +493,7 @@ export function EmployeeView({ app }) {
     return (
       <div className="employee-app">
         <header className="employee-header">
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
+          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
           <span className="text-sm text-muted">{t("Employee Portal")}</span>
         </header>
         <div className="employee-body">
@@ -541,7 +541,7 @@ export function EmployeeView({ app }) {
       <div className="employee-app">
         <header className="employee-header">
           <div>
-            <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
+            <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
             <span className="text-xs text-muted">{activeEmp.name} · {activeEmp.role}</span>
           </div>
           <button className="settings-gear" onClick={() => { setSelectedInfoProject(null); setEmpTab("settings"); }} title={t("Settings")}>
@@ -697,7 +697,7 @@ export function EmployeeView({ app }) {
     <div className="employee-app">
       <header className="employee-header">
         <div>
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
+          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
           <span className="text-xs text-muted">{activeEmp.name} · {activeEmp.role}</span>
         </div>
         <button className="settings-gear" onClick={() => setEmpTab("settings")} title={t("Settings")}>
@@ -1029,18 +1029,65 @@ export function EmployeeView({ app }) {
                   {proj?.name} · {jsa.date} · {jsa.supervisor}
                 </div>
 
-                {/* Sign-On Button (prominent) */}
-                {jsa.status === "active" && !alreadySigned && (
-                  <button className="btn btn-primary" style={{ width: "100%", padding: "14px", fontSize: 16, fontWeight: 700, marginBottom: 16 }}
-                    onClick={() => {
-                      setJsas(prev => prev.map(j => j.id === jsa.id ? {
-                        ...j, crewSignOn: [...(j.crewSignOn || []), { employeeId: activeEmp.id, name: activeEmp.name, signedAt: new Date().toISOString() }]
-                      } : j));
-                      show(t("You have signed the JSA"));
-                    }}>
-                    ✍️ {t("Sign JSA")}
-                  </button>
-                )}
+                {/* Sign-On with Signature Pad */}
+                {jsa.status === "active" && !alreadySigned && (() => {
+                  const sigCanvasRef = React.createRef();
+                  let sigDrawing = false;
+                  let sigHasStrokes = false;
+                  return (
+                    <div style={{ marginBottom: 16 }}>
+                      {/* Hazard acknowledgment header */}
+                      <div style={{ background: "var(--amber-dim)", border: "1px solid var(--amber)", borderRadius: 8, padding: 12, marginBottom: 12, textAlign: "center" }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--amber)" }}>⚠️ {t("Review & Sign")}</div>
+                        <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 4 }}>
+                          {lang === "es" ? "Revise los peligros abajo y firme para reconocer" : "Review hazards below and sign to acknowledge"}
+                        </div>
+                      </div>
+
+                      {/* Signature pad */}
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 600, marginBottom: 4 }}>{t("Sign below")}</div>
+                        <canvas ref={sigCanvasRef}
+                          style={{ width: "100%", height: 120, background: "var(--bg3)", border: "2px solid var(--border)", borderRadius: 8, cursor: "crosshair", touchAction: "none" }}
+                          onMouseDown={(e) => { e.preventDefault(); const ctx = sigCanvasRef.current.getContext("2d"); const rect = sigCanvasRef.current.getBoundingClientRect(); ctx.beginPath(); ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top); sigDrawing = true; }}
+                          onMouseMove={(e) => { if (!sigDrawing) return; e.preventDefault(); const ctx = sigCanvasRef.current.getContext("2d"); const rect = sigCanvasRef.current.getBoundingClientRect(); ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top); ctx.stroke(); sigHasStrokes = true; }}
+                          onMouseUp={(e) => { if (e) e.preventDefault(); sigDrawing = false; }}
+                          onMouseLeave={() => { sigDrawing = false; }}
+                          onTouchStart={(e) => { e.preventDefault(); const ctx = sigCanvasRef.current.getContext("2d"); const rect = sigCanvasRef.current.getBoundingClientRect(); const touch = e.touches[0]; ctx.beginPath(); ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top); sigDrawing = true; }}
+                          onTouchMove={(e) => { if (!sigDrawing) return; e.preventDefault(); const ctx = sigCanvasRef.current.getContext("2d"); const rect = sigCanvasRef.current.getBoundingClientRect(); const touch = e.touches[0]; ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top); ctx.stroke(); sigHasStrokes = true; }}
+                          onTouchEnd={(e) => { if (e) e.preventDefault(); sigDrawing = false; }}
+                          ref={(canvas) => {
+                            if (!canvas || canvas._init) return;
+                            canvas._init = true;
+                            const ctx = canvas.getContext("2d");
+                            const rect = canvas.getBoundingClientRect();
+                            canvas.width = rect.width * (window.devicePixelRatio || 1);
+                            canvas.height = rect.height * (window.devicePixelRatio || 1);
+                            ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+                            ctx.strokeStyle = "#1e2d3b";
+                            ctx.lineWidth = 3;
+                            ctx.lineCap = "round";
+                            ctx.lineJoin = "round";
+                            sigCanvasRef.current = canvas;
+                          }}
+                        />
+                      </div>
+
+                      <button className="btn btn-primary" style={{ width: "100%", padding: "14px", fontSize: 16, fontWeight: 700 }}
+                        onClick={() => {
+                          const canvas = sigCanvasRef.current;
+                          if (!canvas) return;
+                          const sigData = canvas.toDataURL("image/png");
+                          setJsas(prev => prev.map(j => j.id === jsa.id ? {
+                            ...j, crewSignOn: [...(j.crewSignOn || []), { employeeId: activeEmp.id, name: activeEmp.name, signedAt: new Date().toISOString(), signature: sigData }]
+                          } : j));
+                          show(t("You have signed the JSA"), "ok");
+                        }}>
+                        ✍️ {t("I Acknowledge & Sign")}
+                      </button>
+                    </div>
+                  );
+                })()}
                 {alreadySigned && (
                   <div style={{ background: "#10b98122", color: "#10b981", padding: 12, borderRadius: 8, textAlign: "center", fontWeight: 600, marginBottom: 16, fontSize: 14 }}>
                     ✓ {t("You have signed this JSA")}
@@ -1081,6 +1128,7 @@ export function EmployeeView({ app }) {
                               <span style={{ background: hrc.bg, color: "#fff", fontSize: 10, padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>{score}</span>
                               <span style={{ fontSize: 12, fontWeight: 500 }}>{h.hazard}</span>
                             </div>
+                            {h.hazardEs && <div style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic", marginBottom: 2 }}>{h.hazardEs}</div>}
                             <div style={{ fontSize: 11, color: "var(--text3)" }}>
                               {(h.controls || []).map((c, ci) => <span key={ci}>✓ {c}{ci < h.controls.length - 1 ? " · " : ""}</span>)}
                             </div>
@@ -1108,9 +1156,24 @@ export function EmployeeView({ app }) {
           }
 
           // List view
+          const unsignedJsas = myJsaList.filter(j => j.status === "active" && !(j.crewSignOn || []).some(c => c.employeeId === activeEmp.id));
           return (
             <div className="emp-content">
               <div className="section-title" style={{ fontSize: 16, marginBottom: 12 }}>{t("Job Safety Analysis")}</div>
+
+              {/* Unsigned JSA notification */}
+              {unsignedJsas.length > 0 && (
+                <div style={{ background: "rgba(245,158,11,0.12)", border: "2px solid var(--amber)", borderRadius: 10, padding: 14, marginBottom: 16, cursor: "pointer", animation: "fadeIn 0.3s" }}
+                  onClick={() => setActiveJsaId(unsignedJsas[0].id)}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 24 }}>⚠️</span>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--amber)" }}>{t("You have an unsigned safety briefing")}</div>
+                      <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>{unsignedJsas[0].title} — {t("Tap to review & sign")}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {myJsaList.length === 0 ? (
                 <div className="empty-state" style={{ padding: "30px 20px" }}>

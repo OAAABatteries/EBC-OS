@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
 import { listFiles, getFileUrl, downloadFile } from "../lib/supabase";
@@ -8,7 +8,58 @@ import {
   PPE_ITEMS, RISK_LIKELIHOOD, RISK_SEVERITY, riskColor,
   HAZARD_CATEGORIES, CONTROL_HIERARCHY, PERMIT_TYPES,
   HAZARD_LIBRARY, TRADE_LABELS, JSA_TEMPLATES, WEATHER_HAZARD_MAP,
+  TRADE_CARDS, WEATHER_QUICK,
 } from "../data/jsaConstants";
+// ═══════════════════════════════════════════════════════════════
+//  Signature Pad — Touch-to-Sign canvas (field-optimized)
+// ═══════════════════════════════════════════════════════════════
+function FieldSignaturePad({ onSave, onClear, label, t }) {
+  const canvasRef = useRef(null);
+  const [drawing, setDrawing] = useState(false);
+  const [hasStrokes, setHasStrokes] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * (window.devicePixelRatio || 1);
+    canvas.height = rect.height * (window.devicePixelRatio || 1);
+    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+    ctx.strokeStyle = "#1e2d3b";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+  }, []);
+
+  const getPos = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches ? e.touches[0] : e;
+    return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+  };
+  const startDraw = (e) => { e.preventDefault(); const ctx = canvasRef.current.getContext("2d"); const pos = getPos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); setDrawing(true); };
+  const draw = (e) => { if (!drawing) return; e.preventDefault(); const ctx = canvasRef.current.getContext("2d"); const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); setHasStrokes(true); };
+  const endDraw = (e) => { if (e) e.preventDefault(); setDrawing(false); };
+  const handleClear = () => { const canvas = canvasRef.current; const ctx = canvas.getContext("2d"); ctx.clearRect(0, 0, canvas.width, canvas.height); setHasStrokes(false); if (onClear) onClear(); };
+  const handleSave = () => { if (!hasStrokes) return null; return canvasRef.current.toDataURL("image/png"); };
+
+  // Expose save via ref-like callback
+  useEffect(() => { if (onSave) onSave({ getSig: handleSave, clear: handleClear }); }, [hasStrokes]);
+
+  return (
+    <div>
+      {label && <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 600, marginBottom: 4 }}>{label}</div>}
+      <canvas ref={canvasRef}
+        style={{ width: "100%", height: 120, background: "#f8f9fb", border: "2px solid var(--border)", borderRadius: 8, cursor: "crosshair", touchAction: "none" }}
+        onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
+        onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw} />
+      <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+        <button className="cal-nav-btn" style={{ fontSize: 12 }} onClick={handleClear}>{t ? t("Clear") : "Clear"}</button>
+      </div>
+    </div>
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  Foreman View — Hours Budget, Crew & Project Management Portal
@@ -87,6 +138,16 @@ export function ForemanView({ app }) {
     steps: [], ppe: [], permits: [],
   });
   const updJsaForm = (k, v) => setJsaForm(f => ({ ...f, [k]: v }));
+
+  // ── Pre-Task Safety Roll Call state ──
+  const [rcStep, setRcStep] = useState("pick"); // pick | crew | sign | supervisor | done
+  const [rcJsaId, setRcJsaId] = useState(null);
+  const [rcWeather, setRcWeather] = useState("clear");
+  const [rcSignIdx, setRcSignIdx] = useState(0);
+  const [rcQueue, setRcQueue] = useState([]); // [{employeeId, name, signed: false}]
+  const [rcSelected, setRcSelected] = useState({}); // {employeeId: true/false}
+  const [rcAddingCrew, setRcAddingCrew] = useState(false);
+  const sigRef = useRef(null);
 
   // ── daily report form state ──
   const [reportForm, setReportForm] = useState({ date: new Date().toISOString().slice(0, 10), weather: "Clear", crewCount: "", workPerformed: "", issues: "", materialsUsed: "" });
@@ -473,7 +534,7 @@ export function ForemanView({ app }) {
     return (
       <div className="employee-app">
         <header className="employee-header">
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
+          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
           <span className="text-sm text-muted">{t("Foreman Portal")}</span>
         </header>
         <div className="employee-body">
@@ -544,7 +605,7 @@ export function ForemanView({ app }) {
       )}
       <header className="employee-header">
         <div>
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
+          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
           <span className="text-xs text-muted">{activeForeman.name} · {t("Foreman Portal")}</span>
         </div>
         <button className="settings-gear" onClick={() => setForemanTab("settings")} title={t("Settings")}>
@@ -1188,10 +1249,18 @@ export function ForemanView({ app }) {
                   <div>
                     <div className="flex-between" style={{ marginBottom: 12 }}>
                       <div className="section-title" style={{ fontSize: 16 }}>{t("Job Safety Analysis")}</div>
-                      <button className="btn btn-primary btn-sm" onClick={() => {
-                        setJsaForm(f => ({ ...f, projectId: String(selectedProjectId || ""), supervisor: activeForeman.name, competentPerson: activeForeman.name }));
-                        setJsaView("create");
-                      }}>{t("+ New JSA")}</button>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button className="btn btn-primary btn-sm" onClick={() => {
+                          setJsaView("rollcall");
+                          setRcStep("pick");
+                          setRcWeather("clear");
+                          setRcJsaId(null);
+                        }}>{t("Pre-Task Safety")}</button>
+                        <button className="cal-nav-btn" style={{ fontSize: 11 }} onClick={() => {
+                          setJsaForm(f => ({ ...f, projectId: String(selectedProjectId || ""), supervisor: activeForeman.name, competentPerson: activeForeman.name }));
+                          setJsaView("create");
+                        }}>+</button>
+                      </div>
                     </div>
 
                     {myJsas.length === 0 ? (
@@ -1226,6 +1295,367 @@ export function ForemanView({ app }) {
                     })}
                   </div>
                 )}
+
+                {/* ── PRE-TASK SAFETY ROLL CALL ── */}
+                {jsaView === "rollcall" && (() => {
+                  const rcJsa = rcJsaId ? (jsas || []).find(j => j.id === rcJsaId) : null;
+                  const updateRcJsa = (patch) => setJsas(prev => prev.map(j => j.id === rcJsaId ? { ...j, ...patch } : j));
+                  const proj = selectedProject;
+
+                  // ── STEP 1: PICK THE TASK ──
+                  if (rcStep === "pick") {
+                    return (
+                      <div>
+                        <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
+                          <button className="cal-nav-btn" onClick={() => setJsaView("list")}>{t("← Back")}</button>
+                          <span style={{ fontSize: 16, fontWeight: 700 }}>{t("Pre-Task Safety")}</span>
+                        </div>
+
+                        {!selectedProjectId && (
+                          <div className="card" style={{ padding: 16, textAlign: "center", color: "var(--amber)" }}>
+                            {t("Select a project first")}
+                          </div>
+                        )}
+
+                        {selectedProjectId && (
+                          <>
+                            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 4 }}>{proj?.name || "Project"}</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 16 }}>{t("Pick today's task")}</div>
+
+                            {/* Trade cards - 2 column grid */}
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+                              {TRADE_CARDS.map(card => {
+                                const tmpl = JSA_TEMPLATES.find(t => t.id === card.templateId);
+                                if (!tmpl) return null;
+                                const tradeLabel = lang === "es"
+                                  ? (TRADE_LABELS[card.trade]?.labelEs || card.trade) + (card.suffixEs ? " — " + card.suffixEs : "")
+                                  : (TRADE_LABELS[card.trade]?.label || card.trade) + (card.suffix ? " — " + card.suffix : "");
+                                return (
+                                  <div key={card.templateId} className="card" style={{
+                                    padding: 16, cursor: "pointer", borderLeft: `4px solid ${card.color}`,
+                                    display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                                    textAlign: "center", transition: "transform 0.15s",
+                                  }} onClick={() => {
+                                    // Auto-create JSA from template
+                                    const trade = tmpl.trade;
+                                    const lib = HAZARD_LIBRARY[trade] || [];
+                                    const steps = tmpl.steps.map((s, i) => ({
+                                      id: "s_" + Date.now() + "_" + i,
+                                      step: s.step, stepEs: s.stepEs,
+                                      hazards: (s.hazards || []).map(hIdx => {
+                                        const h = lib[hIdx];
+                                        if (!h) return null;
+                                        return { hazard: h.hazard, hazardEs: h.hazardEs, category: h.category, likelihood: h.likelihood, severity: h.severity, controls: [...h.controls], controlType: h.controlType, ppe: h.ppe ? [...h.ppe] : [] };
+                                      }).filter(Boolean),
+                                    }));
+                                    // Add weather hazard if applicable
+                                    const wh = WEATHER_HAZARD_MAP[rcWeather];
+                                    if (wh && rcWeather !== "clear") {
+                                      steps.push({ id: "s_weather_" + Date.now(), step: "Weather precautions", stepEs: "Precauciones climáticas",
+                                        hazards: [{ hazard: wh.hazard, hazardEs: wh.hazardEs, category: wh.category, likelihood: 3, severity: 3, controls: ["Monitor conditions", "Take breaks as needed"], controlType: "administrative", ppe: wh.ppe || [] }],
+                                      });
+                                    }
+                                    const newJsa = {
+                                      id: crypto.randomUUID(),
+                                      projectId: selectedProjectId,
+                                      templateId: card.templateId,
+                                      trade, title: tmpl.title, titleEs: tmpl.titleEs,
+                                      location: proj?.address || "",
+                                      date: new Date().toISOString().slice(0, 10),
+                                      shift: new Date().getHours() < 14 ? "day" : "night",
+                                      weather: rcWeather,
+                                      supervisor: activeForeman.name,
+                                      competentPerson: activeForeman.name,
+                                      status: "draft",
+                                      steps, ppe: [...tmpl.ppe], permits: [...tmpl.permits],
+                                      crewSignOn: [], nearMisses: [],
+                                      toolboxTalk: { topic: "", notes: "", discussed: false },
+                                      createdAt: new Date().toISOString(),
+                                      createdBy: activeForeman.name, audit: [],
+                                    };
+                                    setJsas(prev => [...prev, newJsa]);
+                                    setRcJsaId(newJsa.id);
+                                    // Pre-select crew for project
+                                    const sel = {};
+                                    crewForProject.forEach(c => { sel[c.id] = true; });
+                                    setRcSelected(sel);
+                                    setRcStep("crew");
+                                  }}>
+                                    <span style={{ fontSize: 28 }}>{card.icon}</span>
+                                    <span style={{ fontSize: 13, fontWeight: 600, color: card.color }}>{tradeLabel}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {/* Weather quick-select */}
+                            <div style={{ marginBottom: 8 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text2)", marginBottom: 6 }}>{t("Weather")}</div>
+                              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                {WEATHER_QUICK.map(w => (
+                                  <button key={w.key} className={rcWeather === w.key ? "btn btn-primary btn-sm" : "cal-nav-btn"}
+                                    style={{ fontSize: 12, padding: "6px 10px" }}
+                                    onClick={() => setRcWeather(w.key)}>
+                                    {w.icon} {lang === "es" ? w.labelEs : w.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  // ── STEP 2: CREW ROLL CALL ──
+                  if (rcStep === "crew") {
+                    const allCrew = [...crewForProject];
+                    // Include any employees not in crewForProject that were manually added
+                    const crewIds = new Set(allCrew.map(c => c.id));
+                    return (
+                      <div>
+                        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
+                          <button className="cal-nav-btn" onClick={() => { setRcStep("pick"); }}>{t("← Back")}</button>
+                          <span style={{ fontSize: 16, fontWeight: 700 }}>{t("Crew Roll Call")}</span>
+                        </div>
+
+                        <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 4 }}>{proj?.name} · {rcJsa?.title}</div>
+                        <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 16 }}>
+                          {new Date().toLocaleDateString(lang === "es" ? "es" : "en-US", { weekday: "long", month: "long", day: "numeric" })}
+                        </div>
+
+                        {/* Crew list */}
+                        {allCrew.length === 0 ? (
+                          <div className="card" style={{ padding: 16, textAlign: "center", color: "var(--text3)" }}>
+                            {t("No crew scheduled. Add crew members below.")}
+                          </div>
+                        ) : allCrew.map(c => (
+                          <div key={c.id} className="card" style={{
+                            padding: 12, marginBottom: 6, display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
+                            borderLeft: rcSelected[c.id] ? "4px solid #10b981" : "4px solid var(--border)",
+                            opacity: rcSelected[c.id] ? 1 : 0.5,
+                          }} onClick={() => setRcSelected(prev => ({ ...prev, [c.id]: !prev[c.id] }))}>
+                            <span style={{ fontSize: 20, width: 28, textAlign: "center" }}>{rcSelected[c.id] ? "✅" : "⬜"}</span>
+                            <div>
+                              <div style={{ fontSize: 14, fontWeight: 600 }}>{c.name}</div>
+                              <div style={{ fontSize: 11, color: "var(--text3)" }}>{c.role || "Crew"}</div>
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Add crew */}
+                        {rcAddingCrew ? (
+                          <select className="form-select" style={{ fontSize: 12, marginTop: 8 }} autoFocus
+                            onChange={e => {
+                              if (!e.target.value) return;
+                              const emp = employees.find(em => em.id === Number(e.target.value));
+                              if (!emp || crewIds.has(emp.id)) return;
+                              crewForProject.push({ id: emp.id, name: emp.name, role: emp.role || "Crew" });
+                              setRcSelected(prev => ({ ...prev, [emp.id]: true }));
+                              setRcAddingCrew(false);
+                            }} onBlur={() => setRcAddingCrew(false)}>
+                            <option value="">{t("Select employee...")}</option>
+                            {(employees || []).filter(e => !crewIds.has(e.id) && e.active !== false).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                          </select>
+                        ) : (
+                          <button className="cal-nav-btn" style={{ marginTop: 8, fontSize: 12 }} onClick={() => setRcAddingCrew(true)}>
+                            + {t("Add Crew")}
+                          </button>
+                        )}
+
+                        {/* Start Sign-On */}
+                        <button className="btn btn-primary" style={{ width: "100%", marginTop: 20, padding: "14px", fontSize: 16 }}
+                          disabled={Object.values(rcSelected).filter(Boolean).length === 0}
+                          onClick={() => {
+                            const queue = crewForProject.filter(c => rcSelected[c.id]).map(c => ({ employeeId: c.id, name: c.name }));
+                            setRcQueue(queue);
+                            setRcSignIdx(0);
+                            setRcStep("sign");
+                          }}>
+                          {t("Start Sign-On")} ({Object.values(rcSelected).filter(Boolean).length})
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  // ── STEP 3: PASS & SIGN ──
+                  if (rcStep === "sign" && rcQueue.length > 0) {
+                    const current = rcQueue[rcSignIdx];
+                    const allHazards = (rcJsa?.steps || []).flatMap(s => s.hazards || []);
+                    const progress = rcSignIdx + 1;
+                    const total = rcQueue.length;
+                    return (
+                      <div>
+                        {/* Progress */}
+                        <div style={{ marginBottom: 12 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--text3)", marginBottom: 4 }}>
+                            <span>{progress} {t("of")} {total}</span>
+                            <span>{t("Pass device to next person")}</span>
+                          </div>
+                          <div style={{ height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: `${(progress / total) * 100}%`, background: "#10b981", borderRadius: 2, transition: "width 0.3s" }} />
+                          </div>
+                        </div>
+
+                        {/* Name banner */}
+                        <div style={{ textAlign: "center", padding: "16px 0", marginBottom: 12 }}>
+                          <div style={{ fontSize: 28, fontWeight: 700 }}>{current.name}</div>
+                          <div style={{ fontSize: 13, color: "var(--text3)" }}>{proj?.name}</div>
+                        </div>
+
+                        {/* Hazard cards */}
+                        <div style={{ marginBottom: 16 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--amber)", marginBottom: 8 }}>{t("Hazards")}</div>
+                          {allHazards.map((h, i) => {
+                            const score = (h.likelihood || 1) * (h.severity || 1);
+                            const hrc = riskColor(score);
+                            const catInfo = HAZARD_CATEGORIES[h.category];
+                            return (
+                              <div key={i} className="card" style={{ padding: 10, marginBottom: 6, borderLeft: `3px solid ${catInfo?.color || "var(--amber)"}` }}>
+                                <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4 }}>
+                                  <span style={{ background: hrc.bg, color: "#fff", fontSize: 10, padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>{score}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 600 }}>{h.hazard}</span>
+                                </div>
+                                {h.hazardEs && <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 4, fontStyle: "italic" }}>{h.hazardEs}</div>}
+                                <div style={{ fontSize: 11, color: "var(--text2)" }}>
+                                  {(h.controls || []).map((c, ci) => <div key={ci}>✓ {c}</div>)}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* PPE */}
+                        <div style={{ marginBottom: 16 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Required PPE")}</div>
+                          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                            {(rcJsa?.ppe || []).map(k => {
+                              const item = PPE_ITEMS.find(p => p.key === k);
+                              return item ? (
+                                <div key={k} style={{ textAlign: "center" }}>
+                                  <div style={{ fontSize: 22 }}>{item.icon}</div>
+                                  <div style={{ fontSize: 10, color: "var(--text2)" }}>{item.label}</div>
+                                  <div style={{ fontSize: 9, color: "var(--text3)" }}>{item.labelEs}</div>
+                                </div>
+                              ) : null;
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Signature pad */}
+                        <div style={{ marginBottom: 12 }}>
+                          <FieldSignaturePad
+                            key={rcSignIdx}
+                            label={t("Sign below")}
+                            t={t}
+                            onSave={(ref) => { sigRef.current = ref; }}
+                          />
+                        </div>
+
+                        {/* Sign & Next button */}
+                        <button className="btn btn-primary" style={{ width: "100%", padding: "14px", fontSize: 16 }}
+                          onClick={() => {
+                            const sigData = sigRef.current?.getSig?.();
+                            if (!sigData) { show(t("Please sign first"), "err"); return; }
+                            // Add signature to JSA
+                            updateRcJsa({
+                              crewSignOn: [...(rcJsa?.crewSignOn || []), {
+                                employeeId: current.employeeId,
+                                name: current.name,
+                                signedAt: new Date().toISOString(),
+                                signature: sigData,
+                              }],
+                            });
+                            if (rcSignIdx < rcQueue.length - 1) {
+                              setRcSignIdx(rcSignIdx + 1);
+                              sigRef.current = null;
+                            } else {
+                              // All crew signed — move to supervisor sign-off
+                              setRcStep("supervisor");
+                              sigRef.current = null;
+                            }
+                          }}>
+                          {rcSignIdx < rcQueue.length - 1 ? t("Sign & Next") : t("Sign & Finish")}
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  // ── STEP 3b: SUPERVISOR SIGN-OFF ──
+                  if (rcStep === "supervisor") {
+                    return (
+                      <div>
+                        <div style={{ textAlign: "center", padding: "24px 0", marginBottom: 16 }}>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: "var(--amber)" }}>{t("Supervisor Sign-Off")}</div>
+                          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>{activeForeman.name}</div>
+                          <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 4 }}>
+                            {(rcJsa?.crewSignOn || []).length} {t("crew members signed")}
+                          </div>
+                        </div>
+
+                        <FieldSignaturePad
+                          key="supervisor"
+                          label={t("Supervisor signature")}
+                          t={t}
+                          onSave={(ref) => { sigRef.current = ref; }}
+                        />
+
+                        <button className="btn btn-primary" style={{ width: "100%", marginTop: 16, padding: "14px", fontSize: 16 }}
+                          onClick={() => {
+                            const sigData = sigRef.current?.getSig?.();
+                            if (!sigData) { show(t("Please sign first"), "err"); return; }
+                            updateRcJsa({ supervisorSignature: sigData, status: "active" });
+                            setRcStep("done");
+                            show(t("Pre-Task Safety Complete"), "ok");
+                          }}>
+                          {t("Activate JSA")}
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  // ── STEP 4: CONFIRMATION ──
+                  if (rcStep === "done") {
+                    const finalJsa = (jsas || []).find(j => j.id === rcJsaId);
+                    return (
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: 48, marginBottom: 8 }}>✅</div>
+                        <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>{t("Pre-Task Safety Complete")}</div>
+                        <div style={{ fontSize: 14, color: "var(--text2)", marginBottom: 20 }}>
+                          {(finalJsa?.crewSignOn || []).length} {t("crew members signed")} · {finalJsa?.title}
+                        </div>
+
+                        {/* Signed crew list */}
+                        <div style={{ textAlign: "left", marginBottom: 20 }}>
+                          {(finalJsa?.crewSignOn || []).map((c, i) => (
+                            <div key={i} className="flex-between" style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                              <span style={{ fontSize: 13, fontWeight: 500 }}>{c.name}</span>
+                              <span style={{ fontSize: 11, color: "#10b981" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button className="cal-nav-btn" style={{ flex: 1, padding: 12 }} onClick={async () => {
+                            try {
+                              const { generateJsaPdf } = await import("../utils/jsaPdf");
+                              const p = projects.find(pr => pr.id === finalJsa?.projectId);
+                              await generateJsaPdf({ ...finalJsa, projectName: p?.name || "Project" });
+                              show(t("PDF exported"), "ok");
+                            } catch (e) { show("PDF error: " + e.message, "err"); }
+                          }}>{t("Export PDF")}</button>
+                          <button className="btn btn-primary" style={{ flex: 1, padding: 12 }} onClick={() => {
+                            setJsaView("list");
+                            setRcJsaId(null);
+                            setRcStep("pick");
+                          }}>{t("Done")}</button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })()}
 
                 {/* ── JSA DETAIL VIEW ── */}
                 {jsaView === "detail" && (() => {

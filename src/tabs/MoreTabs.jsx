@@ -566,10 +566,10 @@ function TmTicketsTab({ app }) {
   return (
     <div>
       <div className="flex-between mt-16">
-        <div className="flex gap-8">
-          <div className="kpi-card"><span className="text2">Total T&M</span><strong>{app.fmt(totalValue)}</strong></div>
-          <div className="kpi-card"><span className="text2">Pending</span><strong>{app.fmt(pendingValue)}</strong></div>
-          <div className="kpi-card"><span className="text2">Approved</span><strong>{app.fmt(approvedValue)}</strong></div>
+        <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
+          <div className="kpi-card" style={{ minWidth: 100 }}><span className="text2">Total T&M</span><strong>{app.fmt(totalValue)}</strong></div>
+          <div className="kpi-card" style={{ minWidth: 100 }}><span className="text2">Pending</span><strong>{app.fmt(pendingValue)}</strong></div>
+          <div className="kpi-card" style={{ minWidth: 100 }}><span className="text2">Approved</span><strong>{app.fmt(approvedValue)}</strong></div>
         </div>
         <button className="btn btn-primary btn-sm" onClick={() => setAdding(!adding)}>+ New T&M Ticket</button>
       </div>

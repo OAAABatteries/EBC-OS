@@ -205,7 +205,7 @@ export function DriverView({ app }) {
     return (
       <div className="employee-app">
         <header className="employee-header">
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
+          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
           <span className="text-sm text-muted">{t("Driver Portal")}</span>
         </header>
         <div className="employee-body">
@@ -237,7 +237,7 @@ export function DriverView({ app }) {
     <div className="employee-app">
       <header className="employee-header">
         <div>
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
+          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
           <span className="text-xs text-muted">{activeDriver.name} · {t("Deliveries")}</span>
         </div>
         <button className="settings-gear" onClick={() => setDriverTab("settings")} title={t("Settings")}>&#9881;</button>

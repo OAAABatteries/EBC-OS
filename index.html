@@ -2,16 +2,23 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=4" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=4" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=4" />
-    <link rel="manifest" href="/manifest.json?v=4" />
+    <!-- Dark browser → white eagle on dark circle -->
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=7" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=7" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=7" media="(prefers-color-scheme: dark)" />
+    <!-- Light browser → blue eagle on light circle -->
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-light-48.png?v=7" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-light-32.png?v=7" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-light-16.png?v=7" media="(prefers-color-scheme: light)" />
+    <!-- Fallback (no preference) → dark variant -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=7" />
+    <link rel="manifest" href="/manifest.json?v=7" />
     <meta name="theme-color" content="#0a0e1a" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Eagles Brothers Constructors" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=4" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=7" />
     <meta name="description" content="Construction management OS for drywall & framing contractors" />
     <title>Eagles Brothers Constructors</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -28,26 +35,40 @@
         font-family:'Barlow Condensed',sans-serif;color:#e09422;
         transition:opacity .4s;
       ">
-        <div style="position:relative;width:80px;height:80px;margin-bottom:24px;">
-          <div style="
-            width:80px;height:80px;border-radius:50%;
-            border:3px solid rgba(224,148,34,0.15);
-            border-top-color:#e09422;
-            animation:splash-spin 1s linear infinite;
-          "></div>
-          <img src="/ebc-eagle.png" alt="EBC" style="
-            position:absolute;inset:0;width:60px;height:60px;margin:auto;
-            object-fit:contain;
-            filter:brightness(0) saturate(100%) invert(62%) sepia(85%) saturate(500%) hue-rotate(350deg) brightness(1.05);
+        <!-- Eagle logo — fade in with subtle glow -->
+        <div class="splash-logo">
+          <img src="/ebc-eagle-white.png" alt="EBC" style="
+            width:72px;height:72px;object-fit:contain;
+            opacity:0;animation:splash-reveal 1.2s ease-out 0.2s forwards;
           " />
         </div>
-        <div style="font-size:13px;font-weight:700;letter-spacing:2px;color:#e09422;margin-top:4px;">EAGLES BROTHERS CONSTRUCTORS</div>
-        <div style="margin-top:24px;width:120px;height:3px;background:rgba(224,148,34,0.15);border-radius:2px;overflow:hidden;">
+        <div style="font-size:13px;font-weight:700;letter-spacing:3px;color:#e09422;margin-top:16px;opacity:0;animation:splash-reveal 1s ease-out 0.6s forwards;">
+          EAGLES BROTHERS CONSTRUCTORS
+        </div>
+        <div style="margin-top:28px;width:120px;height:2px;background:rgba(224,148,34,0.12);border-radius:2px;overflow:hidden;opacity:0;animation:splash-reveal 0.8s ease-out 0.9s forwards;">
           <div style="height:100%;background:#e09422;border-radius:2px;animation:splash-bar 1.8s ease-in-out infinite;"></div>
         </div>
       </div>
       <style>
-        @keyframes splash-spin{to{transform:rotate(360deg)}}
+        .splash-logo{
+          position:relative;
+          width:88px;height:88px;
+          display:flex;align-items:center;justify-content:center;
+        }
+        .splash-logo::before{
+          content:'';position:absolute;inset:-4px;
+          border-radius:50%;
+          background:radial-gradient(circle,rgba(224,148,34,0.08) 0%,transparent 70%);
+          animation:splash-glow 2.4s ease-in-out infinite;
+        }
+        @keyframes splash-reveal{
+          from{opacity:0;transform:translateY(8px)}
+          to{opacity:1;transform:translateY(0)}
+        }
+        @keyframes splash-glow{
+          0%,100%{opacity:0.4;transform:scale(1)}
+          50%{opacity:1;transform:scale(1.15)}
+        }
         @keyframes splash-bar{0%{width:0;margin-left:0}50%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
       </style>
     </div>

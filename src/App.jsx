@@ -305,7 +305,7 @@ function AuthGate() {
 
 function App({ auth, onLogout }) {
   // ── UI preferences (localStorage only, no Supabase sync) ──
-  const [theme, setTheme] = useLocalStorage("theme", "steel");
+  const [theme, setTheme] = useLocalStorage("theme", "daylight");
   const [lang, setLang] = useLocalStorage("ebc_lang", "en");
   const [apiKey, setApiKey] = useLocalStorage("apiKey", "");
 
@@ -2298,7 +2298,7 @@ function App({ auth, onLogout }) {
 
       <header className="header">
         <div className="logo" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <img src="/ebc-eagle.png" alt="Eagles Brothers Constructors" style={{ height: 32, width: "auto", objectFit: "contain", filter: theme === "daylight" ? "none" : "brightness(0) saturate(100%) invert(62%) sepia(85%) saturate(500%) hue-rotate(350deg) brightness(1.05)", transition: "filter 0.3s" }} onError={(e) => e.target.style.display = "none"} />
+          <img src={theme === "daylight" ? "/eagle-blue.png" : "/ebc-eagle-white.png"} alt="Eagles Brothers Constructors" style={{ height: 32, width: "auto", objectFit: "contain", transition: "opacity 0.3s" }} onError={(e) => e.target.style.display = "none"} />
         </div>
         <button className="hamburger" onClick={() => setMobileNav(!mobileNav)} aria-label="Menu">
           <span className={`hamburger-line ${mobileNav ? "open" : ""}`} />
@@ -2351,7 +2351,7 @@ function App({ auth, onLogout }) {
           <div className="mobile-nav-overlay" onClick={() => setMobileNav(false)}>
             <nav className="mobile-nav" onClick={e => e.stopPropagation()}>
               <div className="mobile-nav-header">
-                <div className="logo" style={{ fontSize: 16, display: "flex", alignItems: "center" }}><img src="/ebc-eagle.png" alt="EBC" style={{ height: 24, width: "auto", objectFit: "contain", filter: theme === "daylight" ? "none" : "brightness(0) saturate(100%) invert(62%) sepia(85%) saturate(500%) hue-rotate(350deg) brightness(1.05)" }} onError={(e) => e.target.style.display = "none"} /></div>
+                <div className="logo" style={{ fontSize: 16, display: "flex", alignItems: "center" }}><img src={theme === "daylight" ? "/eagle-blue.png" : "/ebc-eagle-white.png"} alt="EBC" style={{ height: 24, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
                 <button className="modal-close" onClick={() => setMobileNav(false)}>{"\u2715"}</button>
               </div>
               <div className="mobile-nav-section">
