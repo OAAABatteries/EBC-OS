@@ -16,47 +16,47 @@ export const ROLES = {
   },
   pm: {
     label: "Project Manager",
-    access: ["dashboard", "bids", "projects", "estimating", "financials", "documents", "calendar", "schedule", "reports", "safety", "jsa", "materials", "deliveries", "incentives", "scope", "contacts", "timeclock", "map", "settings"],
+    access: ["dashboard", "bids", "projects", "estimating", "financials", "documents", "calendar", "schedule", "reports", "safety", "jsa", "materials", "deliveries", "incentives", "scope", "contacts", "timeclock", "sds", "map", "settings"],
     description: "Manage assigned projects and bids"
   },
   estimator: {
     label: "Estimator",
-    access: ["dashboard", "bids", "estimating", "materials", "contacts", "documents"],
+    access: ["dashboard", "bids", "estimating", "materials", "contacts", "documents", "sds"],
     description: "Estimating and bid management"
   },
   project_engineer: {
     label: "Project Engineer",
-    access: ["dashboard", "bids", "projects", "estimating", "documents", "calendar", "schedule", "reports", "materials", "scope", "contacts"],
+    access: ["dashboard", "bids", "projects", "estimating", "documents", "calendar", "schedule", "reports", "materials", "scope", "contacts", "sds"],
     description: "Project support, submittals, RFIs, documents"
   },
   foreman: {
     label: "Superintendent / Foreman",
-    access: ["dashboard", "projects", "schedule", "reports", "safety", "jsa", "materials", "timeclock", "map", "settings"],
+    access: ["dashboard", "projects", "schedule", "reports", "safety", "jsa", "materials", "timeclock", "sds", "map", "settings"],
     description: "Field operations and crew management"
   },
   safety: {
     label: "Safety Officer",
-    access: ["dashboard", "safety", "jsa", "reports", "schedule", "settings"],
+    access: ["dashboard", "safety", "jsa", "reports", "schedule", "sds", "settings"],
     description: "Safety compliance, JSAs, incident reporting"
   },
   accounting: {
     label: "Accounting",
-    access: ["dashboard", "financials", "timeclock", "reports", "contacts", "settings"],
-    description: "Invoices, change orders, payroll"
+    access: ["dashboard", "financials", "timeclock", "reports", "contacts", "projects", "calendar", "schedule", "sds", "settings"],
+    description: "Invoices, change orders, payroll, project budgets, PTO visibility"
   },
   office_admin: {
     label: "Office Admin",
-    access: ["dashboard", "bids", "projects", "financials", "documents", "calendar", "contacts", "timeclock", "reports", "settings"],
+    access: ["dashboard", "bids", "projects", "financials", "documents", "calendar", "contacts", "timeclock", "sds", "reports", "settings"],
     description: "Office operations, documents, scheduling"
   },
   employee: {
     label: "Employee / Crew",
-    access: ["dashboard", "timeclock", "schedule", "materials", "settings"],
+    access: ["dashboard", "timeclock", "schedule", "materials", "sds", "settings"],
     description: "Clock in/out, schedule, material requests"
   },
   driver: {
     label: "Driver",
-    access: ["dashboard", "deliveries", "materials", "settings"],
+    access: ["dashboard", "deliveries", "materials", "sds", "settings"],
     description: "Delivery queue, transit status, material requests"
   }
 };

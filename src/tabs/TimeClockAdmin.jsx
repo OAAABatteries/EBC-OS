@@ -704,11 +704,12 @@ export function TimeClockAdmin({ app }) {
                     <th>Out</th>
                     <th>Hours</th>
                     <th>Status</th>
+                    <th>T&M</th>
                   </tr>
                 </thead>
                 <tbody>
                   {allEntries.slice(0, 50).map((entry) => (
-                    <tr key={entry.id}>
+                    <tr key={entry.id} style={{ background: entry.isTM ? "rgba(224,148,34,0.08)" : undefined }}>
                       <td className="font-mono text-sm">{fmtDate(entry.clockIn)}</td>
                       <td className="font-semi">{entry.employeeName}</td>
                       <td className="text-sm">{entry.projectName}</td>
@@ -719,6 +720,20 @@ export function TimeClockAdmin({ app }) {
                         <span className={`badge ${entry.geofenceStatus === "inside" ? "badge-green" : entry.geofenceStatus === "override" ? "badge-amber" : "badge-red"}`}>
                           {entry.geofenceStatus}
                         </span>
+                      </td>
+                      <td>
+                        <button
+                          className={`badge ${entry.isTM ? "badge-amber" : "badge-muted"}`}
+                          style={{ cursor: "pointer", fontSize: 10, border: "none", padding: "2px 8px" }}
+                          onClick={() => {
+                            app.setTimeEntries(prev => prev.map(e => e.id === entry.id ? { ...e, isTM: !e.isTM } : e));
+                            app.show(entry.isTM ? "Removed T&M flag" : "Flagged as T&M", "ok");
+                          }}
+                          title={entry.isTM ? "Click to remove T&M flag" : "Click to flag as T&M extra work"}
+                        >
+                          {entry.isTM ? "T&M ✓" : "—"}
+                        </button>
+                        {entry.tmTicketId && <span className="text-xs text-muted" style={{ display: "block", marginTop: 2 }}>#{entry.tmTicketId.slice(0, 6)}</span>}
                       </td>
                     </tr>
                   ))}

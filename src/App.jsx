@@ -64,6 +64,7 @@ const SECONDARY_TABS = [
   { key: "scope", label: "Scope" },
   { key: "contacts", label: "Contacts" },
   { key: "timeclock", label: "Time Clock" },
+  { key: "sds", label: "SDS Binder" },
   { key: "map", label: "Map" },
   { key: "settings", label: "Settings" },
 ];
@@ -349,6 +350,7 @@ function App({ auth, onLogout }) {
   const [materials, setMaterials, _syncMaterials] = useSyncedState("materials", DEFAULT_MATERIALS);
   const [customAssemblies, setCustomAssemblies, _syncCustomAssemblies] = useSyncedState("customAssemblies", []);
   const [incentiveProjects, setIncentiveProjects, _syncIncentiveProjects] = useSyncedState("incentiveProjects", []);
+  const [sdsSheets, setSdsSheets, _syncSds] = useSyncedState("sdsSheets", []);
 
   // ── Aggregate sync status for UI ──
   const _allSync = [
@@ -360,6 +362,7 @@ function App({ auth, onLogout }) {
     _syncCalendarEvents, _syncPtoRequests, _syncEquipment, _syncEquipBookings,
     _syncCerts, _syncJsas, _syncTmTickets, _syncMaterials, _syncCustomAssemblies,
     _syncIncentiveProjects,
+    _syncSds,
   ];
   const syncStatus = useMemo(() => ({
     loading: _allSync.some(s => s.loading),
@@ -391,6 +394,66 @@ function App({ auth, onLogout }) {
     flushSyncQueue();
   }, []);
 
+  const [notifications, setNotifications] = useLocalStorage("ebc_notifications", []);
+  // ── notification generator (runs on mount + every 5 min) ──
+  useEffect(() => {
+    const generateNotifications = () => {
+      const now = new Date();
+      const candidates = [];
+      const addCandidate = (id, type, title, message, linkedType, linkedId) => {
+        candidates.push({ id, userId: auth?.id, type, title, message, linkedType, linkedId, read: false, createdAt: now.toISOString() });
+      };
+      // Cert expirations
+      (certifications || []).forEach(cert => {
+        if (!cert.expiryDate) return;
+        const expiry = new Date(cert.expiryDate);
+        const daysLeft = Math.floor((expiry - now) / 86400000);
+        const empName = (() => { try { const users = JSON.parse(localStorage.getItem("ebc_users") || "[]"); return users.find(u => u.id === cert.employeeId)?.name || "Employee"; } catch { return "Employee"; } })();
+        if (daysLeft < 0) addCandidate(`cert_exp_${cert.id}`, "cert_expired", "Certification Expired", `${empName}'s ${cert.name} expired ${Math.abs(daysLeft)} days ago`, "certification", cert.id);
+        else if (daysLeft <= 7) addCandidate(`cert_7d_${cert.id}`, "cert_urgent", "Certification Expiring", `${empName}'s ${cert.name} expires in ${daysLeft} days`, "certification", cert.id);
+        else if (daysLeft <= 30) addCandidate(`cert_30d_${cert.id}`, "cert_warning", "Certification Expiring Soon", `${empName}'s ${cert.name} expires in ${daysLeft} days`, "certification", cert.id);
+      });
+      // Overdue invoices
+      (invoices || []).forEach(inv => {
+        if (inv.status !== "overdue") return;
+        const age = Math.floor((now - new Date(inv.date)) / 86400000);
+        addCandidate(`inv_overdue_${inv.id}`, "invoice_overdue", "Invoice Overdue", `Invoice #${inv.number} is ${age} days old ($${inv.amount})`, "invoice", inv.id);
+      });
+      // Pending T&M tickets
+      const pendingTM = (tmTickets || []).filter(t => t.status === "draft" || t.status === "pending");
+      if (pendingTM.length > 0) addCandidate(`tm_pending_${now.toISOString().slice(0, 10)}`, "tm_pending", "T&M Tickets Pending", `${pendingTM.length} T&M ticket(s) need review`, "tmTickets", null);
+      // SDS expirations
+      (sdsSheets || []).forEach(sds => {
+        if (!sds.expiresAt) return;
+        const daysLeft = Math.floor((new Date(sds.expiresAt) - now) / 86400000);
+        if (daysLeft < 0) addCandidate(`sds_exp_${sds.id}`, "sds_expired", "SDS Expired", `${sds.productName} SDS has expired`, "sds", sds.id);
+        else if (daysLeft <= 30) addCandidate(`sds_30d_${sds.id}`, "sds_warning", "SDS Expiring Soon", `${sds.productName} SDS expires in ${daysLeft} days`, "sds", sds.id);
+      });
+      // Pending change orders
+      const pendingCOs = (changeOrders || []).filter(co => co.status === "pending");
+      if (pendingCOs.length > 0) addCandidate(`co_pending_${now.toISOString().slice(0, 10)}`, "co_pending", "Change Orders Pending", `${pendingCOs.length} change order(s) awaiting approval`, "changeOrders", null);
+
+      if (candidates.length > 0) {
+        // Read directly from localStorage to avoid stale closure issues with React strict mode
+        const current = (() => { try { return JSON.parse(localStorage.getItem("ebc_notifications") || "[]"); } catch { return []; } })();
+        const currentIds = new Set(current.map(n => n.id));
+        const fresh = candidates.filter(c => !currentIds.has(c.id));
+        if (fresh.length > 0) {
+          const merged = [...fresh, ...current].slice(0, 100);
+          setNotifications(merged);
+        }
+      }
+    };
+    generateNotifications();
+    const interval = setInterval(generateNotifications, 300000); // every 5 min
+    return () => clearInterval(interval);
+  }, [certifications?.length, invoices?.length, tmTickets?.length, sdsSheets?.length, changeOrders?.length]);
+
+  const unreadCount = (notifications || []).filter(n => !n.read).length;
+  const markAllRead = () => setNotifications(prev => (prev || []).map(n => ({ ...n, read: true })));
+  const markRead = (id) => setNotifications(prev => (prev || []).map(n => n.id === id ? { ...n, read: true } : n));
+  const clearNotifications = () => setNotifications([]);
+
   // ── i18n helper ──
   const t = useCallback((key) => {
     if (lang === "en") return key;
@@ -421,6 +484,7 @@ function App({ auth, onLogout }) {
   const [bidPageSize, setBidPageSize] = useState(24);
   const [projPageSize, setProjPageSize] = useState(24);
   const [installPrompt, setInstallPrompt] = useState(null);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   // ── PWA install prompt (24h cooldown after dismiss) ──
   useEffect(() => {
@@ -481,6 +545,7 @@ function App({ auth, onLogout }) {
     scheduleConflicts, setScheduleConflicts,
     jsas, setJsas,
     tmTickets, setTmTickets,
+    sdsSheets, setSdsSheets,
     show, setModal, modal, search, setSearch, tab, setTab, subTab, setSubTab, fmt, fmtK, nextId,
     lang, setLang, t,
     auth, onLogout,
@@ -610,7 +675,7 @@ function App({ auth, onLogout }) {
     admin:       { subtitle: "Company Overview",       showKPIs: true,  showCharts: true,  showDigest: true,  showBrief: true,  showQuickActions: true },
     pm:          { subtitle: "Projects & Bids",        showKPIs: true,  showCharts: true,  showDigest: true,  showBrief: true,  showQuickActions: true },
     office_admin:{ subtitle: "Office Operations",      showKPIs: true,  showCharts: false, showDigest: false, showBrief: true,  showQuickActions: false },
-    accounting:  { subtitle: "Financials & Payroll",   showKPIs: true,  showCharts: false, showDigest: false, showBrief: true,  showQuickActions: false },
+    accounting:  { subtitle: "Financials & Payroll",   showKPIs: true,  showCharts: true,  showDigest: true,  showBrief: true,  showQuickActions: false },
     safety:      { subtitle: "Safety & Compliance",    showKPIs: false, showCharts: false, showDigest: false, showBrief: true,  showQuickActions: false },
     foreman:     { subtitle: "Field Operations",       showKPIs: false, showCharts: false, showDigest: false, showBrief: true,  showQuickActions: false },
     driver:      { subtitle: "Deliveries",             showKPIs: false, showCharts: false, showDigest: false, showBrief: false, showQuickActions: false },
@@ -701,9 +766,14 @@ function App({ auth, onLogout }) {
       {dashCfg.showKPIs && userRole === "accounting" ? (
         <div className="kpi-grid">
           <div className="kpi-card">
-            <div className="kpi-label">{t("Pipeline Value")}</div>
-            <div className="kpi-value">{fmtK(pipeline)}</div>
-            <div className="kpi-sub">{bids.filter(b => b.status === "awarded").length} {t("awarded")}</div>
+            <div className="kpi-label">{t("Outstanding A/R")}</div>
+            <div className="kpi-value">{fmtK(invoices.filter(i => i.status === "pending" || i.status === "overdue").reduce((s, i) => s + (i.amount || 0), 0))}</div>
+            <div className="kpi-sub">{invoices.filter(i => i.status === "pending" || i.status === "overdue").length} {t("unpaid invoices")}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Overdue Invoices")}</div>
+            <div className="kpi-value" style={{ color: "var(--red)" }}>{fmtK(invoices.filter(i => i.status === "overdue").reduce((s, i) => s + (i.amount || 0), 0))}</div>
+            <div className="kpi-sub">{invoices.filter(i => i.status === "overdue").length} {t("past due")}</div>
           </div>
           <div className="kpi-card">
             <div className="kpi-label">{t("Active Projects")}</div>
@@ -711,14 +781,19 @@ function App({ auth, onLogout }) {
             <div className="kpi-sub">{t("billing in progress")}</div>
           </div>
           <div className="kpi-card">
-            <div className="kpi-label">{t("Team Members")}</div>
-            <div className="kpi-value">{(() => { try { return JSON.parse(localStorage.getItem("ebc_users") || "[]").length; } catch { return 0; } })()}</div>
-            <div className="kpi-sub">{t("on payroll")}</div>
+            <div className="kpi-label">{t("T&M Pending")}</div>
+            <div className="kpi-value">{tmTickets.filter(t => t.status === "pending" || t.status === "draft").length}</div>
+            <div className="kpi-sub">{t("tickets to review")}</div>
           </div>
           <div className="kpi-card">
-            <div className="kpi-label">{t("Win Rate")}</div>
-            <div className="kpi-value">{winRate}%</div>
-            <div className="kpi-sub">{awarded}W / {lost}L</div>
+            <div className="kpi-label">{t("Team on Payroll")}</div>
+            <div className="kpi-value">{(() => { try { return JSON.parse(localStorage.getItem("ebc_users") || "[]").length; } catch { return 0; } })()}</div>
+            <div className="kpi-sub">{t("employees")}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">{t("Change Orders")}</div>
+            <div className="kpi-value">{fmtK(changeOrders.filter(co => co.status === "approved").reduce((s, co) => s + (co.amount || 0), 0))}</div>
+            <div className="kpi-sub">{changeOrders.filter(co => co.status === "pending").length} {t("pending approval")}</div>
           </div>
         </div>
       ) : dashCfg.showKPIs && userRole === "office_admin" ? (
@@ -2313,6 +2388,73 @@ function App({ auth, onLogout }) {
         >
           {lang === "en" ? "🌐 ES" : "🌐 EN"}
         </button>
+        <div style={{ position: "relative", marginRight: 4 }}>
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{ fontSize: 16, padding: "4px 8px", position: "relative" }}
+            onClick={() => setNotifOpen(!notifOpen)}
+            title="Notifications"
+          >
+            🔔
+            {unreadCount > 0 && (
+              <span style={{
+                position: "absolute", top: -2, right: -2, background: "var(--red)", color: "#fff",
+                borderRadius: "50%", width: 16, height: 16, fontSize: 9, fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
+              }}>{unreadCount > 9 ? "9+" : unreadCount}</span>
+            )}
+          </button>
+          {notifOpen && (
+            <div style={{
+              position: "absolute", top: "100%", right: 0, width: 360, maxHeight: 480, overflowY: "auto",
+              background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+              zIndex: 999, padding: 0,
+            }} onClick={e => e.stopPropagation()}>
+              <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{t("Notifications")} {unreadCount > 0 && <span className="badge badge-red" style={{ fontSize: 10, marginLeft: 4 }}>{unreadCount}</span>}</div>
+                <div className="flex gap-4">
+                  {unreadCount > 0 && <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px" }} onClick={markAllRead}>Mark all read</button>}
+                  {(notifications || []).length > 0 && <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px", color: "var(--red)" }} onClick={clearNotifications}>Clear</button>}
+                </div>
+              </div>
+              {(notifications || []).length === 0 ? (
+                <div style={{ padding: 32, textAlign: "center" }}>
+                  <div style={{ fontSize: 32 }}>✅</div>
+                  <div className="text-sm text-muted" style={{ marginTop: 8 }}>All caught up! No notifications.</div>
+                </div>
+              ) : (
+                (notifications || []).slice(0, 30).map(n => {
+                  const NOTIF_ICONS = { cert_expired: "🚨", cert_urgent: "⚠️", cert_warning: "📋", invoice_overdue: "💰", tm_pending: "📝", sds_expired: "☣️", sds_warning: "📄", co_pending: "📑" };
+                  const timeAgo = (() => {
+                    const mins = Math.floor((Date.now() - new Date(n.createdAt)) / 60000);
+                    if (mins < 60) return `${mins}m ago`;
+                    const hrs = Math.floor(mins / 60);
+                    if (hrs < 24) return `${hrs}h ago`;
+                    return `${Math.floor(hrs / 24)}d ago`;
+                  })();
+                  return (
+                    <div key={n.id}
+                      style={{
+                        padding: "10px 16px", borderBottom: "1px solid var(--border)", cursor: "pointer",
+                        background: n.read ? "transparent" : "rgba(224,148,34,0.06)",
+                      }}
+                      onClick={() => { markRead(n.id); }}
+                    >
+                      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                        <span style={{ fontSize: 18, flexShrink: 0 }}>{NOTIF_ICONS[n.type] || "📌"}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: n.read ? 400 : 600, fontSize: 12 }}>{n.title}</div>
+                          <div className="text-xs text-muted" style={{ marginTop: 2 }}>{n.message}</div>
+                        </div>
+                        <div className="text-xs text-muted" style={{ flexShrink: 0 }}>{timeAgo}</div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
         <nav className="nav">
           {visiblePrimary.map(pt => (
             <button
@@ -2382,7 +2524,7 @@ function App({ auth, onLogout }) {
         )}
       </header>
 
-      <main className="main-content" onClick={() => moreOpen && setMoreOpen(false)}>
+      <main className="main-content" onClick={() => { moreOpen && setMoreOpen(false); notifOpen && setNotifOpen(false); }}>
         <UpdateBanner />
         <SyncStatus syncStatus={syncStatus} network={network} />
         {tab === "dashboard" && renderDashboard()}
@@ -2396,7 +2538,7 @@ function App({ auth, onLogout }) {
         {tab === "calendar" && <CalendarView app={app} />}
         {tab === "jsa" && <JSATab app={app} />}
         {tab === "deliveries" && <DeliveriesTab app={app} />}
-        {["financials", "documents", "schedule", "reports", "safety", "timeclock", "map", "settings"].includes(tab) && <MoreTabs app={app} />}
+        {["financials", "documents", "schedule", "reports", "safety", "timeclock", "sds", "map", "settings"].includes(tab) && <MoreTabs app={app} />}
       </main>
 
       <div className="toast-wrap">
@@ -3211,6 +3353,64 @@ const ModalHub = ({ type, data, app }) => {
               )}
             </div>
           </div>
+          {/* ── Project Document Hub ── */}
+          {!isNew && (() => {
+            const calcLaborTotal = (entries) => (entries || []).reduce((s, e) => s + (Number(e.hours) || 0) * (Number(e.rate) || 0), 0);
+            const calcMatTotal = (entries) => (entries || []).reduce((s, e) => { const b = (Number(e.qty) || 0) * (Number(e.unitCost) || 0); return s + b + b * (Number(e.markup) || 0) / 100; }, 0);
+            const pid = draft.id;
+            const projRfis = (app.rfis || []).filter(r => r.projectId === pid);
+            const projSubmittals = (app.submittals || []).filter(s => s.projectId === pid);
+            const projCOs = (app.changeOrders || []).filter(c => c.projectId === pid);
+            const projInvoices = (app.invoices || []).filter(i => i.projectId === pid);
+            const projDailyReports = (app.dailyReports || []).filter(d => d.projectId === pid);
+            const projJSAs = (app.jsas || []).filter(j => j.projectId === pid);
+            const projTM = (app.tmTickets || []).filter(t => t.projectId === pid);
+
+            const sections = [
+              { label: "RFIs", items: projRfis, icon: "📝", tab: "documents", fields: (r) => `#${r.number || ""} — ${r.subject || r.desc || ""}`, badge: (r) => r.status },
+              { label: "Submittals", items: projSubmittals, icon: "📋", tab: "documents", fields: (s) => `#${s.number || ""} — ${s.description || s.desc || ""}`, badge: (s) => s.status },
+              { label: "Change Orders", items: projCOs, icon: "📑", tab: "financials", fields: (c) => `#${c.number || ""} — ${c.desc || ""} (${fmt(c.amount || 0)})`, badge: (c) => c.status },
+              { label: "Invoices", items: projInvoices, icon: "💰", tab: "financials", fields: (i) => `#${i.number} — ${fmt(i.amount)} — ${i.date || ""}`, badge: (i) => i.status },
+              { label: "Daily Reports", items: projDailyReports, icon: "📊", tab: "safety", fields: (d) => `${d.date || ""} — ${d.crewSize || 0} crew — ${(d.work || "").slice(0, 60)}`, badge: () => null },
+              { label: "JSAs", items: projJSAs, icon: "⚠️", tab: "jsa", fields: (j) => `${j.date || ""} — ${j.title || j.location || ""}`, badge: () => null },
+              { label: "T&M Tickets", items: projTM, icon: "🔧", tab: "financials", fields: (t) => `${t.ticketNumber || ""} — ${t.description || ""} (${fmt(calcLaborTotal(t.laborEntries || []) + calcMatTotal(t.materialEntries || []))})`, badge: (t) => t.status },
+            ];
+
+            const totalDocs = sections.reduce((s, sec) => s + sec.items.length, 0);
+
+            return (
+              <div style={{ marginTop: 16, borderTop: "2px solid var(--border)", paddingTop: 16 }}>
+                <div className="flex-between" style={{ marginBottom: 12 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>Project Documents ({totalDocs})</div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 8 }}>
+                  {sections.map(sec => (
+                    <div key={sec.label} style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", border: "1px solid var(--border)" }}>
+                      <div className="flex-between" style={{ marginBottom: 6 }}>
+                        <div style={{ fontWeight: 600, fontSize: 12 }}>{sec.icon} {sec.label}</div>
+                        <span className="badge badge-blue" style={{ fontSize: 9 }}>{sec.items.length}</span>
+                      </div>
+                      {sec.items.length === 0 ? (
+                        <div className="text-xs text-muted">None</div>
+                      ) : (
+                        sec.items.slice(0, 5).map((item, i) => (
+                          <div key={item.id || i} style={{ fontSize: 11, padding: "3px 0", borderBottom: "1px solid var(--border)" }}>
+                            <span>{sec.fields(item)}</span>
+                            {sec.badge(item) && <span className={`badge ${sec.badge(item) === "paid" || sec.badge(item) === "approved" || sec.badge(item) === "answered" ? "badge-green" : sec.badge(item) === "pending" || sec.badge(item) === "submitted" || sec.badge(item) === "open" ? "badge-amber" : "badge-muted"}`} style={{ fontSize: 8, marginLeft: 4 }}>{sec.badge(item)}</span>}
+                          </div>
+                        ))
+                      )}
+                      {sec.items.length > 5 && <div className="text-xs text-muted" style={{ marginTop: 4 }}>+{sec.items.length - 5} more</div>}
+                      <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px", marginTop: 6 }} onClick={() => { setModal(null); app.setTab(sec.tab); }}>
+                        View All →
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="modal-actions" style={{ justifyContent: "space-between" }}>
             {!isNew && <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>}
             <div className="flex gap-8" style={{ marginLeft: "auto" }}>
