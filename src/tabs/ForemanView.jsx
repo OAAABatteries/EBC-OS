@@ -473,7 +473,7 @@ export function ForemanView({ app }) {
     return (
       <div className="employee-app">
         <header className="employee-header">
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/eagle.png" alt="" style={{ width: 36, height: 36, objectFit: "contain", background: "transparent" }} onError={(e) => e.target.style.display = "none"} />EBC-OS</div>
+          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
           <span className="text-sm text-muted">{t("Foreman Portal")}</span>
         </header>
         <div className="employee-body">
@@ -544,7 +544,7 @@ export function ForemanView({ app }) {
       )}
       <header className="employee-header">
         <div>
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/eagle.png" alt="" style={{ width: 36, height: 36, objectFit: "contain", background: "transparent" }} onError={(e) => e.target.style.display = "none"} />EBC-OS</div>
+          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
           <span className="text-xs text-muted">{activeForeman.name} · {t("Foreman Portal")}</span>
         </div>
         <button className="settings-gear" onClick={() => setForemanTab("settings")} title={t("Settings")}>

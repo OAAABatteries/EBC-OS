@@ -2297,14 +2297,8 @@ function App({ auth, onLogout }) {
       {isCyber && <div className="cyber-scanlines" />}
 
       <header className="header">
-        <div className="logo" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 58, height: 38, overflow: "hidden", position: "relative", flexShrink: 0 }}>
-            <img src="/eagle.png" alt="EBC" style={{ position: "absolute", width: 48, height: 48, top: -5, left: 5, filter: theme === "daylight" ? "invert(1)" : "none", opacity: 0.95, objectFit: "contain" }} onError={(e) => e.target.parentElement.style.display = "none"} />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", lineHeight: 1.2 }}>
-            {isAnime ? "EBC-OS ✧" : "EBC-OS"}
-            <span className="logo-sub">{isAnime ? "♡ EAGLES BROTHERS CONSTRUCTORS ♡" : "EAGLES BROTHERS CONSTRUCTORS"}</span>
-          </div>
+        <div className="logo" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <img src="/ebc-eagle.png" alt="Eagles Brothers Constructors" style={{ height: 32, width: "auto", objectFit: "contain", filter: theme === "daylight" ? "none" : "brightness(0) saturate(100%) invert(62%) sepia(85%) saturate(500%) hue-rotate(350deg) brightness(1.05)", transition: "filter 0.3s" }} onError={(e) => e.target.style.display = "none"} />
         </div>
         <button className="hamburger" onClick={() => setMobileNav(!mobileNav)} aria-label="Menu">
           <span className={`hamburger-line ${mobileNav ? "open" : ""}`} />
@@ -2357,7 +2351,7 @@ function App({ auth, onLogout }) {
           <div className="mobile-nav-overlay" onClick={() => setMobileNav(false)}>
             <nav className="mobile-nav" onClick={e => e.stopPropagation()}>
               <div className="mobile-nav-header">
-                <div className="logo" style={{ fontSize: 16 }}>{isAnime ? "EBC-OS \u2727" : "EBC-OS"}</div>
+                <div className="logo" style={{ fontSize: 16, display: "flex", alignItems: "center" }}><img src="/ebc-eagle.png" alt="EBC" style={{ height: 24, width: "auto", objectFit: "contain", filter: theme === "daylight" ? "none" : "brightness(0) saturate(100%) invert(62%) sepia(85%) saturate(500%) hue-rotate(350deg) brightness(1.05)" }} onError={(e) => e.target.style.display = "none"} /></div>
                 <button className="modal-close" onClick={() => setMobileNav(false)}>{"\u2715"}</button>
               </div>
               <div className="mobile-nav-section">
@@ -2424,7 +2418,7 @@ function App({ auth, onLogout }) {
         }}>
           <div style={{ fontSize: 28, lineHeight: 1 }}>&#9881;</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, color: "var(--gold, #e09422)" }}>{t("Install EBC-OS")}</div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: "var(--gold, #e09422)" }}>{t("Install EBC")}</div>
             <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>
               {t("Works offline, launches instantly — like a real app")}
             </div>
@@ -2436,7 +2430,7 @@ function App({ auth, onLogout }) {
           }} onClick={async () => {
             installPrompt.prompt();
             const { outcome } = await installPrompt.userChoice;
-            if (outcome === "accepted") show("EBC-OS installed!");
+            if (outcome === "accepted") show("EBC installed!");
             setInstallPrompt(null);
           }}>{t("Install")}</button>
           <button onClick={() => {

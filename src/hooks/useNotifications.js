@@ -60,7 +60,7 @@ export function useNotifications() {
   const notifyMaterialStatus = useCallback(({ material, status, projectName, requestId }) => {
     const statusText = status === "approved" ? "approved" : status === "delivered" ? "delivered" : `updated to ${status}`;
     sendNotification({
-      title: `EBC-OS · Material ${status === "delivered" ? "Delivered" : "Update"}`,
+      title: `EBC · Material ${status === "delivered" ? "Delivered" : "Update"}`,
       body: `${material} has been ${statusText}${projectName ? " — " + projectName : ""}`,
       tag: `material-${requestId}`,
       url: "/#/foreman",
@@ -70,7 +70,7 @@ export function useNotifications() {
   // ── Schedule change notification ──
   const notifyScheduleChange = useCallback(({ employeeName, projectName, change }) => {
     sendNotification({
-      title: "EBC-OS · Schedule Change",
+      title: "EBC · Schedule Change",
       body: `${employeeName}: ${change}${projectName ? " — " + projectName : ""}`,
       tag: `schedule-change-${Date.now()}`,
       url: "/#/employee",

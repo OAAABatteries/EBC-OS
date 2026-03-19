@@ -65,7 +65,7 @@ export function InstallPrompt() {
     }}>
       <span style={{ fontSize: 20 }}>&#9881;</span>
       <div style={{ flex: 1 }}>
-        <strong style={{ color: "var(--gold, #e09422)" }}>Install EBC-OS</strong>
+        <strong style={{ color: "var(--gold, #e09422)" }}>Install EBC</strong>
         <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 2 }}>
           Works offline, launches instantly, feels like a native app
         </div>
@@ -129,7 +129,7 @@ export function UpdateBanner() {
     }}>
       <span style={{ fontSize: 16 }}>&#8635;</span>
       <span style={{ flex: 1 }}>
-        <strong>Update available</strong> — a new version of EBC-OS is ready
+        <strong>Update available</strong> — a new version of EBC is ready
       </span>
       <button
         onClick={() => window.location.reload()}

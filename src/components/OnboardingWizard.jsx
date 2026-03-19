@@ -384,7 +384,7 @@ export function OnboardingWizard({ onComplete }) {
           {step === 0 && (
             <div className="wizard-slide">
               <img src="/eagle.png" alt="EBC" className="wizard-logo" onError={(e) => { e.target.style.display = "none"; }} />
-              <div className="wizard-title">Welcome to EBC-OS</div>
+              <div className="wizard-title">Welcome to EBC</div>
               <div className="wizard-desc">
                 Your complete construction management platform.<br />
                 Bids, projects, estimating, scheduling, safety, and more — all in one place.
@@ -487,10 +487,10 @@ export function OnboardingWizard({ onComplete }) {
               <div className="wizard-ready-icon">{"\ud83d\ude80"}</div>
               <div className="wizard-title">You're All Set!</div>
               <div className="wizard-desc" style={{ marginBottom: 32 }}>
-                EBC-OS is ready. Your data, your team, your way.
+                EBC is ready. Your data, your team, your way.
               </div>
               <button className="wizard-btn wizard-launch" onClick={handleComplete}>
-                Launch EBC-OS
+                Launch EBC
               </button>
             </div>
           )}

@@ -10,7 +10,7 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.error) return (
       <div style={{padding:40,color:'#ff6b6b',background:'#111',minHeight:'100vh',fontFamily:'monospace'}}>
-        <h2>EBC-OS Error</h2>
+        <h2>EBC Error</h2>
         <pre style={{whiteSpace:'pre-wrap',color:'#ffa'}}>{this.state.error.message}</pre>
         <pre style={{whiteSpace:'pre-wrap',color:'#888',fontSize:12}}>{this.state.error.stack}</pre>
         <button onClick={()=>location.reload()} style={{marginTop:20,padding:'8px 20px',background:'#e09422',border:'none',borderRadius:6,color:'#000',fontWeight:700,cursor:'pointer'}}>Reload</button>

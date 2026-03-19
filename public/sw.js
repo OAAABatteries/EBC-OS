@@ -218,7 +218,7 @@ self.addEventListener("message", (event) => {
 
     if (delay > 0 && delay < 8 * 60 * 60 * 1000) {
       const timer = setTimeout(() => {
-        self.registration.showNotification("EBC-OS · Clock In Reminder", {
+        self.registration.showNotification("EBC · Clock In Reminder", {
           body: `${employeeName}, time to clock in${projectName ? " for " + projectName : ""}`,
           icon: "/icon-192.png",
           badge: "/icon-192.png",
@@ -247,7 +247,7 @@ self.addEventListener("message", (event) => {
   // ── Generic one-shot notification ──
   if (data?.type === "SHOW_NOTIFICATION") {
     const { title, body, tag, url, icon } = data;
-    self.registration.showNotification(title || "EBC-OS", {
+    self.registration.showNotification(title || "EBC", {
       body: body || "",
       icon: icon || "/icon-192.png",
       badge: "/icon-192.png",
@@ -270,7 +270,7 @@ self.addEventListener("message", (event) => {
 
     if (delay > 0 && delay < 12 * 60 * 60 * 1000) {
       const timer = setTimeout(() => {
-        self.registration.showNotification("EBC-OS · Daily Report", {
+        self.registration.showNotification("EBC · Daily Report", {
           body: `${employeeName}, don't forget to submit your daily report before leaving`,
           icon: "/icon-192.png",
           badge: "/icon-192.png",
@@ -330,7 +330,7 @@ self.addEventListener("push", (event) => {
     const payload = event.data.json();
     const { title, body, tag, url, icon } = payload;
     event.waitUntil(
-      self.registration.showNotification(title || "EBC-OS", {
+      self.registration.showNotification(title || "EBC", {
         body: body || "",
         icon: icon || "/icon-192.png",
         badge: "/icon-192.png",
@@ -342,7 +342,7 @@ self.addEventListener("push", (event) => {
   } catch {
     // Fallback for plain text payloads
     event.waitUntil(
-      self.registration.showNotification("EBC-OS", {
+      self.registration.showNotification("EBC", {
         body: event.data.text(),
         icon: "/icon-192.png",
         badge: "/icon-192.png",

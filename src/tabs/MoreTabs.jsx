@@ -4662,7 +4662,7 @@ function ApiTab({ app }) {
     setStatus(null);
     try {
       const { callClaude } = await import("../utils/api.js");
-      const result = await callClaude(key, "Reply with exactly: EBC-OS connected", 32);
+      const result = await callClaude(key, "Reply with exactly: EBC connected", 32);
       if (result.toLowerCase().includes("connected")) {
         setStatus("ok");
         app.show("API connected successfully");

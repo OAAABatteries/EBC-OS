@@ -588,7 +588,7 @@ export function LoginScreen({ onLogin }) {
       <div className="login-card">
         <div className="login-logo-wrap">
           <img src="/eagle.png" alt="EBC" className="login-logo-img" onError={(e) => { e.target.style.display = "none"; }} />
-          <div className="login-title">EBC-OS</div>
+          <div className="login-title">Eagles Brothers Constructors</div>
           <div className="login-subtitle">{t("Eagles Brothers Constructors")}</div>
         </div>
 

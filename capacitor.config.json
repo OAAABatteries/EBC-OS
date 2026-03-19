@@ -1,6 +1,6 @@
 {
   "appId": "com.eaglesbrothers.ebcos",
-  "appName": "EBC-OS",
+  "appName": "Eagles Brothers Constructors",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"
