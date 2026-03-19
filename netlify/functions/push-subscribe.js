@@ -1,6 +1,11 @@
-// Netlify Function: Store push subscription
-// In production, subscriptions would go to Supabase. For now, we store in-memory
-// and provide the endpoint for the client to register.
+// Netlify Function: Store push subscription in Supabase
+// Falls back to in-memory logging if Supabase is not configured
+
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 export async function handler(event) {
   if (event.httpMethod === "OPTIONS") {
@@ -15,9 +20,22 @@ export async function handler(event) {
     const { subscription, userId, action } = JSON.parse(event.body);
 
     if (action === "subscribe" && subscription) {
-      // In production: save to Supabase push_subscriptions table
-      // For now, return success so the client flow works end-to-end
-      console.log(`[push] User ${userId} subscribed:`, subscription.endpoint);
+      if (supabase) {
+        // Upsert subscription keyed by endpoint (one per browser per user)
+        const { error } = await supabase.from("push_subscriptions").upsert(
+          {
+            user_id: userId,
+            endpoint: subscription.endpoint,
+            keys_p256dh: subscription.keys?.p256dh || "",
+            keys_auth: subscription.keys?.auth || "",
+            expires_at: subscription.expirationTime || null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "endpoint" }
+        );
+        if (error) console.warn("[push] Supabase upsert error:", error.message);
+      }
+      console.log(`[push] User ${userId} subscribed:`, subscription.endpoint?.slice(0, 60));
       return {
         statusCode: 200,
         headers: corsHeaders(),
@@ -26,6 +44,13 @@ export async function handler(event) {
     }
 
     if (action === "unsubscribe") {
+      if (supabase && subscription?.endpoint) {
+        const { error } = await supabase
+          .from("push_subscriptions")
+          .delete()
+          .eq("endpoint", subscription.endpoint);
+        if (error) console.warn("[push] Supabase delete error:", error.message);
+      }
       console.log(`[push] User ${userId} unsubscribed`);
       return {
         statusCode: 200,

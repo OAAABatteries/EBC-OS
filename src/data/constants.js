@@ -211,29 +211,97 @@ export function getHF(h){
   return{f:1.70,l:"+70%+ labor",c:"Multi-level staging"};
 }
 
-// ── SCOPE CHECKLIST ──
+// ── SCOPE CHECKLIST (18 items — used per-takeoff before proposal export) ──
 export const SCOPE_INIT = [
   {id:1,title:"Finish Level (L4 vs L5)",desc:"L5 specified at lobby, gloss paint, or critical lighting?",status:"unchecked"},
   {id:2,title:"Backing & Blocking",desc:"Who provides blocking behind casework, handrails, TVs?",status:"unchecked"},
   {id:3,title:"Deflection Track",desc:"Any walls framing to deck? Slotted/deep-leg track required?",status:"unchecked"},
   {id:4,title:"Acoustical Sealant",desc:"Any acoustical partitions spec'd? Sealant in spec section?",status:"unchecked"},
-  {id:5,title:"ICRA Barriers",desc:"Project in/adjacent to occupied medical facility?",status:"unchecked"},
-  {id:6,title:"Lead-Lined Scope Split",desc:"Which lead items does EBC furnish vs. I.O. only?",status:"unchecked"},
-  {id:7,title:"Access Panels",desc:"Furnished by owner/GC/EBC? Clarify P&I vs I.O.",status:"unchecked"},
-  {id:8,title:"Seismic ACT Bracing",desc:"Seismic Design Category C or higher? Medical occupancy?",status:"unchecked"},
-  {id:9,title:"Corner Bead Count",desc:"All outside corners, window wraps, door returns counted?",status:"unchecked"},
-  {id:10,title:"Control Joints",desc:"Spec require CJs? At what spacing? (typically 30' OC)",status:"unchecked"},
-  {id:11,title:"Shaft Wall Systems",desc:"Elevator/stair shafts or duct chases in scope?",status:"unchecked"},
-  {id:12,title:"Above-ACT Framing",desc:"Any EBC framing above the ACT plane required?",status:"unchecked"},
-  {id:13,title:"Patching at Penetrations",desc:"Existing drywall needing patch at MEP penetrations?",status:"unchecked"},
-  {id:14,title:"Small Rooms & Closets",desc:"All closets, toilet rooms, alcoves measured? High cost/SF.",status:"unchecked"},
-  {id:15,title:"Off-Hours Requirement",desc:"Work restricted to after-hours or weekends?",status:"unchecked"},
-  {id:16,title:"Phasing / Multiple Mobs",desc:"Multiple mobilizations? Price each mob separately.",status:"unchecked"},
-  {id:17,title:"GWB Type Check",desc:"Abuse-resistant, soundproof, or moisture-resistant GWB?",status:"unchecked"},
-  {id:18,title:"Equipment Support Framing",desc:"Above-ceiling equipment support framing in EBC scope?",status:"unchecked"},
-  {id:19,title:"Addenda Review",desc:"All addenda reviewed? Scope changes after original set?",status:"unchecked"},
-  {id:20,title:"Drawing Conflicts",desc:"Walls shown differently on different sheets? Submit RFI.",status:"unchecked"},
+  {id:5,title:"Lead-Lined Scope",desc:"Lead-lined drywall in scope? MUST specify thickness (1/32\", 1/16\", 1/8\").",status:"unchecked"},
+  {id:6,title:"Access Panels",desc:"EBC usually furnishes & installs. Clarify if owner-furnished.",status:"unchecked"},
+  {id:7,title:"Seismic ACT Bracing",desc:"Seismic Design Category C or higher? Medical occupancy?",status:"unchecked"},
+  {id:8,title:"Corner Bead Count",desc:"All outside corners, window wraps, door returns counted?",status:"unchecked"},
+  {id:9,title:"Control Joints",desc:"Spec require CJs? At what spacing? (typically 30' OC)",status:"unchecked"},
+  {id:10,title:"Shaft Wall Systems",desc:"Elevator/stair shafts or duct chases in scope?",status:"unchecked"},
+  {id:11,title:"Above-ACT Framing",desc:"Any EBC framing above the ACT plane required?",status:"unchecked"},
+  {id:12,title:"Patching at Penetrations",desc:"Existing drywall needing patch at MEP penetrations?",status:"unchecked"},
+  {id:13,title:"Off-Hours Requirement",desc:"Work restricted to after-hours or weekends?",status:"unchecked"},
+  {id:14,title:"Phasing / Multiple Mobs",desc:"Multiple mobilizations? Price each mob separately.",status:"unchecked"},
+  {id:15,title:"GWB Type Check",desc:"Abuse-resistant, soundproof, or moisture-resistant GWB?",status:"unchecked"},
+  {id:16,title:"Equipment Support Framing",desc:"Above-ceiling equipment support framing in EBC scope?",status:"unchecked"},
+  {id:17,title:"Addenda Review",desc:"All addenda reviewed? Scope changes after original set?",status:"unchecked"},
+  {id:18,title:"Drawing Conflicts",desc:"Walls shown differently on different sheets? Submit RFI.",status:"unchecked"},
 ];
+
+// Maps each checklist item → include/exclude text for the proposal
+export const SCOPE_ITEM_MAP = {
+  1:  { includeText: "Drywall finish to Level 4 (tape, float, skim)", excludeText: "Level 5 finish (skim coat for gloss paint or critical lighting areas)" },
+  2:  { includeText: "Wood blocking in walls as noted on drawings", excludeText: "Blocking behind casework, handrails, TVs, monitors (unless noted on drawings)" },
+  3:  { includeText: "Deflection track at walls framing to deck", excludeText: "Slotted or deep-leg deflection track at deck connections" },
+  4:  { includeText: "Acoustical sealant at rated partitions", excludeText: "Acoustical sealant and acoustical partition treatment" },
+  5:  { includeText: "Lead-lined drywall furnish and install (thickness: ___/32\")", excludeText: "Lead-lined drywall and shielding materials — thickness must be specified (1/32\", 1/16\", 1/8\")" },
+  6:  { includeText: "Access panels — furnish and install", excludeText: "Access panels — install only (owner-furnished)" },
+  7:  { includeText: "Seismic bracing for ACT grid per code", excludeText: "Seismic bracing for acoustical ceiling grid" },
+  8:  { includeText: "Corner bead at all outside corners, window wraps, and door returns", excludeText: "Additional corner bead beyond what is shown on drawings" },
+  9:  { includeText: "Control joints per specification", excludeText: "Control joints in drywall and acoustical ceilings" },
+  10: { includeText: "Shaft wall systems at elevator, stair shafts, and duct chases", excludeText: "Shaft wall systems" },
+  11: { includeText: "Framing above acoustical ceiling plane where noted", excludeText: "Framing above ACT plane" },
+  12: { includeText: "Patching existing drywall at MEP penetrations", excludeText: "Patching at MEP penetrations in existing walls" },
+  13: { includeText: "Work to be performed during regular working hours", excludeText: "Overtime, after-hours, and weekend work" },
+  14: { includeText: "Single mobilization", excludeText: "Multiple mobilizations or re-mobilization" },
+  15: { includeText: "Standard Type X gypsum board", excludeText: "Specialty GWB (abuse-resistant, moisture-resistant, soundboard, etc.)" },
+  16: { includeText: "Above-ceiling equipment support framing where noted", excludeText: "Above-ceiling equipment support framing" },
+  17: { includeText: "All addenda reviewed and incorporated through Addendum #___", excludeText: "Scope changes from addenda not yet reviewed" },
+  18: { includeText: "Scope per architectural drawings", excludeText: "Scope differences between conflicting drawing sheets" },
+};
+
+// Default assumptions for proposals (editable per takeoff)
+export const DEFAULT_ASSUMPTIONS = [
+  "Pricing based on drawings dated ___ (Rev ___), Addenda through #___",
+  "EBC provides all scaffolding and equipment for own trade",
+  "Dumpsters by general contractor",
+  "Assumes unobstructed access to all work areas",
+  "Assumes single mobilization unless noted",
+  "Assumes standard ceiling heights (22' or less to deck)",
+];
+
+// Default proposal terms
+export const DEFAULT_PROPOSAL_TERMS = {
+  paymentTerms: "Progress billing monthly, Net 30",
+  warranty: "EBC warrants workmanship for one (1) year from date of substantial completion.",
+  changeOrders: "Changes to scope of work will be priced and submitted for approval prior to execution.",
+  pricingValidity: "Pricing is valid for 30 days from proposal date.",
+};
+
+// ── Scope Checklist Templates by Project Type ──
+// Pre-sets common checklist statuses based on project type
+export const SCOPE_TEMPLATES = {
+  Medical: {
+    label: "Medical / Healthcare",
+    presets: { 5: "checked", 7: "checked", 10: "checked", 15: "checked" },
+    // Lead-lined (5) usually in scope, seismic ACT (7), shaft walls (10), GWB type (15)
+  },
+  Commercial: {
+    label: "Commercial Office",
+    presets: { 1: "checked", 6: "checked", 8: "checked", 13: "checked" },
+    // L4 finish (1), access panels (6), corner bead (8), off-hours unlikely (13 checked = regular hours)
+  },
+  Retail: {
+    label: "Retail / Restaurant",
+    presets: { 1: "checked", 6: "checked", 13: "checked", 14: "checked" },
+    // L4 finish, access panels, regular hours, single mob
+  },
+  Education: {
+    label: "Education / K-12",
+    presets: { 1: "checked", 4: "checked", 7: "checked", 13: "unchecked" },
+    // L4, acoustical sealant, seismic, off-hours likely (13 unchecked = excluded)
+  },
+  Federal: {
+    label: "Federal / Government",
+    presets: { 1: "checked", 4: "checked", 5: "checked", 7: "checked", 15: "checked", 17: "checked" },
+    // Most items in scope for federal, strict specs
+  },
+};
 
 // ── SEED: BIDS (70+ real bids) ──
 const _demoBids = [
@@ -355,11 +423,11 @@ const _demoBids = [
 export const PM_NAMES = { 3: "Emmanuel Aguilar", 4: "Isai Aguilar", 8: "Abner Aguilar" };
 const _demoProjects = [
   // Active EBC projects (awarded bids)
-  {id:1,name:"ROD - Brunello Cucinelli",gc:"ROD",value:92500,status:"in-progress",phase:"Retail",address:"2800 Kirby Dr, Houston TX 77098",pm:"Emmanuel Aguilar",laborHours:1200,progress:35,startDate:"2026-01-15",endDate:"2026-07-30",scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish"]},
-  {id:2,name:"United - Escapology San Antonio",gc:"United",value:187800,status:"in-progress",phase:"Commercial",address:"15900 La Cantera Pkwy, San Antonio TX 78256",pm:"Isai Aguilar",laborHours:800,progress:20,startDate:"2026-02-10",endDate:"2026-06-15",scope:["Demo","Metal Framing","Drywall","ACT Ceilings"]},
-  {id:3,name:"Forney - BSLMC Cath Labs 4 & 9",gc:"Forney",value:145000,status:"in-progress",phase:"Medical",address:"17500 Red Oak Dr, Houston TX 77090",pm:"Emmanuel Aguilar",laborHours:960,progress:55,startDate:"2025-12-01",endDate:"2026-04-30",scope:["Metal Framing","Drywall","Lead-Lined Walls","Tape & Finish"]},
-  {id:4,name:"Memorial Hermann - League City CCC CT",gc:"Memorial Hermann",value:68000,status:"in-progress",phase:"Medical",address:"100 Medical Center Blvd, League City TX 77573",pm:"Abner Aguilar",laborHours:480,progress:10,startDate:"2026-03-01",endDate:"2026-05-30",scope:["Demo","Metal Framing","Drywall","Lead-Lined Walls"]},
-  {id:5,name:"United - Heart Care Clinic NW Houston",gc:"United",value:112000,status:"in-progress",phase:"Medical",address:"17270 Red Oak Dr, Houston TX 77090",pm:"Isai Aguilar",laborHours:720,progress:45,startDate:"2026-01-06",endDate:"2026-05-15",scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish"]},
+  {id:1,name:"ROD - Brunello Cucinelli",gc:"ROD",contract:92500,status:"in-progress",phase:"Retail",address:"2800 Kirby Dr, Houston TX 77098",pm:"Emmanuel Aguilar",laborHours:1200,progress:35,start:"2026-01-15",end:"2026-07-30",scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish"]},
+  {id:2,name:"United - Escapology San Antonio",gc:"United",contract:187800,status:"in-progress",phase:"Commercial",address:"15900 La Cantera Pkwy, San Antonio TX 78256",pm:"Isai Aguilar",laborHours:800,progress:20,start:"2026-02-10",end:"2026-06-15",scope:["Demo","Metal Framing","Drywall","ACT Ceilings"]},
+  {id:3,name:"Forney - BSLMC Cath Labs 4 & 9",gc:"Forney",contract:145000,status:"in-progress",phase:"Medical",address:"17500 Red Oak Dr, Houston TX 77090",pm:"Emmanuel Aguilar",laborHours:960,progress:55,start:"2025-12-01",end:"2026-04-30",scope:["Metal Framing","Drywall","Lead-Lined Walls","Tape & Finish"]},
+  {id:4,name:"Memorial Hermann - League City CCC CT",gc:"Memorial Hermann",contract:68000,status:"in-progress",phase:"Medical",address:"100 Medical Center Blvd, League City TX 77573",pm:"Abner Aguilar",laborHours:480,progress:10,start:"2026-03-01",end:"2026-05-30",scope:["Demo","Metal Framing","Drywall","Lead-Lined Walls"]},
+  {id:5,name:"United - Heart Care Clinic NW Houston",gc:"United",contract:112000,status:"in-progress",phase:"Medical",address:"17270 Red Oak Dr, Houston TX 77090",pm:"Isai Aguilar",laborHours:720,progress:45,start:"2026-01-06",end:"2026-05-15",scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish"]},
 ];
 
 // ── SEED: CONTACTS ──

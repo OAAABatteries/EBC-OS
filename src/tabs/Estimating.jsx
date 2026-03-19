@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
-import { getHF } from "../data/constants";
-import { generateProposalPdf } from "../utils/proposalPdf";
+import { getHF, SCOPE_INIT, SCOPE_ITEM_MAP, DEFAULT_ASSUMPTIONS, DEFAULT_PROPOSAL_TERMS, SCOPE_TEMPLATES } from "../data/constants";
+import { generateProposalPdf, defaultIncludes, defaultExcludes } from "../utils/proposalPdf";
+import { buildScopeLines } from "../utils/scopeBuilder";
 
 /* ── helpers ─────────────────────────────────────────────────── */
 
@@ -75,6 +76,10 @@ export function EstimatingTab({ app }) {
   const [gapContractScope, setGapContractScope] = useState("");
   const [gapResult, setGapResult] = useState(null);
   const [gapLoading, setGapLoading] = useState(false);
+
+  // ── Scope Review Modal state ──
+  const [scopeModalTkId, setScopeModalTkId] = useState(null);
+  const [scopeModalStep, setScopeModalStep] = useState(1);
 
   const filteredScope = (() => {
     if (scopeFilter === "Flagged") return (scope || []).filter(s => s.status === "flagged");
@@ -216,10 +221,15 @@ export function EstimatingTab({ app }) {
       rooms,
       alternates: scanResult.alternate ? [{ id: "alt_" + Date.now(), description: scanResult.alternate, amount: 0, type: "add" }] : [],
       addOns: [],
+      scopeChecklist: SCOPE_INIT.map(s => ({ ...s })),
+      scopeChecklistCompleted: false,
       scopeLines: {
         includes: scanResult.includes || [],
         excludes: scanResult.excludes || [],
+        assumptions: [],
       },
+      proposalNumber: "",
+      proposalTerms: { ...DEFAULT_PROPOSAL_TERMS },
     };
 
     setTakeoffs(prev => [...prev, tk]);
@@ -394,6 +404,11 @@ export function EstimatingTab({ app }) {
       overheadPct: company.defaultOverhead,
       profitPct: company.defaultProfit,
       rooms,
+      scopeChecklist: SCOPE_INIT.map(s => ({ ...s })),
+      scopeChecklistCompleted: false,
+      scopeLines: { includes: [], excludes: [], assumptions: [] },
+      proposalNumber: "",
+      proposalTerms: { ...DEFAULT_PROPOSAL_TERMS },
     };
 
     setTakeoffs(prev => [...prev, tk]);
@@ -431,7 +446,7 @@ export function EstimatingTab({ app }) {
         name: p.project,
         gc: p.gc,
         phase: p.phase,
-        contractValue: p.value,
+        contractValue: p.contract,
         billed: p.billed,
         margin: p.margin,
         scope: p.scope || [],
@@ -465,6 +480,11 @@ export function EstimatingTab({ app }) {
       overheadPct: company.defaultOverhead,
       profitPct: company.defaultProfit,
       rooms: [],
+      scopeChecklist: SCOPE_INIT.map(s => ({ ...s })),
+      scopeChecklistCompleted: false,
+      scopeLines: { includes: [], excludes: [], assumptions: [] },
+      proposalNumber: "",
+      proposalTerms: { ...DEFAULT_PROPOSAL_TERMS },
     };
     setTakeoffs((prev) => [...prev, tk]);
     setActiveTk(tk.id);
@@ -487,6 +507,11 @@ export function EstimatingTab({ app }) {
           id: "li_" + (now + ri * 1000 + ii + 100),
         })),
       })),
+      scopeChecklist: (src.scopeChecklist || SCOPE_INIT).map(s => ({ ...s })),
+      scopeChecklistCompleted: false,
+      scopeLines: src.scopeLines ? { ...src.scopeLines } : { includes: [], excludes: [], assumptions: [] },
+      proposalNumber: "",
+      proposalTerms: src.proposalTerms ? { ...src.proposalTerms } : { ...DEFAULT_PROPOSAL_TERMS },
     };
     setTakeoffs((prev) => [...prev, clone]);
     setActiveTk(clone.id);
@@ -630,7 +655,6 @@ export function EstimatingTab({ app }) {
         <div className="section-header flex-between">
           <h2 className="section-title">Estimating</h2>
           <div className="flex gap-8">
-            <button className={`btn ${showScopePanel ? "btn-primary" : "btn-ghost"} btn-sm`} onClick={() => setShowScopePanel(!showScopePanel)} style={{ fontSize: 13 }}>Scope Checklist</button>
             <input type="file" id="ost-import" accept=".csv,.txt" style={{ display: "none" }} onChange={handleOstFile} />
             <button className="btn btn-ghost" onClick={() => document.getElementById("ost-import").click()} style={{ fontSize: 13 }}>Import OST</button>
             <input type="file" id="scan-pdf" accept=".pdf" style={{ display: "none" }} onChange={handleScanPdf} />
@@ -710,6 +734,11 @@ export function EstimatingTab({ app }) {
                                   overheadPct: company.defaultOverhead,
                                   profitPct: company.defaultProfit,
                                   rooms: [],
+                                  scopeChecklist: SCOPE_INIT.map(s => ({ ...s })),
+                                  scopeChecklistCompleted: false,
+                                  scopeLines: { includes: [], excludes: [], assumptions: [] },
+                                  proposalNumber: "",
+                                  proposalTerms: { ...DEFAULT_PROPOSAL_TERMS },
                                 };
                                 setTakeoffs(prev => [...prev, tk]);
                                 setActiveTk(tk.id);
@@ -727,109 +756,6 @@ export function EstimatingTab({ app }) {
             </div>
           )}
         </div>
-
-        {/* ── Scope Checklist Panel (list view) ── */}
-        {showScopePanel && (
-          <div className="card mt-16" style={{ padding: 20, marginBottom: 16 }}>
-            <div className="flex-between mb-12">
-              <div className="section-title" style={{ fontSize: 16 }}>Scope Checklist & AI Gap Analysis</div>
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowScopePanel(false)}>Close</button>
-            </div>
-
-            <div className="flex gap-4 mb-16">
-              {[{ key: "checklist", label: "Checklist" }, { key: "gapchecker", label: "Gap Checker" }].map(st => (
-                <button key={st.key} className={`btn btn-sm ${scopeSubTab === st.key ? "btn-primary" : "btn-ghost"}`}
-                  onClick={() => setScopeSubTab(st.key)}>{st.label}</button>
-              ))}
-            </div>
-
-            {scopeSubTab === "checklist" && (<>
-              <div className="flex gap-4 mb-12">
-                {["All", "Flagged", "Unchecked"].map(f => (
-                  <button key={f} className={`btn btn-sm ${scopeFilter === f ? "btn-primary" : "btn-ghost"}`}
-                    onClick={() => setScopeFilter(f)}>{f}</button>
-                ))}
-              </div>
-              {filteredScope.length === 0 ? (
-                <div className="empty-state"><div className="empty-icon">📋</div><div className="empty-text">No items match this filter</div></div>
-              ) : (
-                <div style={{ maxHeight: 400, overflowY: "auto" }}>
-                  {filteredScope.map(s => (
-                    <div key={s.id} className="scope-item" onClick={() => handleScopeCycle(s.id)} style={{ cursor: "pointer" }}>
-                      <span className="scope-check">{SCOPE_ICONS[s.status]}</span>
-                      <div className="scope-info">
-                        <div className="scope-title">{s.title}</div>
-                        <div className="scope-desc">{s.desc}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>)}
-
-            {scopeSubTab === "gapchecker" && (
-              <div>
-                <div className="text-sm font-semi mb-8">Paste your bid scope and contract/spec scope below. AI will identify gaps, extras, and risks.</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div className="form-group">
-                    <label className="form-label">Bid Scope (what EBC priced)</label>
-                    <textarea className="form-input" rows={6} placeholder="Paste your bid scope..."
-                      value={gapBidScope} onChange={e => setGapBidScope(e.target.value)} style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Contract Scope (specs / drawings notes)</label>
-                    <textarea className="form-input" rows={6} placeholder="Paste contract scope..."
-                      value={gapContractScope} onChange={e => setGapContractScope(e.target.value)} style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
-                  </div>
-                </div>
-                <button className="btn btn-primary mt-12" onClick={runGapCheck} disabled={gapLoading}>
-                  {gapLoading ? "Analyzing..." : "Run Gap Analysis"}
-                </button>
-                {gapResult && (
-                  <div style={{ marginTop: 16 }}>
-                    <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-                      <div className="flex-between mb-8">
-                        <div className="text-sm font-semi">Coverage Score</div>
-                        <div style={{ fontSize: 28, fontWeight: 800, color: gapResult.score >= 80 ? "var(--green)" : gapResult.score >= 50 ? "var(--amber)" : "var(--red)" }}>{gapResult.score}/100</div>
-                      </div>
-                      <div className="text-sm text-muted">{gapResult.summary}</div>
-                    </div>
-                    {gapResult.gaps?.length > 0 && (
-                      <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-                        <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Missing from Bid ({gapResult.gaps.length})</div>
-                        {gapResult.gaps.map((g, i) => (
-                          <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                            <div className="flex-between"><span className="text-sm font-semi">{g.item}</span><span className={`badge ${SEV_BADGE[g.severity] || "badge-muted"}`}>{g.severity}</span></div>
-                            <div className="text-xs text-muted mt-4">{g.detail}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {gapResult.extras?.length > 0 && (
-                      <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-                        <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>In Bid but Not in Contract ({gapResult.extras.length})</div>
-                        {gapResult.extras.map((g, i) => (
-                          <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}><span className="text-sm font-semi">{g.item}</span><div className="text-xs text-muted mt-4">{g.detail}</div></div>
-                        ))}
-                      </div>
-                    )}
-                    {gapResult.risks?.length > 0 && (
-                      <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-                        <div className="text-sm font-semi mb-8" style={{ color: "var(--blue)" }}>Risks & Ambiguities ({gapResult.risks.length})</div>
-                        {gapResult.risks.map((g, i) => (
-                          <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                            <div className="flex-between"><span className="text-sm font-semi">{g.item}</span><span className={`badge ${SEV_BADGE[g.severity] || "badge-muted"}`}>{g.severity}</span></div>
-                            <div className="text-xs text-muted mt-4">{g.detail}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
 
         {filtered.length === 0 && (
           <p style={{ color: "var(--text2)", padding: 16 }}>No takeoffs yet. Create one to get started.</p>
@@ -1118,10 +1044,9 @@ export function EstimatingTab({ app }) {
             {histLoading ? "Comparing..." : "Compare to History"}
           </button>
           <button className="btn btn-ghost btn-sm" onClick={() => copyProposal(tk)}>Copy Proposal</button>
-          <button className="btn btn-sm" style={{ background: "var(--gold)", color: "#fff" }} onClick={async () => {
-            const bid = bids.find(b => b.id === tk.bidId);
-            const fileName = await generateProposalPdf({ takeoff: tk, bid, company, assemblies, submittals, calcItem, calcRoom, calcSummary, scopeLines: tk.scopeLines });
-            show(`PDF exported: ${fileName}`, "ok");
+          <button className="btn btn-sm" style={{ background: "var(--gold)", color: "#fff" }} onClick={() => {
+            setScopeModalTkId(tk.id);
+            setScopeModalStep(tk.scopeChecklistCompleted ? 2 : 1);
           }}>Export PDF</button>
         </div>
       </div>
@@ -1194,138 +1119,98 @@ export function EstimatingTab({ app }) {
         </div>
       </details>
 
-      {/* ── Scope Checklist & Gap Analysis ── */}
+      {/* ── Gap Analysis (standalone) ── */}
       <div style={{ marginBottom: 16 }}>
         <button
           className={`btn ${showScopePanel ? "btn-primary" : "btn-ghost"} btn-sm`}
           onClick={() => setShowScopePanel(!showScopePanel)}
         >
-          {showScopePanel ? "Hide Scope Checklist" : "Scope Checklist & Gap Analysis"}
+          {showScopePanel ? "Hide Gap Analysis" : "AI Gap Analysis"}
         </button>
       </div>
 
       {showScopePanel && (
         <div className="card" style={{ padding: 20, marginBottom: 20 }}>
           <div className="flex-between mb-12">
-            <div className="section-title" style={{ fontSize: 16 }}>Scope Checklist & AI Gap Analysis</div>
+            <div className="section-title" style={{ fontSize: 16 }}>AI Gap Analysis</div>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowScopePanel(false)}>Close</button>
           </div>
-
-          <div className="flex gap-4 mb-16">
-            {[{ key: "checklist", label: "Checklist" }, { key: "gapchecker", label: "Gap Checker" }].map(st => (
-              <button key={st.key} className={`btn btn-sm ${scopeSubTab === st.key ? "btn-primary" : "btn-ghost"}`}
-                onClick={() => setScopeSubTab(st.key)}>{st.label}</button>
-            ))}
-          </div>
-
-          {scopeSubTab === "checklist" && (<>
-            <div className="flex gap-8 mb-16 flex-wrap" style={{ alignItems: "center" }}>
-              <div className="flex gap-4">
-                {["All", "Flagged", "Unchecked"].map(f => (
-                  <button key={f} className={`btn btn-sm ${scopeFilter === f ? "btn-primary" : "btn-ghost"}`}
-                    onClick={() => setScopeFilter(f)}>{f}</button>
-                ))}
+          <div>
+            <div className="text-sm font-semi mb-8">Paste your bid scope and contract/spec scope below. AI will identify gaps, extras, and risks.</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="form-group">
+                <label className="form-label">Bid Scope (what EBC priced)</label>
+                <textarea className="form-input" rows={6} placeholder="Paste your bid scope, line items, or proposal scope description..."
+                  value={gapBidScope} onChange={e => setGapBidScope(e.target.value)} style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
+                <div className="text-xs text-dim mt-4">{gapBidScope.length} chars</div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Contract Scope (specs / drawings notes)</label>
+                <textarea className="form-input" rows={6} placeholder="Paste contract scope, spec sections, or drawing notes..."
+                  value={gapContractScope} onChange={e => setGapContractScope(e.target.value)} style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
+                <div className="text-xs text-dim mt-4">{gapContractScope.length} chars</div>
               </div>
             </div>
+            <button className="btn btn-primary mt-12" onClick={runGapCheck} disabled={gapLoading}>
+              {gapLoading ? "Analyzing..." : "Run Gap Analysis"}
+            </button>
 
-            {filteredScope.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">📋</div>
-                <div className="empty-text">No items match this filter</div>
-              </div>
-            ) : (
-              <div style={{ maxHeight: 400, overflowY: "auto" }}>
-                {filteredScope.map(s => (
-                  <div key={s.id} className="scope-item" onClick={() => handleScopeCycle(s.id)} style={{ cursor: "pointer" }}>
-                    <span className="scope-check">{SCOPE_ICONS[s.status]}</span>
-                    <div className="scope-info">
-                      <div className="scope-title">{s.title}</div>
-                      <div className="scope-desc">{s.desc}</div>
+            {gapResult && (
+              <div style={{ marginTop: 16 }}>
+                <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+                  <div className="flex-between mb-8">
+                    <div className="text-sm font-semi">Coverage Score</div>
+                    <div style={{ fontSize: 28, fontWeight: 800, color: gapResult.score >= 80 ? "var(--green)" : gapResult.score >= 50 ? "var(--amber)" : "var(--red)" }}>
+                      {gapResult.score}/100
                     </div>
                   </div>
-                ))}
+                  <div className="text-sm text-muted">{gapResult.summary}</div>
+                </div>
+
+                {gapResult.gaps?.length > 0 && (
+                  <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+                    <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Missing from Bid ({gapResult.gaps.length})</div>
+                    {gapResult.gaps.map((g, i) => (
+                      <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                        <div className="flex-between">
+                          <span className="text-sm font-semi">{g.item}</span>
+                          <span className={`badge ${SEV_BADGE[g.severity] || "badge-muted"}`}>{g.severity}</span>
+                        </div>
+                        <div className="text-xs text-muted mt-4">{g.detail}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {gapResult.extras?.length > 0 && (
+                  <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+                    <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>In Bid but Not in Contract ({gapResult.extras.length})</div>
+                    {gapResult.extras.map((g, i) => (
+                      <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                        <span className="text-sm font-semi">{g.item}</span>
+                        <div className="text-xs text-muted mt-4">{g.detail}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {gapResult.risks?.length > 0 && (
+                  <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+                    <div className="text-sm font-semi mb-8" style={{ color: "var(--blue)" }}>Risks & Ambiguities ({gapResult.risks.length})</div>
+                    {gapResult.risks.map((g, i) => (
+                      <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                        <div className="flex-between">
+                          <span className="text-sm font-semi">{g.item}</span>
+                          <span className={`badge ${SEV_BADGE[g.severity] || "badge-muted"}`}>{g.severity}</span>
+                        </div>
+                        <div className="text-xs text-muted mt-4">{g.detail}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-          </>)}
-
-          {scopeSubTab === "gapchecker" && (
-            <div>
-              <div className="text-sm font-semi mb-8">Paste your bid scope and contract/spec scope below. AI will identify gaps, extras, and risks.</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div className="form-group">
-                  <label className="form-label">Bid Scope (what EBC priced)</label>
-                  <textarea className="form-input" rows={6} placeholder="Paste your bid scope, line items, or proposal scope description..."
-                    value={gapBidScope} onChange={e => setGapBidScope(e.target.value)} style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
-                  <div className="text-xs text-dim mt-4">{gapBidScope.length} chars</div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Contract Scope (specs / drawings notes)</label>
-                  <textarea className="form-input" rows={6} placeholder="Paste contract scope, spec sections, or drawing notes..."
-                    value={gapContractScope} onChange={e => setGapContractScope(e.target.value)} style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
-                  <div className="text-xs text-dim mt-4">{gapContractScope.length} chars</div>
-                </div>
-              </div>
-              <button className="btn btn-primary mt-12" onClick={runGapCheck} disabled={gapLoading}>
-                {gapLoading ? "Analyzing..." : "Run Gap Analysis"}
-              </button>
-
-              {gapResult && (
-                <div style={{ marginTop: 16 }}>
-                  <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-                    <div className="flex-between mb-8">
-                      <div className="text-sm font-semi">Coverage Score</div>
-                      <div style={{ fontSize: 28, fontWeight: 800, color: gapResult.score >= 80 ? "var(--green)" : gapResult.score >= 50 ? "var(--amber)" : "var(--red)" }}>
-                        {gapResult.score}/100
-                      </div>
-                    </div>
-                    <div className="text-sm text-muted">{gapResult.summary}</div>
-                  </div>
-
-                  {gapResult.gaps?.length > 0 && (
-                    <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-                      <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Missing from Bid ({gapResult.gaps.length})</div>
-                      {gapResult.gaps.map((g, i) => (
-                        <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                          <div className="flex-between">
-                            <span className="text-sm font-semi">{g.item}</span>
-                            <span className={`badge ${SEV_BADGE[g.severity] || "badge-muted"}`}>{g.severity}</span>
-                          </div>
-                          <div className="text-xs text-muted mt-4">{g.detail}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {gapResult.extras?.length > 0 && (
-                    <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-                      <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>In Bid but Not in Contract ({gapResult.extras.length})</div>
-                      {gapResult.extras.map((g, i) => (
-                        <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                          <span className="text-sm font-semi">{g.item}</span>
-                          <div className="text-xs text-muted mt-4">{g.detail}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {gapResult.risks?.length > 0 && (
-                    <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-                      <div className="text-sm font-semi mb-8" style={{ color: "var(--blue)" }}>Risks & Ambiguities ({gapResult.risks.length})</div>
-                      {gapResult.risks.map((g, i) => (
-                        <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                          <div className="flex-between">
-                            <span className="text-sm font-semi">{g.item}</span>
-                            <span className={`badge ${SEV_BADGE[g.severity] || "badge-muted"}`}>{g.severity}</span>
-                          </div>
-                          <div className="text-xs text-muted mt-4">{g.detail}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -1777,11 +1662,324 @@ export function EstimatingTab({ app }) {
           </div>
         );
       })()}
+
+      {/* ═══ SCOPE REVIEW MODAL ═══ */}
+      {scopeModalTkId === tk.id && (
+        <ScopeReviewModal
+          tk={tk}
+          bid={linkedBid}
+          step={scopeModalStep}
+          setStep={setScopeModalStep}
+          onClose={() => setScopeModalTkId(null)}
+          onSave={async (updatedFields) => {
+            updateTakeoff(tk.id, updatedFields);
+            setScopeModalTkId(null);
+            // Generate PDF
+            const mergedTk = { ...tk, ...updatedFields };
+            const bid = bids.find(b => b.id === mergedTk.bidId);
+            const fileName = await generateProposalPdf({
+              takeoff: mergedTk,
+              bid,
+              company,
+              assemblies,
+              submittals,
+              calcItem,
+              calcRoom,
+              calcSummary,
+              scopeLines: updatedFields.scopeLines,
+              proposalTerms: updatedFields.proposalTerms,
+              proposalNumber: updatedFields.proposalNumber,
+            });
+            show(`PDF exported: ${fileName}`, "ok");
+          }}
+          updateTakeoff={updateTakeoff}
+          assemblies={assemblies}
+          company={company}
+          submittals={submittals}
+          calcItem={calcItem}
+          calcRoom={calcRoom}
+          calcSummary={calcSummary}
+          bids={bids}
+          show={show}
+        />
+      )}
     </div>
   );
 }
 
 /* ── sub-components ──────────────────────────────────────────── */
+
+/* ── Scope Review Modal (2-step: checklist → edit scope lines) ── */
+function ScopeReviewModal({ tk, bid, step, setStep, onClose, onSave, updateTakeoff, show }) {
+  const checklist = tk.scopeChecklist || SCOPE_INIT.map(s => ({ ...s }));
+  const [localChecklist, setLocalChecklist] = useState(checklist.map(s => ({ ...s })));
+
+  // Build initial edit lines — used when starting at step 2 or after continuing from step 1
+  const [editLines, setEditLines] = useState(() => {
+    if (step === 2) {
+      const built = buildScopeLines(checklist, SCOPE_ITEM_MAP, defaultIncludes, defaultExcludes, DEFAULT_ASSUMPTIONS);
+      const existing = tk.scopeLines || {};
+      return {
+        includes: existing.includes?.length > 0 && tk.scopeChecklistCompleted ? [...existing.includes] : built.includes,
+        excludes: existing.excludes?.length > 0 && tk.scopeChecklistCompleted ? [...existing.excludes] : built.excludes,
+        assumptions: existing.assumptions?.length > 0 && tk.scopeChecklistCompleted ? [...existing.assumptions] : built.assumptions,
+      };
+    }
+    return null;
+  });
+
+  const [proposalNum, setProposalNum] = useState(
+    tk.proposalNumber || `EBC-${new Date().getFullYear()}-${String(bid?.id || tk.id).toString().slice(-4).padStart(4, "0")}`
+  );
+  const [terms, setTerms] = useState(tk.proposalTerms || { ...DEFAULT_PROPOSAL_TERMS });
+  const [drawingRef, setDrawingRef] = useState(tk.drawingRef || "");
+
+  // Initialize edit lines when moving to step 2 from step 1
+  function initEditLines() {
+    const built = buildScopeLines(localChecklist, SCOPE_ITEM_MAP, defaultIncludes, defaultExcludes, DEFAULT_ASSUMPTIONS);
+    const existing = tk.scopeLines || {};
+    setEditLines({
+      includes: existing.includes?.length > 0 && tk.scopeChecklistCompleted ? [...existing.includes] : built.includes,
+      excludes: existing.excludes?.length > 0 && tk.scopeChecklistCompleted ? [...existing.excludes] : built.excludes,
+      assumptions: existing.assumptions?.length > 0 && tk.scopeChecklistCompleted ? [...existing.assumptions] : built.assumptions,
+    });
+  }
+
+  const handleChecklistCycle = (id) => {
+    setLocalChecklist(prev => prev.map(s =>
+      s.id === id ? { ...s, status: SCOPE_CYCLE[s.status] } : s
+    ));
+  };
+
+  const reviewed = localChecklist.filter(s => s.status !== "unchecked").length;
+  const total = localChecklist.length;
+
+  const goToStep2 = () => {
+    initEditLines();
+    setStep(2);
+  };
+
+  const handleSaveExport = () => {
+    onSave({
+      scopeChecklist: localChecklist,
+      scopeChecklistCompleted: true,
+      scopeLines: editLines,
+      proposalNumber: proposalNum,
+      proposalTerms: terms,
+      drawingRef: drawingRef,
+    });
+  };
+
+  const updateLine = (section, idx, value) => {
+    setEditLines(prev => ({
+      ...prev,
+      [section]: prev[section].map((l, i) => i === idx ? value : l),
+    }));
+  };
+
+  const deleteLine = (section, idx) => {
+    setEditLines(prev => ({
+      ...prev,
+      [section]: prev[section].filter((_, i) => i !== idx),
+    }));
+  };
+
+  const addLine = (section) => {
+    setEditLines(prev => ({
+      ...prev,
+      [section]: [...prev[section], ""],
+    }));
+  };
+
+  // Modal overlay styles
+  const overlayStyle = {
+    position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+    background: "rgba(0,0,0,0.7)", zIndex: 9999,
+    display: "flex", justifyContent: "center", alignItems: "center",
+    padding: "16px",
+  };
+  const modalStyle = {
+    background: "var(--bg2)", border: "1px solid var(--border2)",
+    borderRadius: "var(--radius)", maxWidth: 820, width: "100%",
+    maxHeight: "90vh", overflow: "auto", padding: 0,
+    boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+  };
+
+  return (
+    <div style={overlayStyle} onClick={onClose}>
+      <div style={modalStyle} onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 700 }}>Scope Review — {tk.name}</div>
+            <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 2 }}>Step {step} of 2</div>
+          </div>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ fontSize: 16, padding: "4px 8px" }}>X</button>
+        </div>
+
+        {/* ── STEP 1: Checklist ── */}
+        {step === 1 && (
+          <div style={{ padding: 20 }}>
+            {/* Template selector */}
+            <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+              <label style={{ fontSize: 12, color: "var(--text2)", whiteSpace: "nowrap" }}>Quick template:</label>
+              <select
+                className="form-select"
+                style={{ fontSize: 12, padding: "4px 8px", maxWidth: 200 }}
+                defaultValue=""
+                onChange={(e) => {
+                  const tmpl = SCOPE_TEMPLATES[e.target.value];
+                  if (!tmpl) return;
+                  setLocalChecklist(prev => prev.map(s => ({
+                    ...s,
+                    status: tmpl.presets[s.id] || "unchecked",
+                  })));
+                  e.target.value = "";
+                }}
+              >
+                <option value="">Select project type...</option>
+                {Object.entries(SCOPE_TEMPLATES).map(([key, t]) => (
+                  <option key={key} value={key}>{t.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Progress bar */}
+            <div style={{ marginBottom: 16 }}>
+              <div className="flex-between" style={{ fontSize: 13, marginBottom: 6 }}>
+                <span>{reviewed}/{total} reviewed</span>
+                <span style={{ color: reviewed === total ? "var(--green)" : "var(--amber)" }}>{Math.round((reviewed / total) * 100)}%</span>
+              </div>
+              <div style={{ height: 6, borderRadius: 3, background: "var(--bg4)", overflow: "hidden" }}>
+                <div style={{ width: `${(reviewed / total) * 100}%`, height: "100%", borderRadius: 3, background: reviewed === total ? "var(--green)" : "var(--amber)", transition: "width 0.3s" }} />
+              </div>
+            </div>
+
+            {/* Checklist items */}
+            <div style={{ maxHeight: "55vh", overflowY: "auto", marginBottom: 16 }}>
+              {localChecklist.map(s => {
+                const mapEntry = SCOPE_ITEM_MAP[s.id];
+                return (
+                  <div
+                    key={s.id}
+                    onClick={() => handleChecklistCycle(s.id)}
+                    style={{
+                      padding: "10px 12px", marginBottom: 6, borderRadius: "var(--radius-sm)",
+                      background: s.status === "checked" ? "rgba(16,185,129,0.06)" : s.status === "flagged" ? "rgba(234,179,8,0.06)" : "rgba(255,255,255,0.02)",
+                      border: `1px solid ${s.status === "checked" ? "rgba(16,185,129,0.15)" : s.status === "flagged" ? "rgba(234,179,8,0.15)" : "var(--border)"}`,
+                      cursor: "pointer", transition: "all 0.15s",
+                    }}
+                  >
+                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>{SCOPE_ICONS[s.status]}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, fontSize: 14 }}>{s.title}</div>
+                        <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>{s.desc}</div>
+                        {mapEntry && (
+                          <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4, fontStyle: "italic" }}>
+                            {s.status === "checked" ? `Include: ${mapEntry.includeText}` :
+                             s.status === "flagged" ? `Assumption: ${mapEntry.includeText} (pending clarification)` :
+                             `Exclude: ${mapEntry.excludeText}`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Continue button */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              {reviewed < total && (
+                <div style={{ fontSize: 12, color: "var(--amber)", alignSelf: "center", marginRight: "auto" }}>
+                  {total - reviewed} item{total - reviewed !== 1 ? "s" : ""} still unchecked
+                </div>
+              )}
+              <button className="btn btn-primary" onClick={goToStep2} style={{ fontSize: 14, padding: "8px 20px" }}>
+                Continue &rarr;
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 2: Edit Proposal Scope ── */}
+        {step === 2 && editLines && (
+          <div style={{ padding: 20 }}>
+            {/* Section renderer */}
+            {[
+              { key: "includes", label: "INCLUDES", color: "var(--green)" },
+              { key: "excludes", label: "EXCLUDES", color: "var(--red)" },
+              { key: "assumptions", label: "ASSUMPTIONS / QUALIFICATIONS", color: "var(--amber)" },
+            ].map(({ key, label, color }) => (
+              <div key={key} style={{ marginBottom: 20 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color, marginBottom: 8, letterSpacing: 0.5 }}>{label}</div>
+                {editLines[key].map((line, i) => (
+                  <div key={i} style={{ display: "flex", gap: 6, marginBottom: 4, alignItems: "center" }}>
+                    <span style={{ fontSize: 11, color: "var(--text3)", minWidth: 20, textAlign: "right" }}>{i + 1}.</span>
+                    <input
+                      className="form-input"
+                      value={line}
+                      onChange={e => updateLine(key, i, e.target.value)}
+                      style={{ flex: 1, fontSize: 12, padding: "4px 8px" }}
+                    />
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => deleteLine(key, i)}
+                      style={{ padding: "2px 6px", color: "var(--red)", fontSize: 14, lineHeight: 1 }}
+                      title="Remove"
+                    >x</button>
+                  </div>
+                ))}
+                <button className="btn btn-ghost btn-sm" onClick={() => addLine(key)} style={{ fontSize: 12, marginTop: 4 }}>+ Add</button>
+              </div>
+            ))}
+
+            {/* Proposal metadata fields */}
+            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16, marginTop: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 12 }}>Proposal Number</label>
+                  <input className="form-input" value={proposalNum} onChange={e => setProposalNum(e.target.value)} style={{ fontSize: 13 }} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 12 }}>Drawing Reference</label>
+                  <input className="form-input" value={drawingRef} onChange={e => setDrawingRef(e.target.value)} placeholder="e.g. A1.01 - A4.02, Rev 3" style={{ fontSize: 13 }} />
+                </div>
+              </div>
+              <div className="form-group" style={{ marginTop: 8 }}>
+                <label className="form-label" style={{ fontSize: 12 }}>Payment Terms</label>
+                <input className="form-input" value={terms.paymentTerms} onChange={e => setTerms(t => ({ ...t, paymentTerms: e.target.value }))} style={{ fontSize: 13 }} />
+              </div>
+              <div className="form-group" style={{ marginTop: 8 }}>
+                <label className="form-label" style={{ fontSize: 12 }}>Warranty</label>
+                <input className="form-input" value={terms.warranty} onChange={e => setTerms(t => ({ ...t, warranty: e.target.value }))} style={{ fontSize: 13 }} />
+              </div>
+              <div className="form-group" style={{ marginTop: 8 }}>
+                <label className="form-label" style={{ fontSize: 12 }}>Change Order Language</label>
+                <input className="form-input" value={terms.changeOrders} onChange={e => setTerms(t => ({ ...t, changeOrders: e.target.value }))} style={{ fontSize: 13 }} />
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20, gap: 8 }}>
+              <button className="btn btn-ghost" onClick={() => setStep(1)} style={{ fontSize: 13 }}>
+                &larr; Back to Checklist
+              </button>
+              <button
+                className="btn"
+                onClick={handleSaveExport}
+                style={{ background: "#e09422", color: "#fff", fontWeight: 700, fontSize: 14, padding: "10px 24px" }}
+              >
+                Save & Export PDF
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function EditableText({ value, onChange, style }) {
   const [editing, setEditing] = useState(false);

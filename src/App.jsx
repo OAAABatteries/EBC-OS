@@ -1553,8 +1553,8 @@ function App({ auth, onLogout }) {
       const { generateWeeklyDigest } = await import("./utils/api.js");
       const projectData = {
         projects: projects.map(p => ({
-          name: p.project, gc: p.gc, phase: p.phase,
-          value: p.value, billed: p.billed, margin: p.margin,
+          name: p.name || p.project, gc: p.gc, phase: p.phase,
+          contract: p.contract, billed: p.billed, margin: p.margin,
           progress: p.progress, scope: p.scope,
         })),
         bids: {
@@ -1725,7 +1725,7 @@ function App({ auth, onLogout }) {
         const projTM = (tmTickets || []).filter(t => t.projectId === p.id);
         return {
           name: p.project || p.name, gc: p.gc, phase: p.phase,
-          value: p.value, billed: p.billed, margin: p.margin, progress: p.progress,
+          contract: p.contract, billed: p.billed, margin: p.margin, progress: p.progress,
           scope: p.scope,
           changeOrders: { count: projCOs.length, totalValue: projCOs.reduce((s, c) => s + (c.amount || 0), 0), pendingCount: projCOs.filter(c => c.status === "pending").length },
           tmTickets: { count: projTM.length, pendingValue: projTM.filter(t => t.status !== "approved" && t.status !== "billed").reduce((s, t) => s + (t.laborEntries || []).reduce((a, e) => a + e.hours * e.rate, 0) + (t.materialEntries || []).reduce((a, e) => a + e.qty * e.unitCost, 0), 0) },

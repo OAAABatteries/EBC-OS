@@ -152,8 +152,48 @@ function checkPage(doc, y, needed = 20) {
   return y;
 }
 
+// ── Default scope lines (exported for use in ScopeReviewModal) ──
+export const defaultIncludes = [
+  "Demo ceilings, doors, and partitions as noted",
+  "Haul the demo and build-back trash of our own trade",
+  "Metal stud framing (20 or 25 ga.)",
+  'Drywall partitions (with "Type X" gypsum, tape, and float to level 4 finish)',
+  "Touch up existing walls in work area",
+  "Fire-rated wood blocking in walls where noted",
+  "Sound insulation (batt insulation)",
+  "Work to be performed during regular working hours",
+  "Installation of door frames, doors, and hardware",
+];
+
+export const defaultExcludes = [
+  "Overtime, after-hours, and weekend work",
+  "All dumpsters",
+  "Protection of existing finishes",
+  "Access panels",
+  "FRP installation",
+  "5/8 Cement Board",
+  "Tax on materials",
+  "Containment walls",
+  "Clean up of other trades demolition of glass, stucco, plaster, or EFIS",
+  "Doors, frames, and hardware materials",
+  "M.E.P. trash removal, M.E.P. fixture supports, and M.E.P. fire seal",
+  "Wall protection materials and wood panels",
+  "Stock material through the stairway",
+  "HVAC air slot blank-outs",
+  "Removal of wall covering on existing walls that is not explicitly noted on drawings",
+  "Specialty drywall not specifically stated (foil-faced, lead-lined, hi-impact, soundboard, etc.)",
+  "Demolition of track and studs above ceilings not explicitly shown to be demolished",
+  "Top out existing demising walls not explicitly noted on drawings",
+  "Any work outside, above, or below the designated work area",
+  "Exterior rigid insulation, thermal fiber insulation",
+  "Removal of glue and thin-set of any sort after flooring demo",
+  "Expansion joints in drywall/acoustical, aluminum, and stainless steel reveal",
+  "VWC, FWC, FW, and DIRTT walls",
+  "Paint, provide, and install sheet metal",
+];
+
 // ── main export function ──
-export async function generateProposalPdf({ takeoff, bid, company, assemblies, submittals, calcItem, calcRoom, calcSummary, scopeLines }) {
+export async function generateProposalPdf({ takeoff, bid, company, assemblies, submittals, calcItem, calcRoom, calcSummary, scopeLines, proposalTerms, proposalNumber }) {
   const doc = new jsPDF({ unit: "mm", format: "letter" });
 
   // Load logo
@@ -168,14 +208,22 @@ export async function generateProposalPdf({ takeoff, bid, company, assemblies, s
   doc.setTextColor(...COLORS.orange);
   doc.text("PROPOSAL", PAGE_W - MR, y + 2, { align: "right" });
 
+  // Proposal number (if provided)
+  if (proposalNumber) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...COLORS.medGray);
+    doc.text(`No. ${sanitize(proposalNumber)}`, PAGE_W - MR, y + 7, { align: "right" });
+  }
+
   // Date
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(...COLORS.darkGray);
   const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  doc.text(`Date: ${today}`, PAGE_W - MR, y + 8, { align: "right" });
+  doc.text(`Date: ${today}`, PAGE_W - MR, y + (proposalNumber ? 12 : 8), { align: "right" });
 
-  y += 14;
+  y += (proposalNumber ? 18 : 14);
 
   // Project info box
   doc.setFillColor(...COLORS.bgLight);
@@ -385,48 +433,10 @@ export async function generateProposalPdf({ takeoff, bid, company, assemblies, s
     y += 4;
   }
 
-  // ── INCLUDES / EXCLUDES ──
-  const defaultIncludes = [
-    "Demo ceilings, doors, and partitions as noted",
-    "Haul the demo and build-back trash of our own trade",
-    "Metal stud framing (20 or 25 ga.)",
-    'Drywall partitions (with "Type X" gypsum, tape, and float to level 4 finish)',
-    "Touch up existing walls in work area",
-    "Fire-rated wood blocking in walls where noted",
-    "Sound insulation (batt insulation)",
-    "Work to be performed during regular working hours",
-    "Installation of door frames, doors, and hardware",
-  ];
-
-  const defaultExcludes = [
-    "Overtime, after-hours, and weekend work",
-    "All dumpsters",
-    "Protection of existing finishes",
-    "Access panels",
-    "FRP installation",
-    "5/8 Cement Board",
-    "Tax on materials",
-    "Containment walls",
-    "Clean up of other trades demolition of glass, stucco, plaster, or EFIS",
-    "Doors, frames, and hardware materials",
-    "M.E.P. trash removal, M.E.P. fixture supports, and M.E.P. fire seal",
-    "Wall protection materials and wood panels",
-    "Stock material through the stairway",
-    "HVAC air slot blank-outs",
-    "Removal of wall covering on existing walls that is not explicitly noted on drawings",
-    "Specialty drywall not specifically stated (foil-faced, lead-lined, hi-impact, soundboard, etc.)",
-    "Demolition of track and studs above ceilings not explicitly shown to be demolished",
-    "Top out existing demising walls not explicitly noted on drawings",
-    "Any work outside, above, or below the designated work area",
-    "Exterior rigid insulation, thermal fiber insulation",
-    "Removal of glue and thin-set of any sort after flooring demo",
-    "Expansion joints in drywall/acoustical, aluminum, and stainless steel reveal",
-    "VWC, FWC, FW, and DIRTT walls",
-    "Paint, provide, and install sheet metal",
-  ];
-
+  // ── INCLUDES / EXCLUDES / ASSUMPTIONS ──
   const includes = scopeLines?.includes?.length > 0 ? scopeLines.includes : defaultIncludes;
   const excludes = scopeLines?.excludes?.length > 0 ? scopeLines.excludes : defaultExcludes;
+  const assumptions = scopeLines?.assumptions || [];
 
   // ── INCLUDES section ──
   y = checkPage(doc, y, 20);
@@ -484,29 +494,84 @@ export async function generateProposalPdf({ takeoff, bid, company, assemblies, s
 
   y += 6;
 
+  // ── ASSUMPTIONS / QUALIFICATIONS section ──
+  if (assumptions.length > 0) {
+    y = checkPage(doc, y, 20);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...COLORS.accent);
+    doc.text("ASSUMPTIONS / QUALIFICATIONS:", ML, y);
+    y += 2;
+    doc.setDrawColor(...COLORS.orange);
+    doc.setLineWidth(0.6);
+    doc.line(ML, y, ML + 70, y);
+    y += 5;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...COLORS.darkGray);
+    assumptions.forEach((line, i) => {
+      y = checkPage(doc, y, 6);
+      doc.text(`${i + 1}.`, ML + 2, y, { align: "right" });
+      const split = doc.splitTextToSize(sanitize(line), CONTENT_W - 12);
+      split.forEach((sl, si) => {
+        doc.text(sl, ML + 6, y);
+        if (si < split.length - 1) y += 4;
+      });
+      y += 5;
+    });
+    y += 4;
+  }
+
   // ── NOTES / TERMS ──
-  y = checkPage(doc, y, 30);
+  const terms = proposalTerms || {};
+  const noteLines = [];
+  if (terms.paymentTerms) noteLines.push("Payment Terms: " + terms.paymentTerms);
+  if (terms.warranty) noteLines.push("Warranty: " + terms.warranty);
+  if (terms.changeOrders) noteLines.push("Change Orders: " + terms.changeOrders);
+  if (terms.pricingValidity) noteLines.push(terms.pricingValidity);
+
+  // Calculate note box height based on content
+  const noteBoxH = Math.max(22, 8 + noteLines.length * 5 + 10);
+  y = checkPage(doc, y, noteBoxH + 6);
   doc.setFillColor(...COLORS.bgLight);
-  doc.roundedRect(ML, y, CONTENT_W, 22, 2, 2, "F");
+  doc.roundedRect(ML, y, CONTENT_W, noteBoxH, 2, 2, "F");
   doc.setDrawColor(...COLORS.lightGray);
-  doc.roundedRect(ML, y, CONTENT_W, 22, 2, 2, "S");
+  doc.roundedRect(ML, y, CONTENT_W, noteBoxH, 2, 2, "S");
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(...COLORS.accent);
-  doc.text("NOTE:", ML + 4, y + 5);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...COLORS.darkGray);
-  doc.text('Assume deck height to be 12\'-00" or less. Advise if deck height wall price needs to be adjusted.', ML + 18, y + 5);
+  if (noteLines.length > 0) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...COLORS.accent);
+    doc.text("TERMS & CONDITIONS:", ML + 4, y + 5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...COLORS.darkGray);
+    let noteY = y + 10;
+    noteLines.forEach((line) => {
+      const split = doc.splitTextToSize(sanitize(line), CONTENT_W - 8);
+      split.forEach((sl) => {
+        doc.text(sl, ML + 4, noteY);
+        noteY += 4;
+      });
+      noteY += 1;
+    });
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.text("Contact: Oscar Abner Aguilar - (346) 970-7093 - abner@ebconstructors.com", ML + 4, noteY + 2);
+  } else {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...COLORS.accent);
+    doc.text("NOTE:", ML + 4, y + 5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...COLORS.darkGray);
+    doc.text('Assume deck height to be 12\'-00" or less. Advise if deck height wall price needs to be adjusted.', ML + 18, y + 5);
+    doc.text("Pricing is good for 30 days from date of proposal. If you have any questions, please contact:", ML + 4, y + 12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Oscar Abner Aguilar - (346) 970-7093 - abner@ebconstructors.com", ML + 4, y + 17);
+  }
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.text("Pricing is good for 30 days from date of proposal. If you have any questions, please contact:", ML + 4, y + 12);
-  doc.setFont("helvetica", "bold");
-  doc.text("Oscar Abner Aguilar - (346) 970-7093 - abner@ebconstructors.com", ML + 4, y + 17);
-
-  // Advance past the note box (22mm tall + spacing)
-  y += 28;
+  y += noteBoxH + 6;
 
   // ── SIGNATURE & DATE SLOTS ──
   y = checkPage(doc, y, 70);

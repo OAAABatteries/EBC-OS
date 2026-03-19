@@ -30,7 +30,7 @@ export function MaterialsTab({ app }) {
     try {
       const { optimizeMaterialCosts } = await import("../utils/api.js");
       const matData = materials.slice(0, 30).map(m => ({ name: m.name, category: m.category, unit: m.unit, unitCost: m.unitCost, note: m.note }));
-      const projData = (app.projects || []).map(p => ({ name: p.name || p.project, phase: p.phase, scope: p.scope, value: p.value }));
+      const projData = (app.projects || []).map(p => ({ name: p.name || p.project, phase: p.phase, scope: p.scope, contract: p.contract }));
       const asmData = (app.assemblies || []).slice(0, 20).map(a => ({ code: a.code, name: a.name, matRate: a.matRate, labRate: a.labRate }));
       const result = await optimizeMaterialCosts(app.apiKey, matData, projData, asmData);
       setOptResult(result);

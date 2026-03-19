@@ -846,7 +846,7 @@ function JobCostingTab({ app }) {
         const tmApproved = tmTickets.filter(t => t.status === "approved" || t.status === "billed").reduce((s, t) => s + calcTicketTotal(t), 0);
         const tmPending = tmTickets.filter(t => t.status === "draft" || t.status === "submitted").reduce((s, t) => s + calcTicketTotal(t), 0);
         return {
-          name: proj.name || proj.project, gc: proj.gc, contract: proj.contract, value: proj.value,
+          name: proj.name || proj.project, gc: proj.gc, contract: proj.contract,
           billed, approvedCOs: cos, tmApproved, tmPending, tmCount: tmTickets.length,
           progress: proj.progress, margin: proj.margin, phase: proj.phase, scope: proj.scope,
         };
@@ -1763,7 +1763,7 @@ function Schedule({ app }) {
       const projectData = app.projects.map(p => ({
         name: p.name || p.project,
         gc: p.gc,
-        value: p.value,
+        contract: p.contract,
         progress: p.progress,
         phase: p.phase,
         scope: p.scope,
@@ -2244,7 +2244,7 @@ function Reports({ app }) {
         byStatus: { estimating: bids.filter(b => b.status === "estimating").length, submitted: bids.filter(b => b.status === "submitted").length, awarded, lost },
         winRate: decided > 0 ? Math.round((awarded / decided) * 100) : 0,
         avgBidSize: bids.length > 0 ? Math.round(bids.reduce((s, b) => s + (b.value || 0), 0) / bids.length) : 0,
-        projects: projects.map(p => ({ name: p.project || p.name, gc: p.gc, value: p.value, billed: p.billed, margin: p.margin, progress: p.progress, phase: p.phase })),
+        projects: projects.map(p => ({ name: p.project || p.name, gc: p.gc, contract: p.contract, billed: p.billed, margin: p.margin, progress: p.progress, phase: p.phase })),
         topGCs: Object.entries(bids.reduce((m, b) => { m[b.gc] = (m[b.gc] || 0) + 1; return m; }, {})).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([gc, count]) => ({ gc, totalBids: count, awarded: bids.filter(b => b.gc === gc && b.status === "awarded").length })),
         changeOrders: { total: (app.changeOrders || []).length, totalValue: (app.changeOrders || []).reduce((s, c) => s + (c.amount || 0), 0) },
       };

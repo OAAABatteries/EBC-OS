@@ -60,7 +60,25 @@ self.addEventListener("fetch", (e) => {
 
   const url = new URL(e.request.url);
 
-  // Skip Supabase API calls — always network
+  // ── Supabase Storage drawings: cache-first for offline viewing ──
+  if (url.hostname.includes("supabase") && url.pathname.includes("storage/v1/object")) {
+    e.respondWith(
+      caches.open(DRAWINGS_CACHE).then((cache) =>
+        cache.match(e.request).then((cached) => {
+          if (cached) return cached;
+          return fetch(e.request).then((res) => {
+            if (res.ok) {
+              const clone = res.clone();
+              cache.put(e.request, clone).then(() => evictDrawingsCache());
+            }
+            return res;
+          });
+        })
+      )
+    );
+    return;
+  }
+  // Skip other Supabase API calls — always network
   if (url.hostname.includes("supabase")) return;
   // Skip Anthropic API — always network
   if (url.hostname.includes("anthropic")) return;
@@ -167,6 +185,23 @@ self.addEventListener("fetch", (e) => {
   );
 });
 
+// ── Drawing cache LRU eviction (max ~50 entries) ─────────────
+const MAX_DRAWINGS = 50;
+
+async function evictDrawingsCache() {
+  try {
+    const cache = await caches.open(DRAWINGS_CACHE);
+    const keys = await cache.keys();
+    if (keys.length > MAX_DRAWINGS) {
+      // Remove oldest entries (first in list) to stay under limit
+      const toRemove = keys.length - MAX_DRAWINGS;
+      for (let i = 0; i < toRemove; i++) {
+        await cache.delete(keys[i]);
+      }
+    }
+  } catch {}
+}
+
 // ── Clock-in reminder scheduling ──────────────────────────────
 const scheduledReminders = new Map();
 
@@ -259,6 +294,27 @@ self.addEventListener("message", (event) => {
     self.registration
       .getNotifications({ tag: `report-reminder-${id}` })
       .then((notifs) => notifs.forEach((n) => n.close()));
+  }
+
+  // ── Drawing cache management ──
+  if (data?.type === "CACHE_DRAWING") {
+    const { url } = data;
+    if (url) {
+      event.waitUntil(
+        caches.open(DRAWINGS_CACHE).then((cache) =>
+          cache.match(url).then((existing) => {
+            if (existing) return; // already cached
+            return fetch(url).then((res) => {
+              if (res.ok) return cache.put(url, res).then(() => evictDrawingsCache());
+            }).catch(() => {});
+          })
+        )
+      );
+    }
+  }
+
+  if (data?.type === "CLEAR_DRAWING_CACHE") {
+    event.waitUntil(caches.delete(DRAWINGS_CACHE));
   }
 
   // Skip waiting when user clicks "Update"

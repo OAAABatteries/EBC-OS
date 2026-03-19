@@ -6,7 +6,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-export function PdfViewer({ pdfData, fileName, onClose }) {
+export function PdfViewer({ pdfData, fileName, onClose, isCachedOffline }) {
   const [pdf, setPdf] = useState(null);
   const [page, setPage] = useState(1);
   const [numPages, setNumPages] = useState(0);
@@ -111,6 +111,21 @@ export function PdfViewer({ pdfData, fileName, onClose }) {
           <span style={{ color: "#fff", fontSize: 14, fontWeight: 600, maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {fileName || "Drawing"}
           </span>
+          {isCachedOffline && (
+            <span title="Available offline" style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              fontSize: 11, color: "#4ade80", background: "rgba(74,222,128,0.12)",
+              padding: "2px 8px", borderRadius: 10, border: "1px solid rgba(74,222,128,0.25)",
+              whiteSpace: "nowrap",
+            }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Offline
+            </span>
+          )}
         </div>
 
         {/* Page nav */}

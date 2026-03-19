@@ -41,5 +41,61 @@ export function useDrawingCache() {
     } catch { return false; }
   };
 
-  return { cacheDrawing, getCachedDrawing, removeCachedDrawing, isCached };
+  /** Ask the service worker to pre-cache a drawing URL (network fetch + store) */
+  const requestSwCache = (url) => {
+    try {
+      if (navigator.serviceWorker?.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: "CACHE_DRAWING", url });
+      }
+    } catch {}
+  };
+
+  /** Ask the service worker to clear the entire drawings cache */
+  const clearAllCached = async () => {
+    try {
+      if (navigator.serviceWorker?.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: "CLEAR_DRAWING_CACHE" });
+      }
+      await caches.delete(CACHE_NAME);
+      localStorage.removeItem("ebc_downloadedDrawings");
+    } catch {}
+  };
+
+  /** Check if a specific drawing URL is in the Cache API */
+  const isUrlCached = async (url) => {
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      const match = await cache.match(url);
+      return !!match;
+    } catch { return false; }
+  };
+
+  /** Get cache stats: count of cached drawings + approximate total size */
+  const getCacheStats = async () => {
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      const keys = await cache.keys();
+      const count = keys.length;
+      // Use localStorage metadata for fast size estimate
+      const meta = JSON.parse(localStorage.getItem("ebc_downloadedDrawings") || "{}");
+      let totalSize = 0;
+      for (const info of Object.values(meta)) {
+        totalSize += info.size || 0;
+      }
+      return { count, totalSize };
+    } catch {
+      return { count: 0, totalSize: 0 };
+    }
+  };
+
+  return {
+    cacheDrawing,
+    getCachedDrawing,
+    removeCachedDrawing,
+    isCached,
+    requestSwCache,
+    clearAllCached,
+    isUrlCached,
+    getCacheStats,
+  };
 }

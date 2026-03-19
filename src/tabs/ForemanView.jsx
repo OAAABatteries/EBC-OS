@@ -69,6 +69,7 @@ export function ForemanView({ app }) {
   });
   const [drawingZoom, setDrawingZoom] = useState(1);
   const [activeDrawingId, setActiveDrawingId] = useState(null);
+  const [activeDrawingPath, setActiveDrawingPath] = useState(null);
   const [activeDrawingData, setActiveDrawingData] = useState(null);
   const [activeDrawingName, setActiveDrawingName] = useState("");
   const [cloudDrawings, setCloudDrawings] = useState([]);
@@ -286,6 +287,7 @@ export function ForemanView({ app }) {
         setActiveDrawingData(cached);
         setActiveDrawingName(drawing.name);
         setActiveDrawingId(drawing.id);
+        setActiveDrawingPath(drawing.path);
         return;
       }
       // Download from Supabase
@@ -295,6 +297,7 @@ export function ForemanView({ app }) {
       setActiveDrawingData(arrayBuffer);
       setActiveDrawingName(drawing.name);
       setActiveDrawingId(drawing.id);
+      setActiveDrawingPath(drawing.path);
       // Auto-cache viewed drawing for offline access
       cacheDrawing(drawing.path, blob).then(() => {
         const updated = { ...downloadedDrawings, [drawing.path]: { cachedAt: new Date().toISOString(), size: blob.size } };
@@ -534,7 +537,8 @@ export function ForemanView({ app }) {
           <PdfViewer
             pdfData={activeDrawingData}
             fileName={activeDrawingName}
-            onClose={() => { setActiveDrawingData(null); setActiveDrawingId(null); setActiveDrawingName(""); }}
+            onClose={() => { setActiveDrawingData(null); setActiveDrawingId(null); setActiveDrawingPath(null); setActiveDrawingName(""); }}
+            isCachedOffline={!!activeDrawingPath && !!downloadedDrawings[activeDrawingPath]}
           />
         </Suspense>
       )}

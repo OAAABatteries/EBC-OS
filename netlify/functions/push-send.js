@@ -1,11 +1,16 @@
-// Netlify Function: Send push notification to a subscription
-// Called internally (e.g., from material approval, schedule changes)
+// Netlify Function: Send push notification
+// Can send to a specific subscription OR to all subscriptions for a userId
 
 import webpush from "web-push";
+import { createClient } from "@supabase/supabase-js";
 
 const VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY;
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:admin@ebconstructors.com";
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 export async function handler(event) {
   if (event.httpMethod === "OPTIONS") {
@@ -27,13 +32,13 @@ export async function handler(event) {
   try {
     webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 
-    const { subscription, title, body, tag, url } = JSON.parse(event.body);
+    const { subscription, userId, title, body, tag, url } = JSON.parse(event.body);
 
-    if (!subscription || !title) {
+    if (!title) {
       return {
         statusCode: 400,
         headers: corsHeaders(),
-        body: JSON.stringify({ ok: false, message: "subscription and title required" }),
+        body: JSON.stringify({ ok: false, message: "title required" }),
       };
     }
 
@@ -45,16 +50,79 @@ export async function handler(event) {
       icon: "/ebc-logo.png",
     });
 
-    await webpush.sendNotification(subscription, payload);
+    // If a specific subscription is provided, send to it directly
+    if (subscription) {
+      await sendToSubscription(subscription, payload);
+      return {
+        statusCode: 200,
+        headers: corsHeaders(),
+        body: JSON.stringify({ ok: true, sent: 1 }),
+      };
+    }
+
+    // If userId is provided, look up all subscriptions for that user from Supabase
+    if (userId && supabase) {
+      const { data: subs, error } = await supabase
+        .from("push_subscriptions")
+        .select("endpoint, keys_p256dh, keys_auth")
+        .eq("user_id", userId);
+
+      if (error) {
+        console.error("[push] lookup error:", error.message);
+        return {
+          statusCode: 500,
+          headers: corsHeaders(),
+          body: JSON.stringify({ ok: false, message: "Failed to look up subscriptions" }),
+        };
+      }
+
+      if (!subs || subs.length === 0) {
+        return {
+          statusCode: 200,
+          headers: corsHeaders(),
+          body: JSON.stringify({ ok: true, sent: 0, message: "No subscriptions found for user" }),
+        };
+      }
+
+      let sent = 0;
+      const expired = [];
+      for (const sub of subs) {
+        const pushSub = {
+          endpoint: sub.endpoint,
+          keys: { p256dh: sub.keys_p256dh, auth: sub.keys_auth },
+        };
+        try {
+          await webpush.sendNotification(pushSub, payload);
+          sent++;
+        } catch (err) {
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            expired.push(sub.endpoint);
+          } else {
+            console.warn("[push] send error:", err.message);
+          }
+        }
+      }
+
+      // Clean up expired subscriptions
+      if (expired.length > 0 && supabase) {
+        await supabase.from("push_subscriptions").delete().in("endpoint", expired);
+        console.log(`[push] Cleaned up ${expired.length} expired subscriptions`);
+      }
+
+      return {
+        statusCode: 200,
+        headers: corsHeaders(),
+        body: JSON.stringify({ ok: true, sent, expired: expired.length }),
+      };
+    }
 
     return {
-      statusCode: 200,
+      statusCode: 400,
       headers: corsHeaders(),
-      body: JSON.stringify({ ok: true }),
+      body: JSON.stringify({ ok: false, message: "subscription or userId required" }),
     };
   } catch (err) {
     console.error("[push] send failed:", err.message);
-    // 410 = subscription expired/invalid
     const status = err.statusCode === 410 ? 410 : 500;
     return {
       statusCode: status,
@@ -62,6 +130,10 @@ export async function handler(event) {
       body: JSON.stringify({ ok: false, message: err.message }),
     };
   }
+}
+
+async function sendToSubscription(sub, payload) {
+  await webpush.sendNotification(sub, payload);
 }
 
 function corsHeaders() {
