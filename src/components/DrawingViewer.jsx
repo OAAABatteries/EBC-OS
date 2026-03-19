@@ -7,6 +7,36 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
+// ── IndexedDB helpers for PDF persistence ──
+const IDB_NAME = "ebc_takeoff_pdfs";
+const IDB_STORE = "pdfs";
+function openIDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function savePdfToIDB(key, data) {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, "readwrite");
+    tx.objectStore(IDB_STORE).put(data, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function loadPdfFromIDB(key) {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, "readonly");
+    const req = tx.objectStore(IDB_STORE).get(key);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
 // ── Modes ──
 const MODE = { PAN: "pan", CALIBRATE: "calibrate", LINEAR: "linear", AREA: "area", COUNT: "count" };
 
@@ -105,7 +135,7 @@ function createCondition(template, index) {
   };
 }
 
-export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, assemblies, initialTakeoffState, onTakeoffStateChange }) {
+export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, assemblies, initialTakeoffState, onTakeoffStateChange, takeoffId }) {
   // ── Multi-PDF management ──
   // pdfFiles: [{ name, data (Uint8Array), doc (pdfjs doc), numPages }]
   const [pdfFiles, setPdfFiles] = useState([]);
@@ -554,10 +584,36 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
         setNumPages(doc.numPages);
         setPage(1);
         setActivePdfIdx(0);
+        // Save to IndexedDB for persistence
+        if (takeoffId) {
+          savePdfToIDB(`${takeoffId}_0`, pdfData).catch(() => {});
+        }
       }
     });
     return () => { cancelled = true; };
   }, [pdfData]);
+
+  // ── Auto-load PDFs from IndexedDB when reopening without pdfData ──
+  useEffect(() => {
+    if (pdfData || !takeoffId || !_init.pdfFileNames || _init.pdfFileNames.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const loaded = [];
+      for (let i = 0; i < _init.pdfFileNames.length; i++) {
+        const data = await loadPdfFromIDB(`${takeoffId}_${i}`).catch(() => null);
+        if (!data || cancelled) continue;
+        const doc = await pdfjsLib.getDocument({ data }).promise;
+        loaded.push({ name: _init.pdfFileNames[i], data, doc, numPages: doc.numPages });
+      }
+      if (cancelled || loaded.length === 0) return;
+      setPdfFiles(loaded);
+      setPdf(loaded[0].doc);
+      setNumPages(loaded[0].numPages);
+      setPage(1);
+      setActivePdfIdx(0);
+    })();
+    return () => { cancelled = true; };
+  }, [takeoffId]);
 
   // ── Switch active PDF when activePdfIdx changes ──
   useEffect(() => {
@@ -579,6 +635,8 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
         const newIdx = pdfFiles.length;
         setPdfFiles(prev => [...prev, { name: file.name, data, doc, numPages: doc.numPages }]);
         setActivePdfIdx(newIdx);
+        // Save to IndexedDB
+        if (takeoffId) savePdfToIDB(`${takeoffId}_${newIdx}`, data).catch(() => {});
       });
     };
     reader.readAsArrayBuffer(file);
@@ -947,7 +1005,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       return;
     }
     if (!activeCond) return;
-    if (mode === MODE.COUNT && ppf) {
+    if (mode === MODE.COUNT) {
       const pt = getNormCoords(e);
       const m = { id: "m_" + Date.now(), type: "count", conditionId: activeCond.id, bidAreaId: activeBidAreaId, point: pt, count: 1, page: pageKey };
       if (coMode) {
@@ -1154,9 +1212,20 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   // Nav
   const prevPage = () => { setPage(p => Math.max(1, p - 1)); setActiveVertices([]); };
   const nextPage = () => { setPage(p => Math.min(numPages, p + 1)); setActiveVertices([]); };
-  const zoomIn = () => setZoom(s => Math.min(4, s + 0.25));
-  const zoomOut = () => setZoom(s => Math.max(0.5, s - 0.25));
+  const zoomIn = () => setZoom(s => Math.min(6, s + 0.25));
+  const zoomOut = () => setZoom(s => Math.max(0.25, s - 0.25));
   const resetZoom = () => setZoom(1);
+
+  // Scroll wheel zoom
+  const handleWheel = useCallback((e) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      setZoom(s => {
+        const delta = e.deltaY > 0 ? -0.15 : 0.15;
+        return Math.min(6, Math.max(0.25, s + delta));
+      });
+    }
+  }, []);
 
   // Touch pinch
   const handleTouchStart = useCallback((e) => {
@@ -1186,7 +1255,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       if (e.key === " ") { e.preventDefault(); setMode(m => m === MODE.PAN ? (activeCond ? activeCond.type : MODE.PAN) : MODE.PAN); return; }
       if (e.key === "l" || e.key === "L") { if (ppf) { setMode(MODE.LINEAR); cancelActive(); } return; }
       if (e.key === "a" || e.key === "A") { if (ppf) { setMode(MODE.AREA); cancelActive(); } return; }
-      if (e.key === "c" || e.key === "C") { if (ppf) { setMode(MODE.COUNT); cancelActive(); } return; }
+      if (e.key === "c" || e.key === "C") { setMode(MODE.COUNT); cancelActive(); return; }
       if (e.key === "s" || e.key === "S") { setMode(MODE.CALIBRATE); cancelActive(); return; }
       if (e.key === "f" || e.key === "F") { resetZoom(); return; }
       if (e.key === "=" || e.key === "+") { zoomIn(); return; }
@@ -1265,7 +1334,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
           <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
           <button onClick={() => { if (ppf) { setMode(MODE.LINEAR); cancelActive(); }}} style={!ppf ? btnDis : mode === MODE.LINEAR ? btnActive : btn} disabled={!ppf} title="L">Linear</button>
           <button onClick={() => { if (ppf) { setMode(MODE.AREA); cancelActive(); }}} style={!ppf ? btnDis : mode === MODE.AREA ? btnActive : btn} disabled={!ppf} title="A">Area</button>
-          <button onClick={() => { if (ppf) { setMode(MODE.COUNT); cancelActive(); }}} style={!ppf ? btnDis : mode === MODE.COUNT ? btnActive : btn} disabled={!ppf} title="C">Count</button>
+          <button onClick={() => { setMode(MODE.COUNT); cancelActive(); }} style={mode === MODE.COUNT ? btnActive : btn} title="C">Count</button>
           <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
           <button onClick={undo} style={btn} title="Ctrl+Z">Undo</button>
           <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
@@ -1401,8 +1470,8 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
 
         {/* Canvas area OR Summary view */}
         {viewMode === "drawing" ? (
-          <div ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove}
-            style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", padding: 12,
+          <div ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onWheel={handleWheel}
+            style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: 12,
               cursor: mode === MODE.PAN ? "grab" : "crosshair" }}>
             <div style={{ position: "relative", display: "inline-block" }}>
               <canvas ref={pdfCanvasRef} />
