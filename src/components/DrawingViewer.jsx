@@ -132,6 +132,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const [openFolders, setOpenFolders] = useState({ Walls: true, Ceilings: true, Counts: true, Insulation: false, "Add-Ons": false });
   const [showAddCond, setShowAddCond] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [hiddenFolders, setHiddenFolders] = useState({}); // { folderName: true } = hidden
 
   // Bid Areas
   const [bidAreas, setBidAreas] = useState([
@@ -321,9 +322,10 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
     const scale = fitScaleRef.current * zoom;
 
-    // Draw completed measurements — color by condition
+    // Draw completed measurements — color by condition (skip hidden layers)
     pageMeasurements.forEach((m) => {
       const cond = conditions.find(c => c.id === m.conditionId);
+      if (cond && hiddenFolders[cond.folder]) return; // layer hidden
       const color = cond?.color || "#3b82f6";
 
       if (m.type === "linear") {
@@ -437,7 +439,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       ctx.fillStyle = "#4ade80"; ctx.font = "10px sans-serif"; ctx.textAlign = "left";
       ctx.fillText(`Scale set (${(1 / ppf).toFixed(4)}'/px)`, 14, ch - 14);
     }
-  }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond]);
+  }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond, hiddenFolders]);
 
   useEffect(() => { requestAnimationFrame(drawOverlay); }, [drawOverlay]);
 
@@ -863,7 +865,12 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
                 <div onClick={() => setOpenFolders(prev => ({ ...prev, [folder]: !prev[folder] }))}
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 6px", cursor: "pointer", borderRadius: 4, background: "rgba(255,255,255,0.03)" }}>
                   <span style={{ fontSize: 9, color: "#888" }}>{openFolders[folder] ? "▼" : "▶"}</span>
-                  <span style={{ fontSize: 11, color: "#aaa", fontWeight: 600, flex: 1 }}>{folder}</span>
+                  <span style={{ fontSize: 11, color: hiddenFolders[folder] ? "#555" : "#aaa", fontWeight: 600, flex: 1, textDecoration: hiddenFolders[folder] ? "line-through" : "none" }}>{folder}</span>
+                  <span onClick={(e) => { e.stopPropagation(); setHiddenFolders(prev => ({ ...prev, [folder]: !prev[folder] })); }}
+                    title={hiddenFolders[folder] ? "Show layer" : "Hide layer"}
+                    style={{ fontSize: 10, cursor: "pointer", padding: "0 3px", color: hiddenFolders[folder] ? "#555" : "#888" }}>
+                    {hiddenFolders[folder] ? "○" : "●"}
+                  </span>
                   <span style={{ fontSize: 10, color: "#666" }}>{conds.length}</span>
                 </div>
                 {openFolders[folder] && conds.map((c, ci) => {
@@ -892,6 +899,34 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
                           <div style={{ fontSize: 9, color: "#888" }}>
                             {Math.round(totals.qty)} {unit} &middot; {fmt(totals.cost)}
                           </div>
+                        )}
+                      </div>
+                      {/* Height badge for linear conditions + delete */}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                        {c.type === "linear" && c.height > 0 && (
+                          <span onClick={(e) => {
+                            e.stopPropagation();
+                            const newH = prompt(`Wall height for "${c.name}" (feet):`, c.height);
+                            if (newH && !isNaN(parseFloat(newH))) {
+                              setConditions(prev => prev.map(cc => cc.id === c.id ? { ...cc, height: parseFloat(newH) } : cc));
+                            }
+                          }}
+                          title="Click to edit height"
+                          style={{ fontSize: 8, color: "#888", padding: "0 4px", borderRadius: 2, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
+                            {c.height}'
+                          </span>
+                        )}
+                        {isActive && (
+                          <span onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`Delete condition "${c.name}"?`)) {
+                              setConditions(prev => prev.filter(cc => cc.id !== c.id));
+                              if (activeCondId === c.id) setActiveCondId(null);
+                            }
+                          }}
+                          style={{ fontSize: 8, color: "#ef4444", cursor: "pointer", padding: "0 3px" }} title="Delete condition">
+                            &#x2715;
+                          </span>
                         )}
                       </div>
                     </div>
