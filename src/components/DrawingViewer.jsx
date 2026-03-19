@@ -236,6 +236,37 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const pageMeasurements = measurements[pageKey] || [];
   const activeCond = conditions.find(c => c.id === activeCondId) || null;
 
+  // ── Helper functions (must be defined before useMemo/useCallback that use them) ──
+  const getSheetName = (pg) => sheetNames[activePdfIdx + ":" + pg] || `Page ${pg}`;
+  const setSheetName = (pg, name) => setSheetNames(prev => ({ ...prev, [activePdfIdx + ":" + pg]: name }));
+  const getKeyName = (pk) => {
+    if (sheetNames[pk]) return sheetNames[pk];
+    const [pIdx, pg] = pk.split(":");
+    const pf = pdfFiles[Number(pIdx)];
+    const prefix = pdfFiles.length > 1 && pf ? pf.name.replace(/\.pdf$/i, "") + " — " : "";
+    return prefix + `Page ${pg}`;
+  };
+
+  // CO page measurements + summary (must be before exportToExcel)
+  const coPageMeasurements = coMeasurements[pageKey] || [];
+  const coSummary = useMemo(() => {
+    const allCo = Object.values(coMeasurements).flat();
+    const adds = { lf: 0, sf: 0, ea: 0, cost: 0 };
+    const dels = { lf: 0, sf: 0, ea: 0, cost: 0 };
+    allCo.forEach(m => {
+      const qty = m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0);
+      const cond = conditions.find(c => c.id === m.conditionId);
+      const asm = cond ? (assemblies || []).find(a => a.code === cond.asmCode) : null;
+      const cost = asm ? qty * ((asm.matRate || 0) + (asm.labRate || 0)) : 0;
+      const bucket = m.coType === "delete" ? dels : adds;
+      if (m.type === "linear") bucket.lf += qty;
+      else if (m.type === "area") bucket.sf += qty;
+      else bucket.ea += qty;
+      bucket.cost += cost;
+    });
+    return { adds, dels, net: adds.cost - dels.cost, total: allCo.length };
+  }, [coMeasurements, conditions, assemblies]);
+
   // Compute condition totals from all measurements + typical group instances
   const condTotals = useMemo(() => {
     const totals = {};
@@ -635,8 +666,6 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   };
 
   // ── CO measurement helpers ──
-  const coPageMeasurements = coMeasurements[pageKey] || [];
-
   const addCoMeasurement = (m) => {
     setCoMeasurements(prev => ({ ...prev, [pageKey]: [...(prev[pageKey] || []), m] }));
   };
@@ -644,25 +673,6 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const deleteCoMeasurement = (id) => {
     setCoMeasurements(prev => ({ ...prev, [pageKey]: (prev[pageKey] || []).filter(m => m.id !== id) }));
   };
-
-  // CO net delta summary
-  const coSummary = useMemo(() => {
-    const allCo = Object.values(coMeasurements).flat();
-    const adds = { lf: 0, sf: 0, ea: 0, cost: 0 };
-    const dels = { lf: 0, sf: 0, ea: 0, cost: 0 };
-    allCo.forEach(m => {
-      const qty = m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0);
-      const cond = conditions.find(c => c.id === m.conditionId);
-      const asm = cond ? (assemblies || []).find(a => a.code === cond.asmCode) : null;
-      const cost = asm ? qty * ((asm.matRate || 0) + (asm.labRate || 0)) : 0;
-      const bucket = m.coType === "delete" ? dels : adds;
-      if (m.type === "linear") bucket.lf += qty;
-      else if (m.type === "area") bucket.sf += qty;
-      else bucket.ea += qty;
-      bucket.cost += cost;
-    });
-    return { adds, dels, net: adds.cost - dels.cost, total: allCo.length };
-  }, [coMeasurements, conditions, assemblies]);
 
   // ── Draw overlay ──
   const drawOverlay = useCallback(() => {
@@ -1129,17 +1139,6 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     });
     return result;
   }, [typicalGroups, measurements, conditions, assemblies]);
-
-  const getSheetName = (pg) => sheetNames[activePdfIdx + ":" + pg] || `Page ${pg}`;
-  const setSheetName = (pg, name) => setSheetNames(prev => ({ ...prev, [activePdfIdx + ":" + pg]: name }));
-  // Get friendly name for any composite key "pdfIdx:page" — used in summary/export
-  const getKeyName = (pk) => {
-    if (sheetNames[pk]) return sheetNames[pk];
-    const [pIdx, pg] = pk.split(":");
-    const pf = pdfFiles[Number(pIdx)];
-    const prefix = pdfFiles.length > 1 && pf ? pf.name.replace(/\.pdf$/i, "") + " — " : "";
-    return prefix + `Page ${pg}`;
-  };
 
   const deleteMeasurement = (id) => { setMeasurements(prev => ({ ...prev, [pageKey]: (prev[pageKey] || []).filter(m => m.id !== id) })); };
   const cancelActive = () => { setActiveVertices([]); setMousePos(null); setCalPoints([]); setShowCalPrompt(false); };
