@@ -573,6 +573,145 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     return map;
   }, [conditions]);
 
+  // ── Auto Name: extract sheet numbers + names from title blocks ──
+  const [autoNaming, setAutoNaming] = useState(false);
+  const autoNamePages = useCallback(async (doc, pdfIdx) => {
+    setAutoNaming(true);
+    try {
+      for (let pg = 1; pg <= doc.numPages; pg++) {
+        const pk = pdfIdx + ":" + pg;
+        // Skip pages that already have custom names
+        if (sheetNames[pk]) continue;
+        try {
+          const page = await doc.getPage(pg);
+          const textContent = await page.getTextContent();
+          const vp = page.getViewport({ scale: 1 });
+          const pageW = vp.width, pageH = vp.height;
+
+          // Collect all text items with positions
+          const items = textContent.items.map(item => ({
+            str: item.str.trim(),
+            x: item.transform[4],
+            y: item.transform[5],
+            // Normalize position as fraction of page (0-1)
+            nx: item.transform[4] / pageW,
+            ny: 1 - (item.transform[5] / pageH), // flip Y since PDF Y is bottom-up
+          })).filter(item => item.str.length > 0);
+
+          // ── Find sheet number ──
+          // Common patterns: A1, A1.1, A-101, S200, M-301, etc.
+          // Usually in bottom-right title block area (nx > 0.7, ny > 0.8)
+          const sheetNumRegex = /^([A-Z]{1,2}[\-\.]?\d{1,3}(?:\.\d{1,2})?)$/i;
+          let sheetNum = "";
+          let sheetTitle = "";
+
+          // Look for sheet number in title block area (right 35%, bottom 25%)
+          const titleBlockItems = items.filter(i => i.nx > 0.65 && i.ny > 0.75);
+          // Also look in wider area for sheet titles
+          const wideItems = items.filter(i => i.ny > 0.7);
+
+          // Find sheet number
+          for (const item of titleBlockItems) {
+            if (sheetNumRegex.test(item.str)) {
+              sheetNum = item.str.toUpperCase();
+              break;
+            }
+          }
+          // If not found in title block, search wider
+          if (!sheetNum) {
+            for (const item of wideItems) {
+              if (sheetNumRegex.test(item.str)) {
+                sheetNum = item.str.toUpperCase();
+                break;
+              }
+            }
+          }
+
+          // ── Find sheet title ──
+          // Look for common plan names near the title block
+          const planNamePatterns = [
+            /FLOOR\s*PLAN/i, /CONSTRUCTION\s*PLAN/i, /CEILING\s*PLAN/i, /REFLECTED\s*CEILING/i,
+            /DEMOLITION\s*PLAN/i, /SITE\s*PLAN/i, /ROOF\s*PLAN/i, /ELEVATION/i,
+            /SECTION/i, /DETAIL/i, /SCHEDULE/i, /PARTITION\s*PLAN/i,
+            /POWER\s*PLAN/i, /LIGHTING\s*PLAN/i, /MECHANICAL/i, /PLUMBING/i,
+            /ELECTRICAL/i, /FRAMING\s*PLAN/i, /FOUNDATION/i, /INTERIOR\s*ELEVATION/i,
+            /EXTERIOR\s*ELEVATION/i, /FINISH\s*PLAN/i, /DOOR\s*SCHEDULE/i,
+            /WALL\s*SECTION/i, /TITLE\s*SHEET/i, /COVER\s*SHEET/i, /GENERAL\s*NOTES/i,
+            /INDEX\s*OF/i, /SPECIFICATIONS/i, /LIFE\s*SAFETY/i,
+          ];
+
+          // Combine adjacent text items on similar Y positions to form full titles
+          const sortedByY = [...wideItems].sort((a, b) => a.ny - b.ny);
+          const textLines = [];
+          let currentLine = "";
+          let lastY = -1;
+          sortedByY.forEach(item => {
+            if (lastY >= 0 && Math.abs(item.ny - lastY) > 0.008) {
+              if (currentLine.trim()) textLines.push(currentLine.trim());
+              currentLine = "";
+            }
+            currentLine += (currentLine ? " " : "") + item.str;
+            lastY = item.ny;
+          });
+          if (currentLine.trim()) textLines.push(currentLine.trim());
+
+          // Search lines for plan name patterns
+          for (const line of textLines) {
+            for (const pattern of planNamePatterns) {
+              if (pattern.test(line)) {
+                // Use the matching line (truncate if too long)
+                sheetTitle = line.length > 40 ? line.substring(0, 40).trim() : line;
+                break;
+              }
+            }
+            if (sheetTitle) break;
+          }
+
+          // ── Build the auto-name ──
+          if (sheetNum || sheetTitle) {
+            const autoName = [sheetNum, sheetTitle].filter(Boolean).join(" - ") || `Page ${pg}`;
+            setSheetNames(prev => ({ ...prev, [pk]: autoName }));
+          }
+
+          // ── Auto scale detection ──
+          // Look for scale text like: 1/8" = 1'-0", 1/4" = 1'-0", 3/16" = 1'-0", SCALE: 1/8" = 1'0"
+          const scaleRegex = /(\d+\/\d+)[""]?\s*=\s*1['']\s*-?\s*0[""]?/i;
+          const fullScaleRegex = /SCALE\s*:\s*(\d+\/\d+)[""]?\s*=\s*1['']\s*-?\s*0[""]?/i;
+          const scaleMap = { "1/8": 96, "3/16": 64, "1/4": 48, "3/8": 32, "1/2": 24, "3/4": 16, "1": 12 };
+
+          if (!calibrations[pk]) {
+            for (const line of textLines) {
+              const match = line.match(fullScaleRegex) || line.match(scaleRegex);
+              if (match) {
+                const fraction = match[1];
+                // Convert architectural scale to pixels-per-foot
+                // At 72 DPI (PDF default), 1 inch = 72 points
+                // Scale 1/8" = 1'-0" means 1 foot = 8 * 72 = 576 points... but we don't know the scan DPI
+                // Instead, store the scale factor so we can suggest it during calibration
+                const feetPerInch = scaleMap[fraction];
+                if (feetPerInch) {
+                  // Store as hint — actual ppf depends on PDF resolution
+                  // We'll show it as a suggestion in the scale UI
+                  setSheetNames(prev => {
+                    const existing = prev[pk] || `Page ${pg}`;
+                    const scaleNote = ` (${fraction}" = 1'-0")`;
+                    return { ...prev, [pk]: existing.includes("=") ? existing : existing + scaleNote };
+                  });
+                }
+                break;
+              }
+            }
+          }
+        } catch (err) {
+          // Skip pages that fail text extraction
+          console.warn(`Auto-name failed for page ${pg}:`, err.message);
+        }
+      }
+    } finally {
+      setAutoNaming(false);
+    }
+  }, [sheetNames, calibrations]);
+
   // ── Load initial PDF into pdfFiles on mount ──
   useEffect(() => {
     if (!pdfData) return;
@@ -588,6 +727,8 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
         if (takeoffId) {
           savePdfToIDB(`${takeoffId}_0`, pdfData).catch(() => {});
         }
+        // Auto-name pages from title blocks
+        autoNamePages(doc, 0);
       }
     });
     return () => { cancelled = true; };
@@ -637,6 +778,8 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
         setActivePdfIdx(newIdx);
         // Save to IndexedDB
         if (takeoffId) savePdfToIDB(`${takeoffId}_${newIdx}`, data).catch(() => {});
+        // Auto-name pages
+        autoNamePages(doc, newIdx);
       });
     };
     reader.readAsArrayBuffer(file);
@@ -1216,16 +1359,33 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const zoomOut = () => setZoom(s => Math.max(0.25, s - 0.25));
   const resetZoom = () => setZoom(1);
 
-  // Scroll wheel zoom
+  // Scroll wheel zoom (no modifier key needed — just scroll to zoom like OST)
   const handleWheel = useCallback((e) => {
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      setZoom(s => {
-        const delta = e.deltaY > 0 ? -0.15 : 0.15;
-        return Math.min(6, Math.max(0.25, s + delta));
-      });
-    }
+    e.preventDefault();
+    setZoom(s => {
+      const factor = e.deltaY > 0 ? 0.9 : 1.1; // multiplicative for smooth feel
+      return Math.min(6, Math.max(0.15, s * factor));
+    });
   }, []);
+
+  // Click-drag pan
+  const [isPanning, setIsPanning] = useState(false);
+  const panStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+  const handlePanStart = useCallback((e) => {
+    if (mode !== MODE.PAN) return;
+    const container = containerRef.current;
+    if (!container) return;
+    setIsPanning(true);
+    panStartRef.current = { x: e.clientX, y: e.clientY, scrollLeft: container.scrollLeft, scrollTop: container.scrollTop };
+  }, [mode]);
+  const handlePanMove = useCallback((e) => {
+    if (!isPanning) return;
+    const container = containerRef.current;
+    if (!container) return;
+    container.scrollLeft = panStartRef.current.scrollLeft - (e.clientX - panStartRef.current.x);
+    container.scrollTop = panStartRef.current.scrollTop - (e.clientY - panStartRef.current.y);
+  }, [isPanning]);
+  const handlePanEnd = useCallback(() => { setIsPanning(false); }, []);
 
   // Touch pinch
   const handleTouchStart = useCallback((e) => {
@@ -1378,9 +1538,16 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
         {/* ── Left Sidebar: Sheet Navigator (Multi-PDF) ── */}
         {showSheets && (numPages > 1 || pdfFiles.length > 1) && (
           <div style={{ width: 190, flexShrink: 0, borderRight: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.9)", overflow: "auto", padding: "8px 6px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "0 4px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, padding: "0 4px" }}>
               <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>Sheets</span>
-              <span style={{ fontSize: 9, color: "#666" }}>{pdfFiles.reduce((s, pf) => s + pf.numPages, 0)} pages</span>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <button onClick={() => { const pf = pdfFiles[activePdfIdx]; if (pf) autoNamePages(pf.doc, activePdfIdx); }}
+                  disabled={autoNaming}
+                  style={{ fontSize: 8, padding: "2px 5px", borderRadius: 3, border: "1px solid rgba(74,222,128,0.3)", background: autoNaming ? "rgba(74,222,128,0.2)" : "transparent", color: "#4ade80", cursor: autoNaming ? "wait" : "pointer" }}>
+                  {autoNaming ? "Naming..." : "Auto Name"}
+                </button>
+                <span style={{ fontSize: 9, color: "#666" }}>{pdfFiles.reduce((s, pf) => s + pf.numPages, 0)}</span>
+              </div>
             </div>
             {pdfFiles.map((pf, pIdx) => {
               const isActivePdf = pIdx === activePdfIdx;
@@ -1469,8 +1636,9 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
         {/* Canvas area OR Summary view */}
         {viewMode === "drawing" ? (
           <div ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onWheel={handleWheel}
+            onMouseDown={handlePanStart} onMouseMove={handlePanMove} onMouseUp={handlePanEnd} onMouseLeave={handlePanEnd}
             style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: 12,
-              cursor: mode === MODE.PAN ? "grab" : "crosshair" }}>
+              cursor: mode === MODE.PAN ? (isPanning ? "grabbing" : "grab") : "crosshair" }}>
             <div style={{ position: "relative", display: "inline-block" }}>
               <canvas ref={pdfCanvasRef} />
               <canvas ref={revisionCanvasRef}
