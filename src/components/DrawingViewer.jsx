@@ -164,7 +164,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
 
   // Sheet management
   const [sheetNames, setSheetNames] = useState(_init.sheetNames || {});
-  const [showSheets, setShowSheets] = useState(true);
+  const [showSheets, setShowSheets] = useState(false);
   const [editingSheet, setEditingSheet] = useState(null);
 
   // Conditions system
@@ -578,139 +578,99 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const autoNamePages = useCallback(async (doc, pdfIdx) => {
     setAutoNaming(true);
     try {
+      // Sheet number pattern: A1, A-1, A1.1, A-101, A101.00, S200, M-301, etc.
+      // Must start with 1-2 letters, then optional separator, then 1-3 digits
+      const sheetNumRe = /^([A-Z]{1,2})[\-\.]?(\d{1,3}(?:\.\d{1,2})?)$/;
+      // Plan title keywords (must be whole words, not fragments)
+      const titleKeywords = /\b(FLOOR PLAN|CONSTRUCTION PLAN|CEILING PLAN|REFLECTED CEILING|DEMOLITION PLAN|DEMO PLAN|SITE PLAN|ROOF PLAN|ELEVATIONS?|SECTIONS?|DETAILS?|SCHEDULES?|PARTITION|LIGHTING|POWER PLAN|MECHANICAL|PLUMBING|ELECTRICAL|FRAMING|FOUNDATION|FINISH PLAN|COVER SHEET|TITLE SHEET|GENERAL NOTES|LIFE SAFETY|ENLARGED|MILLWORK|INTERIOR ELEV|EXTERIOR ELEV)\b/i;
+
       for (let pg = 1; pg <= doc.numPages; pg++) {
         const pk = pdfIdx + ":" + pg;
-        // Skip pages that already have custom names
         if (sheetNames[pk]) continue;
         try {
-          const page = await doc.getPage(pg);
-          const textContent = await page.getTextContent();
-          const vp = page.getViewport({ scale: 1 });
-          const pageW = vp.width, pageH = vp.height;
+          const p = await doc.getPage(pg);
+          const tc = await p.getTextContent();
+          const vp = p.getViewport({ scale: 1 });
+          const W = vp.width, H = vp.height;
 
-          // Collect all text items with positions
-          const items = textContent.items.map(item => ({
-            str: item.str.trim(),
-            x: item.transform[4],
-            y: item.transform[5],
-            // Normalize position as fraction of page (0-1)
-            nx: item.transform[4] / pageW,
-            ny: 1 - (item.transform[5] / pageH), // flip Y since PDF Y is bottom-up
-          })).filter(item => item.str.length > 0);
+          // Get all text with normalized positions (0-1)
+          const all = tc.items.map(it => ({
+            s: it.str.trim(),
+            nx: it.transform[4] / W,
+            ny: 1 - (it.transform[5] / H), // flip Y
+            fs: Math.abs(it.transform[3]) || 10, // font size approx
+          })).filter(it => it.s.length > 0);
 
-          // ── Find sheet number ──
-          // Common patterns: A1, A1.1, A-101, S200, M-301, etc.
-          // Usually in bottom-right title block area (nx > 0.7, ny > 0.8)
-          const sheetNumRegex = /^([A-Z]{1,2}[\-\.]?\d{1,3}(?:\.\d{1,2})?)$/i;
+          // ── Title block is typically rightmost 15% OR bottom 12% ──
+          // Try right strip first (vertical title block), then bottom strip
+          const rightStrip = all.filter(i => i.nx > 0.85);
+          const bottomRight = all.filter(i => i.nx > 0.6 && i.ny > 0.88);
+          const titleArea = rightStrip.length > 3 ? rightStrip : bottomRight;
+
           let sheetNum = "";
           let sheetTitle = "";
 
-          // Look for sheet number in title block area (right 35%, bottom 25%)
-          const titleBlockItems = items.filter(i => i.nx > 0.65 && i.ny > 0.75);
-          // Also look in wider area for sheet titles
-          const wideItems = items.filter(i => i.ny > 0.7);
-
-          // Find sheet number
-          for (const item of titleBlockItems) {
-            if (sheetNumRegex.test(item.str)) {
-              sheetNum = item.str.toUpperCase();
+          // ── Find sheet number in title area only ──
+          for (const item of titleArea) {
+            const upper = item.s.toUpperCase();
+            if (sheetNumRe.test(upper) && upper.length <= 8) {
+              sheetNum = upper;
               break;
-            }
-          }
-          // If not found in title block, search wider
-          if (!sheetNum) {
-            for (const item of wideItems) {
-              if (sheetNumRegex.test(item.str)) {
-                sheetNum = item.str.toUpperCase();
-                break;
-              }
             }
           }
 
           // ── Find sheet title ──
-          // Look for common plan names near the title block
-          const planNamePatterns = [
-            /FLOOR\s*PLAN/i, /CONSTRUCTION\s*PLAN/i, /CEILING\s*PLAN/i, /REFLECTED\s*CEILING/i,
-            /DEMOLITION\s*PLAN/i, /SITE\s*PLAN/i, /ROOF\s*PLAN/i, /ELEVATION/i,
-            /SECTION/i, /DETAIL/i, /SCHEDULE/i, /PARTITION\s*PLAN/i,
-            /POWER\s*PLAN/i, /LIGHTING\s*PLAN/i, /MECHANICAL/i, /PLUMBING/i,
-            /ELECTRICAL/i, /FRAMING\s*PLAN/i, /FOUNDATION/i, /INTERIOR\s*ELEVATION/i,
-            /EXTERIOR\s*ELEVATION/i, /FINISH\s*PLAN/i, /DOOR\s*SCHEDULE/i,
-            /WALL\s*SECTION/i, /TITLE\s*SHEET/i, /COVER\s*SHEET/i, /GENERAL\s*NOTES/i,
-            /INDEX\s*OF/i, /SPECIFICATIONS/i, /LIFE\s*SAFETY/i,
-          ];
-
-          // Combine adjacent text items on similar Y positions to form full titles
-          const sortedByY = [...wideItems].sort((a, b) => a.ny - b.ny);
-          const textLines = [];
-          let currentLine = "";
-          let lastY = -1;
-          sortedByY.forEach(item => {
-            if (lastY >= 0 && Math.abs(item.ny - lastY) > 0.008) {
-              if (currentLine.trim()) textLines.push(currentLine.trim());
-              currentLine = "";
+          // Build text lines from title area by grouping nearby Y positions
+          const sorted = [...titleArea].sort((a, b) => a.ny - b.ny);
+          const lines = [];
+          let line = "", ly = -1;
+          sorted.forEach(it => {
+            if (ly >= 0 && Math.abs(it.ny - ly) > 0.006) {
+              if (line) lines.push(line);
+              line = "";
             }
-            currentLine += (currentLine ? " " : "") + item.str;
-            lastY = item.ny;
+            line += (line ? " " : "") + it.s;
+            ly = it.ny;
           });
-          if (currentLine.trim()) textLines.push(currentLine.trim());
+          if (line) lines.push(line);
 
-          // Search lines for plan name patterns
-          for (const line of textLines) {
-            for (const pattern of planNamePatterns) {
-              if (pattern.test(line)) {
-                // Use the matching line (truncate if too long)
-                sheetTitle = line.length > 40 ? line.substring(0, 40).trim() : line;
-                break;
-              }
-            }
-            if (sheetTitle) break;
-          }
-
-          // ── Build the auto-name ──
-          if (sheetNum || sheetTitle) {
-            const autoName = [sheetNum, sheetTitle].filter(Boolean).join(" - ") || `Page ${pg}`;
-            setSheetNames(prev => ({ ...prev, [pk]: autoName }));
-          }
-
-          // ── Auto scale detection ──
-          // Look for scale text like: 1/8" = 1'-0", 1/4" = 1'-0", 3/16" = 1'-0", SCALE: 1/8" = 1'0"
-          const scaleRegex = /(\d+\/\d+)[""]?\s*=\s*1['']\s*-?\s*0[""]?/i;
-          const fullScaleRegex = /SCALE\s*:\s*(\d+\/\d+)[""]?\s*=\s*1['']\s*-?\s*0[""]?/i;
-          const scaleMap = { "1/8": 96, "3/16": 64, "1/4": 48, "3/8": 32, "1/2": 24, "3/4": 16, "1": 12 };
-
-          if (!calibrations[pk]) {
-            for (const line of textLines) {
-              const match = line.match(fullScaleRegex) || line.match(scaleRegex);
+          // Search for plan title keywords
+          for (const l of lines) {
+            if (titleKeywords.test(l)) {
+              // Extract just the matching portion + context, max 35 chars
+              const match = l.match(titleKeywords);
               if (match) {
-                const fraction = match[1];
-                // Convert architectural scale to pixels-per-foot
-                // At 72 DPI (PDF default), 1 inch = 72 points
-                // Scale 1/8" = 1'-0" means 1 foot = 8 * 72 = 576 points... but we don't know the scan DPI
-                // Instead, store the scale factor so we can suggest it during calibration
-                const feetPerInch = scaleMap[fraction];
-                if (feetPerInch) {
-                  // Store as hint — actual ppf depends on PDF resolution
-                  // We'll show it as a suggestion in the scale UI
-                  setSheetNames(prev => {
-                    const existing = prev[pk] || `Page ${pg}`;
-                    const scaleNote = ` (${fraction}" = 1'-0")`;
-                    return { ...prev, [pk]: existing.includes("=") ? existing : existing + scaleNote };
-                  });
-                }
+                // Try to get the full title line, not just the keyword
+                sheetTitle = l.length > 35 ? l.substring(0, 35).trim() : l;
                 break;
               }
             }
+          }
+
+          // ── Also scan the ENTIRE page for a large/prominent sheet title ──
+          // Big text (large font size) with title keywords = likely the sheet title stamp
+          if (!sheetTitle) {
+            const bigText = all.filter(i => i.fs > 12); // large font items
+            for (const item of bigText) {
+              if (titleKeywords.test(item.s)) {
+                sheetTitle = item.s.length > 35 ? item.s.substring(0, 35).trim() : item.s;
+                break;
+              }
+            }
+          }
+
+          // ── Build name ──
+          if (sheetNum || sheetTitle) {
+            setSheetNames(prev => ({ ...prev, [pk]: [sheetNum, sheetTitle].filter(Boolean).join(" - ") }));
           }
         } catch (err) {
-          // Skip pages that fail text extraction
-          console.warn(`Auto-name failed for page ${pg}:`, err.message);
+          console.warn(`Auto-name page ${pg}:`, err.message);
         }
       }
     } finally {
       setAutoNaming(false);
     }
-  }, [sheetNames, calibrations]);
+  }, [sheetNames]);
 
   // ── Load initial PDF into pdfFiles on mount ──
   useEffect(() => {
@@ -1488,9 +1448,16 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
             <button onClick={undo} style={{ ...btn, padding: "3px 8px", fontSize: 11 }} title="Ctrl+Z">Undo</button>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-            <button onClick={prevPage} style={page <= 1 ? { ...btnDis, padding: "3px 8px", fontSize: 11 } : { ...btn, padding: "3px 8px", fontSize: 11 }} disabled={page <= 1}>◀</button>
-            <span style={{ color: "#ccc", fontSize: 10, minWidth: 40, textAlign: "center" }}>{page}/{numPages}</span>
-            <button onClick={nextPage} style={page >= numPages ? { ...btnDis, padding: "3px 8px", fontSize: 11 } : { ...btn, padding: "3px 8px", fontSize: 11 }} disabled={page >= numPages}>▶</button>
+            <button onClick={prevPage} style={page <= 1 ? { ...btnDis, padding: "3px 6px", fontSize: 11 } : { ...btn, padding: "3px 6px", fontSize: 11 }} disabled={page <= 1}>◀</button>
+            <select value={page} onChange={e => { setPage(Number(e.target.value)); setActiveVertices([]); }}
+              style={{ padding: "2px 4px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#fff", fontSize: 10, maxWidth: 220 }}>
+              {Array.from({ length: numPages }, (_, i) => i + 1).map(pg => {
+                const pk = activePdfIdx + ":" + pg;
+                const name = sheetNames[pk] || `Page ${pg}`;
+                return <option key={pg} value={pg}>{pg} - {name}</option>;
+              })}
+            </select>
+            <button onClick={nextPage} style={page >= numPages ? { ...btnDis, padding: "3px 6px", fontSize: 11 } : { ...btn, padding: "3px 6px", fontSize: 11 }} disabled={page >= numPages}>▶</button>
             <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.12)" }} />
             <button onClick={zoomOut} style={{ ...btn, padding: "3px 6px", fontSize: 11 }}>−</button>
             <span style={{ color: "#ccc", fontSize: 10, minWidth: 32, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
