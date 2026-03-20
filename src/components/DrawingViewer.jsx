@@ -10,11 +10,16 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 // ── IndexedDB helpers for PDF persistence ──
 const IDB_NAME = "ebc_takeoff_pdfs";
 const IDB_STORE = "pdfs";
+let _idbInstance = null;
 function openIDB() {
+  if (_idbInstance) return Promise.resolve(_idbInstance);
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(IDB_NAME, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
-    req.onsuccess = () => resolve(req.result);
+    const req = indexedDB.open(IDB_NAME, 2);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess = () => { _idbInstance = req.result; resolve(req.result); };
     req.onerror = () => reject(req.error);
   });
 }
@@ -23,8 +28,8 @@ async function savePdfToIDB(key, data) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IDB_STORE, "readwrite");
     tx.objectStore(IDB_STORE).put(data, key);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    tx.oncomplete = () => { console.log(`[IDB] Saved PDF: ${key} (${(data.byteLength / 1024 / 1024).toFixed(1)}MB)`); resolve(); };
+    tx.onerror = () => { console.warn(`[IDB] Save failed: ${key}`, tx.error); reject(tx.error); };
   });
 }
 async function loadPdfFromIDB(key) {
@@ -32,8 +37,8 @@ async function loadPdfFromIDB(key) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IDB_STORE, "readonly");
     const req = tx.objectStore(IDB_STORE).get(key);
-    req.onsuccess = () => resolve(req.result || null);
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => { console.log(`[IDB] Load PDF: ${key} → ${req.result ? "found" : "miss"}`); resolve(req.result || null); };
+    req.onerror = () => { console.warn(`[IDB] Load failed: ${key}`, req.error); reject(req.error); };
   });
 }
 
@@ -52,6 +57,24 @@ function polyArea(pts) {
   let a = 0;
   for (let i = 0; i < pts.length; i++) { const j = (i + 1) % pts.length; a += pts[i].x * pts[j].y - pts[j].x * pts[i].y; }
   return Math.abs(a) / 2;
+}
+
+// ── Angle snapping — hold Shift to snap to nearest 15° increment ──
+const SNAP_ANGLES = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 285, 300, 315, 330, 345];
+function snapToAngle(prevPt, rawPt) {
+  if (!prevPt) return rawPt;
+  const dx = rawPt.x - prevPt.x;
+  const dy = rawPt.y - prevPt.y;
+  const rawAngle = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+  const length = Math.sqrt(dx * dx + dy * dy);
+  // Find closest snap angle
+  let best = 0, bestDiff = 360;
+  for (const a of SNAP_ANGLES) {
+    const diff = Math.min(Math.abs(rawAngle - a), 360 - Math.abs(rawAngle - a));
+    if (diff < bestDiff) { bestDiff = diff; best = a; }
+  }
+  const rad = best * Math.PI / 180;
+  return { x: prevPt.x + length * Math.cos(rad), y: prevPt.y + length * Math.sin(rad) };
 }
 
 // ── Condition Templates by Trade ──
@@ -208,6 +231,10 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const [activeVertices, setActiveVertices] = useState([]);
   const [mousePos, setMousePos] = useState(null);
   const [undoStack, setUndoStack] = useState([]);
+  const [redoStack, setRedoStack] = useState([]);
+  const [continuousMode, setContinuousMode] = useState(true); // auto-start next measurement
+  const [completedPages, setCompletedPages] = useState(_init.completedPages || {}); // { [pageKey]: true }
+  const [draggingHandle, setDraggingHandle] = useState(null); // { measurementId, vertexIdx, pageKey } or { measurementId, pointKey:'point', pageKey }
 
   // ── Change Order Overlay ──
   // revisionDocs: { [pageKey]: { doc, revPage, name } } — revision PDF docs mapped to specific sheets
@@ -227,6 +254,20 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const [typicalName, setTypicalName] = useState("");
   const [placingTypicalId, setPlacingTypicalId] = useState(null); // ID of typical being placed
   const [showTypicalPanel, setShowTypicalPanel] = useState(false);
+
+  // ── Click debounce for double-click finish (prevent extra vertices) ──
+  const clickTimerRef = useRef(null);
+  const pendingClickRef = useRef(null);
+
+  // ── Angle snap state (Shift key tracking) ──
+  const [shiftHeld, setShiftHeld] = useState(false);
+  useEffect(() => {
+    const down = (e) => { if (e.key === "Shift") setShiftHeld(true); };
+    const up = (e) => { if (e.key === "Shift") setShiftHeld(false); };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
+  }, []);
 
   // ── Auto-save: debounced state change notification ──
   const saveTimerRef = useRef(null);
@@ -249,11 +290,12 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
         activePdfIdx,
         typicalGroups,
         coMeasurements,
+        completedPages,
       });
       setLastSaved(Date.now());
     }, 800); // 800ms debounce
     return () => clearTimeout(saveTimerRef.current);
-  }, [measurements, conditions, condLinks, sheetNames, calibrations, bidAreas, hiddenFolders, activeCondId, activeBidAreaId, typicalGroups, coMeasurements]);
+  }, [measurements, conditions, condLinks, sheetNames, calibrations, bidAreas, hiddenFolders, activeCondId, activeBidAreaId, typicalGroups, coMeasurements, pdfFiles.length, completedPages]);
 
   // Refs
   const pdfCanvasRef = useRef(null);
@@ -573,16 +615,62 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     return map;
   }, [conditions]);
 
-  // ── Auto Name: extract sheet numbers + names from title blocks ──
+  // ── Auto Name V2: multi-region, scored title block extraction ──
   const [autoNaming, setAutoNaming] = useState(false);
   const autoNamePages = useCallback(async (doc, pdfIdx) => {
     setAutoNaming(true);
     try {
-      // Sheet number pattern: A1, A-1, A1.1, A-101, A101.00, S200, M-301, etc.
-      // Must start with 1-2 letters, then optional separator, then 1-3 digits
+      // Sheet number: A1, A-1, A1.1, A-101, A101.00, S200, M-301, etc.
       const sheetNumRe = /^([A-Z]{1,2})[\-\.]?(\d{1,3}(?:\.\d{1,2})?)$/;
-      // Plan title keywords (must be whole words, not fragments)
-      const titleKeywords = /\b(FLOOR PLAN|CONSTRUCTION PLAN|CEILING PLAN|REFLECTED CEILING|DEMOLITION PLAN|DEMO PLAN|SITE PLAN|ROOF PLAN|ELEVATIONS?|SECTIONS?|DETAILS?|SCHEDULES?|PARTITION|LIGHTING|POWER PLAN|MECHANICAL|PLUMBING|ELECTRICAL|FRAMING|FOUNDATION|FINISH PLAN|COVER SHEET|TITLE SHEET|GENERAL NOTES|LIFE SAFETY|ENLARGED|MILLWORK|INTERIOR ELEV|EXTERIOR ELEV)\b/i;
+      // Plan title keywords — whole words only
+      const titleKeywords = /\b(FLOOR PLAN|CONSTRUCTION PLAN|CEILING PLAN|REFLECTED CEILING|DEMOLITION PLAN|DEMO PLAN|SITE PLAN|ROOF PLAN|ELEVATIONS?|SECTIONS?|DETAILS?|SCHEDULES?|PARTITION PLAN|PARTITION TYPES|LIGHTING PLAN|POWER PLAN|MECHANICAL|PLUMBING|ELECTRICAL|FRAMING|FOUNDATION|FINISH PLAN|COVER SHEET|TITLE SHEET|GENERAL NOTES|LIFE SAFETY|ENLARGED|MILLWORK|INTERIOR ELEV|EXTERIOR ELEV)\b/i;
+      // Noise words — skip items that are clearly spec/note text
+      const noiseRe = /\b(GAUGE|WIRE|MESH|BENJAMIN|MOORE|GYPSUM|MANUFACTURER|CONTRACTOR|ASTM|SPECIFICATION|SEE DETAIL|REFER TO|INSTALL|PROVIDE|SHALL BE|PER PLAN|UL RATED|TYPICAL|NIC\b|BY OWNER|NOTE:?|DOOR|WINDOW TYPE|FRAME TYPE)\b/i;
+
+      // ── Page 1 index parsing: look for "INDEX OF DRAWINGS" table ──
+      let indexMap = {}; // { "A101": "FLOOR PLAN", "A102": "REFLECTED CEILING PLAN" }
+      try {
+        const p1 = await doc.getPage(1);
+        const tc1 = await p1.getTextContent();
+        const vp1 = p1.getViewport({ scale: 1 });
+        const items1 = tc1.items.map(it => ({
+          s: it.str.trim(),
+          nx: it.transform[4] / vp1.width,
+          ny: 1 - (it.transform[5] / vp1.height),
+          fs: Math.abs(it.transform[3]) || 10,
+        })).filter(it => it.s.length > 0);
+
+        // Look for "INDEX" or "DRAWING INDEX" or "SHEET INDEX"
+        const hasIndex = items1.some(it => /\b(INDEX|DRAWING LIST|SHEET LIST)\b/i.test(it.s));
+        if (hasIndex) {
+          // Build all text lines sorted by Y
+          const sorted1 = [...items1].sort((a, b) => a.ny - b.ny);
+          const lines1 = [];
+          let curLine = "", curY = -1;
+          sorted1.forEach(it => {
+            if (curY >= 0 && Math.abs(it.ny - curY) > 0.004) {
+              if (curLine) lines1.push(curLine);
+              curLine = "";
+            }
+            curLine += (curLine ? "  " : "") + it.s;
+            curY = it.ny;
+          });
+          if (curLine) lines1.push(curLine);
+
+          // Parse lines like "A101  FLOOR PLAN" or "A-101 - FIRST FLOOR PLAN"
+          const indexLineRe = /([A-Z]{1,2}[\-\.]?\d{1,3}(?:\.\d{1,2})?)\s+[\-–—]?\s*(.+)/;
+          lines1.forEach(l => {
+            const m = l.match(indexLineRe);
+            if (m) {
+              const num = m[1].toUpperCase().replace(/[\-\.]/g, "");
+              const title = m[2].replace(/\s+/g, " ").trim();
+              if (title.length > 2 && title.length < 60 && !noiseRe.test(title)) {
+                indexMap[num] = title.length > 40 ? title.substring(0, 40).trim() : title;
+              }
+            }
+          });
+        }
+      } catch (e) { /* index parsing is best-effort */ }
 
       for (let pg = 1; pg <= doc.numPages; pg++) {
         const pk = pdfIdx + ":" + pg;
@@ -593,75 +681,95 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
           const vp = p.getViewport({ scale: 1 });
           const W = vp.width, H = vp.height;
 
-          // Get all text with normalized positions (0-1)
+          // All text items with normalized coords + font size
           const all = tc.items.map(it => ({
             s: it.str.trim(),
             nx: it.transform[4] / W,
-            ny: 1 - (it.transform[5] / H), // flip Y
-            fs: Math.abs(it.transform[3]) || 10, // font size approx
-          })).filter(it => it.s.length > 0);
+            ny: 1 - (it.transform[5] / H),
+            fs: Math.abs(it.transform[3]) || 10,
+          })).filter(it => it.s.length > 0 && it.s.length < 80);
 
-          // ── Title block is typically rightmost 15% OR bottom 12% ──
-          // Try right strip first (vertical title block), then bottom strip
-          const rightStrip = all.filter(i => i.nx > 0.85);
-          const bottomRight = all.filter(i => i.nx > 0.6 && i.ny > 0.88);
-          const titleArea = rightStrip.length > 3 ? rightStrip : bottomRight;
+          // ── Multi-region scanning with scoring ──
+          // Region candidates (normalized coords): right strip, bottom-right, bottom strip
+          const regions = [
+            { name: "right",       items: all.filter(i => i.nx > 0.82),                    weight: 1.0 },
+            { name: "bottomRight", items: all.filter(i => i.nx > 0.55 && i.ny > 0.85),     weight: 0.9 },
+            { name: "bottom",      items: all.filter(i => i.ny > 0.90),                     weight: 0.7 },
+            { name: "topRight",    items: all.filter(i => i.nx > 0.82 && i.ny < 0.15),      weight: 0.5 },
+          ];
 
-          let sheetNum = "";
-          let sheetTitle = "";
+          // Score sheet number candidates across all regions
+          let bestNum = "", bestNumScore = 0;
+          let bestTitle = "", bestTitleScore = 0;
 
-          // ── Find sheet number in title area only ──
-          for (const item of titleArea) {
-            const upper = item.s.toUpperCase();
-            if (sheetNumRe.test(upper) && upper.length <= 8) {
-              sheetNum = upper;
-              break;
+          for (const region of regions) {
+            if (region.items.length < 2) continue;
+
+            for (const item of region.items) {
+              const upper = item.s.toUpperCase().trim();
+              if (noiseRe.test(upper)) continue;
+
+              // ── Score sheet numbers ──
+              if (sheetNumRe.test(upper) && upper.length <= 8 && upper.length >= 2) {
+                let score = region.weight;
+                // Bonus: larger font = more likely title block
+                if (item.fs > 14) score += 0.5;
+                if (item.fs > 10) score += 0.2;
+                // Bonus: near bottom of the region (sheet numbers are usually at bottom of title block)
+                if (item.ny > 0.85) score += 0.3;
+                // Bonus: has digits (not just "A" or "S")
+                if (/\d/.test(upper)) score += 0.3;
+                // Bonus: matches common format like A101, A-1.01
+                if (/^[A-Z]\d{2,3}/.test(upper)) score += 0.3;
+                // Penalty: single char like "A" — too short
+                if (upper.length <= 2 && !/\d/.test(upper)) score -= 1;
+
+                if (score > bestNumScore) {
+                  bestNumScore = score;
+                  bestNum = upper;
+                }
+              }
             }
-          }
 
-          // ── Find sheet title ──
-          // Build text lines from title area by grouping nearby Y positions
-          const sorted = [...titleArea].sort((a, b) => a.ny - b.ny);
-          const lines = [];
-          let line = "", ly = -1;
-          sorted.forEach(it => {
-            if (ly >= 0 && Math.abs(it.ny - ly) > 0.006) {
-              if (line) lines.push(line);
-              line = "";
-            }
-            line += (line ? " " : "") + it.s;
-            ly = it.ny;
-          });
-          if (line) lines.push(line);
+            // ── Build region text lines for title extraction ──
+            const sorted = [...region.items].filter(i => !noiseRe.test(i.s)).sort((a, b) => a.ny - b.ny);
+            const lines = [];
+            let line = "", ly = -1;
+            sorted.forEach(it => {
+              if (ly >= 0 && Math.abs(it.ny - ly) > 0.005) {
+                if (line) lines.push({ text: line, fs: sorted.find(s => line.includes(s.s))?.fs || 10 });
+                line = "";
+              }
+              line += (line ? " " : "") + it.s;
+              ly = it.ny;
+            });
+            if (line) lines.push({ text: line, fs: sorted[sorted.length - 1]?.fs || 10 });
 
-          // Search for plan title keywords
-          for (const l of lines) {
-            if (titleKeywords.test(l)) {
-              // Extract just the matching portion + context, max 35 chars
-              const match = l.match(titleKeywords);
-              if (match) {
-                // Try to get the full title line, not just the keyword
-                sheetTitle = l.length > 35 ? l.substring(0, 35).trim() : l;
-                break;
+            for (const l of lines) {
+              if (titleKeywords.test(l.text) && !noiseRe.test(l.text)) {
+                let score = region.weight;
+                if (l.fs > 12) score += 0.5;
+                if (l.fs > 8) score += 0.2;
+                if (l.text.length < 40) score += 0.2; // Short = more likely a title, not a note
+                if (score > bestTitleScore) {
+                  bestTitleScore = score;
+                  bestTitle = l.text.length > 40 ? l.text.substring(0, 40).trim() : l.text;
+                }
               }
             }
           }
 
-          // ── Also scan the ENTIRE page for a large/prominent sheet title ──
-          // Big text (large font size) with title keywords = likely the sheet title stamp
-          if (!sheetTitle) {
-            const bigText = all.filter(i => i.fs > 12); // large font items
-            for (const item of bigText) {
-              if (titleKeywords.test(item.s)) {
-                sheetTitle = item.s.length > 35 ? item.s.substring(0, 35).trim() : item.s;
-                break;
-              }
+          // ── Cross-reference with index map if we found a sheet number ──
+          if (bestNum && !bestTitle) {
+            const normalized = bestNum.replace(/[\-\.]/g, "");
+            if (indexMap[normalized]) {
+              bestTitle = indexMap[normalized];
             }
           }
 
           // ── Build name ──
-          if (sheetNum || sheetTitle) {
-            setSheetNames(prev => ({ ...prev, [pk]: [sheetNum, sheetTitle].filter(Boolean).join(" - ") }));
+          if (bestNum || bestTitle) {
+            setSheetNames(prev => ({ ...prev, [pk]: [bestNum, bestTitle].filter(Boolean).join(" - ") }));
           }
         } catch (err) {
           console.warn(`Auto-name page ${pg}:`, err.message);
@@ -699,19 +807,28 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     if (pdfData || !takeoffId || !_init.pdfFileNames || _init.pdfFileNames.length === 0) return;
     let cancelled = false;
     (async () => {
+      console.log(`[IDB] Attempting to restore ${_init.pdfFileNames.length} PDFs for takeoff ${takeoffId}`);
       const loaded = [];
       for (let i = 0; i < _init.pdfFileNames.length; i++) {
-        const data = await loadPdfFromIDB(`${takeoffId}_${i}`).catch(() => null);
-        if (!data || cancelled) continue;
-        const doc = await pdfjsLib.getDocument({ data }).promise;
-        loaded.push({ name: _init.pdfFileNames[i], data, doc, numPages: doc.numPages });
+        try {
+          const data = await loadPdfFromIDB(`${takeoffId}_${i}`);
+          if (!data || cancelled) { console.warn(`[IDB] No data for ${takeoffId}_${i}`); continue; }
+          const doc = await pdfjsLib.getDocument({ data }).promise;
+          loaded.push({ name: _init.pdfFileNames[i], data, doc, numPages: doc.numPages });
+        } catch (err) { console.warn(`[IDB] Failed to load ${takeoffId}_${i}:`, err.message); }
       }
-      if (cancelled || loaded.length === 0) return;
+      if (cancelled || loaded.length === 0) {
+        console.warn("[IDB] No PDFs restored — user will need to re-upload");
+        return;
+      }
+      console.log(`[IDB] Restored ${loaded.length} PDFs successfully`);
       setPdfFiles(loaded);
       setPdf(loaded[0].doc);
       setNumPages(loaded[0].numPages);
       setPage(1);
       setActivePdfIdx(0);
+      // Re-run auto-name on restored PDFs
+      loaded.forEach((pf, idx) => autoNamePages(pf.doc, idx));
     })();
     return () => { cancelled = true; };
   }, [takeoffId]);
@@ -918,6 +1035,38 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       }
     });
 
+    // Draw resize handles on completed measurements (when in PAN mode and not drawing)
+    if (mode === MODE.PAN && activeVertices.length === 0) {
+      pageMeasurements.forEach((m) => {
+        const cond = conditions.find(c => c.id === m.conditionId);
+        if (cond && hiddenFolders[cond.folder]) return;
+        const color = cond?.color || "#3b82f6";
+        if (m.vertices) {
+          m.vertices.forEach((v, vi) => {
+            const sx = v.x * scale, sy = v.y * scale;
+            const isActive = draggingHandle && draggingHandle.measurementId === m.id && draggingHandle.vertexIdx === vi;
+            ctx.fillStyle = isActive ? "#fff" : color;
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.rect(sx - 5, sy - 5, 10, 10);
+            ctx.fill();
+            ctx.stroke();
+          });
+        } else if (m.point) {
+          const sx = m.point.x * scale, sy = m.point.y * scale;
+          const isActive = draggingHandle && draggingHandle.measurementId === m.id;
+          ctx.fillStyle = isActive ? "#fff" : color;
+          ctx.strokeStyle = "#fff";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.rect(sx - 5, sy - 5, 10, 10);
+          ctx.fill();
+          ctx.stroke();
+        }
+      });
+    }
+
     // Draw calibration points
     calPoints.forEach(p => {
       const sx = p.x * scale, sy = p.y * scale;
@@ -937,21 +1086,39 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
       ctx.beginPath();
       pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
-      if (mousePos) ctx.lineTo(mousePos.x, mousePos.y);
+      // Default = snap preview line to angle; Shift = free trace
+      let cursorTarget = mousePos;
+      if (mousePos && !shiftHeld && activeVertices.length > 0) {
+        const lastScaled = { x: activeVertices[activeVertices.length - 1].x * scale, y: activeVertices[activeVertices.length - 1].y * scale };
+        cursorTarget = snapToAngle(lastScaled, mousePos);
+      }
+      if (cursorTarget) ctx.lineTo(cursorTarget.x, cursorTarget.y);
       if (mode === MODE.AREA && pts.length > 1) ctx.closePath();
       ctx.stroke(); ctx.setLineDash([]);
       pts.forEach(p => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill(); });
 
+      // Show angle indicator when snapping (default mode, not holding Shift)
+      if (cursorTarget && !shiftHeld && activeVertices.length > 0) {
+        const lastScaled = { x: activeVertices[activeVertices.length - 1].x * scale, y: activeVertices[activeVertices.length - 1].y * scale };
+        const dx = cursorTarget.x - lastScaled.x;
+        const dy = cursorTarget.y - lastScaled.y;
+        const angle = ((Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
+        ctx.fillStyle = "rgba(59,130,246,0.9)";
+        ctx.fillRect(cursorTarget.x + 14, cursorTarget.y - 28, 40, 16);
+        ctx.fillStyle = "#fff"; ctx.font = "bold 10px sans-serif"; ctx.textAlign = "left";
+        ctx.fillText(`${Math.round(angle)}°`, cursorTarget.x + 18, cursorTarget.y - 16);
+      }
+
       // Running measurement at cursor
-      if (ppf && mousePos) {
+      if (ppf && cursorTarget) {
         let totalPx = 0;
         for (let i = 1; i < pts.length; i++) totalPx += dist(pts[i - 1], pts[i]);
-        totalPx += dist(pts[pts.length - 1], mousePos);
+        totalPx += dist(pts[pts.length - 1], cursorTarget);
         const ft = totalPx / (ppf * fitScaleRef.current * zoom);
         ctx.fillStyle = "rgba(0,0,0,0.85)";
-        ctx.fillRect(mousePos.x + 14, mousePos.y - 10, 70, 18);
+        ctx.fillRect(cursorTarget.x + 14, cursorTarget.y - 10, 70, 18);
         ctx.fillStyle = "#fff"; ctx.font = "11px sans-serif"; ctx.textAlign = "left";
-        ctx.fillText(`${ft.toFixed(1)}' LF`, mousePos.x + 18, mousePos.y + 3);
+        ctx.fillText(`${ft.toFixed(1)}' LF`, cursorTarget.x + 18, cursorTarget.y + 3);
       }
     }
 
@@ -1067,7 +1234,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       ctx.fillStyle = "#4ade80"; ctx.font = "10px sans-serif"; ctx.textAlign = "left";
       ctx.fillText(`Scale set (${(1 / ppf).toFixed(4)}'/px)`, 14, ch - 14);
     }
-  }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond, hiddenFolders, selectedMeasIds, typicalGroups, measurements, pageKey, placingTypicalId, coPageMeasurements, coMode]);
+  }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond, hiddenFolders, selectedMeasIds, typicalGroups, measurements, pageKey, placingTypicalId, coPageMeasurements, coMode, shiftHeld, draggingHandle]);
 
   useEffect(() => { requestAnimationFrame(drawOverlay); }, [drawOverlay]);
 
@@ -1120,12 +1287,28 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       return;
     }
     if (mode === MODE.LINEAR || mode === MODE.AREA) {
-      setActiveVertices(prev => [...prev, getNormCoords(e)]);
+      // Debounce: delay vertex placement so dblclick can cancel it
+      let pt = getNormCoords(e);
+      // Default = snap to nearest 15° angle; Shift = free trace (no snap)
+      if (!e.shiftKey && activeVertices.length > 0) {
+        pt = snapToAngle(activeVertices[activeVertices.length - 1], pt);
+      }
+      if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+      pendingClickRef.current = pt;
+      clickTimerRef.current = setTimeout(() => {
+        if (pendingClickRef.current) {
+          setActiveVertices(prev => [...prev, pendingClickRef.current]);
+          pendingClickRef.current = null;
+        }
+      }, 200); // 200ms window — if dblclick fires within this, vertex is cancelled
     }
   };
 
   const handleCanvasDoubleClick = (e) => {
     e.preventDefault();
+    // Cancel the pending single-click vertex
+    if (clickTimerRef.current) { clearTimeout(clickTimerRef.current); clickTimerRef.current = null; }
+    pendingClickRef.current = null;
     if ((mode === MODE.LINEAR || mode === MODE.AREA) && activeVertices.length >= 2 && ppf && activeCond) finishMeasurement();
   };
 
@@ -1168,8 +1351,12 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     } else {
       setMeasurements(prev => ({ ...prev, [pageKey]: [...(prev[pageKey] || []), ...newMeasurements] }));
       newMeasurements.forEach(m => setUndoStack(prev => [...prev, { action: "add", pageKey, measurementId: m.id }]));
+      setRedoStack([]); // new measurement clears redo history
     }
     setActiveVertices([]);
+    // Continuous mode: stay in same mode with same condition (don't reset to PAN)
+    // When OFF, switch back to PAN after finishing
+    if (!continuousMode) setMode(MODE.PAN);
   };
 
   const handleCanvasMove = (e) => {
@@ -1304,12 +1491,49 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const deleteMeasurement = (id) => { setMeasurements(prev => ({ ...prev, [pageKey]: (prev[pageKey] || []).filter(m => m.id !== id) })); };
   const cancelActive = () => { setActiveVertices([]); setMousePos(null); setCalPoints([]); setShowCalPrompt(false); };
 
+  // ── Flush pending save before closing (prevent losing last <800ms of changes) ──
+  const handleClose = useCallback(() => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    // Synchronous save on close
+    if (onTakeoffStateChange) {
+      onTakeoffStateChange({
+        measurements, conditions, condLinks, sheetNames,
+        calibrations, bidAreas, hiddenFolders, activeCondId, activeBidAreaId,
+        pdfFileNames: pdfFiles.map(pf => pf.name),
+        activePdfIdx, typicalGroups, coMeasurements, completedPages,
+      });
+    }
+    onClose();
+  }, [onClose, onTakeoffStateChange, measurements, conditions, condLinks, sheetNames, calibrations, bidAreas, hiddenFolders, activeCondId, activeBidAreaId, pdfFiles, activePdfIdx, typicalGroups, coMeasurements, completedPages]);
+
   const undo = () => {
     if (activeVertices.length > 0) { setActiveVertices(prev => prev.slice(0, -1)); return; }
     const last = undoStack[undoStack.length - 1];
     if (!last) return;
-    if (last.action === "add") deleteMeasurement(last.measurementId);
+    if (last.action === "add") {
+      // Save measurement data for redo before deleting
+      const allPageMeas = measurements[last.pageKey] || [];
+      const meas = allPageMeas.find(m => m.id === last.measurementId);
+      setRedoStack(prev => [...prev, { ...last, measurementData: meas }]);
+      // Delete from the correct page (not just current pageKey)
+      const pk = last.pageKey;
+      setMeasurements(prev => ({ ...prev, [pk]: (prev[pk] || []).filter(m => m.id !== last.measurementId) }));
+    }
     setUndoStack(prev => prev.slice(0, -1));
+  };
+
+  const redo = () => {
+    const last = redoStack[redoStack.length - 1];
+    if (!last) return;
+    if (last.action === "add" && last.measurementData) {
+      const pk = last.pageKey;
+      setMeasurements(prev => ({ ...prev, [pk]: [...(prev[pk] || []), last.measurementData] }));
+      setUndoStack(prev => [...prev, { action: "add", pageKey: pk, measurementId: last.measurementId }]);
+    }
+    setRedoStack(prev => prev.slice(0, -1));
   };
 
   // Nav
@@ -1333,19 +1557,93 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const panStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
   const handlePanStart = useCallback((e) => {
     if (mode !== MODE.PAN) return;
+    // Check if mousedown is on a resize handle — if so, start dragging instead of panning
+    const overlay = overlayCanvasRef.current;
+    if (overlay) {
+      const rect = overlay.getBoundingClientRect();
+      const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+      const sc = fitScaleRef.current * zoom;
+      const pm = measurements[activePdfIdx + ":" + page] || [];
+      for (const m of pm) {
+        const cond = conditions.find(c => c.id === m.conditionId);
+        if (cond && hiddenFolders[cond.folder]) continue;
+        if (m.vertices) {
+          for (let vi = 0; vi < m.vertices.length; vi++) {
+            if (Math.abs(cx - m.vertices[vi].x * sc) < 8 && Math.abs(cy - m.vertices[vi].y * sc) < 8) {
+              setDraggingHandle({ measurementId: m.id, vertexIdx: vi, pageKey: activePdfIdx + ":" + page });
+              return; // don't start panning
+            }
+          }
+        } else if (m.point) {
+          if (Math.abs(cx - m.point.x * sc) < 8 && Math.abs(cy - m.point.y * sc) < 8) {
+            setDraggingHandle({ measurementId: m.id, pointKey: "point", pageKey: activePdfIdx + ":" + page });
+            return;
+          }
+        }
+      }
+    }
     const container = containerRef.current;
     if (!container) return;
     setIsPanning(true);
     panStartRef.current = { x: e.clientX, y: e.clientY, scrollLeft: container.scrollLeft, scrollTop: container.scrollTop };
-  }, [mode]);
+  }, [mode, zoom, measurements, activePdfIdx, page, conditions, hiddenFolders]);
   const handlePanMove = useCallback((e) => {
+    if (draggingHandle) {
+      const overlay = overlayCanvasRef.current;
+      if (!overlay) return;
+      const rect = overlay.getBoundingClientRect();
+      const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+      const sc = fitScaleRef.current * zoom;
+      const pt = { x: cx / sc, y: cy / sc };
+      const pk = draggingHandle.pageKey;
+      setMeasurements(prev => {
+        const pageMeas = [...(prev[pk] || [])];
+        const idx = pageMeas.findIndex(m => m.id === draggingHandle.measurementId);
+        if (idx < 0) return prev;
+        const m = { ...pageMeas[idx] };
+        if (draggingHandle.pointKey === "point") {
+          m.point = pt;
+        } else {
+          const verts = [...m.vertices];
+          verts[draggingHandle.vertexIdx] = pt;
+          m.vertices = verts;
+        }
+        pageMeas[idx] = m;
+        return { ...prev, [pk]: pageMeas };
+      });
+      return;
+    }
     if (!isPanning) return;
     const container = containerRef.current;
     if (!container) return;
     container.scrollLeft = panStartRef.current.scrollLeft - (e.clientX - panStartRef.current.x);
     container.scrollTop = panStartRef.current.scrollTop - (e.clientY - panStartRef.current.y);
-  }, [isPanning]);
-  const handlePanEnd = useCallback(() => { setIsPanning(false); }, []);
+  }, [isPanning, draggingHandle, zoom]);
+  const handlePanEnd = useCallback(() => {
+    if (draggingHandle) {
+      // Recalculate measurement values after drag
+      const pk = draggingHandle.pageKey;
+      setMeasurements(prev => {
+        const pageMeas = [...(prev[pk] || [])];
+        const idx = pageMeas.findIndex(m => m.id === draggingHandle.measurementId);
+        if (idx < 0) return prev;
+        const m = { ...pageMeas[idx] };
+        const ppfVal = calibrations[pk] || null;
+        if (ppfVal && m.type === "linear" && m.vertices) {
+          let totalPx = 0;
+          for (let i = 1; i < m.vertices.length; i++) totalPx += dist(m.vertices[i - 1], m.vertices[i]);
+          m.totalFt = totalPx / ppfVal;
+        } else if (ppfVal && m.type === "area" && m.vertices) {
+          m.totalSf = polyArea(m.vertices) / (ppfVal * ppfVal);
+        }
+        pageMeas[idx] = m;
+        return { ...prev, [pk]: pageMeas };
+      });
+      setDraggingHandle(null);
+      return;
+    }
+    setIsPanning(false);
+  }, [draggingHandle, calibrations]);
 
   // Touch pinch
   const handleTouchStart = useCallback((e) => {
@@ -1370,9 +1668,10 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       // Don't intercept when typing in inputs
       if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
 
-      if (e.key === "Escape") { if (activeVertices.length > 0 || calPoints.length > 0) cancelActive(); else onClose(); return; }
+      if (e.key === "Escape") { if (activeVertices.length > 0 || calPoints.length > 0) cancelActive(); else handleClose(); return; }
       if (e.key === "Enter") { if (activeVertices.length >= 2 && ppf && activeCond) { finishMeasurement(); } return; }
       if (e.ctrlKey && e.key === "z") { e.preventDefault(); undo(); return; }
+      if (e.ctrlKey && e.key === "y") { e.preventDefault(); redo(); return; }
       if (e.key === " ") { e.preventDefault(); setMode(m => m === MODE.PAN ? (activeCond ? activeCond.type : MODE.PAN) : MODE.PAN); return; }
       if (e.key === "l" || e.key === "L") { if (ppf) { setMode(MODE.LINEAR); cancelActive(); } return; }
       if (e.key === "a" || e.key === "A") { if (ppf) { setMode(MODE.AREA); cancelActive(); } return; }
@@ -1429,7 +1728,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
         {/* Row 1: File info + Tools */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 10px", gap: 4 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <button onClick={onClose} style={{ ...btn, padding: "4px 8px", fontSize: 11, background: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.4)" }}>✕</button>
+            <button onClick={handleClose} style={{ ...btn, padding: "4px 8px", fontSize: 11, background: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.4)" }}>✕</button>
             <span style={{ color: "#fff", fontSize: 11, fontWeight: 600, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {pdfFiles.length > 1
                 ? `${(pdfFiles[activePdfIdx]?.name || "PDF").replace(/\.pdf$/i, "")} — ${getSheetName(page)}`
@@ -1446,6 +1745,11 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
             <button onClick={() => { setMode(MODE.COUNT); cancelActive(); }} style={mode === MODE.COUNT ? { ...btnActive, padding: "3px 8px", fontSize: 11 } : { ...btn, padding: "3px 8px", fontSize: 11 }} title="C">Count</button>
             <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.12)" }} />
             <button onClick={undo} style={{ ...btn, padding: "3px 8px", fontSize: 11 }} title="Ctrl+Z">Undo</button>
+            <button onClick={redo} style={redoStack.length ? { ...btn, padding: "3px 8px", fontSize: 11 } : { ...btnDis, padding: "3px 8px", fontSize: 11 }} disabled={!redoStack.length} title="Ctrl+Y">Redo</button>
+            <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.12)" }} />
+            <button onClick={() => setContinuousMode(m => !m)}
+              style={continuousMode ? { ...btn, padding: "3px 8px", fontSize: 11, background: "rgba(16,185,129,0.2)", borderColor: "rgba(16,185,129,0.5)", color: "#10b981" } : { ...btn, padding: "3px 8px", fontSize: 11 }}
+              title="Continuous mode: auto-start next measurement">{continuousMode ? "⟳ On" : "⟳ Off"}</button>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
             <button onClick={prevPage} style={page <= 1 ? { ...btnDis, padding: "3px 6px", fontSize: 11 } : { ...btn, padding: "3px 6px", fontSize: 11 }} disabled={page <= 1}>◀</button>
@@ -1454,10 +1758,16 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
               {Array.from({ length: numPages }, (_, i) => i + 1).map(pg => {
                 const pk = activePdfIdx + ":" + pg;
                 const name = sheetNames[pk] || `Page ${pg}`;
-                return <option key={pg} value={pg}>{pg} - {name}</option>;
+                const hasMeas = (measurements[pk] || []).length > 0;
+                const isComplete = completedPages[pk];
+                const indicator = isComplete ? "✓ " : hasMeas ? "● " : "  ";
+                return <option key={pg} value={pg}>{indicator}{pg} - {name}</option>;
               })}
             </select>
             <button onClick={nextPage} style={page >= numPages ? { ...btnDis, padding: "3px 6px", fontSize: 11 } : { ...btn, padding: "3px 6px", fontSize: 11 }} disabled={page >= numPages}>▶</button>
+            <button onClick={() => setCompletedPages(prev => ({ ...prev, [pageKey]: !prev[pageKey] }))}
+              style={completedPages[pageKey] ? { ...btn, padding: "3px 8px", fontSize: 10, background: "rgba(34,197,94,0.2)", borderColor: "rgba(34,197,94,0.5)", color: "#22c55e" } : { ...btn, padding: "3px 8px", fontSize: 10 }}
+              title="Mark this page as takeoff complete">{completedPages[pageKey] ? "✓ Done" : "Mark Done"}</button>
             <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.12)" }} />
             <button onClick={zoomOut} style={{ ...btn, padding: "3px 6px", fontSize: 11 }}>−</button>
             <span style={{ color: "#ccc", fontSize: 10, minWidth: 32, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
@@ -1605,7 +1915,35 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
           <div ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onWheel={handleWheel}
             onMouseDown={handlePanStart} onMouseMove={handlePanMove} onMouseUp={handlePanEnd} onMouseLeave={handlePanEnd}
             style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: 12,
-              cursor: mode === MODE.PAN ? (isPanning ? "grabbing" : "grab") : "crosshair" }}>
+              cursor: draggingHandle ? "grabbing" : mode === MODE.PAN ? (isPanning ? "grabbing" : "grab") : "crosshair" }}>
+            {/* Show re-upload prompt if no PDF loaded but state exists */}
+            {pdfFiles.length === 0 && _init.pdfFileNames?.length > 0 && (
+              <div style={{ textAlign: "center", padding: 60, color: "#888" }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>Loading plans from cache...</div>
+                <div style={{ fontSize: 13, marginBottom: 16 }}>If plans don't appear, re-upload the PDF to restore your {Object.values(measurements).flat().length} saved measurements.</div>
+                <label style={{ display: "inline-block", padding: "10px 24px", borderRadius: 8, background: "var(--amber, #e09422)", color: "#000", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+                  Re-upload PDF
+                  <input type="file" accept=".pdf" style={{ display: "none" }} onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      const data = new Uint8Array(ev.target.result);
+                      pdfjsLib.getDocument({ data }).promise.then((doc) => {
+                        setPdfFiles([{ name: file.name, data, doc, numPages: doc.numPages }]);
+                        setPdf(doc);
+                        setNumPages(doc.numPages);
+                        setPage(1);
+                        setActivePdfIdx(0);
+                        if (takeoffId) savePdfToIDB(`${takeoffId}_0`, data).catch(() => {});
+                        autoNamePages(doc, 0);
+                      });
+                    };
+                    reader.readAsArrayBuffer(file);
+                  }} />
+                </label>
+              </div>
+            )}
             <div style={{ position: "relative", display: "inline-block" }}>
               <canvas ref={pdfCanvasRef} />
               <canvas ref={revisionCanvasRef}
@@ -1633,6 +1971,19 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
                   });
                   if (nearest) setContextMenu({ x: e.clientX, y: e.clientY, measurementId: nearest.id });
                 }} />
+              {/* ── Floating Finish button while drawing ── */}
+              {(mode === MODE.LINEAR || mode === MODE.AREA) && activeVertices.length >= 2 && ppf && activeCond && (
+                <button onClick={finishMeasurement}
+                  style={{
+                    position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)",
+                    padding: "8px 24px", borderRadius: 8, fontSize: 13, fontWeight: 700,
+                    background: "var(--amber, #e09422)", color: "#000", border: "2px solid rgba(0,0,0,0.3)",
+                    cursor: "pointer", zIndex: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+                    animation: "pulse 1.5s ease-in-out infinite",
+                  }}>
+                  ✓ Finish ({activeVertices.length} pts) — Dbl-click or Enter
+                </button>
+              )}
             </div>
           </div>
         ) : (

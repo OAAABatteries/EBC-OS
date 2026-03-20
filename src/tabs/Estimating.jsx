@@ -1037,9 +1037,9 @@ export function EstimatingTab({ app }) {
   return (
     <div>
       {/* Drawing Viewer overlay */}
-      {showDrawing && drawingPdfData && (
+      {showDrawing && (drawingPdfData || tk.drawingState?.pdfFileNames?.length > 0) && (
         <DrawingViewer
-          pdfData={drawingPdfData}
+          pdfData={drawingPdfData || null}
           fileName={drawingFileName}
           assemblies={assemblies}
           takeoffId={tk.id}

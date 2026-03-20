@@ -201,16 +201,22 @@ CREATE TABLE IF NOT EXISTS scope_items (
 --  TAKEOFFS
 -- ═════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS takeoffs (
-  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  bid_id       UUID REFERENCES bids(id) ON DELETE SET NULL,
-  name         TEXT NOT NULL,
-  waste_pct    NUMERIC(5,2) DEFAULT 10,
-  tax_rate     NUMERIC(5,2) DEFAULT 8.25,
-  overhead_pct NUMERIC(5,2) DEFAULT 10,
-  profit_pct   NUMERIC(5,2) DEFAULT 20,
-  created_at   TIMESTAMPTZ DEFAULT NOW(),
-  updated_at   TIMESTAMPTZ DEFAULT NOW()
+  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  bid_id         UUID REFERENCES bids(id) ON DELETE SET NULL,
+  name           TEXT NOT NULL,
+  waste_pct      NUMERIC(5,2) DEFAULT 10,
+  tax_rate       NUMERIC(5,2) DEFAULT 8.25,
+  overhead_pct   NUMERIC(5,2) DEFAULT 10,
+  profit_pct     NUMERIC(5,2) DEFAULT 20,
+  drawing_state      JSONB,          -- measurements, conditions, calibrations, etc.
+  drawing_file_name  TEXT,           -- original PDF filename for re-upload prompt
+  created_at     TIMESTAMPTZ DEFAULT NOW(),
+  updated_at     TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migration: add drawing_state to existing takeoffs table
+ALTER TABLE takeoffs ADD COLUMN IF NOT EXISTS drawing_state JSONB;
+ALTER TABLE takeoffs ADD COLUMN IF NOT EXISTS drawing_file_name TEXT;
 
 CREATE TABLE IF NOT EXISTS takeoff_rooms (
   id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -4,72 +4,52 @@ Copy/paste this to start the next session:
 
 ---
 
-EBC-OS Phase 3D: Takeoff Engine — Plan Management & OST Parity
+EBC-OS Phase 4A: Drawing Engine Polish — Continuous Mode & Labels
 
 ## Context
-Phase 1 (Foundation), Phase 2 (Project Intelligence), Phase 3 Sprints 1-8 are complete and deployed. The takeoff engine has: PDF viewer, 3 measurement modes, conditions system, templates, bid areas, multi-condition links, typical groups, CO overlay, Excel export, persistence, multi-PDF, auto-name, smooth zoom/pan.
+Phases 1-3 are complete. Full OST reverse-engineering analysis done (see docs/takeoff-spec/ost-feature-matrix.md). New phased roadmap V2 created (see docs/takeoff-spec/phased-build-roadmap-v2.md).
 
 **Check memory files and docs/takeoff-spec/ for full history.**
 
-## What was tested
-Real-world test with Marshalls San Antonio 25-page construction PDF revealed critical UX gaps vs OST (On-Screen Takeoff, our main competitor). User feedback screenshots from OST are saved in the conversation history.
+## What's Done (from this session)
+- Fixed 3 critical bugs: double-click finish (debounced), IDB PDF persistence (deps + logging), Auto Name V2 (multi-region scoring + noise filter + index parsing)
+- Added angle snapping (default ON, Shift = free trace, 15° increments with angle badge)
+- Added floating "Finish" button during drawing
+- Fixed save-on-close race condition (handleClose flushes pending save)
+- Fixed Resume Takeoff pipeline (DrawingViewer mounts without pdfData, loads from IDB)
+- Added re-upload fallback UI when IDB cache is cleared
+- Added drawing_state JSONB + drawing_file_name columns to Supabase schema
+- Created full OST feature matrix (92 features analyzed, 28 done, 7 BETTER than OST)
 
-## Known Issues (must fix first)
-1. **Auto Name quality** — Title block text extraction works but results are inconsistent. Different PDF formats have title blocks in different positions (right strip vs bottom strip vs rotated). Needs smarter detection — possibly scan multiple regions and score candidates.
-2. **PDF persistence reliability** — IndexedDB save/load was implemented but user reports plans still don't persist across sessions. Debug the IDB flow end-to-end.
-3. **Double-click to finish measurement** — Works in code but feels unreliable. The browser fires 2 click events before the dblclick, adding extra vertices. Need click debouncing or a "finish" button visible during drawing.
+## Current Scorecard
+- 30% OST feature parity (28 of 92 features)
+- 17% partial (16 features started)
+- 52% missing (48 features)
+- 7 features where we BEAT OST (pricing, live costing, profit suggestions, scope gap, proposals, OST import, bid scanning)
 
-## Priority 1: Plan Management Redesign (OST Cover Sheet equivalent)
-OST starts every project with a "Cover Sheet" dialog:
-- Project Name, Job No., Estimator, Bid Date, Notes
-- **Plan Organizer** table: Sheet No. | Sheet Name | Page Size | Scale | Image File | Show
-- Upload ALL PDFs first → Auto Name runs → user reviews/corrects → OK → takeoff begins
-- Plans are permanently saved to the project
+## Phase 4A Priority: Drawing Engine Polish (THIS SESSION)
 
-Our flow is backwards: "Open Drawing" is a temporary file picker that doesn't save. We need:
-- **Plan Upload step** in the takeoff detail view (before opening DrawingViewer)
-- Store PDFs in Supabase Storage (not just IndexedDB) so they persist across devices
-- Plan table showing all uploaded sheets with auto-named info
-- Then "Open Takeoff" launches DrawingViewer with all plans pre-loaded
+### Sprint 1: Continuous Mode + Editing Basics
+1. **Continuous mode** — after finishing a measurement, immediately start the next one (same mode, same condition). Toggle button in toolbar. This is the #1 speed improvement.
+2. **Redo** (Ctrl+Y)
+3. **Resize handles** — drag endpoints/corners to adjust measurements
+4. **Mark Takeoff Complete** — per-page checkbox, green dot in page dropdown
 
-## Priority 2: Measurement UX Polish
-- Click debouncing for double-click finish (prevent extra vertices)
-- Visual "Finish" button that appears while drawing a measurement
-- Snap-to-endpoint when clicking near an existing vertex
-- Measurement label editing (click to rename/annotate)
-- Delete measurement from right-click context menu (already exists but verify)
+### Sprint 2: Measurement Visibility & Labels
+1. **Display condition name** on each measurement (toggleable)
+2. **Display dimension label** centered on completed measurements
+3. **Page indicators** in dropdown — blue dot = has measurements, green check = complete
+4. **Right-angle indicator** — special 90° emphasis
+5. **Hover tooltip** — condition name, qty, cost
 
-## Priority 3: Auto Name V2
-- Try multiple title block regions (right strip, bottom strip, bottom-right corner)
-- Score candidates by: proximity to page edge, font size, presence of sheet number patterns
-- Handle rotated text (some title blocks have vertical text)
-- Parse sheet INDEX from cover page (Page 1 often has an Index of Drawings table)
-- Auto-detect scale text and pre-fill calibration dialog
+## What's After This
+- Phase 4B: Attachment conditions (doors subtract from walls) + Backout mode (ceiling holes)
+- Phase 4C: Snap to Linear / Room auto-fill (double-click enclosed room → auto-fill area)
+- Phase 4D: Plan Management Redesign (upload-first flow, Supabase Storage)
+- Phase 4E: Copy/Move/Split/Resize editing
+- Phase 4F: Annotations + Collaboration
+- Phase 5: AI Takeoff Boost (wall detection, count detection, AI suggestions)
 
-## Priority 4: Multi-Window / Split View
-OST has separate windows for takeoff and annotation. We could do:
-- Split view: plan on left, zoomed detail on right
-- Or: floating magnifier window that follows cursor
-- Picture-in-picture minimap showing full plan with viewport indicator
-
-## Priority 5: Takeoff Boost Equivalent (AI)
-OST's "Takeoff Boost" uses AI to auto-identify and measure walls, areas, counts in ~30 seconds. For EBC-OS:
-- Use Claude API to analyze plan images and identify wall lines
-- Auto-suggest conditions based on wall type symbols
-- Auto-count doors from symbol recognition
-- "You measured walls but no corner bead" suggestions
-
-## Phase Summary
-
-| Phase | What | Effort | Priority |
-|-------|------|--------|----------|
-| Fix bugs | Auto Name, IDB persistence, dblclick | 1 session | NOW |
-| Plan Management | Upload flow, Supabase storage, plan table | 1-2 sessions | HIGH |
-| Measurement UX | Finish button, snap, labels, debounce | 1 session | HIGH |
-| Auto Name V2 | Multi-region, scoring, index parsing | 1 session | MEDIUM |
-| Split View | Multi-window, magnifier, minimap | 1 session | MEDIUM |
-| AI Takeoff Boost | Wall detection, auto-count, suggestions | 2-3 sessions | FUTURE |
-
-Start by fixing the 3 known bugs, then tackle Plan Management.
+Start with Sprint 1 (Continuous Mode is the biggest win).
 
 ---
