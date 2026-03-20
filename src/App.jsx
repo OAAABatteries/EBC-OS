@@ -9,7 +9,7 @@ import {
   initIncidents, initToolboxTalks, initDailyReports, initTakeoffs,
   OSHA_CHECKLIST, COMPANY_DEFAULTS, getHF,
   initEmployees, initCompanyLocations, initTimeEntries, initCrewSchedule, initMaterialRequests,
-  initTmTickets
+  initTmTickets, DATA_VERSION
 } from "./data/constants";
 import { EstimatingTab } from "./tabs/Estimating";
 import { MoreTabs } from "./tabs/MoreTabs";
@@ -35,7 +35,7 @@ import { OnboardingWizard } from "./components/OnboardingWizard";
 import { SyncStatus } from "./components/SyncStatus";
 import { UpdateBanner } from "./components/InstallPrompt";
 import { useNetworkStatus } from "./hooks/useNetworkStatus";
-import { hasAccess } from "./data/roles";
+import { hasAccess, ROLES } from "./data/roles";
 import { supabase, isSupabaseConfigured, signOut as supaSignOut, onAuthStateChange, signIn as supaSignIn, signUp as supaSignUp } from "./lib/supabase";
 
 // ═══════════════════════════════════════════════════════════════
@@ -410,6 +410,32 @@ function App({ auth, onLogout }) {
     flushSyncQueue();
   }, []);
 
+  // ── DATA VERSION CHECK — re-seed from constants.js when seed data changes ──
+  useEffect(() => {
+    try {
+      const storedVer = parseInt(localStorage.getItem("ebc_data_version") || "0", 10);
+      if (storedVer < DATA_VERSION) {
+        // Re-seed all data from constants.js (overwrites stale localStorage + pushes to Supabase)
+        setBids(initBids);
+        setProjects(initProjects);
+        setContacts(initContacts);
+        setCallLog(initCallLog);
+        setChangeOrders(initChangeOrders);
+        setRfis(initRfis);
+        setSubmittals(initSubmittals);
+        setSchedule(initSchedule);
+        setInvoices(initInvoices);         // []
+        setTmTickets(initTmTickets);       // []
+        setIncidents(initIncidents);       // []
+        setToolboxTalks(initToolboxTalks); // []
+        setDailyReports(initDailyReports); // []
+        setTakeoffs(initTakeoffs);         // []
+        localStorage.setItem("ebc_data_version", String(DATA_VERSION));
+        console.info("[EBC] Data version upgraded to", DATA_VERSION, "— re-seeded all data from constants.js");
+      }
+    } catch {}
+  }, []);
+
   const [notifications, setNotifications] = useLocalStorage("ebc_notifications", []);
   // ── notification generator (runs on mount + every 5 min) ──
   useEffect(() => {
@@ -491,7 +517,13 @@ function App({ auth, onLogout }) {
     initNative(); // configure status bar, hide native splash, register app events
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
-  // ── portal routing for field roles ──
+  // ── role view toggle (Admin can preview other role views) ──
+  const [viewAsRole, setViewAsRole] = useLocalStorage("ebc_viewAsRole", "");
+
+  // ── role view toggle (effective role for tabs/dashboard, actual role for portals) ──
+  const effectiveRole = viewAsRole || auth?.role || "owner";
+
+  // ── portal routing for field roles (uses actual auth role, NOT the toggle) ──
   const isDriverView = auth?.role === "driver";
   const isEmployeeView = auth?.role === "employee";
   const isForemanView = auth?.role === "foreman";
@@ -580,7 +612,7 @@ function App({ auth, onLogout }) {
   // ── KPI computations ──
   const pipeline = useMemo(() => bids.filter(b => b.status === "estimating").reduce((s, b) => s + (b.value || 0), 0), [bids]);
   const activeProjects = projects.length;
-  const openBids = bids.filter(b => b.status === "estimating" || b.status === "submitted").length;
+  const openBids = bids.filter(b => b.status === "submitted" || (b.status === "estimating" && b.due && new Date(b.due) >= new Date())).length;
   const awarded = bids.filter(b => b.status === "awarded").length;
   const lost = bids.filter(b => b.status === "lost").length;
   const winRate = awarded + lost > 0 ? Math.round((awarded / (awarded + lost)) * 100) : 0;
@@ -681,7 +713,7 @@ function App({ auth, onLogout }) {
   }, [scope, scopeFilter]);
 
   // ── role-based tab filtering ──
-  const userRole = auth?.role || "owner";
+  const userRole = effectiveRole;
   const visiblePrimary = useMemo(() =>
     PRIMARY_TABS.filter(t => hasAccess(userRole, t.key)), [userRole]);
   const visibleSecondary = useMemo(() =>
@@ -790,7 +822,8 @@ function App({ auth, onLogout }) {
     const tmPending = tmTickets.filter(t => t.status === "pending" || t.status === "draft");
 
     // Projects with no invoice in last 30 days (active projects only)
-    const projNoBilling = projects.filter(p => (p.progress || 0) < 100).filter(p => {
+    // Suppress entirely when no invoices exist (no data to judge from)
+    const projNoBilling = invoices.length === 0 ? [] : projects.filter(p => (p.progress || 0) < 100).filter(p => {
       const projInvs = invoices.filter(i => i.projectId === p.id);
       if (projInvs.length === 0) return true;
       const latest = Math.max(...projInvs.map(i => parseDate(i.date)?.getTime() || 0));
@@ -826,9 +859,20 @@ function App({ auth, onLogout }) {
       <div className="section-header">
         <div>
           <div className="section-title font-head" style={{ fontSize: 20 }}>{t("Command Center")}</div>
-          <div className="section-sub" style={{ fontSize: 12 }}>
-            {auth?.name || "EBC"} — {new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
-            {dashActions.urgentCount > 0 && <span style={{ color: "var(--red)", fontWeight: 700, marginLeft: 8 }}>{dashActions.urgentCount} items need attention</span>}
+          <div className="section-sub" style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span>{auth?.name || "EBC"} — {new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</span>
+            {(auth?.role === "owner" || auth?.role === "admin") && (
+              <select
+                value={viewAsRole || auth?.role || "owner"}
+                onChange={e => setViewAsRole(e.target.value === (auth?.role || "owner") ? "" : e.target.value)}
+                style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "var(--bg3)", color: viewAsRole && viewAsRole !== auth?.role ? "var(--amber)" : "var(--text-muted)", border: "1px solid var(--border)", cursor: "pointer" }}
+              >
+                {Object.entries(ROLES).map(([k, v]) => (
+                  <option key={k} value={k}>{v.label}</option>
+                ))}
+              </select>
+            )}
+            {dashActions.urgentCount > 0 && <span style={{ color: "var(--red)", fontWeight: 700 }}>{dashActions.urgentCount} items need attention</span>}
           </div>
         </div>
         <div className="flex gap-8">

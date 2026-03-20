@@ -184,12 +184,12 @@ export function useSyncedState(key, initialValue) {
     hydrated.current = true;
 
     // Check if we already have local data
+    // An explicit empty array ("[]") counts as "has data" — the user intentionally cleared it.
+    // Only treat missing key (null) as "no local data."
     const hasLocalData = (() => {
       try {
         const item = localStorage.getItem(lsKey);
-        if (!item) return false;
-        const parsed = JSON.parse(item);
-        return Array.isArray(parsed) ? parsed.length > 0 : !!parsed;
+        return item !== null;
       } catch { return false; }
     })();
 
