@@ -526,7 +526,7 @@ export function EstimatingTab({ app }) {
   }
 
   function addRoom(tkId) {
-    const newRoom = { id: "rm_" + Date.now(), name: "New Room", floor: "", items: [] };
+    const newRoom = { id: "rm_" + Date.now(), name: "New Area", floor: "", items: [] };
     updateTakeoff(tkId, (tk) => ({ ...tk, rooms: [...(tk.rooms || []), newRoom] }));
     setOpenRooms((prev) => ({ ...prev, [newRoom.id]: true }));
   }
@@ -660,7 +660,17 @@ export function EstimatingTab({ app }) {
     return (
       <div>
         <div className="section-header flex-between">
-          <h2 className="section-title">Estimating</h2>
+          <div>
+            <h2 className="section-title" style={{ margin: 0 }}>Estimating</h2>
+            <div className="section-sub">
+              {takeoffs.length} takeoff{takeoffs.length !== 1 ? "s" : ""}
+              {(() => {
+                const withItems = takeoffs.filter(t => (t.rooms || []).some(r => (r.items || []).length > 0)).length;
+                const totalValue = takeoffs.reduce((sum, t) => sum + calcSummary(t, assemblies).grandTotal, 0);
+                return <>{withItems > 0 && <span style={{ marginLeft: 8 }}>{withItems} active</span>}{totalValue > 0 && <span style={{ marginLeft: 8 }}>Pipeline: {fmtK(totalValue)}</span>}</>;
+              })()}
+            </div>
+          </div>
           <div className="flex gap-8">
             <input type="file" id="ost-import" accept=".csv,.txt" style={{ display: "none" }} onChange={handleOstFile} />
             <button className="btn btn-ghost" onClick={() => document.getElementById("ost-import").click()} style={{ fontSize: 13 }}>Import OST</button>
@@ -765,32 +775,79 @@ export function EstimatingTab({ app }) {
         </div>
 
         {filtered.length === 0 && (
-          <p style={{ color: "var(--text2)", padding: 16 }}>No takeoffs yet. Create one to get started.</p>
+          <div className="card" style={{ padding: 32, textAlign: "center" }}>
+            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>No takeoffs yet</div>
+            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 16 }}>Create a takeoff from a bid, import from OST, or scan a bid PDF to get started.</div>
+            <div className="flex gap-8" style={{ justifyContent: "center" }}>
+              <button className="btn btn-primary" onClick={createTakeoff}>+ New Takeoff</button>
+              <button className="btn btn-ghost" onClick={() => setShowBidBrowser(true)}>Browse Bids</button>
+            </div>
+          </div>
         )}
 
-        <div className="flex" style={{ flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 12 }}>
           {filtered.map((tk) => {
             const s = calcSummary(tk, assemblies);
-            const bidName = bids.find((b) => b.id === tk.bidId)?.name;
+            const linkedBid = bids.find((b) => b.id === tk.bidId);
             const roomCount = (tk.rooms || []).length;
+            const lineItemCount = (tk.rooms || []).reduce((sum, rm) => sum + (rm.items || []).length, 0);
+            const hasDrawing = !!(tk.drawingState || tk.drawingFileName);
+            const measCount = tk.drawingState ? Object.values(tk.drawingState.measurements || {}).flat().length : 0;
+            const scopeDone = tk.scopeChecklistCompleted;
+            // Completeness: rooms, line items, drawing, scope, value
+            const hasRooms = roomCount > 0;
+            const hasItems = lineItemCount > 0;
+            const hasValue = s.grandTotal > 0;
+            const completeness = [hasRooms, hasItems, hasDrawing, scopeDone, hasValue].filter(Boolean).length;
             return (
               <div
                 key={tk.id}
-                className="card card-glass"
-                style={{ cursor: "pointer", minWidth: 260, flex: "1 1 280px" }}
+                className="card"
+                style={{ cursor: "pointer", borderLeft: `4px solid ${completeness >= 4 ? "var(--green)" : completeness >= 2 ? "var(--amber)" : "var(--border)"}` }}
                 onClick={() => setActiveTk(tk.id)}
               >
-                <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{tk.name}</div>
-                {bidName && <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 4 }}>{bidName}</div>}
-                <div className="flex-between" style={{ fontSize: 13, color: "var(--text2)" }}>
-                  <span>{roomCount} room{roomCount !== 1 ? "s" : ""}</span>
-                  <span>{tk.created}</span>
+                {/* Name + linked bid */}
+                <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2, lineHeight: 1.3 }}>{tk.name}</div>
+                {linkedBid && (
+                  <div style={{ fontSize: 11, color: "var(--text2)", marginBottom: 4 }}>
+                    <span className={`badge ${linkedBid.status === "awarded" ? "badge-green" : linkedBid.status === "submitted" ? "badge-blue" : "badge-amber"}`} style={{ fontSize: 9, marginRight: 4 }}>{linkedBid.status}</span>
+                    {linkedBid.gc}
+                  </div>
+                )}
+                {!linkedBid && <div style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic", marginBottom: 4 }}>No linked bid</div>}
+
+                {/* Stats row */}
+                <div className="flex gap-8" style={{ fontSize: 11, color: "var(--text2)", marginTop: 6, flexWrap: "wrap" }}>
+                  <span>{roomCount} area{roomCount !== 1 ? "s" : ""}</span>
+                  <span>{lineItemCount} item{lineItemCount !== 1 ? "s" : ""}</span>
+                  {hasDrawing && <span style={{ color: "var(--green)" }}>Drawing{measCount > 0 ? ` (${measCount})` : ""}</span>}
+                  {!hasDrawing && <span style={{ color: "var(--text3)" }}>No drawing</span>}
+                  {scopeDone && <span style={{ color: "var(--green)" }}>Scope reviewed</span>}
                 </div>
+
+                {/* Value + completion bar */}
                 <div className="flex-between" style={{ marginTop: 8, alignItems: "center" }}>
-                  <span style={{ fontWeight: 700, fontSize: 18, color: "var(--amber)" }}>{fmtK(s.grandTotal)}</span>
-                  <span style={{ display: "flex", gap: 4 }}>
-                    <button className="btn btn-ghost btn-sm" title="Clone" onClick={e => { e.stopPropagation(); cloneTakeoff(tk.id); }} style={{ fontSize: 11, padding: "2px 6px" }}>📋</button>
-                    <button className="btn btn-ghost btn-sm" title="Delete" onClick={e => { e.stopPropagation(); if (confirm(`Delete takeoff "${tk.name}"?`)) setTakeoffs(prev => prev.filter(t => t.id !== tk.id)); }} style={{ fontSize: 11, padding: "2px 6px", color: "var(--red)" }}>✕</button>
+                  {hasValue ? (
+                    <span style={{ fontWeight: 700, fontSize: 16, color: "var(--amber)" }}>{fmtK(s.grandTotal)}</span>
+                  ) : (
+                    <span style={{ fontSize: 12, color: "var(--text3)", fontStyle: "italic" }}>No estimate yet</span>
+                  )}
+                  <span style={{ fontSize: 11, color: "var(--text2)" }}>{tk.created}</span>
+                </div>
+
+                {/* Completeness bar */}
+                <div style={{ marginTop: 6, display: "flex", gap: 3, alignItems: "center" }}>
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i < completeness ? "var(--green)" : "var(--border)" }} />
+                  ))}
+                  <span style={{ fontSize: 10, color: "var(--text3)", marginLeft: 4 }}>{completeness}/5</span>
+                </div>
+
+                {/* Actions */}
+                <div className="flex-between" style={{ marginTop: 6 }}>
+                  <span className="flex gap-4">
+                    <button className="btn btn-ghost btn-sm" title="Clone" onClick={e => { e.stopPropagation(); cloneTakeoff(tk.id); }} style={{ fontSize: 10, padding: "2px 6px" }}>Clone</button>
+                    <button className="btn btn-ghost btn-sm" title="Delete" onClick={e => { e.stopPropagation(); if (confirm(`Delete takeoff "${tk.name}"?`)) setTakeoffs(prev => prev.filter(t => t.id !== tk.id)); }} style={{ fontSize: 10, padding: "2px 6px", color: "var(--red)" }}>Delete</button>
                   </span>
                 </div>
               </div>
@@ -1448,58 +1505,35 @@ export function EstimatingTab({ app }) {
         })}
       </div>
 
-      <div style={{ marginTop: 12 }}>
-        <button className="btn btn-primary btn-sm" onClick={() => addRoom(tk.id)}>+ Add Room</button>
+      <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+        <button className="btn btn-primary btn-sm" onClick={() => addRoom(tk.id)}>+ Add Area</button>
+        {(tk.rooms || []).length === 0 && (
+          <span style={{ fontSize: 12, color: "var(--text3)", alignSelf: "center" }}>Add areas (floors, zones, rooms) to start building your estimate</span>
+        )}
       </div>
 
-      {/* bid summary */}
-      <div className="takeoff-summary" style={{ marginTop: 24 }}>
-        <h3 style={{ marginBottom: 12, fontSize: 15 }}>Bid Summary</h3>
-        <div className="summary-row">
-          <span>Subtotal Materials</span>
-          <span>{fmt(summary.matSub)}</span>
+      {/* bid summary — only show when there's actual data */}
+      {summary.grandTotal > 0 ? (
+        <div className="takeoff-summary" style={{ marginTop: 24 }}>
+          <h3 style={{ marginBottom: 12, fontSize: 15 }}>Bid Summary</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+            <div className="summary-row"><span>Materials</span><span>{fmt(summary.matSub)}</span></div>
+            <div className="summary-row"><span>Labor</span><span>{fmt(summary.labSub)}</span></div>
+          </div>
+          <div className="summary-row" style={{ borderTop: "1px solid var(--border)", marginTop: 4, paddingTop: 4 }}>
+            <span>Subtotal</span><span>{fmt(summary.subtotal)}</span>
+          </div>
+          <div className="summary-row"><span>Waste ({tk.wastePct}%)</span><span>{fmt(summary.wasteAmt)}</span></div>
+          <div className="summary-row"><span>Tax on Materials ({tk.taxRate}%)</span><span>{fmt(summary.taxAmt)}</span></div>
+          <div className="summary-row"><span>Overhead ({tk.overheadPct}%)</span><span>{fmt(summary.overheadAmt)}</span></div>
+          <div className="summary-row"><span>Profit ({tk.profitPct}%)</span><span>{fmt(summary.profitAmt)}</span></div>
+          <div className="summary-row total"><span>GRAND TOTAL</span><span>{fmt(summary.grandTotal)}</span></div>
         </div>
-        <div className="summary-row">
-          <span>Subtotal Labor</span>
-          <span>{fmt(summary.labSub)}</span>
+      ) : (tk.rooms || []).length > 0 ? (
+        <div style={{ marginTop: 24, padding: "12px 16px", borderRadius: 6, background: "var(--bg3)", border: "1px solid var(--border)", fontSize: 13, color: "var(--text2)" }}>
+          Add line items to your areas to see the bid summary. Totals appear here automatically.
         </div>
-        <div className="summary-row">
-          <span>Subtotal</span>
-          <span>{fmt(summary.subtotal)}</span>
-        </div>
-        <div className="summary-row">
-          <span>Waste ({tk.wastePct}%)</span>
-          <span>{fmt(summary.wasteAmt)}</span>
-        </div>
-        <div className="summary-row">
-          <span>Net Cost</span>
-          <span>{fmt(summary.netCost)}</span>
-        </div>
-        <div className="summary-row">
-          <span>Tax on Materials ({tk.taxRate}%)</span>
-          <span>{fmt(summary.taxAmt)}</span>
-        </div>
-        <div className="summary-row">
-          <span>Cost with Tax</span>
-          <span>{fmt(summary.costWithTax)}</span>
-        </div>
-        <div className="summary-row">
-          <span>Overhead ({tk.overheadPct}%)</span>
-          <span>{fmt(summary.overheadAmt)}</span>
-        </div>
-        <div className="summary-row">
-          <span>Cost with Overhead</span>
-          <span>{fmt(summary.costWithOverhead)}</span>
-        </div>
-        <div className="summary-row">
-          <span>Profit ({tk.profitPct}%)</span>
-          <span>{fmt(summary.profitAmt)}</span>
-        </div>
-        <div className="summary-row total">
-          <span>GRAND TOTAL</span>
-          <span>{fmt(summary.grandTotal)}</span>
-        </div>
-      </div>
+      ) : null}
 
       {/* Historical Comparison Panel */}
       {showHist && (
