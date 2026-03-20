@@ -2867,6 +2867,7 @@ const ModalHub = ({ type, data, app }) => {
         return data ? { ...data } : {
           name: "", gc: "", contract: 0, billed: 0, progress: 0,
           phase: "", start: "", end: "", pm: "", address: "",
+          suite: "", parking: "", lat: "", lng: "",
           closeOut: "", attachments: []
         };
       case "editContact":
@@ -3566,6 +3567,22 @@ const ModalHub = ({ type, data, app }) => {
             <div className="form-group full">
               <label className="form-label">Address</label>
               <input className="form-input" value={draft.address || ""} onChange={e => upd("address", e.target.value)} placeholder="Project address" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Suite / Area</label>
+              <input className="form-input" value={draft.suite || ""} onChange={e => upd("suite", e.target.value)} placeholder="e.g. Suite 200, Level 4" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Parking Info</label>
+              <input className="form-input" value={draft.parking || ""} onChange={e => upd("parking", e.target.value)} placeholder="e.g. Garage Level B2, Lot C" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Latitude</label>
+              <input className="form-input" type="number" step="any" value={draft.lat || ""} onChange={e => upd("lat", Number(e.target.value) || "")} placeholder="29.7604" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Longitude</label>
+              <input className="form-input" type="number" step="any" value={draft.lng || ""} onChange={e => upd("lng", Number(e.target.value) || "")} placeholder="-95.3698" />
             </div>
 
             <div className="form-group full">

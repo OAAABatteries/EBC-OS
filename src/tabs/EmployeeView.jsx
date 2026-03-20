@@ -11,6 +11,9 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 const DARK_TILES = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const SATELLITE_TILES = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const STREET_TILES = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+const TILE_SETS = { dark: DARK_TILES, satellite: SATELLITE_TILES, street: STREET_TILES };
 const PHASE_COLORS = {
   "Pre-Construction": "#e09422",
   "Estimating": "#3b82f6",
@@ -105,6 +108,8 @@ export function EmployeeView({ app }) {
   const clockMapRef = useRef(null);
   const clockMapInstance = useRef(null);
   const clockMarkersRef = useRef([]);
+  const tileLayerRef = useRef(null);
+  const [mapStyle, setMapStyle] = useState("dark");
 
   // ── clock tick ──
   useEffect(() => {
@@ -233,12 +238,20 @@ export function EmployeeView({ app }) {
         attributionControl: false,
         zoomControl: true,
       });
-      L.tileLayer(DARK_TILES, { maxZoom: 18 }).addTo(map);
+      tileLayerRef.current = L.tileLayer(TILE_SETS[mapStyle], { maxZoom: 19 }).addTo(map);
       clockMapInstance.current = map;
       setTimeout(() => { map.invalidateSize(); setClockMapReady(true); }, 120);
     }, 50);
     return () => clearTimeout(timer);
   }, [activeEmp, empTab]);
+
+  // Switch tile layer when mapStyle changes
+  useEffect(() => {
+    const map = clockMapInstance.current;
+    if (!map || !tileLayerRef.current) return;
+    map.removeLayer(tileLayerRef.current);
+    tileLayerRef.current = L.tileLayer(TILE_SETS[mapStyle], { maxZoom: 19 }).addTo(map);
+  }, [mapStyle]);
 
   useEffect(() => {
     const map = clockMapInstance.current;
@@ -257,7 +270,10 @@ export function EmployeeView({ app }) {
         iconAnchor: [8, 8],
       });
       const marker = L.marker([p.lat, p.lng], { icon }).addTo(map);
-      marker.bindPopup(`<div style="font-size:12px"><b style="color:${color}">${p.name}</b><br/>${p.gc} · ${p.phase}<br/>${p.address || ""}</div>`);
+      const suiteHtml = p.suite ? `<br/>📍 Suite/Area: <b>${p.suite}</b>` : "";
+      const parkingHtml = p.parking ? `<br/>🅿️ Parking: ${p.parking}` : "";
+      const navLink = `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
+      marker.bindPopup(`<div style="font-size:12px;min-width:180px"><b style="color:${color}">${p.name}</b><br/>${p.gc} · ${p.phase}<br/>${p.address || ""}${suiteHtml}${parkingHtml}<br/><a href="${navLink}" target="_blank" style="color:#3b82f6;text-decoration:underline;font-size:11px">📍 Navigate</a></div>`);
       clockMarkersRef.current.push(marker);
     });
     // add user position marker
@@ -912,8 +928,17 @@ export function EmployeeView({ app }) {
             )}
 
             {/* ── Map ── */}
-            <div className="clock-card" style={{ marginTop: 12, padding: 0, overflow: "hidden" }}>
-              <div ref={clockMapRef} style={{ width: "100%", height: 260, borderRadius: "var(--radius)" }} />
+            <div className="clock-card" style={{ marginTop: 12, padding: 0, overflow: "hidden", position: "relative" }}>
+              <div ref={clockMapRef} style={{ width: "100%", height: 280, borderRadius: "var(--radius)" }} />
+              {/* Tile switcher */}
+              <div style={{ position: "absolute", top: 8, right: 8, zIndex: 1000, display: "flex", gap: 2, background: "rgba(0,0,0,0.7)", borderRadius: 6, padding: 2 }}>
+                {[["dark", "🌑"], ["satellite", "🛰️"], ["street", "🗺️"]].map(([key, icon]) => (
+                  <button key={key} onClick={() => setMapStyle(key)}
+                    style={{ padding: "4px 8px", fontSize: 12, border: "none", borderRadius: 4, cursor: "pointer", background: mapStyle === key ? "var(--amber)" : "transparent", color: mapStyle === key ? "#000" : "#fff" }}>
+                    {icon}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="clock-card" style={{ marginTop: 12 }}>

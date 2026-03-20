@@ -16,7 +16,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .logo{font-family:var(--font-head);font-size:18px;font-weight:700;color:var(--amber);letter-spacing:1px;white-space:nowrap;
   text-shadow:0 0 20px var(--amber-glow)}
 .logo-sub{font-size:10px;color:var(--text3);font-weight:400;letter-spacing:0.5px;display:block;margin-top:-2px}
-.main-content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:24px 28px 40px;animation:fadeIn 0.25s ease;position:relative;z-index:1}
+.main-content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:24px 28px 40px;padding-bottom:calc(40px + env(safe-area-inset-bottom));animation:fadeIn 0.25s ease;position:relative;z-index:1}
 
 /* ══ NAV ══ */
 .nav{display:flex;align-items:center;gap:2px;margin-left:auto}
@@ -532,12 +532,12 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 
 /* ══ EMPLOYEE VIEW ══ */
 .employee-app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;background:var(--bg)}
-.employee-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;
+.employee-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;padding-top:calc(12px + env(safe-area-inset-top));
   background:var(--glass-bg);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);
   border-bottom:1px solid var(--glass-border)}
 .employee-logo{font-family:var(--font-head);font-size:16px;font-weight:700;color:var(--amber);
   text-shadow:0 0 20px var(--amber-glow)}
-.employee-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px;display:flex;flex-direction:column;align-items:center}
+.employee-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center}
 
 /* ── PIN PAD ── */
 .pin-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:24px}
@@ -586,7 +586,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 
 /* ── EMPLOYEE SUB-TABS ── */
 .emp-tabs{display:flex;gap:4px;width:100%;max-width:420px;margin-bottom:16px;
-  border-bottom:1px solid var(--border);padding-bottom:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  border-bottom:1px solid var(--border);padding-bottom:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  position:sticky;top:0;z-index:10;background:var(--bg);padding-top:4px}
 .emp-tab{flex:0 0 auto;padding:8px 12px;border:none;background:none;font-family:var(--font-body);
   font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;white-space:nowrap;
   border-radius:var(--radius-sm) var(--radius-sm) 0 0;transition:all 0.15s ease}
