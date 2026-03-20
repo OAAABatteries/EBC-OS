@@ -288,6 +288,14 @@ export function MaterialsTab({ app }) {
         return { ...a, layers };
       });
     };
+    const duplicateLayer = (idx) => {
+      setEditAsm(a => {
+        const layers = [...a.layers];
+        const copy = { ...layers[idx], id: "ly_" + Date.now() };
+        layers.splice(idx + 1, 0, copy);
+        return { ...a, layers };
+      });
+    };
 
     return (
       <div>
@@ -317,10 +325,38 @@ export function MaterialsTab({ app }) {
           </div>
         </div>
 
-        {/* Add Layer */}
+        {/* Quick-Add Presets */}
+        <div className="mb-16">
+          <label className="form-label" style={{ marginBottom: 8 }}>Quick Add</label>
+          <div className="flex gap-4 flex-wrap">
+            {[
+              { label: "🧱 Stud 3-5/8\"", id: "m1" },
+              { label: "🧱 Stud 6\"", id: "m3" },
+              { label: "📏 Track", id: "m4" },
+              { label: "📄 5/8\" GWB", id: "m7" },
+              { label: "📄 DensShield", id: "m8" },
+              { label: "📄 Impact GWB", id: "m9" },
+              { label: "📄 Lead-Lined", id: "m12" },
+              { label: "📄 QuietRock", id: "m36" },
+              { label: "🧶 R-13 Batt", id: "m13" },
+              { label: "🧶 R-19 Batt", id: "m14" },
+              { label: "🧶 Mineral Wool", id: "m16" },
+              { label: "🔲 ACT Grid 2x2", id: "m17" },
+              { label: "🔲 Acoustic Tile", id: "m19" },
+              { label: "🎨 L4 Finish", id: "m26" },
+              { label: "🎨 L5 Finish", id: "m27" },
+              { label: "🔥 Fire Caulk", id: "m44" },
+            ].map(p => (
+              <button key={p.id} className="btn btn-sm btn-ghost" style={{ fontSize: 11, padding: "4px 10px" }}
+                onClick={() => addLayer(p.id)}>{p.label}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Add Layer — Full Dropdown */}
         <div className="flex gap-8 mb-16" style={{ alignItems: "end" }}>
           <div className="form-group" style={{ flex: 1 }}>
-            <label className="form-label">Add Material Layer</label>
+            <label className="form-label">Or Search All Materials</label>
             <select className="form-select" onChange={e => { if (e.target.value) addLayer(e.target.value); e.target.value = ""; }}>
               <option value="">-- Select Material --</option>
               {MAT_CATS.map(cat => (
@@ -373,7 +409,10 @@ export function MaterialsTab({ app }) {
                       <td style={{ textAlign: "right" }} className="font-mono">${(l.matCost * l.qty).toFixed(0)}</td>
                       <td style={{ textAlign: "right" }} className="font-mono">${(l.laborCost * l.qty).toFixed(0)}</td>
                       <td style={{ textAlign: "right" }} className="font-mono text-amber">${((l.matCost + l.laborCost) * l.qty).toFixed(0)}</td>
-                      <td><button className="btn btn-sm btn-ghost" style={{ color: "var(--red)" }} onClick={() => removeLayer(i)}>Remove</button></td>
+                      <td className="flex gap-4">
+                        <button className="btn btn-sm btn-ghost" title="Duplicate layer" onClick={() => duplicateLayer(i)}>📋</button>
+                        <button className="btn btn-sm btn-ghost" style={{ color: "var(--red)" }} onClick={() => removeLayer(i)}>✕</button>
+                      </td>
                     </tr>
                   );
                 })}
