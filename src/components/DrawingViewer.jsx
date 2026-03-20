@@ -1800,10 +1800,14 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   // ── Keyboard shortcuts ──
   useEffect(() => {
     const handler = (e) => {
-      // Don't intercept when typing in inputs
+      // Escape always works — even when focused on an input (e.g. calibration prompt)
+      if (e.key === "Escape") {
+        if (showCalPrompt || calPoints.length > 0 || activeVertices.length > 0) { cancelActive(); e.target.blur?.(); }
+        else handleClose();
+        return;
+      }
+      // Don't intercept other keys when typing in inputs
       if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
-
-      if (e.key === "Escape") { if (activeVertices.length > 0 || calPoints.length > 0) cancelActive(); else handleClose(); return; }
       if (e.key === "Enter") { if (activeVertices.length >= 2 && ppf && activeCond) { finishMeasurement(); } return; }
       if (e.ctrlKey && e.key === "z") { e.preventDefault(); undo(); return; }
       if (e.ctrlKey && e.key === "y") { e.preventDefault(); redo(); return; }
@@ -1834,7 +1838,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [activeVertices, calPoints, activeCond, ppf, folders, selectedMeasId]);
+  }, [activeVertices, calPoints, showCalPrompt, activeCond, ppf, folders, selectedMeasId]);
 
   // Add new condition
   const addCondition = (asmCode) => {
