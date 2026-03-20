@@ -1,8 +1,13 @@
-import { useState, useCallback, Fragment } from "react";
+import { useState, useCallback, Fragment, lazy, Suspense } from "react";
 import { THEMES, OSHA_CHECKLIST, COMPANY_DEFAULTS, ASSEMBLIES } from "../data/constants";
 import { storePdf, getPdfUrl, deletePdf, fmtSize } from "../hooks/useSubmittalPdf";
 import { TimeClockAdmin } from "./TimeClockAdmin";
 import { MapView } from "./MapView";
+
+const BusinessCardGenerator = lazy(() => import("../components/BusinessCard"));
+function BusinessCardTab({ app }) {
+  return <Suspense fallback={<div className="text-sm text-dim">Loading...</div>}><BusinessCardGenerator employees={app.employees} app={app} /></Suspense>;
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · MoreTabs — Secondary tab routing & implementations
@@ -4450,7 +4455,7 @@ function Settings({ app }) {
   // Simplified settings for non-business roles
   const canSeeInsurance = ["owner", "admin", "pm", "office_admin", "accounting"].includes(userRole);
   const tabs = isFullAccess
-    ? ["Company", ...(canSeeInsurance ? ["Insurance"] : []), "Assemblies", "Equipment", "Margin Tiers", "Data", "QuickBooks", "Theme", "API", "Account"]
+    ? ["Company", ...(canSeeInsurance ? ["Insurance"] : []), "Assemblies", "Equipment", "Margin Tiers", "Business Cards", "Data", "QuickBooks", "Theme", "API", "Account"]
     : [...(canSeeInsurance ? ["Insurance"] : []), "Theme", "Account"];
   if (isOwnerOrAdmin) tabs.push("Users");
   const [sub, setSub] = useState(isFullAccess ? "Company" : "Theme");
@@ -4461,6 +4466,7 @@ function Settings({ app }) {
       {sub === "Assemblies" && <AssembliesTab app={app} />}
       {sub === "Equipment" && <EquipmentTab app={app} />}
       {sub === "Margin Tiers" && <MarginTiersTab app={app} />}
+      {sub === "Business Cards" && <BusinessCardTab app={app} />}
       {sub === "Data" && <DataTab app={app} />}
       {sub === "QuickBooks" && <QuickBooksTab app={app} />}
       {sub === "Theme" && <ThemeTab app={app} />}

@@ -1,7 +1,27 @@
-import { StrictMode, Component } from 'react'
+import { StrictMode, Component, useState, useEffect, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
+
+const GCPortal = lazy(() => import('./components/GCPortal.jsx'));
+const JobPortal = lazy(() => import('./components/JobPortal.jsx'));
+
+function Router() {
+  const [hash, setHash] = useState(window.location.hash);
+  useEffect(() => {
+    const onHash = () => setHash(window.location.hash);
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  if (hash === '#/gc-portal') {
+    return <Suspense fallback={<div style={{padding:40,color:'#f59e0b',background:'#0a0e1a',minHeight:'100vh'}}>Loading...</div>}><GCPortal /></Suspense>;
+  }
+  if (hash === '#/careers') {
+    return <Suspense fallback={<div style={{padding:40,color:'#f59e0b',background:'#0a0e1a',minHeight:'100vh'}}>Loading...</div>}><JobPortal /></Suspense>;
+  }
+  return <App />;
+}
 
 class ErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { error: null }; }
@@ -23,7 +43,7 @@ class ErrorBoundary extends Component {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <Router />
     </ErrorBoundary>
   </StrictMode>,
 )
