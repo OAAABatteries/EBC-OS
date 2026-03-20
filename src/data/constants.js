@@ -458,94 +458,41 @@ const _demoProjects = [
 
 // ── SEED: CONTACTS ──
 const _demoContacts = [
+  // ── ENDURANCE BUILDERS (endbs.com) ──
+  {id:1,name:"Christina Zube Volkers",company:"Endurance Builders",role:"Senior PM",bids:12,wins:6,color:"#3b82f6",last:"This week",priority:"high",phone:"713-569-3121",email:"Christina.zube@endbs.com",notes:"Senior PM at Endurance. Woodside Lab (Rice), Rice BRC. Primary contact for all Endurance projects."},
+  {id:2,name:"Ruby Rubio",company:"Endurance Builders",role:"Project Engineer",bids:8,wins:4,color:"#8b5cf6",last:"This week",priority:"high",phone:"281-745-2965",email:"rrubio@endbs.com",notes:"Project Engineer. Handles work orders, COIs, submittals. Woodside Lab."},
+  {id:3,name:"Mason Williams",company:"Endurance Builders",role:"Superintendent",bids:4,wins:2,color:"#10b981",last:"This week",priority:"high",phone:"713-899-6142",email:"mwilliams@endbs.com",notes:"Field super on Woodside Lab. PTO 3/23-3/28. Direct line for field coordination."},
   // ── FORNEY CONSTRUCTION ──
-  {id:1,name:"Christina Zube",company:"Forney Construction",role:"PM",bids:12,wins:6,color:"#3b82f6",last:"This week",priority:"high",phone:"",email:"",notes:"Primary Forney contact. BSLMC Cath Labs, Cancer Center, Hobby Center, Duchesne, Grace Bible Church."},
-  {id:2,name:"Mason Williams",company:"Forney Construction",role:"Estimator",bids:8,wins:4,color:"#10b981",last:"This week",priority:"high",phone:"",email:"",notes:"Forney estimating. Handles bid invites."},
-  // ── UNITED CONSTRUCTORS ──
-  {id:3,name:"Ruby Rubio",company:"United Constructors",role:"PM",bids:10,wins:4,color:"#8b5cf6",last:"This week",priority:"high",phone:"",email:"",notes:"United PM. Heart Care Clinic, Brunello Cucinelli, Escapology."},
-  {id:4,name:"Heidi Phillips",company:"United Constructors",role:"PM",bids:6,wins:2,color:"#f59e0b",last:"2 weeks ago",priority:"med",phone:"",email:"",notes:"United PM."},
-  {id:5,name:"Joseph Quan",company:"United Constructors",role:"Estimator",bids:5,wins:2,color:"#ef4444",last:"1 week ago",priority:"med",phone:"",email:"",notes:"United estimating."},
-  // ── O'DONNELL/SNIDER ──
-  {id:6,name:"Adam Teeter",company:"O'Donnell/Snider",role:"PM",bids:3,wins:2,color:"#06b6d4",last:"This week",priority:"high",phone:"",email:"",notes:"O'Donnell/Snider PM. MH Neuro IR & Single Plane IR."},
+  {id:4,name:"Natalie Pettis",company:"Forney Construction",role:"Asst PM",bids:6,wins:3,color:"#ec4899",last:"This week",priority:"high",phone:"832-274-2512",email:"natalie.pettis@forneyconstruction.com",notes:"Asst PM at Forney. MHTW RAD project, subcontracts, NTPs."},
+  {id:5,name:"Jason McIntyre",company:"Forney Construction",role:"PM",bids:8,wins:4,color:"#14b8a6",last:"This week",priority:"high",phone:"713-410-9824",email:"jason.mcintyre@forneyconstruction.com",notes:"PM at Forney. MH League City CCC CT, MH Pearland CT. Handles SOVs via Procore."},
+  {id:6,name:"Jose Perez",company:"Forney Construction",role:"Asst PM",bids:5,wins:3,color:"#a855f7",last:"This week",priority:"high",phone:"832-605-7437",email:"Jose.perez@forneyconstruction.com",notes:"Asst PM at Forney. BSLMC Cath Labs 4&9, Our Lady of Guadalupe. Background checks."},
+  {id:7,name:"Jennifer Averitt",company:"Forney Construction",role:"Asst PM",bids:4,wins:2,color:"#64748b",last:"This week",priority:"med",phone:"251-625-5771",email:"jennifer.averitt@forneyconstruction.com",notes:"Asst PM at Forney. MH Cancer Center COs and closeout."},
+  {id:8,name:"Monica Waller",company:"Forney Construction",role:"Project Coordinator",bids:3,wins:2,color:"#f97316",last:"This week",priority:"med",phone:"713-224-1900",email:"Monica.Waller@forneyconstruction.com",notes:"Project Coordinator at Forney. MH League City submittals via Procore. Subcontracts."},
+  {id:9,name:"Mariana Fumero",company:"Forney Construction",role:"Project Coordinator",bids:3,wins:2,color:"#e11d48",last:"Feb 2026",priority:"med",phone:"",email:"mariana.fumero@forneyconstruction.com",notes:"Project Coordinator at Forney. MH Pearland CT submittals and SOVs via Procore."},
   // ── WC CONSTRUCTION ──
-  {id:7,name:"Natalie Pettis",company:"WC Construction",role:"PM",bids:4,wins:1,color:"#ec4899",last:"This week",priority:"high",phone:"",email:"",notes:"WCC PM. CB&I CEO/Lvl2/Lvl7."},
-  {id:8,name:"Jason McIntyre",company:"WC Construction",role:"Estimator",bids:6,wins:2,color:"#14b8a6",last:"1 week ago",priority:"med",phone:"",email:"",notes:"WCC estimating."},
-  // ── ARCH-CON ──
-  {id:9,name:"Jose Perez",company:"Arch-Con",role:"PM",bids:3,wins:1,color:"#a855f7",last:"This week",priority:"high",phone:"",email:"",notes:"Arch-Con PM. Sprouts Farmers Market."},
-  // ── ENDURANCE BUILDERS ──
-  {id:10,name:"Monica Waller",company:"Endurance Builders",role:"PM",bids:2,wins:1,color:"#f97316",last:"This week",priority:"med",phone:"",email:"",notes:"Endurance Builders. Woodside Laboratory."},
-  // ── FKC ──
-  {id:11,name:"Jennifer Averitt",company:"FKC",role:"PM",bids:1,wins:0,color:"#64748b",last:"1 week ago",priority:"med",phone:"",email:"",notes:"FKC. San Angelo project."},
-  // ── OTHER KEY CONTACTS ──
-  {id:12,name:"Justin Gayford",company:"",role:"PM",bids:2,wins:1,color:"#0ea5e9",last:"2 weeks ago",priority:"med",phone:"",email:"",notes:""},
-  {id:13,name:"Steve Williams",company:"",role:"PM",bids:3,wins:1,color:"#22c55e",last:"1 week ago",priority:"med",phone:"",email:"",notes:""},
-  {id:14,name:"Kim Bullard",company:"",role:"PM",bids:2,wins:1,color:"#eab308",last:"2 weeks ago",priority:"med",phone:"",email:"",notes:""},
-  {id:15,name:"Ethan Alvarez",company:"",role:"Estimator",bids:2,wins:0,color:"#6366f1",last:"1 week ago",priority:"low",phone:"",email:"",notes:""},
-  {id:16,name:"Mariana Fumero",company:"",role:"PM",bids:2,wins:1,color:"#e11d48",last:"2 weeks ago",priority:"med",phone:"",email:"",notes:""},
+  {id:10,name:"Heidi Phillips",company:"WC Construction",role:"PM",bids:6,wins:2,color:"#f59e0b",last:"This week",priority:"high",phone:"409-893-2069",email:"hphillips@wcconstructioncompany.com",notes:"PM at WC Construction. CB&I CEO/Lvl2/Lvl7 project. Office: 281-801-0076 x218."},
+  {id:11,name:"Joseph Quan",company:"WC Construction",role:"PM",bids:5,wins:2,color:"#ef4444",last:"This week",priority:"high",phone:"832-991-5653",email:"jquan@wcconstructioncompany.com",notes:"PM at WC Construction. CB&I project, COI requests. Uses Procore."},
+  // ── UNITED CONSTRUCTORS ──
+  {id:12,name:"Steve Williams",company:"United Constructors",role:"VP Interior Construction",bids:10,wins:5,color:"#22c55e",last:"This week",priority:"high",phone:"713-579-9738",email:"swilliams@unitedconstructors.com",notes:"VP of Interior Construction. Escapology San Antonio, Brunello Cucinelli. Cell: 281-850-4573. Office: 6989 W Little York Ste F, Houston 77040."},
+  {id:13,name:"Justin Gayford",company:"United Constructors",role:"PM",bids:4,wins:2,color:"#0ea5e9",last:"This week",priority:"med",phone:"",email:"justin@unitedconstructors.com",notes:"PM at United. Opera Gallery punch list. Heart Care Clinic."},
+  // ── O'DONNELL/SNIDER ──
+  {id:14,name:"Kim Bullard",company:"O'Donnell/Snider",role:"Sr Project Coordinator",bids:5,wins:2,color:"#eab308",last:"Oct 2025",priority:"med",phone:"",email:"kbullard@odonnellsnider.com",notes:"Senior Project Coordinator at O'Donnell/Snider. MH MEIC Breast Cancer MRI. RFIs via Procore. Office: 1900 W Loop South Ste 500, Houston."},
+  {id:15,name:"Ethan Alvarez",company:"O'Donnell/Snider",role:"Estimator",bids:3,wins:0,color:"#6366f1",last:"This week",priority:"med",phone:"346-352-3018",email:"ealvarez@odonnellsnider.com",notes:"Estimator at O'Donnell/Snider. Bid invites via BuildingConnected. HM Scurlock Uro Clinic."},
 ];
 
 // ── SEED: CALL LOG ──
 const _demoCallLog = [
-  {id:1,contact:"Ruby Rubio",company:"United Constructors",time:"Mar 12 10:30 AM",note:"Discussed Escapology San Antonio scope — confirmed demo + drywall + ACT. $187,800 total.",next:"Submit final proposal by Mar 15"},
-  {id:2,contact:"Natalie Pettis",company:"WC Construction",time:"Mar 11 2:15 PM",note:"CB&I Lvl 2 & Lvl 7 — confirmed 3 areas. CEO office soundproofing alternate requested.",next:"Submit alternates pricing"},
-  {id:3,contact:"Christina Zube",company:"Forney Construction",time:"Mar 11 4:00 PM",note:"Fulshear SMR — build back + ACT only, no demo. Armstrong BP355E Optima on 9/16 grid.",next:"Confirm material lead times"},
+  {id:1,contact:"Steve Williams",company:"United Constructors",time:"Mar 16 7:09 PM",note:"Escapology San Antonio — discussed parking logistics, PMC lot at 119 N Alamo St.",next:"Coordinate sub parking with subs"},
+  {id:2,contact:"Heidi Phillips",company:"WC Construction",time:"Mar 19 2:19 PM",note:"CB&I CEO/Lvl2/Lvl7 — Sub kick-off call. Start tonight 3/20 at 6pm. COI needed ASAP.",next:"Submit project COI to Heidi"},
+  {id:3,contact:"Christina Zube Volkers",company:"Endurance Builders",time:"Mar 17 3:39 PM",note:"Woodside Lab — cost approved, targeting 3/30 start. Kick-off meeting 3/18 @ 1pm at Endurance office.",next:"Attend kick-off, submit material lead times"},
 ];
 
 // ── SEED: INVOICES ──
-const _demoInvoices = [
-  {id:1,projectId:1,number:"EBC-2026-001",date:"2026-02-28",amount:92500,status:"pending",desc:"Progress billing #1 — Mobilization + material delivery (Brunello Cucinelli)",paidDate:null},
-  {id:2,projectId:2,number:"EBC-2026-002",date:"2026-03-10",amount:28350,status:"pending",desc:"Progress billing #1 — BSLMC Cath Labs 4 & 9",paidDate:null},
-  {id:3,projectId:10,number:"EBC-2026-003",date:"2026-02-15",amount:22200,status:"paid",desc:"Progress billing #1 — Heart Care Clinic NW Houston",paidDate:"2026-03-01"},
-  {id:4,projectId:6,number:"EBC-2026-004",date:"2026-01-15",amount:13300,status:"paid",desc:"Progress billing — MHMC Cancer Center (base contract)",paidDate:"2026-02-10"},
-  {id:5,projectId:3,number:"EBC-2026-005",date:"2026-03-15",amount:22440,status:"pending",desc:"Progress billing #1 — Woodside Laboratory",paidDate:null},
-];
+const _demoInvoices = [];
 
 // ── SEED: T&M TICKETS ──
 // Time & Material tracking — separate from original project contract
-const _demoTmTickets = [
-  {
-    id: 1, projectId: 6, ticketNumber: "TM-001", date: "2026-03-11", status: "submitted",
-    description: "MHMC Cancer Center — Drywall patching and shelf installation per owner request (CO#1 $800)",
-    laborEntries: [
-      { id: 1, employeeName: "Jesus M.", hours: 4, rate: 65, description: "Drywall patching" },
-      { id: 2, employeeName: "Pedro R.", hours: 4, rate: 55, description: "Framing support" },
-    ],
-    materialEntries: [
-      { id: 1, item: '5/8" Type X Drywall', qty: 4, unit: "sheets", unitCost: 18, markup: 15 },
-      { id: 2, item: "Joint compound & tape", qty: 1, unit: "bucket", unitCost: 25, markup: 15 },
-    ],
-    submittedDate: "2026-03-11", approvedDate: null, billedDate: null,
-    notes: "Owner-directed extra work, not in original scope",
-  },
-  {
-    id: 2, projectId: 5, ticketNumber: "TM-001", date: "2026-03-08", status: "approved",
-    description: "MH Pearland MEIC CT — Additional blocking for owner-furnished TV mounts",
-    laborEntries: [
-      { id: 1, employeeName: "Carlos V.", hours: 3, rate: 65, description: "Install blocking" },
-    ],
-    materialEntries: [
-      { id: 1, item: "2x6 Blocking lumber", qty: 8, unit: "pcs", unitCost: 8, markup: 15 },
-      { id: 2, item: '16ga 3-5/8" studs', qty: 4, unit: "pcs", unitCost: 12, markup: 15 },
-    ],
-    submittedDate: "2026-03-09", approvedDate: "2026-03-12", billedDate: null,
-    notes: "Approved by Forney PM via email 3/12",
-  },
-  {
-    id: 3, projectId: 11, ticketNumber: "TM-001", date: "2026-03-05", status: "billed",
-    description: "HM Magnolia ECC — Demo and infill at relocated sleep room door",
-    laborEntries: [
-      { id: 1, employeeName: "Jesus M.", hours: 6, rate: 65, description: "Door demo and infill framing" },
-      { id: 2, employeeName: "Miguel A.", hours: 6, rate: 55, description: "Drywall hang and finish" },
-    ],
-    materialEntries: [
-      { id: 1, item: '5/8" Type X Drywall', qty: 6, unit: "sheets", unitCost: 18, markup: 15 },
-      { id: 2, item: '3-5/8" 25ga studs', qty: 6, unit: "pcs", unitCost: 10, markup: 15 },
-      { id: 3, item: "Joint compound & tape", qty: 1, unit: "bucket", unitCost: 25, markup: 15 },
-    ],
-    submittedDate: "2026-03-06", approvedDate: "2026-03-08", billedDate: "2026-03-10",
-    notes: "Billed on Invoice #INV-012",
-  },
-];
+const _demoTmTickets = [];
 
 // ── SEED: CHANGE ORDERS ──
 // Real change orders from Google Docs
@@ -609,43 +556,14 @@ const _demoSchedule = [
 ];
 
 // ── SEED: SAFETY ──
-const _demoIncidents = [
-  {id:1,projectId:1,date:"2026-03-05",type:"near-miss",desc:"Scaffold wheel unlocked during repositioning on Level 2",corrective:"All scaffold wheels inspected. Refresher training conducted same day.",reportedBy:"Oscar A."},
-  {id:2,projectId:2,date:"2026-02-18",type:"first-aid",desc:"Minor cut on hand from sheet metal edge — no stitches required",corrective:"Crew reminded of cut-resistant glove requirement. Gloves restocked.",reportedBy:"Foreman R."},
-];
+const _demoIncidents = [];
 
-const _demoToolboxTalks = [
-  {id:1,projectId:1,date:"2026-03-13",topic:"Silica Dust Exposure — GWB Sanding",attendees:8,conductor:"Oscar A.",notes:"Reviewed N95 requirements, wet sanding technique"},
-  {id:2,projectId:1,date:"2026-03-06",topic:"Scaffold Safety & Fall Protection",attendees:6,conductor:"Oscar A.",notes:"Inspection checklist reviewed, competent person designated"},
-  {id:3,projectId:2,date:"2026-03-11",topic:"Electrical Safety — Lockout/Tagout",attendees:5,conductor:"Foreman R.",notes:"All crew signed off on awareness form"},
-];
+const _demoToolboxTalks = [];
 
-const _demoDailyReports = [
-  {id:1,projectId:1,date:"2026-03-13",crewSize:6,hours:48,work:"Framing complete rooms 201-204. Board started 201.",issues:"Material delivery delayed — GWB arriving tomorrow.",weather:"Clear 72°F",safety:"No incidents."},
-  {id:2,projectId:1,date:"2026-03-12",crewSize:6,hours:48,work:"Framing rooms 205-208. Track layout at corridor C.",issues:"None.",weather:"Overcast 68°F",safety:"Toolbox talk — scaffold safety."},
-];
+const _demoDailyReports = [];
 
 // ── SEED: TAKEOFFS ──
-const _demoTakeoffs = [
-  {id:"tk_1",bidId:1,name:"Memorial Hermann Pearland",created:"2026-03-10",
-    wastePct:5,taxRate:8.25,overheadPct:10,profitPct:10,
-    rooms:[
-      {id:"rm_1",name:"ICU Room 201",floor:"Level 2",items:[
-        {id:"li_1",code:"A2",desc:'3-5/8" 20ga Wall',qty:145,unit:"LF",height:10,diff:1.00},
-        {id:"li_2",code:"LL1",desc:"Lead-Lined GWB",qty:320,unit:"SF",height:10,diff:1.35},
-        {id:"li_3",code:"ACT1",desc:"2x2 ACT Grid+Tile",qty:480,unit:"SF",height:10,diff:1.00},
-      ]},
-      {id:"rm_2",name:"ICU Room 202",floor:"Level 2",items:[
-        {id:"li_4",code:"A2",desc:'3-5/8" 20ga Wall',qty:128,unit:"LF",height:10,diff:1.00},
-        {id:"li_5",code:"INS1",desc:'R-11 Batt Insulation',qty:256,unit:"SF",height:10,diff:1.00},
-      ]},
-      {id:"rm_3",name:"Corridor C",floor:"Level 2",items:[
-        {id:"li_6",code:"B1",desc:'6" 20ga Wall',qty:310,unit:"LF",height:14,diff:1.00},
-        {id:"li_7",code:"ICRA1",desc:"ICRA Dust Barrier",qty:185,unit:"LF",height:10,diff:1.35},
-      ]},
-    ]
-  },
-];
+const _demoTakeoffs = [];
 
 // ── OSHA CHECKLIST ──
 export const OSHA_CHECKLIST = [

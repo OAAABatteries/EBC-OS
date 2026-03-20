@@ -2601,9 +2601,9 @@ function App({ auth, onLogout }) {
           </button>
           {notifOpen && (
             <div style={{
-              position: "absolute", top: "100%", right: 0, width: 360, maxHeight: 480, overflowY: "auto",
+              position: "fixed", top: 54, right: 8, width: Math.min(360, window.innerWidth - 16), maxHeight: "calc(100vh - 70px)", overflowY: "auto",
               background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-              zIndex: 999, padding: 0,
+              zIndex: 9999, padding: 0,
             }} onClick={e => e.stopPropagation()}>
               <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{t("Notifications")} {unreadCount > 0 && <span className="badge badge-red" style={{ fontSize: 10, marginLeft: 4 }}>{unreadCount}</span>}</div>
@@ -2636,7 +2636,7 @@ function App({ auth, onLogout }) {
                       onClick={() => {
                         markRead(n.id);
                         setNotifOpen(false);
-                        const navMap = { cert_expired: "timeclock", cert_urgent: "timeclock", cert_warning: "timeclock", invoice_overdue: "financials", tm_pending: "financials", sds_expired: "sds", sds_warning: "sds", co_pending: "financials" };
+                        const navMap = { cert_expired: "timeclock", cert_urgent: "timeclock", cert_warning: "timeclock", invoice_overdue: "financials", tm_pending: "financials", sds_expired: "sds", sds_warning: "sds", co_pending: "financials", insurance_expired: "more", insurance_warning: "more" };
                         if (navMap[n.type]) handleTabClick(navMap[n.type]);
                       }}
                     >
