@@ -70,12 +70,26 @@ const SECONDARY_TABS = [
 ];
 
 const SECONDARY_KEYS = SECONDARY_TABS.map(t => t.key);
-const STATUS_BADGE = { estimating: "badge-amber", submitted: "badge-blue", awarded: "badge-green", lost: "badge-red" };
+const STATUS_BADGE = {
+  invite_received: "badge-muted", reviewing: "badge-muted", assigned: "badge-blue",
+  takeoff: "badge-amber", awaiting_quotes: "badge-amber", pricing: "badge-amber",
+  draft_ready: "badge-blue", estimating: "badge-amber",
+  submitted: "badge-blue", clarifications: "badge-amber", negotiating: "badge-blue",
+  awarded: "badge-green", lost: "badge-red", no_bid: "badge-muted"
+};
+const STATUS_LABEL = {
+  invite_received: "Invite Received", reviewing: "Reviewing Docs", assigned: "Assigned",
+  takeoff: "Takeoff", awaiting_quotes: "Awaiting Quotes", pricing: "Pricing",
+  draft_ready: "Proposal Ready", estimating: "Estimating",
+  submitted: "Submitted", clarifications: "Clarifications", negotiating: "Negotiating",
+  awarded: "Awarded", lost: "Lost", no_bid: "No Bid"
+};
+const BID_ACTIVE_STATUSES = ["invite_received", "reviewing", "assigned", "takeoff", "awaiting_quotes", "pricing", "draft_ready", "estimating", "submitted", "clarifications", "negotiating"];
 const RISK_BADGE = { High: "badge-red", Med: "badge-amber", Low: "badge-green" };
 const PRIORITY_BADGE = { high: "badge-red", med: "badge-amber", low: "badge-green" };
 const SCOPE_ICONS = { unchecked: "\u2b1c", checked: "\u2705", flagged: "\ud83d\udea9" };
 const SCOPE_CYCLE = { unchecked: "checked", checked: "flagged", flagged: "unchecked" };
-const BID_FILTERS = ["All", "Estimating", "Submitted", "Awarded", "Lost"];
+const BID_FILTERS = ["All", "Active", "Submitted", "Awarded", "Lost", "No Bid"];
 
 // ── Sakura Petals (anime theme only) ──
 const PETAL_COUNT = 28;
@@ -614,13 +628,16 @@ function App({ auth, onLogout }) {
   // ── filtered bids ──
   const filteredBids = useMemo(() => {
     let list = bids;
-    if (bidFilter !== "All") list = list.filter(b => b.status === bidFilter.toLowerCase());
+    if (bidFilter === "Active") list = list.filter(b => BID_ACTIVE_STATUSES.includes(b.status));
+    else if (bidFilter === "No Bid") list = list.filter(b => b.status === "no_bid");
+    else if (bidFilter !== "All") list = list.filter(b => b.status === bidFilter.toLowerCase());
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(b =>
         b.name.toLowerCase().includes(q) ||
         b.gc.toLowerCase().includes(q) ||
-        (b.contact || "").toLowerCase().includes(q)
+        (b.contact || "").toLowerCase().includes(q) ||
+        (b.estimator || "").toLowerCase().includes(q)
       );
     }
     return list;
@@ -1117,8 +1134,11 @@ function App({ auth, onLogout }) {
     <div>
       <div className="section-header">
         <div>
-          <div className="section-title font-head">{t("Bids")}</div>
-          <div className="section-sub">{filteredBids.length} {filteredBids.length !== 1 ? t("bids") : t("bid")}</div>
+          <div className="section-title font-head">{t("Bid Manager")}</div>
+          <div className="section-sub">
+            {filteredBids.length} {filteredBids.length !== 1 ? t("bids") : t("bid")}
+            {(() => { const active = bids.filter(b => BID_ACTIVE_STATUSES.includes(b.status)).length; const dueSoon = bids.filter(b => { const d = b.due ? new Date(b.due) : null; return d && !isNaN(d) && d >= new Date() && d <= new Date(Date.now() + 7 * 86400000) && BID_ACTIVE_STATUSES.includes(b.status); }).length; return <>{active > 0 && <span style={{ marginLeft: 8 }}>{active} active</span>}{dueSoon > 0 && <span style={{ color: "var(--red)", marginLeft: 8, fontWeight: 600 }}>{dueSoon} due this week</span>}</>; })()}
+          </div>
         </div>
         <div className="flex gap-8">
           <div className="search-wrap">
@@ -1131,11 +1151,13 @@ function App({ auth, onLogout }) {
             />
           </div>
           <button className="btn btn-ghost" onClick={() => {
-            const headers = ["ID","Name","GC","Value","Due","Status","Phase","Risk","Contact","Month","Scope","Notes"];
+            const headers = ["ID","Name","GC","Value","Due","Status","Sector","Risk","Contact","Estimator","Scope","Exclusions","Notes"];
             const rows = filteredBids.map(b => [
               b.id, `"${(b.name||'').replace(/"/g,'""')}"`, `"${(b.gc||'').replace(/"/g,'""')}"`,
-              b.value||0, b.due||'', b.status||'', b.phase||'', b.risk||'', `"${(b.contact||'').replace(/"/g,'""')}"`,
-              b.month||'', `"${(b.scope||[]).join('; ')}"`, `"${(b.notes||'').replace(/"/g,'""')}"`
+              b.value||0, b.due||'', STATUS_LABEL[b.status]||b.status||'', b.sector||b.phase||'', b.risk||'',
+              `"${(b.contact||'').replace(/"/g,'""')}"`, `"${(b.estimator||'').replace(/"/g,'""')}"`,
+              `"${(b.scope||[]).join('; ')}"`, `"${(b.exclusions||'').replace(/"/g,'""')}"`,
+              `"${(b.notes||'').replace(/"/g,'""')}"`
             ]);
             const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
             const blob = new Blob([csv], { type: 'text/csv' });
@@ -1211,15 +1233,23 @@ function App({ auth, onLogout }) {
           <select className="form-select" style={{ width: "auto", fontSize: 12 }} defaultValue="" onChange={e => {
             if (!e.target.value) return;
             setBids(prev => prev.map(b => selectedBids.has(b.id) ? { ...b, status: e.target.value } : b));
-            show(`${selectedBids.size} bids → ${e.target.value}`);
+            show(`${selectedBids.size} bids → ${STATUS_LABEL[e.target.value] || e.target.value}`);
             setSelectedBids(new Set());
             e.target.value = "";
           }}>
             <option value="">{t("Set status...")}</option>
+            <option value="invite_received">Invite Received</option>
+            <option value="reviewing">Reviewing Docs</option>
+            <option value="assigned">Assigned</option>
             <option value="estimating">Estimating</option>
+            <option value="takeoff">Takeoff</option>
+            <option value="awaiting_quotes">Awaiting Quotes</option>
+            <option value="pricing">Pricing</option>
+            <option value="draft_ready">Proposal Ready</option>
             <option value="submitted">Submitted</option>
             <option value="awarded">Awarded</option>
             <option value="lost">Lost</option>
+            <option value="no_bid">No Bid</option>
           </select>
           <button className="btn btn-ghost btn-sm" onClick={() => setSelectedBids(new Set())}>{t("Clear")}</button>
           <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }} onClick={() => {
@@ -1238,83 +1268,99 @@ function App({ auth, onLogout }) {
         </div>
       ) : (
         <div className="bid-grid">
-          {filteredBids.slice(0, bidPageSize).map(b => (
-            <div key={b.id} className="bid-card" onClick={() => setModal({ type: "editBid", data: b })}>
-              <div className="flex-between mb-8">
+          {filteredBids.slice(0, bidPageSize).map(b => {
+            // Due countdown
+            const dueDate = b.due ? new Date(b.due) : null;
+            const daysLeft = dueDate && !isNaN(dueDate) ? Math.ceil((dueDate - new Date()) / 86400000) : null;
+            const dueColor = daysLeft !== null ? (daysLeft < 0 ? "var(--red)" : daysLeft <= 2 ? "var(--red)" : daysLeft <= 7 ? "var(--amber)" : "var(--text2)") : "var(--text2)";
+            const dueLabel = daysLeft !== null ? (daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : daysLeft === 0 ? "Due today" : daysLeft === 1 ? "Due tomorrow" : `${daysLeft}d left`) : (b.due || "No date");
+            // Readiness
+            const hasPlans = (b.attachments || []).length > 0 || b.plansUploaded;
+            const hasScope = (b.scope || []).length > 0;
+            const hasEstimator = !!(b.estimator);
+            const hasValue = b.value > 0;
+            const readiness = [hasPlans, hasScope, hasEstimator, hasValue].filter(Boolean).length;
+            const readinessMax = 4;
+            return (
+            <div key={b.id} className="bid-card" onClick={() => setModal({ type: "editBid", data: b })} style={{ position: "relative" }}>
+              {/* Top row: status + risk + due countdown */}
+              <div className="flex-between mb-4">
                 <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <input type="checkbox" checked={selectedBids.has(b.id)} onClick={e => e.stopPropagation()} onChange={e => {
                     setSelectedBids(prev => { const n = new Set(prev); e.target.checked ? n.add(b.id) : n.delete(b.id); return n; });
                   }} style={{ cursor: "pointer" }} />
-                  <span className={`badge ${STATUS_BADGE[b.status] || "badge-muted"}`}>{b.status}</span>
+                  <span className={`badge ${STATUS_BADGE[b.status] || "badge-muted"}`}>{STATUS_LABEL[b.status] || b.status}</span>
+                  {b.risk === "High" && <span className="badge badge-red" style={{ fontSize: 10 }}>High</span>}
                 </span>
-                {b.risk && <span className={`badge ${RISK_BADGE[b.risk] || "badge-muted"}`}>{b.risk} Risk</span>}
+                <span style={{ fontSize: 11, fontWeight: 600, color: dueColor }}>{dueLabel}</span>
               </div>
-              <div className="card-title font-head" style={{ fontSize: 15, marginBottom: 4 }}>{b.name}</div>
-              <div className="text-sm text-muted mb-4">{b.gc}</div>
-              <div className="flex-between mt-8">
-                <span className="font-mono font-bold text-amber">{fmt(b.value)}</span>
-                <span className="text-xs text-dim">Due: {b.due || "TBD"}</span>
+              {/* Name + GC */}
+              <div className="card-title font-head" style={{ fontSize: 14, marginBottom: 2, lineHeight: 1.3 }}>{b.name}</div>
+              <div className="text-xs text-muted">{b.gc}</div>
+              {/* Value + Owner row */}
+              <div className="flex-between mt-6" style={{ alignItems: "flex-end" }}>
+                {hasValue ? <span className="font-mono font-bold text-amber" style={{ fontSize: 14 }}>{fmt(b.value)}</span> : <span className="text-xs text-muted" style={{ fontStyle: "italic" }}>No estimate</span>}
+                {b.estimator && <span className="text-xs" style={{ color: "var(--blue)" }}>{b.estimator}</span>}
               </div>
-              {b.scope && b.scope.length > 0 && (
-                <div className="flex gap-4 flex-wrap mt-8">
-                  {b.scope.map((s, i) => (
-                    <span key={i} className="badge badge-muted" style={{ fontSize: 10 }}>{s}</span>
-                  ))}
-                </div>
-              )}
-              {b.contact && <div className="text-xs text-dim mt-8">Contact: {b.contact}</div>}
-              <div className="flex gap-4 mt-8 flex-wrap">
+              {/* Readiness bar */}
+              <div style={{ marginTop: 8, display: "flex", gap: 3, alignItems: "center" }}>
+                {Array.from({ length: readinessMax }, (_, i) => (
+                  <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i < readiness ? "var(--green)" : "var(--border)" }} />
+                ))}
+                <span className="text-xs text-muted" style={{ marginLeft: 4, fontSize: 10 }}>{readiness}/{readinessMax}</span>
+              </div>
+              {/* Quick indicators row */}
+              <div className="flex gap-6 mt-6" style={{ flexWrap: "wrap", fontSize: 10, color: "var(--text2)" }}>
+                <span style={{ color: hasPlans ? "var(--green)" : "var(--text3)" }}>{hasPlans ? "Plans" : "No plans"}</span>
+                {(b.addendaCount || 0) > 0 && <span style={{ color: "var(--amber)" }}>{b.addendaCount} addenda</span>}
+                {hasScope && <span>{(b.scope || []).slice(0, 3).join(", ")}{(b.scope || []).length > 3 ? "..." : ""}</span>}
+                {b.contact && <span>{b.contact}</span>}
+              </div>
+              {/* Action row */}
+              <div className="flex gap-4 mt-6 flex-wrap">
                 {b.status === "submitted" && (
-                  <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }}
+                  <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 8px" }}
                     onClick={(e) => { e.stopPropagation(); runFollowUp(b); }}
                     disabled={followUpLoading && followUpBid?.id === b.id}>
-                    {followUpLoading && followUpBid?.id === b.id ? t("Drafting...") : t("Draft Follow-Up")}
-                  </button>
-                )}
-                {(b.status === "estimating" || b.status === "submitted") && (
-                  <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, color: "var(--amber)" }}
-                    onClick={(e) => { e.stopPropagation(); runWinPredict(b); }}
-                    disabled={winPredLoading && winPredBid?.id === b.id}>
-                    {winPredLoading && winPredBid?.id === b.id ? t("Predicting...") : t("Win Predictor")}
+                    {followUpLoading && followUpBid?.id === b.id ? "Drafting..." : "Follow-Up"}
                   </button>
                 )}
                 {b.status === "awarded" && !projects.some(p => p.bidId === b.id) && (
-                  <button className="btn btn-primary btn-sm" style={{ fontSize: 11 }}
+                  <button className="btn btn-primary btn-sm" style={{ fontSize: 10, padding: "2px 8px" }}
                     onClick={(e) => {
                       e.stopPropagation();
                       const newProj = {
-                        id: nextId(),
-                        bidId: b.id,
-                        name: b.name,
-                        gc: b.gc,
-                        contract: b.value || 0,
-                        billed: 0,
-                        progress: 0,
-                        phase: "Pre-Construction",
-                        start: "",
-                        end: "",
-                        scope: b.scope || [],
-                        margin: 0,
+                        id: nextId(), bidId: b.id, name: b.name, gc: b.gc,
+                        contract: b.value || 0, billed: 0, progress: 0,
+                        phase: "Pre-Construction", start: "", end: "",
+                        scope: b.scope || [], margin: 0,
                       };
                       setProjects(prev => [...prev, newProj]);
                       show(`Project created from "${b.name}"`);
                     }}>
-                    {t("Convert to Project")}
+                    Convert to Project
                   </button>
                 )}
                 {b.status === "awarded" && projects.some(p => p.bidId === b.id) && (
-                  <span className="badge badge-green" style={{ fontSize: 10 }}>{t("Project Created")}</span>
+                  <span className="badge badge-green" style={{ fontSize: 10 }}>Project Created</span>
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
       {filteredBids.length > bidPageSize && (
-        <div style={{ textAlign: "center", marginTop: 16 }}>
-          <button className="btn btn-ghost" onClick={() => setBidPageSize(s => s + 24)}>
-            {t("Show More")} ({filteredBids.length - bidPageSize} {t("remaining")})
-          </button>
+        <div className="flex-between" style={{ marginTop: 16, padding: "8px 0" }}>
+          <span className="text-xs text-muted">Showing {Math.min(bidPageSize, filteredBids.length)} of {filteredBids.length}</span>
+          <div className="flex gap-8">
+            <button className="btn btn-ghost btn-sm" onClick={() => setBidPageSize(s => s + 24)}>
+              Load More ({filteredBids.length - bidPageSize})
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setBidPageSize(filteredBids.length)}>
+              Show All
+            </button>
+          </div>
         </div>
       )}
 
@@ -2695,9 +2741,10 @@ const ModalHub = ({ type, data, app }) => {
     switch (type) {
       case "editBid":
         return data ? { ...data } : {
-          name: "", gc: "", value: 0, due: "", status: "estimating",
-          scope: [], phase: "", risk: "Med", notes: "", contact: "",
-          month: "", address: "", attachments: []
+          name: "", gc: "", value: 0, due: "", status: "invite_received",
+          scope: [], sector: "", risk: "Med", notes: "", contact: "",
+          address: "", attachments: [], estimator: "", exclusions: "",
+          plansUploaded: false, addendaCount: 0, proposalStatus: ""
         };
       case "editProject":
         return data ? { ...data } : {
@@ -3086,15 +3133,37 @@ const ModalHub = ({ type, data, app }) => {
             <div className="form-group">
               <label className="form-label">Status</label>
               <select className="form-select" value={draft.status} onChange={e => upd("status", e.target.value)}>
-                <option value="estimating">Estimating</option>
-                <option value="submitted">Submitted</option>
-                <option value="awarded">Awarded</option>
-                <option value="lost">Lost</option>
+                <optgroup label="Pre-Bid">
+                  <option value="invite_received">Invite Received</option>
+                  <option value="reviewing">Reviewing Docs</option>
+                  <option value="assigned">Assigned</option>
+                </optgroup>
+                <optgroup label="Estimating">
+                  <option value="estimating">Estimating</option>
+                  <option value="takeoff">Takeoff in Progress</option>
+                  <option value="awaiting_quotes">Awaiting Quotes</option>
+                  <option value="pricing">Pricing</option>
+                  <option value="draft_ready">Proposal Ready</option>
+                </optgroup>
+                <optgroup label="Post-Bid">
+                  <option value="submitted">Submitted</option>
+                  <option value="clarifications">Clarifications</option>
+                  <option value="negotiating">Negotiating</option>
+                </optgroup>
+                <optgroup label="Outcome">
+                  <option value="awarded">Awarded</option>
+                  <option value="lost">Lost</option>
+                  <option value="no_bid">No Bid</option>
+                </optgroup>
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Phase</label>
-              <input className="form-input" value={draft.phase} onChange={e => upd("phase", e.target.value)} placeholder="e.g. Medical, Commercial" />
+              <label className="form-label">Sector</label>
+              <input className="form-input" value={draft.sector || draft.phase || ""} onChange={e => upd("sector", e.target.value)} placeholder="e.g. Healthcare, Commercial, K-12" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Estimator / Owner</label>
+              <input className="form-input" value={draft.estimator || ""} onChange={e => upd("estimator", e.target.value)} placeholder="Who owns this bid?" />
             </div>
             <div className="form-group">
               <label className="form-label">Risk</label>
@@ -3179,8 +3248,8 @@ const ModalHub = ({ type, data, app }) => {
               )}
             </div>
             <div className="form-group">
-              <label className="form-label">Month</label>
-              <input className="form-input" value={draft.month || ""} onChange={e => upd("month", e.target.value)} placeholder="e.g. Mar" />
+              <label className="form-label">Addenda Count</label>
+              <input className="form-input" type="number" min="0" value={draft.addendaCount || 0} onChange={e => upd("addendaCount", Number(e.target.value))} />
             </div>
             <div className="form-group full">
               <label className="form-label">Address</label>
@@ -3202,46 +3271,59 @@ const ModalHub = ({ type, data, app }) => {
               </div>
             </div>
             <div className="form-group full">
-              <label className="form-label">Notes</label>
-              <textarea className="form-textarea" value={draft.notes} onChange={e => upd("notes", e.target.value)} placeholder="Bid notes, clarifications, exclusions..." style={{ minHeight: 220, resize: "vertical", fontSize: 12, lineHeight: 1.5, fontFamily: "inherit" }} />
+              <label className="form-label">Notes / Clarifications</label>
+              <textarea className="form-textarea" value={draft.notes} onChange={e => upd("notes", e.target.value)} placeholder="RFI questions, clarifications, general notes..." style={{ minHeight: 120, resize: "vertical", fontSize: 12, lineHeight: 1.5, fontFamily: "inherit" }} />
+            </div>
+            <div className="form-group full">
+              <label className="form-label">Exclusions / Inclusions</label>
+              <textarea className="form-textarea" value={draft.exclusions || ""} onChange={e => upd("exclusions", e.target.value)} placeholder="List scope exclusions and inclusions for the proposal..." style={{ minHeight: 80, resize: "vertical", fontSize: 12, lineHeight: 1.5, fontFamily: "inherit" }} />
             </div>
 
             {/* ── File Attachments ── */}
             <div className="form-group full">
-              <label className="form-label">Plans, Specs & Documents</label>
-              <div style={{ border: "1px dashed var(--border2)", borderRadius: "var(--radius)", padding: 16, background: "var(--bg2)" }}>
-                <input
-                  type="file"
-                  multiple
-                  accept=".pdf,.png,.jpg,.jpeg,.dwg,.xlsx,.xls,.doc,.docx,.csv"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || []);
-                    if (!files.length) return;
-                    files.forEach(file => {
-                      if (file.size > 10 * 1024 * 1024) {
-                        show(`${file.name} is too large (max 10MB)`, "err");
-                        return;
-                      }
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        const attachment = {
-                          id: Date.now() + Math.random(),
-                          name: file.name,
-                          type: file.type || "application/octet-stream",
-                          size: file.size,
-                          data: reader.result,
-                          uploaded: new Date().toISOString(),
-                        };
-                        setDraft(d => ({ ...d, attachments: [...(d.attachments || []), attachment] }));
-                      };
-                      reader.readAsDataURL(file);
-                    });
-                    e.target.value = "";
-                  }}
-                  style={{ marginBottom: 8 }}
-                />
-                <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 8 }}>
-                  PDF, images, DWG, Excel, Word — max 10MB per file. Stored locally.
+              <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                Plans, Specs & Documents
+                {(draft.attachments || []).length === 0 && <span style={{ fontSize: 10, color: "var(--red)", fontWeight: 600 }}>NO PLANS UPLOADED</span>}
+                {(draft.attachments || []).length > 0 && <span style={{ fontSize: 10, color: "var(--green)", fontWeight: 600 }}>{(draft.attachments || []).length} file{(draft.attachments || []).length !== 1 ? "s" : ""}</span>}
+              </label>
+              <div style={{ border: `2px dashed ${(draft.attachments || []).length === 0 ? "var(--amber)" : "var(--border2)"}`, borderRadius: "var(--radius)", padding: 16, background: "var(--bg2)" }}>
+                <div style={{ textAlign: "center", padding: "8px 0" }}>
+                  <label style={{ cursor: "pointer", color: "var(--blue)", fontWeight: 600, fontSize: 13 }}>
+                    Click to upload or drag files
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.png,.jpg,.jpeg,.dwg,.xlsx,.xls,.doc,.docx,.csv"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        if (!files.length) return;
+                        files.forEach(file => {
+                          if (file.size > 10 * 1024 * 1024) {
+                            show(`${file.name} is too large (max 10MB)`, "err");
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            const attachment = {
+                              id: Date.now() + Math.random(),
+                              name: file.name,
+                              type: file.type || "application/octet-stream",
+                              size: file.size,
+                              data: reader.result,
+                              uploaded: new Date().toISOString(),
+                            };
+                            setDraft(d => ({ ...d, attachments: [...(d.attachments || []), attachment] }));
+                          };
+                          reader.readAsDataURL(file);
+                        });
+                        e.target.value = "";
+                      }}
+                      style={{ display: "none" }}
+                    />
+                  </label>
+                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>
+                    PDF, images, DWG, Excel, Word — max 10MB per file
+                  </div>
                 </div>
                 {(draft.attachments || []).length > 0 && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
