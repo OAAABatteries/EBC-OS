@@ -235,6 +235,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const [continuousMode, setContinuousMode] = useState(true); // auto-start next measurement
   const [completedPages, setCompletedPages] = useState(_init.completedPages || {}); // { [pageKey]: true }
   const [draggingHandle, setDraggingHandle] = useState(null); // { measurementId, vertexIdx, pageKey } or { measurementId, pointKey:'point', pageKey }
+  const preDragMeasRef = useRef(null); // snapshot of measurement before drag for undo
 
   // ── Change Order Overlay ──
   // revisionDocs: { [pageKey]: { doc, revPage, name } } — revision PDF docs mapped to specific sheets
@@ -1488,7 +1489,12 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     return result;
   }, [typicalGroups, measurements, conditions, assemblies]);
 
-  const deleteMeasurement = (id) => { setMeasurements(prev => ({ ...prev, [pageKey]: (prev[pageKey] || []).filter(m => m.id !== id) })); };
+  const deleteMeasurement = (id, pk) => {
+    const targetKey = pk || pageKey;
+    const meas = (measurements[targetKey] || []).find(m => m.id === id);
+    if (meas) setUndoStack(prev => [...prev, { action: "delete", pageKey: targetKey, measurementId: id, measurementData: meas }]);
+    setMeasurements(prev => ({ ...prev, [targetKey]: (prev[targetKey] || []).filter(m => m.id !== id) }));
+  };
   const cancelActive = () => { setActiveVertices([]); setMousePos(null); setCalPoints([]); setShowCalPrompt(false); };
 
   // ── Flush pending save before closing (prevent losing last <800ms of changes) ──
@@ -1513,14 +1519,24 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     if (activeVertices.length > 0) { setActiveVertices(prev => prev.slice(0, -1)); return; }
     const last = undoStack[undoStack.length - 1];
     if (!last) return;
+    const pk = last.pageKey;
     if (last.action === "add") {
-      // Save measurement data for redo before deleting
-      const allPageMeas = measurements[last.pageKey] || [];
-      const meas = allPageMeas.find(m => m.id === last.measurementId);
+      const meas = (measurements[pk] || []).find(m => m.id === last.measurementId);
       setRedoStack(prev => [...prev, { ...last, measurementData: meas }]);
-      // Delete from the correct page (not just current pageKey)
-      const pk = last.pageKey;
       setMeasurements(prev => ({ ...prev, [pk]: (prev[pk] || []).filter(m => m.id !== last.measurementId) }));
+    } else if (last.action === "delete" && last.measurementData) {
+      // Re-add the deleted measurement
+      setRedoStack(prev => [...prev, last]);
+      setMeasurements(prev => ({ ...prev, [pk]: [...(prev[pk] || []), last.measurementData] }));
+    } else if (last.action === "drag" && last.measurementData) {
+      // Restore pre-drag state
+      const current = (measurements[pk] || []).find(m => m.id === last.measurementId);
+      setRedoStack(prev => [...prev, { ...last, redoData: current }]);
+      setMeasurements(prev => ({ ...prev, [pk]: (prev[pk] || []).map(m => m.id === last.measurementId ? last.measurementData : m) }));
+    } else if (last.action === "reassign") {
+      // Restore original conditionId
+      setRedoStack(prev => [...prev, last]);
+      setMeasurements(prev => ({ ...prev, [pk]: (prev[pk] || []).map(m => m.id === last.measurementId ? { ...m, conditionId: last.oldConditionId } : m) }));
     }
     setUndoStack(prev => prev.slice(0, -1));
   };
@@ -1528,10 +1544,20 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const redo = () => {
     const last = redoStack[redoStack.length - 1];
     if (!last) return;
+    const pk = last.pageKey;
     if (last.action === "add" && last.measurementData) {
-      const pk = last.pageKey;
       setMeasurements(prev => ({ ...prev, [pk]: [...(prev[pk] || []), last.measurementData] }));
       setUndoStack(prev => [...prev, { action: "add", pageKey: pk, measurementId: last.measurementId }]);
+    } else if (last.action === "delete") {
+      const meas = (measurements[pk] || []).find(m => m.id === last.measurementId);
+      setUndoStack(prev => [...prev, { ...last, measurementData: meas }]);
+      setMeasurements(prev => ({ ...prev, [pk]: (prev[pk] || []).filter(m => m.id !== last.measurementId) }));
+    } else if (last.action === "drag" && last.redoData) {
+      setUndoStack(prev => [...prev, { action: "drag", pageKey: pk, measurementId: last.measurementId, measurementData: (measurements[pk] || []).find(m => m.id === last.measurementId) }]);
+      setMeasurements(prev => ({ ...prev, [pk]: (prev[pk] || []).map(m => m.id === last.measurementId ? last.redoData : m) }));
+    } else if (last.action === "reassign") {
+      setUndoStack(prev => [...prev, { ...last, oldConditionId: last.oldConditionId, newConditionId: last.newConditionId }]);
+      setMeasurements(prev => ({ ...prev, [pk]: (prev[pk] || []).map(m => m.id === last.measurementId ? { ...m, conditionId: last.newConditionId } : m) }));
     }
     setRedoStack(prev => prev.slice(0, -1));
   };
@@ -1570,12 +1596,14 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
         if (m.vertices) {
           for (let vi = 0; vi < m.vertices.length; vi++) {
             if (Math.abs(cx - m.vertices[vi].x * sc) < 8 && Math.abs(cy - m.vertices[vi].y * sc) < 8) {
+              preDragMeasRef.current = JSON.parse(JSON.stringify(m));
               setDraggingHandle({ measurementId: m.id, vertexIdx: vi, pageKey: activePdfIdx + ":" + page });
               return; // don't start panning
             }
           }
         } else if (m.point) {
           if (Math.abs(cx - m.point.x * sc) < 8 && Math.abs(cy - m.point.y * sc) < 8) {
+            preDragMeasRef.current = JSON.parse(JSON.stringify(m));
             setDraggingHandle({ measurementId: m.id, pointKey: "point", pageKey: activePdfIdx + ":" + page });
             return;
           }
@@ -1639,6 +1667,12 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
         pageMeas[idx] = m;
         return { ...prev, [pk]: pageMeas };
       });
+      // Push drag to undo stack
+      if (preDragMeasRef.current) {
+        setUndoStack(prev => [...prev, { action: "drag", pageKey: pk, measurementId: draggingHandle.measurementId, measurementData: preDragMeasRef.current }]);
+        setRedoStack([]);
+        preDragMeasRef.current = null;
+      }
       setDraggingHandle(null);
       return;
     }
@@ -1962,16 +1996,24 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
                   // Find nearest measurement to right-click point
                   const pt = getNormCoords(e);
                   const scale = fitScaleRef.current * zoom;
-                  let nearest = null, nearestDist = 30 / scale; // 30px threshold
+                  let nearest = null, nearestDist = 30 / scale, isCo = false; // 30px threshold
                   pageMeasurements.forEach(m => {
                     if (m.type === "count") {
                       const d = dist(pt, m.point);
-                      if (d < nearestDist) { nearest = m; nearestDist = d; }
+                      if (d < nearestDist) { nearest = m; nearestDist = d; isCo = false; }
                     } else if (m.vertices) {
-                      m.vertices.forEach(v => { const d = dist(pt, v); if (d < nearestDist) { nearest = m; nearestDist = d; } });
+                      m.vertices.forEach(v => { const d = dist(pt, v); if (d < nearestDist) { nearest = m; nearestDist = d; isCo = false; } });
                     }
                   });
-                  if (nearest) setContextMenu({ x: e.clientX, y: e.clientY, measurementId: nearest.id });
+                  coPageMeasurements.forEach(m => {
+                    if (m.type === "count") {
+                      const d = dist(pt, m.point);
+                      if (d < nearestDist) { nearest = m; nearestDist = d; isCo = true; }
+                    } else if (m.vertices) {
+                      m.vertices.forEach(v => { const d = dist(pt, v); if (d < nearestDist) { nearest = m; nearestDist = d; isCo = true; } });
+                    }
+                  });
+                  if (nearest) setContextMenu({ x: e.clientX, y: e.clientY, measurementId: nearest.id, isCo });
                 }} />
               {/* ── Floating Finish button while drawing ── */}
               {(mode === MODE.LINEAR || mode === MODE.AREA) && activeVertices.length >= 2 && ppf && activeCond && (
@@ -2429,18 +2471,27 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       {contextMenu && (
         <div style={{ position: "fixed", left: contextMenu.x, top: contextMenu.y, background: "rgba(0,0,0,0.95)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 6, padding: 4, zIndex: 10002, minWidth: 140 }}
           onClick={() => setContextMenu(null)}>
-          <div onClick={() => { deleteMeasurement(contextMenu.measurementId); setContextMenu(null); }}
+          <div onClick={() => {
+              if (contextMenu.isCo) deleteCoMeasurement(contextMenu.measurementId);
+              else deleteMeasurement(contextMenu.measurementId);
+              setContextMenu(null);
+            }}
             style={{ padding: "6px 12px", fontSize: 11, color: "#ef4444", cursor: "pointer", borderRadius: 4 }}
             onMouseEnter={e => e.target.style.background = "rgba(239,68,68,0.1)"}
             onMouseLeave={e => e.target.style.background = "transparent"}>
-            Delete Measurement
+            Delete {contextMenu.isCo ? "CO " : ""}Measurement
           </div>
+          {!contextMenu.isCo && <>
           <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "2px 0" }} />
           {conditions.filter(c => {
             const m = pageMeasurements.find(mm => mm.id === contextMenu.measurementId);
             return m && c.id !== m.conditionId;
-          }).slice(0, 6).map(c => (
+          }).map(c => (
             <div key={c.id} onClick={() => {
+              const meas = pageMeasurements.find(mm => mm.id === contextMenu.measurementId);
+              const oldCondId = meas?.conditionId;
+              setUndoStack(prev => [...prev, { action: "reassign", pageKey, measurementId: contextMenu.measurementId, oldConditionId: oldCondId, newConditionId: c.id }]);
+              setRedoStack([]);
               setMeasurements(prev => ({
                 ...prev,
                 [pageKey]: (prev[pageKey] || []).map(m => m.id === contextMenu.measurementId ? { ...m, conditionId: c.id } : m)
@@ -2454,6 +2505,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
               Move to {c.name}
             </div>
           ))}
+          </>}
         </div>
       )}
 
@@ -2549,14 +2601,13 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
               { label: '3/8"', ratio: 32 }, { label: '1/2"', ratio: 24 }, { label: '3/4"', ratio: 16 }, { label: '1"', ratio: 12 },
             ].map(sc => (
               <button key={sc.label} onClick={() => {
-                // For presets: user clicked two points on a known dimension
-                // The ratio tells us: 1 paper inch = ratio real inches
-                // But we still need the user to tell us the real distance
-                // Pre-fill a common value suggestion instead
-                // If the user knows the scale, they can measure any line and the preset tells us the conversion
-                // Better approach: just ask for the real feet and use the manual flow
-                // Presets are best used when we can auto-detect DPI — for now, highlight the preset name
-                setCalInput("");
+                // ratio = real inches per 1 paper inch. PDF coords are 72 units/inch.
+                // realFeet = pixelDist * ratio / (72 * 12)
+                if (calPoints.length >= 2) {
+                  const pixDist = dist(calPoints[0], calPoints[1]);
+                  const realFeet = pixDist * sc.ratio / (72 * 12);
+                  setCalInput(realFeet.toFixed(2));
+                }
               }} style={{ ...btn, fontSize: 10, padding: "3px 8px", minWidth: 42 }}>{sc.label}=1'</button>
             ))}
           </div>
