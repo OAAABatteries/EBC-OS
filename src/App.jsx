@@ -1479,17 +1479,35 @@ function App({ auth, onLogout }) {
       <div className="section-header">
         <div>
           <div className="section-title font-head">{t("Projects")}</div>
-          <div className="section-sub">{projects.length} {projects.length !== 1 ? t("projects") : t("project")}</div>
+          <div className="section-sub">
+            {filteredProjects.length} {filteredProjects.length !== 1 ? t("projects") : t("project")}
+            {(() => {
+              const active = projects.filter(p => (p.progress || 0) < 100).length;
+              const atRisk = projects.filter(p => {
+                if ((p.progress || 0) >= 100) return false;
+                const end = p.end ? new Date(p.end) : null;
+                const start = p.start ? new Date(p.start) : null;
+                if (!end || !start || isNaN(end) || isNaN(start)) return false;
+                const totalDays = (end - start) / 86400000;
+                const elapsed = (new Date() - start) / 86400000;
+                return (p.progress || 0) < Math.min(100, (elapsed / totalDays) * 100) - 15;
+              }).length;
+              const openRfis = rfis.filter(r => r.status === "open").length;
+              const pendingCOs = changeOrders.filter(c => c.status === "pending").length;
+              return <>{active > 0 && <span style={{ marginLeft: 8 }}>{active} active</span>}{atRisk > 0 && <span style={{ color: "var(--red)", fontWeight: 600, marginLeft: 8 }}>{atRisk} at risk</span>}{openRfis > 0 && <span style={{ marginLeft: 8 }}>{openRfis} open RFIs</span>}{pendingCOs > 0 && <span style={{ marginLeft: 8 }}>{pendingCOs} pending COs</span>}</>;
+            })()}
+          </div>
         </div>
         <div className="flex gap-8">
           <button className="btn btn-ghost" onClick={runRiskRadar} disabled={riskLoading}>
             {riskLoading ? t("Scanning...") : t("Risk Radar")}
           </button>
           <button className="btn btn-ghost" onClick={() => {
-            const headers = ["ID","Name","GC","Contract","Billed","Progress","Phase","Start","End","Margin"];
+            const headers = ["ID","Name","GC","Contract","Billed","Progress","Phase","Start","End","PM","Address","Margin"];
             const rows = filteredProjects.map(p => [
               p.id, `"${(p.name||'').replace(/"/g,'""')}"`, `"${(p.gc||'').replace(/"/g,'""')}"`,
-              p.contract||0, p.billed||0, p.progress||0, p.phase||'', p.start||'', p.end||'', p.margin||''
+              p.contract||0, p.billed||0, p.progress||0, p.phase||'', p.start||'', p.end||'',
+              `"${(p.pm||'').replace(/"/g,'""')}"`, `"${(p.address||'').replace(/"/g,'""')}"`, p.margin||''
             ]);
             const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
             const blob = new Blob([csv], { type: 'text/csv' });
@@ -1577,47 +1595,102 @@ function App({ auth, onLogout }) {
         </div>
       ) : (
         <div className="project-grid">
-          {filteredProjects.slice(0, projPageSize).map(p => (
-            <div key={p.id} className="project-card" onClick={() => {
-              // Track last accessed
+          {filteredProjects.slice(0, projPageSize).map(p => {
+            // Compute health signals
+            const pid = p.id;
+            const pRfis = rfis.filter(r => r.projectId === pid && r.status === "open");
+            const pSubs = submittals.filter(s => s.projectId === pid && s.status !== "approved");
+            const pCOs = changeOrders.filter(c => c.projectId === pid && c.status === "pending");
+            const pInvs = invoices.filter(i => i.projectId === pid);
+            const overdueRfis = pRfis.filter(r => r.submitted && (new Date() - new Date(r.submitted)) > 7 * 86400000).length;
+            // Schedule health
+            const endDate = p.end ? new Date(p.end) : null;
+            const startDate = p.start ? new Date(p.start) : null;
+            const now = new Date();
+            let scheduleRisk = null;
+            if (endDate && startDate && !isNaN(endDate) && !isNaN(startDate)) {
+              const totalDays = (endDate - startDate) / 86400000;
+              const elapsed = (now - startDate) / 86400000;
+              const expected = totalDays > 0 ? Math.min(100, (elapsed / totalDays) * 100) : 0;
+              if ((p.progress || 0) < expected - 15) scheduleRisk = "behind";
+              else if (now > endDate && (p.progress || 0) < 100) scheduleRisk = "overdue";
+            }
+            // Billing health
+            const billedPct = (p.contract || 0) > 0 ? Math.round(((p.billed || 0) / p.contract) * 100) : 0;
+            const billingLag = (p.progress || 0) > 0 && billedPct < (p.progress || 0) - 20;
+            // Overall health
+            const issues = (scheduleRisk ? 1 : 0) + (overdueRfis > 0 ? 1 : 0) + (billingLag ? 1 : 0) + (pCOs.length > 0 ? 1 : 0);
+            const healthColor = issues >= 2 ? "var(--red)" : issues === 1 ? "var(--amber)" : "var(--green)";
+            const progressColor = scheduleRisk === "overdue" ? "var(--red)" : scheduleRisk === "behind" ? "var(--amber)" : "var(--green)";
+            return (
+            <div key={p.id} className="project-card" style={{ borderLeft: `4px solid ${healthColor}` }} onClick={() => {
               setProjects(prev => prev.map(proj => proj.id === p.id ? { ...proj, lastAccessed: new Date().toISOString() } : proj));
               setModal({ type: "editProject", data: { ...p, lastAccessed: new Date().toISOString() } });
             }}>
+              {/* Top: phase + PM + health dot */}
               <div className="flex-between mb-4">
-                <span className="badge badge-blue">{p.phase}</span>
+                <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <span className="badge badge-blue" style={{ fontSize: 10 }}>{p.phase || "No Phase"}</span>
+                  {scheduleRisk && <span className="badge badge-red" style={{ fontSize: 9 }}>{scheduleRisk === "overdue" ? "OVERDUE" : "BEHIND"}</span>}
+                </span>
+                {p.pm && <span className="text-xs" style={{ color: "var(--blue)" }}>{p.pm.split(" ")[0]}</span>}
               </div>
-              <div className="card-title font-head" style={{ fontSize: 15, marginBottom: 4 }}>{p.name}</div>
-              <div className="text-sm text-muted mb-4">{p.gc}</div>
-              <div className="flex-between text-xs text-dim mb-4">
-                <span>📅 Bid: {p.start || "—"}</span>
-                <span>🕐 {p.lastAccessed ? new Date(p.lastAccessed).toLocaleDateString() : "Never opened"}</span>
+              {/* Name + GC */}
+              <div className="card-title font-head" style={{ fontSize: 14, marginBottom: 2, lineHeight: 1.3 }}>{p.name}</div>
+              <div className="text-xs text-muted mb-4">{p.gc}</div>
+              {/* Contract + Billed (hide $0) */}
+              <div className="flex-between text-sm mb-4">
+                {(p.contract || 0) > 0 ? (
+                  <span>Contract: <span className="font-mono text-amber">{fmt(p.contract)}</span></span>
+                ) : <span className="text-xs text-muted" style={{ fontStyle: "italic" }}>No contract value</span>}
+                {(p.billed || 0) > 0 && <span className="text-xs">Billed: <span className="font-mono">{fmt(p.billed)}</span></span>}
               </div>
-              <div className="flex-between text-sm">
-                <span>Contract: <span className="font-mono text-amber">{fmt(p.contract)}</span></span>
-                <span>Billed: <span className="font-mono">{fmt(p.billed)}</span></span>
-              </div>
-              <div className="progress-bar mt-8">
-                <div className="progress-fill" style={{ width: `${p.progress}%` }} />
+              {/* Progress bar — colored by health */}
+              <div className="progress-bar" style={{ height: 5 }}>
+                <div className="progress-fill" style={{ width: `${p.progress || 0}%`, background: progressColor }} />
               </div>
               <div className="flex-between mt-4">
-                <div className="text-xs text-dim">{p.progress}% complete</div>
-                {p.progress >= 75 && (
+                <div className="text-xs text-dim">{p.progress || 0}%{(p.contract || 0) > 0 && (p.billed || 0) > 0 ? ` done · ${billedPct}% billed` : ""}</div>
+                {endDate && !isNaN(endDate) && (p.progress || 0) < 100 && (
+                  <span className="text-xs" style={{ color: now > endDate ? "var(--red)" : "var(--text2)" }}>
+                    {now > endDate ? `${Math.ceil((now - endDate) / 86400000)}d past due` : `${Math.ceil((endDate - now) / 86400000)}d left`}
+                  </span>
+                )}
+              </div>
+              {/* Document counts row */}
+              <div className="flex gap-6 mt-6" style={{ flexWrap: "wrap", fontSize: 10, color: "var(--text2)" }}>
+                {pRfis.length > 0 && <span style={{ color: overdueRfis > 0 ? "var(--red)" : "var(--amber)" }}>RFI: {pRfis.length}{overdueRfis > 0 ? ` (${overdueRfis} aging)` : ""}</span>}
+                {pSubs.length > 0 && <span style={{ color: "var(--amber)" }}>Sub: {pSubs.length}</span>}
+                {pCOs.length > 0 && <span style={{ color: "var(--amber)" }}>CO: {pCOs.length}</span>}
+                {billingLag && <span style={{ color: "var(--red)" }}>Billing lag</span>}
+                {pRfis.length === 0 && pSubs.length === 0 && pCOs.length === 0 && !billingLag && <span style={{ color: "var(--green)" }}>On track</span>}
+              </div>
+              {/* Closeout button for near-complete */}
+              {(p.progress || 0) >= 75 && (
+                <div style={{ marginTop: 6 }}>
                   <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 8px", color: "var(--amber)" }}
                     onClick={(e) => { e.stopPropagation(); runCloseout(p); }}
                     disabled={closeoutLoading && closeoutProj?.id === p.id}>
                     {closeoutLoading && closeoutProj?.id === p.id ? "..." : "AI Closeout"}
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
       {filteredProjects.length > projPageSize && (
-        <div style={{ textAlign: "center", marginTop: 16 }}>
-          <button className="btn btn-ghost" onClick={() => setProjPageSize(s => s + 24)}>
-            {t("Show More")} ({filteredProjects.length - projPageSize} {t("remaining")})
-          </button>
+        <div className="flex-between" style={{ marginTop: 16, padding: "8px 0" }}>
+          <span className="text-xs text-muted">Showing {Math.min(projPageSize, filteredProjects.length)} of {filteredProjects.length}</span>
+          <div className="flex gap-8">
+            <button className="btn btn-ghost btn-sm" onClick={() => setProjPageSize(s => s + 24)}>
+              Load More ({filteredProjects.length - projPageSize})
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setProjPageSize(filteredProjects.length)}>
+              Show All
+            </button>
+          </div>
         </div>
       )}
 
@@ -2749,7 +2822,8 @@ const ModalHub = ({ type, data, app }) => {
       case "editProject":
         return data ? { ...data } : {
           name: "", gc: "", contract: 0, billed: 0, progress: 0,
-          phase: "", start: "", end: ""
+          phase: "", start: "", end: "", pm: "", address: "",
+          closeOut: "", attachments: []
         };
       case "editContact":
         return data ? { ...data } : {
@@ -3531,20 +3605,38 @@ const ModalHub = ({ type, data, app }) => {
             const projJSAs = (app.jsas || []).filter(j => j.projectId === pid);
             const projTM = (app.tmTickets || []).filter(t => t.projectId === pid);
 
+            // Health signals
+            const openRfis = projRfis.filter(r => r.status === "open");
+            const agingRfis = openRfis.filter(r => r.submitted && (new Date() - new Date(r.submitted)) > 7 * 86400000);
+            const pendingSubs = projSubmittals.filter(s => s.status !== "approved");
+            const pendingCOs = projCOs.filter(c => c.status === "pending");
+            const overdueInvs = projInvoices.filter(i => i.status === "overdue");
+            const pendingTM = projTM.filter(t => t.status === "pending" || t.status === "draft");
+            const hasIssues = agingRfis.length > 0 || pendingCOs.length > 0 || overdueInvs.length > 0;
+
             const sections = [
-              { label: "RFIs", items: projRfis, icon: "📝", tab: "documents", fields: (r) => `#${r.number || ""} — ${r.subject || r.desc || ""}`, badge: (r) => r.status },
-              { label: "Submittals", items: projSubmittals, icon: "📋", tab: "documents", fields: (s) => `#${s.number || ""} — ${s.description || s.desc || ""}`, badge: (s) => s.status },
-              { label: "Change Orders", items: projCOs, icon: "📑", tab: "financials", fields: (c) => `#${c.number || ""} — ${c.desc || ""} (${fmt(c.amount || 0)})`, badge: (c) => c.status },
-              { label: "Invoices", items: projInvoices, icon: "💰", tab: "financials", fields: (i) => `#${i.number} — ${fmt(i.amount)} — ${i.date || ""}`, badge: (i) => i.status },
-              { label: "Daily Reports", items: projDailyReports, icon: "📊", tab: "safety", fields: (d) => `${d.date || ""} — ${d.crewSize || 0} crew — ${(d.work || "").slice(0, 60)}`, badge: () => null },
-              { label: "JSAs", items: projJSAs, icon: "⚠️", tab: "jsa", fields: (j) => `${j.date || ""} — ${j.title || j.location || ""}`, badge: () => null },
-              { label: "T&M Tickets", items: projTM, icon: "🔧", tab: "financials", fields: (t) => `${t.ticketNumber || ""} — ${t.description || ""} (${fmt(calcLaborTotal(t.laborEntries || []) + calcMatTotal(t.materialEntries || []))})`, badge: (t) => t.status },
+              { label: "RFIs", items: projRfis, icon: "📝", tab: "documents", fields: (r) => `#${r.number || ""} — ${r.subject || r.desc || ""}`, badge: (r) => r.status, urgent: openRfis.length },
+              { label: "Submittals", items: projSubmittals, icon: "📋", tab: "documents", fields: (s) => `#${s.number || ""} — ${s.description || s.desc || ""}`, badge: (s) => s.status, urgent: pendingSubs.length },
+              { label: "Change Orders", items: projCOs, icon: "📑", tab: "financials", fields: (c) => `#${c.number || ""} — ${c.desc || ""} (${fmt(c.amount || 0)})`, badge: (c) => c.status, urgent: pendingCOs.length },
+              { label: "Invoices", items: projInvoices, icon: "💰", tab: "financials", fields: (i) => `#${i.number} — ${fmt(i.amount)} — ${i.date || ""}`, badge: (i) => i.status, urgent: overdueInvs.length },
+              { label: "Daily Reports", items: projDailyReports, icon: "📊", tab: "safety", fields: (d) => `${d.date || ""} — ${d.crewSize || 0} crew — ${(d.work || "").slice(0, 60)}`, badge: () => null, urgent: 0 },
+              { label: "JSAs", items: projJSAs, icon: "⚠️", tab: "jsa", fields: (j) => `${j.date || ""} — ${j.title || j.location || ""}`, badge: () => null, urgent: 0 },
+              { label: "T&M Tickets", items: projTM, icon: "🔧", tab: "financials", fields: (t) => `${t.ticketNumber || ""} — ${t.description || ""} (${fmt(calcLaborTotal(t.laborEntries || []) + calcMatTotal(t.materialEntries || []))})`, badge: (t) => t.status, urgent: pendingTM.length },
             ];
 
             const totalDocs = sections.reduce((s, sec) => s + sec.items.length, 0);
 
             return (
               <div style={{ marginTop: 16, borderTop: "2px solid var(--border)", paddingTop: 16 }}>
+                {/* Health Summary Bar */}
+                {hasIssues && (
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12, padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}>
+                    {agingRfis.length > 0 && <span style={{ fontSize: 11, color: "var(--red)", fontWeight: 600 }}>{agingRfis.length} RFI{agingRfis.length > 1 ? "s" : ""} aging 7+ days</span>}
+                    {pendingCOs.length > 0 && <span style={{ fontSize: 11, color: "var(--amber)", fontWeight: 600 }}>{pendingCOs.length} CO{pendingCOs.length > 1 ? "s" : ""} pending ({fmt(pendingCOs.reduce((s, c) => s + (c.amount || 0), 0))})</span>}
+                    {overdueInvs.length > 0 && <span style={{ fontSize: 11, color: "var(--red)", fontWeight: 600 }}>{overdueInvs.length} overdue invoice{overdueInvs.length > 1 ? "s" : ""}</span>}
+                    {pendingTM.length > 0 && <span style={{ fontSize: 11, color: "var(--amber)" }}>{pendingTM.length} T&M pending</span>}
+                  </div>
+                )}
                 <div className="flex-between" style={{ marginBottom: 12 }}>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>Project Documents ({totalDocs})</div>
                 </div>
@@ -3553,7 +3645,10 @@ const ModalHub = ({ type, data, app }) => {
                     <div key={sec.label} style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", border: "1px solid var(--border)" }}>
                       <div className="flex-between" style={{ marginBottom: 6 }}>
                         <div style={{ fontWeight: 600, fontSize: 12 }}>{sec.icon} {sec.label}</div>
-                        <span className="badge badge-blue" style={{ fontSize: 9 }}>{sec.items.length}</span>
+                        <span style={{ display: "flex", gap: 4 }}>
+                          {sec.urgent > 0 && <span className="badge badge-red" style={{ fontSize: 9 }}>{sec.urgent} open</span>}
+                          <span className="badge badge-blue" style={{ fontSize: 9 }}>{sec.items.length}</span>
+                        </span>
                       </div>
                       {sec.items.length === 0 ? (
                         <div className="text-xs text-muted">None</div>
