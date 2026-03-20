@@ -345,6 +345,58 @@ export async function listFiles(folder = "", bucket = DEFAULT_BUCKET) {
 }
 
 // ═════════════════════════════════════════════════════════════
+//  TAKEOFF PDF STORAGE (cloud persistence for drawing PDFs)
+// ═════════════════════════════════════════════════════════════
+
+const PDF_BUCKET = "ebc-files";
+const PDF_PREFIX = "takeoff-pdfs";
+
+/**
+ * Upload a takeoff PDF to Supabase Storage.
+ * Path: takeoff-pdfs/{takeoffId}/{index}_{filename}
+ */
+export async function uploadTakeoffPdf(takeoffId, pdfData, fileName, index = 0) {
+  if (!supabase) return null;
+  const path = `${PDF_PREFIX}/${takeoffId}/${index}_${fileName.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+  const blob = new Blob([pdfData], { type: "application/pdf" });
+  const { data, error } = await supabase.storage.from(PDF_BUCKET).upload(path, blob, {
+    upsert: true,
+    cacheControl: "86400",
+  });
+  if (error) { console.warn(`[Supabase] PDF upload failed: ${path}`, error.message); return null; }
+  console.log(`[Supabase] PDF uploaded: ${path} (${(pdfData.byteLength / 1024 / 1024).toFixed(1)}MB)`);
+  return data;
+}
+
+/**
+ * Download a takeoff PDF from Supabase Storage.
+ * Returns ArrayBuffer or null.
+ */
+export async function downloadTakeoffPdf(takeoffId, fileName, index = 0) {
+  if (!supabase) return null;
+  const path = `${PDF_PREFIX}/${takeoffId}/${index}_${fileName.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+  try {
+    const { data, error } = await supabase.storage.from(PDF_BUCKET).download(path);
+    if (error) { console.warn(`[Supabase] PDF download failed: ${path}`, error.message); return null; }
+    const buf = await data.arrayBuffer();
+    console.log(`[Supabase] PDF downloaded: ${path} (${(buf.byteLength / 1024 / 1024).toFixed(1)}MB)`);
+    return buf;
+  } catch (e) { console.warn(`[Supabase] PDF download error:`, e.message); return null; }
+}
+
+/**
+ * List all PDFs for a takeoff (returns file names and paths).
+ */
+export async function listTakeoffPdfs(takeoffId) {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase.storage.from(PDF_BUCKET).list(`${PDF_PREFIX}/${takeoffId}`);
+    if (error) return [];
+    return (data || []).map(f => f.name).sort();
+  } catch { return []; }
+}
+
+// ═════════════════════════════════════════════════════════════
 //  REALTIME SUBSCRIPTIONS
 // ═════════════════════════════════════════════════════════════
 

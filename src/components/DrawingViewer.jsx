@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import * as XLSX from "xlsx";
+import { uploadTakeoffPdf, downloadTakeoffPdf } from "../lib/supabase";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.mjs",
@@ -817,9 +818,10 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
         setNumPages(doc.numPages);
         setPage(1);
         setActivePdfIdx(0);
-        // Save to IndexedDB for persistence
+        // Save to IndexedDB (local cache) + Supabase Storage (cloud persistence)
         if (takeoffId) {
           savePdfToIDB(`${takeoffId}_0`, pdfData).catch(() => {});
+          uploadTakeoffPdf(takeoffId, pdfData, fileName || "Drawing.pdf", 0).catch(() => {});
         }
         // Auto-name pages from title blocks
         autoNamePages(doc, 0);
@@ -828,26 +830,45 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     return () => { cancelled = true; };
   }, [pdfData]);
 
-  // ── Auto-load PDFs from IndexedDB when reopening without pdfData ──
+  // ── Auto-load PDFs: IDB cache → Supabase cloud → show re-upload UI ──
   useEffect(() => {
     if (pdfData || !takeoffId || !_init.pdfFileNames || _init.pdfFileNames.length === 0) return;
     let cancelled = false;
     (async () => {
-      console.log(`[IDB] Attempting to restore ${_init.pdfFileNames.length} PDFs for takeoff ${takeoffId}`);
+      console.log(`[Restore] Attempting to restore ${_init.pdfFileNames.length} PDFs for takeoff ${takeoffId}`);
       const loaded = [];
       for (let i = 0; i < _init.pdfFileNames.length; i++) {
+        const name = _init.pdfFileNames[i];
+        let data = null;
+        // Try IDB cache first
         try {
-          const data = await loadPdfFromIDB(`${takeoffId}_${i}`);
-          if (!data || cancelled) { console.warn(`[IDB] No data for ${takeoffId}_${i}`); continue; }
+          data = await loadPdfFromIDB(`${takeoffId}_${i}`);
+          if (data) console.log(`[Restore] PDF ${i} loaded from IDB cache`);
+        } catch (err) { console.warn(`[IDB] Failed: ${err.message}`); }
+        // Try Supabase Storage if IDB missed
+        if (!data && !cancelled) {
+          try {
+            console.log(`[Restore] Trying Supabase Storage for PDF ${i}: ${name}`);
+            const buf = await downloadTakeoffPdf(takeoffId, name, i);
+            if (buf) {
+              data = buf;
+              console.log(`[Restore] PDF ${i} downloaded from Supabase Storage`);
+              // Re-cache in IDB for next time
+              savePdfToIDB(`${takeoffId}_${i}`, data).catch(() => {});
+            }
+          } catch (err) { console.warn(`[Supabase] Download failed:`, err.message); }
+        }
+        if (!data || cancelled) { console.warn(`[Restore] No data for PDF ${i}`); continue; }
+        try {
           const doc = await pdfjsLib.getDocument({ data }).promise;
-          loaded.push({ name: _init.pdfFileNames[i], data, doc, numPages: doc.numPages });
-        } catch (err) { console.warn(`[IDB] Failed to load ${takeoffId}_${i}:`, err.message); }
+          loaded.push({ name, data, doc, numPages: doc.numPages });
+        } catch (err) { console.warn(`[Restore] PDF parse failed:`, err.message); }
       }
       if (cancelled || loaded.length === 0) {
-        console.warn("[IDB] No PDFs restored — user will need to re-upload");
+        console.warn("[Restore] No PDFs restored — user will need to re-upload");
         return;
       }
-      console.log(`[IDB] Restored ${loaded.length} PDFs successfully`);
+      console.log(`[Restore] Restored ${loaded.length} PDFs successfully`);
       setPdfFiles(loaded);
       setPdf(loaded[0].doc);
       setNumPages(loaded[0].numPages);
@@ -879,8 +900,11 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
         const newIdx = pdfFiles.length;
         setPdfFiles(prev => [...prev, { name: file.name, data, doc, numPages: doc.numPages }]);
         setActivePdfIdx(newIdx);
-        // Save to IndexedDB
-        if (takeoffId) savePdfToIDB(`${takeoffId}_${newIdx}`, data).catch(() => {});
+        // Save to IndexedDB (cache) + Supabase Storage (cloud)
+        if (takeoffId) {
+          savePdfToIDB(`${takeoffId}_${newIdx}`, data).catch(() => {});
+          uploadTakeoffPdf(takeoffId, data, file.name, newIdx).catch(() => {});
+        }
         // Auto-name pages
         autoNamePages(doc, newIdx);
       });

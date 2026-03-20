@@ -3,6 +3,7 @@ import { getHF, SCOPE_INIT, SCOPE_ITEM_MAP, DEFAULT_ASSUMPTIONS, DEFAULT_PROPOSA
 import { generateProposalPdf, defaultIncludes, defaultExcludes } from "../utils/proposalPdf";
 import { buildScopeLines } from "../utils/scopeBuilder";
 import { DrawingViewer } from "../components/DrawingViewer";
+import { uploadTakeoffPdf, downloadTakeoffPdf } from "../lib/supabase";
 
 /* ── helpers ─────────────────────────────────────────────────── */
 
@@ -75,11 +76,12 @@ export function EstimatingTab({ app }) {
   const [drawingFileName, setDrawingFileName] = useState("");
   const drawingFileRef = useRef();
 
-  // Try to open drawing from IDB cache first, fall back to file picker
+  // Try to open drawing: memory → IDB cache → Supabase cloud → file picker
   const openDrawing = useCallback(async (tkId, drawingState) => {
     // If we already have pdfData in memory, just open
     if (drawingPdfData) { setShowDrawing(true); return; }
-    // Try IDB if we have saved file names
+    const fileName = drawingState?.pdfFileNames?.[0] || drawingState?.drawingFileName || "";
+    // Try IDB cache first
     if (drawingState?.pdfFileNames?.length > 0) {
       try {
         const IDB_NAME = "ebc_takeoff_pdfs";
@@ -96,14 +98,42 @@ export function EstimatingTab({ app }) {
           req.onerror = () => reject(req.error);
         });
         if (data) {
+          console.log("[OpenDrawing] Loaded from IDB cache");
           setDrawingPdfData(new Uint8Array(data));
-          setDrawingFileName(drawingState.pdfFileNames[0]);
+          setDrawingFileName(fileName);
           setShowDrawing(true);
           return;
         }
       } catch (e) { console.warn("[IDB] Failed to load cached PDF:", e); }
     }
-    // Fallback: open file picker
+    // Try Supabase Storage (cloud fallback)
+    if (fileName) {
+      try {
+        show("Downloading drawing from cloud...", "info");
+        const buf = await downloadTakeoffPdf(tkId, fileName, 0);
+        if (buf) {
+          console.log("[OpenDrawing] Downloaded from Supabase Storage");
+          const pdfBytes = new Uint8Array(buf);
+          setDrawingPdfData(pdfBytes);
+          setDrawingFileName(fileName);
+          setShowDrawing(true);
+          // Re-cache in IDB for next time
+          try {
+            const IDB_NAME = "ebc_takeoff_pdfs";
+            const db = await new Promise((resolve, reject) => {
+              const req = indexedDB.open(IDB_NAME, 2);
+              req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains("pdfs")) req.result.createObjectStore("pdfs"); };
+              req.onsuccess = () => resolve(req.result);
+              req.onerror = () => reject(req.error);
+            });
+            const tx = db.transaction("pdfs", "readwrite");
+            tx.objectStore("pdfs").put(pdfBytes.buffer, `${tkId}_0`);
+          } catch (e) { console.warn("[IDB] Failed to re-cache PDF:", e); }
+          return;
+        }
+      } catch (e) { console.warn("[Supabase] Failed to download PDF:", e); }
+    }
+    // Final fallback: open file picker
     if (drawingFileRef.current) drawingFileRef.current.click();
   }, [drawingPdfData]);
 
@@ -1192,10 +1222,13 @@ export function EstimatingTab({ app }) {
               if (!file) return;
               const reader = new FileReader();
               reader.onload = (ev) => {
-                setDrawingPdfData(new Uint8Array(ev.target.result));
+                const pdfBytes = new Uint8Array(ev.target.result);
+                setDrawingPdfData(pdfBytes);
                 setDrawingFileName(file.name);
                 updateTakeoff(tk.id, { drawingFileName: file.name });
                 setShowDrawing(true);
+                // Upload to Supabase Storage in background (cloud persistence)
+                uploadTakeoffPdf(tk.id, pdfBytes, file.name, 0).catch(() => {});
               };
               reader.readAsArrayBuffer(file);
               e.target.value = "";
