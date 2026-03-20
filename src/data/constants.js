@@ -325,12 +325,12 @@ export const SCOPE_TEMPLATES = {
 const _demoBids = [
   // ── REAL EBC BIDS (from estimating system) ──
   // 2026
-  {id:101,name:"Endurance Builders - Woodside Laboratory",gc:"Endurance Builders",value:0,due:"Mar 13, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Mar",closeOut:null,bidDate:"Mar 13, 2026"},
+  {id:101,name:"Endurance Builders - Woodside Laboratory",gc:"Endurance Builders",value:74800,due:"Mar 13, 2026",status:"awarded",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Mar",closeOut:null,bidDate:"Mar 13, 2026"},
   {id:102,name:"WCC - Real Manage Suite 250",gc:"WCC",value:0,due:"Mar 12, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Mar",closeOut:null,bidDate:"Mar 12, 2026"},
-  {id:103,name:"United - Escapology San Antonio",gc:"United",value:0,due:"Mar 12, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Mar",closeOut:null,bidDate:"Mar 12, 2026"},
+  {id:103,name:"United - Escapology San Antonio",gc:"United Constructors",value:187800,due:"Mar 12, 2026",status:"submitted",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Mar",closeOut:null,bidDate:"Mar 12, 2026"},
   {id:104,name:"United - 801 Travis - Elevator Lobby Remodel",gc:"United",value:0,due:"Mar 11, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Mar",closeOut:null,bidDate:"Mar 11, 2026"},
   {id:105,name:"Memorial Hermann - Fulshear SMR",gc:"Memorial Hermann",value:0,due:"Mar 11, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Mar",closeOut:null,bidDate:"Mar 11, 2026"},
-  {id:106,name:"FKC San Angelo",gc:"FKC",value:0,due:"Mar 10, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Mar",closeOut:null,bidDate:"Mar 10, 2026"},
+  {id:106,name:"FKC San Angelo",gc:"FKC",value:313400,due:"Mar 10, 2026",status:"submitted",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Mar",closeOut:null,bidDate:"Mar 10, 2026"},
   {id:107,name:"United - Aggieland Imaging - College Station - Outpatient MRI Facility",gc:"United",value:0,due:"Mar 9, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Mar",closeOut:null,bidDate:"Mar 9, 2026"},
   {id:108,name:"United - Ogle School Remodel",gc:"United",value:0,due:"Mar 6, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Mar",closeOut:null,bidDate:"Mar 6, 2026"},
   {id:109,name:"Harvey - Celltex Prelim",gc:"Harvey",value:0,due:"Mar 6, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Mar",closeOut:null,bidDate:"Mar 6, 2026"},
@@ -349,7 +349,7 @@ const _demoBids = [
   {id:122,name:"Bayshore - Texas Heart Center",gc:"Bayshore",value:0,due:"Feb 20, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 20, 2026"},
   {id:123,name:"CB&I Lvl 7",gc:"CB&I",value:0,due:"Feb 18, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 18, 2026"},
   {id:124,name:"CB&I Lvl 2",gc:"CB&I",value:0,due:"Feb 18, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 18, 2026"},
-  {id:125,name:"Memorial Hermann - Woodlands RAD Equipment Replacement",gc:"Memorial Hermann",value:0,due:"Feb 17, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 17, 2026"},
+  {id:125,name:"Memorial Hermann - Woodlands RAD Equipment Replacement",gc:"Forney Construction",value:10500,due:"Feb 17, 2026",status:"awarded",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 17, 2026"},
   {id:126,name:"United - Edwin Watts Golf Shop",gc:"United",value:0,due:"Feb 17, 2026",status:"estimating",scope:[],phase:"Retail",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 17, 2026"},
   {id:127,name:"Forney - Roseate Beach Amenities",gc:"Forney",value:0,due:"Feb 17, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 17, 2026"},
   {id:128,name:"WCC - 3 HL 1780 Houghs Landing Suite 265",gc:"WCC",value:0,due:"Feb 16, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 16, 2026"},
@@ -357,19 +357,19 @@ const _demoBids = [
   {id:130,name:"Montgomery Roth Office Suite 7029",gc:"Montgomery Roth",value:0,due:"Feb 16, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 16, 2026"},
   {id:131,name:"Memorial Hermann - MHSE CT",gc:"Memorial Hermann",value:0,due:"Feb 13, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 13, 2026"},
   {id:132,name:"Memorial Hermann - The Woodlands MNA Infusion",gc:"Memorial Hermann",value:0,due:"Feb 12, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 12, 2026"},
-  {id:133,name:"Memorial Hermann - MC MP3 Infusion Suite 785",gc:"Memorial Hermann",value:0,due:"Feb 12, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 12, 2026"},
+  {id:133,name:"Memorial Hermann - MC MP3 Infusion Suite 785",gc:"Memorial Hermann",value:25000,due:"Feb 12, 2026",status:"submitted",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 12, 2026"},
   {id:134,name:"United - UCT New Offices",gc:"United",value:0,due:"Feb 11, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 11, 2026"},
   {id:135,name:"United - Apricot Lane",gc:"United",value:0,due:"Feb 11, 2026",status:"estimating",scope:[],phase:"Retail",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 11, 2026"},
-  {id:136,name:"Forney - Grace Bible Church",gc:"Forney",value:0,due:"Feb 10, 2026",status:"estimating",scope:[],phase:"Religious",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 10, 2026"},
+  {id:136,name:"Forney - Grace Bible Church",gc:"Forney Construction",value:780700,due:"Feb 10, 2026",status:"submitted",scope:[],phase:"Religious",risk:"",notes:"Won by GC, not yet awarded to EBC",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 10, 2026"},
   {id:137,name:"9821 Katy Fwy Lobby Renovation",gc:"",value:0,due:"Feb 10, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 10, 2026"},
-  {id:138,name:"Arch-Con - Sprouts Farmers Market",gc:"Arch-Con",value:0,due:"Feb 6, 2026",status:"estimating",scope:[],phase:"Retail",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 6, 2026"},
+  {id:138,name:"Arch-Con - Sprouts Farmers Market",gc:"Arch-Con",value:215100,due:"Feb 6, 2026",status:"awarded",scope:[],phase:"Retail",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 6, 2026"},
   {id:139,name:"WCC - AB Energy",gc:"WCC",value:0,due:"Feb 6, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 6, 2026"},
   {id:140,name:"Warwick - Octapharma Plasma - Little York",gc:"Warwick",value:0,due:"Feb 5, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 5, 2026"},
   {id:141,name:"WCC - Brazos County Road & Bridge",gc:"WCC",value:0,due:"Feb 3, 2026",status:"estimating",scope:[],phase:"Government",risk:"",notes:"",contact:"",month:"Feb",closeOut:null,bidDate:"Feb 3, 2026"},
   {id:142,name:"Nan & Company",gc:"",value:0,due:"Jan 30, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 30, 2026"},
   {id:143,name:"CSH ST Lukes Vintage Cath Lab 2",gc:"CSH",value:0,due:"Jan 29, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 29, 2026"},
-  {id:144,name:"Forney - Hobby Center Admin Offices",gc:"Forney",value:0,due:"Jan 28, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 28, 2026"},
-  {id:145,name:"Forney - Duchesne Academy Classrooms",gc:"Forney",value:0,due:"Jan 28, 2026",status:"estimating",scope:[],phase:"Education",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 28, 2026"},
+  {id:144,name:"Forney - Hobby Center Admin Offices",gc:"Forney Construction",value:213700,due:"Jan 28, 2026",status:"submitted",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 28, 2026"},
+  {id:145,name:"Forney - Duchesne Academy Classrooms",gc:"Forney Construction",value:250800,due:"Jan 28, 2026",status:"submitted",scope:[],phase:"Education",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 28, 2026"},
   {id:146,name:"Forney - Mobile Energy Solutions",gc:"Forney",value:0,due:"Jan 28, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 28, 2026"},
   {id:147,name:"United - Edward Jones",gc:"United",value:0,due:"Jan 26, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 26, 2026"},
   {id:148,name:"ATH Orthopedics Cypress Buildout",gc:"ATH",value:0,due:"Jan 22, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 22, 2026"},
@@ -383,16 +383,16 @@ const _demoBids = [
   {id:156,name:"Wier - Mac Hiak CDJR",gc:"Wier",value:0,due:"Jan 14, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 14, 2026"},
   {id:157,name:"United - Texas Heart & Vascular Specialist",gc:"United",value:0,due:"Jan 14, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 14, 2026"},
   {id:158,name:"Farmers - Existing Office Expansion",gc:"Farmers",value:0,due:"Jan 13, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 13, 2026"},
-  {id:159,name:"Forney - Micillaneous Office Buildout",gc:"Forney",value:0,due:"Jan 13, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 13, 2026"},
-  {id:160,name:"ROD - Brunello Cucinelli",gc:"ROD",value:0,due:"Jan 12, 2026",status:"estimating",scope:[],phase:"Retail",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 12, 2026"},
+  {id:159,name:"Forney - Miscellaneous Office Buildout",gc:"Forney Construction",value:18600,due:"Jan 13, 2026",status:"submitted",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 13, 2026"},
+  {id:160,name:"United - Brunello Cucinelli",gc:"United Constructors",value:308400,due:"Jan 12, 2026",status:"awarded",scope:[],phase:"Retail",risk:"",notes:"Brodson sub",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 12, 2026"},
   {id:161,name:"Bayshore - Success on the Spectrum - Conroe",gc:"Bayshore",value:0,due:"Jan 12, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 12, 2026"},
   {id:162,name:"Anchor - Smile Studios - Richmond",gc:"Anchor",value:0,due:"Jan 12, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 12, 2026"},
-  {id:163,name:"Forney - BSLMC Cath Labs 4 & 9",gc:"Forney",value:0,due:"Jan 12, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 12, 2026"},
+  {id:163,name:"Forney - BSLMC Cath Labs 4 & 9",gc:"Forney Construction",value:94500,due:"Jan 12, 2026",status:"awarded",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 12, 2026"},
   {id:164,name:"UTMB M87 PCP Cancer Services Clinic",gc:"UTMB",value:0,due:"Jan 8, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 8, 2026"},
   {id:165,name:"Potbellys Sandwich Shop - Woodlands",gc:"",value:0,due:"Jan 7, 2026",status:"estimating",scope:[],phase:"Retail",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 7, 2026"},
   {id:166,name:"Rise Group Investment - Flex Warehouse Buildout",gc:"Rise Group Investment",value:0,due:"Jan 6, 2026",status:"estimating",scope:[],phase:"Industrial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 6, 2026"},
   {id:167,name:"Rise Group Investment - Baseball Warehouse",gc:"Rise Group Investment",value:0,due:"Jan 6, 2026",status:"estimating",scope:[],phase:"Industrial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 6, 2026"},
-  {id:168,name:"United - Heart Care Clinic - NW Houston",gc:"United",value:0,due:"Jan 5, 2026",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 5, 2026"},
+  {id:168,name:"United - Heart Care Clinic - NW Houston",gc:"United Constructors",value:83500,due:"Jan 5, 2026",status:"awarded",scope:[],phase:"Medical",risk:"",notes:"COMPLETE",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 5, 2026"},
   // 2025
   {id:169,name:"JP's Construction - Health Source",gc:"JP's Construction",value:0,due:"Dec 22, 2025",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 22, 2025"},
   {id:170,name:"Jacob White - Holler Brewing Expansion",gc:"Jacob White",value:0,due:"Dec 22, 2025",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 22, 2025"},
@@ -400,11 +400,11 @@ const _demoBids = [
   {id:172,name:"Diffco - Wall Protection",gc:"Diffco",value:0,due:"Dec 18, 2025",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 18, 2025"},
   {id:173,name:"Forney - Dell Webb Pickleball",gc:"Forney",value:0,due:"Dec 18, 2025",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 18, 2025"},
   {id:174,name:"United - Brunello Cucinelli Expansion",gc:"United",value:0,due:"Dec 16, 2025",status:"estimating",scope:[],phase:"Retail",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 16, 2025"},
-  {id:175,name:"Memorial Hermann - Neuro IR",gc:"Memorial Hermann",value:0,due:"Dec 12, 2025",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 12, 2025"},
+  {id:175,name:"Memorial Hermann - Neuro IR",gc:"O'Donnell/Snider",value:34000,due:"Dec 12, 2025",status:"awarded",scope:[],phase:"Medical",risk:"",notes:"PM: Abner Aguilar",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 12, 2025"},
   {id:176,name:"Hope Clinic",gc:"",value:0,due:"Dec 12, 2025",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 12, 2025"},
-  {id:177,name:"Memorial Hermann - Memorial City Single Plane IR",gc:"Memorial Hermann",value:0,due:"Dec 11, 2025",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 11, 2025"},
-  {id:178,name:"Memorial Hermann - League City CCC - CT Equipment Exchange",gc:"Memorial Hermann",value:0,due:"Dec 10, 2025",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 10, 2025"},
-  {id:179,name:"Memorial Hermann - Pearland MEIC CT",gc:"Memorial Hermann",value:0,due:"Dec 10, 2025",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 10, 2025"},
+  {id:177,name:"Memorial Hermann - Memorial City Single Plane IR",gc:"O'Donnell/Snider",value:33000,due:"Dec 11, 2025",status:"awarded",scope:[],phase:"Medical",risk:"",notes:"PM: Abner Aguilar",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 11, 2025"},
+  {id:178,name:"Memorial Hermann - League City CCC - CT Equipment Exchange",gc:"Forney Construction",value:10900,due:"Dec 10, 2025",status:"awarded",scope:[],phase:"Medical",risk:"",notes:"Alt: +$14,100 lead shielding replacement",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 10, 2025"},
+  {id:179,name:"Memorial Hermann - Pearland MEIC CT",gc:"Forney Construction",value:10500,due:"Dec 10, 2025",status:"awarded",scope:[],phase:"Medical",risk:"",notes:"Alts: +$300 soffit repair, +$1,000 lead door, +$1,100 demo flooring",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 10, 2025"},
   {id:180,name:"Vibra Studios",gc:"",value:0,due:"Dec 9, 2025",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 9, 2025"},
   {id:181,name:"Hope Biosciences",gc:"",value:0,due:"Dec 9, 2025",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 9, 2025"},
   {id:182,name:"Pard Campus",gc:"",value:0,due:"Dec 8, 2025",status:"estimating",scope:[],phase:"Education",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 8, 2025"},
@@ -412,7 +412,7 @@ const _demoBids = [
   {id:184,name:"UT Health - MSB Open Wet Lab Renovation",gc:"UT Health",value:0,due:"Dec 3, 2025",status:"estimating",scope:[],phase:"Education",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 3, 2025"},
   {id:185,name:"Anchor - Meridiana Retail Center",gc:"Anchor",value:0,due:"Dec 3, 2025",status:"estimating",scope:[],phase:"Retail",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 3, 2025"},
   {id:186,name:"Anchor - Marina Bay Harbor Expansion",gc:"Anchor",value:0,due:"Dec 3, 2025",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 3, 2025"},
-  {id:187,name:"Forney - MHMC Cancer Center",gc:"Forney",value:0,due:"Dec 2, 2025",status:"estimating",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 2, 2025"},
+  {id:187,name:"Forney - MHMC Cancer Center",gc:"Forney Construction",value:20900,due:"Dec 2, 2025",status:"awarded",scope:[],phase:"Medical",risk:"",notes:"CLOSEOUT — base $13,300 + COs. L4 waiting on closeouts.",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 2, 2025"},
   {id:188,name:"Weir - Velocity Sim Racing",gc:"Weir",value:0,due:"Dec 1, 2025",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Dec",closeOut:null,bidDate:"Dec 1, 2025"},
   {id:189,name:"Anchor - TwoTen",gc:"Anchor",value:0,due:"Nov 25, 2025",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Nov",closeOut:null,bidDate:"Nov 25, 2025"},
   {id:190,name:"Anchor - Refuel 369",gc:"Anchor",value:0,due:"Nov 25, 2025",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Nov",closeOut:null,bidDate:"Nov 25, 2025"},
@@ -434,44 +434,70 @@ const _demoBids = [
   {id:206,name:"C120",gc:"",value:0,due:"Jan 20, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 20, 2026"},
   {id:207,name:"Power House",gc:"",value:0,due:"Jan 20, 2026",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 20, 2026"},
   {id:208,name:"New Project 566",gc:"",value:0,due:"Oct 31, 2025",status:"estimating",scope:[],phase:"Commercial",risk:"",notes:"",contact:"",month:"Oct",closeOut:null,bidDate:"Oct 31, 2025"},
+  {id:209,name:"WC Construction - CB&I CEO/Lvl2/Lvl7",gc:"WC Construction",value:59800,due:"Mar 20, 2026",status:"awarded",scope:[],phase:"Commercial",risk:"",notes:"Starts 3/20 at 6pm",contact:"",month:"Mar",closeOut:null,bidDate:"Mar 20, 2026"},
 ];
 
 // ── SEED: PROJECTS ──
 // Real project data extracted from Google Docs proposals
 export const PM_NAMES = { 3: "Emmanuel Aguilar", 4: "Isai Aguilar", 8: "Abner Aguilar" };
 const _demoProjects = [
-  // Active EBC projects (awarded bids)
-  {id:1,name:"ROD - Brunello Cucinelli",gc:"ROD",contract:92500,status:"in-progress",phase:"Retail",address:"2800 Kirby Dr, Houston TX 77098",pm:"Emmanuel Aguilar",laborHours:1200,progress:35,start:"2026-01-15",end:"2026-07-30",scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish"]},
-  {id:2,name:"United - Escapology San Antonio",gc:"United",contract:187800,status:"in-progress",phase:"Commercial",address:"15900 La Cantera Pkwy, San Antonio TX 78256",pm:"Isai Aguilar",laborHours:800,progress:20,start:"2026-02-10",end:"2026-06-15",scope:["Demo","Metal Framing","Drywall","ACT Ceilings"]},
-  {id:3,name:"Forney - BSLMC Cath Labs 4 & 9",gc:"Forney",contract:145000,status:"in-progress",phase:"Medical",address:"17500 Red Oak Dr, Houston TX 77090",pm:"Emmanuel Aguilar",laborHours:960,progress:55,start:"2025-12-01",end:"2026-04-30",scope:["Metal Framing","Drywall","Lead-Lined Walls","Tape & Finish"]},
-  {id:4,name:"Memorial Hermann - League City CCC CT",gc:"Memorial Hermann",contract:68000,status:"in-progress",phase:"Medical",address:"100 Medical Center Blvd, League City TX 77573",pm:"Abner Aguilar",laborHours:480,progress:10,start:"2026-03-01",end:"2026-05-30",scope:["Demo","Metal Framing","Drywall","Lead-Lined Walls"]},
-  {id:5,name:"United - Heart Care Clinic NW Houston",gc:"United",contract:112000,status:"in-progress",phase:"Medical",address:"17270 Red Oak Dr, Houston TX 77090",pm:"Isai Aguilar",laborHours:720,progress:45,start:"2026-01-06",end:"2026-05-15",scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish"]},
+  // ── ACTIVE AWARDED PROJECTS ──
+  {id:1,name:"United - Brunello Cucinelli",gc:"United Constructors",contract:308400,status:"in-progress",phase:"Retail",address:"2800 Kirby Dr, Houston TX 77098",pm:"Emmanuel Aguilar",laborHours:2400,progress:35,start:"2026-01-15",end:"2026-07-30",scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish"],notes:"Brodson sub"},
+  {id:2,name:"Forney - BSLMC Cath Labs 4 & 9",gc:"Forney Construction",contract:94500,status:"in-progress",phase:"Medical",address:"17500 Red Oak Dr, Houston TX 77090",pm:"Emmanuel Aguilar",laborHours:960,progress:55,start:"2025-12-01",end:"2026-04-30",scope:["Metal Framing","Drywall","Lead-Lined Walls","Tape & Finish"]},
+  {id:3,name:"Endurance Builders - Woodside Laboratory",gc:"Endurance Builders",contract:74800,status:"in-progress",phase:"Commercial",address:"Houston, TX",pm:"Emmanuel Aguilar",laborHours:600,progress:10,start:"2026-03-01",end:"2026-06-30",scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish"]},
+  {id:4,name:"Memorial Hermann - League City CCC CT",gc:"Forney Construction",contract:10900,status:"in-progress",phase:"Medical",address:"2555 Gulf Fwy S, League City, TX 77573",pm:"Isai Aguilar",laborHours:200,progress:5,start:"2026-03-15",end:"2026-05-30",scope:["Demo","Drywall","ACT"]},
+  {id:5,name:"Memorial Hermann - Pearland MEIC CT",gc:"Forney Construction",contract:10500,status:"in-progress",phase:"Medical",address:"Pearland, TX",pm:"Isai Aguilar",laborHours:200,progress:5,start:"2026-03-15",end:"2026-05-30",scope:["Demo","Drywall","ACT"]},
+  {id:6,name:"Forney - MHMC Cancer Center",gc:"Forney Construction",contract:20900,status:"closeout",phase:"Medical",address:"Houston, TX",pm:"Emmanuel Aguilar",laborHours:300,progress:95,start:"2025-10-01",end:"2026-03-30",scope:["Metal Framing","Drywall","Tape & Finish"],notes:"L4 waiting on closeouts"},
+  {id:7,name:"Memorial Hermann - Woodlands RAD",gc:"Forney Construction",contract:10500,status:"in-progress",phase:"Medical",address:"The Woodlands, TX",pm:"Emmanuel Aguilar",laborHours:150,progress:20,start:"2026-02-17",end:"2026-04-30",scope:["Demo","Drywall","Lead-Lined Walls"]},
+  {id:8,name:"Memorial Hermann - Neuro IR",gc:"O'Donnell/Snider",contract:34000,status:"in-progress",phase:"Medical",address:"Houston, TX",pm:"Abner Aguilar",laborHours:400,progress:10,start:"2026-03-01",end:"2026-06-15",scope:["Demo","Metal Framing","Drywall","Lead-Lined Walls"]},
+  {id:9,name:"Memorial Hermann - MC Single Plane IR",gc:"O'Donnell/Snider",contract:33000,status:"in-progress",phase:"Medical",address:"Houston, TX",pm:"Abner Aguilar",laborHours:400,progress:10,start:"2026-03-01",end:"2026-06-15",scope:["Demo","Metal Framing","Drywall","Lead-Lined Walls"]},
+  {id:10,name:"United - Heart Care Clinic NW Houston",gc:"United Constructors",contract:83500,status:"complete",phase:"Medical",address:"17270 Red Oak Dr, Houston TX 77090",pm:"Isai Aguilar",laborHours:720,progress:100,start:"2026-01-06",end:"2026-03-15",scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish"]},
+  {id:11,name:"Arch-Con - Sprouts Farmers Market",gc:"Arch-Con",contract:215100,status:"in-progress",phase:"Retail",address:"Houston, TX",pm:"Emmanuel Aguilar",laborHours:1600,progress:5,start:"2026-03-20",end:"2026-08-30",scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish"]},
+  {id:12,name:"WC Construction - CB&I CEO/Lvl2/Lvl7",gc:"WC Construction",contract:59800,status:"in-progress",phase:"Commercial",address:"Houston, TX",pm:"Emmanuel Aguilar",laborHours:500,progress:0,start:"2026-03-20",end:"2026-06-30",scope:["Metal Framing","Drywall","Tape & Finish"],notes:"Started 3/20 at 6pm"},
 ];
 
 // ── SEED: CONTACTS ──
 const _demoContacts = [
-  {id:1,name:"Chris Morales",company:"Tellepsen Builders",role:"Senior PM",bids:14,wins:7,color:"#3b82f6",last:"2 days ago",priority:"high",phone:"713-555-0101",email:"chris.morales@tellepsen.com",notes:"First call list. Prefers text for quick questions. Strong relationship."},
-  {id:2,name:"Daniel Park",company:"JE Dunn Construction",role:"Estimator",bids:9,wins:5,color:"#10b981",last:"1 week ago",priority:"high",phone:"713-555-0102",email:"d.park@jedunn.com",notes:"Strong relationship. Invited EBC to NICU bid directly."},
-  {id:3,name:"Sarah Nichols",company:"Turner Construction",role:"Pre-Con Mgr",bids:6,wins:2,color:"#8b5cf6",last:"3 days ago",priority:"med",phone:"713-555-0103",email:"s.nichols@tcco.com",notes:"Building relationship. Texas Heart bid is key opportunity."},
-  {id:4,name:"Mike Trevino",company:"Linbeck Group",role:"Sr. Estimator",bids:11,wins:4,color:"#f59e0b",last:"Today",priority:"high",phone:"713-555-0104",email:"m.trevino@linbeck.com",notes:"Good communicator. Always levels fairly. Call before bid day."},
-  {id:5,name:"Kevin Flores",company:"Harvey Builders",role:"PM",bids:4,wins:2,color:"#ef4444",last:"5 days ago",priority:"med",phone:"713-555-0105",email:"k.flores@harvey.com",notes:"New contact. Post Oak Tower is first major bid opportunity."},
-  {id:6,name:"Amy Chen",company:"Skanska USA",role:"Preconstruction",bids:3,wins:1,color:"#06b6d4",last:"2 weeks ago",priority:"low",phone:"713-555-0106",email:"a.chen@skanska.com",notes:"Follow up after HEB result comes in."},
+  // ── FORNEY CONSTRUCTION ──
+  {id:1,name:"Christina Zube",company:"Forney Construction",role:"PM",bids:12,wins:6,color:"#3b82f6",last:"This week",priority:"high",phone:"",email:"",notes:"Primary Forney contact. BSLMC Cath Labs, Cancer Center, Hobby Center, Duchesne, Grace Bible Church."},
+  {id:2,name:"Mason Williams",company:"Forney Construction",role:"Estimator",bids:8,wins:4,color:"#10b981",last:"This week",priority:"high",phone:"",email:"",notes:"Forney estimating. Handles bid invites."},
+  // ── UNITED CONSTRUCTORS ──
+  {id:3,name:"Ruby Rubio",company:"United Constructors",role:"PM",bids:10,wins:4,color:"#8b5cf6",last:"This week",priority:"high",phone:"",email:"",notes:"United PM. Heart Care Clinic, Brunello Cucinelli, Escapology."},
+  {id:4,name:"Heidi Phillips",company:"United Constructors",role:"PM",bids:6,wins:2,color:"#f59e0b",last:"2 weeks ago",priority:"med",phone:"",email:"",notes:"United PM."},
+  {id:5,name:"Joseph Quan",company:"United Constructors",role:"Estimator",bids:5,wins:2,color:"#ef4444",last:"1 week ago",priority:"med",phone:"",email:"",notes:"United estimating."},
+  // ── O'DONNELL/SNIDER ──
+  {id:6,name:"Adam Teeter",company:"O'Donnell/Snider",role:"PM",bids:3,wins:2,color:"#06b6d4",last:"This week",priority:"high",phone:"",email:"",notes:"O'Donnell/Snider PM. MH Neuro IR & Single Plane IR."},
+  // ── WC CONSTRUCTION ──
+  {id:7,name:"Natalie Pettis",company:"WC Construction",role:"PM",bids:4,wins:1,color:"#ec4899",last:"This week",priority:"high",phone:"",email:"",notes:"WCC PM. CB&I CEO/Lvl2/Lvl7."},
+  {id:8,name:"Jason McIntyre",company:"WC Construction",role:"Estimator",bids:6,wins:2,color:"#14b8a6",last:"1 week ago",priority:"med",phone:"",email:"",notes:"WCC estimating."},
+  // ── ARCH-CON ──
+  {id:9,name:"Jose Perez",company:"Arch-Con",role:"PM",bids:3,wins:1,color:"#a855f7",last:"This week",priority:"high",phone:"",email:"",notes:"Arch-Con PM. Sprouts Farmers Market."},
+  // ── ENDURANCE BUILDERS ──
+  {id:10,name:"Monica Waller",company:"Endurance Builders",role:"PM",bids:2,wins:1,color:"#f97316",last:"This week",priority:"med",phone:"",email:"",notes:"Endurance Builders. Woodside Laboratory."},
+  // ── FKC ──
+  {id:11,name:"Jennifer Averitt",company:"FKC",role:"PM",bids:1,wins:0,color:"#64748b",last:"1 week ago",priority:"med",phone:"",email:"",notes:"FKC. San Angelo project."},
+  // ── OTHER KEY CONTACTS ──
+  {id:12,name:"Justin Gayford",company:"",role:"PM",bids:2,wins:1,color:"#0ea5e9",last:"2 weeks ago",priority:"med",phone:"",email:"",notes:""},
+  {id:13,name:"Steve Williams",company:"",role:"PM",bids:3,wins:1,color:"#22c55e",last:"1 week ago",priority:"med",phone:"",email:"",notes:""},
+  {id:14,name:"Kim Bullard",company:"",role:"PM",bids:2,wins:1,color:"#eab308",last:"2 weeks ago",priority:"med",phone:"",email:"",notes:""},
+  {id:15,name:"Ethan Alvarez",company:"",role:"Estimator",bids:2,wins:0,color:"#6366f1",last:"1 week ago",priority:"low",phone:"",email:"",notes:""},
+  {id:16,name:"Mariana Fumero",company:"",role:"PM",bids:2,wins:1,color:"#e11d48",last:"2 weeks ago",priority:"med",phone:"",email:"",notes:""},
 ];
 
 // ── SEED: CALL LOG ──
 const _demoCallLog = [
-  {id:1,contact:"United PM",company:"United",time:"Mar 12 10:30 AM",note:"Discussed Escapology San Antonio scope — confirmed demo + drywall + ACT. $187,800 total.",next:"Submit final proposal by Mar 15"},
-  {id:2,contact:"WCC PM",company:"WCC",time:"Mar 11 2:15 PM",note:"CB&I Lvl 2 & Lvl 7 — confirmed 3 areas. CEO office soundproofing alternate requested.",next:"Submit alternates pricing"},
-  {id:3,contact:"Forney PM",company:"Forney",time:"Mar 11 4:00 PM",note:"Fulshear SMR — build back + ACT only, no demo. Armstrong BP355E Optima on 9/16 grid.",next:"Confirm material lead times"},
+  {id:1,contact:"Ruby Rubio",company:"United Constructors",time:"Mar 12 10:30 AM",note:"Discussed Escapology San Antonio scope — confirmed demo + drywall + ACT. $187,800 total.",next:"Submit final proposal by Mar 15"},
+  {id:2,contact:"Natalie Pettis",company:"WC Construction",time:"Mar 11 2:15 PM",note:"CB&I Lvl 2 & Lvl 7 — confirmed 3 areas. CEO office soundproofing alternate requested.",next:"Submit alternates pricing"},
+  {id:3,contact:"Christina Zube",company:"Forney Construction",time:"Mar 11 4:00 PM",note:"Fulshear SMR — build back + ACT only, no demo. Armstrong BP355E Optima on 9/16 grid.",next:"Confirm material lead times"},
 ];
 
 // ── SEED: INVOICES ──
 const _demoInvoices = [
   {id:1,projectId:1,number:"EBC-2026-001",date:"2026-02-28",amount:92500,status:"pending",desc:"Progress billing #1 — Mobilization + material delivery (Brunello Cucinelli)",paidDate:null},
-  {id:2,projectId:4,number:"EBC-2026-002",date:"2026-03-10",amount:94000,status:"pending",desc:"Progress billing #1 — Mobilization (Bayshore FKC San Angelo)",paidDate:null},
-  {id:3,projectId:5,number:"EBC-2026-003",date:"2026-02-15",amount:22200,status:"paid",desc:"Progress billing #1 — Heart Care Clinic NW Houston",paidDate:"2026-03-01"},
-  {id:4,projectId:8,number:"EBC-2026-004",date:"2026-03-10",amount:78600,status:"pending",desc:"Progress billing #1 — MH Katy OBGYN Level 4",paidDate:null},
-  {id:5,projectId:9,number:"EBC-2026-005",date:"2026-03-10",amount:90100,status:"pending",desc:"Progress billing #1 — Ogle School Remodel",paidDate:null},
+  {id:2,projectId:2,number:"EBC-2026-002",date:"2026-03-10",amount:28350,status:"pending",desc:"Progress billing #1 — BSLMC Cath Labs 4 & 9",paidDate:null},
+  {id:3,projectId:10,number:"EBC-2026-003",date:"2026-02-15",amount:22200,status:"paid",desc:"Progress billing #1 — Heart Care Clinic NW Houston",paidDate:"2026-03-01"},
+  {id:4,projectId:6,number:"EBC-2026-004",date:"2026-01-15",amount:13300,status:"paid",desc:"Progress billing — MHMC Cancer Center (base contract)",paidDate:"2026-02-10"},
+  {id:5,projectId:3,number:"EBC-2026-005",date:"2026-03-15",amount:22440,status:"pending",desc:"Progress billing #1 — Woodside Laboratory",paidDate:null},
 ];
 
 // ── SEED: T&M TICKETS ──
@@ -479,7 +505,7 @@ const _demoInvoices = [
 const _demoTmTickets = [
   {
     id: 1, projectId: 6, ticketNumber: "TM-001", date: "2026-03-11", status: "submitted",
-    description: "MHMC Cancer Center — Drywall patching and shelf installation per owner request",
+    description: "MHMC Cancer Center — Drywall patching and shelf installation per owner request (CO#1 $800)",
     laborEntries: [
       { id: 1, employeeName: "Jesus M.", hours: 4, rate: 65, description: "Drywall patching" },
       { id: 2, employeeName: "Pedro R.", hours: 4, rate: 55, description: "Framing support" },
@@ -492,8 +518,8 @@ const _demoTmTickets = [
     notes: "Owner-directed extra work, not in original scope",
   },
   {
-    id: 2, projectId: 8, ticketNumber: "TM-001", date: "2026-03-08", status: "approved",
-    description: "MH Pearland Level 4 — Additional blocking for owner-furnished TV mounts",
+    id: 2, projectId: 5, ticketNumber: "TM-001", date: "2026-03-08", status: "approved",
+    description: "MH Pearland MEIC CT — Additional blocking for owner-furnished TV mounts",
     laborEntries: [
       { id: 1, employeeName: "Carlos V.", hours: 3, rate: 65, description: "Install blocking" },
     ],
@@ -524,30 +550,44 @@ const _demoTmTickets = [
 // ── SEED: CHANGE ORDERS ──
 // Real change orders from Google Docs
 const _demoChangeOrders = [
-  {id:1,projectId:6,number:"CO-001",desc:"MHMC Cancer Center — Drywall patching, painting, shelf installation (T&M)",amount:800,status:"pending",submitted:"2026-03-11",approved:null},
-  {id:2,projectId:11,number:"CO-001",desc:"HM Magnolia ECC MRI Buildout — Sleep room door demo, infill, relocate & tape/float",amount:2600,status:"pending",submitted:"2026-03-10",approved:null},
-  {id:3,projectId:8,number:"CO-009",desc:"MH Pearland Level 4 Renovation — Install 10 AD Systems sliding doors (after hours)",amount:8400,status:"pending",submitted:"2026-01-29",approved:null},
-  {id:4,projectId:5,number:"CO-001",desc:"United Heart Care Clinic NW Houston — Additional scope per revised drawings",amount:4200,status:"pending",submitted:"2026-03-11",approved:null},
+  // ── HEART CARE CLINIC NW HOUSTON ──
+  {id:1,projectId:10,number:"CO-001",desc:"Heart Care Clinic NW Houston — Net change per revised scope"   ,amount:-4300,status:"approved",submitted:"2026-02-15",approved:"2026-02-28"},
+  // ── MHMC CANCER CENTER ──
+  {id:2,projectId:6,number:"CO-001",desc:"MHMC Cancer Center — Drywall patching, painting, shelf installation (T&M)",amount:800,status:"approved",submitted:"2025-12-15",approved:"2026-01-05"},
+  // ── OCCU-HEALTH WINDOW SILL ──
+  {id:3,projectId:null,number:"CO-001",desc:"Occu-Health — Window sill change order",amount:0,status:"pending",submitted:"2026-03-01",approved:null},
+  // ── THC BAYTOWN ──
+  {id:4,projectId:null,number:"CO-001",desc:"THC Baytown — Change order",amount:0,status:"pending",submitted:"2026-02-20",approved:null},
+  // ── SPRING CYPRESS ORAL SURGEONS ──
+  {id:5,projectId:null,number:"CO-001",desc:"Spring Cypress Oral Surgeons — Change order",amount:0,status:"pending",submitted:"2026-02-10",approved:null},
+  // ── DOTSON MEDICAL ──
+  {id:6,projectId:null,number:"CO-002",desc:"Dotson Medical — Change order #2",amount:0,status:"pending",submitted:"2026-02-25",approved:null},
+  // ── ESCAPOLOGY ──
+  {id:7,projectId:null,number:"CO-001",desc:"Escapology — Change order",amount:0,status:"pending",submitted:"2026-03-05",approved:null},
+  // ── ROD A115 ──
+  {id:8,projectId:null,number:"CO-005",desc:"ROD Space A115 — Change order #5",amount:0,status:"pending",submitted:"2026-03-10",approved:null},
+  // ── ROD F150 ──
+  {id:9,projectId:null,number:"CO-001",desc:"ROD Space F150 — Change order #1",amount:0,status:"pending",submitted:"2026-03-08",approved:null},
 ];
 
 // ── SEED: RFIs ──
 const _demoRfis = [
-  {id:1,projectId:4,number:"RFI-001",subject:"MH League City CCC CT — Equipment exchange scope clarification",submitted:"2026-03-12",status:"open",assigned:"Forney PM",response:"",responseDate:null},
-  {id:2,projectId:1,number:"RFI-001",subject:"Brunello Cucinelli — ACT grid layout at display area",submitted:"2026-02-25",status:"open",assigned:"WCC PM",response:"",responseDate:null},
-  {id:3,projectId:9,number:"RFI-001",subject:"Ogle School — Metal framing gauge at corridor partitions",submitted:"2026-03-08",status:"answered",assigned:"United PM",response:"20ga per structural, 14ga at impact zones",responseDate:"2026-03-11"},
-  {id:4,projectId:7,number:"RFI-001",subject:"Aggieland MRI — Lead-lined rock layers at scan room",submitted:"2026-03-11",status:"open",assigned:"United PM",response:"",responseDate:null},
+  {id:1,projectId:4,number:"RFI-001",subject:"MH League City CCC CT — Equipment exchange scope clarification",submitted:"2026-03-12",status:"open",assigned:"Christina Zube",response:"",responseDate:null},
+  {id:2,projectId:1,number:"RFI-001",subject:"Brunello Cucinelli — ACT grid layout at display area",submitted:"2026-02-25",status:"open",assigned:"Ruby Rubio",response:"",responseDate:null},
+  {id:3,projectId:8,number:"RFI-001",subject:"MH Neuro IR — Lead-lined rock layers at scan room",submitted:"2026-03-11",status:"open",assigned:"Adam Teeter",response:"",responseDate:null},
+  {id:4,projectId:9,number:"RFI-001",subject:"MH Single Plane IR — Lead shielding thickness clarification",submitted:"2026-03-12",status:"open",assigned:"Adam Teeter",response:"",responseDate:null},
 ];
 
 // ── SEED: SUBMITTALS ──
 const _demoSubmittals = [
-  {id:1,projectId:1,number:"SUB-001",desc:"Metal stud shop drawings — Level 2",specSection:"09 22 16",status:"approved",submitted:"2026-02-05",due:"2026-02-19",
+  {id:1,projectId:1,number:"SUB-001",desc:"Metal stud shop drawings — Brunello Cucinelli",specSection:"09 22 16",status:"approved",submitted:"2026-02-05",due:"2026-02-19",
     pdfKey:null,pdfName:null,pdfSize:null,linkedMaterialIds:["m1","m2"],linkedAssemblyCodes:["A2","B1","DW1"]},
   {id:2,projectId:1,number:"SUB-002",desc:"GWB product data — Type X Firecode",specSection:"09 29 00",status:"submitted",submitted:"2026-03-01",due:"2026-03-15",
     pdfKey:null,pdfName:null,pdfSize:null,linkedMaterialIds:["m7","m8"],linkedAssemblyCodes:["A2","B1"]},
-  {id:3,projectId:1,number:"SUB-003",desc:"ACT product data — Armstrong Cortega",specSection:"09 51 00",status:"preparing",submitted:null,due:"2026-03-20",
-    pdfKey:null,pdfName:null,pdfSize:null,linkedMaterialIds:["m15"],linkedAssemblyCodes:["ACT1"]},
-  {id:4,projectId:3,number:"SUB-001",desc:"Metal framing shop drawings",specSection:"09 22 16",status:"approved",submitted:"2025-12-01",due:"2025-12-15",
+  {id:3,projectId:2,number:"SUB-001",desc:"Metal framing shop drawings — BSLMC Cath Labs",specSection:"09 22 16",status:"approved",submitted:"2025-12-01",due:"2025-12-15",
     pdfKey:null,pdfName:null,pdfSize:null,linkedMaterialIds:["m1","m2"],linkedAssemblyCodes:["A2"]},
+  {id:4,projectId:2,number:"SUB-002",desc:"Lead-lined drywall product data — BSLMC Cath Labs",specSection:"09 29 00",status:"submitted",submitted:"2026-01-10",due:"2026-01-24",
+    pdfKey:null,pdfName:null,pdfSize:null,linkedMaterialIds:[],linkedAssemblyCodes:["LL1"]},
 ];
 
 // ── SEED: SCHEDULE ──
@@ -560,20 +600,24 @@ const _demoSchedule = [
   {id:6,projectId:1,task:"ACT Ceiling Install",start:"2026-06-01",end:"2026-06-20",crew:"Ceiling Crew (3)",status:"not-started",milestone:false},
   {id:7,projectId:1,task:"Punch & Closeout",start:"2026-06-21",end:"2026-07-30",crew:"Oscar + 2",status:"not-started",milestone:false},
   {id:8,projectId:1,task:"Framing Complete Milestone",start:"2026-04-15",end:"2026-04-15",crew:"",status:"not-started",milestone:true},
-  {id:9,projectId:3,task:"Board Hang — All Areas",start:"2026-02-01",end:"2026-03-20",crew:"Crew C (5)",status:"in-progress",milestone:false},
-  {id:10,projectId:3,task:"Tape & Finish",start:"2026-03-21",end:"2026-04-30",crew:"Finishers (3)",status:"not-started",milestone:false},
+  // BSLMC Cath Labs
+  {id:9,projectId:2,task:"Board Hang — All Areas",start:"2026-02-01",end:"2026-03-20",crew:"Crew B (5)",status:"in-progress",milestone:false},
+  {id:10,projectId:2,task:"Tape & Finish",start:"2026-03-21",end:"2026-04-30",crew:"Finishers (3)",status:"not-started",milestone:false},
+  // CB&I
+  {id:11,projectId:12,task:"Mobilization",start:"2026-03-20",end:"2026-03-22",crew:"Crew C (4)",status:"in-progress",milestone:false},
+  {id:12,projectId:12,task:"Metal Framing & Drywall",start:"2026-03-23",end:"2026-05-30",crew:"Crew C (4)",status:"not-started",milestone:false},
 ];
 
 // ── SEED: SAFETY ──
 const _demoIncidents = [
   {id:1,projectId:1,date:"2026-03-05",type:"near-miss",desc:"Scaffold wheel unlocked during repositioning on Level 2",corrective:"All scaffold wheels inspected. Refresher training conducted same day.",reportedBy:"Oscar A."},
-  {id:2,projectId:3,date:"2026-02-18",type:"first-aid",desc:"Minor cut on hand from sheet metal edge — no stitches required",corrective:"Crew reminded of cut-resistant glove requirement. Gloves restocked.",reportedBy:"Foreman R."},
+  {id:2,projectId:2,date:"2026-02-18",type:"first-aid",desc:"Minor cut on hand from sheet metal edge — no stitches required",corrective:"Crew reminded of cut-resistant glove requirement. Gloves restocked.",reportedBy:"Foreman R."},
 ];
 
 const _demoToolboxTalks = [
   {id:1,projectId:1,date:"2026-03-13",topic:"Silica Dust Exposure — GWB Sanding",attendees:8,conductor:"Oscar A.",notes:"Reviewed N95 requirements, wet sanding technique"},
   {id:2,projectId:1,date:"2026-03-06",topic:"Scaffold Safety & Fall Protection",attendees:6,conductor:"Oscar A.",notes:"Inspection checklist reviewed, competent person designated"},
-  {id:3,projectId:3,date:"2026-03-11",topic:"Electrical Safety — Lockout/Tagout",attendees:5,conductor:"Foreman R.",notes:"All crew signed off on awareness form"},
+  {id:3,projectId:2,date:"2026-03-11",topic:"Electrical Safety — Lockout/Tagout",attendees:5,conductor:"Foreman R.",notes:"All crew signed off on awareness form"},
 ];
 
 const _demoDailyReports = [
@@ -620,10 +664,10 @@ export const OSHA_CHECKLIST = [
 // ── COMPANY INFO ──
 export const COMPANY_DEFAULTS = {
   name:"Eagles Brothers Constructors",
-  address:"Houston, TX",
-  phone:"713-555-0000",
+  address:"7801 N Shepherd Dr Suite 107, Houston TX 77088",
+  phone:"346-970-7093",
   email:"abner@ebconstructors.com",
-  license:"TX GC License #12345",
+  license:"",
   defaultTax:8.25,
   defaultWaste:5,
   defaultOverhead:10,
@@ -649,7 +693,7 @@ const _demoEmployees = [
 
 // ── SEED: COMPANY LOCATIONS (geofence) ──
 const _demoCompanyLocations = [
-  { id: "loc_office", name: "EBC Main Office", lat: 29.7604, lng: -95.3698, radiusFt: 1000, type: "office" },
+  { id: "loc_office", name: "EBC Main Office — 7801 N Shepherd Dr Ste 107", lat: 29.8351, lng: -95.4103, radiusFt: 1000, type: "office" },
   { id: "loc_warehouse", name: "EBC Warehouse", lat: 29.7250, lng: -95.4000, radiusFt: 800, type: "warehouse" },
 ];
 
@@ -663,10 +707,10 @@ const _ws = _currentWeekStart();
 
 // ── SEED: MATERIAL REQUESTS ──
 const _demoMaterialRequests = [
-  {id:"mr-1",projectId:1,projectName:"ROD - Brunello Cucinelli",material:'5/8" Type X Firecode (4x12)',qty:120,unit:"sheets",status:"ordered",requestedBy:"Antonio Hernandez",employeeName:"Antonio Hernandez",requestedAt:new Date(_ws+"T07:15:00").toISOString(),notes:"Level 2 board hang starting next week",deliveredAt:null,priority:"normal"},
-  {id:"mr-2",projectId:1,projectName:"ROD - Brunello Cucinelli",material:"3-5/8\" 25ga Metal Studs (10')",qty:400,unit:"sticks",status:"delivered",requestedBy:"Antonio Hernandez",employeeName:"Antonio Hernandez",requestedAt:new Date(_ws+"T06:45:00").toISOString(),notes:"Corridor framing",deliveredAt:new Date(_ws+"T14:00:00").toISOString(),priority:"high"},
-  {id:"mr-3",projectId:3,projectName:"Forney - BSLMC Cath Labs 4 & 9",material:"Lead-Lined Drywall (1/16\" Pb)",qty:24,unit:"sheets",status:"pending",requestedBy:"Antonio Hernandez",employeeName:"Antonio Hernandez",requestedAt:new Date(_ws+"T08:30:00").toISOString(),notes:"Cath Lab 4 scan room walls",deliveredAt:null,priority:"high"},
-  {id:"mr-4",projectId:1,projectName:"ROD - Brunello Cucinelli",material:"USG Sheetrock All Purpose Joint Compound (5 gal)",qty:15,unit:"buckets",status:"pending",requestedBy:"Ricardo Mendez",employeeName:"Ricardo Mendez",requestedAt:new Date(_ws+"T09:00:00").toISOString(),notes:"",deliveredAt:null,priority:"normal"},
+  {id:"mr-1",projectId:1,projectName:"United - Brunello Cucinelli",material:'5/8" Type X Firecode (4x12)',qty:120,unit:"sheets",status:"ordered",requestedBy:"Antonio Hernandez",employeeName:"Antonio Hernandez",requestedAt:new Date(_ws+"T07:15:00").toISOString(),notes:"Board hang starting next week",deliveredAt:null,priority:"normal"},
+  {id:"mr-2",projectId:1,projectName:"United - Brunello Cucinelli",material:"3-5/8\" 25ga Metal Studs (10')",qty:400,unit:"sticks",status:"delivered",requestedBy:"Antonio Hernandez",employeeName:"Antonio Hernandez",requestedAt:new Date(_ws+"T06:45:00").toISOString(),notes:"Corridor framing",deliveredAt:new Date(_ws+"T14:00:00").toISOString(),priority:"high"},
+  {id:"mr-3",projectId:2,projectName:"Forney - BSLMC Cath Labs 4 & 9",material:"Lead-Lined Drywall (1/16\" Pb)",qty:24,unit:"sheets",status:"pending",requestedBy:"Antonio Hernandez",employeeName:"Antonio Hernandez",requestedAt:new Date(_ws+"T08:30:00").toISOString(),notes:"Cath Lab 4 scan room walls",deliveredAt:null,priority:"high"},
+  {id:"mr-4",projectId:1,projectName:"United - Brunello Cucinelli",material:"USG Sheetrock All Purpose Joint Compound (5 gal)",qty:15,unit:"buckets",status:"pending",requestedBy:"Ricardo Mendez",employeeName:"Ricardo Mendez",requestedAt:new Date(_ws+"T09:00:00").toISOString(),notes:"",deliveredAt:null,priority:"normal"},
 ];
 
 // ── SEED: CREW SCHEDULE ──
@@ -678,25 +722,25 @@ const _demoCrewSchedule = [
   { id:4, employeeId:6,  projectId:1, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
   { id:5, employeeId:10, projectId:1, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
   { id:6, employeeId:11, projectId:1, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"07:00",end:"15:30"} },
-  // Project 3: BSLMC Cath Labs — Antonio also oversees
-  { id:7, employeeId:9,  projectId:3, weekStart:_ws, days:{mon:false,tue:false,wed:true,thu:true,fri:true}, hours:{start:"06:00",end:"14:30"} },
-  { id:8, employeeId:4,  projectId:3, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
-  // Project 2: Escapology — Oscar's crew
-  { id:9,  employeeId:1, projectId:2, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
-  { id:10, employeeId:5, projectId:2, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:false}, hours:{start:"07:00",end:"15:30"} },
+  // Project 2: BSLMC Cath Labs — Antonio also oversees
+  { id:7, employeeId:9,  projectId:2, weekStart:_ws, days:{mon:false,tue:false,wed:true,thu:true,fri:true}, hours:{start:"06:00",end:"14:30"} },
+  { id:8, employeeId:4,  projectId:2, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
+  // Project 12: CB&I — Oscar's crew
+  { id:9,  employeeId:1, projectId:12, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:true}, hours:{start:"06:30",end:"15:00"} },
+  { id:10, employeeId:5, projectId:12, weekStart:_ws, days:{mon:true,tue:true,wed:true,thu:true,fri:false}, hours:{start:"07:00",end:"15:30"} },
 ];
 
 // ── SEED: TIME ENTRIES ──
 // Generate time entries for Mon-Fri of current week (up to today)
 function _seedTimeEntries() {
   const _empNames = {1:"Oscar Alvarez",2:"Ricardo Mendez",3:"Carlos Fuentes",4:"Miguel Torres",5:"David Ramirez",6:"Luis Herrera",9:"Antonio Hernandez",10:"Jose Perez",11:"Fernando Reyes"};
-  const _projNames = {1:"ROD - Brunello Cucinelli",2:"United - Escapology San Antonio",3:"Forney - BSLMC Cath Labs 4 & 9"};
+  const _projNames = {1:"United - Brunello Cucinelli",2:"Forney - BSLMC Cath Labs 4 & 9",12:"WC Construction - CB&I CEO/Lvl2/Lvl7"};
   const entries = [];
   const ws = new Date(_ws);
   const today = new Date(); today.setHours(23,59,59,999);
   const crew = [
     {eid:9,pid:1,h:8.5},{eid:2,pid:1,h:8.5},{eid:6,pid:1,h:8.5},{eid:10,pid:1,h:8.5},{eid:11,pid:1,h:8.5},
-    {eid:3,pid:1,h:8.5},{eid:4,pid:3,h:8.5},{eid:1,pid:2,h:8.5},{eid:5,pid:2,h:8.5},
+    {eid:3,pid:1,h:8.5},{eid:4,pid:2,h:8.5},{eid:1,pid:12,h:8.5},{eid:5,pid:12,h:8.5},
   ];
   let id = 1;
   for (let d = 0; d < 5; d++) {
@@ -716,9 +760,9 @@ const _demoTimeEntries = _seedTimeEntries();
 // Projects & employees ALWAYS load (real EBC data), other seed data is demo-only
 export const initBids = _demoBids; // always load — real EBC bid list
 export const initProjects = _demoProjects; // always load — real EBC project list
-export const initContacts = _demo ? _demoContacts : [];
-export const initCallLog = _demo ? _demoCallLog : [];
-export const initInvoices = _demo ? _demoInvoices : [];
+export const initContacts = _demoContacts; // always load — real GC contacts
+export const initCallLog = _demoCallLog; // always load — real call log
+export const initInvoices = _demoInvoices; // always load — real invoices
 export const initTmTickets = _demo ? _demoTmTickets : [];
 export const initChangeOrders = _demoChangeOrders; // always load — foreman portal needs this
 export const initRfis = _demoRfis; // always load — foreman portal needs this
