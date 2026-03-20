@@ -779,6 +779,48 @@ export function TimeClockAdmin({ app }) {
                 {crewOptLoading ? "Optimizing..." : "AI Optimize"}
               </button>
               <button className="btn btn-ghost btn-sm" onClick={copyPreviousWeek}>Copy Previous Week</button>
+              <button className="btn btn-primary btn-sm" onClick={() => {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const dayIdx = (tomorrow.getDay() + 6) % 7; // 0=Mon
+                if (dayIdx > 4) { show("No dispatch needed — tomorrow is weekend"); return; }
+                const dayKey = DAY_KEYS[dayIdx];
+                const dayLabel = DAY_LABELS[dayIdx];
+                const dayDate = getDayDate(currentWeekStart, dayIdx);
+
+                const assignments = weekSchedule.filter(s => s.days?.[dayKey]);
+                if (assignments.length === 0) { show("No crew scheduled for " + dayLabel); return; }
+
+                const lines = [];
+                const assignedEmps = new Set();
+                assignments.forEach(a => {
+                  const emp = employees.find(e => e.id === a.employeeId);
+                  if (!emp) return;
+                  assignedEmps.add(emp.id);
+                  const proj = projects.find(p => p.id === a.projectId);
+                  const addr = proj?.address || "";
+                  const suite = proj?.suite ? ` (${proj.suite})` : "";
+                  const parking = proj?.parking ? ` | Parking: ${proj.parking}` : "";
+                  const time = a.hours ? `${a.hours.start}–${a.hours.end}` : "6:30–3:00";
+                  lines.push(`${emp.name} → ${a.projectName}${suite}\n  📍 ${addr}${parking}\n  🕐 ${time}`);
+                });
+
+                // Find unassigned
+                const unassigned = employees.filter(e => e.active && !assignedEmps.has(e.id));
+                if (unassigned.length > 0) {
+                  lines.push("\n⚠️ UNASSIGNED:\n" + unassigned.map(e => `  • ${e.name} (${e.role})`).join("\n"));
+                }
+
+                const dispatchMsg = `📋 EBC CREW DISPATCH — ${dayLabel} ${fmtWeekDate(dayDate)}\n${"─".repeat(40)}\n\n${lines.join("\n\n")}`;
+
+                // Copy to clipboard for SMS/WhatsApp
+                navigator.clipboard.writeText(dispatchMsg).then(() => {
+                  show(`Dispatch copied — ${assignments.length} crew assigned for ${dayLabel}. Paste into group chat.`, "ok");
+                }).catch(() => {
+                  // Fallback: show in prompt
+                  window.prompt("Copy this dispatch:", dispatchMsg);
+                });
+              }}>📋 Send Dispatch</button>
             </div>
           </div>
 
@@ -875,7 +917,7 @@ export function TimeClockAdmin({ app }) {
             </div>
             <div className="kpi-card">
               <div className="kpi-label">Unassigned</div>
-              <div className="kpi-value">
+              <div className="kpi-value" style={{ color: employees.filter(e => e.active && !weekSchedule.some(s => s.employeeId === e.id)).length > 0 ? "var(--red)" : "var(--green)" }}>
                 {employees.filter(e => e.active && !weekSchedule.some(s => s.employeeId === e.id)).length}
               </div>
             </div>
@@ -885,7 +927,63 @@ export function TimeClockAdmin({ app }) {
                 {new Set(weekSchedule.map(s => s.projectId)).size}
               </div>
             </div>
+            <div className="kpi-card">
+              <div className="kpi-label">Weekly Crew Hours</div>
+              <div className="kpi-value">
+                {(() => {
+                  let hrs = 0;
+                  weekSchedule.forEach(s => {
+                    const daysOn = DAY_KEYS.slice(0, 5).filter(d => s.days?.[d]).length;
+                    const daily = s.hours ? (parseFloat(s.hours.end) - parseFloat(s.hours.start)) : 8.5;
+                    hrs += daysOn * daily;
+                  });
+                  return hrs.toFixed(0) + "h";
+                })()}
+              </div>
+            </div>
           </div>
+
+          {/* ── Backlog / Projected Overhead ── */}
+          {(() => {
+            const activeProjects = projects.filter(p => p.status === "in-progress");
+            const totalContract = activeProjects.reduce((s, p) => s + (p.contract || 0), 0);
+            const totalBilled = activeProjects.reduce((s, p) => s + (p.billed || 0), 0);
+            const backlog = totalContract - totalBilled;
+            const activeEmps = employees.filter(e => e.active);
+            const avgRate = activeEmps.length > 0 ? activeEmps.reduce((s, e) => s + (e.hourlyRate || 30), 0) / activeEmps.length : 30;
+            const weeklyOverhead = activeEmps.length * avgRate * 42.5; // 8.5hrs * 5days
+            const weeksOfWork = weeklyOverhead > 0 ? backlog / weeklyOverhead : 0;
+
+            return (
+              <div className="card" style={{ padding: 16, marginBottom: 20 }}>
+                <div className="text-sm font-semi mb-8">Backlog & Projected Overhead</div>
+                <div className="flex gap-16 flex-wrap">
+                  <div>
+                    <span className="text-dim text-xs">ACTIVE CONTRACTS</span>
+                    <div className="font-mono">${(totalContract / 1000).toFixed(0)}K</div>
+                  </div>
+                  <div>
+                    <span className="text-dim text-xs">BILLED TO DATE</span>
+                    <div className="font-mono">${(totalBilled / 1000).toFixed(0)}K</div>
+                  </div>
+                  <div>
+                    <span className="text-dim text-xs">BACKLOG</span>
+                    <div className="font-mono text-amber font-bold">${(backlog / 1000).toFixed(0)}K</div>
+                  </div>
+                  <div>
+                    <span className="text-dim text-xs">WEEKLY LABOR COST</span>
+                    <div className="font-mono">${(weeklyOverhead / 1000).toFixed(1)}K</div>
+                  </div>
+                  <div>
+                    <span className="text-dim text-xs">WEEKS OF WORK</span>
+                    <div className="font-mono" style={{ color: weeksOfWork > 8 ? "var(--green)" : weeksOfWork > 4 ? "var(--amber)" : "var(--red)" }}>
+                      {weeksOfWork.toFixed(1)} wks
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="table-wrap">
             <table className="data-table">

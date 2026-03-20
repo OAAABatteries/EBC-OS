@@ -564,6 +564,7 @@ function App({ auth, onLogout }) {
 
   // ── bid filter (for bids tab) ──
   const [bidFilter, setBidFilter] = useState("All");
+  const [bidViewMode, setBidViewMode] = useState("list"); // "list" or "pipeline"
 
   // ── scope bid selector ──
   const [scopeBidId, setScopeBidId] = useState(null);
@@ -1259,16 +1260,22 @@ function App({ auth, onLogout }) {
         </div>
       )}
 
-      <div className="flex gap-4 mb-16 flex-wrap">
-        {BID_FILTERS.map(f => (
-          <button
-            key={f}
-            className={`btn btn-sm ${bidFilter === f ? "btn-primary" : "btn-ghost"}`}
-            onClick={() => setBidFilter(f)}
-          >
-            {t(f)}
-          </button>
-        ))}
+      <div className="flex-between mb-16">
+        <div className="flex gap-4 flex-wrap">
+          {BID_FILTERS.map(f => (
+            <button
+              key={f}
+              className={`btn btn-sm ${bidFilter === f ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => setBidFilter(f)}
+            >
+              {t(f)}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-4">
+          <button className={`btn btn-sm ${bidViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("list")}>☰ List</button>
+          <button className={`btn btn-sm ${bidViewMode === "pipeline" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("pipeline")}>⬛ Pipeline</button>
+        </div>
       </div>
 
       {selectedBids.size > 0 && (
@@ -1305,12 +1312,54 @@ function App({ auth, onLogout }) {
         </div>
       )}
 
-      {filteredBids.length === 0 ? (
+      {/* ═══ PIPELINE KANBAN VIEW ═══ */}
+      {bidViewMode === "pipeline" && (
+        <div style={{ overflowX: "auto", paddingBottom: 16 }}>
+          <div style={{ display: "flex", gap: 12, minWidth: "fit-content" }}>
+            {[
+              { key: "estimating", label: "Estimating", statuses: ["invite_received", "reviewing", "assigned", "takeoff", "awaiting_quotes", "pricing", "draft_ready", "estimating"] },
+              { key: "submitted", label: "Submitted", statuses: ["submitted", "clarifications", "negotiating"] },
+              { key: "awarded", label: "Awarded", statuses: ["awarded"] },
+              { key: "lost", label: "Lost / No Bid", statuses: ["lost", "no_bid"] },
+            ].map(col => {
+              const colBids = bids.filter(b => col.statuses.includes(b.status));
+              const colValue = colBids.reduce((s, b) => s + (b.value || 0), 0);
+              return (
+                <div key={col.key} style={{ flex: "0 0 260px", background: "var(--bg2)", borderRadius: 12, padding: 12, maxHeight: "70vh", overflowY: "auto" }}>
+                  <div className="flex-between mb-8">
+                    <span className="text-sm font-semi">{col.label}</span>
+                    <span className="text-xs text-muted">{colBids.length} · {fmtK(colValue)}</span>
+                  </div>
+                  {colBids.length === 0 ? (
+                    <div className="text-xs text-dim" style={{ padding: 16, textAlign: "center" }}>Empty</div>
+                  ) : colBids.map(b => (
+                    <div key={b.id} className="bid-card" style={{ marginBottom: 8, padding: "10px 12px", cursor: "pointer" }}
+                      onClick={() => setModal({ type: "editBid", data: b })}>
+                      <div className="text-xs font-semi" style={{ lineHeight: 1.3, marginBottom: 4 }}>{b.name}</div>
+                      <div className="flex-between">
+                        <span className="text-xs text-muted">{b.gc}</span>
+                        <span className="text-xs font-mono text-amber">{b.value ? fmt(b.value) : "—"}</span>
+                      </div>
+                      <div className="flex gap-4 mt-4">
+                        <span className={`badge ${STATUS_BADGE[b.status] || "badge-muted"}`} style={{ fontSize: 9 }}>{STATUS_LABEL[b.status] || b.status}</span>
+                        {b.contact && <span className="text-xs text-dim">{b.contact}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ LIST VIEW ═══ */}
+      {bidViewMode === "list" && filteredBids.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">📂</div>
           <div className="empty-text">{t("No bids match your filter")}</div>
         </div>
-      ) : (
+      ) : bidViewMode === "list" ? (
         <div className="bid-grid">
           {filteredBids.slice(0, bidPageSize).map(b => {
             // Due countdown
@@ -1393,8 +1442,8 @@ function App({ auth, onLogout }) {
             );
           })}
         </div>
-      )}
-      {filteredBids.length > bidPageSize && (
+      ) : null}
+      {bidViewMode === "list" && filteredBids.length > bidPageSize && (
         <div className="flex-between" style={{ marginTop: 16, padding: "8px 0" }}>
           <span className="text-xs text-muted">Showing {Math.min(bidPageSize, filteredBids.length)} of {filteredBids.length}</span>
           <div className="flex gap-8">
