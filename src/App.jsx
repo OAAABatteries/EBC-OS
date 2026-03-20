@@ -734,18 +734,94 @@ function App({ auth, onLogout }) {
   };
   const dashCfg = ROLE_DASH[userRole] || ROLE_DASH.owner;
 
+  // ── Dashboard computed action items ──
+  const dashActions = useMemo(() => {
+    const now = new Date();
+    const in7 = new Date(now.getTime() + 7 * 86400000);
+    const parseDate = (s) => { if (!s) return null; const d = new Date(s); return isNaN(d) ? null : d; };
+
+    // Bids due in next 7 days
+    const bidsDueSoon = bids.filter(b => {
+      if (b.status !== "estimating") return false;
+      const d = parseDate(b.due);
+      return d && d >= now && d <= in7;
+    }).sort((a, b) => (parseDate(a.due) || 0) - (parseDate(b.due) || 0));
+
+    // COs pending approval
+    const cosPending = changeOrders.filter(co => co.status === "pending");
+    const cosPendingTotal = cosPending.reduce((s, co) => s + (co.amount || 0), 0);
+
+    // RFIs open (with age)
+    const rfisOpen = rfis.filter(r => r.status === "open").map(r => {
+      const age = r.submitted ? Math.floor((now - new Date(r.submitted)) / 86400000) : 0;
+      return { ...r, age };
+    }).sort((a, b) => b.age - a.age);
+
+    // Submittals due soon (not approved, due within 14 days)
+    const in14 = new Date(now.getTime() + 14 * 86400000);
+    const subsDueSoon = submittals.filter(s => {
+      if (s.status === "approved") return false;
+      const d = parseDate(s.due);
+      return d && d <= in14;
+    }).sort((a, b) => (parseDate(a.due) || 0) - (parseDate(b.due) || 0));
+
+    // Overdue invoices
+    const overdueInv = invoices.filter(i => i.status === "overdue" || (i.status === "pending" && parseDate(i.date) && (now - parseDate(i.date)) > 30 * 86400000));
+    const overdueTotal = overdueInv.reduce((s, i) => s + (i.amount || 0), 0);
+
+    // T&M tickets pending
+    const tmPending = tmTickets.filter(t => t.status === "pending" || t.status === "draft");
+
+    // Projects with no invoice in last 30 days (active projects only)
+    const projNoBilling = projects.filter(p => (p.progress || 0) < 100).filter(p => {
+      const projInvs = invoices.filter(i => i.projectId === p.id);
+      if (projInvs.length === 0) return true;
+      const latest = Math.max(...projInvs.map(i => parseDate(i.date)?.getTime() || 0));
+      return (now.getTime() - latest) > 30 * 86400000;
+    });
+
+    // Projects at risk (behind schedule)
+    const projAtRisk = projects.filter(p => {
+      if ((p.progress || 0) >= 100) return false;
+      const end = parseDate(p.end);
+      const start = parseDate(p.start);
+      if (!end || !start) return false;
+      const totalDays = (end - start) / 86400000;
+      const elapsed = (now - start) / 86400000;
+      const expectedProgress = Math.min(100, (elapsed / totalDays) * 100);
+      return (p.progress || 0) < expectedProgress - 15; // 15% behind expected
+    });
+
+    // Follow-ups from call log
+    const followUps = callLog.filter(c => c.next && c.next.trim());
+
+    // Total urgency count
+    const urgentCount = bidsDueSoon.length + cosPending.length + rfisOpen.filter(r => r.age > 7).length + subsDueSoon.length + overdueInv.length;
+
+    return { bidsDueSoon, cosPending, cosPendingTotal, rfisOpen, subsDueSoon, overdueInv, overdueTotal, tmPending, projNoBilling, projAtRisk, followUps, urgentCount };
+  }, [bids, changeOrders, rfis, submittals, invoices, tmTickets, projects, callLog]);
+
+  const pName = (pid) => projects.find(p => p.id === pid)?.name || "Unknown";
+
   const renderDashboard = () => (
     <div>
+      {/* ── Header — action-oriented ── */}
       <div className="section-header">
         <div>
-          <div className="section-title font-head">{t("Dashboard")}</div>
-          <div className="section-sub">{auth?.name ? `${auth.name} — ${t(dashCfg.subtitle)}` : t(dashCfg.subtitle)}</div>
+          <div className="section-title font-head" style={{ fontSize: 20 }}>{t("Command Center")}</div>
+          <div className="section-sub" style={{ fontSize: 12 }}>
+            {auth?.name || "EBC"} — {new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+            {dashActions.urgentCount > 0 && <span style={{ color: "var(--red)", fontWeight: 700, marginLeft: 8 }}>{dashActions.urgentCount} items need attention</span>}
+          </div>
         </div>
-        {dashCfg.showBrief && (
-          <button className="btn btn-ghost" onClick={() => { showBrief ? setShowBrief(false) : runMorningBrief(); }} disabled={briefLoading}>
-            {briefLoading ? t("Loading...") : t("Morning Brief")}
-          </button>
-        )}
+        <div className="flex gap-8">
+          {dashCfg.showBrief && (
+            <button className="btn btn-ghost" onClick={() => { showBrief ? setShowBrief(false) : runMorningBrief(); }} disabled={briefLoading}>
+              {briefLoading ? t("Loading...") : t("Morning Brief")}
+            </button>
+          )}
+          <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>+ New Bid</button>
+        </div>
       </div>
 
       {/* Morning Briefing Panel */}
@@ -816,99 +892,108 @@ function App({ auth, onLogout }) {
         </div>
       )}
 
-      {dashCfg.showKPIs && userRole === "accounting" ? (
-        <div className="kpi-grid">
-          <div className="kpi-card" onClick={() => handleTabClick("financials")} style={{ cursor: "pointer" }}>
-            <div className="kpi-label">{t("Outstanding A/R")}</div>
-            <div className="kpi-value">{fmtK(invoices.filter(i => i.status === "pending" || i.status === "overdue").reduce((s, i) => s + (i.amount || 0), 0))}</div>
-            <div className="kpi-sub">{invoices.filter(i => i.status === "pending" || i.status === "overdue").length} {t("unpaid invoices")}</div>
-          </div>
-          <div className="kpi-card" onClick={() => handleTabClick("financials")} style={{ cursor: "pointer" }}>
-            <div className="kpi-label">{t("Overdue Invoices")}</div>
-            <div className="kpi-value" style={{ color: "var(--red)" }}>{fmtK(invoices.filter(i => i.status === "overdue").reduce((s, i) => s + (i.amount || 0), 0))}</div>
-            <div className="kpi-sub">{invoices.filter(i => i.status === "overdue").length} {t("past due")}</div>
-          </div>
-          <div className="kpi-card" onClick={() => handleTabClick("projects")} style={{ cursor: "pointer" }}>
-            <div className="kpi-label">{t("Active Projects")}</div>
-            <div className="kpi-value">{activeProjects}</div>
-            <div className="kpi-sub">{t("billing in progress")}</div>
-          </div>
-          <div className="kpi-card" onClick={() => handleTabClick("financials")} style={{ cursor: "pointer" }}>
-            <div className="kpi-label">{t("T&M Pending")}</div>
-            <div className="kpi-value">{tmTickets.filter(t => t.status === "pending" || t.status === "draft").length}</div>
-            <div className="kpi-sub">{t("tickets to review")}</div>
-          </div>
-          <div className="kpi-card" onClick={() => handleTabClick("timeclock")} style={{ cursor: "pointer" }}>
-            <div className="kpi-label">{t("Team on Payroll")}</div>
-            <div className="kpi-value">{(() => { try { return JSON.parse(localStorage.getItem("ebc_users") || "[]").length; } catch { return 0; } })()}</div>
-            <div className="kpi-sub">{t("employees")}</div>
-          </div>
-          <div className="kpi-card" onClick={() => handleTabClick("financials")} style={{ cursor: "pointer" }}>
-            <div className="kpi-label">{t("Change Orders")}</div>
-            <div className="kpi-value">{fmtK(changeOrders.filter(co => co.status === "approved").reduce((s, co) => s + (co.amount || 0), 0))}</div>
-            <div className="kpi-sub">{changeOrders.filter(co => co.status === "pending").length} {t("pending approval")}</div>
-          </div>
-        </div>
-      ) : dashCfg.showKPIs && userRole === "office_admin" ? (
-        <div className="kpi-grid">
-          <div className="kpi-card" onClick={() => handleTabClick("projects")} style={{ cursor: "pointer" }}>
-            <div className="kpi-label">{t("Active Projects")}</div>
-            <div className="kpi-value">{activeProjects}</div>
-            <div className="kpi-sub">{projects.filter(p => p.progress < 100).length} {t("in progress")}</div>
-          </div>
-          <div className="kpi-card" onClick={() => handleTabClick("bids")} style={{ cursor: "pointer" }}>
-            <div className="kpi-label">{t("Open Bids")}</div>
-            <div className="kpi-value">{openBids}</div>
-            <div className="kpi-sub">{bids.filter(b => b.status === "submitted").length} {t("submitted")}</div>
-          </div>
-          <div className="kpi-card" onClick={() => handleTabClick("contacts")} style={{ cursor: "pointer" }}>
-            <div className="kpi-label">{t("Contacts")}</div>
-            <div className="kpi-value">{contacts.length}</div>
-            <div className="kpi-sub">{t("in directory")}</div>
-          </div>
-          <div className="kpi-card" onClick={() => handleTabClick("bids")} style={{ cursor: "pointer" }}>
-            <div className="kpi-label">{t("Pipeline Value")}</div>
-            <div className="kpi-value">{fmtK(pipeline)}</div>
-            <div className="kpi-sub">{t("total estimating")}</div>
-          </div>
-        </div>
-      ) : dashCfg.showKPIs && (
-        <div className="kpi-grid">
-          <div className="kpi-card" onClick={() => handleTabClick("projects")} style={{ cursor: "pointer" }}>
-            <div className="kpi-label">{t("Backlog")}</div>
-            <div className="kpi-value">{fmtK(backlog)}</div>
-            <div className="kpi-sub">{projects.filter(p => (p.progress || 0) < 100).length} {t("projects remaining")}</div>
-          </div>
-          <div className="kpi-card" onClick={() => handleTabClick("bids")} style={{ cursor: "pointer" }}>
-            <div className="kpi-label">{t("Win Rate")}</div>
-            <div className="kpi-value">{winRate}%</div>
-            <div className="kpi-sub">{awarded}W / {lost}L — {openBids} {t("open")}</div>
-          </div>
-          <div className="kpi-card" onClick={() => handleTabClick("bids")} style={{ cursor: "pointer" }}>
-            <div className="kpi-label">{t("Pipeline")}</div>
-            <div className="kpi-value">{fmtK(pipeline)}</div>
-            <div className="kpi-sub">{bids.filter(b => b.status === "estimating").length} {t("bids estimating")}</div>
-          </div>
-          <div className="kpi-card" onClick={() => handleTabClick("financials")} style={{ cursor: "pointer" }}>
-            <div className="kpi-label">{t("Receivables")}</div>
-            <div className="kpi-value">{fmtK(cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90)}</div>
-            <div className="kpi-sub" style={cashFlow.net90 > 0 ? { color: "var(--red)" } : {}}>{cashFlow.net90 > 0 ? fmtK(cashFlow.net90) + " 90+ days" : t("all current")}</div>
-          </div>
-          <div className="kpi-card" onClick={() => handleTabClick("timeclock")} style={{ cursor: "pointer" }}>
-            <div className="kpi-label">{t("Labor Utilization")}</div>
-            <div className="kpi-value" style={{ color: laborUtil >= 70 ? "var(--green)" : laborUtil >= 50 ? "var(--amber)" : "var(--red)" }}>{laborUtil}%</div>
-            <div className="kpi-sub">{t("billable vs total hours")}</div>
-          </div>
+      {/* ── Section 1: Action Items — what needs attention NOW ── */}
+      {dashCfg.showKPIs && (dashActions.bidsDueSoon.length > 0 || dashActions.cosPending.length > 0 || dashActions.rfisOpen.length > 0 || dashActions.subsDueSoon.length > 0 || dashActions.overdueInv.length > 0 || dashActions.tmPending.length > 0) && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 16 }}>
+          {dashActions.bidsDueSoon.length > 0 && (
+            <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--red)" }} onClick={() => handleTabClick("bids")}>
+              <div className="text-xs text-muted">Bids Due This Week</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: "var(--red)" }}>{dashActions.bidsDueSoon.length}</div>
+              <div className="text-xs text-muted" style={{ marginTop: 2 }}>{dashActions.bidsDueSoon.slice(0, 2).map(b => b.name?.slice(0, 20) || "Untitled").join(", ")}{dashActions.bidsDueSoon.length > 2 ? "..." : ""}</div>
+            </div>
+          )}
+          {dashActions.cosPending.length > 0 && (
+            <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--amber)" }} onClick={() => handleTabClick("projects")}>
+              <div className="text-xs text-muted">COs Pending</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: "var(--amber)" }}>{dashActions.cosPending.length}</div>
+              <div className="text-xs text-muted" style={{ marginTop: 2 }}>{fmtK(dashActions.cosPendingTotal)} awaiting approval</div>
+            </div>
+          )}
+          {dashActions.rfisOpen.length > 0 && (
+            <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--blue)" }} onClick={() => handleTabClick("projects")}>
+              <div className="text-xs text-muted">Open RFIs</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: "var(--blue)" }}>{dashActions.rfisOpen.length}</div>
+              {dashActions.rfisOpen[0]?.age > 7 && <div className="text-xs" style={{ color: "var(--red)", marginTop: 2 }}>Oldest: {dashActions.rfisOpen[0].age}d</div>}
+            </div>
+          )}
+          {dashActions.subsDueSoon.length > 0 && (
+            <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--amber)" }} onClick={() => handleTabClick("projects")}>
+              <div className="text-xs text-muted">Submittals Due</div>
+              <div style={{ fontSize: 22, fontWeight: 700 }}>{dashActions.subsDueSoon.length}</div>
+              <div className="text-xs text-muted" style={{ marginTop: 2 }}>within 14 days</div>
+            </div>
+          )}
+          {dashActions.overdueInv.length > 0 && (
+            <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--red)" }} onClick={() => handleTabClick("financials")}>
+              <div className="text-xs text-muted">Overdue Invoices</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: "var(--red)" }}>{dashActions.overdueInv.length}</div>
+              <div className="text-xs text-muted" style={{ marginTop: 2 }}>{fmtK(dashActions.overdueTotal)} outstanding</div>
+            </div>
+          )}
+          {dashActions.tmPending.length > 0 && (
+            <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--amber)" }} onClick={() => handleTabClick("financials")}>
+              <div className="text-xs text-muted">T&M Pending</div>
+              <div style={{ fontSize: 22, fontWeight: 700 }}>{dashActions.tmPending.length}</div>
+              <div className="text-xs text-muted" style={{ marginTop: 2 }}>tickets to review</div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Charts Row — actionable analytics */}
-      {dashCfg.showCharts && (<>
-        <div className="flex gap-16 mt-24" style={{ flexWrap: "wrap" }}>
-          {/* Win Rate by GC — stacked bar */}
+      {/* ── Section 2: Compact KPI row — context, not decoration ── */}
+      {dashCfg.showKPIs && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16, padding: "10px 0", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
+          {[
+            { label: "Backlog", val: backlog > 0 ? fmtK(backlog) : null, click: "projects" },
+            { label: "Pipeline", val: pipeline > 0 ? fmtK(pipeline) : null, click: "bids" },
+            { label: "Win Rate", val: (awarded + lost) > 0 ? `${winRate}%` : null, sub: (awarded + lost) > 0 ? `${awarded}W/${lost}L` : null, click: "bids" },
+            { label: "A/R", val: (cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90) > 0 ? fmtK(cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90) : null, color: cashFlow.net90 > 0 ? "var(--red)" : undefined, click: "financials" },
+            { label: "Labor", val: laborUtil > 0 ? `${laborUtil}%` : null, color: laborUtil >= 70 ? "var(--green)" : laborUtil >= 50 ? "var(--amber)" : "var(--red)", click: "timeclock" },
+            { label: "Open Bids", val: openBids > 0 ? String(openBids) : null, click: "bids" },
+          ].filter(k => k.val).map((k, i) => (
+            <div key={i} style={{ padding: "6px 14px", cursor: "pointer", borderRadius: 6, background: "var(--bg3)", minWidth: 80, textAlign: "center" }}
+              onClick={() => handleTabClick(k.click)}>
+              <div className="text-xs text-muted">{k.label}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: k.color || "var(--text)" }}>{k.val}</div>
+              {k.sub && <div className="text-xs text-muted">{k.sub}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Section 3: Project Health — behind schedule / no billing ── */}
+      {dashCfg.showKPIs && (dashActions.projAtRisk.length > 0 || dashActions.projNoBilling.length > 0) && (
+        <div className="card" style={{ padding: "12px 16px", marginBottom: 16 }}>
+          <div className="text-sm font-semi mb-8">Project Health</div>
+          {dashActions.projAtRisk.length > 0 && (
+            <div style={{ marginBottom: dashActions.projNoBilling.length > 0 ? 10 : 0 }}>
+              <div className="text-xs" style={{ color: "var(--red)", marginBottom: 4 }}>Behind Schedule ({dashActions.projAtRisk.length})</div>
+              {dashActions.projAtRisk.slice(0, 4).map(p => (
+                <div key={p.id} className="text-sm" style={{ padding: "3px 0", cursor: "pointer", color: "var(--blue)" }}
+                  onClick={() => setModal({ type: "editProject", data: p })}>{p.name} — {p.progress || 0}%</div>
+              ))}
+              {dashActions.projAtRisk.length > 4 && <div className="text-xs text-muted">+{dashActions.projAtRisk.length - 4} more</div>}
+            </div>
+          )}
+          {dashActions.projNoBilling.length > 0 && (
+            <div>
+              <div className="text-xs" style={{ color: "var(--amber)", marginBottom: 4 }}>No Billing 30+ Days ({dashActions.projNoBilling.length})</div>
+              {dashActions.projNoBilling.slice(0, 4).map(p => (
+                <div key={p.id} className="text-sm" style={{ padding: "3px 0", cursor: "pointer", color: "var(--blue)" }}
+                  onClick={() => setModal({ type: "editProject", data: p })}>{p.name}</div>
+              ))}
+              {dashActions.projNoBilling.length > 4 && <div className="text-xs text-muted">+{dashActions.projNoBilling.length - 4} more</div>}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Section 4: Charts — only if data exists, compact ── */}
+      {dashCfg.showCharts && gcWinRates.length > 0 && (
+        <div className="flex gap-16 mt-8" style={{ flexWrap: "wrap" }}>
           <div className="card" style={{ flex: "1 1 480px", minWidth: 320 }}>
-            <div className="card-header"><div className="card-title font-head">{t("Win Rate by GC")}</div></div>
-            <ResponsiveContainer width="100%" height={Math.max(160, gcWinRates.length * 32 + 40)}>
+            <div className="card-header"><div className="card-title font-head" style={{ fontSize: 13 }}>{t("Win Rate by GC")}</div></div>
+            <ResponsiveContainer width="100%" height={Math.max(140, gcWinRates.length * 28 + 32)}>
               <BarChart data={gcWinRates.map(g => ({ name: g.gc.length > 18 ? g.gc.slice(0, 16) + "..." : g.gc, Awarded: g.awarded, Lost: g.lost, Pending: g.pending }))} layout="vertical" margin={{ left: 10, right: 20 }}>
                 <XAxis type="number" tick={{ fill: "var(--text2)", fontSize: 11 }} />
                 <YAxis type="category" dataKey="name" width={120} tick={{ fill: "var(--text2)", fontSize: 11 }} />
@@ -920,235 +1005,108 @@ function App({ auth, onLogout }) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-
-          {/* Cash Flow Aging */}
-          <div className="card" style={{ flex: "1 1 280px", minWidth: 260 }}>
-            <div className="card-header"><div className="card-title font-head">{t("Receivables Aging")}</div></div>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={[
-                { name: "Current", value: cashFlow.current },
-                { name: "31-60d", value: cashFlow.net30 },
-                { name: "61-90d", value: cashFlow.net60 },
-                { name: "90+d", value: cashFlow.net90 },
-              ]} margin={{ left: 0, right: 10 }}>
-                <XAxis dataKey="name" tick={{ fill: "var(--text2)", fontSize: 11 }} />
-                <YAxis tick={{ fill: "var(--text2)", fontSize: 11 }} tickFormatter={v => fmtK(v)} />
-                <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} formatter={v => fmt(v)} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {[
-                    { name: "Current", color: "var(--green)" },
-                    { name: "31-60d", color: "var(--amber)" },
-                    { name: "61-90d", color: "var(--red)" },
-                    { name: "90+d", color: "#dc2626" },
-                  ].map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Backlog Projection */}
-        <div className="card mt-16">
-          <div className="card-header"><div className="card-title font-head">{t("Backlog Projection")}</div></div>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={(() => {
-              const months = [];
-              const now = new Date();
-              for (let i = 0; i < 6; i++) {
-                const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-                const label = d.toLocaleString("en", { month: "short" });
-                let remaining = 0;
-                projects.forEach(p => {
-                  if ((p.progress || 0) >= 100) return;
-                  const end = p.end ? new Date(p.end) : null;
-                  if (!end || end >= d) remaining += (p.contract || 0) * (1 - (p.progress || 0) / 100) * (1 - i * 0.15);
-                });
-                months.push({ name: label, Backlog: Math.max(0, Math.round(remaining)) });
-              }
-              return months;
-            })()} margin={{ left: 0, right: 20 }}>
-              <XAxis dataKey="name" tick={{ fill: "var(--text2)", fontSize: 12 }} />
-              <YAxis tick={{ fill: "var(--text2)", fontSize: 11 }} tickFormatter={v => fmtK(v)} />
-              <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} formatter={v => fmt(v)} />
-              <Area type="monotone" dataKey="Backlog" stroke="var(--amber)" fill="var(--amber-dim)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Bids by Month — keep this, it's useful context */}
-        <div className="card mt-16">
-          <div className="card-header"><div className="card-title font-head">{t("Bid Volume by Month")}</div></div>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={monthChartData} margin={{ left: 0, right: 20 }}>
-              <XAxis dataKey="name" tick={{ fill: "var(--text2)", fontSize: 12 }} />
-              <YAxis tick={{ fill: "var(--text2)", fontSize: 11 }} />
-              <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} />
-              <Bar dataKey="value" fill="var(--blue)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </>)}
-
-      <div className="card mt-16">
-        <div className="card-header">
-          <div className="card-title font-head">{t("Recent Activity")}</div>
-        </div>
-        {callLog.slice(0, 5).map(c => (
-          <div key={c.id} className="flex gap-12 border-b" style={{ padding: "10px 0", cursor: "pointer", borderRadius: 4 }}
-            onClick={() => { handleTabClick("contacts"); setTimeout(() => setContactSearch(c.contact || ""), 0); }}>
-            <div style={{ width: 6, borderRadius: 3, background: "var(--amber)", flexShrink: 0 }} />
-            <div className="flex-col gap-4" style={{ flex: 1 }}>
-              <div className="flex-between">
-                <span className="font-semi text-sm">{c.contact}</span>
-                <span className="text-xs text-dim">{c.time}</span>
-              </div>
-              <div className="text-sm text-muted">{c.note}</div>
-              {c.next && <div className="text-xs text-dim">Next: {c.next}</div>}
+          {(cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90) > 0 && (
+            <div className="card" style={{ flex: "1 1 260px", minWidth: 240 }}>
+              <div className="card-header"><div className="card-title font-head" style={{ fontSize: 13 }}>{t("Receivables Aging")}</div></div>
+              <ResponsiveContainer width="100%" height={170}>
+                <BarChart data={[
+                  { name: "Current", value: cashFlow.current },
+                  { name: "31-60d", value: cashFlow.net30 },
+                  { name: "61-90d", value: cashFlow.net60 },
+                  { name: "90+d", value: cashFlow.net90 },
+                ]} margin={{ left: 0, right: 10 }}>
+                  <XAxis dataKey="name" tick={{ fill: "var(--text2)", fontSize: 11 }} />
+                  <YAxis tick={{ fill: "var(--text2)", fontSize: 11 }} tickFormatter={v => fmtK(v)} />
+                  <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" }} formatter={v => fmt(v)} />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {[
+                      { name: "Current", color: "var(--green)" },
+                      { name: "31-60d", color: "var(--amber)" },
+                      { name: "61-90d", color: "var(--red)" },
+                      { name: "90+d", color: "#dc2626" },
+                    ].map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-          </div>
-        ))}
-        {callLog.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-icon">📋</div>
-            <div className="empty-text">{t("No recent activity")}</div>
+          )}
+        </div>
+      )}
+
+      {/* ── Section 5: Follow-ups & Recent Activity side by side ── */}
+      <div className="flex gap-16 mt-16" style={{ flexWrap: "wrap" }}>
+        {dashActions.followUps.length > 0 && (
+          <div className="card" style={{ flex: "1 1 300px", minWidth: 280, padding: "12px 16px" }}>
+            <div className="text-sm font-semi mb-8">Follow-ups</div>
+            {dashActions.followUps.slice(0, 5).map((c, i) => (
+              <div key={i} className="flex gap-8" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+                onClick={() => { handleTabClick("contacts"); setTimeout(() => setContactSearch(c.contact || ""), 0); }}>
+                <div style={{ width: 4, borderRadius: 2, background: "var(--amber)", flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div className="flex-between">
+                    <span className="text-sm font-semi">{c.contact}</span>
+                    <span className="text-xs text-dim">{c.time}</span>
+                  </div>
+                  <div className="text-xs text-muted">{c.next}</div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
+        <div className="card" style={{ flex: "1 1 300px", minWidth: 280, padding: "12px 16px" }}>
+          <div className="text-sm font-semi mb-8">Recent Activity</div>
+          {callLog.slice(0, 5).map(c => (
+            <div key={c.id} className="flex gap-8" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+              onClick={() => { handleTabClick("contacts"); setTimeout(() => setContactSearch(c.contact || ""), 0); }}>
+              <div style={{ width: 4, borderRadius: 2, background: "var(--blue)", flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div className="flex-between">
+                  <span className="text-sm font-semi">{c.contact}</span>
+                  <span className="text-xs text-dim">{c.time}</span>
+                </div>
+                <div className="text-xs text-muted">{c.note}</div>
+              </div>
+            </div>
+          ))}
+          {callLog.length === 0 && <div className="text-sm text-muted" style={{ padding: 8 }}>No recent activity</div>}
+        </div>
       </div>
 
-      {/* Weekly Digest — owner/admin/pm only */}
-      {dashCfg.showDigest && <div className="card mt-16">
-        <div className="card-header flex-between">
-          <div className="card-title font-head">{t("PM Weekly Digest")}</div>
-          <button className="btn btn-primary btn-sm" onClick={runWeeklyDigest} disabled={digestLoading}>
-            {digestLoading ? t("Generating...") : t("Generate Digest")}
+      {/* ── Compact Weekly Digest ── */}
+      {dashCfg.showDigest && <div className="card mt-16" style={{ padding: "12px 16px" }}>
+        <div className="flex-between mb-8">
+          <div className="text-sm font-semi">Weekly Digest</div>
+          <button className="btn btn-ghost btn-sm" onClick={runWeeklyDigest} disabled={digestLoading} style={{ fontSize: 11 }}>
+            {digestLoading ? "Analyzing..." : "Generate"}
           </button>
         </div>
         {!digestResult && !digestLoading && (
-          <div className="text-sm text-muted" style={{ padding: "12px 0" }}>
-            {t("AI-powered summary of project health, alerts, and recommendations across your portfolio.")}
-          </div>
+          <div className="text-xs text-muted">AI-powered portfolio summary — health, alerts, and recommendations.</div>
         )}
-        {digestLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Analyzing {projects.length} projects and {bids.length} bids...</div>}
+        {digestLoading && <div className="text-xs text-muted" style={{ textAlign: "center", padding: 8 }}>Analyzing {projects.length} projects...</div>}
         {digestResult && (
-          <div style={{ marginTop: 8 }}>
-            {/* Health Summary */}
-            <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12, fontSize: 14 }}>
-              {digestResult.healthSummary}
-            </div>
-
-            {/* KPIs */}
-            {digestResult.kpis && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
-                <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", textAlign: "center" }}>
-                  <div className="text-xs text-muted">{t("Avg Margin")}</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: "var(--amber)" }}>{digestResult.kpis.avgMargin}%</div>
-                </div>
-                <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", textAlign: "center" }}>
-                  <div className="text-xs text-muted">{t("Cash Flow")}</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>{digestResult.kpis.cashFlowStatus}</div>
-                </div>
-                <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", textAlign: "center" }}>
-                  <div className="text-xs text-muted">{t("Crew Utilization")}</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>{digestResult.kpis.crewUtilization}</div>
-                </div>
+          <div>
+            <div className="text-sm" style={{ padding: "8px 10px", borderRadius: 6, background: "var(--bg3)", marginBottom: 8 }}>{digestResult.healthSummary}</div>
+            {digestResult.alerts?.length > 0 && digestResult.alerts.slice(0, 3).map((a, i) => (
+              <div key={i} style={{ padding: "6px 10px", marginBottom: 3, borderRadius: 4, borderLeft: `3px solid ${a.priority === "high" ? "var(--red)" : "var(--amber)"}`, background: "var(--card)", fontSize: 12, cursor: a.project ? "pointer" : undefined }}
+                onClick={a.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); } : undefined}>
+                <span className="font-semi">{a.project}</span> — <span className="text-muted">{a.message}</span>
               </div>
-            )}
-
-            {/* Alerts */}
-            {digestResult.alerts?.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
-                <div className="text-sm font-semi mb-8">{t("Alerts")}</div>
-                {digestResult.alerts.map((a, i) => (
-                  <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, borderLeft: `3px solid ${a.priority === "high" ? "var(--red)" : a.priority === "medium" ? "var(--amber)" : "var(--blue)"}`, background: "var(--card)", fontSize: 13, cursor: a.project ? "pointer" : undefined }}
-                    onClick={a.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); } : undefined}>
-                    <div className="flex-between">
-                      <span className="font-semi" style={a.project ? { color: "var(--blue)", textDecoration: "underline" } : {}}>{a.project}</span>
-                      <span className={`badge ${a.priority === "high" ? "badge-red" : a.priority === "medium" ? "badge-amber" : "badge-blue"}`}>{a.type}</span>
-                    </div>
-                    <div className="text-muted mt-4">{a.message}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Recommendations */}
+            ))}
             {digestResult.recommendations?.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
-                <div className="text-sm font-semi mb-8">{t("Recommendations")}</div>
-                {digestResult.recommendations.map((r, i) => (
-                  <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
-                    <div className="flex-between">
-                      <span>{r.action}</span>
-                      <span className={`badge ${r.urgency === "now" ? "badge-red" : r.urgency === "this_week" ? "badge-amber" : "badge-blue"}`}>{r.urgency}</span>
-                    </div>
-                    <div className="text-xs text-muted mt-2">{r.impact}</div>
+              <div style={{ marginTop: 8 }}>
+                <div className="text-xs font-semi mb-4">Recommendations</div>
+                {digestResult.recommendations.slice(0, 3).map((r, i) => (
+                  <div key={i} className="text-xs" style={{ padding: "3px 0" }}>
+                    <span className={`badge ${r.urgency === "now" ? "badge-red" : "badge-amber"}`} style={{ fontSize: 10 }}>{r.urgency}</span>{" "}
+                    {r.action}
                   </div>
-                ))}
-              </div>
-            )}
-
-            {/* Wins */}
-            {digestResult.wins?.length > 0 && (
-              <div>
-                <div className="text-sm font-semi mb-8">{t("Wins This Week")}</div>
-                {digestResult.wins.map((w, i) => (
-                  <div key={i} style={{ padding: "4px 0", fontSize: 13, color: "var(--green)" }}>{w}</div>
                 ))}
               </div>
             )}
           </div>
         )}
       </div>}
-
-      {/* Role-tailored quick actions */}
-      {dashCfg.showQuickActions && (
-        <div className="flex gap-8 mt-16">
-          <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>{t("+ Add Bid")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("projects")}>{t("View Projects")}</button>
-        </div>
-      )}
-      {userRole === "office_admin" && (
-        <div className="flex gap-8 mt-16">
-          <button className="btn btn-primary" onClick={() => handleTabClick("documents")}>{t("Documents")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("calendar")}>{t("Calendar")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("contacts")}>{t("Contacts")}</button>
-        </div>
-      )}
-      {userRole === "accounting" && (
-        <div className="flex gap-8 mt-16">
-          <button className="btn btn-primary" onClick={() => handleTabClick("financials")}>{t("Financials")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("timeclock")}>{t("Time Clock")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("reports")}>{t("Reports")}</button>
-        </div>
-      )}
-      {userRole === "safety" && (
-        <div className="flex gap-8 mt-16">
-          <button className="btn btn-primary" onClick={() => handleTabClick("jsa")}>{t("JSA Forms")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("safety")}>{t("Safety")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("reports")}>{t("Reports")}</button>
-        </div>
-      )}
-      {userRole === "foreman" && (
-        <div className="flex gap-8 mt-16">
-          <button className="btn btn-primary" onClick={() => handleTabClick("projects")}>{t("Projects")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("schedule")}>{t("Schedule")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("materials")}>{t("Materials")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("jsa")}>{t("JSA")}</button>
-        </div>
-      )}
-      {userRole === "driver" && (
-        <div className="flex gap-8 mt-16">
-          <button className="btn btn-primary" onClick={() => handleTabClick("deliveries")}>{t("Deliveries")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("materials")}>{t("Materials")}</button>
-        </div>
-      )}
-      {userRole === "employee" && (
-        <div className="flex gap-8 mt-16">
-          <button className="btn btn-primary" onClick={() => handleTabClick("timeclock")}>{t("Time Clock")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("schedule")}>{t("Schedule")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("materials")}>{t("Materials")}</button>
-        </div>
-      )}
     </div>
   );
 
