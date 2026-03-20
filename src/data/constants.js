@@ -385,7 +385,7 @@ const _demoBids = [
   {id:162,name:"Anchor - Smile Studios - Richmond",gc:"Anchor",value:0,due:"Jan 12, 2026",status:"submitted",scope:[],phase:"Medical",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 12, 2026"},
   {id:163,name:"Forney - BSLMC Cath Labs 4 & 9",gc:"Forney Construction",value:94500,due:"Jan 12, 2026",status:"awarded",scope:["Demo","Metal Framing","Drywall","Lead-Lined Walls","ACT Ceilings"],phase:"Medical",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 12, 2026"},
   {id:164,name:"UTMB M87 PCP Cancer Services Clinic",gc:"York Construction",value:525400,due:"Jan 9, 2025",status:"submitted",scope:["Demo","Metal Framing","Drywall","Tape & Finish","Doors & Hardware"],phase:"Medical",risk:"",notes:"Galveston, TX",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 9, 2025"},
-  {id:165,name:"Potbellys Sandwich Shop - Woodlands",gc:"Warwick Construction",value:0,due:"Jan 7, 2026",status:"submitted",scope:[],phase:"Retail",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 7, 2026"},
+  {id:165,name:"Potbellys Sandwich Shop - Woodlands",gc:"Warwick Construction",value:39700,due:"Jan 7, 2026",status:"submitted",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Retail",risk:"",notes:"The Woodlands, TX",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 7, 2026"},
   {id:166,name:"Rise Group Investment - Flex Warehouse Buildout",gc:"Rise Group Investment",value:0,due:"Jan 6, 2026",status:"submitted",scope:[],phase:"Industrial",risk:"",notes:"",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 6, 2026"},
   {id:168,name:"United - Heart Care Clinic - NW Houston",gc:"United Constructors",value:83500,due:"Jan 5, 2026",status:"awarded",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Medical",risk:"",notes:"COMPLETE",contact:"",month:"Jan",closeOut:null,bidDate:"Jan 5, 2026"},
   // 2025
@@ -439,7 +439,7 @@ const _demoProjects = [
   {id:12,name:"Arch-Con - Sprouts Farmers Market",gc:"Arch-Con",contract:215100,status:"in-progress",phase:"Retail",address:"4775 W Panther Creek Dr, The Woodlands, TX 77381",pm:"Abner Aguilar",laborHours:0,progress:0,start:"",end:"",scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
   {id:13,name:"MHMC Cancer Center CT",gc:"Forney Construction",contract:20900,status:"in-progress",phase:"Medical",address:"925 Gessner Rd, Houston, TX 77024",pm:"Abner Aguilar",laborHours:0,progress:95,start:"",end:"",scope:["Demo","Metal Framing","Drywall","ACT Ceilings"]},
   {id:14,name:"Heart Care Clinic - NW Houston",gc:"United Constructors",contract:79200,status:"completed",phase:"Medical",address:"13325 Hargrave Rd, Houston, TX 77070",pm:"Abner Aguilar",laborHours:0,progress:100,start:"",end:"",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
-  {id:15,name:"MH Pearland L4 Renovation",gc:"Harvey Cleary",contract:0,status:"in-progress",phase:"Medical",address:"",pm:"Abner Aguilar",laborHours:0,progress:95,start:"",end:"",scope:["Metal Framing","Drywall"]},
+  {id:15,name:"MH Pearland L4 Renovation",gc:"Harvey Cleary",contract:83700,status:"in-progress",phase:"Medical",address:"16100 South Fwy, Pearland, TX 77584",pm:"Abner Aguilar",laborHours:0,progress:95,start:"",end:"",scope:["Metal Framing","Drywall"]},
 ];
 
 // ── SEED: CONTACTS ──
