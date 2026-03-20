@@ -304,6 +304,20 @@ export function EmployeeView({ app }) {
   };
 
   const doClockIn = (pos, target, status, reason) => {
+    // Guard: auto-close any open entry to prevent overlaps (multi-tab, slow sync)
+    if (activeEntry) {
+      const clockIn = new Date(activeEntry.clockIn);
+      const clockOut = new Date();
+      const diffMs = clockOut - clockIn;
+      const totalHours = +(diffMs / 3600000).toFixed(2);
+      setTimeEntries((prev) =>
+        prev.map((e) =>
+          e.id === activeEntry.id
+            ? { ...e, clockOut: clockOut.toISOString(), totalHours, notes: e.notes ? e.notes + " [auto-closed]" : "[auto-closed]" }
+            : e
+        )
+      );
+    }
     const entry = {
       id: crypto.randomUUID(),
       employeeId: activeEmp.id,

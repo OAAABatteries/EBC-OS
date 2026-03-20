@@ -216,7 +216,7 @@ function InvoicesTab({ app }) {
         <table className="data-table">
           <thead><tr><th>Invoice #</th><th>Project</th><th>Date</th><th>Amount</th><th>Status</th><th>Paid Date</th><th></th></tr></thead>
           <tbody>
-            {invFiltered.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center" }}>{app.search ? "No matching invoices" : "No invoices"}</td></tr>}
+            {invFiltered.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: "32px 16px", color: "var(--text-muted)" }}>{app.search ? "No matching invoices" : <>No invoices yet<br/><span style={{ fontSize: 12, opacity: 0.7 }}>Create your first invoice from an awarded project to start tracking payments</span></>}</td></tr>}
             {invFiltered.map(inv => (
               <Fragment key={inv.id}>
                 <tr>
@@ -402,7 +402,7 @@ function ChangeOrdersTab({ app }) {
         <table className="data-table">
           <thead><tr><th>CO #</th><th>Project</th><th>Description</th><th>Amount</th><th>Status</th><th>Submitted</th><th>Approved</th><th></th></tr></thead>
           <tbody>
-            {coFiltered.length === 0 && <tr><td colSpan={8} style={{ textAlign: "center" }}>{app.search ? "No matching change orders" : "No change orders"}</td></tr>}
+            {coFiltered.length === 0 && <tr><td colSpan={8} style={{ textAlign: "center", padding: "32px 16px", color: "var(--text-muted)" }}>{app.search ? "No matching change orders" : <>No change orders yet<br/><span style={{ fontSize: 12, opacity: 0.7 }}>Change orders track scope changes on active projects — add one when a GC approves extra work</span></>}</td></tr>}
             {coFiltered.map(co => (
               <Fragment key={co.id}>
                 <tr>
@@ -818,7 +818,7 @@ function TmTicketsTab({ app }) {
 
       {/* Tickets list */}
       <div className="mt-16">
-        {allTickets.length === 0 && <div className="card" style={{ textAlign: "center" }}>No T&M tickets</div>}
+        {allTickets.length === 0 && <div className="card" style={{ textAlign: "center", padding: "32px 16px", color: "var(--text-muted)" }}>No T&M tickets yet<br/><span style={{ fontSize: 12, opacity: 0.7 }}>Track time & material work outside the original contract — add labor hours and materials per ticket</span></div>}
         {allTickets.map(t => {
           const total = calcTicketTotal(t);
           const isExpanded = expandedId === t.id;
@@ -1119,7 +1119,7 @@ function JobCostingTab({ app }) {
           )}
         </div>
       )}
-      {app.projects.length === 0 && <div className="card mt-16" style={{ textAlign: "center" }}>No projects</div>}
+      {app.projects.length === 0 && <div className="card mt-16" style={{ textAlign: "center", padding: "32px 16px", color: "var(--text-muted)" }}>No projects yet<br/><span style={{ fontSize: 12, opacity: 0.7 }}>Convert awarded bids to projects to track job costing, labor, and profitability</span></div>}
       {app.projects.map(proj => {
         const billed = app.invoices.filter(i => i.projectId === proj.id).reduce((s, i) => s + i.amount, 0);
         const cos = app.changeOrders.filter(c => c.projectId === proj.id && c.status === "approved").reduce((s, c) => s + c.amount, 0);
