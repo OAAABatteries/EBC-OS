@@ -4450,7 +4450,7 @@ function Settings({ app }) {
   // Simplified settings for non-business roles
   const canSeeInsurance = ["owner", "admin", "pm", "office_admin", "accounting"].includes(userRole);
   const tabs = isFullAccess
-    ? ["Company", ...(canSeeInsurance ? ["Insurance"] : []), "Assemblies", "Equipment", "Margin Tiers", "Data", "Theme", "API", "Account"]
+    ? ["Company", ...(canSeeInsurance ? ["Insurance"] : []), "Assemblies", "Equipment", "Margin Tiers", "Data", "QuickBooks", "Theme", "API", "Account"]
     : [...(canSeeInsurance ? ["Insurance"] : []), "Theme", "Account"];
   if (isOwnerOrAdmin) tabs.push("Users");
   const [sub, setSub] = useState(isFullAccess ? "Company" : "Theme");
@@ -4462,6 +4462,7 @@ function Settings({ app }) {
       {sub === "Equipment" && <EquipmentTab app={app} />}
       {sub === "Margin Tiers" && <MarginTiersTab app={app} />}
       {sub === "Data" && <DataTab app={app} />}
+      {sub === "QuickBooks" && <QuickBooksTab app={app} />}
       {sub === "Theme" && <ThemeTab app={app} />}
       {sub === "API" && <ApiTab app={app} />}
       {sub === "Account" && <AccountTab app={app} />}
@@ -5811,6 +5812,179 @@ function DataTab({ app }) {
             <button className="btn btn-danger btn-sm" onClick={doReset}>Reset to Defaults</button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── QuickBooks Desktop Mapping ──────────────────────────────── */
+function QuickBooksTab({ app }) {
+  const [mappings, setMappings] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ebc_qb_mappings") || "{}"); } catch { return {}; }
+  });
+  const [editKey, setEditKey] = useState(null); // "employees:John Doe" etc
+  const [editVal, setEditVal] = useState("");
+
+  const save = (updated) => {
+    setMappings(updated);
+    localStorage.setItem("ebc_qb_mappings", JSON.stringify(updated));
+  };
+
+  const startEdit = (type, name) => {
+    setEditKey(`${type}:${name}`);
+    setEditVal((mappings[type] || {})[name] || "");
+  };
+  const saveEdit = () => {
+    if (!editKey) return;
+    const [type, name] = [editKey.split(":")[0], editKey.split(":").slice(1).join(":")];
+    const updated = { ...mappings, [type]: { ...(mappings[type] || {}), [name]: editVal.trim() || undefined } };
+    // Remove undefined entries
+    if (!editVal.trim()) delete updated[type][name];
+    save(updated);
+    setEditKey(null);
+    setEditVal("");
+  };
+  const cancelEdit = () => { setEditKey(null); setEditVal(""); };
+
+  // Gather all unique employee names and project names from time entries
+  const employeeNames = [...new Set((app.timeEntries || []).map(e => e.employeeName).filter(Boolean))].sort();
+  const projectNames = [...new Set([
+    ...(app.projects || []).map(p => p.name),
+    ...(app.timeEntries || []).map(e => e.projectName),
+  ].filter(Boolean))].sort();
+
+  const empMap = mappings.employees || {};
+  const jobMap = mappings.jobs || {};
+
+  const MappingRow = ({ type, name }) => {
+    const key = `${type}:${name}`;
+    const mapped = (mappings[type] || {})[name];
+    const isEditing = editKey === key;
+    return (
+      <tr>
+        <td style={{ padding: "6px 12px", fontSize: 13, color: "var(--text)" }}>{name}</td>
+        <td style={{ padding: "6px 12px", fontSize: 13 }}>
+          {isEditing ? (
+            <div style={{ display: "flex", gap: 6 }}>
+              <input
+                autoFocus
+                className="form-input"
+                style={{ fontSize: 12, padding: "3px 8px", flex: 1 }}
+                value={editVal}
+                placeholder={name}
+                onChange={e => setEditVal(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit(); }}
+              />
+              <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: "2px 8px" }} onClick={saveEdit}>Save</button>
+              <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }} onClick={cancelEdit}>Cancel</button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ color: mapped ? "var(--green)" : "var(--text2)", fontStyle: mapped ? "normal" : "italic" }}>
+                {mapped || "Same as app name"}
+              </span>
+              <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "1px 6px" }} onClick={() => startEdit(type, name)}>Edit</button>
+            </div>
+          )}
+        </td>
+      </tr>
+    );
+  };
+
+  return (
+    <div className="mt-16">
+      <div className="section-title">QuickBooks Desktop Integration</div>
+      <div className="card">
+        <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 12, lineHeight: 1.5 }}>
+          Map EBC-OS names to <strong>exact</strong> QuickBooks Desktop names. If the name is the same in both, leave it blank.
+          QB imports will fail silently if names don't match exactly (case-sensitive).
+        </p>
+        <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 16, lineHeight: 1.5 }}>
+          Export buttons are in <strong>Time Clock Admin</strong> (time entries) and <strong>Financials &gt; Invoices</strong>.
+          Anna imports the .iif file in QB Desktop via <em>File &gt; Utilities &gt; Import &gt; IIF Files</em>.
+        </p>
+      </div>
+
+      {/* Employee Mappings */}
+      <div className="card mt-16">
+        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 12, color: "var(--text)" }}>
+          Employee Names <span style={{ fontWeight: 400, fontSize: 12, color: "var(--text2)" }}>({employeeNames.length} found, {Object.keys(empMap).length} mapped)</span>
+        </div>
+        {employeeNames.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text2)", fontStyle: "italic" }}>No time entries yet. Employee names will appear here once clock entries are created.</p>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className="data-table" style={{ width: "100%" }}>
+              <thead><tr>
+                <th style={{ padding: "6px 12px", fontSize: 12, textAlign: "left" }}>EBC-OS Name</th>
+                <th style={{ padding: "6px 12px", fontSize: 12, textAlign: "left" }}>QB Desktop Name</th>
+              </tr></thead>
+              <tbody>
+                {employeeNames.map(name => <MappingRow key={name} type="employees" name={name} />)}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Project/Job Mappings */}
+      <div className="card mt-16">
+        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 12, color: "var(--text)" }}>
+          Project / Job Names <span style={{ fontWeight: 400, fontSize: 12, color: "var(--text2)" }}>({projectNames.length} found, {Object.keys(jobMap).length} mapped)</span>
+        </div>
+        {projectNames.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text2)", fontStyle: "italic" }}>No projects yet. Project names will appear here once created.</p>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className="data-table" style={{ width: "100%" }}>
+              <thead><tr>
+                <th style={{ padding: "6px 12px", fontSize: 12, textAlign: "left" }}>EBC-OS Name</th>
+                <th style={{ padding: "6px 12px", fontSize: 12, textAlign: "left" }}>QB Desktop Name (Customer:Job)</th>
+              </tr></thead>
+              <tbody>
+                {projectNames.map(name => <MappingRow key={name} type="jobs" name={name} />)}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Service Items */}
+      <div className="card mt-16">
+        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8, color: "var(--text)" }}>Default QB Items</div>
+        <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 12 }}>These are the default QB service/payroll items used in IIF exports.</p>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+          <div>
+            <label style={{ fontSize: 12, color: "var(--text2)" }}>Service Item</label>
+            <input className="form-input" style={{ fontSize: 12, padding: "4px 8px", width: 200 }}
+              value={mappings.serviceItem || "Drywall Labor"}
+              onChange={e => save({ ...mappings, serviceItem: e.target.value })} />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: "var(--text2)" }}>Payroll Item</label>
+            <input className="form-input" style={{ fontSize: 12, padding: "4px 8px", width: 200 }}
+              value={mappings.payrollItem || "Hourly Rate"}
+              onChange={e => save({ ...mappings, payrollItem: e.target.value })} />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: "var(--text2)" }}>Income Account</label>
+            <input className="form-input" style={{ fontSize: 12, padding: "4px 8px", width: 200 }}
+              value={mappings.incomeAccount || "Construction Income"}
+              onChange={e => save({ ...mappings, incomeAccount: e.target.value })} />
+          </div>
+        </div>
+      </div>
+
+      {/* Reset */}
+      <div className="card mt-16" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}>Reset All Mappings</div>
+          <div style={{ fontSize: 12, color: "var(--text2)" }}>Clear all QB name mappings and start fresh.</div>
+        </div>
+        <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)", borderColor: "var(--red)" }}
+          onClick={() => { if (confirm("Reset all QB mappings?")) { save({}); app.show("QB mappings cleared"); } }}>
+          Reset
+        </button>
       </div>
     </div>
   );
