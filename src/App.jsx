@@ -3174,30 +3174,180 @@ const ModalHub = ({ type, data, app }) => {
 
   // ── View Project (read-only) ──
   if (type === "viewProject") {
+    const projCOs = app.changeOrders.filter(co => co.projectId === draft.id);
+    const projRFIs = (app.rfis || []).filter(r => r.projectId === draft.id);
+    const projSubmittals = (app.submittals || []).filter(s => s.projectId === draft.id);
+    const projCrew = app.crewSchedule.filter(s => s.projectId === draft.id);
+    const projTime = app.timeEntries.filter(t => t.projectId === draft.id && t.clockOut);
+    const totalHrs = projTime.reduce((s, t) => s + (t.totalHours || 0), 0);
+    const projInvoices = app.invoices.filter(i => i.projectId === draft.id);
+    const totalBilled = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);
+    const remaining = (draft.contract || 0) - totalBilled;
+    const [projTab, setProjTab] = useState("overview");
+    const projTabs = ["overview", "change orders", "submittals", "crew", "financials", "closeout"];
     return (
       <div className="modal-overlay" onMouseDown={handleOverlayDown} onMouseUp={handleOverlayUp(close)}>
-        <div className="modal">
+        <div className="modal modal-lg" style={{ maxHeight: "85vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <div className="modal-header">
-            <div className="modal-title">Project Details</div>
+            <div>
+              <div className="modal-title">{draft.name}</div>
+              <div className="text-xs text-muted">{draft.gc} · {draft.phase} · {draft.pm || "Unassigned"}</div>
+            </div>
             <button className="modal-close" onClick={close}>✕</button>
           </div>
-          <div className="flex-col gap-12">
-            <div><span className="text-dim text-xs">NAME</span><div className="font-semi">{draft.name}</div></div>
-            <div><span className="text-dim text-xs">GC</span><div>{draft.gc}</div></div>
-            <div className="flex gap-16">
-              <div><span className="text-dim text-xs">CONTRACT</span><div className="font-mono text-amber">{fmt(draft.contract)}</div></div>
-              <div><span className="text-dim text-xs">BILLED</span><div className="font-mono">{fmt(draft.billed)}</div></div>
-              <div><span className="text-dim text-xs">PROGRESS</span><div>{draft.progress}%</div></div>
-            </div>
-            <div><span className="text-dim text-xs">PHASE</span><div className="badge badge-blue">{draft.phase}</div></div>
-            <div className="flex gap-16">
-              <div><span className="text-dim text-xs">START</span><div>{draft.start || "TBD"}</div></div>
-              <div><span className="text-dim text-xs">END</span><div>{draft.end || "TBD"}</div></div>
-            </div>
-            <div className="progress-bar">
-              <div className="progress-fill" style={{ width: `${draft.progress}%` }} />
-            </div>
+
+          {/* Sub-tabs */}
+          <div className="flex gap-4 mb-12" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8, overflowX: "auto" }}>
+            {projTabs.map(tab => (
+              <button key={tab} className={`btn btn-sm ${projTab === tab ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjTab(tab)}
+                style={{ whiteSpace: "nowrap", fontSize: 11, textTransform: "capitalize" }}>{tab}</button>
+            ))}
           </div>
+
+          <div style={{ flex: 1, overflowY: "auto", paddingBottom: 16 }}>
+            {/* ── Overview ── */}
+            {projTab === "overview" && (
+              <div className="flex-col gap-12">
+                <div className="flex gap-16 flex-wrap">
+                  <div><span className="text-dim text-xs">CONTRACT</span><div className="font-mono text-amber font-bold">{fmt(draft.contract)}</div></div>
+                  <div><span className="text-dim text-xs">BILLED</span><div className="font-mono">{fmt(totalBilled)}</div></div>
+                  <div><span className="text-dim text-xs">REMAINING</span><div className="font-mono" style={{ color: remaining > 0 ? "var(--green)" : "var(--red)" }}>{fmt(remaining)}</div></div>
+                  <div><span className="text-dim text-xs">PROGRESS</span><div className="font-mono">{draft.progress}%</div></div>
+                </div>
+                <div className="progress-bar"><div className="progress-fill" style={{ width: `${draft.progress}%` }} /></div>
+                <div className="flex gap-16 flex-wrap">
+                  <div><span className="text-dim text-xs">ADDRESS</span><div className="text-sm">{draft.address || "—"}</div></div>
+                  {draft.suite && <div><span className="text-dim text-xs">SUITE</span><div className="text-sm">{draft.suite}</div></div>}
+                  {draft.parking && <div><span className="text-dim text-xs">PARKING</span><div className="text-sm">{draft.parking}</div></div>}
+                </div>
+                <div className="flex gap-16">
+                  <div><span className="text-dim text-xs">START</span><div>{draft.start || "TBD"}</div></div>
+                  <div><span className="text-dim text-xs">END</span><div>{draft.end || "TBD"}</div></div>
+                </div>
+                <div><span className="text-dim text-xs">SCOPE</span>
+                  <div className="flex gap-4 flex-wrap mt-4">{(draft.scope || []).map(s => <span key={s} className="badge badge-amber" style={{ fontSize: 10 }}>{s}</span>)}</div>
+                </div>
+                <div className="flex gap-16 flex-wrap" style={{ marginTop: 8 }}>
+                  <div><span className="text-dim text-xs">LABOR HOURS</span><div className="font-mono">{totalHrs.toFixed(1)}h</div></div>
+                  <div><span className="text-dim text-xs">CHANGE ORDERS</span><div className="font-mono">{projCOs.length}</div></div>
+                  <div><span className="text-dim text-xs">RFIs</span><div className="font-mono">{projRFIs.length}</div></div>
+                  <div><span className="text-dim text-xs">SUBMITTALS</span><div className="font-mono">{projSubmittals.length}</div></div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Change Orders ── */}
+            {projTab === "change orders" && (
+              <div>
+                {projCOs.length === 0 ? <div className="text-sm text-dim" style={{ textAlign: "center", padding: 24 }}>No change orders</div> : (
+                  projCOs.map(co => (
+                    <div key={co.id} className="card" style={{ padding: 12, marginBottom: 8 }}>
+                      <div className="flex-between">
+                        <span className="font-semi text-sm">{co.description || co.name || `CO #${co.id}`}</span>
+                        <span className="font-mono text-amber">{fmt(co.amount)}</span>
+                      </div>
+                      <div className="text-xs text-muted mt-4">{co.status || "pending"} · {co.date || ""}</div>
+                    </div>
+                  ))
+                )}
+                <div className="text-xs text-dim mt-8">CO Total: <span className="font-mono text-amber">{fmt(projCOs.reduce((s, c) => s + (c.amount || 0), 0))}</span></div>
+              </div>
+            )}
+
+            {/* ── Submittals ── */}
+            {projTab === "submittals" && (
+              <div>
+                {projSubmittals.length === 0 ? <div className="text-sm text-dim" style={{ textAlign: "center", padding: 24 }}>No submittals</div> : (
+                  projSubmittals.map(s => (
+                    <div key={s.id} className="card" style={{ padding: 12, marginBottom: 8 }}>
+                      <div className="flex-between">
+                        <span className="font-semi text-sm">{s.name || s.description}</span>
+                        <span className={`badge ${s.status === "approved" ? "badge-green" : s.status === "rejected" ? "badge-red" : "badge-amber"}`}>{s.status}</span>
+                      </div>
+                      <div className="text-xs text-muted mt-4">{s.spec || ""} · {s.date || ""}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* ── Crew ── */}
+            {projTab === "crew" && (
+              <div>
+                {projCrew.length === 0 ? <div className="text-sm text-dim" style={{ textAlign: "center", padding: 24 }}>No crew assigned</div> : (
+                  <table className="data-table">
+                    <thead><tr><th>Employee</th><th>Days</th><th>Hours</th></tr></thead>
+                    <tbody>
+                      {projCrew.map(s => {
+                        const emp = app.employees.find(e => e.id === s.employeeId);
+                        const days = ["mon","tue","wed","thu","fri"].filter(d => s.days?.[d]).length;
+                        return (
+                          <tr key={s.id}>
+                            <td className="font-semi">{emp?.name || "Unknown"}<div className="text-xs text-muted">{emp?.role}</div></td>
+                            <td>{days}d/wk</td>
+                            <td>{s.hours?.start || "6:30"} – {s.hours?.end || "3:00"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+                <div className="text-xs text-dim mt-8">Total labor logged: <span className="font-mono">{totalHrs.toFixed(1)}h</span></div>
+              </div>
+            )}
+
+            {/* ── Financials ── */}
+            {projTab === "financials" && (
+              <div>
+                <div className="flex gap-16 mb-16 flex-wrap">
+                  <div><span className="text-dim text-xs">CONTRACT</span><div className="font-mono text-amber">{fmt(draft.contract)}</div></div>
+                  <div><span className="text-dim text-xs">COs</span><div className="font-mono">{fmt(projCOs.reduce((s, c) => s + (c.amount || 0), 0))}</div></div>
+                  <div><span className="text-dim text-xs">REVISED</span><div className="font-mono font-bold">{fmt((draft.contract || 0) + projCOs.reduce((s, c) => s + (c.amount || 0), 0))}</div></div>
+                  <div><span className="text-dim text-xs">INVOICED</span><div className="font-mono">{fmt(totalBilled)}</div></div>
+                  <div><span className="text-dim text-xs">REMAINING</span><div className="font-mono" style={{ color: remaining > 0 ? "var(--green)" : "var(--red)" }}>{fmt(remaining)}</div></div>
+                </div>
+                {projInvoices.length > 0 && (
+                  <table className="data-table">
+                    <thead><tr><th>#</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
+                    <tbody>
+                      {projInvoices.map(inv => (
+                        <tr key={inv.id}>
+                          <td>{inv.number}</td>
+                          <td>{inv.date}</td>
+                          <td className="font-mono">{fmt(inv.amount)}</td>
+                          <td><span className={`badge ${inv.status === "paid" ? "badge-green" : inv.status === "pending" ? "badge-amber" : "badge-red"}`}>{inv.status}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+
+            {/* ── Closeout ── */}
+            {projTab === "closeout" && (
+              <div className="flex-col gap-12">
+                <div><span className="text-dim text-xs">CLOSE-OUT NOTES</span><div className="text-sm">{draft.closeOut || "No close-out notes yet."}</div></div>
+                <div className="flex gap-8 flex-wrap">
+                  {["Final walkthrough", "Punch list complete", "As-builts submitted", "Warranty letter sent", "Final invoice sent", "Lien waiver received"].map(item => {
+                    const key = "co_" + item.toLowerCase().replace(/\s+/g, "_");
+                    const done = draft[key];
+                    return (
+                      <button key={item} className={`badge ${done ? "badge-green" : "badge-muted"}`} style={{ cursor: "pointer", fontSize: 10 }}
+                        onClick={() => {
+                          const updated = { ...draft, [key]: !done };
+                          app.setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
+                          setDraft(updated);
+                        }}>
+                        {done ? "✅" : "⬜"} {item}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="modal-actions" style={{ justifyContent: "space-between" }}>
             <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>
             <div className="flex gap-8">
