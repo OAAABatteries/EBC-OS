@@ -7,7 +7,7 @@ import { isDemoMode } from "./defaults";
 const _demo = isDemoMode();
 
 // Bump this when seed data changes to bust stale localStorage caches
-export const DATA_VERSION = 11;
+export const DATA_VERSION = 12;
 
 // ── THEMES ────────────────────────────────────────────────────
 export const THEMES = {

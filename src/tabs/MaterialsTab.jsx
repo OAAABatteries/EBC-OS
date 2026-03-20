@@ -330,22 +330,40 @@ export function MaterialsTab({ app }) {
           <label className="form-label" style={{ marginBottom: 8 }}>Quick Add</label>
           <div className="flex gap-4 flex-wrap">
             {[
-              { label: "🧱 Stud 3-5/8\"", id: "m1" },
-              { label: "🧱 Stud 6\"", id: "m3" },
-              { label: "📏 Track", id: "m4" },
-              { label: "📄 5/8\" GWB", id: "m7" },
+              // Studs by gauge
+              { label: "🧱 3-5/8\" 25ga", id: "m1" },
+              { label: "🧱 3-5/8\" 20ga", id: "m2" },
+              { label: "🧱 3-5/8\" 18ga", id: "fs358-18" },
+              { label: "🧱 3-5/8\" 16ga", id: "fs358-16" },
+              { label: "🧱 3-5/8\" 14ga", id: "fs358-14" },
+              { label: "🧱 6\" 20ga", id: "m3" },
+              { label: "🧱 6\" 16ga", id: "fs600-16" },
+              { label: "🧱 8\" 20ga", id: "m31" },
+              // Tracks
+              { label: "📏 Track 3-5/8\"", id: "ft358-20" },
+              { label: "📏 Track 6\"", id: "ft600-20" },
+              { label: "📏 Deflection", id: "m6" },
+              // Board
+              { label: "📄 1/2\" Regular", id: "gwb-12r" },
+              { label: "📄 5/8\" Type X", id: "m7" },
+              { label: "📄 5/8\" Type C", id: "gwb-58c" },
               { label: "📄 DensShield", id: "m8" },
               { label: "📄 Impact GWB", id: "m9" },
               { label: "📄 Lead-Lined", id: "m12" },
               { label: "📄 QuietRock", id: "m36" },
+              { label: "📄 Mold Tough", id: "gwb-mr" },
+              // Insulation
               { label: "🧶 R-13 Batt", id: "m13" },
               { label: "🧶 R-19 Batt", id: "m14" },
               { label: "🧶 Mineral Wool", id: "m16" },
+              // Ceiling
               { label: "🔲 ACT Grid 2x2", id: "m17" },
               { label: "🔲 Acoustic Tile", id: "m19" },
+              // Finish & specialty
               { label: "🎨 L4 Finish", id: "m26" },
               { label: "🎨 L5 Finish", id: "m27" },
               { label: "🔥 Fire Caulk", id: "m44" },
+              { label: "🪵 2x6 Blocking", id: "m50" },
             ].map(p => (
               <button key={p.id} className="btn btn-sm btn-ghost" style={{ fontSize: 11, padding: "4px 10px" }}
                 onClick={() => addLayer(p.id)}>{p.label}</button>
