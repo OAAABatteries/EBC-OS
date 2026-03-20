@@ -61,6 +61,15 @@ function polyArea(pts) {
 
 // ── Angle snapping — hold Shift to snap to nearest 15° increment ──
 const SNAP_ANGLES = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 285, 300, 315, 330, 345];
+function distToSegment(p, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return dist(p, a);
+  let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  return dist(p, { x: a.x + t * dx, y: a.y + t * dy });
+}
+
 function snapToAngle(prevPt, rawPt) {
   if (!prevPt) return rawPt;
   const dx = rawPt.x - prevPt.x;
@@ -223,7 +232,10 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const [summaryGroupBy, setSummaryGroupBy] = useState("condition"); // "condition" | "bidArea" | "page" | "folder"
 
   // Context menu for right-click on measurements
-  const [contextMenu, setContextMenu] = useState(null); // { x, y, measurementId }
+  const [contextMenu, setContextMenu] = useState(null); // { x, y, measurementId, isCo }
+  const [selectedMeasId, setSelectedMeasId] = useState(null); // single-select for info panel
+  const [spaceHeld, setSpaceHeld] = useState(false); // space-bar hold for temp pan
+  const modeBeforeSpaceRef = useRef(null); // mode to restore after space release
   const [condSearch, setCondSearch] = useState("");
 
   // Measurements — now linked to conditions + bid areas
@@ -260,11 +272,24 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const clickTimerRef = useRef(null);
   const pendingClickRef = useRef(null);
 
-  // ── Angle snap state (Shift key tracking) ──
+  // ── Modifier key tracking (Shift for angle snap, Space for temp pan) ──
   const [shiftHeld, setShiftHeld] = useState(false);
   useEffect(() => {
-    const down = (e) => { if (e.key === "Shift") setShiftHeld(true); };
-    const up = (e) => { if (e.key === "Shift") setShiftHeld(false); };
+    const down = (e) => {
+      if (e.key === "Shift") setShiftHeld(true);
+      if (e.key === " " && !e.repeat && e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") {
+        e.preventDefault();
+        setSpaceHeld(true);
+        setMode(prev => { modeBeforeSpaceRef.current = prev; return MODE.PAN; });
+      }
+    };
+    const up = (e) => {
+      if (e.key === "Shift") setShiftHeld(false);
+      if (e.key === " ") {
+        setSpaceHeld(false);
+        if (modeBeforeSpaceRef.current != null) { setMode(modeBeforeSpaceRef.current); modeBeforeSpaceRef.current = null; }
+      }
+    };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
@@ -963,61 +988,97 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
     const scale = fitScaleRef.current * zoom;
 
+    // Adaptive label size — scales with zoom so labels stay readable
+    const labelSize = Math.max(9, Math.min(14, 11 / Math.sqrt(zoom)));
+    const smallLabel = Math.max(8, labelSize - 2);
+
     // Draw completed measurements — color by condition (skip hidden layers)
     pageMeasurements.forEach((m) => {
       const cond = conditions.find(c => c.id === m.conditionId);
       if (cond && hiddenFolders[cond.folder]) return; // layer hidden
       const color = cond?.color || "#3b82f6";
+      const isSelected = m.id === selectedMeasId;
+      const lw = isSelected ? 4 : 2.5;
 
       if (m.type === "linear") {
         const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+        // Selection glow
+        if (isSelected) { ctx.strokeStyle = "#fff"; ctx.lineWidth = lw + 3; ctx.setLineDash([]); ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.stroke(); }
         ctx.strokeStyle = color;
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = lw;
         ctx.setLineDash([]);
         ctx.beginPath();
         pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
         ctx.stroke();
-        pts.forEach(p => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill(); });
+        pts.forEach(p => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(p.x, p.y, isSelected ? 5 : 4, 0, Math.PI * 2); ctx.fill(); });
+        // Per-segment dimension labels
+        if (pts.length >= 2 && ppf) {
+          ctx.font = `${smallLabel}px sans-serif`;
+          ctx.textAlign = "center";
+          for (let i = 1; i < pts.length; i++) {
+            const segPx = dist(pts[i - 1], pts[i]);
+            const segFt = segPx / (ppf * fitScaleRef.current * zoom);
+            if (segFt < 0.1) continue; // skip tiny segments
+            const mx = (pts[i - 1].x + pts[i].x) / 2;
+            const my = (pts[i - 1].y + pts[i].y) / 2;
+            const segTxt = `${segFt.toFixed(1)}'`;
+            const stw = ctx.measureText(segTxt).width + 6;
+            // Offset label perpendicular to segment direction
+            const dx = pts[i].x - pts[i - 1].x, dy = pts[i].y - pts[i - 1].y;
+            const len = Math.sqrt(dx * dx + dy * dy) || 1;
+            const offX = -dy / len * 12, offY = dx / len * 12;
+            ctx.fillStyle = "rgba(0,0,0,0.6)";
+            ctx.fillRect(mx + offX - stw / 2, my + offY - smallLabel / 2 - 2, stw, smallLabel + 2);
+            ctx.fillStyle = "#ddd";
+            ctx.fillText(segTxt, mx + offX, my + offY + smallLabel / 2 - 2);
+          }
+        }
+        // Total label (at midpoint of path)
         if (pts.length >= 2) {
+          ctx.font = `bold ${labelSize}px sans-serif`;
           const mid = pts[Math.floor(pts.length / 2)];
-          ctx.fillStyle = "rgba(0,0,0,0.75)";
           const txt = `${m.totalFt.toFixed(1)}' LF`;
           const tw = ctx.measureText(txt).width + 10;
-          ctx.fillRect(mid.x - tw / 2, mid.y - 18, tw, 16);
+          ctx.fillStyle = isSelected ? "rgba(59,130,246,0.9)" : "rgba(0,0,0,0.75)";
+          ctx.fillRect(mid.x - tw / 2, mid.y - labelSize - 6, tw, labelSize + 4);
           ctx.fillStyle = "#fff";
-          ctx.font = "11px sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText(txt, mid.x, mid.y - 6);
+          ctx.fillText(txt, mid.x, mid.y - 8);
         }
       } else if (m.type === "area") {
         const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
-        ctx.fillStyle = color + "22";
+        // Selection glow
+        if (isSelected) { ctx.strokeStyle = "#fff"; ctx.lineWidth = lw + 3; ctx.setLineDash([]); ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.closePath(); ctx.stroke(); }
+        ctx.fillStyle = color + (isSelected ? "44" : "22");
         ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = lw;
         ctx.setLineDash([]);
         ctx.beginPath();
         pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
-        pts.forEach(p => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill(); });
+        pts.forEach(p => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(p.x, p.y, isSelected ? 5 : 4, 0, Math.PI * 2); ctx.fill(); });
+        ctx.font = `bold ${labelSize}px sans-serif`;
         const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
         const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
         const txt = `${m.totalSf.toFixed(0)} SF`;
         const tw = ctx.measureText(txt).width + 10;
-        ctx.fillStyle = "rgba(0,0,0,0.75)";
-        ctx.fillRect(cx - tw / 2, cy - 8, tw, 16);
+        ctx.fillStyle = isSelected ? "rgba(59,130,246,0.9)" : "rgba(0,0,0,0.75)";
+        ctx.fillRect(cx - tw / 2, cy - labelSize / 2 - 2, tw, labelSize + 4);
         ctx.fillStyle = "#fff";
-        ctx.font = "11px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(txt, cx, cy + 4);
+        ctx.fillText(txt, cx, cy + labelSize / 2 - 1);
       } else if (m.type === "count") {
         const pt = { x: m.point.x * scale, y: m.point.y * scale };
+        const r = isSelected ? 13 : 10;
+        // Selection glow
+        if (isSelected) { ctx.strokeStyle = "#fff"; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(pt.x, pt.y, r + 3, 0, Math.PI * 2); ctx.stroke(); }
         // Outer circle
         ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = lw;
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 10, 0, Math.PI * 2);
+        ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
         ctx.stroke();
         ctx.fillStyle = color + "44";
         ctx.fill();
@@ -1027,12 +1088,12 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
         ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
         ctx.fill();
         // Count number
+        ctx.font = `${smallLabel}px sans-serif`;
         ctx.fillStyle = "rgba(0,0,0,0.75)";
-        ctx.fillRect(pt.x + 10, pt.y - 8, 18, 14);
+        ctx.fillRect(pt.x + r + 2, pt.y - 8, 18, 14);
         ctx.fillStyle = "#fff";
-        ctx.font = "10px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(m.count || 1, pt.x + 19, pt.y + 3);
+        ctx.fillText(m.count || 1, pt.x + r + 11, pt.y + 3);
       }
     });
 
@@ -1235,7 +1296,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       ctx.fillStyle = "#4ade80"; ctx.font = "10px sans-serif"; ctx.textAlign = "left";
       ctx.fillText(`Scale set (${(1 / ppf).toFixed(4)}'/px)`, 14, ch - 14);
     }
-  }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond, hiddenFolders, selectedMeasIds, typicalGroups, measurements, pageKey, placingTypicalId, coPageMeasurements, coMode, shiftHeld, draggingHandle]);
+  }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond, hiddenFolders, selectedMeasIds, selectedMeasId, typicalGroups, measurements, pageKey, placingTypicalId, coPageMeasurements, coMode, shiftHeld, draggingHandle]);
 
   useEffect(() => { requestAnimationFrame(drawOverlay); }, [drawOverlay]);
 
@@ -1269,7 +1330,32 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       if (closest) toggleMeasSelection(closest);
       return;
     }
-    if (mode === MODE.PAN) return;
+    if (mode === MODE.PAN) {
+      // Click-to-select measurement in PAN mode
+      const clickPt = getCanvasCoords(e);
+      const scale = fitScaleRef.current * zoom;
+      let closest = null, closestDist = 20;
+      pageMeasurements.forEach(m => {
+        if (m.vertices) {
+          // Check proximity to edges, not just vertices
+          for (let i = 0; i < m.vertices.length - (m.type === "area" ? 0 : 1); i++) {
+            const a = { x: m.vertices[i].x * scale, y: m.vertices[i].y * scale };
+            const b = { x: m.vertices[(i + 1) % m.vertices.length].x * scale, y: m.vertices[(i + 1) % m.vertices.length].y * scale };
+            const d = distToSegment(clickPt, a, b);
+            if (d < closestDist) { closestDist = d; closest = m.id; }
+          }
+          m.vertices.forEach(v => {
+            const d = dist({ x: v.x * scale, y: v.y * scale }, clickPt);
+            if (d < closestDist) { closestDist = d; closest = m.id; }
+          });
+        } else if (m.point) {
+          const d = dist({ x: m.point.x * scale, y: m.point.y * scale }, clickPt);
+          if (d < closestDist) { closestDist = d; closest = m.id; }
+        }
+      });
+      setSelectedMeasId(closest); // null clears selection
+      return;
+    }
     if (mode === MODE.CALIBRATE) {
       const pt = getNormCoords(e);
       if (calPoints.length < 2) { const next = [...calPoints, pt]; setCalPoints(next); if (next.length === 2) setShowCalPrompt(true); }
@@ -1569,12 +1655,27 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const zoomOut = () => setZoom(s => Math.max(0.25, s - 0.25));
   const resetZoom = () => setZoom(1);
 
-  // Scroll wheel zoom (no modifier key needed — just scroll to zoom like OST)
+  // Scroll wheel zoom centered on cursor position
   const handleWheel = useCallback((e) => {
     e.preventDefault();
+    const container = containerRef.current;
+    if (!container) { setZoom(s => Math.min(6, Math.max(0.15, s * (e.deltaY > 0 ? 0.9 : 1.1)))); return; }
+    const rect = container.getBoundingClientRect();
+    const cursorX = e.clientX - rect.left;
+    const cursorY = e.clientY - rect.top;
+    // Position in content space before zoom
+    const scrollX = container.scrollLeft + cursorX;
+    const scrollY = container.scrollTop + cursorY;
     setZoom(s => {
-      const factor = e.deltaY > 0 ? 0.9 : 1.1; // multiplicative for smooth feel
-      return Math.min(6, Math.max(0.15, s * factor));
+      const factor = e.deltaY > 0 ? 0.9 : 1.1;
+      const next = Math.min(6, Math.max(0.15, s * factor));
+      const ratio = next / s;
+      // Adjust scroll so cursor stays on same content point
+      requestAnimationFrame(() => {
+        container.scrollLeft = scrollX * ratio - cursorX;
+        container.scrollTop = scrollY * ratio - cursorY;
+      });
+      return next;
     });
   }, []);
 
@@ -1706,7 +1807,13 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
       if (e.key === "Enter") { if (activeVertices.length >= 2 && ppf && activeCond) { finishMeasurement(); } return; }
       if (e.ctrlKey && e.key === "z") { e.preventDefault(); undo(); return; }
       if (e.ctrlKey && e.key === "y") { e.preventDefault(); redo(); return; }
-      if (e.key === " ") { e.preventDefault(); setMode(m => m === MODE.PAN ? (activeCond ? activeCond.type : MODE.PAN) : MODE.PAN); return; }
+      if (e.key === " ") return; // handled by modifier key tracking (hold-to-pan)
+      if (e.key === "PageUp") { e.preventDefault(); prevPage(); return; }
+      if (e.key === "PageDown") { e.preventDefault(); nextPage(); return; }
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (selectedMeasId) { deleteMeasurement(selectedMeasId); setSelectedMeasId(null); }
+        return;
+      }
       if (e.key === "l" || e.key === "L") { if (ppf) { setMode(MODE.LINEAR); cancelActive(); } return; }
       if (e.key === "a" || e.key === "A") { if (ppf) { setMode(MODE.AREA); cancelActive(); } return; }
       if (e.key === "c" || e.key === "C") { setMode(MODE.COUNT); cancelActive(); return; }
@@ -1727,7 +1834,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [activeVertices, calPoints, activeCond, ppf, folders]);
+  }, [activeVertices, calPoints, activeCond, ppf, folders, selectedMeasId]);
 
   // Add new condition
   const addCondition = (asmCode) => {
@@ -1951,7 +2058,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
           <div ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onWheel={handleWheel}
             onMouseDown={handlePanStart} onMouseMove={handlePanMove} onMouseUp={handlePanEnd} onMouseLeave={handlePanEnd}
             style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: 12,
-              cursor: draggingHandle ? "grabbing" : mode === MODE.PAN ? (isPanning ? "grabbing" : "grab") : "crosshair" }}>
+              cursor: draggingHandle ? "grabbing" : spaceHeld ? "grab" : mode === MODE.PAN ? (isPanning ? "grabbing" : "grab") : "crosshair" }}>
             {/* Show re-upload prompt if no PDF loaded but state exists */}
             {pdfFiles.length === 0 && _init.pdfFileNames?.length > 0 && (
               <div style={{ textAlign: "center", padding: 60, color: "#888" }}>
@@ -2015,6 +2122,25 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
                   });
                   if (nearest) setContextMenu({ x: e.clientX, y: e.clientY, measurementId: nearest.id, isCo });
                 }} />
+              {/* ── Selected measurement info bar ── */}
+              {selectedMeasId && (() => {
+                const sm = pageMeasurements.find(m => m.id === selectedMeasId);
+                if (!sm) return null;
+                const sc = conditions.find(c => c.id === sm.conditionId);
+                const asm = sc?.asmCode && assemblies?.find(a => a.code === sc.asmCode);
+                const cost = asm ? (sm.type === "linear" ? (sm.totalFt || 0) * ((asm.matRate || 0) + (asm.labRate || 0)) : sm.type === "area" ? (sm.totalSf || 0) * ((asm.matRate || 0) + (asm.labRate || 0)) : (sm.count || 1) * ((asm.matRate || 0) + (asm.labRate || 0))) : 0;
+                return (
+                  <div style={{ position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.92)", border: "1px solid rgba(59,130,246,0.5)", borderRadius: 8, padding: "6px 16px", zIndex: 10, display: "flex", alignItems: "center", gap: 14, fontSize: 12, color: "#fff" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: sc?.color || "#3b82f6" }} />
+                    <span style={{ fontWeight: 600 }}>{sc?.name || "Unknown"}</span>
+                    <span style={{ color: "#aaa" }}>|</span>
+                    <span>{sm.type === "linear" ? `${sm.totalFt?.toFixed(1)}' LF` : sm.type === "area" ? `${sm.totalSf?.toFixed(0)} SF` : `${sm.count || 1} EA`}</span>
+                    {cost > 0 && <><span style={{ color: "#aaa" }}>|</span><span style={{ color: "#4ade80" }}>${cost.toFixed(0)}</span></>}
+                    <button onClick={() => { deleteMeasurement(selectedMeasId); setSelectedMeasId(null); }} style={{ ...btn, padding: "2px 8px", fontSize: 10, color: "#ef4444", borderColor: "rgba(239,68,68,0.3)" }}>Delete</button>
+                    <button onClick={() => setSelectedMeasId(null)} style={{ ...btn, padding: "2px 8px", fontSize: 10 }}>✕</button>
+                  </div>
+                );
+              })()}
               {/* ── Floating Finish button while drawing ── */}
               {(mode === MODE.LINEAR || mode === MODE.AREA) && activeVertices.length >= 2 && ppf && activeCond && (
                 <button onClick={finishMeasurement}
