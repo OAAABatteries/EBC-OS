@@ -462,6 +462,40 @@ const _demoContacts = [
   {id:19,name:"Josh",company:"Bayshore",role:"",bids:0,wins:0,color:"#a855f7",last:"Mar 19",priority:"med",phone:"",email:"josh@bayshoretex.com",notes:"THC Baytown. CO for ticket work sent 3/19."},
   // Wier CC
   {id:20,name:"Preston Cheney",company:"Wier CC",role:"",bids:0,wins:0,color:"#64748b",last:"Feb 20",priority:"med",phone:"",email:"pcheney@wiercc.com",notes:"Spring Cypress Oral Surgeons. Window opening CO, overhead blocking CO."},
+  // Arch-Con
+  {id:21,name:"Robert Fortney",company:"Arch-Con",role:"Project Manager",bids:1,wins:0,color:"#f97316",last:"Mar 5",priority:"med",phone:"",email:"rfortney@arch-con.com",notes:"Regor Therapeutics PM."},
+  {id:22,name:"Jon Windham",company:"Arch-Con",role:"Project Manager",bids:1,wins:1,color:"#f97316",last:"Mar 10",priority:"high",phone:"",email:"jwindham@arch-con.com",notes:"Sprouts Farmers Market PM. Submittals & billing active."},
+  {id:23,name:"Shane Struska",company:"Arch-Con",role:"Senior PM",bids:0,wins:0,color:"#f97316",last:"Nov 13",priority:"med",phone:"832-490-4816",email:"sstruska@arch-con.com",notes:"Dr. Mazhar & Daye (Suite 440)."},
+  // Structure Tone
+  {id:24,name:"Alba Flores",company:"Structure Tone",role:"Project Manager",bids:1,wins:0,color:"#ec4899",last:"Mar 6",priority:"med",phone:"",email:"alba.flores@structuretone.com",notes:"8303 Fallbrook Generator Addition."},
+  {id:25,name:"Blessing Awobayiku",company:"Structure Tone",role:"",bids:1,wins:0,color:"#ec4899",last:"Mar 17",priority:"med",phone:"",email:"",notes:"Southwest General Building. Via BuildingConnected."},
+  // Jacob White
+  {id:26,name:"Alex Vidosh",company:"Jacob White",role:"Project Manager",bids:3,wins:0,color:"#14b8a6",last:"Feb 26",priority:"med",phone:"",email:"a.vidosh@jacobwhitecc.com",notes:"CSH St Lukes Cath Lab, Holler Brewing, HM Sugarland. Via BuildingConnected."},
+  // Warwick Construction
+  {id:27,name:"Carlos Campbell",company:"Warwick Construction",role:"Project Manager",bids:1,wins:0,color:"#84cc16",last:"Feb 12",priority:"med",phone:"832-448-5810",email:"ccampbell@warwickconstruction.com",notes:"Octapharma Plasma - Little York."},
+  {id:28,name:"Kendrick Quintanilla",company:"Warwick Construction",role:"",bids:1,wins:0,color:"#84cc16",last:"Jan 8",priority:"med",phone:"",email:"kquintanilla@warwickconstruction.com",notes:"Potbelly Sandwich Shop - Woodlands."},
+  // Anchor Construction
+  {id:29,name:"Will Talamaivao",company:"Anchor Construction",role:"Project Manager",bids:3,wins:0,color:"#d946ef",last:"Mar 18",priority:"med",phone:"",email:"will.t@anchorcm.net",notes:"Pard Campus, TwoTen, Meridiana Retail. Active bid invites."},
+  {id:30,name:"Sona Francis",company:"Anchor Construction",role:"Estimator",bids:1,wins:0,color:"#d946ef",last:"Dec 3",priority:"med",phone:"858-245-7020",email:"sona.f@anchorcm.net",notes:"Khango Gym estimator."},
+  {id:31,name:"David Garcia",company:"Anchor Construction",role:"",bids:0,wins:0,color:"#d946ef",last:"Mar 20",priority:"med",phone:"",email:"",notes:"Shake Shack, Chick-Fil-A bid invites. Via BuildingConnected."},
+  // Brodson Construction
+  {id:32,name:"Philippe Faucher",company:"Brodson Construction",role:"Senior PM",bids:1,wins:1,color:"#0ea5e9",last:"Mar 9",priority:"high",phone:"",email:"pfaucher@brodsonconstruction.com",notes:"Brunello Cucinelli Store Buildout - River Oaks District."},
+  // Hirsch Construction
+  {id:33,name:"Angelica Baez",company:"Hirsch Construction",role:"",bids:1,wins:0,color:"#fb923c",last:"Nov 19",priority:"med",phone:"",email:"abaez@hirschcorp.com",notes:"Hermes Houston Temp Store. Also Princess Polly."},
+  // Garrison Construction
+  {id:34,name:"Melanie Itzel",company:"Garrison Construction",role:"Senior Project Coordinator",bids:1,wins:0,color:"#a3e635",last:"Feb 16",priority:"med",phone:"",email:"melanie@garrisonconstructiongroup.com",notes:"Montgomery Roth Office Suite 7029."},
+  // York Construction
+  {id:35,name:"Yarelys Hernandez",company:"York Construction",role:"",bids:1,wins:0,color:"#22d3ee",last:"Jan 9",priority:"med",phone:"",email:"yhernandez@yorkconstruction.com",notes:"UTMB M87 PCP Cancer Services Clinic. Galveston."},
+  // ProConstruct / ATH
+  {id:36,name:"Emilio Alaniz",company:"ProConstruct",role:"",bids:1,wins:0,color:"#818cf8",last:"Jan 27",priority:"med",phone:"281-799-9731",email:"e.alaniz@att.net",notes:"UT Orthopedics Cypress Buildout. Fry reglet revision."},
+  // Gullo Commercial
+  {id:37,name:"Renee Hollek",company:"Gullo Commercial",role:"",bids:1,wins:0,color:"#fbbf24",last:"Jan 23",priority:"med",phone:"832-580-2260",email:"gullobids@gullocommercial.com",notes:"Stonebridge Church Renovation."},
+  // Farmer Construction
+  {id:38,name:"Chase Evans",company:"Farmer Construction",role:"",bids:1,wins:0,color:"#4ade80",last:"Jan 15",priority:"med",phone:"",email:"chase.evans@farmerconstructioninc.com",notes:"Farmer office expansion."},
+  // JP's Construction
+  {id:39,name:"Robert",company:"JP's Construction",role:"Owner",bids:1,wins:0,color:"#f472b6",last:"Jan 12",priority:"med",phone:"",email:"robert@jpsconstruction.org",notes:"Health Source Missouri City. Demising wall breakout requested."},
+  // Forney (additional)
+  {id:40,name:"Leigh Bartish",company:"Forney Construction",role:"Senior Estimator",bids:1,wins:0,color:"#f59e0b",last:"Mar 11",priority:"med",phone:"713-805-0000",email:"leigh.bartish@forneyconstruction.com",notes:"MH Fulshear SMR estimator."},
 ];
 
 // ── SEED: CALL LOG ──
