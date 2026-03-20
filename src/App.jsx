@@ -2816,7 +2816,7 @@ const ModalHub = ({ type, data, app }) => {
         return data ? { ...data } : {
           name: "", gc: "", value: 0, due: "", status: "invite_received",
           scope: [], sector: "", risk: "Med", notes: "", contact: "",
-          address: "", attachments: [], estimator: "", exclusions: "",
+          address: "", attachments: [], estimator: app.auth?.name || "", exclusions: "",
           plansUploaded: false, addendaCount: 0, proposalStatus: ""
         };
       case "editProject":
@@ -3237,7 +3237,12 @@ const ModalHub = ({ type, data, app }) => {
             </div>
             <div className="form-group">
               <label className="form-label">Estimator / Owner</label>
-              <input className="form-input" value={draft.estimator || ""} onChange={e => upd("estimator", e.target.value)} placeholder="Who owns this bid?" />
+              <select className="form-select" value={draft.estimator || ""} onChange={e => upd("estimator", e.target.value)}>
+                <option value="">— Select —</option>
+                <option value="Emmanuel Aguilar">Emmanuel Aguilar</option>
+                <option value="Abner Aguilar">Abner Aguilar</option>
+                <option value="Isai Aguilar">Isai Aguilar</option>
+              </select>
             </div>
             <div className="form-group">
               <label className="form-label">Risk</label>
