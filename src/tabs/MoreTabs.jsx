@@ -161,6 +161,24 @@ function InvoicesTab({ app }) {
             const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'ebc_invoices.csv'; a.click(); URL.revokeObjectURL(url);
             app.show("Invoices CSV exported");
           }}>Export CSV</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => {
+            import("../utils/qbExport.js").then(({ generateInvoiceIIF, downloadIIF }) => {
+              const pending = invFiltered.filter(i => i.status === "pending" || i.status === "draft");
+              if (pending.length === 0) { app.show("No pending invoices to export"); return; }
+              const qbInvoices = pending.map(inv => ({
+                number: inv.number,
+                date: (() => { const d = new Date(inv.date); return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}/${d.getFullYear()}`; })(),
+                customerName: pName(inv.projectId),
+                amount: inv.amount,
+                lineItems: [{ description: inv.desc || "Drywall Scope", amount: inv.amount, item: "Drywall Labor" }],
+                terms: "Net 30",
+                memo: inv.desc || "",
+              }));
+              const iif = generateInvoiceIIF(qbInvoices);
+              downloadIIF(iif, `EBC_QB_Invoices_${new Date().toISOString().slice(0,10)}.iif`);
+              app.show("QuickBooks IIF exported", "ok");
+            });
+          }}>Export to QB</button>
           <button className="btn btn-primary btn-sm" onClick={() => { if (!adding) { const nums = app.invoices.map(i => parseInt(i.number)).filter(n => !isNaN(n)); setForm(f => ({ ...f, number: String((nums.length ? Math.max(...nums) : 0) + 1).padStart(4, "0"), date: new Date().toISOString().slice(0, 10) })); } setAdding(!adding); }}>+ Add Invoice</button>
         </div>
       </div>
@@ -1235,6 +1253,20 @@ function PayrollSummaryTab({ app }) {
             <option value="month">This Month</option>
           </select>
           <button className="btn btn-ghost btn-sm" onClick={exportPayrollCSV}>Export CSV</button>
+          <button className="btn btn-primary btn-sm" onClick={() => {
+            import("../utils/qbExport.js").then(({ generateTimeIIF, downloadIIF, validateTimeEntries }) => {
+              const filtered = (app.timeEntries || []).filter(e => {
+                const d = new Date(e.clockIn || e.date);
+                return d >= periodStart && d <= now;
+              });
+              if (filtered.length === 0) { app.show("No time entries for this period"); return; }
+              const warnings = validateTimeEntries(filtered);
+              if (warnings.length > 0 && !window.confirm("Warnings:\n• " + warnings.join("\n• ") + "\n\nContinue export?")) return;
+              const iif = generateTimeIIF(filtered);
+              downloadIIF(iif, `EBC_QB_Payroll_${periodStart.toISOString().slice(0, 10)}.iif`);
+              app.show("QuickBooks IIF exported", "ok");
+            });
+          }}>Export to QB</button>
         </div>
       </div>
 

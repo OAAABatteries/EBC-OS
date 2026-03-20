@@ -642,6 +642,19 @@ export function TimeClockAdmin({ app }) {
                 URL.revokeObjectURL(url);
                 show("Payroll CSV exported");
               }}>Export CSV</button>
+              <button className="btn btn-primary btn-sm" onClick={() => {
+                import("../utils/qbExport.js").then(({ generateTimeIIF, downloadIIF, validateTimeEntries }) => {
+                  const ws = currentWeekStart; const we = new Date(ws); we.setDate(we.getDate() + 7);
+                  const filtered = timeEntries.filter(e => { const d = new Date(e.clockIn); return d >= ws && d < we; });
+                  if (filtered.length === 0) { show("No time entries for this week"); return; }
+                  const warnings = validateTimeEntries(filtered);
+                  if (warnings.length > 0 && !window.confirm("Warnings:\n• " + warnings.join("\n• ") + "\n\nContinue export?")) return;
+                  const iif = generateTimeIIF(filtered);
+                  const dateStr = ws.toISOString().slice(0, 10);
+                  downloadIIF(iif, `EBC_QB_Time_${dateStr}.iif`);
+                  show("QuickBooks IIF exported — import in QB Desktop via File > Utilities > Import > IIF Files");
+                });
+              }}>Export to QB</button>
             </div>
           </div>
 
