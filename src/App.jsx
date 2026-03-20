@@ -763,7 +763,8 @@ function App({ auth, onLogout }) {
             <div style={{ marginBottom: 12 }}>
               <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>{t("Urgent Alerts")}</div>
               {briefResult.urgentAlerts.map((a, i) => (
-                <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", cursor: a.project ? "pointer" : undefined }}
+                  onClick={a.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); } : undefined}>
                   <div className="flex-between">
                     <span className="text-sm">{a.alert}</span>
                     <span className="badge badge-red">{a.type}</span>
@@ -779,12 +780,13 @@ function App({ auth, onLogout }) {
             <div style={{ marginBottom: 12 }}>
               <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>{t("Today's Focus")}</div>
               {briefResult.todaysFocus.map((f, i) => (
-                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", cursor: f.project ? "pointer" : undefined }}
+                  onClick={f.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(f.project.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); } : undefined}>
                   <div className="flex-between">
                     <span className="text-sm">{f.item}</span>
                     <span className={`badge ${f.priority === "critical" ? "badge-red" : f.priority === "high" ? "badge-amber" : "badge-muted"}`}>{f.priority}</span>
                   </div>
-                  {f.project && <div className="text-xs text-dim mt-2">{f.project}</div>}
+                  {f.project && <div className="text-xs text-dim mt-2" style={{ color: "var(--blue)", textDecoration: "underline" }}>{f.project}</div>}
                 </div>
               ))}
             </div>
@@ -816,32 +818,32 @@ function App({ auth, onLogout }) {
 
       {dashCfg.showKPIs && userRole === "accounting" ? (
         <div className="kpi-grid">
-          <div className="kpi-card">
+          <div className="kpi-card" onClick={() => handleTabClick("financials")} style={{ cursor: "pointer" }}>
             <div className="kpi-label">{t("Outstanding A/R")}</div>
             <div className="kpi-value">{fmtK(invoices.filter(i => i.status === "pending" || i.status === "overdue").reduce((s, i) => s + (i.amount || 0), 0))}</div>
             <div className="kpi-sub">{invoices.filter(i => i.status === "pending" || i.status === "overdue").length} {t("unpaid invoices")}</div>
           </div>
-          <div className="kpi-card">
+          <div className="kpi-card" onClick={() => handleTabClick("financials")} style={{ cursor: "pointer" }}>
             <div className="kpi-label">{t("Overdue Invoices")}</div>
             <div className="kpi-value" style={{ color: "var(--red)" }}>{fmtK(invoices.filter(i => i.status === "overdue").reduce((s, i) => s + (i.amount || 0), 0))}</div>
             <div className="kpi-sub">{invoices.filter(i => i.status === "overdue").length} {t("past due")}</div>
           </div>
-          <div className="kpi-card">
+          <div className="kpi-card" onClick={() => handleTabClick("projects")} style={{ cursor: "pointer" }}>
             <div className="kpi-label">{t("Active Projects")}</div>
             <div className="kpi-value">{activeProjects}</div>
             <div className="kpi-sub">{t("billing in progress")}</div>
           </div>
-          <div className="kpi-card">
+          <div className="kpi-card" onClick={() => handleTabClick("financials")} style={{ cursor: "pointer" }}>
             <div className="kpi-label">{t("T&M Pending")}</div>
             <div className="kpi-value">{tmTickets.filter(t => t.status === "pending" || t.status === "draft").length}</div>
             <div className="kpi-sub">{t("tickets to review")}</div>
           </div>
-          <div className="kpi-card">
+          <div className="kpi-card" onClick={() => handleTabClick("timeclock")} style={{ cursor: "pointer" }}>
             <div className="kpi-label">{t("Team on Payroll")}</div>
             <div className="kpi-value">{(() => { try { return JSON.parse(localStorage.getItem("ebc_users") || "[]").length; } catch { return 0; } })()}</div>
             <div className="kpi-sub">{t("employees")}</div>
           </div>
-          <div className="kpi-card">
+          <div className="kpi-card" onClick={() => handleTabClick("financials")} style={{ cursor: "pointer" }}>
             <div className="kpi-label">{t("Change Orders")}</div>
             <div className="kpi-value">{fmtK(changeOrders.filter(co => co.status === "approved").reduce((s, co) => s + (co.amount || 0), 0))}</div>
             <div className="kpi-sub">{changeOrders.filter(co => co.status === "pending").length} {t("pending approval")}</div>
@@ -849,22 +851,22 @@ function App({ auth, onLogout }) {
         </div>
       ) : dashCfg.showKPIs && userRole === "office_admin" ? (
         <div className="kpi-grid">
-          <div className="kpi-card">
+          <div className="kpi-card" onClick={() => handleTabClick("projects")} style={{ cursor: "pointer" }}>
             <div className="kpi-label">{t("Active Projects")}</div>
             <div className="kpi-value">{activeProjects}</div>
             <div className="kpi-sub">{projects.filter(p => p.progress < 100).length} {t("in progress")}</div>
           </div>
-          <div className="kpi-card">
+          <div className="kpi-card" onClick={() => handleTabClick("bids")} style={{ cursor: "pointer" }}>
             <div className="kpi-label">{t("Open Bids")}</div>
             <div className="kpi-value">{openBids}</div>
             <div className="kpi-sub">{bids.filter(b => b.status === "submitted").length} {t("submitted")}</div>
           </div>
-          <div className="kpi-card">
+          <div className="kpi-card" onClick={() => handleTabClick("contacts")} style={{ cursor: "pointer" }}>
             <div className="kpi-label">{t("Contacts")}</div>
             <div className="kpi-value">{contacts.length}</div>
             <div className="kpi-sub">{t("in directory")}</div>
           </div>
-          <div className="kpi-card">
+          <div className="kpi-card" onClick={() => handleTabClick("bids")} style={{ cursor: "pointer" }}>
             <div className="kpi-label">{t("Pipeline Value")}</div>
             <div className="kpi-value">{fmtK(pipeline)}</div>
             <div className="kpi-sub">{t("total estimating")}</div>
@@ -872,27 +874,27 @@ function App({ auth, onLogout }) {
         </div>
       ) : dashCfg.showKPIs && (
         <div className="kpi-grid">
-          <div className="kpi-card">
+          <div className="kpi-card" onClick={() => handleTabClick("projects")} style={{ cursor: "pointer" }}>
             <div className="kpi-label">{t("Backlog")}</div>
             <div className="kpi-value">{fmtK(backlog)}</div>
             <div className="kpi-sub">{projects.filter(p => (p.progress || 0) < 100).length} {t("projects remaining")}</div>
           </div>
-          <div className="kpi-card">
+          <div className="kpi-card" onClick={() => handleTabClick("bids")} style={{ cursor: "pointer" }}>
             <div className="kpi-label">{t("Win Rate")}</div>
             <div className="kpi-value">{winRate}%</div>
             <div className="kpi-sub">{awarded}W / {lost}L — {openBids} {t("open")}</div>
           </div>
-          <div className="kpi-card">
+          <div className="kpi-card" onClick={() => handleTabClick("bids")} style={{ cursor: "pointer" }}>
             <div className="kpi-label">{t("Pipeline")}</div>
             <div className="kpi-value">{fmtK(pipeline)}</div>
             <div className="kpi-sub">{bids.filter(b => b.status === "estimating").length} {t("bids estimating")}</div>
           </div>
-          <div className="kpi-card">
+          <div className="kpi-card" onClick={() => handleTabClick("financials")} style={{ cursor: "pointer" }}>
             <div className="kpi-label">{t("Receivables")}</div>
             <div className="kpi-value">{fmtK(cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90)}</div>
             <div className="kpi-sub" style={cashFlow.net90 > 0 ? { color: "var(--red)" } : {}}>{cashFlow.net90 > 0 ? fmtK(cashFlow.net90) + " 90+ days" : t("all current")}</div>
           </div>
-          <div className="kpi-card">
+          <div className="kpi-card" onClick={() => handleTabClick("timeclock")} style={{ cursor: "pointer" }}>
             <div className="kpi-label">{t("Labor Utilization")}</div>
             <div className="kpi-value" style={{ color: laborUtil >= 70 ? "var(--green)" : laborUtil >= 50 ? "var(--amber)" : "var(--red)" }}>{laborUtil}%</div>
             <div className="kpi-sub">{t("billable vs total hours")}</div>
@@ -992,7 +994,8 @@ function App({ auth, onLogout }) {
           <div className="card-title font-head">{t("Recent Activity")}</div>
         </div>
         {callLog.slice(0, 5).map(c => (
-          <div key={c.id} className="flex gap-12 border-b" style={{ padding: "10px 0" }}>
+          <div key={c.id} className="flex gap-12 border-b" style={{ padding: "10px 0", cursor: "pointer", borderRadius: 4 }}
+            onClick={() => { handleTabClick("contacts"); setTimeout(() => setContactSearch(c.contact || ""), 0); }}>
             <div style={{ width: 6, borderRadius: 3, background: "var(--amber)", flexShrink: 0 }} />
             <div className="flex-col gap-4" style={{ flex: 1 }}>
               <div className="flex-between">
@@ -1056,9 +1059,10 @@ function App({ auth, onLogout }) {
               <div style={{ marginBottom: 12 }}>
                 <div className="text-sm font-semi mb-8">{t("Alerts")}</div>
                 {digestResult.alerts.map((a, i) => (
-                  <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, borderLeft: `3px solid ${a.priority === "high" ? "var(--red)" : a.priority === "medium" ? "var(--amber)" : "var(--blue)"}`, background: "var(--card)", fontSize: 13 }}>
+                  <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, borderLeft: `3px solid ${a.priority === "high" ? "var(--red)" : a.priority === "medium" ? "var(--amber)" : "var(--blue)"}`, background: "var(--card)", fontSize: 13, cursor: a.project ? "pointer" : undefined }}
+                    onClick={a.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); } : undefined}>
                     <div className="flex-between">
-                      <span className="font-semi">{a.project}</span>
+                      <span className="font-semi" style={a.project ? { color: "var(--blue)", textDecoration: "underline" } : {}}>{a.project}</span>
                       <span className={`badge ${a.priority === "high" ? "badge-red" : a.priority === "medium" ? "badge-amber" : "badge-blue"}`}>{a.type}</span>
                     </div>
                     <div className="text-muted mt-4">{a.message}</div>
@@ -1524,7 +1528,8 @@ function App({ auth, onLogout }) {
               {riskResult.rankings?.map((r, i) => {
                 const riskColor = r.riskLevel === "critical" ? "var(--red)" : r.riskLevel === "high" ? "var(--amber)" : r.riskLevel === "medium" ? "var(--blue)" : "var(--green)";
                 return (
-                  <div key={i} style={{ padding: 12, marginBottom: 8, borderRadius: 8, borderLeft: `4px solid ${riskColor}`, background: "var(--card)" }}>
+                  <div key={i} style={{ padding: 12, marginBottom: 8, borderRadius: 8, borderLeft: `4px solid ${riskColor}`, background: "var(--card)", cursor: "pointer" }}
+                    onClick={() => { const p = projects.find(p => p.name?.toLowerCase().includes(r.project?.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); }}>
                     <div className="flex-between mb-4">
                       <span className="font-semi text-sm">{r.project}</span>
                       <div className="flex gap-8" style={{ alignItems: "center" }}>
@@ -1545,7 +1550,8 @@ function App({ auth, onLogout }) {
                 <div style={{ marginTop: 12 }}>
                   <div className="text-sm font-semi mb-8">{t("Immediate Actions")}</div>
                   {riskResult.immediateActions.map((a, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13, cursor: a.project ? "pointer" : undefined }}
+                      onClick={a.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); } : undefined}>
                       <div className="flex-between">
                         <span className="font-semi">{a.project}</span>
                         <span className="text-xs text-dim">{a.deadline}</span>
@@ -2550,7 +2556,12 @@ function App({ auth, onLogout }) {
                         padding: "10px 16px", borderBottom: "1px solid var(--border)", cursor: "pointer",
                         background: n.read ? "transparent" : "rgba(224,148,34,0.06)",
                       }}
-                      onClick={() => { markRead(n.id); }}
+                      onClick={() => {
+                        markRead(n.id);
+                        setNotifOpen(false);
+                        const navMap = { cert_expired: "timeclock", cert_urgent: "timeclock", cert_warning: "timeclock", invoice_overdue: "financials", tm_pending: "financials", sds_expired: "sds", sds_warning: "sds", co_pending: "financials" };
+                        if (navMap[n.type]) handleTabClick(navMap[n.type]);
+                      }}
                     >
                       <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                         <span style={{ fontSize: 18, flexShrink: 0 }}>{NOTIF_ICONS[n.type] || "📌"}</span>
@@ -3508,14 +3519,16 @@ const ModalHub = ({ type, data, app }) => {
                         <div className="text-xs text-muted">None</div>
                       ) : (
                         sec.items.slice(0, 5).map((item, i) => (
-                          <div key={item.id || i} style={{ fontSize: 11, padding: "3px 0", borderBottom: "1px solid var(--border)" }}>
+                          <div key={item.id || i} style={{ fontSize: 11, padding: "3px 0", borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+                            onClick={() => { setModal(null); app.setSearch(draft.name || ""); app.setTab(sec.tab); }}>
                             <span>{sec.fields(item)}</span>
                             {sec.badge(item) && <span className={`badge ${sec.badge(item) === "paid" || sec.badge(item) === "approved" || sec.badge(item) === "answered" ? "badge-green" : sec.badge(item) === "pending" || sec.badge(item) === "submitted" || sec.badge(item) === "open" ? "badge-amber" : "badge-muted"}`} style={{ fontSize: 8, marginLeft: 4 }}>{sec.badge(item)}</span>}
                           </div>
                         ))
                       )}
-                      {sec.items.length > 5 && <div className="text-xs text-muted" style={{ marginTop: 4 }}>+{sec.items.length - 5} more</div>}
-                      <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px", marginTop: 6 }} onClick={() => { setModal(null); app.setTab(sec.tab); }}>
+                      {sec.items.length > 5 && <div className="text-xs" style={{ marginTop: 4, cursor: "pointer", color: "var(--blue)" }}
+                        onClick={() => { setModal(null); app.setSearch(draft.name || ""); app.setTab(sec.tab); }}>+{sec.items.length - 5} more →</div>}
+                      <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px", marginTop: 6 }} onClick={() => { setModal(null); app.setSearch(draft.name || ""); app.setTab(sec.tab); }}>
                         View All →
                       </button>
                     </div>
