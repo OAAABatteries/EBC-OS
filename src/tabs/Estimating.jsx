@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { getHF, SCOPE_INIT, SCOPE_ITEM_MAP, DEFAULT_ASSUMPTIONS, DEFAULT_PROPOSAL_TERMS, SCOPE_TEMPLATES, PROFIT_SUGGESTIONS } from "../data/constants";
 import { generateProposalPdf, defaultIncludes, defaultExcludes } from "../utils/proposalPdf";
 import { buildScopeLines } from "../utils/scopeBuilder";
@@ -74,6 +74,38 @@ export function EstimatingTab({ app }) {
   const [drawingPdfData, setDrawingPdfData] = useState(null);
   const [drawingFileName, setDrawingFileName] = useState("");
   const drawingFileRef = useRef();
+
+  // Try to open drawing from IDB cache first, fall back to file picker
+  const openDrawing = useCallback(async (tkId, drawingState) => {
+    // If we already have pdfData in memory, just open
+    if (drawingPdfData) { setShowDrawing(true); return; }
+    // Try IDB if we have saved file names
+    if (drawingState?.pdfFileNames?.length > 0) {
+      try {
+        const IDB_NAME = "ebc_takeoff_pdfs";
+        const db = await new Promise((resolve, reject) => {
+          const req = indexedDB.open(IDB_NAME, 2);
+          req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains("pdfs")) req.result.createObjectStore("pdfs"); };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+        const data = await new Promise((resolve, reject) => {
+          const tx = db.transaction("pdfs", "readonly");
+          const req = tx.objectStore("pdfs").get(`${tkId}_0`);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => reject(req.error);
+        });
+        if (data) {
+          setDrawingPdfData(new Uint8Array(data));
+          setDrawingFileName(drawingState.pdfFileNames[0]);
+          setShowDrawing(true);
+          return;
+        }
+      } catch (e) { console.warn("[IDB] Failed to load cached PDF:", e); }
+    }
+    // Fallback: open file picker
+    if (drawingFileRef.current) drawingFileRef.current.click();
+  }, [drawingPdfData]);
 
   // ── Scope Checklist & Gap Analysis state ──
   const [showScopePanel, setShowScopePanel] = useState(false);
@@ -1142,11 +1174,11 @@ export function EstimatingTab({ app }) {
           />
         </div>
         <div className="flex gap-8">
-          <button className="btn btn-ghost btn-sm" onClick={() => {
-            if (drawingFileRef.current) drawingFileRef.current.click();
-          }}>Open Drawing</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => openDrawing(tk.id, tk.drawingState)}>
+            {drawingPdfData || tk.drawingState?.pdfFileNames?.length > 0 ? "Open Drawing" : "Upload Drawing"}
+          </button>
           {tk.drawingState && (
-            <button className="btn btn-ghost btn-sm" style={{ color: "#10b981" }} onClick={() => setShowDrawing(true)}>
+            <button className="btn btn-ghost btn-sm" style={{ color: "#10b981" }} onClick={() => openDrawing(tk.id, tk.drawingState)}>
               Resume Takeoff ({Object.values(tk.drawingState.measurements || {}).flat().length} meas)
             </button>
           )}
