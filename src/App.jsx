@@ -691,6 +691,10 @@ function App({ auth, onLogout }) {
     if (bidFilter === "Active") list = list.filter(b => BID_ACTIVE_STATUSES.includes(b.status));
     else if (bidFilter === "No Bid") list = list.filter(b => b.status === "no_bid");
     else if (bidFilter !== "All") list = list.filter(b => b.status === bidFilter.toLowerCase());
+    // Hide converted-to-project bids from All and Active views (show only in Awarded filter)
+    if (bidFilter === "All" || bidFilter === "Active") {
+      list = list.filter(b => !b.convertedToProject);
+    }
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(b =>
@@ -1548,8 +1552,31 @@ function App({ auth, onLogout }) {
           <span className="text-sm font-semi">{selectedBids.size} {t("selected")}</span>
           <select className="form-select" style={{ width: "auto", fontSize: 12 }} defaultValue="" onChange={e => {
             if (!e.target.value) return;
-            setBids(prev => prev.map(b => selectedBids.has(b.id) ? { ...b, status: e.target.value } : b));
-            show(`${selectedBids.size} bids → ${STATUS_LABEL[e.target.value] || e.target.value}`);
+            const newStatus = e.target.value;
+            if (newStatus === "awarded") {
+              // Auto-convert each selected bid to a project
+              const bidsToAward = bids.filter(b => selectedBids.has(b.id) && b.status !== "awarded");
+              setBids(prev => prev.map(b => selectedBids.has(b.id) ? { ...b, status: "awarded", convertedToProject: true } : b));
+              let created = 0;
+              bidsToAward.forEach(b => {
+                if (!projects.some(p => p.bidId === b.id)) {
+                  const newProj = {
+                    id: nextId(), bidId: b.id, name: b.name, gc: b.gc,
+                    contract: b.value || 0, billed: 0, progress: 0,
+                    phase: b.phase || b.sector || "", start: b.due || "", end: "",
+                    pm: b.estimator || "", laborBudget: 0, laborHours: 0, laborCost: 0, materialCost: 0,
+                    address: b.address || "", attachments: b.attachments || [],
+                    notes: b.notes || "", scope: b.scope || [], sector: b.sector || "", contact: b.contact || "",
+                  };
+                  setProjects(prev => [...prev, newProj]);
+                  created++;
+                }
+              });
+              show(`${selectedBids.size} bids awarded!${created > 0 ? ` ${created} project${created > 1 ? "s" : ""} created.` : ""}`);
+            } else {
+              setBids(prev => prev.map(b => selectedBids.has(b.id) ? { ...b, status: newStatus } : b));
+              show(`${selectedBids.size} bids → ${STATUS_LABEL[newStatus] || newStatus}`);
+            }
             setSelectedBids(new Set());
             e.target.value = "";
           }}>
@@ -1597,9 +1624,11 @@ function App({ auth, onLogout }) {
                   </div>
                   {colBids.length === 0 ? (
                     <div className="text-xs text-dim" style={{ padding: 16, textAlign: "center" }}>Empty</div>
-                  ) : colBids.map(b => (
-                    <div key={b.id} className="bid-card" style={{ marginBottom: 8, padding: "10px 12px", cursor: "pointer" }}
-                      onClick={() => setModal({ type: "editBid", data: b })}>
+                  ) : colBids.map(b => {
+                    const linkedProject = b.convertedToProject ? projects.find(p => p.bidId === b.id) : null;
+                    return (
+                    <div key={b.id} className="bid-card" style={{ marginBottom: 8, padding: "10px 12px", cursor: "pointer", opacity: b.convertedToProject ? 0.7 : 1 }}
+                      onClick={() => b.convertedToProject && linkedProject ? setModal({ type: "editProject", data: linkedProject }) : setModal({ type: "editBid", data: b })}>
                       <div className="text-xs font-semi" style={{ lineHeight: 1.3, marginBottom: 4 }}>{b.name}</div>
                       <div className="flex-between">
                         <span className="text-xs text-muted">{b.gc}</span>
@@ -1609,8 +1638,14 @@ function App({ auth, onLogout }) {
                         <span className={`badge ${STATUS_BADGE[b.status] || "badge-muted"}`} style={{ fontSize: 9 }}>{STATUS_LABEL[b.status] || b.status}</span>
                         {b.contact && <span className="text-xs text-dim">{b.contact}</span>}
                       </div>
+                      {b.convertedToProject && (
+                        <div className="text-xs mt-4" style={{ color: "var(--green)", fontStyle: "italic" }}>
+                          → Moved to Projects
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })}
@@ -1885,6 +1920,9 @@ function App({ auth, onLogout }) {
               {/* Name + GC */}
               <div className="card-title font-head" style={{ fontSize: 14, marginBottom: 2, lineHeight: 1.3 }}>{b.name}</div>
               <div className="text-xs text-muted">{b.gc}</div>
+              {b.convertedToProject && (
+                <div className="text-xs mt-4" style={{ color: "var(--green)", fontStyle: "italic", fontWeight: 500 }}>→ Moved to Projects</div>
+              )}
               {/* Value + Owner row */}
               <div className="flex-between mt-6" style={{ alignItems: "flex-end" }}>
                 {hasValue ? <span className="font-mono font-bold text-amber" style={{ fontSize: 14 }}>{fmt(b.value)}</span> : <span className="text-xs text-muted" style={{ fontStyle: "italic" }}>No estimate</span>}
@@ -1920,18 +1958,28 @@ function App({ auth, onLogout }) {
                       const newProj = {
                         id: nextId(), bidId: b.id, name: b.name, gc: b.gc,
                         contract: b.value || 0, billed: 0, progress: 0,
-                        phase: "Pre-Construction", start: "", end: "",
-                        scope: b.scope || [], margin: 0,
+                        phase: b.phase || b.sector || "Pre-Construction", start: b.due || "", end: "",
+                        pm: b.estimator || "", address: b.address || "",
+                        scope: b.scope || [], sector: b.sector || "", contact: b.contact || "",
+                        notes: b.notes || "", attachments: b.attachments || [],
+                        laborBudget: 0, laborHours: 0, laborCost: 0, materialCost: 0,
                       };
                       setProjects(prev => [...prev, newProj]);
-                      show(`Project created from "${b.name}"`);
+                      setBids(prev => prev.map(x => x.id === b.id ? { ...x, convertedToProject: true } : x));
+                      show(`Bid awarded! Project created: ${b.name}`);
                     }}>
                     Convert to Project
                   </button>
                 )}
-                {b.status === "awarded" && projects.some(p => p.bidId === b.id) && (
-                  <span className="badge badge-green" style={{ fontSize: 10 }}>Project Created</span>
-                )}
+                {b.status === "awarded" && projects.some(p => p.bidId === b.id) && (() => {
+                  const linkedProj = projects.find(p => p.bidId === b.id);
+                  return (
+                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 8px", color: "var(--green)" }}
+                      onClick={(e) => { e.stopPropagation(); if (linkedProj) setModal({ type: "editProject", data: linkedProj }); }}>
+                      → View Project
+                    </button>
+                  );
+                })()}
               </div>
             </div>
             );
@@ -3546,8 +3594,41 @@ const ModalHub = ({ type, data, app }) => {
           app.setBids(prev => [...prev, { ...draft, id: app.nextId() }]);
           show("Bid added");
         } else {
-          app.setBids(prev => prev.map(b => b.id === draft.id ? { ...draft } : b));
-          show("Bid updated");
+          // If status was changed to "awarded" via the dropdown, auto-convert to project
+          const wasPreviouslyAwarded = data && data.status === "awarded";
+          if (draft.status === "awarded" && !wasPreviouslyAwarded) {
+            // Check if project already exists for this bid
+            if (!app.projects.some(p => p.bidId === draft.id)) {
+              const awardedBid = { ...draft, convertedToProject: true };
+              app.setBids(prev => prev.map(b => b.id === draft.id ? awardedBid : b));
+              const newProject = {
+                id: app.nextId(),
+                name: awardedBid.name,
+                gc: awardedBid.gc,
+                contract: awardedBid.value || 0,
+                billed: 0, progress: 0,
+                phase: awardedBid.phase || awardedBid.sector || "",
+                start: awardedBid.due || "",
+                end: "", pm: awardedBid.estimator || "",
+                laborBudget: 0, laborHours: 0, laborCost: 0, materialCost: 0,
+                address: awardedBid.address || "",
+                attachments: awardedBid.attachments || [],
+                bidId: awardedBid.id,
+                notes: awardedBid.notes || "",
+                scope: awardedBid.scope || [],
+                sector: awardedBid.sector || "",
+                contact: awardedBid.contact || "",
+              };
+              app.setProjects(prev => [...prev, newProject]);
+              show(`Bid awarded! Project created: ${draft.name}`);
+            } else {
+              app.setBids(prev => prev.map(b => b.id === draft.id ? { ...draft, convertedToProject: true } : b));
+              show("Bid awarded! Project already exists.");
+            }
+          } else {
+            app.setBids(prev => prev.map(b => b.id === draft.id ? { ...draft } : b));
+            show("Bid updated");
+          }
         }
         break;
       }
@@ -3595,8 +3676,16 @@ const ModalHub = ({ type, data, app }) => {
   // ── Award / Un-award a bid ──
   const handleAwardBid = () => {
     if (!draft.id || !draft.name) return;
-    // Update bid status to "awarded"
-    const awardedBid = { ...draft, status: "awarded" };
+    // Don't create duplicate project if already linked
+    if (app.projects.some(p => p.bidId === draft.id)) {
+      const awardedBid = { ...draft, status: "awarded", convertedToProject: true };
+      app.setBids(prev => prev.map(b => b.id === awardedBid.id ? awardedBid : b));
+      show("Bid awarded! Project already exists.");
+      setModal(null);
+      return;
+    }
+    // Update bid status to "awarded" and mark as converted
+    const awardedBid = { ...draft, status: "awarded", convertedToProject: true };
     app.setBids(prev => prev.map(b => b.id === awardedBid.id ? awardedBid : b));
     // Create project from bid data
     const newProject = {
@@ -3606,10 +3695,10 @@ const ModalHub = ({ type, data, app }) => {
       contract: awardedBid.value || 0,
       billed: 0,
       progress: 0,
-      phase: awardedBid.phase || "",
+      phase: awardedBid.phase || awardedBid.sector || "",
       start: awardedBid.due || "",
       end: "",
-      pm: "",
+      pm: awardedBid.estimator || "",
       laborBudget: 0,
       laborHours: 0,
       laborCost: 0,
@@ -3618,17 +3707,20 @@ const ModalHub = ({ type, data, app }) => {
       attachments: awardedBid.attachments || [],
       bidId: awardedBid.id, // link back to the bid
       notes: awardedBid.notes || "",
+      scope: awardedBid.scope || [],
+      sector: awardedBid.sector || "",
+      contact: awardedBid.contact || "",
     };
     app.setProjects(prev => [...prev, newProject]);
-    show("Bid awarded! Project created.");
+    show(`Bid awarded! Project created: ${awardedBid.name}`);
     setModal(null);
   };
 
   const handleUnAwardBid = () => {
     if (!draft.id) return;
     if (!confirm("Un-award this bid? The linked project will be removed.")) return;
-    // Set bid back to submitted
-    const updBid = { ...draft, status: "submitted" };
+    // Set bid back to submitted and clear converted flag
+    const updBid = { ...draft, status: "submitted", convertedToProject: false };
     app.setBids(prev => prev.map(b => b.id === updBid.id ? updBid : b));
     // Remove linked project
     app.setProjects(prev => prev.filter(p => p.bidId !== draft.id));
