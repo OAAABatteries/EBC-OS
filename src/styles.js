@@ -1175,4 +1175,56 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
   .cal-events-wrap{display:none}
   .cal-month-cell.has-events::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:var(--amber)}
 }
+
+/* ══ BID CALENDAR ══ */
+.bidcal-wrap{display:flex;gap:16px;margin-top:8px}
+.bidcal-main{flex:1;min-width:0}
+.bidcal-sidebar{width:280px;flex-shrink:0}
+.bidcal-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.bidcal-nav{display:flex;align-items:center;gap:6px}
+.bidcal-nav button{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;transition:all 0.15s}
+.bidcal-nav button:hover{border-color:var(--amber);color:var(--amber)}
+.bidcal-month-title{font-family:var(--font-head);font-size:17px;font-weight:700;color:var(--text);min-width:160px;text-align:center}
+.bidcal-today-btn{background:var(--amber);color:var(--bg);border:none;padding:5px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:600;transition:all 0.15s}
+.bidcal-today-btn:hover{box-shadow:0 2px 10px var(--amber-glow)}
+.bidcal-grid{display:grid;grid-template-columns:repeat(7,1fr);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.bidcal-hdr{padding:8px 4px;text-align:center;font-size:10px;text-transform:uppercase;letter-spacing:0.6px;color:var(--text3);font-weight:600;background:var(--bg3);border-bottom:1px solid var(--border)}
+.bidcal-cell{min-height:90px;padding:4px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg2);position:relative;cursor:pointer;transition:background 0.12s}
+.bidcal-cell:nth-child(7n){border-right:none}
+.bidcal-cell:hover{background:var(--bg3)}
+.bidcal-cell.outside{opacity:0.35}
+.bidcal-cell.today{background:var(--amber-dim);box-shadow:inset 0 0 0 2px var(--amber)}
+.bidcal-cell.selected{background:var(--blue-dim);box-shadow:inset 0 0 0 2px var(--blue)}
+.bidcal-day{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:2px;display:flex;align-items:center;gap:4px}
+.bidcal-cell.today .bidcal-day{color:var(--amber);font-weight:700}
+.bidcal-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.bidcal-evt{font-size:9px;padding:1px 4px;border-radius:3px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;cursor:pointer}
+.bidcal-evt:hover{filter:brightness(1.2)}
+.bidcal-evt.bid-due{background:var(--amber-dim);color:var(--amber);border-left:2px solid var(--amber)}
+.bidcal-evt.site-walk{background:var(--blue-dim);color:var(--blue);border-left:2px solid var(--blue)}
+.bidcal-evt.pre-bid{background:var(--green-dim);color:var(--green);border-left:2px solid var(--green)}
+.bidcal-evt.plan-review{background:rgba(139,92,246,0.10);color:#8b5cf6;border-left:2px solid #8b5cf6}
+.bidcal-evt.follow-up{background:var(--red-dim);color:var(--red);border-left:2px solid var(--red)}
+.bidcal-evt.status-awarded{background:var(--green-dim);color:var(--green);border-left:2px solid var(--green)}
+.bidcal-evt.status-lost{background:var(--red-dim);color:var(--red);border-left:2px solid var(--red)}
+.bidcal-evt.status-nobid{background:rgba(100,116,139,0.10);color:#64748b;border-left:2px solid #64748b}
+.bidcal-more{font-size:9px;color:var(--text3);cursor:pointer;padding:0 4px}
+.bidcal-more:hover{color:var(--amber)}
+.bidcal-sidebar-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+.bidcal-sidebar-title{font-family:var(--font-head);font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px}
+.bidcal-upcoming-item{padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:6px;cursor:pointer;transition:all 0.15s}
+.bidcal-upcoming-item:hover{border-color:var(--amber-dim);background:var(--bg3)}
+.bidcal-day-detail{padding:14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-top:12px}
+.bidcal-day-detail-title{font-family:var(--font-head);font-size:14px;font-weight:600;margin-bottom:10px;color:var(--text)}
+.bidcal-detail-item{padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:6px;cursor:pointer;transition:all 0.15s}
+.bidcal-detail-item:hover{border-color:var(--amber-dim);background:var(--bg3)}
+@media(max-width:900px){
+  .bidcal-wrap{flex-direction:column}
+  .bidcal-sidebar{width:100%}
+}
+@media(max-width:600px){
+  .bidcal-cell{min-height:50px}
+  .bidcal-evt{display:none}
+  .bidcal-cell .bidcal-day .bidcal-dot{display:inline-block}
+}
 `;

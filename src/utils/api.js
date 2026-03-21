@@ -233,28 +233,58 @@ Return ONLY valid JSON, no other text.`;
 }
 
 export async function analyzeBidsFromEmail(apiKey, emailContent) {
-  const prompt = `You are a bid tracking assistant for Eagles Brothers Constructors (EBC), a drywall and interior framing subcontractor.
+  const prompt = `You are a bid extraction assistant for Eagles Brothers Constructors (EBC), a Houston-based drywall, metal framing, and acoustical ceiling tile (ACT) subcontractor.
 
-Analyze this email content and extract any bid-related information:
+You are reading one or more pasted emails. These are typically construction bid invitations (ITB / Invitation to Bid), bid updates, addenda notices, plan availability notices, or pre-bid meeting invites. Extract EVERY distinct bid/project you can identify.
 
+EMAIL CONTENT:
+---
 ${emailContent}
+---
 
-Return a JSON array of bid objects with these fields (use null for unknown):
-- name: project name
-- gc: general contractor name
-- value: bid amount (number or null)
-- due: due date
-- status: one of "estimating", "submitted", "awarded", "lost"
-- contact: contact person name
-- notes: any relevant notes
+For EACH bid/project found, return a JSON object with these fields (use null if not found — do NOT guess):
+- name: string — project name (e.g. "Memorial Hermann Sugar Land MOB", "HISD James Middle School")
+- gc: string — general contractor or construction manager name (e.g. "Tellepsen", "McCarthy Building Co.")
+- due: string — bid due date in short format like "Mar 20" or "2026-03-25" or whatever is stated
+- address: string — project address or city/location if mentioned
+- value: number — estimated project or bid value in dollars if mentioned, otherwise null
+- scope: array of strings — applicable scope tags from ONLY these: ["Metal Framing", "GWB", "ACT", "Insulation", "Lead-Lined", "L5 Finish", "ICRA", "Deflection Track", "Shaft Wall", "FRP", "Cement Board", "Blocking", "Demo"]. Infer from context — if drywall is mentioned, include "GWB"; if ceiling tile / acoustic / ACT is mentioned, include "ACT"; if framing / studs / metal stud is mentioned, include "Metal Framing"; if demolition or gut is mentioned, include "Demo".
+- contactName: string — GC contact person name if mentioned
+- contactEmail: string — GC contact email if mentioned
+- contactPhone: string — phone number if mentioned
+- sector: string — one of "Medical", "Commercial", "Education", "Hospitality", "Government", "Religious", "Entertainment", "Industrial", "Residential" based on project type clues
+- planLinks: array of strings — any URLs to plans, specs, Procore, BuildingConnected, iSqFt, SmartBidNet, PlanHub, or file downloads mentioned
+- prebidDate: string — pre-bid meeting date/time if mentioned
+- prebidLocation: string — pre-bid meeting location if mentioned
+- addenda: number — number of addenda mentioned, or null
+- notes: string — key details an estimator should know: building size/SF, number of floors, special requirements, phasing, union/prevailing wage, bonding, schedule constraints, any other useful context. Be specific.
+- status: always "invite_received" for new bid invites, "estimating" if they mention EBC is already working on it, or infer from context
 
-If no bid information is found, return an empty array [].
-Return ONLY valid JSON, no other text.`;
+Construction email clues to watch for:
+- "ITB", "Invitation to Bid", "Request for Proposal", "bid due", "bids due", "proposals due"
+- "Plans available at", "specs posted", "documents available"
+- "Pre-bid meeting", "mandatory walk-through", "site visit"
+- "Scope of work", "division 09", "div 9", "drywall", "gypsum", "framing", "ceilings", "ACT"
+- GC company names often end in "Construction", "Builders", "Building Co.", "Constructors", "General Contractors"
+- "Addendum", "addenda", "revised"
 
-  const result = await callClaude(apiKey, prompt, 1024);
+If the pasted content contains MULTIPLE separate emails or bid invites, extract each one as a separate object in the array.
+
+If no bid information is found at all, return an empty array [].
+
+Return ONLY a valid JSON array, no markdown, no explanation.`;
+
+  const result = await callClaude(apiKey, prompt, 4000);
   try {
-    return JSON.parse(result);
+    const cleaned = result.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    return Array.isArray(parsed) ? parsed : [parsed];
   } catch {
+    // Try to salvage partial JSON
+    try {
+      const match = result.match(/\[[\s\S]*\]/);
+      if (match) return JSON.parse(match[0]);
+    } catch { /* fall through */ }
     return [];
   }
 }

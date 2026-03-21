@@ -53,26 +53,21 @@ function sanitize(str) {
     .replace(/[^\x00-\x7F]/g, (c) => c.charCodeAt(0) > 255 ? "" : c); // drop unsupported unicode
 }
 
-// ── load logo as base64 (white eagle on navy background, phone number removed) ──
+// ── load logo as base64 (white-on-navy version for PDF header) ──
 async function loadLogo() {
   try {
-    const resp = await fetch("/logo-ebc.png");
+    const resp = await fetch("/logo-ebc-white.png");
     if (!resp.ok) return null;
     const blob = await resp.blob();
     return await new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
-        // Crop bottom 45% to fully remove baked-in phone number from logo image
-        const cropH = Math.floor(img.height * 0.55);
         const canvas = document.createElement("canvas");
         canvas.width = img.width;
-        canvas.height = cropH;
+        canvas.height = img.height;
         const ctx = canvas.getContext("2d");
-        // Navy background to match header bar
-        ctx.fillStyle = "#1E2D3B";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, img.width, cropH, 0, 0, img.width, cropH);
-        resolve(canvas.toDataURL("image/png"));
+        ctx.drawImage(img, 0, 0);
+        resolve({ data: canvas.toDataURL("image/png"), w: img.width, h: img.height });
       };
       img.onerror = () => resolve(null);
       img.src = URL.createObjectURL(blob);
@@ -95,14 +90,15 @@ function drawHeader(doc, company, logoBase64) {
   doc.setFillColor(...COLORS.orange);
   doc.rect(0, headerH, PAGE_W, 1.5, "F");
 
-  // Logo — left side, fitted to fill the header height
+  // Logo — left side, fitted within the header height with correct aspect ratio
   if (logoBase64) {
     try {
-      const logoH = headerH;
-      // Source is 500x275 (cropped to 55% of 500px square), aspect ratio = 500/275
-      const logoW = logoH * (500 / 275);
-      // Center vertically in the header
-      doc.addImage(logoBase64, "PNG", 0, 0, logoW, logoH);
+      const logo = typeof logoBase64 === "string" ? { data: logoBase64, w: 500, h: 149 } : logoBase64;
+      const aspect = logo.w / logo.h; // ~3.36 for 500x149
+      const logoH = headerH - 4; // slight padding
+      const logoW = logoH * aspect;
+      const logoY = (headerH - logoH) / 2; // center vertically
+      doc.addImage(logo.data, "PNG", 2, logoY, logoW, logoH);
     } catch { /* fallback */ }
   }
 
@@ -643,4 +639,336 @@ export async function generateProposalPdf({ takeoff, bid, company, assemblies, s
   const fileName = `EBC Proposal - ${projectName} - ${new Date().toISOString().slice(0, 10)}.pdf`;
   doc.save(fileName);
   return fileName;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Quick Proposal PDF — simple line-item based (no takeoff needed)
+//  Perfect for fast bids where you just need scope + price
+// ═══════════════════════════════════════════════════════════════
+export async function generateQuickProposalPdf({
+  projectName = "",
+  projectAddress = "",
+  gcName = "",
+  date = "",
+  lineItems = [],         // [{ description, amount }]
+  alternates = [],        // [{ description, type:"add"|"deduct", amount }]
+  includes = [],
+  excludes = [],
+  assumptions = [],
+  notes = "",             // free-text note block
+  contactName = "Oscar Abner Aguilar",
+  contactPhone = "(346) 970-7093",
+  contactEmail = "abner@ebconstructors.com",
+  proposalNumber = "",
+}) {
+  const doc = new jsPDF({ unit: "mm", format: "letter" });
+  const logoBase64 = await loadLogo();
+
+  // ── PAGE 1: HEADER ──
+  let y = drawHeader(doc, null, logoBase64);
+
+  // "PROPOSAL" label
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(...COLORS.orange);
+  doc.text("PROPOSAL", PAGE_W - MR, y + 2, { align: "right" });
+
+  if (proposalNumber) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...COLORS.medGray);
+    doc.text(`No. ${sanitize(proposalNumber)}`, PAGE_W - MR, y + 7, { align: "right" });
+  }
+
+  // Date
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(...COLORS.darkGray);
+  const displayDate = date || new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  doc.text(`Date: ${sanitize(displayDate)}`, PAGE_W - MR, y + (proposalNumber ? 12 : 8), { align: "right" });
+  y += (proposalNumber ? 18 : 14);
+
+  // Project info box
+  doc.setFillColor(...COLORS.bgLight);
+  doc.roundedRect(ML, y, CONTENT_W, 24, 2, 2, "F");
+  doc.setDrawColor(...COLORS.lightGray);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(ML, y, CONTENT_W, 24, 2, 2, "S");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...COLORS.accent);
+  doc.text("Project:", ML + 4, y + 7);
+  doc.text("Address:", ML + 4, y + 14);
+  doc.text("GC:", ML + 4, y + 21);
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...COLORS.black);
+  doc.text(sanitize(projectName), ML + 24, y + 7);
+  doc.text(sanitize(projectAddress), ML + 24, y + 14);
+  doc.text(sanitize(gcName), ML + 24, y + 21);
+  y += 32;
+
+  // ── SCOPE OF WORK & PRICING TABLE ──
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...COLORS.accent);
+  doc.text("SCOPE OF WORK & PRICING", ML, y);
+  y += 2;
+  doc.setDrawColor(...COLORS.orange);
+  doc.setLineWidth(0.8);
+  doc.line(ML, y, ML + 60, y);
+  y += 6;
+
+  // Table header
+  doc.setFillColor(...COLORS.accent);
+  doc.rect(ML, y, CONTENT_W, 8, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...COLORS.white);
+  doc.text("DESCRIPTION", ML + 4, y + 5.5);
+  doc.text("AMOUNT", PAGE_W - MR - 4, y + 5.5, { align: "right" });
+  y += 8;
+
+  // Line item rows
+  let grandTotal = 0;
+  lineItems.forEach((item, i) => {
+    y = checkPage(doc, y, 10);
+    if (i % 2 === 1) {
+      doc.setFillColor(...COLORS.bgLight);
+      doc.rect(ML, y, CONTENT_W, 8, "F");
+    }
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...COLORS.black);
+    doc.text(sanitize(item.description), ML + 4, y + 5.5);
+    doc.setFont("helvetica", "bold");
+    doc.text(fmtMoney(item.amount), PAGE_W - MR - 4, y + 5.5, { align: "right" });
+    grandTotal += Number(item.amount) || 0;
+    y += 8;
+  });
+
+  // Grand total
+  y = checkPage(doc, y, 20);
+  y += 4;
+  doc.setFillColor(...COLORS.navy);
+  doc.roundedRect(ML + CONTENT_W * 0.45, y - 2, CONTENT_W * 0.55, 12, 2, 2, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(...COLORS.white);
+  doc.text("TOTAL", ML + CONTENT_W * 0.5 + 4, y + 6.5);
+  doc.text(fmtMoney(grandTotal), PAGE_W - MR - 6, y + 6.5, { align: "right" });
+  y += 18;
+
+  // ── ALTERNATES ──
+  if (alternates.length > 0) {
+    y = checkPage(doc, y, 20);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...COLORS.accent);
+    doc.text("ALTERNATES", ML, y);
+    y += 2;
+    doc.setDrawColor(...COLORS.orange);
+    doc.setLineWidth(0.6);
+    doc.line(ML, y, ML + 35, y);
+    y += 6;
+
+    alternates.forEach((alt, i) => {
+      y = checkPage(doc, y, 12);
+      if (i % 2 === 1) {
+        doc.setFillColor(...COLORS.bgLight);
+        doc.rect(ML, y - 1, CONTENT_W, 9, "F");
+      }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(...COLORS.accent);
+      doc.text(`Alternate ${i + 1}:`, ML + 4, y + 5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...COLORS.black);
+      const descLines = doc.splitTextToSize(sanitize(alt.description || ""), CONTENT_W - 60);
+      doc.text(descLines[0] || "", ML + 30, y + 5);
+      doc.setFont("helvetica", "bold");
+      const sign = alt.type === "deduct" ? "Deduct " : "Add ";
+      doc.text(sign + fmtMoney(alt.amount || 0), PAGE_W - MR - 4, y + 5, { align: "right" });
+      y += 8;
+      for (let li = 1; li < descLines.length; li++) {
+        y = checkPage(doc, y, 6);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(...COLORS.darkGray);
+        doc.text(descLines[li], ML + 30, y + 4);
+        y += 5;
+      }
+    });
+    y += 4;
+  }
+
+  // ── INCLUDES ──
+  const incList = includes.length > 0 ? includes : defaultIncludes;
+  y = checkPage(doc, y, 20);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...COLORS.accent);
+  doc.text("INCLUDES:", ML, y);
+  y += 2;
+  doc.setDrawColor(...COLORS.orange);
+  doc.setLineWidth(0.6);
+  doc.line(ML, y, ML + 28, y);
+  y += 5;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...COLORS.darkGray);
+  incList.forEach((line, i) => {
+    y = checkPage(doc, y, 6);
+    doc.text(`${i + 1}.`, ML + 2, y, { align: "right" });
+    const split = doc.splitTextToSize(sanitize(line), CONTENT_W - 12);
+    split.forEach((sl, si) => {
+      doc.text(sl, ML + 6, y);
+      if (si < split.length - 1) y += 4;
+    });
+    y += 5;
+  });
+  y += 4;
+
+  // ── EXCLUDES ──
+  const excList = excludes.length > 0 ? excludes : defaultExcludes;
+  y = checkPage(doc, y, 20);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...COLORS.accent);
+  doc.text("EXCLUDES:", ML, y);
+  y += 2;
+  doc.setDrawColor(...COLORS.orange);
+  doc.setLineWidth(0.6);
+  doc.line(ML, y, ML + 30, y);
+  y += 5;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...COLORS.darkGray);
+  excList.forEach((line, i) => {
+    y = checkPage(doc, y, 6);
+    doc.text(`${i + 1}.`, ML + 2, y, { align: "right" });
+    const split = doc.splitTextToSize(sanitize(line), CONTENT_W - 12);
+    split.forEach((sl, si) => {
+      doc.text(sl, ML + 6, y);
+      if (si < split.length - 1) y += 4;
+    });
+    y += 5;
+  });
+  y += 4;
+
+  // ── ASSUMPTIONS ──
+  if (assumptions.length > 0) {
+    y = checkPage(doc, y, 20);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...COLORS.accent);
+    doc.text("ASSUMPTIONS / QUALIFICATIONS:", ML, y);
+    y += 2;
+    doc.setDrawColor(...COLORS.orange);
+    doc.setLineWidth(0.6);
+    doc.line(ML, y, ML + 70, y);
+    y += 5;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...COLORS.darkGray);
+    assumptions.forEach((line, i) => {
+      y = checkPage(doc, y, 6);
+      doc.text(`${i + 1}.`, ML + 2, y, { align: "right" });
+      const split = doc.splitTextToSize(sanitize(line), CONTENT_W - 12);
+      split.forEach((sl, si) => {
+        doc.text(sl, ML + 6, y);
+        if (si < split.length - 1) y += 4;
+      });
+      y += 5;
+    });
+    y += 4;
+  }
+
+  // ── NOTES BOX ──
+  const noteText = notes || `Assume deck height to be 14'-00" or less. Advise if deck height wall price needs to be adjusted.\nPricing is good for 30 days from date of proposal.`;
+  const noteLinesSplit = doc.splitTextToSize(sanitize(noteText), CONTENT_W - 8);
+  const noteBoxH = Math.max(22, 10 + noteLinesSplit.length * 4 + 10);
+  y = checkPage(doc, y, noteBoxH + 6);
+  doc.setFillColor(...COLORS.bgLight);
+  doc.roundedRect(ML, y, CONTENT_W, noteBoxH, 2, 2, "F");
+  doc.setDrawColor(...COLORS.lightGray);
+  doc.roundedRect(ML, y, CONTENT_W, noteBoxH, 2, 2, "S");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...COLORS.accent);
+  doc.text("NOTE:", ML + 4, y + 5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...COLORS.darkGray);
+  let noteY = y + 10;
+  noteLinesSplit.forEach((sl) => {
+    doc.text(sl, ML + 4, noteY);
+    noteY += 4;
+  });
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.text(`${sanitize(contactName)} - ${sanitize(contactPhone)} - ${sanitize(contactEmail)}`, ML + 4, noteY + 2);
+
+  y += noteBoxH + 6;
+
+  // ── SIGNATURE ──
+  y = checkPage(doc, y, 70);
+  y += 4;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...COLORS.accent);
+  doc.text("ACCEPTANCE", ML, y);
+  y += 2;
+  doc.setDrawColor(...COLORS.orange);
+  doc.setLineWidth(0.6);
+  doc.line(ML, y, ML + 35, y);
+  y += 8;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...COLORS.darkGray);
+  doc.text("By signing below, you authorize Eagles Brothers Constructors Inc. to proceed with the scope of work", ML, y);
+  y += 4;
+  doc.text("described in this proposal under the terms and conditions stated herein.", ML, y);
+  y += 14;
+
+  const sigLineW = (CONTENT_W - 16) / 2;
+  doc.setDrawColor(...COLORS.black);
+  doc.setLineWidth(0.4);
+  doc.line(ML, y, ML + sigLineW, y);
+  doc.line(ML + sigLineW + 16, y, ML + sigLineW + 16 + sigLineW, y);
+  y += 5;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(...COLORS.medGray);
+  doc.text("Client Signature", ML, y);
+  doc.text("Date", ML + sigLineW + 16, y);
+  y += 14;
+  doc.line(ML, y, ML + sigLineW, y);
+  doc.line(ML + sigLineW + 16, y, ML + sigLineW + 16 + sigLineW, y);
+  y += 5;
+  doc.text("Printed Name", ML, y);
+  doc.text("Title / Company", ML + sigLineW + 16, y);
+  y += 14;
+  doc.line(ML, y, ML + sigLineW, y);
+  doc.line(ML + sigLineW + 16, y, ML + sigLineW + 16 + sigLineW, y);
+  y += 5;
+  doc.text("EBC Representative Signature", ML, y);
+  doc.text("Date", ML + sigLineW + 16, y);
+
+  // Page numbers
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    drawFooter(doc, i, totalPages);
+  }
+
+  const fileName = `EBC Proposal - ${sanitize(projectName)} - ${new Date().toISOString().slice(0, 10)}.pdf`;
+  doc.save(fileName);
+  const blob = doc.output('blob');
+  return { fileName, blob };
 }

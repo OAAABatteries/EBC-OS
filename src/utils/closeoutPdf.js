@@ -126,9 +126,14 @@ export function generateCloseoutPdf(project, data) {
   const remaining = adjustedContract - totalBilled;
 
   textLine("Total Billed", fmt(totalBilled));
+  textLine("All Change Orders", fmt((data.changeOrders || []).reduce((s, c) => s + (c.amount || 0), 0)) + ` (${(data.changeOrders || []).length} total)`);
   textLine("Approved Change Orders", fmt(totalCOs) + ` (${(data.changeOrders || []).filter(c => c.status === "approved").length})`);
   textLine("Adjusted Contract", fmt(adjustedContract));
   textLine("Remaining to Bill", fmt(remaining));
+  const retHeld = data.closeoutResult?.financialStatus?.retainage || Math.round(adjustedContract * 0.10);
+  textLine("Retainage Held (est)", fmt(retHeld));
+  const paidTotal = (data.invoices || []).filter(i => i.status === "paid").reduce((s, i) => s + (i.amount || 0), 0);
+  textLine("Total Paid", fmt(paidTotal));
 
   // ── Closeout Checklist (from AI if available) ──
   if (data.closeoutResult) {
@@ -148,13 +153,17 @@ export function generateCloseoutPdf(project, data) {
     }
 
     if (cr.checklist?.length > 0) {
-      sectionTitle("Checklist Items");
-      cr.checklist.forEach(item => {
+      sectionTitle("Closeout Checklist");
+      const cw = [6, 72, 18, 24, 18, 40];
+      tableRow(["#", "Item", "Status", "Date", "Resp", "Notes"], cw, true);
+      cr.checklist.forEach((item, i) => {
         checkPage(8);
-        doc.setFontSize(8);
-        doc.text((item.status === "complete" ? "[X] " : "[ ] ") + safe(item.item || item.description), ML + 2, y + 4);
-        y += 6;
+        const mark = item.status === "complete" ? "[X]" : "[ ]";
+        tableRow([String(i + 1), safe(item.item || item.description), mark, item.dateCompleted || "", item.responsible || "", (item.notes || "").slice(0, 30)], cw);
       });
+      y += 4;
+      const doneCount = cr.checklist.filter(c => c.status === "complete").length;
+      textLine("Completion", doneCount + " of " + cr.checklist.length + " (" + Math.round((doneCount / cr.checklist.length) * 100) + "%)");
     }
   }
 

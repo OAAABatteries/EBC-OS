@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { useNotifications } from "../hooks/useNotifications";
-import { findNearestGeofence, getLocationsInRange } from "../utils/geofence";
+import { findNearestGeofence, getLocationsInRange, pointInPolygon, polygonAreaSqFt } from "../utils/geofence";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
 import {
@@ -48,7 +48,7 @@ function toDateStr(d) {
 
 export function EmployeeView({ app }) {
   const {
-    employees, projects, companyLocations,
+    employees, projects, setProjects, companyLocations,
     timeEntries, setTimeEntries,
     changeOrders, rfis, submittals, crewSchedule,
     materialRequests, setMaterialRequests,
@@ -110,6 +110,14 @@ export function EmployeeView({ app }) {
   const clockMarkersRef = useRef([]);
   const tileLayerRef = useRef(null);
   const [mapStyle, setMapStyle] = useState("dark");
+
+  // ── perimeter drawing ──
+  const [drawingPerimeter, setDrawingPerimeter] = useState(false);
+  const [perimeterPoints, setPerimeterPoints] = useState([]);
+  const [perimeterProjectId, setPerimeterProjectId] = useState(null);
+  const perimeterLayersRef = useRef([]);
+  const drawingPolylineRef = useRef(null);
+  const drawingMarkersRef = useRef([]);
 
   // ── clock tick ──
   useEffect(() => {
@@ -304,6 +312,120 @@ export function EmployeeView({ app }) {
       }
     };
   }, []);
+
+  // ── render saved perimeters on map ──
+  const PERIMETER_COLORS = ["#3b82f6", "#10b981", "#e09422", "#ef4444", "#8b5cf6", "#06b6d4", "#f59e0b", "#ec4899"];
+  useEffect(() => {
+    const map = clockMapInstance.current;
+    if (!map || !clockMapReady) return;
+    // clear old perimeter layers
+    perimeterLayersRef.current.forEach(layer => { try { map.removeLayer(layer); } catch {} });
+    perimeterLayersRef.current = [];
+    // draw saved perimeters
+    projects.forEach((p, idx) => {
+      if (!p.perimeter || p.perimeter.length < 3) return;
+      const color = PERIMETER_COLORS[idx % PERIMETER_COLORS.length];
+      const polygon = L.polygon(p.perimeter, {
+        color,
+        fillColor: color,
+        fillOpacity: 0.18,
+        weight: 2,
+        dashArray: "6 3",
+      }).addTo(map);
+      const areaSqFt = polygonAreaSqFt(p.perimeter);
+      const areaLabel = areaSqFt >= 43560
+        ? `${(areaSqFt / 43560).toFixed(2)} acres`
+        : `${Math.round(areaSqFt).toLocaleString()} sq ft`;
+      const insideText = position ? (pointInPolygon(position.lat, position.lng, p.perimeter)
+        ? '<br/><span style="color:#10b981">&#x2713; You are inside this perimeter</span>'
+        : '<br/><span style="color:#ef4444">&#x2717; You are outside this perimeter</span>') : '';
+      polygon.bindPopup(`<div style="font-size:12px"><b style="color:${color}">${p.name}</b><br/>Area: ${areaLabel}${insideText}</div>`);
+      perimeterLayersRef.current.push(polygon);
+    });
+  }, [clockMapReady, projects, position]);
+
+  // ── invalidate map size when drawing mode changes ──
+  useEffect(() => {
+    const map = clockMapInstance.current;
+    if (map) setTimeout(() => map.invalidateSize(), 350);
+  }, [drawingPerimeter]);
+
+  // ── perimeter drawing: update polyline preview ──
+  useEffect(() => {
+    const map = clockMapInstance.current;
+    if (!map) return;
+    // clear old drawing preview
+    if (drawingPolylineRef.current) { try { map.removeLayer(drawingPolylineRef.current); } catch {} drawingPolylineRef.current = null; }
+    drawingMarkersRef.current.forEach(m => { try { map.removeLayer(m); } catch {} });
+    drawingMarkersRef.current = [];
+    if (!drawingPerimeter || perimeterPoints.length === 0) return;
+    // draw polyline of current points
+    const latlngs = perimeterPoints.map(pt => [pt[0], pt[1]]);
+    if (latlngs.length >= 2) {
+      // Close the polygon preview if 3+ points
+      const previewPts = latlngs.length >= 3 ? [...latlngs, latlngs[0]] : latlngs;
+      drawingPolylineRef.current = L.polyline(previewPts, { color: "#f59e0b", weight: 3, dashArray: "8 4" }).addTo(map);
+    }
+    // draw vertex markers
+    latlngs.forEach((pt, i) => {
+      const m = L.circleMarker(pt, {
+        radius: 6, color: "#f59e0b", fillColor: i === 0 ? "#10b981" : "#f59e0b", fillOpacity: 1, weight: 2,
+      }).addTo(map);
+      m.bindTooltip(`Point ${i + 1}`, { permanent: false, direction: "top", offset: [0, -8] });
+      drawingMarkersRef.current.push(m);
+    });
+  }, [drawingPerimeter, perimeterPoints]);
+
+  // ── perimeter drawing: map click handler ──
+  useEffect(() => {
+    const map = clockMapInstance.current;
+    if (!map) return;
+    const onClick = (e) => {
+      if (!drawingPerimeter) return;
+      setPerimeterPoints(prev => [...prev, [e.latlng.lat, e.latlng.lng]]);
+    };
+    map.on("click", onClick);
+    return () => { map.off("click", onClick); };
+  }, [drawingPerimeter, clockMapReady]);
+
+  // ── perimeter drawing handlers ──
+  const startDrawPerimeter = (projectId) => {
+    setPerimeterProjectId(projectId);
+    setPerimeterPoints([]);
+    setDrawingPerimeter(true);
+    show("Tap the map to place perimeter points", "ok");
+  };
+
+  const finishPerimeter = () => {
+    if (perimeterPoints.length < 3) {
+      show("Need at least 3 points to define a perimeter", "err");
+      return;
+    }
+    setProjects(prev => prev.map(p =>
+      p.id === perimeterProjectId ? { ...p, perimeter: perimeterPoints } : p
+    ));
+    setDrawingPerimeter(false);
+    setPerimeterPoints([]);
+    setPerimeterProjectId(null);
+    show("Perimeter saved", "ok");
+  };
+
+  const cancelPerimeter = () => {
+    setDrawingPerimeter(false);
+    setPerimeterPoints([]);
+    setPerimeterProjectId(null);
+  };
+
+  const clearPerimeter = (projectId) => {
+    setProjects(prev => prev.map(p =>
+      p.id === projectId ? { ...p, perimeter: null } : p
+    ));
+    show("Perimeter cleared", "ok");
+  };
+
+  const undoLastPoint = () => {
+    setPerimeterPoints(prev => prev.slice(0, -1));
+  };
 
   // ── clock in ──
   const handleClockIn = async () => {
@@ -929,7 +1051,7 @@ export function EmployeeView({ app }) {
 
             {/* ── Map ── */}
             <div className="clock-card" style={{ marginTop: 12, padding: 0, overflow: "hidden", position: "relative" }}>
-              <div ref={clockMapRef} style={{ width: "100%", height: 280, borderRadius: "var(--radius)" }} />
+              <div ref={clockMapRef} style={{ width: "100%", height: drawingPerimeter ? 380 : 280, borderRadius: "var(--radius)", transition: "height 0.3s", cursor: drawingPerimeter ? "crosshair" : "" }} />
               {/* Tile switcher */}
               <div style={{ position: "absolute", top: 8, right: 8, zIndex: 1000, display: "flex", gap: 2, background: "rgba(0,0,0,0.7)", borderRadius: 6, padding: 2 }}>
                 {[["dark", "🌑"], ["satellite", "🛰️"], ["street", "🗺️"]].map(([key, icon]) => (
@@ -939,7 +1061,77 @@ export function EmployeeView({ app }) {
                   </button>
                 ))}
               </div>
+              {/* Drawing mode controls */}
+              {drawingPerimeter && (
+                <div style={{ position: "absolute", bottom: 8, left: 8, right: 8, zIndex: 1000, display: "flex", gap: 6, alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.85)", borderRadius: 8, padding: "8px 12px" }}>
+                  <span style={{ fontSize: 11, color: "#f59e0b", fontWeight: 600 }}>
+                    {perimeterPoints.length} {perimeterPoints.length === 1 ? "point" : "points"}
+                  </span>
+                  <button onClick={undoLastPoint} disabled={perimeterPoints.length === 0}
+                    style={{ padding: "4px 10px", fontSize: 11, border: "1px solid #555", borderRadius: 4, cursor: "pointer", background: "transparent", color: "#ccc" }}>
+                    Undo
+                  </button>
+                  <button onClick={finishPerimeter} disabled={perimeterPoints.length < 3}
+                    style={{ padding: "4px 10px", fontSize: 11, border: "none", borderRadius: 4, cursor: perimeterPoints.length < 3 ? "not-allowed" : "pointer", background: perimeterPoints.length >= 3 ? "#10b981" : "#333", color: "#fff", fontWeight: 600 }}>
+                    Finish
+                  </button>
+                  <button onClick={cancelPerimeter}
+                    style={{ padding: "4px 10px", fontSize: 11, border: "none", borderRadius: 4, cursor: "pointer", background: "#ef4444", color: "#fff" }}>
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
+
+            {/* ── Perimeter controls per project ── */}
+            {!drawingPerimeter && (
+              <div className="clock-card" style={{ marginTop: 12 }}>
+                <div className="text-xs text-dim mb-8" style={{ textTransform: "uppercase", letterSpacing: "0.6px" }}>
+                  Project Perimeters
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {projects.filter(p => p.lat && p.lng).slice(0, 8).map((p, idx) => {
+                    const hasPerimeter = p.perimeter && p.perimeter.length >= 3;
+                    const color = PERIMETER_COLORS[idx % PERIMETER_COLORS.length];
+                    const areaSqFt = hasPerimeter ? polygonAreaSqFt(p.perimeter) : 0;
+                    const areaLabel = areaSqFt >= 43560
+                      ? `${(areaSqFt / 43560).toFixed(2)} acres`
+                      : `${Math.round(areaSqFt).toLocaleString()} sq ft`;
+                    const isInside = hasPerimeter && position ? pointInPolygon(position.lat, position.lng, p.perimeter) : false;
+                    return (
+                      <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, padding: "4px 0", borderBottom: "1px solid var(--border)" }}>
+                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "var(--text)" }}>{p.name}</div>
+                          {hasPerimeter && (
+                            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>
+                              {areaLabel} &middot; {p.perimeter.length} pts
+                              {position && (
+                                <span style={{ marginLeft: 6, color: isInside ? "#10b981" : "#ef4444" }}>
+                                  {isInside ? "Inside" : "Outside"}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                          {hasPerimeter ? (
+                            <button onClick={() => clearPerimeter(p.id)}
+                              style={{ padding: "3px 8px", fontSize: 10, border: "1px solid #ef4444", borderRadius: 4, cursor: "pointer", background: "transparent", color: "#ef4444" }}>
+                              Clear
+                            </button>
+                          ) : null}
+                          <button onClick={() => startDrawPerimeter(p.id)}
+                            style={{ padding: "3px 8px", fontSize: 10, border: "none", borderRadius: 4, cursor: "pointer", background: hasPerimeter ? "var(--surface-alt)" : color, color: hasPerimeter ? "var(--text-muted)" : "#fff", fontWeight: 600 }}>
+                            {hasPerimeter ? "Redraw" : "Draw Perimeter"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="clock-card" style={{ marginTop: 12 }}>
               <div className="text-xs text-dim mb-8" style={{ textTransform: "uppercase", letterSpacing: "0.6px" }}>

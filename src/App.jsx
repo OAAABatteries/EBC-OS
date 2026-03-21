@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, Fragment } from "react";
 import { styles } from "./styles";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useSyncedState, flushSyncQueue } from "./hooks/useSyncedState";
@@ -37,6 +37,8 @@ import { UpdateBanner } from "./components/InstallPrompt";
 import { useNetworkStatus } from "./hooks/useNetworkStatus";
 import { hasAccess, ROLES } from "./data/roles";
 import { supabase, isSupabaseConfigured, signOut as supaSignOut, onAuthStateChange, signIn as supaSignIn, signUp as supaSignUp } from "./lib/supabase";
+
+import { GanttScheduleView } from "./components/GanttScheduleView";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · App Component
@@ -368,6 +370,25 @@ function App({ auth, onLogout }) {
   const [punchItems, setPunchItems, _syncPunch] = useSyncedState("punchItems", []);
   const [insurancePolicies, setInsurancePolicies, _syncInsurance] = useSyncedState("insurancePolicies", []);
 
+  // ── User GPS location for proximity features ──
+  const [userLocation, setUserLocation] = useState(null);
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 30000, timeout: 10000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+  const getDistanceM = (lat1, lng1, lat2, lng2) => {
+    const R = 6371000;
+    const toRad = d => d * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
   // ── Aggregate sync status for UI ──
   const _allSync = [
     _syncBids, _syncProjects, _syncContacts, _syncCallLog, _syncScope,
@@ -538,6 +559,7 @@ function App({ auth, onLogout }) {
   const [selectedBids, setSelectedBids] = useState(new Set());
   const [bidPageSize, setBidPageSize] = useState(24);
   const [projPageSize, setProjPageSize] = useState(24);
+  const [projectViewMode, setProjectViewMode] = useState("list"); // "list" | "schedule"
   const [installPrompt, setInstallPrompt] = useState(null);
   const [notifOpen, setNotifOpen] = useState(false);
 
@@ -564,7 +586,12 @@ function App({ auth, onLogout }) {
 
   // ── bid filter (for bids tab) ──
   const [bidFilter, setBidFilter] = useState("All");
-  const [bidViewMode, setBidViewMode] = useState("list"); // "list" or "pipeline"
+  const [bidViewMode, setBidViewMode] = useState("list"); // "list" | "pipeline" | "calendar"
+  const [bidCalMonth, setBidCalMonth] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
+  const [bidCalSelected, setBidCalSelected] = useState(null); // "YYYY-MM-DD"
+  const [bidCalEvents, setBidCalEvents] = useLocalStorage("bidCalEvents", []);
+  const [bidCalAddOpen, setBidCalAddOpen] = useState(false);
+  const [bidCalEventForm, setBidCalEventForm] = useState({ type: "Site Walk", time: "", location: "", notes: "", bidId: "", date: "" });
 
   // ── scope bid selector ──
   const [scopeBidId, setScopeBidId] = useState(null);
@@ -846,10 +873,27 @@ function App({ auth, onLogout }) {
     // Follow-ups from call log
     const followUps = callLog.filter(c => c.next && c.next.trim());
 
-    // Total urgency count
-    const urgentCount = bidsDueSoon.length + cosPending.length + rfisOpen.filter(r => r.age > 7).length + subsDueSoon.length + overdueInv.length;
+    // Profit margin alerts — flag active projects below 30% margin
+    // profit% = (contract - laborCost - materialCost) / contract * 100
+    const profitAlerts = projects.filter(p => {
+      if ((p.progress || 0) >= 100) return false; // skip completed
+      const contract = p.contract || 0;
+      if (contract <= 0) return false; // can't calculate without contract
+      const totalCost = (p.laborCost || 0) + (p.materialCost || 0);
+      if (totalCost <= 0) return false; // no costs entered yet — not alertable
+      const margin = ((contract - totalCost) / contract) * 100;
+      return margin < 30;
+    }).map(p => {
+      const contract = p.contract || 0;
+      const totalCost = (p.laborCost || 0) + (p.materialCost || 0);
+      const margin = Math.round(((contract - totalCost) / contract) * 100);
+      return { ...p, margin, totalCost };
+    }).sort((a, b) => a.margin - b.margin);
 
-    return { bidsDueSoon, cosPending, cosPendingTotal, rfisOpen, subsDueSoon, overdueInv, overdueTotal, tmPending, projNoBilling, projAtRisk, followUps, urgentCount };
+    // Total urgency count
+    const urgentCount = bidsDueSoon.length + cosPending.length + rfisOpen.filter(r => r.age > 7).length + subsDueSoon.length + overdueInv.length + profitAlerts.length;
+
+    return { bidsDueSoon, cosPending, cosPendingTotal, rfisOpen, subsDueSoon, overdueInv, overdueTotal, tmPending, projNoBilling, projAtRisk, followUps, profitAlerts, urgentCount };
   }, [bids, changeOrders, rfis, submittals, invoices, tmTickets, projects, callLog]);
 
   const pName = (pid) => projects.find(p => p.id === pid)?.name || "Unknown";
@@ -954,8 +998,59 @@ function App({ auth, onLogout }) {
         </div>
       )}
 
+      {/* ── Today's Sites — quick directions / clock-in ── */}
+      {(() => {
+        const mySites = projects.filter(p => p.status === "in-progress" && p.lat && p.lng);
+        if (mySites.length === 0) return null;
+        const PROXIMITY_M = 200;
+        return (
+          <div className="card" style={{ padding: "14px 16px", marginBottom: 16, borderLeft: "3px solid var(--blue)" }}>
+            <div className="text-sm font-semi mb-8" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 15 }}>{"\u{1F4CD}"}</span> Today's Sites
+              <span className="text-xs text-muted" style={{ fontWeight: 400 }}>({mySites.length} active)</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 8 }}>
+              {mySites.slice(0, 6).map(p => {
+                const dist = userLocation ? getDistanceM(userLocation.lat, userLocation.lng, p.lat, p.lng) : null;
+                const isOnSite = dist !== null && dist < PROXIMITY_M;
+                const distLabel = dist !== null
+                  ? dist < 1000 ? `${Math.round(dist)}m away` : `${(dist / 1609.34).toFixed(1)} mi away`
+                  : null;
+                return (
+                  <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderRadius: 6, background: "var(--bg3)", gap: 8 }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div className="text-sm font-semi" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", color: "var(--blue)" }}
+                        onClick={() => setModal({ type: "editProject", data: p })}>{p.name}</div>
+                      <div className="text-xs text-muted" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {p.address}{p.suite ? ` — ${p.suite}` : ""}
+                      </div>
+                      {distLabel && <div className="text-xs" style={{ color: isOnSite ? "var(--green)" : "var(--text-muted)", marginTop: 2 }}>{isOnSite ? "On site" : distLabel}</div>}
+                    </div>
+                    {isOnSite ? (
+                      <button className="btn btn-primary btn-sm" style={{ whiteSpace: "nowrap", flexShrink: 0 }}
+                        onClick={() => handleTabClick("timeclock")}>
+                        Clock In
+                      </button>
+                    ) : (
+                      <button className="btn btn-ghost btn-sm" style={{ whiteSpace: "nowrap", flexShrink: 0 }}
+                        onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`, "_blank")}>
+                        Directions
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {mySites.length > 6 && (
+              <div className="text-xs text-muted" style={{ marginTop: 6, cursor: "pointer", color: "var(--blue)" }}
+                onClick={() => handleTabClick("projects")}>View all {mySites.length} sites →</div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* ── Section 1: Action Items — what needs attention NOW ── */}
-      {dashCfg.showKPIs && (dashActions.bidsDueSoon.length > 0 || dashActions.cosPending.length > 0 || dashActions.rfisOpen.length > 0 || dashActions.subsDueSoon.length > 0 || dashActions.overdueInv.length > 0 || dashActions.tmPending.length > 0) && (
+      {dashCfg.showKPIs && (dashActions.bidsDueSoon.length > 0 || dashActions.cosPending.length > 0 || dashActions.rfisOpen.length > 0 || dashActions.subsDueSoon.length > 0 || dashActions.overdueInv.length > 0 || dashActions.tmPending.length > 0 || dashActions.profitAlerts.length > 0) && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 16 }}>
           {dashActions.bidsDueSoon.length > 0 && (
             <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--red)" }} onClick={() => handleTabClick("bids")}>
@@ -997,6 +1092,13 @@ function App({ auth, onLogout }) {
               <div className="text-xs text-muted">T&M Pending</div>
               <div style={{ fontSize: 22, fontWeight: 700 }}>{dashActions.tmPending.length}</div>
               <div className="text-xs text-muted" style={{ marginTop: 2 }}>tickets to review</div>
+            </div>
+          )}
+          {dashActions.profitAlerts.length > 0 && (
+            <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--red)" }} onClick={() => handleTabClick("projects")}>
+              <div className="text-xs text-muted">Low Margin</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: "var(--red)" }}>{dashActions.profitAlerts.length}</div>
+              <div className="text-xs text-muted" style={{ marginTop: 2 }}>projects below 30%</div>
             </div>
           )}
         </div>
@@ -1047,6 +1149,32 @@ function App({ auth, onLogout }) {
               {dashActions.projNoBilling.length > 4 && <div className="text-xs text-muted">+{dashActions.projNoBilling.length - 4} more</div>}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Profit Margin Alerts — projects below 30% margin ── */}
+      {dashCfg.showKPIs && dashActions.profitAlerts.length > 0 && (
+        <div className="card" style={{ padding: "12px 16px", marginBottom: 16, borderLeft: "3px solid var(--red)" }}>
+          <div className="flex-between mb-8">
+            <div className="text-sm font-semi" style={{ color: "var(--red)" }}>Profit Alerts ({dashActions.profitAlerts.length})</div>
+            <span className="badge badge-red">Below 30%</span>
+          </div>
+          {dashActions.profitAlerts.slice(0, 6).map(p => {
+            const marginColor = p.margin < 0 ? "#dc2626" : p.margin < 15 ? "var(--red)" : "var(--amber)";
+            return (
+              <div key={p.id} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                onClick={() => setModal({ type: "editProject", data: p })}>
+                <div>
+                  <div className="text-sm" style={{ color: "var(--blue)" }}>{p.name}</div>
+                  <div className="text-xs text-muted">{p.gc} — Contract: {fmt(p.contract)} | Costs: {fmt(p.totalCost)}</div>
+                </div>
+                <span className={`badge ${p.margin < 15 ? "badge-red" : "badge-amber"}`} style={{ minWidth: 52, textAlign: "center" }}>
+                  {p.margin}%
+                </span>
+              </div>
+            );
+          })}
+          {dashActions.profitAlerts.length > 6 && <div className="text-xs text-muted" style={{ marginTop: 6 }}>+{dashActions.profitAlerts.length - 6} more</div>}
         </div>
       )}
 
@@ -1221,41 +1349,177 @@ function App({ auth, onLogout }) {
       {/* Email-to-Bid Scanner */}
       {showEmailScanner && (
         <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-          <div className="text-sm font-semi mb-8">{t("Email-to-Bid Scanner")}</div>
-          <div className="text-xs text-muted mb-8">Paste a bid invite email, forwarded bid package, or any email with project info. AI will extract bids and let you import them.</div>
-          <textarea className="form-input" rows={6} placeholder="Paste email content here..."
+          <div className="flex-between mb-8">
+            <div>
+              <div className="text-sm font-semi">{t("Email-to-Bid Scanner")}</div>
+              <div className="text-xs text-muted mt-2">Paste one or more bid invite emails. AI extracts project details, scope, contacts, and plan links. Review and edit before importing.</div>
+            </div>
+          </div>
+          <textarea className="form-input" rows={8} placeholder={"Paste email content here...\n\nTip: You can paste multiple emails at once \u2014 separate them with a blank line or just paste everything together. The scanner will detect each bid separately.\n\nWorks with: ITB emails, BuildingConnected invites, bid updates, addenda notices, plan availability emails, pre-bid meeting notices..."}
             value={emailText} onChange={e => setEmailText(e.target.value)}
-            style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13, marginBottom: 8 }} />
+            style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13, marginBottom: 8, minHeight: 120 }} />
           <div className="flex-between">
-            <span className="text-xs text-dim">{emailText.length} chars</span>
-            <button className="btn btn-primary btn-sm" onClick={runEmailScan} disabled={emailLoading}>
+            <div className="flex gap-8" style={{ alignItems: "center" }}>
+              <span className="text-xs text-dim">{emailText.length} chars</span>
+              {emailText.length > 0 && <button className="btn btn-ghost btn-sm" onClick={() => { setEmailText(""); setEmailResults(null); setEditingEmailBid(null); }}>Clear</button>}
+            </div>
+            <button className="btn btn-primary btn-sm" onClick={runEmailScan} disabled={emailLoading || !emailText.trim()}>
               {emailLoading ? t("Scanning...") : t("Extract Bids")}
             </button>
           </div>
 
-          {emailResults && emailResults.length > 0 && (
+          {/* Editing a single bid inline */}
+          {editingEmailBid !== null && emailResults && emailResults[editingEmailBid] && (() => {
+            const idx = editingEmailBid;
+            const bid = emailResults[idx];
+            const updateField = (field, val) => {
+              setEmailResults(prev => prev.map((b, i) => i === idx ? { ...b, [field]: val } : b));
+            };
+            const SCOPE_OPTIONS = ["Metal Framing", "GWB", "ACT", "Insulation", "Lead-Lined", "L5 Finish", "ICRA", "Deflection Track", "Shaft Wall", "FRP", "Cement Board", "Blocking", "Demo"];
+            return (
+              <div style={{ marginTop: 12, padding: 16, borderRadius: 8, background: "var(--bg3)", border: "2px solid var(--accent)" }}>
+                <div className="flex-between mb-8">
+                  <span className="font-semi text-sm">Edit Extracted Bid</span>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setEditingEmailBid(null)}>Done Editing</button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  <div>
+                    <label className="text-xs text-muted">Project Name *</label>
+                    <input className="form-input" value={bid.name || ""} onChange={e => updateField("name", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted">GC Name *</label>
+                    <input className="form-input" value={bid.gc || ""} onChange={e => updateField("gc", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted">Bid Due Date</label>
+                    <input className="form-input" value={bid.due || ""} onChange={e => updateField("due", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted">Estimated Value ($)</label>
+                    <input className="form-input" type="number" value={bid.value || ""} onChange={e => updateField("value", e.target.value ? Number(e.target.value) : null)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted">Project Address</label>
+                    <input className="form-input" value={bid.address || ""} onChange={e => updateField("address", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted">Sector</label>
+                    <select className="form-select" value={bid.sector || ""} onChange={e => updateField("sector", e.target.value)}>
+                      <option value="">--</option>
+                      {["Medical", "Commercial", "Education", "Hospitality", "Government", "Religious", "Entertainment", "Industrial", "Residential"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted">Contact Name</label>
+                    <input className="form-input" value={bid.contactName || ""} onChange={e => updateField("contactName", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted">Contact Email</label>
+                    <input className="form-input" value={bid.contactEmail || ""} onChange={e => updateField("contactEmail", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted">Contact Phone</label>
+                    <input className="form-input" value={bid.contactPhone || ""} onChange={e => updateField("contactPhone", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted">Pre-Bid Date</label>
+                    <input className="form-input" value={bid.prebidDate || ""} onChange={e => updateField("prebidDate", e.target.value)} />
+                  </div>
+                </div>
+                <div style={{ marginTop: 8 }}>
+                  <label className="text-xs text-muted">Scope Tags</label>
+                  <div className="flex gap-4 flex-wrap mt-4">
+                    {SCOPE_OPTIONS.map(tag => (
+                      <button key={tag} className={`btn btn-sm ${(bid.scope || []).includes(tag) ? "btn-primary" : "btn-ghost"}`}
+                        onClick={() => {
+                          const arr = bid.scope || [];
+                          updateField("scope", arr.includes(tag) ? arr.filter(s => s !== tag) : [...arr, tag]);
+                        }}>{tag}</button>
+                    ))}
+                  </div>
+                </div>
+                {bid.planLinks && bid.planLinks.length > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    <label className="text-xs text-muted">Plan / Spec Links</label>
+                    {bid.planLinks.map((link, li) => (
+                      <div key={li} className="text-xs mt-2" style={{ wordBreak: "break-all" }}>
+                        <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>{link}</a>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ marginTop: 8 }}>
+                  <label className="text-xs text-muted">Notes</label>
+                  <textarea className="form-input" rows={3} value={bid.notes || ""} onChange={e => updateField("notes", e.target.value)}
+                    style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
+                </div>
+                <div className="flex gap-8 mt-8" style={{ justifyContent: "flex-end" }}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setEditingEmailBid(null)}>Cancel</button>
+                  <button className="btn btn-primary btn-sm" onClick={() => { importEmailBid(bid); setEditingEmailBid(null); }}>Create Bid</button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Results list */}
+          {editingEmailBid === null && emailResults && emailResults.length > 0 && (
             <div style={{ marginTop: 12 }}>
-              <div className="text-sm font-semi mb-8">Found {emailResults.length} bid{emailResults.length > 1 ? "s" : ""}</div>
+              <div className="flex-between mb-8">
+                <div className="text-sm font-semi">Found {emailResults.length} bid{emailResults.length > 1 ? "s" : ""}</div>
+                {emailResults.length > 1 && (
+                  <button className="btn btn-primary btn-sm" onClick={() => {
+                    emailResults.forEach(bid => importEmailBid(bid));
+                    setEmailResults(null);
+                    setEmailText("");
+                  }}>Import All ({emailResults.length})</button>
+                )}
+              </div>
               {emailResults.map((bid, i) => (
                 <div key={i} style={{ padding: 12, marginBottom: 8, borderRadius: 8, background: "var(--bg3)", border: "1px solid var(--border)" }}>
                   <div className="flex-between mb-4">
-                    <span className="font-semi text-sm">{bid.name || "Unnamed"}</span>
-                    <button className="btn btn-primary btn-sm" onClick={() => importEmailBid(bid)}>Import</button>
+                    <span className="font-semi text-sm">{bid.name || "Unnamed Project"}</span>
+                    <div className="flex gap-4">
+                      <button className="btn btn-ghost btn-sm" onClick={() => setEditingEmailBid(i)}>Edit</button>
+                      <button className="btn btn-primary btn-sm" onClick={() => {
+                        importEmailBid(bid);
+                        setEmailResults(prev => prev.filter((_, j) => j !== i));
+                      }}>Import</button>
+                    </div>
                   </div>
-                  <div className="text-xs text-muted">
-                    {bid.gc && <span>GC: {bid.gc} · </span>}
-                    {bid.value && <span>{fmt(bid.value)} · </span>}
-                    {bid.due && <span>Due: {bid.due} · </span>}
-                    {bid.status && <span className={`badge ${STATUS_BADGE[bid.status] || "badge-muted"}`}>{bid.status}</span>}
+                  <div className="text-xs text-muted" style={{ lineHeight: 1.6 }}>
+                    {bid.gc && <span>GC: <strong>{bid.gc}</strong> &middot; </span>}
+                    {bid.value && <span>{fmt(bid.value)} &middot; </span>}
+                    {bid.due && <span>Due: <strong>{bid.due}</strong> &middot; </span>}
+                    {bid.sector && <span>{bid.sector} &middot; </span>}
+                    {bid.status && <span className={`badge ${STATUS_BADGE[bid.status] || "badge-muted"}`}>{STATUS_LABEL[bid.status] || bid.status}</span>}
                   </div>
-                  {bid.contact && <div className="text-xs text-dim mt-4">Contact: {bid.contact}</div>}
-                  {bid.notes && <div className="text-xs text-dim mt-4">{bid.notes}</div>}
+                  {bid.address && <div className="text-xs text-dim mt-4">Address: {bid.address}</div>}
+                  {(bid.scope || []).length > 0 && (
+                    <div className="flex gap-4 flex-wrap mt-4">
+                      {bid.scope.map(tag => <span key={tag} className="badge badge-blue" style={{ fontSize: 10 }}>{tag}</span>)}
+                    </div>
+                  )}
+                  {(bid.contactName || bid.contactEmail) && (
+                    <div className="text-xs text-dim mt-4">
+                      Contact: {bid.contactName || ""}{bid.contactEmail ? ` (${bid.contactEmail})` : ""}{bid.contactPhone ? ` ${bid.contactPhone}` : ""}
+                    </div>
+                  )}
+                  {bid.prebidDate && <div className="text-xs text-dim mt-4">Pre-Bid: {bid.prebidDate}{bid.prebidLocation ? ` at ${bid.prebidLocation}` : ""}</div>}
+                  {bid.planLinks && bid.planLinks.length > 0 && (
+                    <div className="text-xs text-dim mt-4">
+                      Plans: {bid.planLinks.map((link, li) => (
+                        <a key={li} href={link} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", marginRight: 8, wordBreak: "break-all" }}>{link.length > 60 ? link.slice(0, 60) + "..." : link}</a>
+                      ))}
+                    </div>
+                  )}
+                  {bid.notes && <div className="text-xs text-dim mt-4" style={{ fontStyle: "italic" }}>{bid.notes}</div>}
                 </div>
               ))}
             </div>
           )}
           {emailResults && emailResults.length === 0 && (
-            <div className="text-sm text-muted" style={{ padding: 12, textAlign: "center" }}>No bid information found in this email.</div>
+            <div className="text-sm text-muted" style={{ padding: 12, textAlign: "center" }}>No bid information found. Try pasting the full email including subject line and body.</div>
           )}
         </div>
       )}
@@ -1275,6 +1539,7 @@ function App({ auth, onLogout }) {
         <div className="flex gap-4">
           <button className={`btn btn-sm ${bidViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("list")}>☰ List</button>
           <button className={`btn btn-sm ${bidViewMode === "pipeline" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("pipeline")}>⬛ Pipeline</button>
+          <button className={`btn btn-sm ${bidViewMode === "calendar" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("calendar")}>📅 Calendar</button>
         </div>
       </div>
 
@@ -1352,6 +1617,236 @@ function App({ auth, onLogout }) {
           </div>
         </div>
       )}
+
+      {/* ═══ BID CALENDAR VIEW ═══ */}
+      {bidViewMode === "calendar" && (() => {
+        const { year: calY, month: calM } = bidCalMonth;
+        const firstDay = new Date(calY, calM, 1);
+        const lastDay = new Date(calY, calM + 1, 0);
+        const startDow = firstDay.getDay();
+        const daysInMonth = lastDay.getDate();
+        const todayD = new Date(); todayD.setHours(0,0,0,0);
+        const todayStr = todayD.toISOString().slice(0, 10);
+        const monthLabel = firstDay.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+        const evMap = {};
+        const addEv = (ds, ev) => { if (!evMap[ds]) evMap[ds] = []; evMap[ds].push(ev); };
+        for (const b of bids) {
+          if (!b.due) continue;
+          const d = new Date(b.due); if (isNaN(d)) continue;
+          const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+          const sc = b.status === "awarded" ? "status-awarded" : b.status === "lost" ? "status-lost" : b.status === "no_bid" ? "status-nobid" : "bid-due";
+          addEv(ds, { id: "bid-" + b.id, type: "Bid Due", label: b.name, gc: b.gc, value: b.value, status: b.status, statusClass: sc, bid: b });
+        }
+        for (const ev of bidCalEvents) {
+          if (!ev.date) continue;
+          const tc = ev.type === "Site Walk" ? "site-walk" : ev.type === "Pre-Bid Meeting" ? "pre-bid" : ev.type === "Plan Review" ? "plan-review" : ev.type === "Follow Up" ? "follow-up" : "bid-due";
+          addEv(ev.date, { ...ev, statusClass: tc, label: ev.label || ev.type });
+        }
+        const cells = [];
+        const prevMo = new Date(calY, calM, 0);
+        for (let i = startDow - 1; i >= 0; i--) {
+          const dd = prevMo.getDate() - i;
+          const ds = `${prevMo.getFullYear()}-${String(prevMo.getMonth()+1).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
+          cells.push({ day: dd, dateStr: ds, outside: true });
+        }
+        for (let dd = 1; dd <= daysInMonth; dd++) {
+          const ds = `${calY}-${String(calM+1).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
+          cells.push({ day: dd, dateStr: ds, outside: false, isToday: ds === todayStr });
+        }
+        const rem = 7 - (cells.length % 7);
+        if (rem < 7) for (let dd = 1; dd <= rem; dd++) {
+          const nm = new Date(calY, calM + 1, dd);
+          const ds = `${nm.getFullYear()}-${String(nm.getMonth()+1).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
+          cells.push({ day: dd, dateStr: ds, outside: true });
+        }
+        const upcoming = [];
+        for (let i = 0; i < 7; i++) {
+          const dd = new Date(todayD); dd.setDate(dd.getDate() + i);
+          const ds = `${dd.getFullYear()}-${String(dd.getMonth()+1).padStart(2,"0")}-${String(dd.getDate()).padStart(2,"0")}`;
+          if (evMap[ds]) upcoming.push(...evMap[ds].map(e => ({ ...e, dateStr: ds })));
+        }
+        const selectedEvts = bidCalSelected && evMap[bidCalSelected] ? evMap[bidCalSelected] : [];
+        const BC_TYPES = ["Site Walk", "Pre-Bid Meeting", "Plan Review", "Follow Up"];
+        const dotClr = (sc) => sc === "status-awarded" ? "var(--green)" : sc === "status-lost" ? "var(--red)" : sc === "status-nobid" ? "#64748b" : sc === "site-walk" ? "var(--blue)" : sc === "pre-bid" ? "var(--green)" : sc === "plan-review" ? "#8b5cf6" : sc === "follow-up" ? "var(--red)" : "var(--amber)";
+        return (
+          <div className="bidcal-wrap">
+            <div className="bidcal-main">
+              <div className="bidcal-toolbar">
+                <div className="bidcal-nav">
+                  <button onClick={() => setBidCalMonth(p => { let m2 = p.month - 1, y2 = p.year; if (m2 < 0) { m2 = 11; y2--; } return { year: y2, month: m2 }; })}>&#9664;</button>
+                  <span className="bidcal-month-title">{monthLabel}</span>
+                  <button onClick={() => setBidCalMonth(p => { let m2 = p.month + 1, y2 = p.year; if (m2 > 11) { m2 = 0; y2++; } return { year: y2, month: m2 }; })}>&#9654;</button>
+                </div>
+                <button className="bidcal-today-btn" onClick={() => { const tn = new Date(); setBidCalMonth({ year: tn.getFullYear(), month: tn.getMonth() }); setBidCalSelected(todayStr); }}>Today</button>
+                <button className="btn btn-sm btn-ghost" style={{ marginLeft: "auto" }} onClick={() => { setBidCalAddOpen(true); setBidCalEventForm(f => ({ ...f, date: bidCalSelected || todayStr })); }}>+ Add Event</button>
+              </div>
+              <div className="bidcal-grid">
+                {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(dw => <div key={dw} className="bidcal-hdr">{dw}</div>)}
+                {cells.map((c, ci) => {
+                  const dayEvts = evMap[c.dateStr] || [];
+                  return (
+                    <div key={ci} className={`bidcal-cell${c.outside ? " outside" : ""}${c.isToday ? " today" : ""}${bidCalSelected === c.dateStr ? " selected" : ""}`} onClick={() => setBidCalSelected(c.dateStr)}>
+                      <div className="bidcal-day">
+                        {c.day}
+                        {dayEvts.length > 0 && dayEvts.slice(0, 3).map((ev, j) => <span key={j} className="bidcal-dot" style={{ background: dotClr(ev.statusClass) }} />)}
+                      </div>
+                      {dayEvts.slice(0, 3).map((ev, j) => (
+                        <div key={j} className={`bidcal-evt ${ev.statusClass || "bid-due"}`}
+                          onClick={e => { e.stopPropagation(); if (ev.bid) setModal({ type: "editBid", data: ev.bid }); }}
+                          title={ev.label + (ev.gc ? " \u2014 " + ev.gc : "") + (ev.value ? " \u2014 " + fmt(ev.value) : "")}>
+                          {ev.type !== "Bid Due" && <span style={{ fontWeight: 600 }}>{ev.type}: </span>}{ev.label}
+                        </div>
+                      ))}
+                      {dayEvts.length > 3 && <div className="bidcal-more">+{dayEvts.length - 3} more</div>}
+                    </div>
+                  );
+                })}
+              </div>
+              {bidCalSelected && selectedEvts.length > 0 && (
+                <div className="bidcal-day-detail">
+                  <div className="bidcal-day-detail-title">
+                    {new Date(bidCalSelected + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+                    <span className="text-xs text-muted" style={{ marginLeft: 8 }}>{selectedEvts.length} event{selectedEvts.length !== 1 ? "s" : ""}</span>
+                  </div>
+                  {selectedEvts.map((ev, si) => (
+                    <div key={si} className="bidcal-detail-item" onClick={() => { if (ev.bid) setModal({ type: "editBid", data: ev.bid }); }}>
+                      <div className="flex-between mb-4">
+                        <span className={`badge ${ev.status === "awarded" ? "badge-green" : ev.status === "lost" ? "badge-red" : ev.status === "no_bid" ? "badge-muted" : ev.type === "Site Walk" ? "badge-blue" : ev.type === "Pre-Bid Meeting" ? "badge-green" : ev.type === "Plan Review" ? "badge-blue" : ev.type === "Follow Up" ? "badge-red" : "badge-amber"}`} style={{ fontSize: 10 }}>{ev.type}</span>
+                        {ev.value > 0 && <span className="text-xs font-mono text-amber">{fmt(ev.value)}</span>}
+                      </div>
+                      <div className="text-sm font-semi">{ev.label}</div>
+                      {ev.gc && <div className="text-xs text-muted">{ev.gc}</div>}
+                      {ev.time && <div className="text-xs text-dim">Time: {ev.time}</div>}
+                      {ev.location && <div className="text-xs text-dim">Location: {ev.location}</div>}
+                      {ev.notes && ev.type !== "Bid Due" && <div className="text-xs text-dim" style={{ marginTop: 4 }}>{ev.notes}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {bidCalSelected && selectedEvts.length === 0 && (
+                <div className="bidcal-day-detail" style={{ textAlign: "center", padding: 24 }}>
+                  <div className="text-sm text-muted">No events on {new Date(bidCalSelected + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric" })}</div>
+                  <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={() => { setBidCalAddOpen(true); setBidCalEventForm(f => ({ ...f, date: bidCalSelected })); }}>+ Add Event</button>
+                </div>
+              )}
+            </div>
+            <div className="bidcal-sidebar">
+              <div className="bidcal-sidebar-card">
+                <div className="bidcal-sidebar-title">Upcoming 7 Days</div>
+                {upcoming.length === 0 ? (
+                  <div className="text-xs text-muted" style={{ padding: 8, textAlign: "center" }}>No upcoming deadlines</div>
+                ) : upcoming.slice(0, 10).map((ev, ui) => (
+                  <div key={ui} className="bidcal-upcoming-item" onClick={() => { setBidCalSelected(ev.dateStr); if (ev.bid) setModal({ type: "editBid", data: ev.bid }); }}>
+                    <div className="flex-between">
+                      <span className={`badge ${ev.status === "awarded" ? "badge-green" : ev.status === "lost" ? "badge-red" : ev.type === "Site Walk" ? "badge-blue" : ev.type === "Pre-Bid Meeting" ? "badge-green" : "badge-amber"}`} style={{ fontSize: 9 }}>{ev.type}</span>
+                      <span className="text-xs text-dim">{new Date(ev.dateStr + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                    </div>
+                    <div className="text-xs font-semi" style={{ marginTop: 4 }}>{ev.label}</div>
+                    {ev.gc && <div className="text-xs text-muted">{ev.gc}</div>}
+                    {ev.value > 0 && <div className="text-xs font-mono text-amber">{fmt(ev.value)}</div>}
+                  </div>
+                ))}
+                {upcoming.length > 10 && <div className="text-xs text-dim" style={{ textAlign: "center", padding: 4 }}>+{upcoming.length - 10} more</div>}
+              </div>
+              <div className="bidcal-sidebar-card">
+                <div className="bidcal-sidebar-title">Legend</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {[
+                    { label: "Bid Due (Active/Submitted)", color: "var(--amber)" },
+                    { label: "Awarded", color: "var(--green)" },
+                    { label: "Lost", color: "var(--red)" },
+                    { label: "No Bid", color: "#64748b" },
+                    { label: "Site Walk", color: "var(--blue)" },
+                    { label: "Pre-Bid Meeting", color: "var(--green)" },
+                    { label: "Plan Review", color: "#8b5cf6" },
+                    { label: "Follow Up", color: "var(--red)" },
+                  ].map((lg, li) => (
+                    <div key={li} className="flex gap-8" style={{ alignItems: "center" }}>
+                      <span className="bidcal-dot" style={{ background: lg.color }} />
+                      <span className="text-xs text-muted">{lg.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="bidcal-sidebar-card">
+                <div className="bidcal-sidebar-title">This Month</div>
+                {(() => {
+                  const moBids = bids.filter(b => { if (!b.due) return false; const d = new Date(b.due); return !isNaN(d) && d.getFullYear() === calY && d.getMonth() === calM; });
+                  const actCt = moBids.filter(b => BID_ACTIVE_STATUSES.includes(b.status)).length;
+                  const awdCt = moBids.filter(b => b.status === "awarded").length;
+                  const totVal = moBids.reduce((s, b) => s + (b.value || 0), 0);
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div className="flex-between"><span className="text-xs text-muted">Total Bids</span><span className="text-xs font-semi">{moBids.length}</span></div>
+                      <div className="flex-between"><span className="text-xs text-muted">Active</span><span className="text-xs font-semi" style={{ color: "var(--amber)" }}>{actCt}</span></div>
+                      <div className="flex-between"><span className="text-xs text-muted">Awarded</span><span className="text-xs font-semi" style={{ color: "var(--green)" }}>{awdCt}</span></div>
+                      <div className="flex-between"><span className="text-xs text-muted">Total Value</span><span className="text-xs font-mono text-amber">{fmtK(totVal)}</span></div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+            {bidCalAddOpen && (
+              <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setBidCalAddOpen(false); }}>
+                <div className="modal-content" style={{ maxWidth: 480 }}>
+                  <div className="modal-header flex-between">
+                    <div className="modal-title">Add Bid Calendar Event</div>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setBidCalAddOpen(false)}>Close</button>
+                  </div>
+                  <div style={{ padding: 16 }}>
+                    <div className="form-grid">
+                      <div className="form-group">
+                        <label className="form-label">Event Type</label>
+                        <select className="form-select" value={bidCalEventForm.type} onChange={e => setBidCalEventForm(f => ({ ...f, type: e.target.value }))}>
+                          {BC_TYPES.map(tp => <option key={tp} value={tp}>{tp}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Date</label>
+                        <input type="date" className="form-input" value={bidCalEventForm.date} onChange={e => setBidCalEventForm(f => ({ ...f, date: e.target.value }))} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Time</label>
+                        <input type="time" className="form-input" value={bidCalEventForm.time} onChange={e => setBidCalEventForm(f => ({ ...f, time: e.target.value }))} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Related Bid</label>
+                        <select className="form-select" value={bidCalEventForm.bidId} onChange={e => setBidCalEventForm(f => ({ ...f, bidId: e.target.value }))}>
+                          <option value="">None</option>
+                          {bids.filter(b => BID_ACTIVE_STATUSES.includes(b.status)).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group full">
+                        <label className="form-label">Location</label>
+                        <input className="form-input" placeholder="Site address..." value={bidCalEventForm.location} onChange={e => setBidCalEventForm(f => ({ ...f, location: e.target.value }))} />
+                      </div>
+                      <div className="form-group full">
+                        <label className="form-label">Notes</label>
+                        <textarea className="form-textarea" rows={3} placeholder="Additional details..." value={bidCalEventForm.notes} onChange={e => setBidCalEventForm(f => ({ ...f, notes: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="flex-between" style={{ marginTop: 16 }}>
+                      <button className="btn btn-ghost" onClick={() => setBidCalAddOpen(false)}>Cancel</button>
+                      <button className="btn btn-primary" onClick={() => {
+                        const relBid = bidCalEventForm.bidId ? bids.find(b => String(b.id) === String(bidCalEventForm.bidId)) : null;
+                        const newEv = {
+                          id: nextId(), type: bidCalEventForm.type, date: bidCalEventForm.date,
+                          time: bidCalEventForm.time, location: bidCalEventForm.location, notes: bidCalEventForm.notes,
+                          label: relBid ? relBid.name : bidCalEventForm.type, gc: relBid ? relBid.gc : "", bidId: bidCalEventForm.bidId || null,
+                        };
+                        setBidCalEvents(prev => [...prev, newEv]);
+                        setBidCalAddOpen(false);
+                        setBidCalEventForm({ type: "Site Walk", time: "", location: "", notes: "", bidId: "", date: "" });
+                        show(newEv.type + " added to calendar");
+                      }}>Save Event</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ═══ LIST VIEW ═══ */}
       {bidViewMode === "list" && filteredBids.length === 0 ? (
@@ -1613,7 +2108,25 @@ function App({ auth, onLogout }) {
         </div>
       </div>
 
+      {/* View Toggle: List | Schedule */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+        <button className={`btn btn-sm ${projectViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("list")}>☰ List</button>
+        <button className={`btn btn-sm ${projectViewMode === "schedule" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("schedule")}>📊 Schedule</button>
+      </div>
+
+      {/* Schedule / Gantt View */}
+      {projectViewMode === "schedule" && (
+        <GanttScheduleView
+          projects={filteredProjects}
+          onProjectClick={(p) => {
+            setProjects(prev => prev.map(proj => proj.id === p.id ? { ...proj, lastAccessed: new Date().toISOString() } : proj));
+            setModal({ type: "editProject", data: { ...p, lastAccessed: new Date().toISOString() } });
+          }}
+        />
+      )}
+
       {/* Search Bar */}
+      {projectViewMode === "list" && <>
       <div style={{ marginBottom: 16 }}>
         <input
           className="form-input"
@@ -1756,6 +2269,7 @@ function App({ auth, onLogout }) {
                 {pSubs.length > 0 && <span style={{ color: "var(--amber)" }}>Sub: {pSubs.length}</span>}
                 {pCOs.length > 0 && <span style={{ color: "var(--amber)" }}>CO: {pCOs.length}</span>}
                 {billingLag && <span style={{ color: "var(--red)" }}>Billing lag</span>}
+                {(() => { const tc = (p.laborCost || 0) + (p.materialCost || 0); const c = p.contract || 0; if (tc > 0 && c > 0) { const m = Math.round(((c - tc) / c) * 100); if (m < 30) return <span style={{ color: m < 0 ? "#dc2626" : "var(--red)", fontWeight: 600 }}>Margin: {m}%</span>; } return null; })()}
                 {pRfis.length === 0 && pSubs.length === 0 && pCOs.length === 0 && !billingLag && <span style={{ color: "var(--green)" }}>On track</span>}
               </div>
               {/* Closeout button for near-complete */}
@@ -1786,6 +2300,8 @@ function App({ auth, onLogout }) {
           </div>
         </div>
       )}
+
+      </>}
 
       {/* Closeout Modal */}
       {closeoutProj && closeoutResult && (
@@ -2131,18 +2647,20 @@ function App({ auth, onLogout }) {
   const [emailText, setEmailText] = useState("");
   const [emailResults, setEmailResults] = useState(null);
   const [emailLoading, setEmailLoading] = useState(false);
+  const [editingEmailBid, setEditingEmailBid] = useState(null);
 
   const runEmailScan = async () => {
     if (!apiKey) { show("Set API key in Settings first", "err"); return; }
     if (!emailText.trim()) { show("Paste email content first", "err"); return; }
     setEmailLoading(true);
     setEmailResults(null);
+    setEditingEmailBid(null);
     try {
       const { analyzeBidsFromEmail } = await import("./utils/api.js");
       const results = await analyzeBidsFromEmail(apiKey, emailText);
       setEmailResults(results);
       if (results.length === 0) show("No bids found in email", "warn");
-      else show(`Found ${results.length} bid${results.length > 1 ? "s" : ""}`, "ok");
+      else show(`Found ${results.length} bid${results.length > 1 ? "s" : ""} — review and import`, "ok");
     } catch (e) {
       show(e.message, "err");
     } finally {
@@ -2151,19 +2669,39 @@ function App({ auth, onLogout }) {
   };
 
   const importEmailBid = (bid) => {
+    // Build contact string from extracted contact fields
+    const contactParts = [bid.contactName, bid.contactEmail, bid.contactPhone].filter(Boolean);
+    const contactStr = bid.contact || contactParts.join(" / ") || "";
+    // Build comprehensive notes
+    const noteParts = [];
+    if (bid.notes) noteParts.push(bid.notes);
+    if (bid.prebidDate) noteParts.push(`Pre-bid: ${bid.prebidDate}${bid.prebidLocation ? " at " + bid.prebidLocation : ""}`);
+    if (bid.planLinks && bid.planLinks.length > 0) noteParts.push("Plans: " + bid.planLinks.join(" , "));
+    if (bid.addenda) noteParts.push(`Addenda: ${bid.addenda}`);
+    if (bid.contactEmail) noteParts.push(`Email: ${bid.contactEmail}`);
+    if (bid.contactPhone) noteParts.push(`Phone: ${bid.contactPhone}`);
+
     const newBid = {
       id: nextId(),
       name: bid.name || "Unnamed Project",
       gc: bid.gc || "",
       value: bid.value || 0,
       due: bid.due || "",
-      status: bid.status || "estimating",
-      phase: "",
+      status: bid.status || "invite_received",
+      sector: bid.sector || "",
+      phase: bid.sector || "",
       risk: "Med",
-      scope: [],
-      contact: bid.contact || "",
-      month: "",
-      notes: bid.notes || "",
+      scope: Array.isArray(bid.scope) ? bid.scope : [],
+      contact: contactStr,
+      address: bid.address || "",
+      month: bid.due ? bid.due.slice(0, 3) : "",
+      notes: noteParts.join(" | "),
+      estimator: "",
+      exclusions: "",
+      attachments: [],
+      plansUploaded: !!(bid.planLinks && bid.planLinks.length > 0),
+      addendaCount: bid.addenda || 0,
+      proposalStatus: "",
     };
     setBids(prev => [...prev, newBid]);
     show(`Imported: ${newBid.name}`, "ok");
@@ -2902,6 +3440,8 @@ const ModalHub = ({ type, data, app }) => {
   const [quickContact, setQuickContact] = useState(null); // inline add-contact from bid form
   const [contactFilter, setContactFilter] = useState("");
   const [contactDropOpen, setContactDropOpen] = useState(false);
+  const [gcFilter, setGcFilter] = useState("");
+  const [gcDropOpen, setGcDropOpen] = useState(false);
 
   const getInitial = () => {
     switch (type) {
@@ -2915,6 +3455,7 @@ const ModalHub = ({ type, data, app }) => {
       case "editProject":
         return data ? { ...data } : {
           name: "", gc: "", contract: 0, billed: 0, progress: 0,
+          laborCost: 0, materialCost: 0,
           phase: "", start: "", end: "", pm: "", address: "",
           suite: "", parking: "", lat: "", lng: "",
           closeOut: "", attachments: []
@@ -3071,6 +3612,8 @@ const ModalHub = ({ type, data, app }) => {
       pm: "",
       laborBudget: 0,
       laborHours: 0,
+      laborCost: 0,
+      materialCost: 0,
       address: awardedBid.address || "",
       attachments: awardedBid.attachments || [],
       bidId: awardedBid.id, // link back to the bid
@@ -3185,6 +3728,88 @@ const ModalHub = ({ type, data, app }) => {
     const remaining = (draft.contract || 0) - totalBilled;
     const [projTab, setProjTab] = useState("overview");
     const projTabs = ["overview", "change orders", "submittals", "crew", "financials", "closeout"];
+    const [coFormOpen, setCoFormOpen] = useState(false);
+    const [coEditId, setCoEditId] = useState(null);
+    const [coExpandedId, setCoExpandedId] = useState(null);
+    const coNextNum = projCOs.length > 0 ? Math.max(...projCOs.map(c => parseInt(String(c.number || "0").replace(/\D/g, "")) || 0)) + 1 : 1;
+    const [coForm, setCoForm] = useState({ number: "", description: "", type: "add", amount: "", status: "draft", date: new Date().toISOString().slice(0, 10), notes: "" });
+    const coNetTotal = projCOs.reduce((s, c) => s + (c.type === "no cost" ? 0 : (c.amount || 0)), 0);
+    const coAdjustedContract = (draft.contract || 0) + coNetTotal;
+    const coStatusColor = (st) => ({ draft: "badge-ghost", submitted: "badge-amber", approved: "badge-green", rejected: "badge-red" }[st] || "badge-ghost");
+    const coTypeLabel = (t) => ({ add: "+Add", deduct: "-Deduct", "no cost": "No Cost" }[t] || t);
+    const resetCoForm = () => { setCoForm({ number: "", description: "", type: "add", amount: "", status: "draft", date: new Date().toISOString().slice(0, 10), notes: "" }); setCoEditId(null); };
+    const saveCo = () => {
+      const num = coForm.number || `CO-${String(coNextNum).padStart(3, "0")}`;
+      const amt = parseFloat(coForm.amount) || 0;
+      const finalAmt = coForm.type === "deduct" ? -Math.abs(amt) : coForm.type === "no cost" ? 0 : Math.abs(amt);
+      if (coEditId) {
+        app.setChangeOrders(prev => prev.map(c => c.id === coEditId ? { ...c, number: num, description: coForm.description, type: coForm.type, amount: finalAmt, status: coForm.status, date: coForm.date, notes: coForm.notes } : c));
+      } else {
+        const newCo = { id: crypto.randomUUID(), projectId: draft.id, number: num, description: coForm.description, type: coForm.type, amount: finalAmt, status: coForm.status, date: coForm.date, notes: coForm.notes, created: new Date().toISOString() };
+        app.setChangeOrders(prev => [...prev, newCo]);
+      }
+      resetCoForm();
+      setCoFormOpen(false);
+    };
+    const editCo = (co) => {
+      setCoForm({ number: co.number || "", description: co.description || co.desc || "", type: co.type || "add", amount: String(Math.abs(co.amount || 0)), status: co.status || "draft", date: co.date || co.submitted || "", notes: co.notes || "" });
+      setCoEditId(co.id);
+      setCoFormOpen(true);
+    };
+    const deleteCo = (coId) => { if (confirm("Delete this change order?")) app.setChangeOrders(prev => prev.filter(c => c.id !== coId)); };
+    const exportCoPdf = async (co) => {
+      const { generateChangeOrderPdf } = await import("./utils/changeOrderPdf.js");
+      generateChangeOrderPdf(draft, { ...co, description: co.description || co.desc }, app.company);
+    };
+
+    // ── Submittal state ──
+    const [subFormOpen, setSubFormOpen] = useState(false);
+    const [subEditId, setSubEditId] = useState(null);
+    const [subExpandedId, setSubExpandedId] = useState(null);
+    const [subFilter, setSubFilter] = useState("all");
+    const subNextNum = projSubmittals.length > 0 ? Math.max(...projSubmittals.map(s => parseInt(String(s.number || "0").replace(/\D/g, "")) || 0)) + 1 : 1;
+    const [subForm, setSubForm] = useState({ number: "", description: "", specSection: "", type: "product data", status: "not started", dateSubmitted: "", dateReturned: "", notes: "" });
+    const SUB_STATUSES = ["not started", "in progress", "submitted", "approved", "revise & resubmit", "rejected"];
+    const SUB_TYPES = ["product data", "shop drawings", "samples", "test reports"];
+    const SUB_STATUS_BADGE = (st) => {
+      const map = { "not started": { bg: "var(--bg3)", color: "var(--text3)" }, "in progress": { bg: "var(--blue-dim)", color: "var(--blue)" }, "submitted": { bg: "var(--amber-dim)", color: "var(--amber)" }, "approved": { bg: "var(--green-dim)", color: "var(--green)" }, "revise & resubmit": { bg: "rgba(249,115,22,0.15)", color: "#f97316" }, "rejected": { bg: "var(--red-dim)", color: "var(--red)" } };
+      return map[st] || map["not started"];
+    };
+    const subDaysOut = (s) => {
+      if (!s.dateSubmitted || s.status === "not started") return null;
+      if (s.dateReturned) return null;
+      const submitted = new Date(s.dateSubmitted);
+      const now = new Date();
+      return Math.floor((now - submitted) / 86400000);
+    };
+    const resetSubForm = () => { setSubForm({ number: "", description: "", specSection: "", type: "product data", status: "not started", dateSubmitted: "", dateReturned: "", notes: "" }); setSubEditId(null); };
+    const saveSub = () => {
+      if (!subForm.description) { show("Description required", "err"); return; }
+      const num = subForm.number || String(subNextNum);
+      if (subEditId) {
+        app.setSubmittals(prev => prev.map(s => s.id === subEditId ? { ...s, number: num, description: subForm.description, specSection: subForm.specSection, type: subForm.type, status: subForm.status, dateSubmitted: subForm.dateSubmitted, dateReturned: subForm.dateReturned, notes: subForm.notes } : s));
+      } else {
+        const newSub = { id: crypto.randomUUID(), projectId: draft.id, number: num, description: subForm.description, specSection: subForm.specSection, type: subForm.type, status: subForm.status, dateSubmitted: subForm.dateSubmitted, dateReturned: subForm.dateReturned, notes: subForm.notes, created: new Date().toISOString() };
+        app.setSubmittals(prev => [...prev, newSub]);
+      }
+      resetSubForm();
+      setSubFormOpen(false);
+      show(subEditId ? "Submittal updated" : "Submittal added", "ok");
+    };
+    const editSub = (s) => {
+      setSubForm({ number: s.number || "", description: s.description || "", specSection: s.specSection || s.spec || "", type: s.type || "product data", status: s.status || "not started", dateSubmitted: s.dateSubmitted || s.date || "", dateReturned: s.dateReturned || "", notes: s.notes || "" });
+      setSubEditId(s.id);
+      setSubFormOpen(true);
+    };
+    const deleteSub = (sId) => { if (confirm("Delete this submittal?")) app.setSubmittals(prev => prev.filter(s => s.id !== sId)); };
+    const filteredSubmittals = projSubmittals.filter(s => {
+      if (subFilter === "all") return true;
+      if (subFilter === "pending") return ["not started", "in progress", "submitted"].includes(s.status);
+      if (subFilter === "approved") return s.status === "approved";
+      if (subFilter === "action") return ["revise & resubmit", "rejected"].includes(s.status);
+      return true;
+    });
+
     return (
       <div className="modal-overlay" onMouseDown={handleOverlayDown} onMouseUp={handleOverlayUp(close)}>
         <div className="modal modal-lg" style={{ maxHeight: "85vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
@@ -3238,35 +3863,297 @@ const ModalHub = ({ type, data, app }) => {
 
             {/* ── Change Orders ── */}
             {projTab === "change orders" && (
-              <div>
-                {projCOs.length === 0 ? <div className="text-sm text-dim" style={{ textAlign: "center", padding: 24 }}>No change orders</div> : (
-                  projCOs.map(co => (
-                    <div key={co.id} className="card" style={{ padding: 12, marginBottom: 8 }}>
-                      <div className="flex-between">
-                        <span className="font-semi text-sm">{co.description || co.name || `CO #${co.id}`}</span>
-                        <span className="font-mono text-amber">{fmt(co.amount)}</span>
-                      </div>
-                      <div className="text-xs text-muted mt-4">{co.status || "pending"} · {co.date || ""}</div>
+              <div className="flex-col gap-12">
+                {/* Summary bar */}
+                <div className="flex gap-16 flex-wrap" style={{ padding: "10px 12px", background: "var(--bg3)", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)" }}>
+                  <div><span className="text-dim text-xs">ORIGINAL CONTRACT</span><div className="font-mono text-sm">{fmt(draft.contract)}</div></div>
+                  <div><span className="text-dim text-xs">NET CO VALUE</span><div className="font-mono text-sm" style={{ color: coNetTotal >= 0 ? "var(--green)" : "var(--red)" }}>{coNetTotal >= 0 ? "+" : ""}{fmt(coNetTotal)}</div></div>
+                  <div><span className="text-dim text-xs">ADJUSTED CONTRACT</span><div className="font-mono text-sm font-bold text-amber">{fmt(coAdjustedContract)}</div></div>
+                  <div><span className="text-dim text-xs">TOTAL COs</span><div className="font-mono text-sm">{projCOs.length}</div></div>
+                </div>
+
+                {/* Add CO button */}
+                <div className="flex-between">
+                  <span className="text-xs text-dim">{projCOs.filter(c => c.status === "approved").length} approved, {projCOs.filter(c => c.status === "submitted" || c.status === "pending").length} pending</span>
+                  <button className="btn btn-sm btn-primary" onClick={() => { resetCoForm(); setCoFormOpen(true); }}>+ Add Change Order</button>
+                </div>
+
+                {/* CO Form (add/edit) */}
+                {coFormOpen && (
+                  <div className="card" style={{ padding: 16, border: "1px solid var(--amber-dim)", background: "var(--bg3)" }}>
+                    <div className="flex-between mb-8">
+                      <span className="font-semi text-sm">{coEditId ? "Edit Change Order" : "New Change Order"}</span>
+                      <button className="btn btn-sm btn-ghost" onClick={() => { setCoFormOpen(false); resetCoForm(); }}>Cancel</button>
                     </div>
-                  ))
+                    <div className="flex gap-8 flex-wrap mb-8">
+                      <div style={{ flex: "0 0 100px" }}>
+                        <label className="text-xs text-dim">CO Number</label>
+                        <input className="input input-sm" placeholder={`CO-${String(coNextNum).padStart(3, "0")}`} value={coForm.number} onChange={e => setCoForm(p => ({ ...p, number: e.target.value }))} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <label className="text-xs text-dim">Description</label>
+                        <input className="input input-sm" placeholder="Describe the change..." value={coForm.description} onChange={e => setCoForm(p => ({ ...p, description: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="flex gap-8 flex-wrap mb-8">
+                      <div style={{ flex: "0 0 120px" }}>
+                        <label className="text-xs text-dim">Type</label>
+                        <select className="input input-sm" value={coForm.type} onChange={e => setCoForm(p => ({ ...p, type: e.target.value }))}>
+                          <option value="add">Add</option>
+                          <option value="deduct">Deduct</option>
+                          <option value="no cost">No Cost</option>
+                        </select>
+                      </div>
+                      <div style={{ flex: "0 0 120px" }}>
+                        <label className="text-xs text-dim">Amount ($)</label>
+                        <input className="input input-sm" type="number" step="0.01" placeholder="0.00" value={coForm.amount} onChange={e => setCoForm(p => ({ ...p, amount: e.target.value }))} disabled={coForm.type === "no cost"} />
+                      </div>
+                      <div style={{ flex: "0 0 140px" }}>
+                        <label className="text-xs text-dim">Status</label>
+                        <select className="input input-sm" value={coForm.status} onChange={e => setCoForm(p => ({ ...p, status: e.target.value }))}>
+                          <option value="draft">Draft</option>
+                          <option value="submitted">Submitted</option>
+                          <option value="approved">Approved</option>
+                          <option value="rejected">Rejected</option>
+                        </select>
+                      </div>
+                      <div style={{ flex: "0 0 140px" }}>
+                        <label className="text-xs text-dim">Date</label>
+                        <input className="input input-sm" type="date" value={coForm.date} onChange={e => setCoForm(p => ({ ...p, date: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="mb-8">
+                      <label className="text-xs text-dim">Notes</label>
+                      <textarea className="input input-sm" rows={2} placeholder="Additional notes..." value={coForm.notes} onChange={e => setCoForm(p => ({ ...p, notes: e.target.value }))} style={{ resize: "vertical" }} />
+                    </div>
+                    <div className="flex gap-8 justify-end">
+                      <button className="btn btn-sm btn-primary" onClick={saveCo} disabled={!coForm.description}>{coEditId ? "Update CO" : "Save CO"}</button>
+                    </div>
+                  </div>
                 )}
-                <div className="text-xs text-dim mt-8">CO Total: <span className="font-mono text-amber">{fmt(projCOs.reduce((s, c) => s + (c.amount || 0), 0))}</span></div>
+
+                {/* CO List */}
+                {projCOs.length === 0 && !coFormOpen ? (
+                  <div className="text-sm text-dim" style={{ textAlign: "center", padding: 32 }}>No change orders yet. Click "+ Add Change Order" to create one.</div>
+                ) : (
+                  projCOs.map(co => {
+                    const isExpanded = coExpandedId === co.id;
+                    const desc = co.description || co.desc || co.name || `CO #${co.id}`;
+                    const coStatus = co.status || "draft";
+                    return (
+                      <div key={co.id} className="card" style={{ padding: 0, marginBottom: 6, overflow: "hidden", border: isExpanded ? "1px solid var(--amber-dim)" : undefined }}>
+                        {/* CO row - clickable */}
+                        <div style={{ padding: "10px 12px", cursor: "pointer" }} onClick={() => setCoExpandedId(isExpanded ? null : co.id)}>
+                          <div className="flex-between">
+                            <div className="flex gap-8 align-center">
+                              <span style={{ fontSize: 10, opacity: 0.4 }}>{isExpanded ? "\u25BC" : "\u25B6"}</span>
+                              <span className="font-mono text-xs text-dim" style={{ minWidth: 56 }}>{co.number || `CO-${co.id}`}</span>
+                              <span className="font-semi text-sm">{desc}</span>
+                            </div>
+                            <div className="flex gap-8 align-center">
+                              <span className={`badge ${coStatusColor(coStatus)}`} style={{ fontSize: 9, textTransform: "capitalize" }}>{coStatus}</span>
+                              <span className="font-mono text-sm" style={{ color: (co.amount || 0) < 0 ? "var(--red)" : (co.amount || 0) > 0 ? "var(--green)" : "var(--text2)", minWidth: 70, textAlign: "right" }}>
+                                {(co.amount || 0) < 0 ? "-" : (co.amount || 0) > 0 ? "+" : ""}{fmt(Math.abs(co.amount || 0))}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted mt-2" style={{ marginLeft: 24 }}>
+                            {coTypeLabel(co.type || "add")} &middot; {co.date || co.submitted || "No date"}
+                          </div>
+                        </div>
+                        {/* Expanded detail */}
+                        {isExpanded && (
+                          <div style={{ padding: "8px 12px 12px", borderTop: "1px solid var(--border)", background: "var(--bg3)" }}>
+                            <div className="flex gap-16 flex-wrap mb-8">
+                              <div><span className="text-dim text-xs">TYPE</span><div className="text-sm">{coTypeLabel(co.type || "add")}</div></div>
+                              <div><span className="text-dim text-xs">STATUS</span><div className="text-sm" style={{ textTransform: "capitalize" }}>{coStatus}</div></div>
+                              <div><span className="text-dim text-xs">DATE</span><div className="text-sm">{co.date || co.submitted || "—"}</div></div>
+                              <div><span className="text-dim text-xs">AMOUNT</span><div className="font-mono text-sm">{fmt(co.amount || 0)}</div></div>
+                              {co.approved && <div><span className="text-dim text-xs">APPROVED</span><div className="text-sm">{co.approved}</div></div>}
+                              {co.created && <div><span className="text-dim text-xs">CREATED</span><div className="text-sm">{new Date(co.created).toLocaleDateString()}</div></div>}
+                            </div>
+                            {(co.notes || co.description || co.desc) && (
+                              <div className="mb-8">
+                                <span className="text-dim text-xs">DESCRIPTION / NOTES</span>
+                                <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{co.description || co.desc}{co.notes ? `\n\nNotes: ${co.notes}` : ""}</div>
+                              </div>
+                            )}
+                            <div className="flex gap-8">
+                              <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); editCo(co); }}>Edit</button>
+                              <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); exportCoPdf(co); }}>Export PDF</button>
+                              <button className="btn btn-sm btn-ghost" style={{ color: "var(--red)" }} onClick={(e) => { e.stopPropagation(); deleteCo(co.id); }}>Delete</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
               </div>
             )}
 
             {/* ── Submittals ── */}
             {projTab === "submittals" && (
               <div>
-                {projSubmittals.length === 0 ? <div className="text-sm text-dim" style={{ textAlign: "center", padding: 24 }}>No submittals</div> : (
-                  projSubmittals.map(s => (
-                    <div key={s.id} className="card" style={{ padding: 12, marginBottom: 8 }}>
-                      <div className="flex-between">
-                        <span className="font-semi text-sm">{s.name || s.description}</span>
-                        <span className={`badge ${s.status === "approved" ? "badge-green" : s.status === "rejected" ? "badge-red" : "badge-amber"}`}>{s.status}</span>
-                      </div>
-                      <div className="text-xs text-muted mt-4">{s.spec || ""} · {s.date || ""}</div>
+                {/* Header + Add button */}
+                <div className="flex-between mb-8">
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <span className="font-semi text-sm">Submittal Log</span>
+                    <span className="badge badge-blue" style={{ fontSize: 9 }}>{projSubmittals.length}</span>
+                  </div>
+                  <button className="btn btn-primary btn-sm" onClick={() => { resetSubForm(); setSubFormOpen(!subFormOpen); }}>+ Add Submittal</button>
+                </div>
+
+                {/* Quick Filters */}
+                <div className="flex gap-4 mb-8" style={{ flexWrap: "wrap" }}>
+                  {[["all", "All"], ["pending", "Pending"], ["approved", "Approved"], ["action", "Action Required"]].map(([key, label]) => (
+                    <button key={key} className={`btn btn-sm ${subFilter === key ? "btn-primary" : "btn-ghost"}`} style={{ fontSize: 10 }} onClick={() => setSubFilter(key)}>
+                      {label}
+                      {key === "action" && projSubmittals.filter(s => ["revise & resubmit", "rejected"].includes(s.status)).length > 0 && (
+                        <span style={{ marginLeft: 4, background: "var(--red)", color: "#fff", borderRadius: 99, padding: "0 5px", fontSize: 9 }}>
+                          {projSubmittals.filter(s => ["revise & resubmit", "rejected"].includes(s.status)).length}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Add/Edit Form */}
+                {subFormOpen && (
+                  <div className="card" style={{ padding: 16, border: "1px solid var(--blue-dim)", background: "var(--bg3)", marginBottom: 12 }}>
+                    <div className="flex-between mb-8">
+                      <span className="font-semi text-sm">{subEditId ? "Edit Submittal" : "New Submittal"}</span>
+                      <button className="btn btn-sm btn-ghost" onClick={() => { setSubFormOpen(false); resetSubForm(); }}>Cancel</button>
                     </div>
-                  ))
+                    <div className="flex gap-8 flex-wrap mb-8">
+                      <div style={{ flex: "0 0 80px" }}>
+                        <label className="text-xs text-dim">Number</label>
+                        <input className="input input-sm" placeholder={String(subNextNum)} value={subForm.number} onChange={e => setSubForm(p => ({ ...p, number: e.target.value }))} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <label className="text-xs text-dim">Description</label>
+                        <input className="input input-sm" placeholder="e.g. Metal stud framing — 20ga 3-5/8&quot; studs" value={subForm.description} onChange={e => setSubForm(p => ({ ...p, description: e.target.value }))} />
+                      </div>
+                      <div style={{ flex: "0 0 100px" }}>
+                        <label className="text-xs text-dim">Spec Section</label>
+                        <input className="input input-sm" placeholder="09 21 16" value={subForm.specSection} onChange={e => setSubForm(p => ({ ...p, specSection: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="flex gap-8 flex-wrap mb-8">
+                      <div style={{ flex: "0 0 150px" }}>
+                        <label className="text-xs text-dim">Type</label>
+                        <select className="input input-sm" value={subForm.type} onChange={e => setSubForm(p => ({ ...p, type: e.target.value }))}>
+                          {SUB_TYPES.map(t => <option key={t} value={t}>{t.replace(/\b\w/g, c => c.toUpperCase())}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ flex: "0 0 170px" }}>
+                        <label className="text-xs text-dim">Status</label>
+                        <select className="input input-sm" value={subForm.status} onChange={e => setSubForm(p => ({ ...p, status: e.target.value }))}>
+                          {SUB_STATUSES.map(st => <option key={st} value={st}>{st.replace(/\b\w/g, c => c.toUpperCase())}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ flex: "0 0 140px" }}>
+                        <label className="text-xs text-dim">Date Submitted</label>
+                        <input className="input input-sm" type="date" value={subForm.dateSubmitted} onChange={e => setSubForm(p => ({ ...p, dateSubmitted: e.target.value }))} />
+                      </div>
+                      <div style={{ flex: "0 0 140px" }}>
+                        <label className="text-xs text-dim">Date Returned</label>
+                        <input className="input input-sm" type="date" value={subForm.dateReturned} onChange={e => setSubForm(p => ({ ...p, dateReturned: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="mb-8">
+                      <label className="text-xs text-dim">Notes</label>
+                      <textarea className="input input-sm" rows={2} placeholder="Additional notes..." value={subForm.notes} onChange={e => setSubForm(p => ({ ...p, notes: e.target.value }))} style={{ resize: "vertical" }} />
+                    </div>
+                    <div className="flex gap-8" style={{ justifyContent: "flex-end" }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => { setSubFormOpen(false); resetSubForm(); }}>Cancel</button>
+                      <button className="btn btn-primary btn-sm" onClick={saveSub}>{subEditId ? "Update" : "Add"} Submittal</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Submittal Table */}
+                {filteredSubmittals.length === 0 ? (
+                  <div className="text-sm text-dim" style={{ textAlign: "center", padding: 24 }}>
+                    {projSubmittals.length === 0 ? "No submittals — click \"+ Add Submittal\" to create one" : "No submittals match this filter"}
+                  </div>
+                ) : (
+                  <div style={{ overflowX: "auto" }}>
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th style={{ width: 40 }}>#</th>
+                          <th>Description</th>
+                          <th style={{ width: 80 }}>Spec</th>
+                          <th style={{ width: 100 }}>Type</th>
+                          <th style={{ width: 120 }}>Status</th>
+                          <th style={{ width: 90 }}>Submitted</th>
+                          <th style={{ width: 90 }}>Returned</th>
+                          <th style={{ width: 70 }}>Days Out</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredSubmittals.map(s => {
+                          const days = subDaysOut(s);
+                          const expanded = subExpandedId === s.id;
+                          const stBadge = SUB_STATUS_BADGE(s.status);
+                          return (
+                            <Fragment key={s.id}>
+                              <tr style={{ cursor: "pointer" }} onClick={() => setSubExpandedId(expanded ? null : s.id)}>
+                                <td className="num">{s.number}</td>
+                                <td className="font-semi" style={{ fontSize: 12 }}>{s.description || s.name || "—"}</td>
+                                <td className="text-xs" style={{ fontFamily: "var(--font-mono)" }}>{s.specSection || s.spec || "—"}</td>
+                                <td className="text-xs" style={{ textTransform: "capitalize" }}>{s.type || "—"}</td>
+                                <td>
+                                  <span className="badge" style={{ background: stBadge.bg, color: stBadge.color, fontSize: 10, textTransform: "capitalize" }}>{s.status}</span>
+                                </td>
+                                <td className="text-xs">{s.dateSubmitted || s.date || "—"}</td>
+                                <td className="text-xs">{s.dateReturned || "—"}</td>
+                                <td className="num" style={{ color: days !== null && days > 14 ? "var(--red)" : undefined, fontWeight: days !== null && days > 14 ? 700 : undefined }}>
+                                  {days !== null ? `${days}d` : "—"}
+                                </td>
+                              </tr>
+                              {expanded && (
+                                <tr>
+                                  <td colSpan={8} style={{ padding: 0, background: "var(--bg3)" }}>
+                                    <div style={{ padding: 16 }}>
+                                      <div className="flex gap-16 flex-wrap mb-8">
+                                        <div><span className="text-dim text-xs">TYPE</span><div className="text-sm" style={{ textTransform: "capitalize" }}>{s.type || "—"}</div></div>
+                                        <div><span className="text-dim text-xs">SPEC SECTION</span><div className="text-sm font-mono">{s.specSection || s.spec || "—"}</div></div>
+                                        <div><span className="text-dim text-xs">STATUS</span><div><span className="badge" style={{ background: stBadge.bg, color: stBadge.color, fontSize: 10, textTransform: "capitalize" }}>{s.status}</span></div></div>
+                                        <div><span className="text-dim text-xs">DATE SUBMITTED</span><div className="text-sm">{s.dateSubmitted || s.date || "—"}</div></div>
+                                        <div><span className="text-dim text-xs">DATE RETURNED</span><div className="text-sm">{s.dateReturned || "—"}</div></div>
+                                        {days !== null && <div><span className="text-dim text-xs">DAYS OUT</span><div className="text-sm" style={{ color: days > 14 ? "var(--red)" : "var(--amber)", fontWeight: 700 }}>{days} days{days > 14 ? " ⚠" : ""}</div></div>}
+                                      </div>
+                                      {s.notes && <div style={{ marginBottom: 8 }}><span className="text-dim text-xs">NOTES</span><div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{s.notes}</div></div>}
+                                      <div className="text-xs text-muted mb-8">Created: {s.created ? new Date(s.created).toLocaleDateString() : "—"}</div>
+                                      <div className="flex gap-8">
+                                        <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); editSub(s); }}>Edit</button>
+                                        <button className="btn btn-sm btn-ghost" style={{ color: "var(--red)" }} onClick={(e) => { e.stopPropagation(); deleteSub(s.id); }}>Delete</button>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Summary stats */}
+                {projSubmittals.length > 0 && (
+                  <div className="flex gap-16 flex-wrap" style={{ marginTop: 12, padding: "8px 0", borderTop: "1px solid var(--border)" }}>
+                    <div className="text-xs"><span className="text-dim">Total:</span> <span className="font-mono">{projSubmittals.length}</span></div>
+                    <div className="text-xs"><span style={{ color: "var(--green)" }}>Approved:</span> <span className="font-mono">{projSubmittals.filter(s => s.status === "approved").length}</span></div>
+                    <div className="text-xs"><span style={{ color: "var(--amber)" }}>Submitted:</span> <span className="font-mono">{projSubmittals.filter(s => s.status === "submitted").length}</span></div>
+                    <div className="text-xs"><span style={{ color: "var(--red)" }}>Action Req:</span> <span className="font-mono">{projSubmittals.filter(s => ["revise & resubmit", "rejected"].includes(s.status)).length}</span></div>
+                    {projSubmittals.some(s => { const d = subDaysOut(s); return d !== null && d > 14; }) && (
+                      <div className="text-xs" style={{ color: "var(--red)", fontWeight: 700 }}>Overdue: {projSubmittals.filter(s => { const d = subDaysOut(s); return d !== null && d > 14; }).length}</div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -3325,27 +4212,212 @@ const ModalHub = ({ type, data, app }) => {
             )}
 
             {/* ── Closeout ── */}
-            {projTab === "closeout" && (
+            {projTab === "closeout" && (() => {
+              const CLOSEOUT_ITEMS = [
+                { id: "punch_list", label: "Final punch list completed", responsible: "Foreman" },
+                { id: "final_walkthrough", label: "Final walk-through with GC", responsible: "PM" },
+                { id: "as_builts", label: "As-built drawings submitted", responsible: "PM" },
+                { id: "warranty_letter", label: "Warranty letter submitted", responsible: "PM" },
+                { id: "lien_waiver_cond", label: "Final lien waiver (conditional) submitted", responsible: "PM" },
+                { id: "lien_waiver_uncond", label: "Final lien waiver (unconditional) submitted", responsible: "PM" },
+                { id: "final_invoice", label: "Final invoice submitted", responsible: "PM" },
+                { id: "final_payment", label: "Final payment received", responsible: "Office" },
+                { id: "retainage_invoice", label: "Retainage invoice submitted", responsible: "PM" },
+                { id: "retainage_received", label: "Retainage received", responsible: "Office" },
+                { id: "om_manuals", label: "O&M manuals submitted (if applicable)", responsible: "PM" },
+                { id: "photos_archived", label: "Project photos archived", responsible: "PM" },
+                { id: "tools_returned", label: "Tools/equipment returned", responsible: "Foreman" },
+                { id: "lessons_learned", label: "Lessons learned documented", responsible: "PM" },
+              ];
+              const closeout = draft.closeout || { items: [], completedDate: null, notes: "" };
+              const itemMap = {};
+              (closeout.items || []).forEach(it => { itemMap[it.id] = it; });
+              const completedCount = CLOSEOUT_ITEMS.filter(ci => itemMap[ci.id]?.done).length;
+              const pct = Math.round((completedCount / CLOSEOUT_ITEMS.length) * 100);
+              const isOverdue = draft.end && new Date(draft.end) < new Date();
+              const coTotal = projCOs.reduce((s, c) => s + (c.amount || 0), 0);
+              const approvedCOs = projCOs.filter(c => c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
+              const revisedContract = (draft.contract || 0) + coTotal;
+              const paidInvoices = projInvoices.filter(i => i.status === "paid").reduce((s, i) => s + (i.amount || 0), 0);
+              const retainageHeld = Math.round(revisedContract * 0.10);
+              const remainingBalance = revisedContract - totalBilled;
+
+              const updateCloseoutItem = (itemId, field, value) => {
+                const items = [...(closeout.items || [])];
+                const idx = items.findIndex(it => it.id === itemId);
+                if (idx >= 0) {
+                  items[idx] = { ...items[idx], [field]: value };
+                } else {
+                  items.push({ id: itemId, done: false, dateCompleted: null, notes: "", responsible: "", [field]: value });
+                }
+                const allDone = CLOSEOUT_ITEMS.every(ci => items.find(it => it.id === ci.id)?.done);
+                const newCloseout = { ...closeout, items, completedDate: allDone ? (closeout.completedDate || new Date().toISOString().slice(0, 10)) : null };
+                const updated = { ...draft, closeout: newCloseout };
+                app.setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
+                setDraft(updated);
+              };
+
+              const toggleItem = (itemId) => {
+                const current = itemMap[itemId]?.done || false;
+                const items = [...(closeout.items || [])];
+                const idx = items.findIndex(it => it.id === itemId);
+                const newVal = !current;
+                const dateVal = newVal ? new Date().toISOString().slice(0, 10) : null;
+                if (idx >= 0) {
+                  items[idx] = { ...items[idx], done: newVal, dateCompleted: dateVal };
+                } else {
+                  items.push({ id: itemId, done: newVal, dateCompleted: dateVal, notes: "", responsible: "" });
+                }
+                const allDone = CLOSEOUT_ITEMS.every(ci => items.find(it => it.id === ci.id)?.done);
+                const newCloseout = { ...closeout, items, completedDate: allDone ? (closeout.completedDate || new Date().toISOString().slice(0, 10)) : null };
+                const updated = { ...draft, closeout: newCloseout };
+                app.setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
+                setDraft(updated);
+              };
+
+              return (
               <div className="flex-col gap-12">
-                <div><span className="text-dim text-xs">CLOSE-OUT NOTES</span><div className="text-sm">{draft.closeOut || "No close-out notes yet."}</div></div>
-                <div className="flex gap-8 flex-wrap">
-                  {["Final walkthrough", "Punch list complete", "As-builts submitted", "Warranty letter sent", "Final invoice sent", "Lien waiver received"].map(item => {
-                    const key = "co_" + item.toLowerCase().replace(/\s+/g, "_");
-                    const done = draft[key];
-                    return (
-                      <button key={item} className={`badge ${done ? "badge-green" : "badge-muted"}`} style={{ cursor: "pointer", fontSize: 10 }}
-                        onClick={() => {
-                          const updated = { ...draft, [key]: !done };
-                          app.setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
-                          setDraft(updated);
-                        }}>
-                        {done ? "✅" : "⬜"} {item}
-                      </button>
-                    );
-                  })}
+                {/* Progress bar */}
+                <div>
+                  <div className="flex-between mb-4">
+                    <span className="text-xs font-semi" style={{ color: pct === 100 ? "var(--green)" : pct >= 50 ? "var(--amber)" : "var(--text-muted)" }}>
+                      Closeout Progress: {pct}% ({completedCount}/{CLOSEOUT_ITEMS.length})
+                    </span>
+                    {closeout.completedDate && <span className="badge badge-green" style={{ fontSize: 10 }}>Closed {closeout.completedDate}</span>}
+                  </div>
+                  <div className="progress-bar" style={{ height: 10, borderRadius: 5 }}>
+                    <div className="progress-fill" style={{ width: `${pct}%`, background: pct === 100 ? "var(--green)" : pct >= 50 ? "var(--amber)" : "var(--red)", borderRadius: 5, transition: "width 0.3s" }} />
+                  </div>
+                </div>
+
+                {/* Financial Summary */}
+                <div className="card" style={{ padding: 12 }}>
+                  <div className="text-xs font-semi mb-8" style={{ color: "var(--amber)" }}>FINANCIAL SUMMARY</div>
+                  <div className="flex gap-16 flex-wrap">
+                    <div><span className="text-dim text-xs">ORIGINAL CONTRACT</span><div className="font-mono">{fmt(draft.contract)}</div></div>
+                    <div><span className="text-dim text-xs">CHANGE ORDERS</span><div className="font-mono">{fmt(coTotal)} ({projCOs.length})</div></div>
+                    <div><span className="text-dim text-xs">REVISED CONTRACT</span><div className="font-mono font-bold text-amber">{fmt(revisedContract)}</div></div>
+                    <div><span className="text-dim text-xs">TOTAL BILLED</span><div className="font-mono">{fmt(totalBilled)}</div></div>
+                    <div><span className="text-dim text-xs">REMAINING</span><div className="font-mono" style={{ color: remainingBalance > 0 ? "var(--amber)" : "var(--green)" }}>{fmt(remainingBalance)}</div></div>
+                    <div><span className="text-dim text-xs">RETAINAGE (EST 10%)</span><div className="font-mono" style={{ color: "var(--red)" }}>{fmt(retainageHeld)}</div></div>
+                    <div><span className="text-dim text-xs">PAID</span><div className="font-mono" style={{ color: "var(--green)" }}>{fmt(paidInvoices)}</div></div>
+                  </div>
+                </div>
+
+                {/* Checklist */}
+                <div>
+                  <div className="text-xs font-semi mb-8">CLOSEOUT CHECKLIST</div>
+                  <div className="flex-col gap-4">
+                    {CLOSEOUT_ITEMS.map((ci, idx) => {
+                      const item = itemMap[ci.id] || {};
+                      const isDone = item.done || false;
+                      const itemOverdue = !isDone && isOverdue;
+                      const bgColor = isDone ? "rgba(16,185,129,0.08)" : itemOverdue ? "rgba(239,68,68,0.08)" : "rgba(224,148,34,0.05)";
+                      const borderColor = isDone ? "var(--green)" : itemOverdue ? "var(--red)" : "var(--border)";
+                      return (
+                        <div key={ci.id} className="card" style={{ padding: "8px 12px", borderLeft: `3px solid ${borderColor}`, background: bgColor }}>
+                          <div className="flex-between" style={{ alignItems: "flex-start" }}>
+                            <div className="flex gap-8" style={{ alignItems: "flex-start", flex: 1 }}>
+                              <button onClick={() => toggleItem(ci.id)}
+                                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 0, lineHeight: 1, marginTop: 1, flexShrink: 0 }}>
+                                {isDone ? "\u2705" : "\u2b1c"}
+                              </button>
+                              <div style={{ flex: 1 }}>
+                                <div className="text-sm" style={{ textDecoration: isDone ? "line-through" : "none", opacity: isDone ? 0.7 : 1 }}>
+                                  <span style={{ fontWeight: 500 }}>{idx + 1}. {ci.label}</span>
+                                </div>
+                                <div className="flex gap-8 mt-4 flex-wrap" style={{ alignItems: "center" }}>
+                                  <span className={`badge ${isDone ? "badge-green" : itemOverdue ? "badge-red" : "badge-amber"}`} style={{ fontSize: 9 }}>
+                                    {isDone ? "Complete" : itemOverdue ? "Overdue" : "Pending"}
+                                  </span>
+                                  <span className="text-xs text-muted">Resp: {item.responsible || ci.responsible}</span>
+                                  {item.dateCompleted && <span className="text-xs text-muted">{item.dateCompleted}</span>}
+                                </div>
+                                {/* Inline notes */}
+                                <input type="text" placeholder="Notes..." value={item.notes || ""} className="input input-sm"
+                                  style={{ fontSize: 10, marginTop: 4, padding: "2px 6px", width: "100%", maxWidth: 400, background: "transparent", border: "1px solid var(--border)" }}
+                                  onClick={e => e.stopPropagation()}
+                                  onChange={e => updateCloseoutItem(ci.id, "notes", e.target.value)} />
+                              </div>
+                            </div>
+                            <div style={{ flexShrink: 0, marginLeft: 8 }}>
+                              <select value={item.responsible || ci.responsible} className="input input-sm"
+                                style={{ fontSize: 10, padding: "2px 4px", width: 80 }}
+                                onClick={e => e.stopPropagation()}
+                                onChange={e => updateCloseoutItem(ci.id, "responsible", e.target.value)}>
+                                <option value="PM">PM</option>
+                                <option value="Foreman">Foreman</option>
+                                <option value="Office">Office</option>
+                                <option value="Emmanuel">Emmanuel</option>
+                                <option value="Isai">Isai</option>
+                                <option value="Abner">Abner</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Closeout Notes */}
+                <div>
+                  <div className="text-xs font-semi mb-4">CLOSEOUT NOTES</div>
+                  <textarea className="input" rows={3} placeholder="General closeout notes..." value={closeout.notes || ""}
+                    style={{ width: "100%", fontSize: 12 }}
+                    onChange={e => {
+                      const newCloseout = { ...closeout, notes: e.target.value };
+                      const updated = { ...draft, closeout: newCloseout };
+                      app.setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
+                      setDraft(updated);
+                    }} />
+                </div>
+
+                {/* Generate Report Button */}
+                <div className="flex gap-8">
+                  <button className="btn btn-primary" style={{ fontSize: 11 }} onClick={async () => {
+                    try {
+                      const { generateCloseoutPdf } = await import("./utils/closeoutPdf.js");
+                      generateCloseoutPdf(draft, {
+                        rfis: (app.rfis || []).filter(r => r.projectId === draft.id),
+                        submittals: (app.submittals || []).filter(s => s.projectId === draft.id),
+                        changeOrders: projCOs,
+                        invoices: projInvoices,
+                        dailyReports: (app.dailyReports || []).filter(d => d.projectId === draft.id),
+                        jsas: (app.jsas || []).filter(j => j.projectId === draft.id),
+                        tmTickets: (app.tmTickets || []).filter(t => t.projectId === draft.id),
+                        closeoutResult: {
+                          readinessScore: pct,
+                          grade: pct >= 90 ? "A" : pct >= 75 ? "B" : pct >= 50 ? "C" : pct >= 25 ? "D" : "F",
+                          summary: `Closeout ${pct}% complete. ${completedCount} of ${CLOSEOUT_ITEMS.length} items done.${closeout.notes ? " Notes: " + closeout.notes : ""}`,
+                          checklist: CLOSEOUT_ITEMS.map(ci => ({
+                            item: ci.label,
+                            status: (itemMap[ci.id]?.done) ? "complete" : "pending",
+                            dateCompleted: itemMap[ci.id]?.dateCompleted || "",
+                            responsible: itemMap[ci.id]?.responsible || ci.responsible,
+                            notes: itemMap[ci.id]?.notes || "",
+                          })),
+                          financialStatus: {
+                            contractValue: draft.contract || 0,
+                            totalBilled,
+                            remaining: remainingBalance,
+                            retainage: retainageHeld,
+                            openCOs: projCOs.filter(c => c.status !== "approved" && c.status !== "rejected").length,
+                            margin: totalBilled > 0 ? Math.round(((totalBilled - (draft.laborCost || 0) - (draft.materialCost || 0)) / totalBilled) * 100) + "%" : "N/A",
+                          },
+                        },
+                      });
+                      show("Closeout PDF exported", "ok");
+                    } catch (err) {
+                      show("PDF export failed: " + err.message, "err");
+                    }
+                  }}>
+                    Generate Closeout Report (PDF)
+                  </button>
                 </div>
               </div>
-            )}
+              );
+            })()}
           </div>
 
           <div className="modal-actions" style={{ justifyContent: "space-between" }}>
@@ -3438,7 +4510,46 @@ const ModalHub = ({ type, data, app }) => {
             </div>
             <div className="form-group">
               <label className="form-label">General Contractor</label>
-              <input className="form-input" value={draft.gc} onChange={e => upd("gc", e.target.value)} placeholder="GC name" />
+              <div style={{ position: "relative" }}>
+                <input
+                  className="form-input"
+                  placeholder="Search or type GC name..."
+                  value={gcDropOpen ? gcFilter : (draft.gc || "")}
+                  onChange={e => { setGcFilter(e.target.value); upd("gc", e.target.value); setGcDropOpen(true); }}
+                  onFocus={() => { setGcDropOpen(true); setGcFilter(draft.gc || ""); }}
+                  onBlur={() => setTimeout(() => setGcDropOpen(false), 200)}
+                />
+                {draft.gc && !gcDropOpen && (
+                  <button type="button" style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text2)", cursor: "pointer", fontSize: 14, padding: "2px 4px" }}
+                    onClick={() => { upd("gc", ""); setGcFilter(""); }}>&#10005;</button>
+                )}
+                {gcDropOpen && (() => {
+                  const q = gcFilter.toLowerCase();
+                  const gcSet = new Set();
+                  app.contacts.forEach(c => { if (c.company) gcSet.add(c.company); });
+                  app.bids.forEach(b => { if (b.gc) gcSet.add(b.gc); });
+                  const allGcs = [...gcSet].sort((a, b) => a.localeCompare(b));
+                  const filtered = allGcs.filter(name => name.toLowerCase().includes(q));
+                  if (filtered.length === 0) return null;
+                  return (
+                    <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, maxHeight: 200, overflowY: "auto", background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "0 0 var(--radius) var(--radius)", boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}>
+                      {filtered.map(name => (
+                        <div key={name}
+                          style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid var(--border)" }}
+                          onMouseDown={e => { e.preventDefault(); upd("gc", name); setGcDropOpen(false); setGcFilter(""); }}
+                          onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
+                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                        >
+                          <span style={{ fontWeight: 500 }}>{name}</span>
+                          <span style={{ color: "var(--text2)", marginLeft: 8, fontSize: 11 }}>
+                            {app.contacts.filter(c => c.company === name).length} contact{app.contacts.filter(c => c.company === name).length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label">Value ($)</label>
@@ -3738,6 +4849,26 @@ const ModalHub = ({ type, data, app }) => {
               <label className="form-label">Billed Amount ($)</label>
               <input className="form-input" type="number" value={draft.billed} onChange={e => upd("billed", Number(e.target.value))} />
             </div>
+            <div className="form-group">
+              <label className="form-label">Labor Cost ($)</label>
+              <input className="form-input" type="number" value={draft.laborCost || 0} onChange={e => upd("laborCost", Number(e.target.value))} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Material Cost ($)</label>
+              <input className="form-input" type="number" value={draft.materialCost || 0} onChange={e => upd("materialCost", Number(e.target.value))} />
+            </div>
+            {(draft.contract || 0) > 0 && ((draft.laborCost || 0) + (draft.materialCost || 0)) > 0 && (() => {
+              const totalCost = (draft.laborCost || 0) + (draft.materialCost || 0);
+              const margin = Math.round(((draft.contract - totalCost) / draft.contract) * 100);
+              return (
+                <div className="form-group">
+                  <label className="form-label">Profit Margin</label>
+                  <div style={{ padding: "8px 12px", borderRadius: 6, background: margin < 30 ? "rgba(239,68,68,0.1)" : "rgba(34,197,94,0.1)", border: `1px solid ${margin < 30 ? "var(--red)" : "var(--green)"}`, fontWeight: 700, color: margin < 0 ? "#dc2626" : margin < 30 ? "var(--red)" : "var(--green)" }}>
+                    {margin}% {margin < 30 ? " — Below 30% target" : ""}
+                  </div>
+                </div>
+              );
+            })()}
             <div className="form-group">
               <label className="form-label">Progress (%)</label>
               <input className="form-input" type="number" min="0" max="100" value={draft.progress} onChange={e => upd("progress", Number(e.target.value))} />

@@ -15,9 +15,13 @@ const TAB = "\t";
 // These map EBC-OS names to exact QB Desktop names.
 // Stored in localStorage so Anna can configure once.
 const STORAGE_KEY = "ebc_qb_mappings";
+const STORAGE_KEY_V2 = "ebc_qb_name_map";
 
 export function getQBMappings() {
   try {
+    // Prefer the v2 key (set by QuickBooks Settings tab), fall back to legacy
+    const v2 = localStorage.getItem(STORAGE_KEY_V2);
+    if (v2) return JSON.parse(v2);
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
   } catch {
     return {};

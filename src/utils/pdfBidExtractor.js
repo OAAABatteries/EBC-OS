@@ -99,6 +99,7 @@ export function parseBidText(text) {
     // Line items breakdown
     lineItems: [],
     alternate: "",
+    alternates: [], // structured: [{description, type, amount}]
     includes: [],
     excludes: [],
   };
@@ -177,11 +178,14 @@ export function parseBidText(text) {
     const rawUpper = raw.toUpperCase();
     const addrEnd = rawUpper.indexOf("PROJECT ADDRESS");
     const includesStart = rawUpper.indexOf("INCLUDES");
+    const alternatesStart = rawUpper.search(/\bALTERNATE[S]?\s*(?::|$)/m);
     const totalIdx = rawUpper.indexOf("TOTAL");
-    // Pricing lives between address and INCLUDES (or Total if no INCLUDES)
+    // Pricing lives between address and ALTERNATES (or INCLUDES if no alternates, or Total)
     const start = addrEnd >= 0 ? raw.indexOf("\n", addrEnd) : 0;
-    const end = includesStart >= 0 ? includesStart : (totalIdx >= 0 ? totalIdx + 50 : raw.length);
-    return raw.substring(start, end);
+    // End pricing at whichever comes first: ALTERNATES section or INCLUDES
+    const sectionEnd = alternatesStart >= 0 && alternatesStart > start ? alternatesStart
+      : (includesStart >= 0 ? includesStart : (totalIdx >= 0 ? totalIdx + 50 : raw.length));
+    return raw.substring(start, sectionEnd);
   })();
 
   // Label → scope mapping
@@ -330,14 +334,94 @@ export function parseBidText(text) {
     result.value = result.lineItems.reduce((sum, li) => sum + li.amount, 0);
   }
 
-  // ── Alternate(s) — capture ALL alternates ──
-  const alternates = [];
-  const altRegex = /Alternate\s*:\s*(.+?)(?=Alternate|INCLUDES|EXCLUDES|Note:|\*|$)/gi;
-  let altM;
-  while ((altM = altRegex.exec(t)) !== null) {
-    alternates.push(altM[1].trim());
+  // ── Alternate(s) — capture ALL alternates as structured objects ──
+  // Handles formats like:
+  //   "Alternate 1: Demo floors (VCT) ADD $2,400"
+  //   "ALT: Remove ACT grid DEDUCT $3,500"
+  //   "Alternate: Upgrade to Level 5 finish Add $1,200"
+  //   "Alternate 2: Remove insulation ($800)"
+  //
+  // First, try to find an ALTERNATES section between pricing and INCLUDES
+  // EBC proposals: pricing table → ALTERNATES → INCLUDES → EXCLUDES
+  const rawUpper2 = raw.toUpperCase();
+  const altSectionStart = rawUpper2.search(/\bALTERNATE[S]?\s*(?::|$)/im);
+  const includesIdx = rawUpper2.indexOf("INCLUDES");
+  const excludesIdx = rawUpper2.indexOf("EXCLUDES");
+  const altSectionEnd = includesIdx >= 0 ? includesIdx : (excludesIdx >= 0 ? excludesIdx : raw.length);
+
+  // Extract alternates from both the section (if found) and inline patterns
+  const altTexts = [];
+
+  // Strategy 1: Parse ALTERNATES section from raw text (preserves line breaks)
+  if (altSectionStart >= 0 && altSectionStart < altSectionEnd) {
+    const altBlock = raw.substring(altSectionStart, altSectionEnd);
+    // Split by "Alternate" or "ALT" boundaries, or numbered items
+    const altLineRegex = /(?:Alternate\s*\d*|ALT)\s*[:\-]\s*(.+?)(?=(?:Alternate\s*\d*|ALT)\s*[:\-]|$)/gi;
+    let altLineM;
+    while ((altLineM = altLineRegex.exec(altBlock)) !== null) {
+      altTexts.push(altLineM[1].trim());
+    }
   }
-  result.alternate = alternates.join(" | ");
+
+  // Strategy 2: Fallback — scan normalized text for inline alternate patterns
+  if (altTexts.length === 0) {
+    const altRegex = /(?:Alternate\s*\d*|ALT)\s*[:\-]\s*(.+?)(?=(?:Alternate\s*\d*|ALT)\s*[:\-]|INCLUDES|EXCLUDES|Note:|\*|$)/gi;
+    let altM;
+    while ((altM = altRegex.exec(t)) !== null) {
+      altTexts.push(altM[1].trim());
+    }
+  }
+
+  // Parse each alternate text into structured {description, type, amount}
+  const structuredAlternates = altTexts.map((altText, idx) => {
+    let type = "add"; // default
+    let amount = 0;
+    let description = altText;
+
+    // Try to extract ADD/DEDUCT and dollar amount
+    // Patterns: "ADD $2,400", "DEDUCT $3,500", "($800)", "- $1,200"
+    const addMatch = altText.match(/\b(ADD)\s*\$\s*([\d,]+(?:\.\d{2})?)/i);
+    const deductMatch = altText.match(/\b(DEDUCT|DEDUCTION)\s*\$\s*([\d,]+(?:\.\d{2})?)/i);
+    const parenMatch = altText.match(/\(\s*\$?\s*([\d,]+(?:\.\d{2})?)\s*\)/);
+    const trailingDollar = altText.match(/\$\s*([\d,]+(?:\.\d{2})?)\s*$/);
+
+    if (deductMatch) {
+      type = "deduct";
+      amount = parseFloat(deductMatch[2].replace(/,/g, ""));
+      description = altText.replace(/\s*(?:DEDUCT|DEDUCTION)\s*\$\s*[\d,]+(?:\.\d{2})?\s*/i, "").trim();
+    } else if (addMatch) {
+      type = "add";
+      amount = parseFloat(addMatch[2].replace(/,/g, ""));
+      description = altText.replace(/\s*ADD\s*\$\s*[\d,]+(?:\.\d{2})?\s*/i, "").trim();
+    } else if (parenMatch) {
+      // Parenthesized amount — could be either, default to deduct
+      type = "deduct";
+      amount = parseFloat(parenMatch[1].replace(/,/g, ""));
+      description = altText.replace(/\s*\(\s*\$?\s*[\d,]+(?:\.\d{2})?\s*\)\s*/, "").trim();
+    } else if (trailingDollar) {
+      // Bare dollar at end — check context for add/deduct keywords
+      amount = parseFloat(trailingDollar[1].replace(/,/g, ""));
+      if (/deduct|remove|delete|omit|credit/i.test(altText)) {
+        type = "deduct";
+      }
+      description = altText.replace(/\s*\$\s*[\d,]+(?:\.\d{2})?\s*$/, "").trim();
+    }
+
+    // Clean up description — remove trailing colons, dashes, etc.
+    description = description.replace(/[:\-\s]+$/, "").trim();
+    if (!description) description = altText; // fallback to original text
+
+    return {
+      id: "alt_scan_" + Date.now() + "_" + idx,
+      description,
+      type,
+      amount,
+    };
+  });
+
+  result.alternates = structuredAlternates;
+  // Keep legacy string field for backward compatibility
+  result.alternate = altTexts.join(" | ");
 
   // ── Room headers for notes ──
   const roomHeaders = pricingSection.match(/(?:Scan\s*Room|Suite|Stress\s*Room|Room)\s*\S+/gi) || [];
@@ -436,7 +520,11 @@ export function parseBidText(text) {
         result.lineItems.map((li) => `${li.label}: $${li.amount.toLocaleString()}`).join(" | ")
     );
   }
-  if (result.alternate) {
+  if (result.alternates.length > 0) {
+    notesParts.push("ALTERNATE(S): " + result.alternates.map(a =>
+      `${a.description} (${a.type.toUpperCase()}${a.amount ? " $" + a.amount.toLocaleString() : ""})`
+    ).join(" | "));
+  } else if (result.alternate) {
     notesParts.push("ALTERNATE(S): " + result.alternate);
   }
   if (result.includes.length > 0) {

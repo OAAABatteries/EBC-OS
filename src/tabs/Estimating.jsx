@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import { getHF, SCOPE_INIT, SCOPE_ITEM_MAP, DEFAULT_ASSUMPTIONS, DEFAULT_PROPOSAL_TERMS, SCOPE_TEMPLATES, PROFIT_SUGGESTIONS } from "../data/constants";
-import { generateProposalPdf, defaultIncludes, defaultExcludes } from "../utils/proposalPdf";
+import { generateProposalPdf, generateQuickProposalPdf, defaultIncludes, defaultExcludes } from "../utils/proposalPdf";
 import { buildScopeLines } from "../utils/scopeBuilder";
 import { DrawingViewer } from "../components/DrawingViewer";
 import { uploadTakeoffPdf, downloadTakeoffPdf } from "../lib/supabase";
@@ -150,6 +150,9 @@ export function EstimatingTab({ app }) {
   const [scopeModalTkId, setScopeModalTkId] = useState(null);
   const [scopeModalStep, setScopeModalStep] = useState(1);
 
+  // ── Quick Proposal state ──
+  const [showQuickProposal, setShowQuickProposal] = useState(false);
+
   const filteredScope = (() => {
     if (scopeFilter === "Flagged") return (scope || []).filter(s => s.status === "flagged");
     if (scopeFilter === "Unchecked") return (scope || []).filter(s => s.status === "unchecked");
@@ -288,7 +291,9 @@ export function EstimatingTab({ app }) {
       overheadPct: company.defaultOverhead,
       profitPct: company.defaultProfit,
       rooms,
-      alternates: scanResult.alternate ? [{ id: "alt_" + Date.now(), description: scanResult.alternate, amount: 0, type: "add" }] : [],
+      alternates: (scanResult.alternates && scanResult.alternates.length > 0)
+        ? scanResult.alternates.map((a, i) => ({ id: a.id || ("alt_" + Date.now() + "_" + i), description: a.description, amount: a.amount || 0, type: a.type || "add" }))
+        : (scanResult.alternate ? [{ id: "alt_" + Date.now(), description: scanResult.alternate, amount: 0, type: "add" }] : []),
       addOns: [],
       scopeChecklist: SCOPE_INIT.map(s => ({ ...s })),
       scopeChecklistCompleted: false,
@@ -738,6 +743,7 @@ export function EstimatingTab({ app }) {
             <button className="btn btn-ghost" onClick={() => document.getElementById("ost-import").click()} style={{ fontSize: 13 }}>Import OST</button>
             <input type="file" id="scan-pdf" accept=".pdf" style={{ display: "none" }} onChange={handleScanPdf} />
             <button className="btn btn-ghost" onClick={() => document.getElementById("scan-pdf").click()} style={{ fontSize: 13 }}>Scan Bid PDF</button>
+            <button className="btn btn-ghost" onClick={() => setShowQuickProposal(true)} style={{ fontSize: 13 }}>Quick Proposal</button>
             <button className="btn btn-primary" onClick={createTakeoff}>+ New Takeoff</button>
           </div>
         </div>
@@ -1006,6 +1012,58 @@ export function EstimatingTab({ app }) {
                     </div>
                   )}
 
+                  {/* Alternates */}
+                  {scanResult.alternates?.length > 0 && (
+                    <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+                      <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Alternates ({scanResult.alternates.length})</div>
+                      <table className="data-table" style={{ fontSize: 12 }}>
+                        <thead>
+                          <tr><th>Description</th><th style={{ width: 80 }}>Type</th><th style={{ textAlign: "right", width: 100 }}>Amount</th><th style={{ width: 32 }}></th></tr>
+                        </thead>
+                        <tbody>
+                          {scanResult.alternates.map((alt, i) => (
+                            <tr key={alt.id || i}>
+                              <td>
+                                <input className="form-input" value={alt.description} style={{ fontSize: 12, padding: "2px 6px" }}
+                                  onChange={e => setScanResult(prev => {
+                                    const updated = [...prev.alternates];
+                                    updated[i] = { ...updated[i], description: e.target.value };
+                                    return { ...prev, alternates: updated };
+                                  })} />
+                              </td>
+                              <td>
+                                <select className="form-input" value={alt.type} style={{ fontSize: 12, padding: "2px 4px" }}
+                                  onChange={e => setScanResult(prev => {
+                                    const updated = [...prev.alternates];
+                                    updated[i] = { ...updated[i], type: e.target.value };
+                                    return { ...prev, alternates: updated };
+                                  })}>
+                                  <option value="add">ADD</option>
+                                  <option value="deduct">DEDUCT</option>
+                                </select>
+                              </td>
+                              <td>
+                                <input className="form-input" type="number" value={alt.amount} style={{ fontSize: 12, padding: "2px 6px", textAlign: "right" }}
+                                  onChange={e => setScanResult(prev => {
+                                    const updated = [...prev.alternates];
+                                    updated[i] = { ...updated[i], amount: parseFloat(e.target.value) || 0 };
+                                    return { ...prev, alternates: updated };
+                                  })} />
+                              </td>
+                              <td>
+                                <button className="btn btn-ghost" style={{ padding: 0, fontSize: 14, color: "var(--red)" }}
+                                  onClick={() => setScanResult(prev => ({
+                                    ...prev,
+                                    alternates: prev.alternates.filter((_, j) => j !== i)
+                                  }))}>&#10005;</button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
                   {/* Includes / Excludes */}
                   {(scanResult.includes?.length > 0 || scanResult.excludes?.length > 0) && (
                     <div className="card" style={{ padding: 16, marginBottom: 16 }}>
@@ -1137,6 +1195,15 @@ export function EstimatingTab({ app }) {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ── Quick Proposal Modal (list view) ── */}
+        {showQuickProposal && (
+          <QuickProposalModal
+            bids={bids}
+            show={show}
+            onClose={() => setShowQuickProposal(false)}
+          />
         )}
       </div>
     );
@@ -1953,6 +2020,15 @@ export function EstimatingTab({ app }) {
           show={show}
         />
       )}
+
+      {/* ── Quick Proposal Modal ── */}
+      {showQuickProposal && (
+        <QuickProposalModal
+          bids={bids}
+          show={show}
+          onClose={() => setShowQuickProposal(false)}
+        />
+      )}
     </div>
   );
 }
@@ -2341,6 +2417,278 @@ function RoomHeader({ rm, isOpen, roomTotal, onToggle, onUpdateRoom, onDelete, f
         >
           Del
         </button>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Quick Proposal Modal — generate proposals from simple line items
+   No takeoff/assembly system needed
+   ═══════════════════════════════════════════════════════════════ */
+function QuickProposalModal({ bids, show, onClose }) {
+  const [projectName, setProjectName] = useState("");
+  const [projectAddress, setProjectAddress] = useState("");
+  const [gcName, setGcName] = useState("");
+  const [proposalDate, setProposalDate] = useState(new Date().toISOString().slice(0, 10));
+  const [lineItems, setLineItems] = useState([{ description: "", amount: "" }]);
+  const [alternates, setAlternates] = useState([]);
+  const [includes, setIncludes] = useState([...defaultIncludes]);
+  const [excludes, setExcludes] = useState([...defaultExcludes]);
+  const [notes, setNotes] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [editSection, setEditSection] = useState(null); // "includes" | "excludes" | null
+  const [generatedPdf, setGeneratedPdf] = useState(null); // { fileName, blobUrl, projectName }
+
+  // Prefill from bid if selected
+  const [selectedBid, setSelectedBid] = useState("");
+  const handleBidSelect = (bidId) => {
+    setSelectedBid(bidId);
+    const bid = bids.find(b => b.id === bidId);
+    if (bid) {
+      setProjectName(bid.name || "");
+      setProjectAddress(bid.address || "");
+      setGcName(bid.gc || "");
+    }
+  };
+
+  const addLineItem = () => setLineItems(prev => [...prev, { description: "", amount: "" }]);
+  const removeLineItem = (i) => setLineItems(prev => prev.filter((_, idx) => idx !== i));
+  const updateLineItem = (i, field, val) => setLineItems(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: val } : item));
+
+  const addAlternate = () => setAlternates(prev => [...prev, { description: "", type: "add", amount: "" }]);
+  const removeAlternate = (i) => setAlternates(prev => prev.filter((_, idx) => idx !== i));
+  const updateAlternate = (i, field, val) => setAlternates(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: val } : item));
+
+  const total = lineItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+  const handleGenerate = async () => {
+    if (!projectName.trim()) { show("Enter a project name", "err"); return; }
+    if (lineItems.filter(i => i.description && i.amount).length === 0) { show("Add at least one line item", "err"); return; }
+    setGenerating(true);
+    try {
+      const result = await generateQuickProposalPdf({
+        projectName,
+        projectAddress,
+        gcName,
+        date: new Date(proposalDate + "T12:00:00").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+        lineItems: lineItems.filter(i => i.description && i.amount),
+        alternates: alternates.filter(a => a.description && a.amount),
+        includes,
+        excludes,
+        notes,
+      });
+      // Revoke previous blob URL to avoid memory leaks
+      if (generatedPdf?.blobUrl) URL.revokeObjectURL(generatedPdf.blobUrl);
+      const blobUrl = URL.createObjectURL(result.blob);
+      setGeneratedPdf({ fileName: result.fileName, blobUrl, projectName: projectName.trim() });
+      show(`Proposal exported: ${result.fileName}`, "ok");
+    } catch (e) {
+      console.error("Quick proposal error:", e);
+      show("Failed to generate proposal", "err");
+    }
+    setGenerating(false);
+  };
+
+  const handleOpenPdf = () => {
+    if (generatedPdf?.blobUrl) window.open(generatedPdf.blobUrl, "_blank");
+  };
+
+  const handlePrintPdf = () => {
+    if (!generatedPdf?.blobUrl) return;
+    const printWin = window.open(generatedPdf.blobUrl, "_blank");
+    if (printWin) {
+      printWin.addEventListener("load", () => { printWin.print(); });
+    }
+  };
+
+  const handleEmailProposal = () => {
+    if (!generatedPdf) return;
+    const subject = encodeURIComponent(`EBC Proposal - ${generatedPdf.projectName}`);
+    const body = encodeURIComponent(
+      `Hi,\n\nPlease find attached our proposal for ${generatedPdf.projectName}.\n\nIf you have any questions, please don't hesitate to reach out.\n\nBest regards,\nOscar Abner Aguilar\nEagles Brothers Constructors\n(346) 970-7093\nabner@ebconstructors.com`
+    );
+    window.open(`mailto:?subject=${subject}&body=${body}`, "_self");
+  };
+
+  const fmtMoney = (n) => "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 720, maxHeight: "92vh", overflow: "auto" }}>
+        <div className="flex-between mb-12">
+          <h3 className="section-title" style={{ margin: 0 }}>Quick Proposal</h3>
+          <button className="btn btn-ghost" onClick={onClose}>✕</button>
+        </div>
+
+        {/* Prefill from bid */}
+        {bids.length > 0 && (
+          <div className="mb-12">
+            <label className="form-label">Prefill from Bid</label>
+            <select className="form-input" value={selectedBid} onChange={e => handleBidSelect(e.target.value)}>
+              <option value="">-- Select a bid --</option>
+              {bids.map(b => <option key={b.id} value={b.id}>{b.name} — {b.gc}</option>)}
+            </select>
+          </div>
+        )}
+
+        {/* Project info */}
+        <div className="form-grid mb-12">
+          <div className="form-group">
+            <label className="form-label">Project Name *</label>
+            <input className="form-input" value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="OSC - Pelican Refining" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Project Address</label>
+            <input className="form-input" value={projectAddress} onChange={e => setProjectAddress(e.target.value)} placeholder="990 Town and Country Blvd, Houston, TX 77024" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">GC / Client</label>
+            <input className="form-input" value={gcName} onChange={e => setGcName(e.target.value)} placeholder="O'Donnell/Snider Construction" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Date</label>
+            <input className="form-input" type="date" value={proposalDate} onChange={e => setProposalDate(e.target.value)} />
+          </div>
+        </div>
+
+        {/* Line items */}
+        <div className="mb-12">
+          <div className="flex-between mb-8">
+            <label className="form-label" style={{ margin: 0, fontWeight: 700 }}>Scope Line Items</label>
+            <button className="btn btn-sm btn-ghost" onClick={addLineItem}>+ Add Line</button>
+          </div>
+          {lineItems.map((item, i) => (
+            <div key={i} className="flex gap-8 mb-4" style={{ alignItems: "center" }}>
+              <input className="form-input" style={{ flex: 2 }} value={item.description}
+                onChange={e => updateLineItem(i, "description", e.target.value)}
+                placeholder="e.g. Demolition" />
+              <input className="form-input" style={{ flex: 1, textAlign: "right" }} value={item.amount}
+                onChange={e => updateLineItem(i, "amount", e.target.value)}
+                placeholder="$0" type="number" />
+              {lineItems.length > 1 && (
+                <button className="btn btn-sm btn-danger" onClick={() => removeLineItem(i)} style={{ padding: "4px 8px" }}>✕</button>
+              )}
+            </div>
+          ))}
+          <div style={{ textAlign: "right", fontWeight: 700, fontSize: 16, color: "var(--accent)", marginTop: 8 }}>
+            Total: {fmtMoney(total)}
+          </div>
+        </div>
+
+        {/* Alternates */}
+        <div className="mb-12">
+          <div className="flex-between mb-8">
+            <label className="form-label" style={{ margin: 0, fontWeight: 700 }}>Alternates</label>
+            <button className="btn btn-sm btn-ghost" onClick={addAlternate}>+ Add Alternate</button>
+          </div>
+          {alternates.map((alt, i) => (
+            <div key={i} className="flex gap-8 mb-4" style={{ alignItems: "center" }}>
+              <input className="form-input" style={{ flex: 2 }} value={alt.description}
+                onChange={e => updateAlternate(i, "description", e.target.value)}
+                placeholder="e.g. Demo floors (VCT)" />
+              <select className="form-input" style={{ width: 90 }} value={alt.type}
+                onChange={e => updateAlternate(i, "type", e.target.value)}>
+                <option value="add">ADD</option>
+                <option value="deduct">DEDUCT</option>
+              </select>
+              <input className="form-input" style={{ flex: 1, textAlign: "right" }} value={alt.amount}
+                onChange={e => updateAlternate(i, "amount", e.target.value)}
+                placeholder="$0" type="number" />
+              <button className="btn btn-sm btn-danger" onClick={() => removeAlternate(i)} style={{ padding: "4px 8px" }}>✕</button>
+            </div>
+          ))}
+        </div>
+
+        {/* Includes / Excludes */}
+        <div className="mb-12">
+          <div className="flex gap-8 mb-8">
+            <button className={`btn btn-sm ${editSection === "includes" ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => setEditSection(editSection === "includes" ? null : "includes")}>
+              Edit Includes ({includes.length})
+            </button>
+            <button className={`btn btn-sm ${editSection === "excludes" ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => setEditSection(editSection === "excludes" ? null : "excludes")}>
+              Edit Excludes ({excludes.length})
+            </button>
+          </div>
+
+          {editSection === "includes" && (
+            <div className="card" style={{ padding: 12, maxHeight: 240, overflowY: "auto" }}>
+              <div className="flex-between mb-8">
+                <span className="text-sm font-semi">Includes</span>
+                <button className="btn btn-sm btn-ghost" onClick={() => setIncludes(prev => [...prev, ""])}>+ Add</button>
+              </div>
+              {includes.map((line, i) => (
+                <div key={i} className="flex gap-4 mb-4" style={{ alignItems: "center" }}>
+                  <span className="text-xs" style={{ width: 20, textAlign: "right", opacity: 0.5 }}>{i + 1}.</span>
+                  <input className="form-input" style={{ flex: 1, fontSize: 12 }} value={line}
+                    onChange={e => setIncludes(prev => prev.map((l, idx) => idx === i ? e.target.value : l))} />
+                  <button className="btn btn-sm btn-danger" onClick={() => setIncludes(prev => prev.filter((_, idx) => idx !== i))}
+                    style={{ padding: "2px 6px", fontSize: 11 }}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {editSection === "excludes" && (
+            <div className="card" style={{ padding: 12, maxHeight: 240, overflowY: "auto" }}>
+              <div className="flex-between mb-8">
+                <span className="text-sm font-semi">Excludes</span>
+                <button className="btn btn-sm btn-ghost" onClick={() => setExcludes(prev => [...prev, ""])}>+ Add</button>
+              </div>
+              {excludes.map((line, i) => (
+                <div key={i} className="flex gap-4 mb-4" style={{ alignItems: "center" }}>
+                  <span className="text-xs" style={{ width: 20, textAlign: "right", opacity: 0.5 }}>{i + 1}.</span>
+                  <input className="form-input" style={{ flex: 1, fontSize: 12 }} value={line}
+                    onChange={e => setExcludes(prev => prev.map((l, idx) => idx === i ? e.target.value : l))} />
+                  <button className="btn btn-sm btn-danger" onClick={() => setExcludes(prev => prev.filter((_, idx) => idx !== i))}
+                    style={{ padding: "2px 6px", fontSize: 11 }}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Notes */}
+        <div className="mb-12">
+          <label className="form-label">Notes (bottom of proposal)</label>
+          <textarea className="form-input" rows={3} value={notes} onChange={e => setNotes(e.target.value)}
+            placeholder='Assume deck height to be 14&apos;-00" or less. Advise if deck height wall price needs to be adjusted.&#10;Pricing is good for 30 days from date of proposal.' />
+        </div>
+
+        {/* Post-generation actions */}
+        {generatedPdf && (
+          <div className="mb-12" style={{ background: "var(--bg-success, #f0fdf4)", border: "1px solid var(--border-success, #bbf7d0)", borderRadius: 8, padding: 12 }}>
+            <div className="text-sm font-semi mb-8" style={{ color: "var(--accent)" }}>
+              PDF Ready: {generatedPdf.fileName}
+            </div>
+            <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
+              <button className="btn btn-sm btn-ghost" onClick={handleOpenPdf} title="Open PDF in a new tab">
+                Open PDF
+              </button>
+              <button className="btn btn-sm btn-ghost" onClick={handlePrintPdf} title="Open PDF and print">
+                Print
+              </button>
+              <button className="btn btn-sm btn-primary" onClick={handleEmailProposal} title="Open email client with pre-filled subject">
+                Email Proposal
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Generate */}
+        <div className="flex-between" style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+          <div className="text-sm" style={{ opacity: 0.6 }}>
+            {lineItems.filter(i => i.description && i.amount).length} line items · {alternates.filter(a => a.description && a.amount).length} alternates
+          </div>
+          <div className="flex gap-8">
+            <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleGenerate} disabled={generating}>
+              {generating ? "Generating..." : generatedPdf ? "Regenerate PDF" : "Generate PDF"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
