@@ -3727,7 +3727,7 @@ const ModalHub = ({ type, data, app }) => {
     const totalBilled = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);
     const remaining = (draft.contract || 0) - totalBilled;
     const [projTab, setProjTab] = useState("overview");
-    const projTabs = ["overview", "change orders", "submittals", "crew", "financials", "closeout"];
+    const projTabs = ["overview", "change orders", "submittals", "rfis", "crew", "financials", "closeout"];
     const [coFormOpen, setCoFormOpen] = useState(false);
     const [coEditId, setCoEditId] = useState(null);
     const [coExpandedId, setCoExpandedId] = useState(null);
@@ -3807,6 +3807,69 @@ const ModalHub = ({ type, data, app }) => {
       if (subFilter === "pending") return ["not started", "in progress", "submitted"].includes(s.status);
       if (subFilter === "approved") return s.status === "approved";
       if (subFilter === "action") return ["revise & resubmit", "rejected"].includes(s.status);
+      return true;
+    });
+
+    // ── RFI state ──
+    const [rfiFormOpen, setRfiFormOpen] = useState(false);
+    const [rfiEditId, setRfiEditId] = useState(null);
+    const [rfiExpandedId, setRfiExpandedId] = useState(null);
+    const [rfiFilter, setRfiFilter] = useState("all");
+    const rfiNextNum = projRFIs.length > 0 ? Math.max(...projRFIs.map(r => parseInt(String(r.number || "0").replace(/\D/g, "")) || 0)) + 1 : 1;
+    const RFI_INIT = { number: "", subject: "", question: "", specRef: "", priority: "Medium", status: "Draft", dateSubmitted: "", dateAnswered: "", answer: "", submittedTo: draft.gc || "", costImpact: "None", costAmount: "", scheduleImpact: "None", scheduleDays: "" };
+    const [rfiForm, setRfiForm] = useState({ ...RFI_INIT });
+    const RFI_STATUSES = ["Draft", "Submitted", "Answered", "Closed"];
+    const RFI_PRIORITIES = ["Low", "Medium", "High", "Critical"];
+    const RFI_STATUS_BADGE = (st) => {
+      const map = { "Draft": { bg: "var(--bg3)", color: "var(--text3)" }, "Submitted": { bg: "var(--amber-dim)", color: "var(--amber)" }, "Answered": { bg: "var(--blue-dim)", color: "var(--blue)" }, "Closed": { bg: "var(--green-dim)", color: "var(--green)" } };
+      return map[st] || map["Draft"];
+    };
+    const RFI_PRIORITY_BADGE = (p) => {
+      const map = { "Low": "badge-green", "Medium": "badge-amber", "High": "badge-red", "Critical": "badge-red" };
+      return map[p] || "badge-ghost";
+    };
+    const rfiDaysOut = (r) => {
+      if (!r.dateSubmitted || r.status === "Draft") return null;
+      if (r.dateAnswered || r.status === "Closed" || r.status === "Answered") return null;
+      const submitted = new Date(r.dateSubmitted);
+      const now = new Date();
+      return Math.floor((now - submitted) / 86400000);
+    };
+    const rfiAvgResponse = (() => {
+      const answered = projRFIs.filter(r => r.dateSubmitted && r.dateAnswered);
+      if (answered.length === 0) return null;
+      const totalDays = answered.reduce((s, r) => s + Math.floor((new Date(r.dateAnswered) - new Date(r.dateSubmitted)) / 86400000), 0);
+      return Math.round(totalDays / answered.length);
+    })();
+    const rfiOpenCount = projRFIs.filter(r => r.status === "Draft" || r.status === "Submitted").length;
+    const rfiOverdueCount = projRFIs.filter(r => { const d = rfiDaysOut(r); return d !== null && d > 7; }).length;
+    const resetRfiForm = () => { setRfiForm({ ...RFI_INIT }); setRfiEditId(null); };
+    const saveRfi = () => {
+      if (!rfiForm.subject) { show("Subject required", "err"); return; }
+      const num = rfiForm.number || `RFI-${String(rfiNextNum).padStart(3, "0")}`;
+      const costAmt = rfiForm.costImpact === "Yes" ? (parseFloat(rfiForm.costAmount) || 0) : 0;
+      const schDays = rfiForm.scheduleImpact === "Yes" ? (parseInt(rfiForm.scheduleDays) || 0) : 0;
+      if (rfiEditId) {
+        app.setRfis(prev => prev.map(r => r.id === rfiEditId ? { ...r, number: num, subject: rfiForm.subject, question: rfiForm.question, specRef: rfiForm.specRef, priority: rfiForm.priority, status: rfiForm.status, dateSubmitted: rfiForm.dateSubmitted, dateAnswered: rfiForm.dateAnswered, answer: rfiForm.answer, submittedTo: rfiForm.submittedTo, costImpact: rfiForm.costImpact, costAmount: costAmt, scheduleImpact: rfiForm.scheduleImpact, scheduleDays: schDays } : r));
+      } else {
+        const newRfi = { id: crypto.randomUUID(), projectId: draft.id, number: num, subject: rfiForm.subject, question: rfiForm.question, specRef: rfiForm.specRef, priority: rfiForm.priority, status: rfiForm.status, dateSubmitted: rfiForm.dateSubmitted, dateAnswered: rfiForm.dateAnswered, answer: rfiForm.answer, submittedTo: rfiForm.submittedTo, costImpact: rfiForm.costImpact, costAmount: costAmt, scheduleImpact: rfiForm.scheduleImpact, scheduleDays: schDays, created: new Date().toISOString() };
+        app.setRfis(prev => [...prev, newRfi]);
+      }
+      resetRfiForm();
+      setRfiFormOpen(false);
+      show(rfiEditId ? "RFI updated" : "RFI added", "ok");
+    };
+    const editRfi = (r) => {
+      setRfiForm({ number: r.number || "", subject: r.subject || "", question: r.question || "", specRef: r.specRef || "", priority: r.priority || "Medium", status: r.status || "Draft", dateSubmitted: r.dateSubmitted || "", dateAnswered: r.dateAnswered || "", answer: r.answer || "", submittedTo: r.submittedTo || draft.gc || "", costImpact: r.costImpact || "None", costAmount: String(r.costAmount || ""), scheduleImpact: r.scheduleImpact || "None", scheduleDays: String(r.scheduleDays || "") });
+      setRfiEditId(r.id);
+      setRfiFormOpen(true);
+    };
+    const deleteRfi = (rId) => { if (confirm("Delete this RFI?")) app.setRfis(prev => prev.filter(r => r.id !== rId)); };
+    const filteredRFIs = projRFIs.filter(r => {
+      if (rfiFilter === "all") return true;
+      if (rfiFilter === "open") return r.status === "Draft" || r.status === "Submitted";
+      if (rfiFilter === "answered") return r.status === "Answered" || r.status === "Closed";
+      if (rfiFilter === "overdue") { const d = rfiDaysOut(r); return d !== null && d > 7; }
       return true;
     });
 
@@ -4153,6 +4216,212 @@ const ModalHub = ({ type, data, app }) => {
                     {projSubmittals.some(s => { const d = subDaysOut(s); return d !== null && d > 14; }) && (
                       <div className="text-xs" style={{ color: "var(--red)", fontWeight: 700 }}>Overdue: {projSubmittals.filter(s => { const d = subDaysOut(s); return d !== null && d > 14; }).length}</div>
                     )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── RFIs ── */}
+            {projTab === "rfis" && (
+              <div className="flex-col gap-12">
+                {/* Summary stats */}
+                <div className="flex gap-16 flex-wrap" style={{ padding: "10px 12px", background: "var(--bg3)", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)" }}>
+                  <div><span className="text-dim text-xs">TOTAL RFIs</span><div className="font-mono text-sm">{projRFIs.length}</div></div>
+                  <div><span className="text-dim text-xs">OPEN</span><div className="font-mono text-sm" style={{ color: rfiOpenCount > 0 ? "var(--amber)" : "var(--green)" }}>{rfiOpenCount}</div></div>
+                  <div><span className="text-dim text-xs">OVERDUE (&gt;7d)</span><div className="font-mono text-sm" style={{ color: rfiOverdueCount > 0 ? "var(--red)" : "var(--green)" }}>{rfiOverdueCount}</div></div>
+                  <div><span className="text-dim text-xs">AVG RESPONSE</span><div className="font-mono text-sm">{rfiAvgResponse !== null ? rfiAvgResponse + " days" : "—"}</div></div>
+                </div>
+
+                {/* Filters + Add button */}
+                <div className="flex-between flex-wrap gap-8">
+                  <div className="flex gap-4">
+                    {["all", "open", "answered", "overdue"].map(f => (
+                      <button key={f} className={`btn btn-sm ${rfiFilter === f ? "btn-primary" : "btn-ghost"}`} onClick={() => setRfiFilter(f)}
+                        style={{ fontSize: 10, textTransform: "capitalize" }}>{f}{f === "overdue" && rfiOverdueCount > 0 ? ` (${rfiOverdueCount})` : ""}</button>
+                    ))}
+                  </div>
+                  <button className="btn btn-sm btn-primary" onClick={() => { resetRfiForm(); setRfiFormOpen(true); }}>+ Add RFI</button>
+                </div>
+
+                {/* RFI Form (add/edit) */}
+                {rfiFormOpen && (
+                  <div className="card" style={{ padding: 16, border: "1px solid var(--amber-dim)", background: "var(--bg3)" }}>
+                    <div className="flex-between mb-8">
+                      <span className="font-semi text-sm">{rfiEditId ? "Edit RFI" : "New RFI"}</span>
+                      <button className="btn btn-sm btn-ghost" onClick={() => { setRfiFormOpen(false); resetRfiForm(); }}>Cancel</button>
+                    </div>
+                    <div className="flex gap-8 flex-wrap mb-8">
+                      <div style={{ flex: "0 0 120px" }}>
+                        <label className="text-xs text-dim">RFI #</label>
+                        <input className="input input-sm" placeholder={`RFI-${String(rfiNextNum).padStart(3, "0")}`} value={rfiForm.number} onChange={e => setRfiForm(p => ({ ...p, number: e.target.value }))} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <label className="text-xs text-dim">Subject *</label>
+                        <input className="input input-sm" placeholder="RFI subject/title" value={rfiForm.subject} onChange={e => setRfiForm(p => ({ ...p, subject: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="mb-8">
+                      <label className="text-xs text-dim">Question / Description</label>
+                      <textarea className="input" rows={3} placeholder="Describe the question or information needed..." value={rfiForm.question} onChange={e => setRfiForm(p => ({ ...p, question: e.target.value }))} style={{ width: "100%", fontSize: 12 }} />
+                    </div>
+                    <div className="flex gap-8 flex-wrap mb-8">
+                      <div style={{ flex: 1, minWidth: 150 }}>
+                        <label className="text-xs text-dim">Spec / Drawing Reference</label>
+                        <input className="input input-sm" placeholder="e.g. Section 09 29 00, Dwg A-201" value={rfiForm.specRef} onChange={e => setRfiForm(p => ({ ...p, specRef: e.target.value }))} />
+                      </div>
+                      <div style={{ flex: "0 0 120px" }}>
+                        <label className="text-xs text-dim">Priority</label>
+                        <select className="input input-sm" value={rfiForm.priority} onChange={e => setRfiForm(p => ({ ...p, priority: e.target.value }))}>
+                          {RFI_PRIORITIES.map(pr => <option key={pr} value={pr}>{pr}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ flex: "0 0 120px" }}>
+                        <label className="text-xs text-dim">Status</label>
+                        <select className="input input-sm" value={rfiForm.status} onChange={e => setRfiForm(p => ({ ...p, status: e.target.value }))}>
+                          {RFI_STATUSES.map(st => <option key={st} value={st}>{st}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex gap-8 flex-wrap mb-8">
+                      <div style={{ flex: "0 0 140px" }}>
+                        <label className="text-xs text-dim">Date Submitted</label>
+                        <input type="date" className="input input-sm" value={rfiForm.dateSubmitted} onChange={e => setRfiForm(p => ({ ...p, dateSubmitted: e.target.value }))} />
+                      </div>
+                      <div style={{ flex: "0 0 140px" }}>
+                        <label className="text-xs text-dim">Date Answered</label>
+                        <input type="date" className="input input-sm" value={rfiForm.dateAnswered} onChange={e => setRfiForm(p => ({ ...p, dateAnswered: e.target.value }))} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 150 }}>
+                        <label className="text-xs text-dim">Submitted To</label>
+                        <input className="input input-sm" placeholder="GC / Architect name" value={rfiForm.submittedTo} onChange={e => setRfiForm(p => ({ ...p, submittedTo: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="mb-8">
+                      <label className="text-xs text-dim">Answer / Response</label>
+                      <textarea className="input" rows={2} placeholder="Response received..." value={rfiForm.answer} onChange={e => setRfiForm(p => ({ ...p, answer: e.target.value }))} style={{ width: "100%", fontSize: 12 }} />
+                    </div>
+                    <div className="flex gap-8 flex-wrap mb-8">
+                      <div style={{ flex: "0 0 140px" }}>
+                        <label className="text-xs text-dim">Cost Impact</label>
+                        <select className="input input-sm" value={rfiForm.costImpact} onChange={e => setRfiForm(p => ({ ...p, costImpact: e.target.value }))}>
+                          <option value="None">None</option>
+                          <option value="TBD">TBD</option>
+                          <option value="Yes">Yes</option>
+                        </select>
+                      </div>
+                      {rfiForm.costImpact === "Yes" && (
+                        <div style={{ flex: "0 0 140px" }}>
+                          <label className="text-xs text-dim">Cost Amount ($)</label>
+                          <input type="number" className="input input-sm" placeholder="0" value={rfiForm.costAmount} onChange={e => setRfiForm(p => ({ ...p, costAmount: e.target.value }))} />
+                        </div>
+                      )}
+                      <div style={{ flex: "0 0 140px" }}>
+                        <label className="text-xs text-dim">Schedule Impact</label>
+                        <select className="input input-sm" value={rfiForm.scheduleImpact} onChange={e => setRfiForm(p => ({ ...p, scheduleImpact: e.target.value }))}>
+                          <option value="None">None</option>
+                          <option value="TBD">TBD</option>
+                          <option value="Yes">Yes</option>
+                        </select>
+                      </div>
+                      {rfiForm.scheduleImpact === "Yes" && (
+                        <div style={{ flex: "0 0 140px" }}>
+                          <label className="text-xs text-dim">Days Delayed</label>
+                          <input type="number" className="input input-sm" placeholder="0" value={rfiForm.scheduleDays} onChange={e => setRfiForm(p => ({ ...p, scheduleDays: e.target.value }))} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-8 justify-end">
+                      <button className="btn btn-sm btn-ghost" onClick={() => { setRfiFormOpen(false); resetRfiForm(); }}>Cancel</button>
+                      <button className="btn btn-sm btn-primary" onClick={saveRfi}>{rfiEditId ? "Update RFI" : "Add RFI"}</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* RFI List */}
+                {filteredRFIs.length === 0 ? (
+                  <div className="text-center text-muted" style={{ padding: 32 }}>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
+                    <div className="text-sm">{rfiFilter === "all" ? "No RFIs yet" : `No ${rfiFilter} RFIs`}</div>
+                    <div className="text-xs text-dim mt-4">Click "+ Add RFI" to create one</div>
+                  </div>
+                ) : (
+                  <div className="flex-col gap-4">
+                    {filteredRFIs.sort((a, b) => {
+                      const numA = parseInt(String(a.number || "0").replace(/\D/g, "")) || 0;
+                      const numB = parseInt(String(b.number || "0").replace(/\D/g, "")) || 0;
+                      return numB - numA;
+                    }).map(r => {
+                      const days = rfiDaysOut(r);
+                      const isOverdue = days !== null && days > 7;
+                      const stBadge = RFI_STATUS_BADGE(r.status);
+                      const isExpanded = rfiExpandedId === r.id;
+                      return (
+                        <div key={r.id} className="card" style={{
+                          padding: "10px 12px",
+                          borderLeft: `3px solid ${stBadge.color}`,
+                          cursor: "pointer",
+                          background: isOverdue ? "rgba(239,68,68,0.06)" : undefined,
+                        }} onClick={() => setRfiExpandedId(isExpanded ? null : r.id)}>
+                          <div className="flex-between" style={{ alignItems: "flex-start" }}>
+                            <div style={{ flex: 1 }}>
+                              <div className="flex gap-8 items-center flex-wrap">
+                                <span className="font-mono text-xs font-bold" style={{ color: "var(--amber)" }}>{r.number}</span>
+                                <span className="text-sm font-semi">{r.subject}</span>
+                              </div>
+                              <div className="flex gap-6 mt-4 flex-wrap" style={{ alignItems: "center" }}>
+                                <span style={{ display: "inline-block", padding: "1px 8px", borderRadius: 4, fontSize: 10, fontWeight: 600, background: stBadge.bg, color: stBadge.color }}>{r.status}</span>
+                                <span className={`badge ${RFI_PRIORITY_BADGE(r.priority)}`} style={{ fontSize: 9 }}>{r.priority}</span>
+                                {r.submittedTo && <span className="text-xs text-muted">To: {r.submittedTo}</span>}
+                                {r.specRef && <span className="text-xs text-muted">Ref: {r.specRef}</span>}
+                                {days !== null && (
+                                  <span className="text-xs font-mono" style={{ color: isOverdue ? "var(--red)" : "var(--amber)", fontWeight: isOverdue ? 700 : 400 }}>
+                                    {days}d outstanding{isOverdue ? " ⚠" : ""}
+                                  </span>
+                                )}
+                                {r.costImpact && r.costImpact !== "None" && (
+                                  <span className="text-xs" style={{ color: "var(--amber)" }}>
+                                    Cost: {r.costImpact === "Yes" ? fmt(r.costAmount || 0) : "TBD"}
+                                  </span>
+                                )}
+                                {r.scheduleImpact && r.scheduleImpact !== "None" && (
+                                  <span className="text-xs" style={{ color: "var(--amber)" }}>
+                                    Sched: {r.scheduleImpact === "Yes" ? `${r.scheduleDays || 0}d` : "TBD"}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-4" style={{ flexShrink: 0 }}>
+                              <button className="btn btn-sm btn-ghost" style={{ fontSize: 10 }} onClick={e => { e.stopPropagation(); editRfi(r); }}>Edit</button>
+                              <button className="btn btn-sm btn-ghost" style={{ fontSize: 10, color: "var(--red)" }} onClick={e => { e.stopPropagation(); deleteRfi(r.id); }}>Del</button>
+                            </div>
+                          </div>
+                          {/* Expanded detail */}
+                          {isExpanded && (
+                            <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+                              {r.question && (
+                                <div className="mb-8">
+                                  <div className="text-xs text-dim font-semi">QUESTION</div>
+                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.question}</div>
+                                </div>
+                              )}
+                              {r.answer && (
+                                <div className="mb-8">
+                                  <div className="text-xs text-dim font-semi">ANSWER</div>
+                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap", color: "var(--green)" }}>{r.answer}</div>
+                                </div>
+                              )}
+                              <div className="flex gap-16 flex-wrap text-xs text-muted">
+                                {r.dateSubmitted && <span>Submitted: {r.dateSubmitted}</span>}
+                                {r.dateAnswered && <span>Answered: {r.dateAnswered}</span>}
+                                {r.dateSubmitted && r.dateAnswered && (
+                                  <span>Response time: {Math.floor((new Date(r.dateAnswered) - new Date(r.dateSubmitted)) / 86400000)} days</span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

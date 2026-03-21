@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { NewHireWizard } from "../components/NewHireWizard";
 
 // ═══════════════════════════════════════════════════════════════
 //  Time Clock Admin — Crew scheduling, verification, labor mgmt
@@ -39,6 +40,7 @@ export function TimeClockAdmin({ app }) {
 
   const [sub, setSub] = useState("Live Status");
   const [editEmp, setEditEmp] = useState(null);
+  const [showNewHire, setShowNewHire] = useState(false);
   const [editLoc, setEditLoc] = useState(null);
   const [matFilter, setMatFilter] = useState("All");
 
@@ -1631,14 +1633,23 @@ export function TimeClockAdmin({ app }) {
         <div>
           <div className="flex-between mb-16">
             <span className="text-sm text-muted">{employees.length} employees</span>
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() =>
-                setEditEmp({ name: "", role: "Journeyman", pin: "", phone: "", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 35, active: true })
-              }
-            >
-              + Add Employee
-            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                className="btn btn-sm"
+                style={{ background: "rgba(224,148,34,0.12)", color: "#e09422", border: "1px solid rgba(224,148,34,0.3)" }}
+                onClick={() => setShowNewHire(true)}
+              >
+                New Hire Onboarding
+              </button>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() =>
+                  setEditEmp({ name: "", role: "Journeyman", pin: "", phone: "", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 35, active: true })
+                }
+              >
+                + Quick Add
+              </button>
+            </div>
           </div>
           <div className="table-wrap">
             <table className="data-table">
@@ -1674,6 +1685,18 @@ export function TimeClockAdmin({ app }) {
               </tbody>
             </table>
           </div>
+
+          {/* New Hire Onboarding Wizard */}
+          {showNewHire && (
+            <NewHireWizard
+              onClose={() => setShowNewHire(false)}
+              onSubmit={(emp) => {
+                setEmployees((prev) => [...prev, emp]);
+                setShowNewHire(false);
+                show(`${emp.name} onboarded successfully (PIN: ${emp.pin})`, "ok");
+              }}
+            />
+          )}
 
           {/* Edit Employee Modal */}
           {editEmp && (

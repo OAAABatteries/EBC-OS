@@ -150,10 +150,54 @@ export function ForemanView({ app }) {
   const sigRef = useRef(null);
 
   // ── daily report form state ──
-  const [reportForm, setReportForm] = useState({ date: new Date().toISOString().slice(0, 10), weather: "Clear", crewCount: "", workPerformed: "", issues: "", materialsUsed: "" });
+  const EMPTY_REPORT_FORM = {
+    date: new Date().toISOString().slice(0, 10),
+    temperature: "",
+    weatherCondition: "Clear",
+    crewPresent: [],
+    quickTasks: [],
+    workPerformed: "",
+    materialsReceived: "",
+    equipmentOnSite: "",
+    visitors: "",
+    safetyIncident: false,
+    safetyDescription: "",
+    photos: [],
+    issues: "",
+    tomorrowPlan: "",
+  };
+  const [reportForm, setReportForm] = useState({ ...EMPTY_REPORT_FORM });
   const [showReportForm, setShowReportForm] = useState(false);
   const [crewSearch, setCrewSearch] = useState("");
   const [expandedReportId, setExpandedReportId] = useState(null);
+  const [editingReportId, setEditingReportId] = useState(null);
+
+  const QUICK_TASKS = ["Framing", "Hanging board", "Taping", "Sanding", "ACT grid", "ACT tile", "Demo", "Cleanup"];
+  const WEATHER_CONDITIONS = ["Clear", "Cloudy", "Rain", "Wind", "Snow"];
+
+  // Auto-calc hours from time entries for today
+  const todayHoursForProject = useMemo(() => {
+    if (!selectedProjectId) return 0;
+    const today = new Date().toDateString();
+    return (timeEntries || [])
+      .filter(te => te.projectId === selectedProjectId && new Date(te.clockIn).toDateString() === today && te.totalHours)
+      .reduce((sum, te) => sum + te.totalHours, 0);
+  }, [timeEntries, selectedProjectId]);
+
+  // Fill from yesterday helper
+  const fillFromYesterday = useCallback(() => {
+    const myReports = (dailyReports || [])
+      .filter(r => r.projectId === selectedProjectId)
+      .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    const yesterday = myReports[0];
+    if (!yesterday) { show(t("No previous report to copy from"), "warn"); return; }
+    setReportForm(f => ({
+      ...f,
+      crewPresent: yesterday.crewPresent || [],
+      equipmentOnSite: yesterday.equipmentOnSite || "",
+    }));
+    show(t("Copied crew & equipment from last report"));
+  }, [dailyReports, selectedProjectId, show, t]);
 
   // ── persist session ──
   useEffect(() => {
@@ -2113,14 +2157,26 @@ export function ForemanView({ app }) {
               <div className="emp-content">
                 <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div className="section-title" style={{ fontSize: 16 }}>{t("Daily Reports")}</div>
-                  <button className="btn btn-primary btn-sm" onClick={() => setShowReportForm(!showReportForm)}>
+                  <button className="btn btn-primary btn-sm" onClick={() => { setShowReportForm(!showReportForm); setEditingReportId(null); if (!showReportForm) setReportForm({ ...EMPTY_REPORT_FORM, date: new Date().toISOString().slice(0, 10) }); }}>
                     {showReportForm ? t("Cancel") : `+ ${t("New Report")}`}
                   </button>
                 </div>
 
-                {/* ── Report Creation Form ── */}
+                {/* ── Report Creation / Edit Form ── */}
                 {showReportForm && (
                   <div className="card" style={{ padding: 16, marginTop: 12, background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 10 }}>
+
+                    {/* Quick-fill from yesterday */}
+                    {!editingReportId && (
+                      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                        <button className="btn btn-sm" style={{ fontSize: 11, background: "var(--surface2)", color: "var(--text2)", border: "1px solid var(--border)" }}
+                          onClick={fillFromYesterday}>
+                          {t("Quick-fill from yesterday")}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Date + Project */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                       <div>
                         <label className="form-label">{t("Date")}</label>
@@ -2128,36 +2184,182 @@ export function ForemanView({ app }) {
                           onChange={e => setReportForm(f => ({ ...f, date: e.target.value }))} />
                       </div>
                       <div>
-                        <label className="form-label">{t("Weather")}</label>
-                        <select className="form-input" value={reportForm.weather}
-                          onChange={e => setReportForm(f => ({ ...f, weather: e.target.value }))}>
-                          {["Clear", "Cloudy", "Rain", "Storm", "Wind", "Hot", "Cold"].map(w => (
+                        <label className="form-label">{t("Project")}</label>
+                        <input type="text" className="form-input" value={selectedProject?.name || ""} disabled style={{ opacity: 0.7 }} />
+                      </div>
+                    </div>
+
+                    {/* Weather: Temperature + Conditions */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
+                      <div>
+                        <label className="form-label">{t("Temperature")} (°F)</label>
+                        <input type="number" className="form-input" placeholder="e.g. 85" value={reportForm.temperature}
+                          onChange={e => setReportForm(f => ({ ...f, temperature: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="form-label">{t("Conditions")}</label>
+                        <select className="form-input" value={reportForm.weatherCondition}
+                          onChange={e => setReportForm(f => ({ ...f, weatherCondition: e.target.value }))}>
+                          {WEATHER_CONDITIONS.map(w => (
                             <option key={w} value={w}>{t(w)}</option>
                           ))}
                         </select>
                       </div>
                     </div>
 
-                    <div style={{ marginTop: 10 }}>
-                      <label className="form-label">{t("Project")}</label>
-                      <input type="text" className="form-input" value={selectedProject?.name || ""} disabled
-                        style={{ opacity: 0.7 }} />
+                    {/* Crew on Site — checkboxes */}
+                    <div style={{ marginTop: 12 }}>
+                      <label className="form-label">{t("Crew on Site")} ({(reportForm.crewPresent || []).length})</label>
+                      <div style={{ maxHeight: 140, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 8, padding: 8, background: "var(--surface1)" }}>
+                        {crewForProject.length > 0 ? crewForProject.map(c => (
+                          <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", fontSize: 13, cursor: "pointer" }}>
+                            <input type="checkbox"
+                              checked={(reportForm.crewPresent || []).some(cp => (typeof cp === "string" ? cp : cp.id) === c.id)}
+                              onChange={e => {
+                                setReportForm(f => {
+                                  const present = f.crewPresent || [];
+                                  if (e.target.checked) {
+                                    return { ...f, crewPresent: [...present, { id: c.id, name: c.name }] };
+                                  } else {
+                                    return { ...f, crewPresent: present.filter(cp => (typeof cp === "string" ? cp : cp.id) !== c.id) };
+                                  }
+                                });
+                              }} />
+                            <span>{c.name}</span>
+                            {c.todayHours > 0 && <span className="text-xs text-muted">({c.todayHours.toFixed(1)}h)</span>}
+                          </label>
+                        )) : (
+                          <div className="text-xs text-muted" style={{ padding: 8 }}>{t("No crew assigned to this project this week")}</div>
+                        )}
+                      </div>
                     </div>
 
-                    <div style={{ marginTop: 10 }}>
-                      <label className="form-label">{t("Crew Count")}</label>
-                      <input type="number" className="form-input" placeholder="0" value={reportForm.crewCount}
-                        onChange={e => setReportForm(f => ({ ...f, crewCount: e.target.value }))} />
-                    </div>
-
-                    <div style={{ marginTop: 10 }}>
+                    {/* Work Performed — quick-add tasks + textarea */}
+                    <div style={{ marginTop: 12 }}>
                       <label className="form-label">{t("Work Performed Today")} *</label>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                        {QUICK_TASKS.map(task => {
+                          const isActive = (reportForm.quickTasks || []).includes(task);
+                          return (
+                            <button key={task} className="btn btn-sm"
+                              style={{
+                                fontSize: 11, padding: "3px 10px", borderRadius: 14,
+                                background: isActive ? "var(--accent)" : "var(--surface2)",
+                                color: isActive ? "#fff" : "var(--text2)",
+                                border: isActive ? "1px solid var(--accent)" : "1px solid var(--border)",
+                              }}
+                              onClick={() => {
+                                setReportForm(f => {
+                                  const tasks = f.quickTasks || [];
+                                  const newTasks = isActive ? tasks.filter(t2 => t2 !== task) : [...tasks, task];
+                                  // Auto-append to textarea
+                                  const taskStr = newTasks.join(", ");
+                                  const existing = f.workPerformed.replace(/^Tasks: [^\n]*\n?/, "");
+                                  return { ...f, quickTasks: newTasks, workPerformed: newTasks.length > 0 ? `Tasks: ${taskStr}\n${existing}` : existing };
+                                });
+                              }}>
+                              {isActive ? "\u2713 " : ""}{t(task)}
+                            </button>
+                          );
+                        })}
+                      </div>
                       <textarea className="form-input" rows={4} placeholder={t("Describe work completed...")}
                         value={reportForm.workPerformed}
                         onChange={e => setReportForm(f => ({ ...f, workPerformed: e.target.value }))}
                         style={{ resize: "vertical" }} />
                     </div>
 
+                    {/* Materials Received */}
+                    <div style={{ marginTop: 10 }}>
+                      <label className="form-label">{t("Materials Received")}</label>
+                      <textarea className="form-input" rows={2} placeholder={t("Materials delivered/received today...")}
+                        value={reportForm.materialsReceived}
+                        onChange={e => setReportForm(f => ({ ...f, materialsReceived: e.target.value }))}
+                        style={{ resize: "vertical" }} />
+                    </div>
+
+                    {/* Equipment on Site */}
+                    <div style={{ marginTop: 10 }}>
+                      <label className="form-label">{t("Equipment on Site")}</label>
+                      <textarea className="form-input" rows={2} placeholder={t("Lifts, scaffolding, tools...")}
+                        value={reportForm.equipmentOnSite}
+                        onChange={e => setReportForm(f => ({ ...f, equipmentOnSite: e.target.value }))}
+                        style={{ resize: "vertical" }} />
+                    </div>
+
+                    {/* Visitors / Inspections */}
+                    <div style={{ marginTop: 10 }}>
+                      <label className="form-label">{t("Visitors / Inspections")}</label>
+                      <textarea className="form-input" rows={2} placeholder={t("GC walkthroughs, inspector visits...")}
+                        value={reportForm.visitors}
+                        onChange={e => setReportForm(f => ({ ...f, visitors: e.target.value }))}
+                        style={{ resize: "vertical" }} />
+                    </div>
+
+                    {/* Safety Incidents */}
+                    <div style={{ marginTop: 10, padding: 12, background: reportForm.safetyIncident ? "rgba(239,68,68,0.08)" : "var(--surface1)", borderRadius: 8, border: reportForm.safetyIncident ? "1px solid var(--red)" : "1px solid var(--border)" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                        <span>{t("Safety Incident")}</span>
+                        <button
+                          style={{
+                            width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
+                            background: reportForm.safetyIncident ? "var(--red)" : "var(--border)",
+                            position: "relative", transition: "background 0.2s",
+                          }}
+                          onClick={() => setReportForm(f => ({ ...f, safetyIncident: !f.safetyIncident }))}>
+                          <span style={{
+                            position: "absolute", top: 2, left: reportForm.safetyIncident ? 22 : 2,
+                            width: 20, height: 20, borderRadius: 10, background: "#fff",
+                            transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                          }} />
+                        </button>
+                        <span style={{ fontSize: 12, color: reportForm.safetyIncident ? "var(--red)" : "var(--text3)" }}>
+                          {reportForm.safetyIncident ? t("YES") : t("No")}
+                        </span>
+                      </label>
+                      {reportForm.safetyIncident && (
+                        <textarea className="form-input" rows={3} placeholder={t("Describe the safety incident...")}
+                          value={reportForm.safetyDescription}
+                          onChange={e => setReportForm(f => ({ ...f, safetyDescription: e.target.value }))}
+                          style={{ resize: "vertical", marginTop: 8 }} />
+                      )}
+                    </div>
+
+                    {/* Photos */}
+                    <div style={{ marginTop: 10 }}>
+                      <label className="form-label">{t("Photos")} ({(reportForm.photos || []).length})</label>
+                      <input type="file" accept="image/*" multiple
+                        style={{ fontSize: 12 }}
+                        onChange={e => {
+                          const files = Array.from(e.target.files || []);
+                          files.forEach(file => {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              setReportForm(f => ({
+                                ...f,
+                                photos: [...(f.photos || []), { data: ev.target.result, name: file.name, caption: "" }]
+                              }));
+                            };
+                            reader.readAsDataURL(file);
+                          });
+                          e.target.value = "";
+                        }} />
+                      {(reportForm.photos || []).length > 0 && (
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                          {reportForm.photos.map((p, i) => (
+                            <div key={i} style={{ position: "relative", width: 64, height: 64 }}>
+                              <img src={p.data} alt={p.name} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 6, border: "1px solid var(--border)" }} />
+                              <button style={{ position: "absolute", top: -4, right: -4, width: 18, height: 18, borderRadius: 9, background: "var(--red)", color: "#fff", border: "none", fontSize: 10, cursor: "pointer", lineHeight: "18px", textAlign: "center" }}
+                                onClick={() => setReportForm(f => ({ ...f, photos: f.photos.filter((_, j) => j !== i) }))}>
+                                x
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Issues / Delays */}
                     <div style={{ marginTop: 10 }}>
                       <label className="form-label">{t("Issues / Delays")}</label>
                       <textarea className="form-input" rows={2} placeholder={t("Any issues or delays...")}
@@ -2166,37 +2368,64 @@ export function ForemanView({ app }) {
                         style={{ resize: "vertical" }} />
                     </div>
 
+                    {/* Tomorrow's Plan */}
                     <div style={{ marginTop: 10 }}>
-                      <label className="form-label">{t("Materials Used")}</label>
-                      <textarea className="form-input" rows={2} placeholder={t("Materials consumed today...")}
-                        value={reportForm.materialsUsed}
-                        onChange={e => setReportForm(f => ({ ...f, materialsUsed: e.target.value }))}
+                      <label className="form-label">{t("Tomorrow's Plan")}</label>
+                      <textarea className="form-input" rows={2} placeholder={t("Planned work for tomorrow...")}
+                        value={reportForm.tomorrowPlan}
+                        onChange={e => setReportForm(f => ({ ...f, tomorrowPlan: e.target.value }))}
                         style={{ resize: "vertical" }} />
                     </div>
 
+                    {/* Hours Worked (auto-calculated) */}
+                    <div style={{ marginTop: 10, padding: 10, background: "var(--surface1)", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span className="form-label" style={{ margin: 0 }}>{t("Hours Worked (from time entries)")}</span>
+                      <span style={{ fontWeight: 700, fontSize: 16, color: "var(--accent)" }}>{todayHoursForProject.toFixed(1)} hrs</span>
+                    </div>
+
+                    {/* Submit / Update */}
                     <button className="btn btn-primary" style={{ width: "100%", marginTop: 14 }}
                       onClick={() => {
                         if (!reportForm.workPerformed.trim()) { show(t("Describe work performed"), "warn"); return; }
                         const report = {
-                          id: "dr-" + Date.now(),
+                          id: editingReportId || ("dr-" + Date.now()),
                           projectId: selectedProjectId,
                           projectName: selectedProject?.name || "",
                           foremanId: activeForeman?.id,
                           foremanName: activeForeman?.name,
                           date: reportForm.date,
-                          weather: reportForm.weather,
-                          crewCount: parseInt(reportForm.crewCount) || 0,
+                          temperature: reportForm.temperature,
+                          weatherCondition: reportForm.weatherCondition,
+                          weather: reportForm.weatherCondition,
+                          crewPresent: reportForm.crewPresent || [],
+                          crewCount: (reportForm.crewPresent || []).length,
+                          quickTasks: reportForm.quickTasks || [],
                           workPerformed: reportForm.workPerformed,
+                          materialsReceived: reportForm.materialsReceived,
+                          equipmentOnSite: reportForm.equipmentOnSite,
+                          visitors: reportForm.visitors,
+                          safetyIncident: reportForm.safetyIncident,
+                          safetyDescription: reportForm.safetyDescription,
+                          photos: reportForm.photos || [],
                           issues: reportForm.issues,
-                          materialsUsed: reportForm.materialsUsed,
-                          createdAt: new Date().toISOString(),
+                          tomorrowPlan: reportForm.tomorrowPlan,
+                          hoursWorked: todayHoursForProject.toFixed(1),
+                          createdAt: editingReportId
+                            ? (dailyReports || []).find(r => r.id === editingReportId)?.createdAt || new Date().toISOString()
+                            : new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
                         };
-                        setDailyReports(prev => [...prev, report]);
-                        setReportForm({ date: new Date().toISOString().slice(0, 10), weather: "Clear", crewCount: "", workPerformed: "", issues: "", materialsUsed: "" });
+                        if (editingReportId) {
+                          setDailyReports(prev => prev.map(r => r.id === editingReportId ? report : r));
+                        } else {
+                          setDailyReports(prev => [...prev, report]);
+                        }
+                        setReportForm({ ...EMPTY_REPORT_FORM, date: new Date().toISOString().slice(0, 10) });
                         setShowReportForm(false);
-                        show(t("Daily report submitted"));
+                        setEditingReportId(null);
+                        show(editingReportId ? t("Report updated") : t("Daily report submitted"));
                       }}>
-                      {t("Submit Report")}
+                      {editingReportId ? t("Update Report") : t("Submit Report")}
                     </button>
                   </div>
                 )}
@@ -2208,42 +2437,172 @@ export function ForemanView({ app }) {
                     .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || ""))
                     .map(r => {
                       const isExpanded = expandedReportId === r.id;
-                      const weatherIcon = { Clear: "\u2600\uFE0F", Cloudy: "\u2601\uFE0F", Rain: "\uD83C\uDF27\uFE0F", Storm: "\u26C8\uFE0F", Wind: "\uD83C\uDF2C\uFE0F", Hot: "\uD83D\uDD25", Cold: "\u2744\uFE0F" }[r.weather] || "";
+                      const weatherIcon = { Clear: "\u2600\uFE0F", Cloudy: "\u2601\uFE0F", Rain: "\uD83C\uDF27\uFE0F", Storm: "\u26C8\uFE0F", Wind: "\uD83C\uDF2C\uFE0F", Snow: "\u2744\uFE0F", Hot: "\uD83D\uDD25", Cold: "\u2744\uFE0F" }[r.weatherCondition || r.weather] || "";
+                      const crewN = (r.crewPresent || []).length || r.crewCount || 0;
                       return (
                         <div key={r.id} className="card" style={{ padding: "12px 14px", marginBottom: 8, cursor: "pointer", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 10 }}
                           onClick={() => setExpandedReportId(isExpanded ? null : r.id)}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <div>
-                              <div className="text-sm font-semi">{r.date} {weatherIcon}</div>
-                              <div className="text-xs text-muted">{r.projectName || t("Project")} · {r.crewCount || 0} {t("crew")} · {r.foremanName || ""}</div>
+                              <div className="text-sm font-semi">{r.date} {weatherIcon} {r.temperature ? `${r.temperature}°F` : ""}</div>
+                              <div className="text-xs text-muted">{r.projectName || t("Project")} · {crewN} {t("crew")} · {r.foremanName || ""}</div>
+                              {r.hoursWorked && <div className="text-xs text-muted">{r.hoursWorked} hrs logged</div>}
                             </div>
-                            <span style={{ fontSize: 12, color: "var(--text3)" }}>{isExpanded ? "\u25BE" : "\u25B8"}</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              {r.safetyIncident && <span style={{ fontSize: 10, background: "var(--red)", color: "#fff", padding: "1px 6px", borderRadius: 8 }}>Safety</span>}
+                              {r.photos && r.photos.length > 0 && <span className="text-xs text-muted">{r.photos.length} pic</span>}
+                              <span style={{ fontSize: 12, color: "var(--text3)" }}>{isExpanded ? "\u25BE" : "\u25B8"}</span>
+                            </div>
                           </div>
                           {!isExpanded && (
                             <div className="text-xs text-muted" style={{ marginTop: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                              {r.workPerformed?.slice(0, 100)}{(r.workPerformed?.length || 0) > 100 ? "..." : ""}
+                              {(r.quickTasks || []).length > 0 && <span style={{ color: "var(--accent)", marginRight: 4 }}>{r.quickTasks.join(", ")}</span>}
+                              {r.workPerformed?.replace(/^Tasks: [^\n]*\n?/, "").slice(0, 80)}
                             </div>
                           )}
                           {isExpanded && (
-                            <div style={{ marginTop: 10, borderTop: "1px solid var(--glass-border)", paddingTop: 10 }}>
+                            <div style={{ marginTop: 10, borderTop: "1px solid var(--glass-border)", paddingTop: 10 }}
+                              onClick={e => e.stopPropagation()}>
+
+                              {/* Crew Present */}
+                              {(r.crewPresent || []).length > 0 && (
+                                <div style={{ marginBottom: 8 }}>
+                                  <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 2 }}>{t("Crew on Site")}</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                    {r.crewPresent.map((c, i) => (
+                                      <span key={i} className="badge badge-blue" style={{ fontSize: 10 }}>{typeof c === "string" ? c : c.name}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Quick Tasks */}
+                              {(r.quickTasks || []).length > 0 && (
+                                <div style={{ marginBottom: 8 }}>
+                                  <div className="text-xs font-semi" style={{ color: "var(--accent)", marginBottom: 2 }}>{t("Tasks")}</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                    {r.quickTasks.map((tk, i) => (
+                                      <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "var(--accent)", color: "#fff" }}>{tk}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
                               <div style={{ marginBottom: 8 }}>
                                 <div className="text-xs font-semi" style={{ color: "var(--accent)", marginBottom: 2 }}>{t("Work Performed")}</div>
                                 <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.workPerformed}</div>
                               </div>
+
+                              {r.materialsReceived && (
+                                <div style={{ marginBottom: 8 }}>
+                                  <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 2 }}>{t("Materials Received")}</div>
+                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.materialsReceived}</div>
+                                </div>
+                              )}
+                              {r.equipmentOnSite && (
+                                <div style={{ marginBottom: 8 }}>
+                                  <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 2 }}>{t("Equipment on Site")}</div>
+                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.equipmentOnSite}</div>
+                                </div>
+                              )}
+                              {r.visitors && (
+                                <div style={{ marginBottom: 8 }}>
+                                  <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 2 }}>{t("Visitors / Inspections")}</div>
+                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.visitors}</div>
+                                </div>
+                              )}
+
+                              {/* Safety */}
+                              <div style={{ marginBottom: 8, padding: 8, borderRadius: 6, background: r.safetyIncident ? "rgba(239,68,68,0.06)" : "rgba(16,185,129,0.06)" }}>
+                                <div className="text-xs font-semi" style={{ color: r.safetyIncident ? "var(--red)" : "var(--green)", marginBottom: 2 }}>
+                                  {r.safetyIncident ? t("SAFETY INCIDENT") : t("No Safety Incidents")}
+                                </div>
+                                {r.safetyIncident && r.safetyDescription && (
+                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.safetyDescription}</div>
+                                )}
+                              </div>
+
                               {r.issues && (
                                 <div style={{ marginBottom: 8 }}>
                                   <div className="text-xs font-semi" style={{ color: "var(--amber)", marginBottom: 2 }}>{t("Issues / Delays")}</div>
                                   <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.issues}</div>
                                 </div>
                               )}
-                              {r.materialsUsed && (
+                              {r.tomorrowPlan && (
                                 <div style={{ marginBottom: 8 }}>
-                                  <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 2 }}>{t("Materials Used")}</div>
-                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.materialsUsed}</div>
+                                  <div className="text-xs font-semi" style={{ color: "var(--accent)", marginBottom: 2 }}>{t("Tomorrow's Plan")}</div>
+                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.tomorrowPlan}</div>
                                 </div>
                               )}
+
+                              {/* Photos */}
+                              {r.photos && r.photos.length > 0 && (
+                                <div style={{ marginBottom: 8 }}>
+                                  <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 4 }}>{t("Photos")} ({r.photos.length})</div>
+                                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                    {r.photos.map((p, i) => (
+                                      <img key={i} src={p.data || p} alt={`Photo ${i + 1}`}
+                                        style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer" }}
+                                        onClick={() => window.open(p.data || p, "_blank")} />
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
                               <div className="text-xs text-muted" style={{ marginTop: 6 }}>
                                 {t("Submitted")}: {new Date(r.createdAt).toLocaleString()}
+                                {r.updatedAt && r.updatedAt !== r.createdAt && ` · ${t("Updated")}: ${new Date(r.updatedAt).toLocaleString()}`}
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                                <button className="btn btn-sm" style={{ fontSize: 11 }}
+                                  onClick={() => {
+                                    setEditingReportId(r.id);
+                                    setReportForm({
+                                      date: r.date || new Date().toISOString().slice(0, 10),
+                                      temperature: r.temperature || "",
+                                      weatherCondition: r.weatherCondition || r.weather || "Clear",
+                                      crewPresent: r.crewPresent || [],
+                                      quickTasks: r.quickTasks || [],
+                                      workPerformed: r.workPerformed || "",
+                                      materialsReceived: r.materialsReceived || "",
+                                      equipmentOnSite: r.equipmentOnSite || "",
+                                      visitors: r.visitors || "",
+                                      safetyIncident: !!r.safetyIncident,
+                                      safetyDescription: r.safetyDescription || "",
+                                      photos: r.photos || [],
+                                      issues: r.issues || "",
+                                      tomorrowPlan: r.tomorrowPlan || "",
+                                    });
+                                    setShowReportForm(true);
+                                    setExpandedReportId(null);
+                                  }}>
+                                  {t("Edit")}
+                                </button>
+                                <button className="btn btn-sm" style={{ fontSize: 11 }}
+                                  onClick={async () => {
+                                    try {
+                                      const { generateDailyReportPdf } = await import("../utils/dailyReportPdf.js");
+                                      generateDailyReportPdf(r, selectedProject);
+                                      show(t("PDF downloaded"));
+                                    } catch (err) {
+                                      console.error("PDF generation error:", err);
+                                      show(t("Failed to generate PDF"), "err");
+                                    }
+                                  }}>
+                                  {t("Export PDF")}
+                                </button>
+                                <button className="btn btn-sm" style={{ fontSize: 11, color: "var(--red)" }}
+                                  onClick={() => {
+                                    if (confirm(t("Delete this daily report?"))) {
+                                      setDailyReports(prev => prev.filter(rp => rp.id !== r.id));
+                                      setExpandedReportId(null);
+                                      show(t("Report deleted"));
+                                    }
+                                  }}>
+                                  {t("Delete")}
+                                </button>
                               </div>
                             </div>
                           )}
