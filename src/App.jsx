@@ -39,6 +39,8 @@ import { hasAccess, ROLES } from "./data/roles";
 import { supabase, isSupabaseConfigured, signOut as supaSignOut, onAuthStateChange, signIn as supaSignIn, signUp as supaSignUp } from "./lib/supabase";
 
 import { GanttScheduleView } from "./components/GanttScheduleView";
+import { useAlertEngine } from "./hooks/useAlertEngine";
+import { NotificationPanel } from "./components/NotificationPanel";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · App Component
@@ -457,72 +459,12 @@ function App({ auth, onLogout }) {
     } catch {}
   }, []);
 
-  const [notifications, setNotifications] = useLocalStorage("ebc_notifications", []);
-  // ── notification generator (runs on mount + every 5 min) ──
-  useEffect(() => {
-    const generateNotifications = () => {
-      const now = new Date();
-      const candidates = [];
-      const addCandidate = (id, type, title, message, linkedType, linkedId) => {
-        candidates.push({ id, userId: auth?.id, type, title, message, linkedType, linkedId, read: false, createdAt: now.toISOString() });
-      };
-      // Cert expirations
-      (certifications || []).forEach(cert => {
-        if (!cert.expiryDate) return;
-        const expiry = new Date(cert.expiryDate);
-        const daysLeft = Math.floor((expiry - now) / 86400000);
-        const empName = (() => { try { const users = JSON.parse(localStorage.getItem("ebc_users") || "[]"); return users.find(u => u.id === cert.employeeId)?.name || "Employee"; } catch { return "Employee"; } })();
-        if (daysLeft < 0) addCandidate(`cert_exp_${cert.id}`, "cert_expired", "Certification Expired", `${empName}'s ${cert.name} expired ${Math.abs(daysLeft)} days ago`, "certification", cert.id);
-        else if (daysLeft <= 7) addCandidate(`cert_7d_${cert.id}`, "cert_urgent", "Certification Expiring", `${empName}'s ${cert.name} expires in ${daysLeft} days`, "certification", cert.id);
-        else if (daysLeft <= 30) addCandidate(`cert_30d_${cert.id}`, "cert_warning", "Certification Expiring Soon", `${empName}'s ${cert.name} expires in ${daysLeft} days`, "certification", cert.id);
-      });
-      // Overdue invoices
-      (invoices || []).forEach(inv => {
-        if (inv.status !== "overdue") return;
-        const age = Math.floor((now - new Date(inv.date)) / 86400000);
-        addCandidate(`inv_overdue_${inv.id}`, "invoice_overdue", "Invoice Overdue", `Invoice #${inv.number} is ${age} days old ($${inv.amount})`, "invoice", inv.id);
-      });
-      // Pending T&M tickets
-      const pendingTM = (tmTickets || []).filter(t => t.status === "draft" || t.status === "pending");
-      if (pendingTM.length > 0) addCandidate(`tm_pending_${now.toISOString().slice(0, 10)}`, "tm_pending", "T&M Tickets Pending", `${pendingTM.length} T&M ticket(s) need review`, "tmTickets", null);
-      // SDS expirations
-      (sdsSheets || []).forEach(sds => {
-        if (!sds.expiresAt) return;
-        const daysLeft = Math.floor((new Date(sds.expiresAt) - now) / 86400000);
-        if (daysLeft < 0) addCandidate(`sds_exp_${sds.id}`, "sds_expired", "SDS Expired", `${sds.productName} SDS has expired`, "sds", sds.id);
-        else if (daysLeft <= 30) addCandidate(`sds_30d_${sds.id}`, "sds_warning", "SDS Expiring Soon", `${sds.productName} SDS expires in ${daysLeft} days`, "sds", sds.id);
-      });
-      // Pending change orders
-      const pendingCOs = (changeOrders || []).filter(co => co.status === "pending");
-      if (pendingCOs.length > 0) addCandidate(`co_pending_${now.toISOString().slice(0, 10)}`, "co_pending", "Change Orders Pending", `${pendingCOs.length} change order(s) awaiting approval`, "changeOrders", null);
-      // Insurance policy expirations
-      (insurancePolicies || []).forEach(pol => {
-        if (!pol.expiryDate) return;
-        const daysLeft = Math.floor((new Date(pol.expiryDate) - now) / 86400000);
-        if (daysLeft < 0) addCandidate(`ins_exp_${pol.id}`, "insurance_expired", "Insurance Expired", `${pol.type} policy expired ${Math.abs(daysLeft)} days ago`, "insurance", pol.id);
-        else if (daysLeft <= 30) addCandidate(`ins_30d_${pol.id}`, "insurance_warning", "Insurance Expiring Soon", `${pol.type} policy expires in ${daysLeft} days`, "insurance", pol.id);
-      });
-
-      if (candidates.length > 0) {
-        // Read directly from localStorage to avoid stale closure issues with React strict mode
-        const current = (() => { try { return JSON.parse(localStorage.getItem("ebc_notifications") || "[]"); } catch { return []; } })();
-        const currentIds = new Set(current.map(n => n.id));
-        const fresh = candidates.filter(c => !currentIds.has(c.id));
-        if (fresh.length > 0) {
-          const merged = [...fresh, ...current].slice(0, 100);
-          setNotifications(merged);
-        }
-      }
-    };
-    generateNotifications();
-    const interval = setInterval(generateNotifications, 300000); // every 5 min
-    return () => clearInterval(interval);
-  }, [certifications?.length, invoices?.length, tmTickets?.length, sdsSheets?.length, changeOrders?.length, insurancePolicies?.length]);
-
-  const unreadCount = (notifications || []).filter(n => !n.read).length;
-  const markAllRead = () => setNotifications(prev => (prev || []).map(n => ({ ...n, read: true })));
-  const markRead = (id) => setNotifications(prev => (prev || []).map(n => n.id === id ? { ...n, read: true } : n));
-  const clearNotifications = () => setNotifications([]);
+  // ── Smart Alert Engine — scans all data for actionable notifications ──
+  const alertEngine = useAlertEngine({
+    bids, projects, contacts, submittals, rfis, changeOrders,
+    certifications, employees, timeEntries, invoices,
+  });
+  const { activeAlerts, grouped: alertGroups, badgeCount: alertBadgeCount, dismissAlert, dismissAll } = alertEngine;
 
   // ── i18n helper ──
   const t = useCallback((key) => {
@@ -3267,71 +3209,26 @@ function App({ auth, onLogout }) {
             className="btn btn-ghost btn-sm"
             style={{ fontSize: 16, padding: "4px 8px", position: "relative" }}
             onClick={() => setNotifOpen(!notifOpen)}
-            title="Notifications"
+            title="Alerts"
           >
-            🔔
-            {unreadCount > 0 && (
+            {"\uD83D\uDD14"}
+            {alertBadgeCount > 0 && (
               <span style={{
                 position: "absolute", top: -2, right: -2, background: "var(--red)", color: "#fff",
                 borderRadius: "50%", width: 16, height: 16, fontSize: 9, fontWeight: 700,
                 display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
-              }}>{unreadCount > 9 ? "9+" : unreadCount}</span>
+              }}>{alertBadgeCount > 99 ? "99+" : alertBadgeCount}</span>
             )}
           </button>
           {notifOpen && (
-            <div style={{
-              position: "fixed", top: 54, right: 8, width: Math.min(360, window.innerWidth - 16), maxHeight: "calc(100vh - 70px)", overflowY: "auto",
-              background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-              zIndex: 9999, padding: 0,
-            }} onClick={e => e.stopPropagation()}>
-              <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{t("Notifications")} {unreadCount > 0 && <span className="badge badge-red" style={{ fontSize: 10, marginLeft: 4 }}>{unreadCount}</span>}</div>
-                <div className="flex gap-4">
-                  {unreadCount > 0 && <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px" }} onClick={markAllRead}>Mark all read</button>}
-                  {(notifications || []).length > 0 && <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px", color: "var(--red)" }} onClick={clearNotifications}>Clear</button>}
-                </div>
-              </div>
-              {(notifications || []).length === 0 ? (
-                <div style={{ padding: 32, textAlign: "center" }}>
-                  <div style={{ fontSize: 32 }}>✅</div>
-                  <div className="text-sm text-muted" style={{ marginTop: 8 }}>All caught up! No notifications.</div>
-                </div>
-              ) : (
-                (notifications || []).slice(0, 30).map(n => {
-                  const NOTIF_ICONS = { cert_expired: "🚨", cert_urgent: "⚠️", cert_warning: "📋", invoice_overdue: "💰", tm_pending: "📝", sds_expired: "☣️", sds_warning: "📄", co_pending: "📑" };
-                  const timeAgo = (() => {
-                    const mins = Math.floor((Date.now() - new Date(n.createdAt)) / 60000);
-                    if (mins < 60) return `${mins}m ago`;
-                    const hrs = Math.floor(mins / 60);
-                    if (hrs < 24) return `${hrs}h ago`;
-                    return `${Math.floor(hrs / 24)}d ago`;
-                  })();
-                  return (
-                    <div key={n.id}
-                      style={{
-                        padding: "10px 16px", borderBottom: "1px solid var(--border)", cursor: "pointer",
-                        background: n.read ? "transparent" : "rgba(224,148,34,0.06)",
-                      }}
-                      onClick={() => {
-                        markRead(n.id);
-                        setNotifOpen(false);
-                        const navMap = { cert_expired: "timeclock", cert_urgent: "timeclock", cert_warning: "timeclock", invoice_overdue: "financials", tm_pending: "financials", sds_expired: "sds", sds_warning: "sds", co_pending: "financials", insurance_expired: "more", insurance_warning: "more" };
-                        if (navMap[n.type]) handleTabClick(navMap[n.type]);
-                      }}
-                    >
-                      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                        <span style={{ fontSize: 18, flexShrink: 0 }}>{NOTIF_ICONS[n.type] || "📌"}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: n.read ? 400 : 600, fontSize: 12 }}>{n.title}</div>
-                          <div className="text-xs text-muted" style={{ marginTop: 2 }}>{n.message}</div>
-                        </div>
-                        <div className="text-xs text-muted" style={{ flexShrink: 0 }}>{timeAgo}</div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+            <NotificationPanel
+              grouped={alertGroups}
+              badgeCount={alertBadgeCount}
+              dismissAlert={dismissAlert}
+              dismissAll={dismissAll}
+              onClose={() => setNotifOpen(false)}
+              onNav={(navKey) => { setNotifOpen(false); handleTabClick(navKey); }}
+            />
           )}
         </div>
         <nav className="nav">
