@@ -42,6 +42,8 @@ import { supabase, isSupabaseConfigured, signOut as supaSignOut, onAuthStateChan
 import { GanttScheduleView } from "./components/GanttScheduleView";
 import { useAlertEngine } from "./hooks/useAlertEngine";
 import { NotificationPanel } from "./components/NotificationPanel";
+import { PerimeterMapModal } from "./components/PerimeterMapModal";
+import { polygonAreaSqFt } from "./utils/geofence";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · App Component
@@ -3476,6 +3478,7 @@ const ModalHub = ({ type, data, app }) => {
   const [contactDropOpen, setContactDropOpen] = useState(false);
   const [gcFilter, setGcFilter] = useState("");
   const [gcDropOpen, setGcDropOpen] = useState(false);
+  const [showPerimeterMap, setShowPerimeterMap] = useState(false);
 
   const getInitial = () => {
     switch (type) {
@@ -5203,6 +5206,17 @@ const ModalHub = ({ type, data, app }) => {
   // ── Edit Project ──
   if (type === "editProject") {
     return (
+      <>
+      {showPerimeterMap && (
+        <PerimeterMapModal
+          project={draft}
+          onClose={() => setShowPerimeterMap(false)}
+          onSave={(pts) => {
+            upd("perimeter", pts);
+            setShowPerimeterMap(false);
+          }}
+        />
+      )}
       <div className="modal-overlay" onMouseDown={handleOverlayDown} onMouseUp={handleOverlayUp(close)}>
         <div className="modal">
           <div className="modal-header">
@@ -5290,6 +5304,44 @@ const ModalHub = ({ type, data, app }) => {
             <div className="form-group">
               <label className="form-label">Longitude</label>
               <input className="form-input" type="number" step="any" value={draft.lng || ""} onChange={e => upd("lng", Number(e.target.value) || "")} placeholder="-95.3698" />
+            </div>
+
+            {/* ── Polygon Perimeter ── */}
+            <div className="form-group full">
+              <label className="form-label">Job Site Perimeter</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ fontSize: 13 }}
+                  onClick={() => setShowPerimeterMap(true)}
+                  disabled={!draft.lat || !draft.lng}
+                  title={!draft.lat || !draft.lng ? "Set Lat/Lng first" : "Draw polygon boundary on map"}
+                >
+                  📍 {draft.perimeter && draft.perimeter.length >= 3 ? "Edit Perimeter" : "Set Perimeter"}
+                </button>
+                {draft.perimeter && draft.perimeter.length >= 3 ? (
+                  <span style={{ fontSize: 12, color: "var(--green, #10b981)" }}>
+                    ✓ {draft.perimeter.length} points · {polygonAreaSqFt(draft.perimeter) > 43560
+                      ? `${(polygonAreaSqFt(draft.perimeter) / 43560).toFixed(2)} acres`
+                      : `${Math.round(polygonAreaSqFt(draft.perimeter)).toLocaleString()} sq ft`}
+                  </span>
+                ) : (
+                  <span style={{ fontSize: 12, color: "var(--text-muted, #9ca3af)" }}>
+                    {!draft.lat || !draft.lng ? "Enter Lat/Lng above first" : "No polygon — using radius geofence"}
+                  </span>
+                )}
+                {draft.perimeter && draft.perimeter.length >= 3 && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: 11, color: "var(--red, #ef4444)" }}
+                    onClick={() => upd("perimeter", [])}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="form-group full">
@@ -5683,6 +5735,7 @@ const ModalHub = ({ type, data, app }) => {
           </div>
         </div>
       </div>
+      </>
     );
   }
 

@@ -156,24 +156,35 @@ export function MapView({ app }) {
           <div class="map-popup-row"><span class="map-popup-label">Phase</span> <span style="color:${color}">${p.phase}</span></div>
           <div class="map-popup-row"><span class="map-popup-label">PM</span> ${p.pm || "—"}</div>
           ${crew > 0 ? `<div class="map-popup-row"><span class="map-popup-label">Crew</span> ${crew} assigned</div>` : ""}
-          <div class="map-popup-row"><span class="map-popup-label">Geofence</span> ${p.radiusFt}ft</div>
+          <div class="map-popup-row"><span class="map-popup-label">Geofence</span> ${p.perimeter && p.perimeter.length >= 3 ? `Polygon (${p.perimeter.length} pts)` : `${p.radiusFt || 1000}ft radius`}</div>
         </div>
       `, { className: "map-popup", maxWidth: 260 });
 
       marker.addTo(mapInstance.current);
       markersRef.current.push(marker);
 
-      // Geofence circle
+      // Geofence: polygon if perimeter exists, else circle
       if (showGeofences) {
-        const circle = L.circle([p.lat, p.lng], {
-          radius: p.radiusFt * 0.3048, // ft to meters
-          color: color,
-          fillColor: color,
-          fillOpacity: 0.08,
-          weight: 1,
-          opacity: 0.3,
-        }).addTo(mapInstance.current);
-        circlesRef.current.push(circle);
+        if (p.perimeter && p.perimeter.length >= 3) {
+          const poly = L.polygon(p.perimeter, {
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.1,
+            weight: 1.5,
+            opacity: 0.5,
+          }).addTo(mapInstance.current);
+          circlesRef.current.push(poly);
+        } else {
+          const circle = L.circle([p.lat, p.lng], {
+            radius: p.radiusFt * 0.3048, // ft to meters
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.08,
+            weight: 1,
+            opacity: 0.3,
+          }).addTo(mapInstance.current);
+          circlesRef.current.push(circle);
+        }
       }
     });
 
