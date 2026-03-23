@@ -7,7 +7,7 @@ import { isDemoMode } from "./defaults";
 const _demo = isDemoMode();
 
 // Bump this when seed data changes to bust stale localStorage caches
-export const DATA_VERSION = 14;
+export const DATA_VERSION = 15;
 
 // ── THEMES ────────────────────────────────────────────────────
 export const THEMES = {
@@ -465,11 +465,12 @@ const _demoContacts = [
   {id:16,name:"Steve Williams",company:"United Constructors",role:"VP Interior Construction",bids:0,wins:0,color:"#ef4444",last:"Mar 12",priority:"high",phone:"713-579-9738",email:"swilliams@unitedconstructors.com",notes:"Heart Care Clinic. CO #2 approved 3/12. Escapology Sugar Land PM."},
   {id:17,name:"Mistie Williams",company:"United Constructors",role:"Project Coordinator",bids:0,wins:0,color:"#ef4444",last:"Mar 2",priority:"med",phone:"713-579-9742",email:"mwilliams@unitedconstructors.com",notes:"Subcontracts and COs. Dotson, Escapology, Heart Care."},
   // Harvey Cleary
-  {id:18,name:"Kristen Gallegos",company:"Harvey Cleary",role:"Senior PM",bids:0,wins:0,color:"#06b6d4",last:"Jan 29",priority:"med",phone:"281-253-0679",email:"kgallegos@harveycleary.com",notes:"MH Pearland L4 Renovation. AD System submittal approved 1/29."},
+  {id:18,name:"Kristen Gallegos",company:"Harvey Cleary",role:"Senior PM",bids:0,wins:0,color:"#06b6d4",last:"Jan 29",priority:"med",phone:"713-783-8710",email:"kgallegos@harveycleary.com",notes:"MH Pearland L4 Renovation. AD System submittal approved 1/29."},
+  {id:44,name:"Brandon Farrell",company:"Harvey Cleary",role:"Superintendent",bids:0,wins:0,color:"#06b6d4",last:"",priority:"med",phone:"832-471-9965",email:"BFarrell@harveycleary.com",notes:"MH Pearland L4 Renovation superintendent."},
   // Bayshore
   {id:19,name:"Josh",company:"Bayshore",role:"",bids:0,wins:0,color:"#a855f7",last:"Mar 19",priority:"med",phone:"",email:"josh@bayshoretex.com",notes:"THC Baytown. CO for ticket work sent 3/19."},
   // Wier CC
-  {id:20,name:"Preston Cheney",company:"Wier CC",role:"",bids:0,wins:0,color:"#64748b",last:"Feb 20",priority:"med",phone:"",email:"pcheney@wiercc.com",notes:"Spring Cypress Oral Surgeons. Window opening CO, overhead blocking CO."},
+  {id:20,name:"Preston Cheney",company:"Wier CC",role:"Assistant Project Manager",bids:0,wins:0,color:"#64748b",last:"Feb 20",priority:"med",phone:"",email:"pcheney@wiercc.com",notes:"Spring Cypress Oral Surgeons. Window opening CO, overhead blocking CO."},
   // Arch-Con
   {id:21,name:"Robert Fortney",company:"Arch-Con",role:"Project Manager",bids:1,wins:0,color:"#f97316",last:"Mar 5",priority:"med",phone:"",email:"rfortney@arch-con.com",notes:"Regor Therapeutics PM."},
   {id:22,name:"Jon Windham",company:"Arch-Con",role:"Project Manager",bids:1,wins:1,color:"#f97316",last:"Mar 10",priority:"high",phone:"",email:"jwindham@arch-con.com",notes:"Sprouts Farmers Market PM. Submittals & billing active."},
@@ -504,6 +505,10 @@ const _demoContacts = [
   {id:39,name:"Robert",company:"JP's Construction",role:"Owner",bids:1,wins:0,color:"#f472b6",last:"Jan 12",priority:"med",phone:"",email:"robert@jpsconstruction.org",notes:"Health Source Missouri City. Demising wall breakout requested."},
   // Forney (additional)
   {id:40,name:"Leigh Bartish",company:"Forney Construction",role:"Senior Estimator",bids:1,wins:0,color:"#f59e0b",last:"Mar 11",priority:"med",phone:"713-805-0000",email:"leigh.bartish@forneyconstruction.com",notes:"MH Fulshear SMR estimator."},
+  // LW Supply
+  {id:45,name:"Dalila Esparza",company:"LW Supply",role:"",bids:0,wins:0,color:"#94a3b8",last:"Dec 4",priority:"med",phone:"",email:"Dalila.Esparza@lwsupply.com",notes:"PPER Missouri City — resubmitted XB1 Alternate through LW Supply 12/4/2025."},
+  // Heitkamp Swift Architects
+  {id:46,name:"Lisa Herring",company:"Heitkamp Swift Architects",role:"",bids:0,wins:0,color:"#94a3b8",last:"",priority:"med",phone:"",email:"lisa.herring@heitkampswift.com",notes:""},
 ];
 
 // ── SEED: CALL LOG ──
@@ -531,7 +536,23 @@ const _demoRfis = [
 ];
 
 // ── SEED: SUBMITTALS ──
-const _demoSubmittals = [];
+const _demoSubmittals = [
+  // MH League City CCC CT (projectId: 9)
+  {id:601,projectId:9,number:"09 21 16-1.0",description:"Gypsum Board",specSection:"09 21 16",type:"product data",status:"distributed",dateSubmitted:"2026-03-04",dateReturned:"2026-03-04",distributedBy:"Monica Waller (Forney)",notes:""},
+  {id:602,projectId:9,number:"09 51 00-1.0",description:"Acoustical Ceilings",specSection:"09 51 00",type:"product data",status:"distributed",dateSubmitted:"2026-03-04",dateReturned:"2026-03-04",distributedBy:"Monica Waller (Forney)",notes:""},
+  // MH Pearland MEIC-CT (projectId: 10)
+  {id:603,projectId:10,number:"095113-1.0",description:"Acoustical Ceiling - Product Data",specSection:"09 51 13",type:"product data",status:"distributed",dateSubmitted:"2026-02-26",dateReturned:"2026-02-26",distributedBy:"Mariana Fumero (Forney)",notes:""},
+  {id:604,projectId:10,number:"095113-2.0",description:"Acoustical Ceiling - Sample",specSection:"09 51 13",type:"sample",status:"distributed",dateSubmitted:"2026-02-26",dateReturned:"2026-02-26",distributedBy:"Mariana Fumero (Forney)",notes:""},
+  // PPER - Missouri City (projectId: 19)
+  {id:605,projectId:19,number:"0570000.0",description:"XB1 Alternate",specSection:"05 70 00",type:"product data",status:"approved",dateSubmitted:"2025-12-04",dateReturned:"2025-12-04",distributedBy:"Alejandra Ibarra (WC Construction)",notes:"Initially rejected 12/4/2025 (Alejandra Ibarra forwarded). Resubmitted through LW Supply (Dalila Esparza). Approved and distributed 12/4/2025."},
+  {id:606,projectId:19,number:"0570000.1",description:"XB1 Alternate",specSection:"05 70 00",type:"product data",status:"distributed",dateSubmitted:"2025-12-04",dateReturned:"2025-12-04",distributedBy:"Alejandra Ibarra (WC Construction)",notes:""},
+  {id:607,projectId:19,number:"057000-1.0",description:"XB1 Alternate 2",specSection:"05 70 00",type:"product data",status:"distributed",dateSubmitted:"2026-01-12",dateReturned:"2026-01-12",distributedBy:"Alejandra Ibarra (WC Construction)",notes:""},
+  // Spring Cypress Oral Surgeons (projectId: 18)
+  {id:608,projectId:18,number:"054000-1.0",description:"CFMF (Cold-Formed Metal Framing)",specSection:"05 40 00",type:"product data",status:"approved",dateSubmitted:"2025-10-30",dateReturned:"2025-10-30",distributedBy:"Preston Cheney (Wier CC)",notes:""},
+  {id:609,projectId:18,number:"Soundbreak XP",description:"Soundbreak XP — Sound Attenuation Board (Quiet Rock substitute)",specSection:"09 21 16",type:"product data",status:"approved",dateSubmitted:"2025-11-03",dateReturned:"2025-11-03",distributedBy:"Preston Cheney (Wier CC)",notes:"Original Quiet Rock supply short, Soundbreak approved as national equivalent"},
+  // MH Pearland L4 Renovation (projectId: 15)
+  {id:610,projectId:15,number:"AD System",description:"AD System Doors",specSection:"08 11 13",type:"product data",status:"approved",dateSubmitted:"2026-01-29",dateReturned:"2026-01-29",distributedBy:"Kristen Gallegos (Harvey Cleary)",notes:"Approved same day, installed that night"},
+];
 
 // ── SEED: SCHEDULE ──
 const _demoSchedule = [];
