@@ -479,7 +479,7 @@ const _demoContacts = [
   {id:30,name:"Sona Francis",company:"Anchor Construction",role:"Estimator",bids:1,wins:0,color:"#d946ef",last:"Dec 3",priority:"med",phone:"858-245-7020",email:"sona.f@anchorcm.net",notes:"Khango Gym estimator."},
   {id:31,name:"David Garcia",company:"Anchor Construction",role:"",bids:0,wins:0,color:"#d946ef",last:"Mar 20",priority:"med",phone:"",email:"",notes:"Shake Shack, Chick-Fil-A bid invites. Via BuildingConnected."},
   // Brodson Construction
-  {id:32,name:"Philippe Faucher",company:"Brodson Construction",role:"Senior PM",bids:1,wins:1,color:"#0ea5e9",last:"Mar 9",priority:"high",phone:"",email:"pfaucher@brodsonconstruction.com",notes:"Brunello Cucinelli Store Buildout - River Oaks District."},
+  {id:32,name:"Philippe Faucher",company:"Brodson Construction",role:"Senior PM",bids:1,wins:0,color:"#0ea5e9",last:"Mar 9",priority:"high",phone:"",email:"pfaucher@brodsonconstruction.com",notes:"Brunello Cucinelli Store Buildout - River Oaks District."},
   // Hirsch Construction
   {id:33,name:"Angelica Baez",company:"Hirsch Construction",role:"",bids:1,wins:0,color:"#fb923c",last:"Nov 19",priority:"med",phone:"",email:"abaez@hirschcorp.com",notes:"Hermes Houston Temp Store. Also Princess Polly."},
   // Garrison Construction
