@@ -7,7 +7,7 @@ import { isDemoMode } from "./defaults";
 const _demo = isDemoMode();
 
 // Bump this when seed data changes to bust stale localStorage caches
-export const DATA_VERSION = 15;
+export const DATA_VERSION = 16;
 
 // ── THEMES ────────────────────────────────────────────────────
 export const THEMES = {
@@ -552,6 +552,26 @@ const _demoSubmittals = [
   {id:609,projectId:18,number:"Soundbreak XP",description:"Soundbreak XP — Sound Attenuation Board (Quiet Rock substitute)",specSection:"09 21 16",type:"product data",status:"approved",dateSubmitted:"2025-11-03",dateReturned:"2025-11-03",distributedBy:"Preston Cheney (Wier CC)",notes:"Original Quiet Rock supply short, Soundbreak approved as national equivalent"},
   // MH Pearland L4 Renovation (projectId: 15)
   {id:610,projectId:15,number:"AD System",description:"AD System Doors",specSection:"08 11 13",type:"product data",status:"approved",dateSubmitted:"2026-01-29",dateReturned:"2026-01-29",distributedBy:"Kristen Gallegos (Harvey Cleary)",notes:"Approved same day, installed that night"},
+  // Arch-Con - Sprouts Farmers Market (projectId: 12)
+  {id:611,projectId:12,number:"CD_600PDS125-18-70ksi-P",description:"ClarkDietrich 600S 125 18ga 70ksi Stud — Product Data Sheet",specSection:"05 40 00",type:"product data",status:"approved",dateSubmitted:"2026-03-03",dateReturned:"",distributedBy:"Jon Windham (Arch-Con)",notes:""},
+  {id:612,projectId:12,number:"CD_Arch_Con_Sprouts",description:"ClarkDietrich Framing Package — Arch-Con Sprouts",specSection:"05 40 00",type:"shop drawings",status:"approved",dateSubmitted:"2026-03-03",dateReturned:"",distributedBy:"Jon Windham (Arch-Con)",notes:""},
+  {id:613,projectId:12,number:"CD_MaxTrak-DW",description:"ClarkDietrich MaxTrak Deflection Track",specSection:"05 40 00",type:"product data",status:"approved",dateSubmitted:"2026-03-03",dateReturned:"",distributedBy:"Jon Windham (Arch-Con)",notes:""},
+  {id:614,projectId:12,number:"USG-FC-X-1.0",description:"USG Sheetrock Firecode X Panels",specSection:"09 21 16",type:"product data",status:"approved",dateSubmitted:"2026-03-03",dateReturned:"",distributedBy:"Jon Windham (Arch-Con)",notes:"Available in EBC submittal library"},
+  {id:615,projectId:12,number:"USG-MTFCX-1.0",description:"Sheetrock Mold Tough Firecode X Panels",specSection:"09 21 16",type:"product data",status:"approved",dateSubmitted:"2026-03-03",dateReturned:"",distributedBy:"Jon Windham (Arch-Con)",notes:"Available in EBC submittal library"},
+  {id:616,projectId:12,number:"Knauf-EcoBatt-1.0",description:"Knauf EcoBatt Insulation",specSection:"07 21 00",type:"product data",status:"approved",dateSubmitted:"2026-03-03",dateReturned:"",distributedBy:"Jon Windham (Arch-Con)",notes:"Available in EBC submittal library"},
+  {id:617,projectId:12,number:"Prelude-XL-1.0",description:"Armstrong Prelude XL 15/16\" Exposed Tee Grid System",specSection:"09 51 00",type:"product data",status:"approved",dateSubmitted:"2026-03-03",dateReturned:"",distributedBy:"Jon Windham (Arch-Con)",notes:"Available in EBC submittal library"},
+  {id:618,projectId:12,number:"FRP-1.0",description:"Fire Rated Plywood",specSection:"06 16 00",type:"product data",status:"approved",dateSubmitted:"2026-03-03",dateReturned:"",distributedBy:"Jon Windham (Arch-Con)",notes:""},
+  {id:619,projectId:12,number:"ToughRock-FXMG-1.0",description:"ToughRock Fireguard X Mold Guard",specSection:"09 21 16",type:"product data",status:"approved",dateSubmitted:"2026-03-03",dateReturned:"",distributedBy:"Jon Windham (Arch-Con)",notes:"Available in EBC submittal library"},
+  // Texas Heart Center - Baytown (projectId: 5)
+  {id:620,projectId:5,number:"THC-PKG-1.0",description:"Texas Heart Center — Full Submittal Package",specSection:"",type:"product data",status:"approved",dateSubmitted:"2026-02-24",dateReturned:"",distributedBy:"Josh (Bayshore)",notes:"Full package on file: Texas_Heart_Center_Submittal_Package.pdf"},
+  {id:621,projectId:5,number:"DensShield-1.0",description:"DensShield Tile Backer",specSection:"09 28 00",type:"product data",status:"approved",dateSubmitted:"2026-02-24",dateReturned:"",distributedBy:"Josh (Bayshore)",notes:"Available in EBC submittal library"},
+  {id:622,projectId:5,number:"USG-Durock-1.0",description:"USG Durock Cement Board with EdgeGuard",specSection:"09 28 00",type:"product data",status:"approved",dateSubmitted:"2026-02-24",dateReturned:"",distributedBy:"Josh (Bayshore)",notes:"Available in EBC submittal library"},
+  // PPER - Missouri City (projectId: 19) — library items matching project scope
+  {id:623,projectId:19,number:"DensGlass-1.0",description:"DensGlass Gold Exterior Sheathing",specSection:"07 25 00",type:"product data",status:"approved",dateSubmitted:"2026-01-27",dateReturned:"",distributedBy:"Alejandra Ibarra (WC Construction)",notes:"Available in EBC submittal library"},
+  {id:624,projectId:19,number:"EcoBatt-R11-1.0",description:"Knauf EcoBatt Insulation R-11",specSection:"07 21 00",type:"product data",status:"approved",dateSubmitted:"2026-01-27",dateReturned:"",distributedBy:"Alejandra Ibarra (WC Construction)",notes:"Available in EBC submittal library"},
+  {id:625,projectId:19,number:"EcoBatt-R8-1.0",description:"Knauf EcoBatt Insulation R-8",specSection:"07 21 00",type:"product data",status:"approved",dateSubmitted:"2026-01-27",dateReturned:"",distributedBy:"Alejandra Ibarra (WC Construction)",notes:"Available in EBC submittal library"},
+  {id:626,projectId:19,number:"EcoBatt-R19-1.0",description:"Knauf EcoBatt Insulation R-19",specSection:"07 21 00",type:"product data",status:"approved",dateSubmitted:"2026-01-27",dateReturned:"",distributedBy:"Alejandra Ibarra (WC Construction)",notes:"Available in EBC submittal library"},
+  {id:627,projectId:19,number:"OC-ThermBatt-1.0",description:"Owens Corning Thermal Batt Insulation",specSection:"07 21 00",type:"product data",status:"approved",dateSubmitted:"2026-01-27",dateReturned:"",distributedBy:"Alejandra Ibarra (WC Construction)",notes:"Available in EBC submittal library"},
 ];
 
 // ── SEED: SCHEDULE ──
