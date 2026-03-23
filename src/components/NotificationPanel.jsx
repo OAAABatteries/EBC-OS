@@ -1,5 +1,18 @@
 import { useState, Fragment } from "react";
-import { BarChart2, Building2, HardHat, Bell, CheckCircle } from "lucide-react";
+import { BarChart2, Building2, HardHat, Bell, CheckCircle, Award, Mail, AlertTriangle, Edit, Clipboard, TrendingDown, FileText, DollarSign, Package, Clock } from "lucide-react";
+
+const ALERT_ICONS = {
+  award: <Award size={16} />,
+  mail: <Mail size={16} />,
+  alert: <AlertTriangle size={16} />,
+  edit: <Edit size={16} />,
+  clipboard: <Clipboard size={16} />,
+  "trending-down": <TrendingDown size={16} />,
+  file: <FileText size={16} />,
+  dollar: <DollarSign size={16} />,
+  package: <Package size={16} />,
+  clock: <Clock size={16} />,
+};
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · Smart Notification Panel
@@ -143,7 +156,7 @@ export function NotificationPanel({ grouped, badgeCount, dismissAlert, dismissAl
                     display: "flex", gap: 10, alignItems: "flex-start",
                   }}
                 >
-                  <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>{alert.icon}</span>
+                  <span style={{ flexShrink: 0, marginTop: 1 }}>{ALERT_ICONS[alert.icon] || <Bell size={16} />}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{ fontWeight: 600, fontSize: 12, cursor: "pointer", lineHeight: 1.3 }}
