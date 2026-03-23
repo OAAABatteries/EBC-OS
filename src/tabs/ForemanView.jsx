@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
+import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp } from "lucide-react";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
 import { PhaseTracker, getDefaultPhases } from "../components/PhaseTracker";
@@ -83,7 +84,7 @@ export function ForemanView({ app }) {
   const {
     employees, projects, setProjects, crewSchedule, timeEntries, setTimeEntries,
     materialRequests, setMaterialRequests,
-    changeOrders, rfis, submittals,
+    changeOrders, rfis, setRfis, submittals,
     jsas, setJsas,
     dailyReports, setDailyReports,
     theme, setTheme, show
@@ -149,6 +150,21 @@ export function ForemanView({ app }) {
   const [rcSelected, setRcSelected] = useState({}); // {employeeId: true/false}
   const [rcAddingCrew, setRcAddingCrew] = useState(false);
   const sigRef = useRef(null);
+
+  // ── Crew tab: add member ──
+  const [showCrewAdd, setShowCrewAdd] = useState(false);
+  const [crewAddSearch, setCrewAddSearch] = useState("");
+  const [extraCrewIds, setExtraCrewIds] = useState([]);
+  const crewAddRef = useRef(null);
+
+  // ── Pre-task safety: indoor/outdoor + hazard multi-select ──
+  const [rcIndoorOutdoor, setRcIndoorOutdoor] = useState("indoor");
+  const [rcPendingCard, setRcPendingCard] = useState(null);
+  const [rcSelectedHazardIdxs, setRcSelectedHazardIdxs] = useState({});
+
+  // ── Submit RFI modal ──
+  const [showRfiModal, setShowRfiModal] = useState(false);
+  const [rfiFormData, setRfiFormData] = useState({ subject: "", description: "", drawingRef: "" });
 
   // ── daily report form state ──
   const EMPTY_REPORT_FORM = {
@@ -1287,40 +1303,126 @@ export function ForemanView({ app }) {
             })()}
 
             {/* ═══ CREW TAB ═══ */}
-            {foremanTab === "crew" && (
-              <div className="emp-content">
-                <div className="section-header">
-                  <div className="section-title" style={{ fontSize: 16 }}>{t("Crew Members")}</div>
-                </div>
-                {crewForProject.length === 0 ? (
-                  <div className="empty-state" style={{ padding: "30px 20px" }}>
-                    <div className="empty-icon">👷</div>
-                    <div className="empty-text">{t("No crew assigned")}</div>
+            {foremanTab === "crew" && (() => {
+              const scheduledIds = new Set(crewForProject.map(c => String(c.id)));
+              const extraCrew = extraCrewIds
+                .map(id => employees.find(e => String(e.id) === String(id)))
+                .filter(Boolean);
+              const allDisplayCrew = [...crewForProject, ...extraCrew];
+
+              const crewAddFiltered = (() => {
+                const q = crewAddSearch.toLowerCase().trim();
+                return (employees || [])
+                  .filter(e => e.active !== false && !scheduledIds.has(String(e.id)) && !extraCrewIds.some(id => String(id) === String(e.id)))
+                  .filter(e => !q || e.name.toLowerCase().includes(q))
+                  .slice(0, 12);
+              })();
+
+              return (
+                <div className="emp-content">
+                  <div className="section-header" style={{ alignItems: "center" }}>
+                    <div className="section-title" style={{ fontSize: 16 }}>{t("Crew Members")}</div>
+                    <button
+                      className="btn btn-sm"
+                      style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, background: "var(--accent)", color: "#fff", padding: "8px 14px", borderRadius: 8 }}
+                      onClick={() => { setShowCrewAdd(v => !v); setCrewAddSearch(""); }}
+                    >
+                      <UserPlus size={15} />
+                      {t("Add Crew")}
+                    </button>
                   </div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {crewForProject.map(c => (
-                      <div key={c.id} className="foreman-crew-row">
-                        <div>
-                          <div className="foreman-crew-name">{c.name}</div>
-                          <div className="foreman-crew-role">{t(c.role)}</div>
-                          <div className="text-xs text-muted" style={{ marginTop: 2 }}>
-                            {DAY_KEYS.filter(d => c.days?.[d]).map(d => t(d.charAt(0).toUpperCase() + d.slice(1))).join(", ")}
-                          </div>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <div className="foreman-crew-hours">{fmtHours(c.todayHours)}</div>
-                          <div className="text-xs text-muted">{t("Hours Today")}</div>
-                          <div className="text-xs text-dim" style={{ marginTop: 2 }}>
-                            {fmtHours(c.weekHours)} {t("This Week").toLowerCase()}
-                          </div>
-                        </div>
+
+                  {/* Add crew member dropdown */}
+                  {showCrewAdd && (
+                    <div style={{ marginBottom: 14, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: "1px solid var(--border)" }}>
+                        <Search size={14} style={{ color: "var(--text3)", flexShrink: 0 }} />
+                        <input
+                          ref={crewAddRef}
+                          autoFocus
+                          type="text"
+                          placeholder={t("Search employees...")}
+                          value={crewAddSearch}
+                          onChange={e => setCrewAddSearch(e.target.value)}
+                          style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--text)", fontSize: 14 }}
+                        />
+                        <button onClick={() => setShowCrewAdd(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 2 }}>
+                          <X size={14} />
+                        </button>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                      {crewAddFiltered.length === 0 ? (
+                        <div style={{ padding: "12px 14px", fontSize: 13, color: "var(--text3)" }}>{t("No employees found")}</div>
+                      ) : (
+                        crewAddFiltered.map(emp => (
+                          <div
+                            key={emp.id}
+                            style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={() => {
+                              setExtraCrewIds(prev => [...prev, emp.id]);
+                              setCrewAddSearch("");
+                            }}
+                          >
+                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                              {emp.name.split(" ").map(n => n[0]).join("")}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>{emp.name}</div>
+                              <div style={{ fontSize: 11, color: "var(--text3)" }}>{emp.role || ""}</div>
+                            </div>
+                            <UserPlus size={14} style={{ color: "var(--accent)" }} />
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {allDisplayCrew.length === 0 ? (
+                    <div className="empty-state" style={{ padding: "30px 20px" }}>
+                      <div style={{ fontSize: 36, marginBottom: 8, opacity: 0.5 }}><UserPlus size={36} /></div>
+                      <div className="empty-text">{t("No crew assigned")}</div>
+                      <div className="text-xs text-muted" style={{ marginTop: 6 }}>{t("Tap Add Crew to add members")}</div>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {crewForProject.map(c => (
+                        <div key={c.id} className="foreman-crew-row">
+                          <div>
+                            <div className="foreman-crew-name">{c.name}</div>
+                            <div className="foreman-crew-role">{t(c.role)}</div>
+                            <div className="text-xs text-muted" style={{ marginTop: 2 }}>
+                              {DAY_KEYS.filter(d => c.days?.[d]).map(d => t(d.charAt(0).toUpperCase() + d.slice(1))).join(", ")}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: "right" }}>
+                            <div className="foreman-crew-hours">{fmtHours(c.todayHours)}</div>
+                            <div className="text-xs text-muted">{t("Hours Today")}</div>
+                            <div className="text-xs text-dim" style={{ marginTop: 2 }}>
+                              {fmtHours(c.weekHours)} {t("This Week").toLowerCase()}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {extraCrew.map(c => (
+                        <div key={c.id} className="foreman-crew-row" style={{ borderLeft: "3px solid var(--amber)" }}>
+                          <div>
+                            <div className="foreman-crew-name">{c.name}</div>
+                            <div className="foreman-crew-role">{t(c.role)}</div>
+                            <div className="text-xs" style={{ color: "var(--amber)", marginTop: 2 }}>+ {t("Added today")}</div>
+                          </div>
+                          <button
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 6 }}
+                            onClick={() => setExtraCrewIds(prev => prev.filter(id => String(id) !== String(c.id)))}
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* ═══ HOURS TAB (was Budget) ═══ */}
             {foremanTab === "hours" && (
@@ -1541,6 +1643,28 @@ export function ForemanView({ app }) {
                             <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 4 }}>{proj?.name || "Project"}</div>
                             <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 16 }}>{t("Pick today's task")}</div>
 
+                            {/* Indoor / Outdoor toggle */}
+                            <div style={{ marginBottom: 16 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text2)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Work Environment")}</div>
+                              <div style={{ display: "flex", gap: 8 }}>
+                                {[{ key: "indoor", label: t("Indoor"), labelEs: "Interior" }, { key: "outdoor", label: t("Outdoor"), labelEs: "Exterior" }].map(opt => (
+                                  <button
+                                    key={opt.key}
+                                    onClick={() => setRcIndoorOutdoor(opt.key)}
+                                    style={{
+                                      flex: 1, padding: "10px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "2px solid",
+                                      borderColor: rcIndoorOutdoor === opt.key ? "var(--accent)" : "var(--border)",
+                                      background: rcIndoorOutdoor === opt.key ? "var(--accent)" : "var(--bg2)",
+                                      color: rcIndoorOutdoor === opt.key ? "#fff" : "var(--text2)",
+                                      transition: "all 0.15s",
+                                    }}
+                                  >
+                                    {lang === "es" ? opt.labelEs : opt.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
                             {/* Trade cards - 2 column grid */}
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
                               {TRADE_CARDS.map(card => {
@@ -1555,50 +1679,15 @@ export function ForemanView({ app }) {
                                     display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
                                     textAlign: "center", transition: "transform 0.15s",
                                   }} onClick={() => {
-                                    // Auto-create JSA from template
+                                    // Go to hazard selection step first
                                     const trade = tmpl.trade;
                                     const lib = HAZARD_LIBRARY[trade] || [];
-                                    const steps = tmpl.steps.map((s, i) => ({
-                                      id: "s_" + Date.now() + "_" + i,
-                                      step: s.step, stepEs: s.stepEs,
-                                      hazards: (s.hazards || []).map(hIdx => {
-                                        const h = lib[hIdx];
-                                        if (!h) return null;
-                                        return { hazard: h.hazard, hazardEs: h.hazardEs, category: h.category, likelihood: h.likelihood, severity: h.severity, controls: [...h.controls], controlType: h.controlType, ppe: h.ppe ? [...h.ppe] : [] };
-                                      }).filter(Boolean),
-                                    }));
-                                    // Add weather hazard if applicable
-                                    const wh = WEATHER_HAZARD_MAP[rcWeather];
-                                    if (wh && rcWeather !== "clear") {
-                                      steps.push({ id: "s_weather_" + Date.now(), step: "Weather precautions", stepEs: "Precauciones climáticas",
-                                        hazards: [{ hazard: wh.hazard, hazardEs: wh.hazardEs, category: wh.category, likelihood: 3, severity: 3, controls: ["Monitor conditions", "Take breaks as needed"], controlType: "administrative", ppe: wh.ppe || [] }],
-                                      });
-                                    }
-                                    const newJsa = {
-                                      id: crypto.randomUUID(),
-                                      projectId: selectedProjectId,
-                                      templateId: card.templateId,
-                                      trade, title: tmpl.title, titleEs: tmpl.titleEs,
-                                      location: proj?.address || "",
-                                      date: new Date().toISOString().slice(0, 10),
-                                      shift: new Date().getHours() < 14 ? "day" : "night",
-                                      weather: rcWeather,
-                                      supervisor: activeForeman.name,
-                                      competentPerson: activeForeman.name,
-                                      status: "draft",
-                                      steps, ppe: [...tmpl.ppe], permits: [...tmpl.permits],
-                                      crewSignOn: [], nearMisses: [],
-                                      toolboxTalk: { topic: "", notes: "", discussed: false },
-                                      createdAt: new Date().toISOString(),
-                                      createdBy: activeForeman.name, audit: [],
-                                    };
-                                    setJsas(prev => [...prev, newJsa]);
-                                    setRcJsaId(newJsa.id);
-                                    // Pre-select crew for project
+                                    // Pre-select all hazards by default
                                     const sel = {};
-                                    crewForProject.forEach(c => { sel[c.id] = true; });
-                                    setRcSelected(sel);
-                                    setRcStep("crew");
+                                    lib.forEach((_, idx) => { sel[idx] = true; });
+                                    setRcSelectedHazardIdxs(sel);
+                                    setRcPendingCard(card);
+                                    setRcStep("hazards");
                                   }}>
                                     <span style={{ fontSize: 28 }}>{card.icon}</span>
                                     <span style={{ fontSize: 13, fontWeight: 600, color: card.color }}>{tradeLabel}</span>
@@ -1607,21 +1696,166 @@ export function ForemanView({ app }) {
                               })}
                             </div>
 
-                            {/* Weather quick-select */}
-                            <div style={{ marginBottom: 8 }}>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text2)", marginBottom: 6 }}>{t("Weather")}</div>
-                              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                                {WEATHER_QUICK.map(w => (
-                                  <button key={w.key} className={rcWeather === w.key ? "btn btn-primary btn-sm" : "cal-nav-btn"}
-                                    style={{ fontSize: 12, padding: "6px 10px" }}
-                                    onClick={() => setRcWeather(w.key)}>
-                                    {w.icon} {lang === "es" ? w.labelEs : w.label}
-                                  </button>
-                                ))}
+                            {/* Weather quick-select — only for outdoor jobs */}
+                            {rcIndoorOutdoor === "outdoor" && (
+                              <div style={{ marginBottom: 8 }}>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text2)", marginBottom: 6 }}>{t("Weather")}</div>
+                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                  {WEATHER_QUICK.map(w => (
+                                    <button key={w.key} className={rcWeather === w.key ? "btn btn-primary btn-sm" : "cal-nav-btn"}
+                                      style={{ fontSize: 12, padding: "6px 10px" }}
+                                      onClick={() => setRcWeather(w.key)}>
+                                      {w.icon} {lang === "es" ? w.labelEs : w.label}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </>
                         )}
+                      </div>
+                    );
+                  }
+
+                  // ── STEP 1b: HAZARD MULTI-SELECT ──
+                  if (rcStep === "hazards" && rcPendingCard) {
+                    const tmpl = JSA_TEMPLATES.find(t => t.id === rcPendingCard.templateId);
+                    const trade = tmpl?.trade || rcPendingCard.trade;
+                    const lib = HAZARD_LIBRARY[trade] || [];
+                    const selectedCount = Object.values(rcSelectedHazardIdxs).filter(Boolean).length;
+                    return (
+                      <div>
+                        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
+                          <button className="cal-nav-btn" onClick={() => { setRcStep("pick"); setRcPendingCard(null); }}>{t("← Back")}</button>
+                          <span style={{ fontSize: 16, fontWeight: 700 }}>{t("Select Hazards")}</span>
+                        </div>
+
+                        <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 4 }}>{proj?.name}</div>
+                        <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 16 }}>
+                          {t("Pick as many as apply")} · {TRADE_LABELS[trade]?.label || trade}
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+                          {lib.map((h, idx) => {
+                            const isChecked = !!rcSelectedHazardIdxs[idx];
+                            const catInfo = HAZARD_CATEGORIES.find(c => c.key === h.category);
+                            return (
+                              <div
+                                key={idx}
+                                onClick={() => setRcSelectedHazardIdxs(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                                style={{
+                                  display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px",
+                                  background: isChecked ? "var(--bg2)" : "var(--bg3)",
+                                  border: `1.5px solid ${isChecked ? (catInfo?.color || "var(--accent)") : "var(--border)"}`,
+                                  borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
+                                }}
+                              >
+                                <div style={{ flexShrink: 0, marginTop: 1, color: isChecked ? (catInfo?.color || "var(--accent)") : "var(--text3)" }}>
+                                  {isChecked ? <CheckSquare size={18} /> : <Square size={18} />}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: isChecked ? "var(--text)" : "var(--text3)" }}>{h.hazard}</div>
+                                  {h.hazardEs && <div style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic" }}>{h.hazardEs}</div>}
+                                  {isChecked && (
+                                    <div style={{ marginTop: 4 }}>
+                                      {h.controls.slice(0, 2).map((c, ci) => (
+                                        <div key={ci} style={{ fontSize: 11, color: "var(--text2)" }}>✓ {c}</div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                {catInfo && (
+                                  <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: catInfo.color + "22", color: catInfo.color, fontWeight: 700, flexShrink: 0 }}>
+                                    {catInfo.label}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+
+                          {/* Weather hazard — only for outdoor */}
+                          {rcIndoorOutdoor === "outdoor" && rcWeather !== "clear" && WEATHER_HAZARD_MAP[rcWeather] && (() => {
+                            const wh = WEATHER_HAZARD_MAP[rcWeather];
+                            const isChecked = !!rcSelectedHazardIdxs["weather"];
+                            return (
+                              <div
+                                onClick={() => setRcSelectedHazardIdxs(prev => ({ ...prev, weather: !prev["weather"] }))}
+                                style={{
+                                  display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px",
+                                  background: isChecked ? "var(--bg2)" : "var(--bg3)",
+                                  border: `1.5px solid ${isChecked ? "#eab308" : "var(--border)"}`,
+                                  borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
+                                }}
+                              >
+                                <div style={{ flexShrink: 0, marginTop: 1, color: isChecked ? "#eab308" : "var(--text3)" }}>
+                                  {isChecked ? <CheckSquare size={18} /> : <Square size={18} />}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: isChecked ? "var(--text)" : "var(--text3)" }}>{wh.hazard}</div>
+                                  {wh.hazardEs && <div style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic" }}>{wh.hazardEs}</div>}
+                                </div>
+                                <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "#eab30822", color: "#eab308", fontWeight: 700, flexShrink: 0 }}>
+                                  Weather
+                                </span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        <button
+                          className="btn btn-primary"
+                          style={{ width: "100%", padding: "14px", fontSize: 16 }}
+                          disabled={selectedCount === 0}
+                          onClick={() => {
+                            if (!tmpl) return;
+                            const libHazards = HAZARD_LIBRARY[trade] || [];
+                            // Build steps with only selected hazards
+                            const steps = tmpl.steps.map((s, i) => ({
+                              id: "s_" + Date.now() + "_" + i,
+                              step: s.step, stepEs: s.stepEs,
+                              hazards: (s.hazards || []).map(hIdx => {
+                                if (!rcSelectedHazardIdxs[hIdx]) return null;
+                                const h = libHazards[hIdx];
+                                if (!h) return null;
+                                return { hazard: h.hazard, hazardEs: h.hazardEs, category: h.category, likelihood: h.likelihood, severity: h.severity, controls: [...h.controls], controlType: h.controlType, ppe: h.ppe ? [...h.ppe] : [] };
+                              }).filter(Boolean),
+                            }));
+                            // Add weather hazard if outdoor + selected
+                            if (rcIndoorOutdoor === "outdoor" && rcWeather !== "clear" && rcSelectedHazardIdxs["weather"]) {
+                              const wh = WEATHER_HAZARD_MAP[rcWeather];
+                              if (wh) steps.push({ id: "s_weather_" + Date.now(), step: "Weather precautions", stepEs: "Precauciones climáticas",
+                                hazards: [{ hazard: wh.hazard, hazardEs: wh.hazardEs, category: wh.category, likelihood: 3, severity: 3, controls: ["Monitor conditions", "Take breaks as needed"], controlType: "administrative", ppe: wh.ppe || [] }],
+                              });
+                            }
+                            const newJsa = {
+                              id: crypto.randomUUID(),
+                              projectId: selectedProjectId,
+                              templateId: rcPendingCard.templateId,
+                              trade, title: tmpl.title, titleEs: tmpl.titleEs,
+                              location: proj?.address || "",
+                              date: new Date().toISOString().slice(0, 10),
+                              shift: new Date().getHours() < 14 ? "day" : "night",
+                              weather: rcIndoorOutdoor === "outdoor" ? rcWeather : "indoor",
+                              indoorOutdoor: rcIndoorOutdoor,
+                              supervisor: activeForeman.name,
+                              competentPerson: activeForeman.name,
+                              status: "draft",
+                              steps, ppe: [...tmpl.ppe], permits: [...tmpl.permits],
+                              crewSignOn: [], nearMisses: [],
+                              toolboxTalk: { topic: "", notes: "", discussed: false },
+                              createdAt: new Date().toISOString(),
+                              createdBy: activeForeman.name, audit: [],
+                            };
+                            setJsas(prev => [...prev, newJsa]);
+                            setRcJsaId(newJsa.id);
+                            const sel = {};
+                            crewForProject.forEach(c => { sel[c.id] = true; });
+                            setRcSelected(sel);
+                            setRcStep("crew");
+                          }}
+                        >
+                          {t("Proceed")} ({selectedCount} {t("hazards selected")})
+                        </button>
                       </div>
                     );
                   }
@@ -2846,9 +3080,19 @@ export function ForemanView({ app }) {
 
                 {/* RFIs */}
                 <div className="project-section">
-                  <div className="project-section-header" onClick={() => toggleSection("rfis")}>
-                    <span>{t("RFIs")} ({projectRFIs.length})</span>
-                    <span>{openSections.rfis ? "▾" : "▸"}</span>
+                  <div className="project-section-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flex: 1 }} onClick={() => toggleSection("rfis")}>
+                      <span>{t("RFIs")} ({projectRFIs.length})</span>
+                      <span>{openSections.rfis ? "▾" : "▸"}</span>
+                    </div>
+                    <button
+                      className="btn btn-sm"
+                      style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, background: "var(--accent)", color: "#fff", padding: "6px 12px", borderRadius: 7 }}
+                      onClick={() => { setShowRfiModal(true); setRfiFormData({ subject: "", description: "", drawingRef: "" }); }}
+                    >
+                      <FileQuestion size={13} />
+                      {t("Submit RFI")}
+                    </button>
                   </div>
                   {openSections.rfis && (
                     projectRFIs.length === 0
@@ -2856,9 +3100,10 @@ export function ForemanView({ app }) {
                       : projectRFIs.map(r => (
                         <div key={r.id} className="card" style={{ padding: 10, marginTop: 6 }}>
                           <div className="flex-between">
-                            <span className="text-sm font-semi">{r.title || r.question}</span>
-                            <span className={`badge ${r.status === "answered" ? "badge-green" : "badge-amber"}`}>{r.status}</span>
+                            <span className="text-sm font-semi">{r.subject || r.title || r.question}</span>
+                            <span className={`badge ${r.status === "answered" ? "badge-green" : r.status === "submitted" ? "badge-blue" : "badge-amber"}`}>{r.status}</span>
                           </div>
+                          {r.drawingRef && <div className="text-xs text-muted mt-4">Ref: {r.drawingRef}</div>}
                           {r.response && <div className="text-xs text-muted mt-4">{t("Response")}: {r.response}</div>}
                         </div>
                       ))
@@ -2869,6 +3114,113 @@ export function ForemanView({ app }) {
           </>
         )}
       </div>
+
+      {/* ═══ SUBMIT RFI MODAL ═══ */}
+      {showRfiModal && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowRfiModal(false); }}>
+          <div className="modal-content" style={{ maxWidth: 480, width: "100%", padding: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <FileQuestion size={20} style={{ color: "var(--accent)" }} />
+                <span style={{ fontSize: 17, fontWeight: 700 }}>{t("Submit RFI")}</span>
+              </div>
+              <button onClick={() => setShowRfiModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 4 }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 16 }}>
+              {selectedProject?.name} · {t("Assigned to PM")}: {selectedProject?.pm || "PM"}
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text2)", display: "block", marginBottom: 6 }}>
+                  {t("Subject")} *
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder={t("e.g., Clarification needed on wall type at Grid A")}
+                  value={rfiFormData.subject}
+                  onChange={e => setRfiFormData(f => ({ ...f, subject: e.target.value }))}
+                  style={{ width: "100%", fontSize: 14 }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text2)", display: "block", marginBottom: 6 }}>
+                  {t("Description")} *
+                </label>
+                <textarea
+                  className="form-input"
+                  placeholder={t("Describe the question or issue in detail...")}
+                  value={rfiFormData.description}
+                  onChange={e => setRfiFormData(f => ({ ...f, description: e.target.value }))}
+                  rows={4}
+                  style={{ width: "100%", fontSize: 14, resize: "vertical", fontFamily: "inherit" }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text2)", display: "block", marginBottom: 6 }}>
+                  {t("Drawing / Spec Reference")} ({t("optional")})
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder={t("e.g., A-201, Spec 09 21 16")}
+                  value={rfiFormData.drawingRef}
+                  onChange={e => setRfiFormData(f => ({ ...f, drawingRef: e.target.value }))}
+                  style={{ width: "100%", fontSize: 14 }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
+              <button className="btn" style={{ flex: 1, fontSize: 14 }} onClick={() => setShowRfiModal(false)}>
+                {t("Cancel")}
+              </button>
+              <button
+                className="btn btn-primary"
+                style={{ flex: 2, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}
+                disabled={!rfiFormData.subject.trim() || !rfiFormData.description.trim()}
+                onClick={() => {
+                  if (!rfiFormData.subject.trim() || !rfiFormData.description.trim()) return;
+                  const proj = selectedProject;
+                  const existingNums = (rfis || []).filter(r => String(r.projectId) === String(selectedProjectId)).length;
+                  const rfiNum = `RFI-${String(existingNums + 1).padStart(3, "0")}`;
+                  const newRfi = {
+                    id: crypto.randomUUID(),
+                    projectId: selectedProjectId,
+                    projectName: proj?.name || "",
+                    number: rfiNum,
+                    subject: rfiFormData.subject.trim(),
+                    question: rfiFormData.description.trim(),
+                    drawingRef: rfiFormData.drawingRef.trim(),
+                    specRef: rfiFormData.drawingRef.trim(),
+                    status: "submitted",
+                    priority: "normal",
+                    assigned: proj?.pm || "PM",
+                    submittedBy: activeForeman.name,
+                    dateSubmitted: new Date().toISOString().slice(0, 10),
+                    submitted: new Date().toISOString().slice(0, 10),
+                    createdAt: new Date().toISOString(),
+                  };
+                  if (setRfis) setRfis(prev => [...prev, newRfi]);
+                  setShowRfiModal(false);
+                  setRfiFormData({ subject: "", description: "", drawingRef: "" });
+                  show(`${t("RFI submitted")} · ${rfiNum}`, "ok");
+                  setOpenSections(prev => ({ ...prev, rfis: true }));
+                }}
+              >
+                <Send size={15} />
+                {t("Submit RFI")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
