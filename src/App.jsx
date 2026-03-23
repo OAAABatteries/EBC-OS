@@ -6,7 +6,7 @@ import { useToast } from "./hooks/useToast";
 import {
   THEMES, ASSEMBLIES, SCOPE_INIT, initBids, initProjects, initContacts, initCallLog,
   initInvoices, initChangeOrders, initRfis, initSubmittals, initSchedule,
-  initIncidents, initToolboxTalks, initDailyReports, initTakeoffs,
+  initIncidents, initToolboxTalks, initDailyReports, initTakeoffs, initPunchItems,
   OSHA_CHECKLIST, COMPANY_DEFAULTS, getHF,
   initEmployees, initCompanyLocations, initTimeEntries, initCrewSchedule, initMaterialRequests,
   initTmTickets, DATA_VERSION
@@ -370,7 +370,7 @@ function App({ auth, onLogout }) {
   const [customAssemblies, setCustomAssemblies, _syncCustomAssemblies] = useSyncedState("customAssemblies", []);
   const [incentiveProjects, setIncentiveProjects, _syncIncentiveProjects] = useSyncedState("incentiveProjects", []);
   const [sdsSheets, setSdsSheets, _syncSds] = useSyncedState("sdsSheets", []);
-  const [punchItems, setPunchItems, _syncPunch] = useSyncedState("punchItems", []);
+  const [punchItems, setPunchItems, _syncPunch] = useSyncedState("punchItems", initPunchItems);
   const [insurancePolicies, setInsurancePolicies, _syncInsurance] = useSyncedState("insurancePolicies", []);
 
   // ── User GPS location for proximity features ──
@@ -454,6 +454,7 @@ function App({ auth, onLogout }) {
         setToolboxTalks(initToolboxTalks); // []
         setDailyReports(initDailyReports); // []
         setTakeoffs(initTakeoffs);         // []
+        setPunchItems(initPunchItems);
         localStorage.setItem("ebc_data_version", String(DATA_VERSION));
         console.info("[EBC] Data version upgraded to", DATA_VERSION, "— re-seeded all data from constants.js");
       }
