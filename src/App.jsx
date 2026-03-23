@@ -373,6 +373,7 @@ function App({ auth, onLogout }) {
   const [sdsSheets, setSdsSheets, _syncSds] = useSyncedState("sdsSheets", []);
   const [punchItems, setPunchItems, _syncPunch] = useSyncedState("punchItems", initPunchItems);
   const [insurancePolicies, setInsurancePolicies, _syncInsurance] = useSyncedState("insurancePolicies", []);
+  const [problems, setProblems, _syncProblems] = useSyncedState("problems", []);
 
   // ── User GPS location for proximity features ──
   const [userLocation, setUserLocation] = useState(null);
@@ -403,7 +404,7 @@ function App({ auth, onLogout }) {
     _syncCalendarEvents, _syncPtoRequests, _syncEquipment, _syncEquipBookings,
     _syncCerts, _syncJsas, _syncTmTickets, _syncMaterials, _syncCustomAssemblies,
     _syncIncentiveProjects,
-    _syncSds, _syncPunch, _syncInsurance,
+    _syncSds, _syncPunch, _syncInsurance, _syncProblems,
   ];
   const syncStatus = useMemo(() => ({
     loading: _allSync.some(s => s.loading),
@@ -577,6 +578,7 @@ function App({ auth, onLogout }) {
     sdsSheets, setSdsSheets,
     punchItems, setPunchItems,
     insurancePolicies, setInsurancePolicies,
+    problems, setProblems,
     show, setModal, modal, search, setSearch, tab, setTab, subTab, setSubTab, fmt, fmtK, nextId,
     lang, setLang, t,
     auth, onLogout,
@@ -5616,6 +5618,58 @@ const ModalHub = ({ type, data, app }) => {
                   onUpdate={updateEditPhases}
                   readOnly={false}
                 />
+              </div>
+            );
+          })()}
+
+          {/* ── Reported Problems ── */}
+          {!isNew && (() => {
+            const pid = draft.id;
+            const projProblems = (app.problems || []).filter(p => String(p.projectId) === String(pid)).sort((a, b) => new Date(b.reportedAt) - new Date(a.reportedAt));
+            const openProblems = projProblems.filter(p => p.status === "open");
+            const PRIORITY_COLOR_MAP = { Low: "var(--green)", Medium: "var(--amber)", High: "var(--red)", Urgent: "#dc2626" };
+            const PRIORITY_BADGE_MAP = { Low: "badge-green", Medium: "badge-amber", High: "badge-red", Urgent: "badge-red" };
+            return (
+              <div style={{ marginTop: 16, borderTop: "2px solid var(--border)", paddingTop: 16 }}>
+                <div className="flex-between" style={{ marginBottom: 10 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    Reported Problems ({projProblems.length})
+                    {openProblems.length > 0 && <span className="badge badge-red" style={{ fontSize: 10 }}>{openProblems.length} open</span>}
+                  </div>
+                </div>
+                {projProblems.length === 0 ? (
+                  <div className="text-xs text-muted" style={{ padding: "8px 0" }}>No problems reported for this project.</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 280, overflowY: "auto" }}>
+                    {projProblems.map(prob => (
+                      <div key={prob.id} style={{ padding: "10px 12px", borderRadius: 8, background: "var(--bg3)", border: `1px solid ${prob.status === "resolved" ? "var(--border)" : "rgba(245,158,11,0.2)"}`, opacity: prob.status === "resolved" ? 0.65 : 1 }}>
+                        <div className="flex-between" style={{ marginBottom: 4 }}>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <span className={`badge ${PRIORITY_BADGE_MAP[prob.priority] || "badge-amber"}`} style={{ fontSize: 9 }}>{prob.priority}</span>
+                            <span className="text-xs font-semi" style={{ color: "var(--text1)" }}>{prob.category}</span>
+                          </div>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <span className={`badge ${prob.status === "resolved" ? "badge-green" : "badge-amber"}`} style={{ fontSize: 9 }}>{prob.status}</span>
+                            {prob.status === "open" && (
+                              <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px" }}
+                                onClick={() => app.setProblems(prev => prev.map(p => p.id === prob.id ? { ...p, status: "resolved", resolvedAt: new Date().toISOString(), resolvedBy: app.auth?.name } : p))}>
+                                Resolve
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-sm" style={{ marginBottom: 4 }}>{prob.description}</div>
+                        <div className="text-xs text-muted">
+                          {prob.reporter} · {new Date(prob.reportedAt).toLocaleDateString()} {new Date(prob.reportedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          {prob.gps && <span style={{ marginLeft: 6 }}>📍 {prob.gps.lat?.toFixed(4)}, {prob.gps.lng?.toFixed(4)}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })()}
