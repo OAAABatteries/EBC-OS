@@ -59,7 +59,7 @@ export function CalendarAnalytics({ app, lang }) {
 
       const empHours = Object.entries(byEmployee).map(([id, hours]) => ({
         empId: Number(id),
-        name: (employees || []).find(e => e.id === Number(id))?.name || `#${id}`,
+        name: (employees || []).find(e => String(e.id) === String(id))?.name || `#${id}`,
         hours,
         overtime: Math.max(0, hours - 40),
       }));
@@ -88,7 +88,7 @@ export function CalendarAnalytics({ app, lang }) {
       byProject[cs.projectId].crew.add(cs.employeeId);
     }
     return Object.entries(byProject).map(([pid, data]) => {
-      const proj = (projects || []).find(p => p.id === Number(pid));
+      const proj = (projects || []).find(p => String(p.id) === String(pid));
       return {
         projectId: Number(pid),
         name: proj?.name || `#${pid}`,

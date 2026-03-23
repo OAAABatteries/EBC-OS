@@ -7,7 +7,7 @@ import { isDemoMode } from "./defaults";
 const _demo = isDemoMode();
 
 // Bump this when seed data changes to bust stale localStorage caches
-export const DATA_VERSION = 12;
+export const DATA_VERSION = 13;
 
 // ── THEMES ────────────────────────────────────────────────────
 export const THEMES = {
@@ -414,19 +414,19 @@ const _demoBids = [
 // Real project data extracted from Google Docs proposals
 export const PM_NAMES = { 3: "Emmanuel Aguilar", 4: "Isai Aguilar", 8: "Abner Aguilar" };
 const _demoProjects = [
-  {id:1,name:"Endurance - Woodside Laboratory",gc:"Endurance Builders",contract:74800,status:"in-progress",phase:"Commercial",address:"4200 San Jacinto St, Houston, TX 77004",suite:"",parking:"",lat:29.7224,lng:-95.3785,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-03-30",end:"2026-08-21",crewCount:5,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
-  {id:2,name:"WCC - CB&I CEO/Lvl 2/Lvl 7",gc:"WC Construction",contract:59800,status:"in-progress",phase:"Commercial",address:"1725 Hughes Landing Blvd, The Woodlands, TX 77380",suite:"CEO Office / Level 2 / Level 7",parking:"",lat:30.1658,lng:-95.4613,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-03-20",end:"2026-06-15",crewCount:4,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish"]},
+  {id:1,name:"Endurance - Woodside Laboratory",gc:"Endurance Builders",contract:74800,status:"in-progress",phase:"Commercial",address:"4200 San Jacinto St, Houston, TX 77004",suite:"",parking:"",lat:29.7224,lng:-95.3785,pm:"Abner Aguilar",laborHours:1200,progress:0,start:"2026-03-30",end:"2026-08-21",crewCount:5,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
+  {id:2,name:"WCC - CB&I CEO/Lvl 2/Lvl 7",gc:"WC Construction",contract:59800,status:"in-progress",phase:"Commercial",address:"1725 Hughes Landing Blvd, The Woodlands, TX 77380",suite:"CEO Office / Level 2 / Level 7",parking:"",lat:30.1658,lng:-95.4613,pm:"Abner Aguilar",laborHours:900,progress:5,start:"2026-03-20",end:"2026-06-15",crewCount:4,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish"]},
   {id:3,name:"Forney - BSLMC Cath Labs 4 & 9",gc:"Forney Construction",contract:104500,status:"on-hold",phase:"Medical",address:"6720 Bertner Ave, Houston, TX 77030",suite:"Cath Labs 4 & 9",parking:"",lat:29.7066,lng:-95.3966,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-05-01",end:"2026-09-30",scope:["Demo","Metal Framing","Drywall","Lead-Lined Walls","ACT Ceilings"]},
-  {id:4,name:"Brunello Cucinelli - Store Buildout",gc:"Brodson",contract:308400,status:"in-progress",phase:"Retail",address:"4444 Westheimer Rd, Houston, TX 77027",suite:"F155",parking:"",lat:29.7376,lng:-95.4328,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-02-10",end:"2026-07-15",crewCount:6,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
-  {id:16,name:"ROD - Brunello Cucinelli Expansion (Landlord Work)",gc:"United Constructors",contract:49900,status:"in-progress",phase:"Retail",address:"4444 Westheimer Rd, Houston, TX 77027",suite:"",parking:"",lat:29.7376,lng:-95.4328,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-03-01",end:"2026-05-30",crewCount:3,scope:["Metal Framing","Drywall"]},
-  {id:5,name:"Texas Heart Center - Baytown",gc:"Bayshore",contract:54200,status:"in-progress",phase:"Medical",address:"1602 W Baker Rd, Baytown, TX 77521",suite:"",parking:"",lat:29.7633,lng:-94.9774,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-02-24",end:"2026-06-20",crewCount:4,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Lead-Lined Walls","Doors & Hardware"]},
+  {id:4,name:"Brunello Cucinelli - Store Buildout",gc:"Brodson",contract:308400,status:"in-progress",phase:"Retail",address:"4444 Westheimer Rd, Houston, TX 77027",suite:"F155",parking:"",lat:29.7376,lng:-95.4328,pm:"Abner Aguilar",laborHours:2400,progress:35,start:"2026-02-10",end:"2026-07-15",crewCount:6,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
+  {id:16,name:"ROD - Brunello Cucinelli Expansion (Landlord Work)",gc:"United Constructors",contract:49900,status:"in-progress",phase:"Retail",address:"4444 Westheimer Rd, Houston, TX 77027",suite:"",parking:"",lat:29.7376,lng:-95.4328,pm:"Abner Aguilar",laborHours:400,progress:20,start:"2026-03-01",end:"2026-05-30",crewCount:3,scope:["Metal Framing","Drywall"]},
+  {id:5,name:"Texas Heart Center - Baytown",gc:"Bayshore",contract:54200,status:"in-progress",phase:"Medical",address:"1602 W Baker Rd, Baytown, TX 77521",suite:"",parking:"",lat:29.7633,lng:-94.9774,pm:"Abner Aguilar",laborHours:800,progress:40,start:"2026-02-24",end:"2026-06-20",crewCount:4,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Lead-Lined Walls","Doors & Hardware"]},
   {id:6,name:"MH Woodlands RAD Equipment Replacement",gc:"Forney Construction",contract:10500,laborCost:5200,materialCost:3800,status:"in-progress",phase:"Medical",address:"9250 Pinecroft Dr, The Woodlands, TX 77380",suite:"",parking:"",lat:30.1620,lng:-95.4710,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-03-10",end:"2026-04-25",crewCount:2,scope:["Demo","Metal Framing","Drywall","ACT Ceilings"]},
-  {id:7,name:"MH MC Single Plane IR",gc:"O'Donnell/Snider",contract:33000,status:"in-progress",phase:"Medical",address:"921 Gessner Rd, Houston, TX 77024",suite:"",parking:"",lat:29.7730,lng:-95.5560,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-03-03",end:"2026-05-20",crewCount:3,scope:["Demo","Metal Framing","Drywall","Lead-Lined Walls"]},
+  {id:7,name:"MH MC Single Plane IR",gc:"O'Donnell/Snider",contract:33000,status:"in-progress",phase:"Medical",address:"921 Gessner Rd, Houston, TX 77024",suite:"",parking:"",lat:29.7730,lng:-95.5560,pm:"Abner Aguilar",laborHours:480,progress:25,start:"2026-03-03",end:"2026-05-20",crewCount:3,scope:["Demo","Metal Framing","Drywall","Lead-Lined Walls"]},
   {id:8,name:"MH MC Neuro IR",gc:"O'Donnell/Snider",contract:34000,status:"in-progress",phase:"Medical",address:"921 Gessner Rd, Houston, TX 77024",suite:"",parking:"",lat:29.7730,lng:-95.5560,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-03-10",end:"2026-05-25",crewCount:3,scope:["Demo","Metal Framing","Drywall","Lead-Lined Walls"]},
   {id:9,name:"MH League City CCC CT",gc:"Forney Construction",contract:14900,laborCost:6500,materialCost:5200,status:"in-progress",phase:"Medical",address:"2555 S Shore Blvd, League City, TX 77573",suite:"",parking:"",lat:29.5580,lng:-95.0690,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-03-15",end:"2026-05-10",crewCount:2,scope:["Demo","Metal Framing","Drywall","Lead-Lined Walls"]},
   {id:10,name:"MH Pearland MEIC-CT",gc:"Forney Construction",contract:10500,status:"in-progress",phase:"Medical",address:"16100 South Fwy, Pearland, TX 77584",suite:"",parking:"",lat:29.5635,lng:-95.2860,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-03-01",end:"2026-04-30",crewCount:2,scope:["Demo","Drywall","ACT Ceilings","Tape & Finish","Lead-Lined Walls"]},
-  {id:11,name:"Our Lady of Guadalupe Restroom",gc:"Forney Construction",contract:34700,status:"in-progress",phase:"Commercial",address:"2405 Navigation Blvd, Houston, TX 77003",suite:"",parking:"",lat:29.7560,lng:-95.3500,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-02-17",end:"2026-05-15",crewCount:3,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
-  {id:12,name:"Arch-Con - Sprouts Farmers Market",gc:"Arch-Con",contract:215100,laborCost:68000,materialCost:62000,status:"in-progress",phase:"Retail",address:"4775 W Panther Creek Dr, The Woodlands, TX 77381",suite:"",parking:"",lat:30.1740,lng:-95.4950,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-03-01",end:"2026-08-30",crewCount:5,scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
+  {id:11,name:"Our Lady of Guadalupe Restroom",gc:"Forney Construction",contract:34700,status:"in-progress",phase:"Commercial",address:"2405 Navigation Blvd, Houston, TX 77003",suite:"",parking:"",lat:29.7560,lng:-95.3500,pm:"Abner Aguilar",laborHours:520,progress:50,start:"2026-02-17",end:"2026-05-15",crewCount:3,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
+  {id:12,name:"Arch-Con - Sprouts Farmers Market",gc:"Arch-Con",contract:215100,laborCost:68000,materialCost:62000,status:"in-progress",phase:"Retail",address:"4775 W Panther Creek Dr, The Woodlands, TX 77381",suite:"",parking:"",lat:30.1740,lng:-95.4950,pm:"Abner Aguilar",laborHours:1800,progress:15,start:"2026-03-01",end:"2026-08-30",crewCount:5,scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
   {id:13,name:"MHMC Cancer Center CT",gc:"Forney Construction",contract:20900,status:"in-progress",phase:"Medical",address:"925 Gessner Rd, Houston, TX 77024",suite:"",parking:"",lat:29.7728,lng:-95.5560,pm:"Abner Aguilar",laborHours:0,progress:95,start:"2026-01-06",end:"2026-03-28",crewCount:2,scope:["Demo","Metal Framing","Drywall","ACT Ceilings"]},
   {id:14,name:"Heart Care Clinic - NW Houston",gc:"United Constructors",contract:79200,status:"completed",phase:"Medical",address:"13325 Hargrave Rd, Houston, TX 77070",suite:"",parking:"",lat:29.9570,lng:-95.5730,pm:"Abner Aguilar",laborHours:0,progress:100,start:"2025-10-01",end:"2026-02-28",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
   {id:15,name:"MH Pearland L4 Renovation",gc:"Harvey Cleary",contract:83700,status:"in-progress",phase:"Medical",address:"16100 South Fwy, Pearland, TX 77584",suite:"Level 4",parking:"",lat:29.5635,lng:-95.2860,pm:"Abner Aguilar",laborHours:0,progress:95,start:"2025-12-01",end:"2026-04-15",crewCount:4,scope:["Metal Framing","Drywall"]},
@@ -592,13 +592,85 @@ function _currentWeekStart() {
 const _ws = _currentWeekStart();
 
 // ── SEED: MATERIAL REQUESTS ──
-const _demoMaterialRequests = [];
+const _demoMaterialRequests = [
+  { id: "mr1", employeeId: 1, employeeName: "Oscar Alvarez", projectId: 4, projectName: "Brunello Cucinelli - Store Buildout", material: '5/8" Type X GWB', qty: 120, unit: "SHT", notes: "Level 5 finish walls — need delivered by Thursday", status: "requested", requestedAt: new Date(Date.now() - 86400000).toISOString() },
+  { id: "mr2", employeeId: 1, employeeName: "Oscar Alvarez", projectId: 4, projectName: "Brunello Cucinelli - Store Buildout", material: '3-5/8" 25ga Metal Studs', qty: 200, unit: "EA", notes: "", status: "approved", requestedAt: new Date(Date.now() - 172800000).toISOString(), approvedAt: new Date(Date.now() - 86400000).toISOString() },
+  { id: "mr3", employeeId: 5, employeeName: "David Ramirez", projectId: 5, projectName: "Texas Heart Center - Baytown", material: "Lead-Lined Drywall (1/32\" Pb)", qty: 40, unit: "SHT", notes: "X-ray room — confirm lead spec with GC", status: "requested", requestedAt: new Date(Date.now() - 43200000).toISOString() },
+  { id: "mr4", employeeId: 9, employeeName: "Antonio Hernandez", projectId: 12, projectName: "Arch-Con - Sprouts Farmers Market", material: "Mud & Tape Compound (5gal)", qty: 10, unit: "BKT", notes: "", status: "approved", requestedAt: new Date(Date.now() - 259200000).toISOString(), approvedAt: new Date(Date.now() - 172800000).toISOString() },
+];
 
 // ── SEED: CREW SCHEDULE ──
-const _demoCrewSchedule = [];
+// Assigns foremen + crew to active projects for the current week
+const _demoCrewSchedule = [
+  // Oscar Alvarez (Foreman id:1) → Brunello Cucinelli (id:4) with crew
+  { id: "cs1", employeeId: 1, projectId: 4, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: true }, hours: { start: "06:30", end: "15:00" } },
+  { id: "cs2", employeeId: 2, projectId: 4, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: true }, hours: { start: "06:30", end: "15:00" } },
+  { id: "cs3", employeeId: 3, projectId: 4, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: false }, hours: { start: "07:00", end: "15:30" } },
+  { id: "cs4", employeeId: 10, projectId: 4, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: true }, hours: { start: "06:30", end: "15:00" } },
+  { id: "cs5", employeeId: 11, projectId: 4, weekStart: _ws, days: { mon: true, tue: false, wed: true, thu: false, fri: true }, hours: { start: "07:00", end: "15:30" } },
+  // Oscar also on ROD Brunello Expansion (id:16)
+  { id: "cs6", employeeId: 1, projectId: 16, weekStart: _ws, days: { mon: false, tue: false, wed: false, thu: false, fri: true }, hours: { start: "06:30", end: "15:00" } },
+
+  // David Ramirez (Foreman id:5) → Texas Heart Center Baytown (id:5) + MH MC Single Plane IR (id:7)
+  { id: "cs10", employeeId: 5, projectId: 5, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: false, fri: false }, hours: { start: "06:00", end: "14:30" } },
+  { id: "cs11", employeeId: 4, projectId: 5, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: false, fri: false }, hours: { start: "06:30", end: "15:00" } },
+  { id: "cs12", employeeId: 6, projectId: 5, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: false, fri: false }, hours: { start: "07:00", end: "15:30" } },
+  { id: "cs13", employeeId: 5, projectId: 7, weekStart: _ws, days: { mon: false, tue: false, wed: false, thu: true, fri: true }, hours: { start: "06:00", end: "14:30" } },
+  { id: "cs14", employeeId: 4, projectId: 7, weekStart: _ws, days: { mon: false, tue: false, wed: false, thu: true, fri: true }, hours: { start: "06:30", end: "15:00" } },
+
+  // Antonio Hernandez (Foreman id:9) → Sprouts (id:12) + Our Lady of Guadalupe (id:11)
+  { id: "cs20", employeeId: 9, projectId: 12, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: true }, hours: { start: "06:00", end: "14:30" } },
+  { id: "cs21", employeeId: 10, projectId: 12, weekStart: _ws, days: { mon: false, tue: false, wed: true, thu: true, fri: true }, hours: { start: "06:30", end: "15:00" } },
+  { id: "cs22", employeeId: 11, projectId: 12, weekStart: _ws, days: { mon: true, tue: true, wed: false, thu: false, fri: false }, hours: { start: "07:00", end: "15:30" } },
+  { id: "cs23", employeeId: 9, projectId: 11, weekStart: _ws, days: { mon: false, tue: false, wed: false, thu: false, fri: true }, hours: { start: "06:00", end: "14:30" } },
+];
 
 // ── SEED: TIME ENTRIES ──
-function _seedTimeEntries() { return []; }
+function _seedTimeEntries() {
+  const today = new Date();
+  const mon = new Date(today); mon.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Monday
+  const entries = [];
+  const mkEntry = (empId, empName, projId, projName, dayOffset, startH, startM, endH, endM) => {
+    const d = new Date(mon); d.setDate(mon.getDate() + dayOffset);
+    const cin = new Date(d); cin.setHours(startH, startM, 0, 0);
+    const cout = new Date(d); cout.setHours(endH, endM, 0, 0);
+    // Only include entries for days that have already passed
+    if (cout > today) return null;
+    const rawH = (cout - cin) / 3600000;
+    const totalHours = +(rawH >= 6 ? rawH - 0.5 : rawH).toFixed(2);
+    return {
+      id: `te_${empId}_${projId}_${dayOffset}`,
+      employeeId: empId, employeeName: empName,
+      projectId: projId, projectName: projName,
+      clockIn: cin.toISOString(), clockOut: cout.toISOString(),
+      clockInLat: 29.73, clockInLng: -95.43, clockOutLat: 29.73, clockOutLng: -95.43,
+      totalHours, geofenceStatus: "inside",
+    };
+  };
+  // Oscar's crew on Brunello (id:4)
+  for (let d = 0; d < 5; d++) {
+    entries.push(mkEntry(1, "Oscar Alvarez", 4, "Brunello Cucinelli - Store Buildout", d, 6, 30, 15, 0));
+    entries.push(mkEntry(2, "Ricardo Mendez", 4, "Brunello Cucinelli - Store Buildout", d, 6, 30, 15, 0));
+    entries.push(mkEntry(3, "Carlos Fuentes", 4, "Brunello Cucinelli - Store Buildout", d, 7, 0, 15, 30));
+    entries.push(mkEntry(10, "Jose Perez", 4, "Brunello Cucinelli - Store Buildout", d, 6, 30, 15, 0));
+  }
+  // David's crew on THC Baytown (id:5)
+  for (let d = 0; d < 3; d++) {
+    entries.push(mkEntry(5, "David Ramirez", 5, "Texas Heart Center - Baytown", d, 6, 0, 14, 30));
+    entries.push(mkEntry(4, "Miguel Torres", 5, "Texas Heart Center - Baytown", d, 6, 30, 15, 0));
+    entries.push(mkEntry(6, "Luis Herrera", 5, "Texas Heart Center - Baytown", d, 7, 0, 15, 30));
+  }
+  // David's crew on MH MC Single Plane IR (id:7)
+  for (let d = 3; d < 5; d++) {
+    entries.push(mkEntry(5, "David Ramirez", 7, "MH MC Single Plane IR", d, 6, 0, 14, 30));
+    entries.push(mkEntry(4, "Miguel Torres", 7, "MH MC Single Plane IR", d, 6, 30, 15, 0));
+  }
+  // Antonio's crew on Sprouts (id:12)
+  for (let d = 0; d < 5; d++) {
+    entries.push(mkEntry(9, "Antonio Hernandez", 12, "Arch-Con - Sprouts Farmers Market", d, 6, 0, 14, 30));
+  }
+  return entries.filter(Boolean);
+}
 const _demoTimeEntries = _seedTimeEntries();
 
 // ── CONDITIONAL EXPORTS ──

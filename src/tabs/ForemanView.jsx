@@ -180,7 +180,7 @@ export function ForemanView({ app }) {
     if (!selectedProjectId) return 0;
     const today = new Date().toDateString();
     return (timeEntries || [])
-      .filter(te => te.projectId === selectedProjectId && new Date(te.clockIn).toDateString() === today && te.totalHours)
+      .filter(te => String(te.projectId) === String(selectedProjectId) && new Date(te.clockIn).toDateString() === today && te.totalHours)
       .reduce((sum, te) => sum + te.totalHours, 0);
   }, [timeEntries, selectedProjectId]);
 
@@ -278,7 +278,7 @@ export function ForemanView({ app }) {
     const rawHours = totalMs / 3600000;
     // Auto-deduct 30-min unpaid lunch for shifts over 6 hours
     const totalHours = +(rawHours >= 6 ? rawHours - 0.5 : rawHours).toFixed(2);
-    const proj = projects.find(p => p.id === (clockEntry.projectId || selectedProjectId));
+    const proj = projects.find(p => String(p.id) === String(clockEntry.projectId || selectedProjectId));
     const newEntry = {
       id: crypto.randomUUID(),
       employeeId: activeForeman.id,
@@ -325,7 +325,7 @@ export function ForemanView({ app }) {
     // Auto-deduct 30-min unpaid lunch for shifts over 6 hours
     const totalHours = +(rawHours >= 6 ? rawHours - 0.5 : rawHours).toFixed(2);
     const emp = employees.find(e => e.id === empId);
-    const proj = projects.find(p => p.id === (entry.projectId || selectedProjectId));
+    const proj = projects.find(p => String(p.id) === String(entry.projectId || selectedProjectId));
     const newEntry = {
       id: crypto.randomUUID(),
       employeeId: empId,
@@ -349,7 +349,7 @@ export function ForemanView({ app }) {
   // ── today's time entries for this foreman ──
   const todayStr = new Date().toDateString();
   const myTodayEntries = useMemo(() =>
-    timeEntries.filter(te => te.employeeId === activeForeman?.id && new Date(te.clockIn).toDateString() === todayStr && te.totalHours),
+    timeEntries.filter(te => String(te.employeeId) === String(activeForeman?.id) && new Date(te.clockIn).toDateString() === todayStr && te.totalHours),
     [timeEntries, activeForeman, todayStr]
   );
   const myTodayHours = myTodayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
@@ -436,11 +436,17 @@ export function ForemanView({ app }) {
 
   const myProjects = useMemo(() => {
     if (!activeForeman) return [];
+    const fId = String(activeForeman.id);
     const mySchedule = crewSchedule.filter(
-      s => s.employeeId === activeForeman.id && s.weekStart === weekStart
+      s => String(s.employeeId) === fId && s.weekStart === weekStart
     );
-    const projectIds = [...new Set(mySchedule.map(s => s.projectId))];
-    return projects.filter(p => projectIds.includes(p.id));
+    const projectIds = [...new Set(mySchedule.map(s => String(s.projectId)))];
+    const scheduled = projects.filter(p => projectIds.includes(String(p.id)));
+    // Fallback: if no crew schedule entries, show all active projects so the portal isn't empty
+    if (scheduled.length === 0) {
+      return projects.filter(p => p.status === "in-progress" || p.status === "active");
+    }
+    return scheduled;
   }, [activeForeman, crewSchedule, projects, weekStart]);
 
   // auto-select first project
@@ -451,21 +457,22 @@ export function ForemanView({ app }) {
   }, [myProjects, selectedProjectId]);
 
   const selectedProject = useMemo(
-    () => projects.find(p => p.id === selectedProjectId) || null,
+    () => projects.find(p => String(p.id) === String(selectedProjectId)) || null,
     [projects, selectedProjectId]
   );
 
   // ── computed: crew for selected project ──
   const crewForProject = useMemo(() => {
     if (!selectedProjectId) return [];
+    const pId = String(selectedProjectId);
     const entries = crewSchedule.filter(
-      s => s.projectId === selectedProjectId && s.weekStart === weekStart
+      s => String(s.projectId) === pId && s.weekStart === weekStart
     );
     return entries.map(s => {
-      const emp = employees.find(e => e.id === s.employeeId);
+      const emp = employees.find(e => String(e.id) === String(s.employeeId));
       if (!emp) return null;
       const today = new Date().toDateString();
-      const empEntries = timeEntries.filter(te => te.employeeId === emp.id && te.projectId === selectedProjectId);
+      const empEntries = timeEntries.filter(te => String(te.employeeId) === String(emp.id) && String(te.projectId) === String(selectedProjectId));
       const todayHours = empEntries
         .filter(te => new Date(te.clockIn).toDateString() === today && te.totalHours)
         .reduce((sum, te) => sum + te.totalHours, 0);
@@ -485,31 +492,34 @@ export function ForemanView({ app }) {
   // ── computed: material requests for project ──
   const projectMatRequests = useMemo(() => {
     if (!selectedProjectId) return materialRequests;
-    return materialRequests.filter(r => r.projectId === selectedProjectId);
+    return materialRequests.filter(r => String(r.projectId) === String(selectedProjectId));
   }, [materialRequests, selectedProjectId]);
 
   // ── computed: documents for project ──
   const projectSubmittals = useMemo(() => {
     if (!selectedProjectId) return [];
-    return (submittals || []).filter(s => s.projectId === selectedProjectId);
+    return (submittals || []).filter(s => String(s.projectId) === String(selectedProjectId));
   }, [submittals, selectedProjectId]);
 
   const projectCOs = useMemo(() => {
     if (!selectedProjectId) return [];
-    return (changeOrders || []).filter(c => c.projectId === selectedProjectId);
+    return (changeOrders || []).filter(c => String(c.projectId) === String(selectedProjectId));
   }, [changeOrders, selectedProjectId]);
 
   const projectRFIs = useMemo(() => {
     if (!selectedProjectId) return [];
-    return (rfis || []).filter(r => r.projectId === selectedProjectId);
+    return (rfis || []).filter(r => String(r.projectId) === String(selectedProjectId));
   }, [rfis, selectedProjectId]);
 
   // weekly burn rate in hours: sum of scheduled hours per crew member this week
   const weeklyBurnHours = useMemo(() => {
     return crewForProject.reduce((sum, c) => {
       const daysThisWeek = DAY_KEYS.filter(d => c.days?.[d]).length;
-      const dailyHours = c.scheduleHours
-        ? (parseFloat(c.scheduleHours.end) - parseFloat(c.scheduleHours.start))
+      const hrs = c.scheduleHours || {};
+      const startH = parseFloat(hrs.start || hrs.startDate || "0");
+      const endH = parseFloat(hrs.end || hrs.endDate || "0");
+      const dailyHours = (startH && endH && endH > startH)
+        ? (endH - startH)
         : 8;
       return sum + (daysThisWeek * dailyHours);
     }, 0);
@@ -535,7 +545,7 @@ export function ForemanView({ app }) {
   const [matForm, setMatForm] = useState({ material: "", qty: "", unit: "EA", notes: "" });
   const handleMatSubmit = () => {
     if (!selectedProjectId || !matForm.material || !matForm.qty) return;
-    const proj = projects.find(p => p.id === selectedProjectId);
+    const proj = projects.find(p => String(p.id) === String(selectedProjectId));
     const newReq = {
       id: crypto.randomUUID(),
       employeeId: activeForeman.id,
@@ -663,7 +673,10 @@ export function ForemanView({ app }) {
           <select
             className="foreman-project-select"
             value={selectedProjectId || ""}
-            onChange={e => setSelectedProjectId(Number(e.target.value))}
+            onChange={e => {
+              const val = e.target.value;
+              setSelectedProjectId(isNaN(val) ? val : Number(val));
+            }}
           >
             {myProjects.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
@@ -889,7 +902,7 @@ export function ForemanView({ app }) {
                               {new Date(te.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} → {new Date(te.clockOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                             </div>
                             <div className="text-xs text-muted">
-                              {projects.find(p => p.id === te.projectId)?.name || t("General")}
+                              {projects.find(p => String(p.id) === String(te.projectId))?.name || t("General")}
                             </div>
                           </div>
                           <div style={{ fontWeight: 600, color: "var(--accent)" }}>{te.totalHours}h</div>
@@ -1316,7 +1329,7 @@ export function ForemanView({ app }) {
                       const maxRisk = Math.max(0, ...j.steps.flatMap(s => (s.hazards || []).map(h => (h.likelihood || 1) * (h.severity || 1))));
                       const rc = riskColor(maxRisk);
                       const statusClr = j.status === "active" ? "#10b981" : j.status === "draft" ? "#f59e0b" : "var(--text3)";
-                      const proj = projects.find(p => p.id === j.projectId);
+                      const proj = projects.find(p => String(p.id) === String(j.projectId));
                       return (
                         <div key={j.id} className="card" style={{ padding: 12, marginBottom: 8, cursor: "pointer" }} onClick={() => { setActiveJsaId(j.id); setJsaView("detail"); }}>
                           <div className="flex-between" style={{ marginBottom: 4 }}>

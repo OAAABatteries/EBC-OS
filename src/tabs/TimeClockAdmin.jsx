@@ -202,11 +202,11 @@ export function TimeClockAdmin({ app }) {
         }
       } else {
         // Update project
-        setCrewSchedule((prev) => prev.map((s) => s.id === existing.id ? { ...s, projectId, projectName: projects.find(p => p.id === projectId)?.name || "" } : s));
+        setCrewSchedule((prev) => prev.map((s) => s.id === existing.id ? { ...s, projectId, projectName: projects.find(p => String(p.id) === String(projectId))?.name || "" } : s));
       }
     } else if (projectId) {
-      const emp = employees.find(e => e.id === empId);
-      const proj = projects.find(p => p.id === projectId);
+      const emp = employees.find(e => String(e.id) === String(empId));
+      const proj = projects.find(p => String(p.id) === String(projectId));
       const newEntry = {
         id: crypto.randomUUID(),
         employeeId: empId,
@@ -253,7 +253,7 @@ export function TimeClockAdmin({ app }) {
     );
 
     return daySchedule.map((sched) => {
-      const emp = employees.find((e) => e.id === sched.employeeId);
+      const emp = employees.find((e) => String(e.id) === String(sched.employeeId));
       const dayEntries = timeEntries.filter((te) => {
         if (te.employeeId !== sched.employeeId) return false;
         const teDate = new Date(te.clockIn).toISOString().split("T")[0];
@@ -315,7 +315,7 @@ export function TimeClockAdmin({ app }) {
       const projEntries = timeEntries.filter((te) => te.projectId === proj.id && te.totalHours);
       let laborSpent = 0;
       projEntries.forEach((te) => {
-        const emp = employees.find((e) => e.id === te.employeeId);
+        const emp = employees.find((e) => String(e.id) === String(te.employeeId));
         const rate = emp?.hourlyRate || 35;
         laborSpent += te.totalHours * rate;
       });
@@ -336,7 +336,7 @@ export function TimeClockAdmin({ app }) {
 
       const avgRate = weeklyCrewEntries.length > 0
         ? weeklyCrewEntries.reduce((sum, s) => {
-            const emp = employees.find(e => e.id === s.employeeId);
+            const emp = employees.find(e => String(e.id) === String(s.employeeId));
             return sum + (emp?.hourlyRate || 35);
           }, 0) / weeklyCrewEntries.length
         : 35;
@@ -796,10 +796,10 @@ export function TimeClockAdmin({ app }) {
                 const lines = [];
                 const assignedEmps = new Set();
                 assignments.forEach(a => {
-                  const emp = employees.find(e => e.id === a.employeeId);
+                  const emp = employees.find(e => String(e.id) === String(a.employeeId));
                   if (!emp) return;
                   assignedEmps.add(emp.id);
-                  const proj = projects.find(p => p.id === a.projectId);
+                  const proj = projects.find(p => String(p.id) === String(a.projectId));
                   const addr = proj?.address || "";
                   const suite = proj?.suite ? ` (${proj.suite})` : "";
                   const parking = proj?.parking ? ` | Parking: ${proj.parking}` : "";

@@ -51,7 +51,7 @@ function DeliveryMap({ projects, materialRequests, companyLocations, auth, t }) 
       r.status === "approved" || r.status === "in-transit"
     );
     return active.map(r => {
-      const proj = projects.find(p => p.id === r.projectId);
+      const proj = projects.find(p => String(p.id) === String(r.projectId));
       return { ...r, lat: proj?.lat, lng: proj?.lng, address: proj?.address };
     }).filter(r => r.lat && r.lng);
   }, [materialRequests, projects]);

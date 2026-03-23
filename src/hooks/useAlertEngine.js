@@ -116,7 +116,7 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
         title: `Send thank you to ${b.gc || "GC"}`,
         message: `${b.name} was awarded. Send a thank you email to ${contactName}.`,
         action: contactEmail ? { label: "Send Email", type: "mailto", url: thankYouEmail(contactName, b.name, contactEmail) } : null,
-        nav: "bids",
+        nav: { tab: "bids", bidId: b.id },
         ts: now.toISOString(),
       });
     }
@@ -134,7 +134,7 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
           title: `Follow up on ${b.name.length > 40 ? b.name.slice(0, 37) + "..." : b.name}`,
           message: `Submitted ${daysAgo} days ago to ${b.gc || "GC"} — no response yet.`,
           action: { label: "Follow Up", type: "mailto", url: followUpEmail(contactName, b.name, dueDate?.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) || "", contactEmail) },
-          nav: "bids",
+          nav: { tab: "bids", bidId: b.id },
           ts: now.toISOString(),
         });
       }
@@ -151,8 +151,8 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
           icon: "\u23F0",
           title: `Bid due ${daysUntil === 0 ? "TODAY" : `in ${daysUntil} day${daysUntil !== 1 ? "s" : ""}`}`,
           message: `${b.name} — $${(b.value || 0).toLocaleString()}`,
-          action: null,
-          nav: "bids",
+          action: { label: "Open Bid", type: "openBid" },
+          nav: { tab: "bids", bidId: b.id },
           ts: now.toISOString(),
         });
       }
@@ -169,8 +169,8 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
           icon: "\uD83D\uDEA8",
           title: `Bid overdue: ${b.name.length > 35 ? b.name.slice(0, 32) + "..." : b.name}`,
           message: `Was due ${daysOverdue} day${daysOverdue !== 1 ? "s" : ""} ago — still in ${b.status.replace(/_/g, " ")} status.`,
-          action: null,
-          nav: "bids",
+          action: { label: "Open Bid", type: "openBid" },
+          nav: { tab: "bids", bidId: b.id },
           ts: now.toISOString(),
         });
       }
@@ -192,8 +192,8 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
             icon: "\uD83D\uDCDD",
             title: `Send proposal for ${b.name.length > 35 ? b.name.slice(0, 32) + "..." : b.name}`,
             message: `Invite received ${sinceBid} days ago from ${b.gc || "GC"}.`,
-            action: contactEmail ? { label: "Send Email", type: "mailto", url: sendProposalEmail(contactName, b.name, contactEmail) } : null,
-            nav: "bids",
+            action: contactEmail ? { label: "Send Email", type: "mailto", url: sendProposalEmail(contactName, b.name, contactEmail) } : { label: "Open Bid", type: "openBid" },
+            nav: { tab: "bids", bidId: b.id },
             ts: now.toISOString(),
           });
         }
@@ -223,8 +223,8 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
         icon: "\uD83D\uDCCB",
         title: `Submit submittals for ${p.name.length > 35 ? p.name.slice(0, 32) + "..." : p.name}`,
         message: `Project started — no submittals logged yet.`,
-        action: null,
-        nav: "projects",
+        action: { label: "Add Submittal", type: "openProject" },
+        nav: { tab: "projects", projectId: p.id, projTab: "submittals" },
         ts: now.toISOString(),
       });
     }
@@ -242,8 +242,8 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
           icon: "\uD83D\uDCC9",
           title: `${p.name.length > 30 ? p.name.slice(0, 27) + "..." : p.name} — ${margin}% margin`,
           message: `Below 30% profit margin. Contract: $${contract.toLocaleString()}, Costs: $${totalCost.toLocaleString()}.`,
-          action: null,
-          nav: "projects",
+          action: { label: "View Financials", type: "openProject" },
+          nav: { tab: "projects", projectId: p.id, projTab: "financials" },
           ts: now.toISOString(),
         });
       }
@@ -257,8 +257,8 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
     if (!submitted) return;
     const daysOut = daysBetween(submitted, now);
     if (daysOut > 14) {
-      const projName = (projects || []).find(pr => pr.id === s.projectId)?.name || "Unknown";
-      const proj = (projects || []).find(pr => pr.id === s.projectId);
+      const projName = (projects || []).find(pr => String(pr.id) === String(s.projectId))?.name || "Unknown";
+      const proj = (projects || []).find(pr => String(pr.id) === String(s.projectId));
       const projContact = proj ? findProjectContact(proj) : null;
       alerts.push({
         id: `sub_overdue_${s.id}`,
@@ -267,8 +267,8 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
         icon: "\uD83D\uDCC4",
         title: `Submittal ${s.number || "#" + s.id} overdue`,
         message: `Submitted ${daysOut} days ago on ${projName} — no response.`,
-        action: projContact?.email ? { label: "Follow Up", type: "mailto", url: submittalReminderEmail(projContact.name, projName, projContact.email) } : null,
-        nav: "projects",
+        action: projContact?.email ? { label: "Follow Up", type: "mailto", url: submittalReminderEmail(projContact.name, projName, projContact.email) } : { label: "View Submittals", type: "openProject" },
+        nav: { tab: "projects", projectId: s.projectId, projTab: "submittals" },
         ts: now.toISOString(),
       });
     }
@@ -276,12 +276,12 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
 
   // 9) RFIs open >7 days
   (rfis || []).forEach(r => {
-    if (r.status !== "open") return;
-    const submitted = parseDate(r.submitted || r.date);
+    if (r.status === "Answered" || r.status === "Closed" || r.status === "closed" || r.status === "answered") return;
+    const submitted = parseDate(r.submitted || r.dateSubmitted || r.date);
     if (!submitted) return;
     const daysOpen = daysBetween(submitted, now);
     if (daysOpen > 7) {
-      const projName = (projects || []).find(pr => pr.id === r.projectId)?.name || "Unknown";
+      const projName = (projects || []).find(pr => String(pr.id) === String(r.projectId))?.name || "Unknown";
       alerts.push({
         id: `rfi_open_${r.id}`,
         category: "projects",
@@ -289,8 +289,8 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
         icon: "\u2753",
         title: `RFI ${r.number || "#" + r.id} unanswered — ${daysOpen} days`,
         message: `On ${projName}.`,
-        action: null,
-        nav: "projects",
+        action: { label: "View RFI", type: "openProject" },
+        nav: { tab: "projects", projectId: r.projectId, projTab: "rfis" },
         ts: now.toISOString(),
       });
     }
@@ -303,7 +303,7 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
     if (!submitted) return;
     const daysPending = daysBetween(submitted, now);
     if (daysPending > 5) {
-      const projName = (projects || []).find(pr => pr.id === co.projectId)?.name || "Unknown";
+      const projName = (projects || []).find(pr => String(pr.id) === String(co.projectId))?.name || "Unknown";
       alerts.push({
         id: `co_pending_${co.id}`,
         category: "projects",
@@ -311,8 +311,8 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
         icon: "\uD83D\uDCB0",
         title: `CO ${co.number || "#" + co.id} pending — ${daysPending} days`,
         message: `$${Math.abs(co.amount || 0).toLocaleString()} on ${projName}.`,
-        action: null,
-        nav: "financials",
+        action: { label: "View CO", type: "openProject" },
+        nav: { tab: "projects", projectId: co.projectId, projTab: "change-orders" },
         ts: now.toISOString(),
       });
     }
@@ -333,8 +333,8 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
           icon: "\uD83D\uDCE6",
           title: `Closeout incomplete — ${p.name.length > 30 ? p.name.slice(0, 27) + "..." : p.name}`,
           message: `${pct}% done. Project is marked complete.`,
-          action: null,
-          nav: "projects",
+          action: { label: "Complete Closeout", type: "openProject" },
+          nav: { tab: "projects", projectId: p.id, projTab: "closeout" },
           ts: now.toISOString(),
         });
       }
@@ -343,7 +343,7 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
 
   // 12) Send final invoice for completed project
   completedProjects.forEach(p => {
-    const projInvoices = (invoices || []).filter(i => i.projectId === p.id);
+    const projInvoices = (invoices || []).filter(i => String(i.projectId) === String(p.id));
     const hasFinal = projInvoices.some(i => i.type === "final" || i.label?.toLowerCase().includes("final"));
     if (!hasFinal) {
       const projContact = findProjectContact(p);
@@ -354,8 +354,8 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
         icon: "\uD83D\uDCB5",
         title: `Send final invoice — ${p.name.length > 30 ? p.name.slice(0, 27) + "..." : p.name}`,
         message: `Project complete but no final invoice found.`,
-        action: projContact?.email ? { label: "Send Email", type: "mailto", url: invoiceEmail(projContact.name, p.name, projContact.email) } : null,
-        nav: "financials",
+        action: projContact?.email ? { label: "Send Invoice", type: "mailto", url: invoiceEmail(projContact.name, p.name, projContact.email) } : { label: "View Financials", type: "openProject" },
+        nav: { tab: "projects", projectId: p.id, projTab: "financials" },
         ts: now.toISOString(),
       });
     }
@@ -371,7 +371,7 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
     const expiry = parseDate(cert.expiryDate);
     if (!expiry) return;
     const daysLeft = daysBetween(now, expiry);
-    const empName = (employees || []).find(e => e.id === cert.employeeId)?.name || "Employee";
+    const empName = (employees || []).find(e => String(e.id) === String(cert.employeeId))?.name || "Employee";
 
     if (daysLeft < 0) {
       alerts.push({
@@ -381,8 +381,8 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
         icon: "\uD83D\uDEA8",
         title: `Cert expired: ${empName}`,
         message: `${cert.name} expired ${Math.abs(daysLeft)} days ago.`,
-        action: null,
-        nav: "timeclock",
+        action: { label: "View Employee", type: "openEmployee" },
+        nav: { tab: "timeclock", employeeId: cert.employeeId, subTab: "employees" },
         ts: now.toISOString(),
       });
     } else if (daysLeft <= 30) {
@@ -393,8 +393,8 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
         icon: "\uD83D\uDCCB",
         title: `Cert expiring: ${empName}`,
         message: `${cert.name} expires in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}.`,
-        action: null,
-        nav: "timeclock",
+        action: { label: "View Employee", type: "openEmployee" },
+        nav: { tab: "timeclock", employeeId: cert.employeeId, subTab: "employees" },
         ts: now.toISOString(),
       });
     }
@@ -420,8 +420,8 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
         icon: "\u23F1\uFE0F",
         title: `${emp.name || "Employee"} — no time entries`,
         message: `No clock-ins this week.`,
-        action: null,
-        nav: "timeclock",
+        action: { label: "View Employee", type: "openEmployee" },
+        nav: { tab: "timeclock", employeeId: emp.id, subTab: "employees" },
         ts: now.toISOString(),
       });
     }

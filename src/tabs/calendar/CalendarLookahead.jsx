@@ -133,8 +133,8 @@ export function CalendarLookahead({ app, lang }) {
     return result;
   }, [weeks, monday, crewSchedule, schedule, calendarEvents, ptoRequests, equipmentBookings, subSchedule, weatherAlerts, filterProject]);
 
-  const projName = (id) => (projects || []).find(p => p.id === id)?.name || `#${id}`;
-  const empName = (id) => (employees || []).find(e => e.id === id)?.name || `#${id}`;
+  const projName = (id) => (projects || []).find(p => String(p.id) === String(id))?.name || `#${id}`;
+  const empName = (id) => (employees || []).find(e => String(e.id) === String(id))?.name || `#${id}`;
 
   const runLaAnalysis = async () => {
     if (!app.apiKey) { app.show("Set API key in Settings first", "err"); return; }
@@ -162,7 +162,7 @@ export function CalendarLookahead({ app, lang }) {
       setLaLoading(false);
     }
   };
-  const eqName = (id) => (equipment || []).find(e => e.id === id)?.name || `#${id}`;
+  const eqName = (id) => (equipment || []).find(e => String(e.id) === String(id))?.name || `#${id}`;
 
   return (
     <div className="cal-lookahead">

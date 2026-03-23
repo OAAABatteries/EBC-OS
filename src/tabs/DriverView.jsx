@@ -120,7 +120,7 @@ export function DriverView({ app }) {
   const allStops = useMemo(() => {
     const items = [...inTransitItems, ...queueItems];
     const stops = items.map(req => {
-      const proj = projects.find(p => p.id === req.projectId);
+      const proj = projects.find(p => String(p.id) === String(req.projectId));
       return {
         ...req,
         address: proj?.address || "",

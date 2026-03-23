@@ -214,8 +214,8 @@ export function CalendarView({ app }) {
 
         for (const cs of crewSchedule) {
           if (cs.weekStart === weekStr && cs.days?.[dayKey]) {
-            const emp = (employees || []).find((e) => e.id === cs.employeeId);
-            const proj = (projects || []).find((p) => p.id === cs.projectId);
+            const emp = (employees || []).find((e) => String(e.id) === String(cs.employeeId));
+            const proj = (projects || []).find((p) => String(p.id) === String(cs.projectId));
             events.push({
               id: "crew_" + cs.id + "_" + dateStr,
               type: "crew",
@@ -247,7 +247,7 @@ export function CalendarView({ app }) {
       // 4. Approved PTO
       for (const pto of ptoRequests || []) {
         if (pto.status === "approved" && inRange(dateStr, pto.startDate, pto.endDate)) {
-          const emp = (employees || []).find((e) => e.id === pto.employeeId);
+          const emp = (employees || []).find((e) => String(e.id) === String(pto.employeeId));
           events.push({
             id: "pto_" + pto.id + "_" + dateStr,
             type: "pto",
@@ -263,7 +263,7 @@ export function CalendarView({ app }) {
       // 5. Equipment bookings
       for (const eb of equipmentBookings || []) {
         if (inRange(dateStr, eb.startDate, eb.endDate)) {
-          const eq = (equipment || []).find((e) => e.id === eb.equipmentId);
+          const eq = (equipment || []).find((e) => String(e.id) === String(eb.equipmentId));
           events.push({
             id: "equip_" + eb.id + "_" + dateStr,
             type: "equipment",
@@ -854,7 +854,7 @@ export function CalendarView({ app }) {
                         {lang === "es" ? et.labelEs : et.label}
                       </div>
                       {items.map((ev) => {
-                        const proj = ev.projectId ? (projects || []).find((p) => p.id === ev.projectId) : null;
+                        const proj = ev.projectId ? (projects || []).find((p) => String(p.id) === String(ev.projectId)) : null;
                         return (
                           <div key={ev.id} className="cal-day-event" onClick={() => openEditEvent(ev)}>
                             <span className="cal-day-event-dot" style={{ background: ev.color }} />

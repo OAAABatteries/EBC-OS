@@ -591,7 +591,7 @@ export function EmployeeView({ app }) {
   // ── material request submit ──
   const handleMatSubmit = () => {
     if (!matProjectId || !matForm.material.trim() || !matForm.qty) return;
-    const proj = projects.find(p => p.id === matProjectId);
+    const proj = projects.find(p => String(p.id) === String(matProjectId));
     const newReq = {
       id: crypto.randomUUID(),
       employeeId: activeEmp.id,
@@ -682,7 +682,7 @@ export function EmployeeView({ app }) {
   //  PROJECT INFO PANEL (drill-down from Schedule)
   // ═══════════════════════════════════════════════════════════════
   if (selectedInfoProject) {
-    const proj = projects.find(p => p.id === selectedInfoProject);
+    const proj = projects.find(p => String(p.id) === String(selectedInfoProject));
     if (!proj) { setSelectedInfoProject(null); return null; }
     const projSubs = (submittals || []).filter(s => s.projectId === proj.id);
     const projCOs = changeOrders.filter(co => co.projectId === proj.id);

@@ -51,7 +51,7 @@ export function CalendarEquipment({ app, lang }) {
     }
   };
 
-  const projName = (id) => (projects || []).find(p => p.id === id)?.name || `#${id}`;
+  const projName = (id) => (projects || []).find(p => String(p.id) === String(id))?.name || `#${id}`;
 
   // Active bookings
   const activeBookings = useMemo(() =>
@@ -195,7 +195,7 @@ export function CalendarEquipment({ app, lang }) {
             <div style={{ color: "var(--text3)", fontSize: 13, padding: 16 }}>{t("No active bookings")}</div>
           )}
           {activeBookings.map(b => {
-            const eq = (equipment || []).find(e => e.id === b.equipmentId);
+            const eq = (equipment || []).find(e => String(e.id) === String(b.equipmentId));
             return (
               <div key={b.id} className="cal-pto-card" style={{ borderLeft: "3px solid #0ea5e9" }}>
                 <div className="cal-pto-card-top">

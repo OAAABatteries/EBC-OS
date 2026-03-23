@@ -24,9 +24,13 @@ export function NotificationPanel({ grouped, badgeCount, dismissAlert, dismissAl
 
   const toggleCategory = (cat) => setCollapsed(prev => ({ ...prev, [cat]: !prev[cat] }));
 
-  const handleAction = (alert) => {
+  const handleAction = (alert, e) => {
+    if (e) e.stopPropagation();
     if (alert.action?.type === "mailto" && alert.action?.url) {
       window.open(alert.action.url, "_blank");
+    } else {
+      // For non-mailto actions, navigate to the target
+      handleNav(alert);
     }
   };
 
@@ -156,7 +160,7 @@ export function NotificationPanel({ grouped, badgeCount, dismissAlert, dismissAl
                             fontSize: 10, padding: "2px 8px",
                             background: colors.dot, color: "#fff", border: "none", borderRadius: 4,
                           }}
-                          onClick={(e) => { e.stopPropagation(); handleAction(alert); }}
+                          onClick={(e) => handleAction(alert, e)}
                         >
                           {alert.action.label}
                         </button>

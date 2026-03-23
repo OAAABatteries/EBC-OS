@@ -69,6 +69,7 @@ const SECONDARY_TABS = [
   { key: "contacts", label: "Contacts" },
   { key: "timeclock", label: "Time Clock" },
   { key: "sds", label: "SDS Binder" },
+  { key: "foreman", label: "Foreman Portal" },
   { key: "map", label: "Map" },
   { key: "settings", label: "Settings" },
 ];
@@ -494,6 +495,7 @@ function App({ auth, onLogout }) {
   // ── ephemeral state ──
   const [tab, setTab] = useState("dashboard");
   const [modal, setModal] = useState(null);
+  const [initialProjTab, setInitialProjTab] = useState("overview");
   const [moreOpen, setMoreOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [subTab, setSubTab] = useState(null);
@@ -577,10 +579,11 @@ function App({ auth, onLogout }) {
     lang, setLang, t,
     auth, onLogout,
     syncStatus,
+    initialProjTab, setInitialProjTab,
   };
 
   // ── KPI computations ──
-  const pipeline = useMemo(() => bids.filter(b => b.status === "estimating").reduce((s, b) => s + (b.value || 0), 0), [bids]);
+  const pipeline = useMemo(() => bids.filter(b => !["awarded", "lost", "dead", "no_bid"].includes(b.status) && !b.convertedToProject).reduce((s, b) => s + (b.value || 0), 0), [bids]);
   const activeProjects = projects.length;
   const openBids = bids.filter(b => b.status === "submitted" || (b.status === "estimating" && b.due && new Date(b.due) >= new Date())).length;
   const awarded = bids.filter(b => b.status === "awarded").length;
@@ -602,7 +605,7 @@ function App({ auth, onLogout }) {
   }, [bids]);
 
   const backlog = useMemo(() => {
-    const awardedNotStarted = bids.filter(b => b.status === "awarded" && !projects.find(p => p.name === b.name)).reduce((s, b) => s + (b.value || 0), 0);
+    const awardedNotStarted = bids.filter(b => b.status === "awarded" && !b.convertedToProject).reduce((s, b) => s + (b.value || 0), 0);
     const inProgressRemaining = projects.filter(p => (p.progress || 0) < 100).reduce((s, p) => s + ((p.contract || 0) * (1 - (p.progress || 0) / 100)), 0);
     return awardedNotStarted + inProgressRemaining;
   }, [bids, projects]);
@@ -640,8 +643,8 @@ function App({ auth, onLogout }) {
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(b =>
-        b.name.toLowerCase().includes(q) ||
-        b.gc.toLowerCase().includes(q) ||
+        (b.name || "").toLowerCase().includes(q) ||
+        (b.gc || "").toLowerCase().includes(q) ||
         (b.contact || "").toLowerCase().includes(q) ||
         (b.estimator || "").toLowerCase().includes(q)
       );
@@ -654,9 +657,9 @@ function App({ auth, onLogout }) {
     if (!contactSearch) return contacts;
     const q = contactSearch.toLowerCase();
     return contacts.filter(c =>
-      c.name.toLowerCase().includes(q) ||
-      c.company.toLowerCase().includes(q) ||
-      c.role.toLowerCase().includes(q)
+      (c.name || "").toLowerCase().includes(q) ||
+      (c.company || "").toLowerCase().includes(q) ||
+      (c.role || "").toLowerCase().includes(q)
     );
   }, [contacts, contactSearch]);
 
@@ -727,10 +730,14 @@ function App({ auth, onLogout }) {
   }, [bids]);
 
   const monthChartData = useMemo(() => {
-    const order = ["Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr"];
+    const allMonths = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     const map = {};
-    bids.forEach(b => { if (b.month) map[b.month] = (map[b.month] || 0) + 1; });
-    return order.filter(m => map[m]).map(m => ({ name: m, value: map[m] }));
+    bids.forEach(b => {
+      const m = b.month || (b.due ? allMonths[new Date(b.due).getMonth()] : null);
+      if (m) map[m] = (map[m] || 0) + 1;
+    });
+    // Sort by calendar order, show only months with data
+    return allMonths.filter(m => map[m]).map(m => ({ name: m, value: map[m] }));
   }, [bids]);
 
   const STATUS_COLORS = useMemo(() => {
@@ -775,8 +782,9 @@ function App({ auth, onLogout }) {
     const cosPendingTotal = cosPending.reduce((s, co) => s + (co.amount || 0), 0);
 
     // RFIs open (with age)
-    const rfisOpen = rfis.filter(r => r.status === "open").map(r => {
-      const age = r.submitted ? Math.floor((now - new Date(r.submitted)) / 86400000) : 0;
+    const rfisOpen = rfis.filter(r => r.status !== "Answered" && r.status !== "Closed").map(r => {
+      const submitted = r.submitted || r.dateSubmitted;
+      const age = submitted ? Math.floor((now - new Date(submitted)) / 86400000) : 0;
       return { ...r, age };
     }).sort((a, b) => b.age - a.age);
 
@@ -842,7 +850,7 @@ function App({ auth, onLogout }) {
     return { bidsDueSoon, cosPending, cosPendingTotal, rfisOpen, subsDueSoon, overdueInv, overdueTotal, tmPending, projNoBilling, projAtRisk, followUps, profitAlerts, urgentCount };
   }, [bids, changeOrders, rfis, submittals, invoices, tmTickets, projects, callLog]);
 
-  const pName = (pid) => projects.find(p => p.id === pid)?.name || "Unknown";
+  const pName = (pid) => projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
 
   const renderDashboard = () => (
     <div>
@@ -2070,7 +2078,7 @@ function App({ auth, onLogout }) {
                 const elapsed = (new Date() - start) / 86400000;
                 return (p.progress || 0) < Math.min(100, (elapsed / totalDays) * 100) - 15;
               }).length;
-              const openRfis = rfis.filter(r => r.status === "open").length;
+              const openRfis = rfis.filter(r => r.status !== "Answered" && r.status !== "Closed").length;
               const pendingCOs = changeOrders.filter(c => c.status === "pending").length;
               return <>{active > 0 && <span style={{ marginLeft: 8 }}>{active} active</span>}{atRisk > 0 && <span style={{ color: "var(--red)", fontWeight: 600, marginLeft: 8 }}>{atRisk} at risk</span>}{openRfis > 0 && <span style={{ marginLeft: 8 }}>{openRfis} open RFIs</span>}{pendingCOs > 0 && <span style={{ marginLeft: 8 }}>{pendingCOs} pending COs</span>}</>;
             })()}
@@ -2194,11 +2202,11 @@ function App({ auth, onLogout }) {
           {filteredProjects.slice(0, projPageSize).map(p => {
             // Compute health signals
             const pid = p.id;
-            const pRfis = rfis.filter(r => r.projectId === pid && r.status === "open");
+            const pRfis = rfis.filter(r => r.projectId === pid && r.status !== "Answered" && r.status !== "Closed");
             const pSubs = submittals.filter(s => s.projectId === pid && s.status !== "approved");
             const pCOs = changeOrders.filter(c => c.projectId === pid && c.status === "pending");
             const pInvs = invoices.filter(i => i.projectId === pid);
-            const overdueRfis = pRfis.filter(r => r.submitted && (new Date() - new Date(r.submitted)) > 7 * 86400000).length;
+            const overdueRfis = pRfis.filter(r => (r.submitted || r.dateSubmitted) && (new Date() - new Date(r.submitted || r.dateSubmitted)) > 7 * 86400000).length;
             // Schedule health
             const endDate = p.end ? new Date(p.end) : null;
             const startDate = p.start ? new Date(p.start) : null;
@@ -2463,7 +2471,7 @@ function App({ auth, onLogout }) {
     try {
       const { generateMorningBriefing } = await import("./utils/api.js");
       const dashData = {
-        projects: projects.map(p => ({ name: p.project || p.name, gc: p.gc, progress: p.progress, margin: p.margin, phase: p.phase })),
+        projects: projects.map(p => ({ name: p.name || p.project, gc: p.gc, progress: p.progress, margin: p.margin, phase: p.phase })),
         bids: { total: bids.length, estimating: bids.filter(b => b.status === "estimating").length, submitted: bids.filter(b => b.status === "submitted").length, dueSoon: bids.filter(b => b.due && new Date(b.due) - Date.now() < 7 * 86400000 && b.status === "estimating").length },
         invoices: (invoices || []).filter(i => i.status === "pending" || i.status === "overdue").map(i => ({ number: i.number, amount: i.amount, status: i.status, project: i.projectId })),
         schedule: (schedule || []).filter(t => t.status === "in-progress").map(t => ({ task: t.task, project: t.projectName, end: t.end })),
@@ -2565,7 +2573,7 @@ function App({ auth, onLogout }) {
     setScopeRiskResult(null);
     try {
       const { scoreScopeRisks } = await import("./utils/api.js");
-      const linkedBid = scopeBidId ? bids.find(b => b.id === scopeBidId) : null;
+      const linkedBid = scopeBidId ? bids.find(b => String(b.id) === String(scopeBidId)) : null;
       const res = await scoreScopeRisks(apiKey, filteredScope, linkedBid, projects);
       setScopeRiskResult(res);
       setShowScopeRisk(true);
@@ -2593,7 +2601,7 @@ function App({ auth, onLogout }) {
         const projCOs = (changeOrders || []).filter(c => c.projectId === p.id);
         const projTM = (tmTickets || []).filter(t => t.projectId === p.id);
         return {
-          name: p.project || p.name, gc: p.gc, phase: p.phase,
+          name: p.name || p.project, gc: p.gc, phase: p.phase,
           contract: p.contract, billed: p.billed, margin: p.margin, progress: p.progress,
           scope: p.scope,
           changeOrders: { count: projCOs.length, totalValue: projCOs.reduce((s, c) => s + (c.amount || 0), 0), pendingCount: projCOs.filter(c => c.status === "pending").length },
@@ -2684,7 +2692,7 @@ function App({ auth, onLogout }) {
       scope: Array.isArray(bid.scope) ? bid.scope : [],
       contact: contactStr,
       address: bid.address || "",
-      month: bid.due ? bid.due.slice(0, 3) : "",
+      month: bid.due ? new Date(bid.due).toLocaleString("en-US", { month: "short" }) : "",
       notes: noteParts.join(" | "),
       estimator: "",
       exclusions: "",
@@ -3101,7 +3109,7 @@ function App({ auth, onLogout }) {
           <div key={c.id} className="contact-card" onClick={() => setModal({ type: "editContact", data: c })}>
             <div className="flex gap-12" style={{ alignItems: "center" }}>
               <div className="contact-avatar" style={{ background: c.color || "var(--amber)" }}>
-                {c.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                {(c.name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
               </div>
               <div className="flex-col" style={{ flex: 1 }}>
                 <div className="font-semi text-sm">{c.name}</div>
@@ -3227,7 +3235,33 @@ function App({ auth, onLogout }) {
               dismissAlert={dismissAlert}
               dismissAll={dismissAll}
               onClose={() => setNotifOpen(false)}
-              onNav={(navKey) => { setNotifOpen(false); handleTabClick(navKey); }}
+              onNav={(navKey) => {
+                setNotifOpen(false);
+                // Rich navigation object from alert engine
+                if (navKey && typeof navKey === "object") {
+                  const { tab: destTab, projectId, projTab: destProjTab, bidId, employeeId, subTab: destSubTab } = navKey;
+                  // Switch to the correct main tab
+                  if (destTab) handleTabClick(destTab);
+                  // Open specific project modal with sub-tab
+                  if (projectId) {
+                    const proj = projects.find(p => String(p.id) === String(projectId));
+                    if (proj) {
+                      // Map hyphenated nav keys to spaced tab names
+                      const tabMap = { "change-orders": "change orders", submittals: "submittals", rfis: "rfis", closeout: "closeout", financials: "financials", crew: "crew", overview: "overview" };
+                      setInitialProjTab(tabMap[destProjTab] || destProjTab || "overview");
+                      setTimeout(() => setModal({ type: "editProject", data: { ...proj, lastAccessed: new Date().toISOString() } }), 50);
+                    }
+                  }
+                  // Open specific bid modal
+                  if (bidId && !projectId) {
+                    const bid = bids.find(b => String(b.id) === String(bidId));
+                    if (bid) setTimeout(() => setModal({ type: "editBid", data: bid }), 50);
+                  }
+                } else {
+                  // Legacy string navigation
+                  handleTabClick(navKey);
+                }
+              }}
             />
           )}
         </div>
@@ -3314,6 +3348,7 @@ function App({ auth, onLogout }) {
         {tab === "calendar" && <CalendarView app={app} />}
         {tab === "jsa" && <JSATab app={app} />}
         {tab === "deliveries" && <DeliveriesTab app={app} />}
+        {tab === "foreman" && <ForemanView app={{...app, auth: { ...app.auth, role: "foreman", name: app.auth?.name || "Admin" }}} />}
         {["financials", "documents", "schedule", "reports", "safety", "timeclock", "sds", "map", "settings"].includes(tab) && <MoreTabs app={app} />}
       </main>
 
@@ -3646,7 +3681,7 @@ const ModalHub = ({ type, data, app }) => {
     setModal(null);
   };
 
-  const close = () => setModal(null);
+  const close = () => { setModal(null); app.setInitialProjTab?.("overview"); };
 
   // Robust overlay dismiss — only close if BOTH mousedown AND mouseup land on the overlay
   const overlayMouseDown = useRef(false);
@@ -3715,7 +3750,7 @@ const ModalHub = ({ type, data, app }) => {
     const projInvoices = app.invoices.filter(i => i.projectId === draft.id);
     const totalBilled = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);
     const remaining = (draft.contract || 0) - totalBilled;
-    const [projTab, setProjTab] = useState("overview");
+    const [projTab, setProjTab] = useState(app.initialProjTab || "overview");
     const projTabs = ["overview", "change orders", "submittals", "rfis", "crew", "financials", "closeout"];
     const [coFormOpen, setCoFormOpen] = useState(false);
     const [coEditId, setCoEditId] = useState(null);
@@ -4424,7 +4459,7 @@ const ModalHub = ({ type, data, app }) => {
                     <thead><tr><th>Employee</th><th>Days</th><th>Hours</th></tr></thead>
                     <tbody>
                       {projCrew.map(s => {
-                        const emp = app.employees.find(e => e.id === s.employeeId);
+                        const emp = app.employees.find(e => String(e.id) === String(s.employeeId));
                         const days = ["mon","tue","wed","thu","fri"].filter(d => s.days?.[d]).length;
                         return (
                           <tr key={s.id}>
@@ -5226,7 +5261,7 @@ const ModalHub = ({ type, data, app }) => {
                         <span>{att.type?.includes("pdf") ? "📄" : att.type?.includes("image") ? "🖼️" : att.type?.includes("sheet") || att.type?.includes("excel") ? "📊" : "📁"}</span>
                         <div>
                           <div className="text-sm font-semi">{att.name}</div>
-                          <div className="text-xs text-dim">{(att.size / 1024).toFixed(0)} KB · {new Date(att.uploadedAt).toLocaleDateString()}</div>
+                          <div className="text-xs text-dim">{(att.size / 1024).toFixed(0)} KB · {new Date(att.uploadedAt || att.uploaded || Date.now()).toLocaleDateString()}</div>
                         </div>
                       </div>
                       <div className="flex gap-4">
@@ -5260,8 +5295,8 @@ const ModalHub = ({ type, data, app }) => {
             const projTM = (app.tmTickets || []).filter(t => t.projectId === pid);
 
             // Health signals
-            const openRfis = projRfis.filter(r => r.status === "open");
-            const agingRfis = openRfis.filter(r => r.submitted && (new Date() - new Date(r.submitted)) > 7 * 86400000);
+            const openRfis = projRfis.filter(r => r.status !== "Answered" && r.status !== "Closed");
+            const agingRfis = openRfis.filter(r => (r.submitted || r.dateSubmitted) && (new Date() - new Date(r.submitted || r.dateSubmitted)) > 7 * 86400000);
             const pendingSubs = projSubmittals.filter(s => s.status !== "approved");
             const pendingCOs = projCOs.filter(c => c.status === "pending");
             const overdueInvs = projInvoices.filter(i => i.status === "overdue");
