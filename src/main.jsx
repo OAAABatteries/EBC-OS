@@ -3,8 +3,9 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
-const GCPortal = lazy(() => import('./components/GCPortal.jsx'));
-const JobPortal = lazy(() => import('./components/JobPortal.jsx'));
+const GCPortal       = lazy(() => import('./components/GCPortal.jsx'));
+const JobPortal      = lazy(() => import('./components/JobPortal.jsx'));
+const CustomerPortal = lazy(() => import('./components/CustomerPortal.jsx'));
 
 function Router() {
   const [hash, setHash] = useState(window.location.hash);
@@ -19,6 +20,9 @@ function Router() {
   }
   if (hash === '#/careers') {
     return <Suspense fallback={<div style={{padding:40,color:'#f59e0b',background:'#0a0e1a',minHeight:'100vh'}}>Loading...</div>}><JobPortal /></Suspense>;
+  }
+  if (hash === '#/customer-portal') {
+    return <Suspense fallback={<div style={{padding:40,color:'#f59e0b',background:'#0a0e1a',minHeight:'100vh'}}>Loading...</div>}><CustomerPortal /></Suspense>;
   }
   return <App />;
 }
