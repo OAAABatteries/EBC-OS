@@ -39,7 +39,9 @@ function cap(str) {
 
 const STATUS_COLORS = {
   "approved":           { bg: [16, 185, 129],  text: [255, 255, 255] },
-  "submitted":          { bg: [224, 148, 34],  text: [255, 255, 255] },
+  "submitted":          { bg: [59, 130, 246],  text: [255, 255, 255] },
+  "distributed":        { bg: [16, 185, 129],  text: [255, 255, 255] },
+  "pending":            { bg: [120, 120, 120], text: [255, 255, 255] },
   "revise & resubmit":  { bg: [249, 115, 22],  text: [255, 255, 255] },
   "rejected":           { bg: [239, 68, 68],   text: [255, 255, 255] },
   "in progress":        { bg: [59, 130, 246],  text: [255, 255, 255] },
