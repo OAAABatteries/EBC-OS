@@ -44,7 +44,7 @@ import { useAlertEngine } from "./hooks/useAlertEngine";
 import { NotificationPanel } from "./components/NotificationPanel";
 import { PerimeterMapModal } from "./components/PerimeterMapModal";
 import { polygonAreaSqFt } from "./utils/geofence";
-import { TrendingDown, AlertTriangle, DollarSign, Wrench, Package, FileX, ChevronDown, ChevronUp, Search, Calendar, Building2, BarChart2, ClipboardList, Globe, Bell, FolderOpen, MapPin, Paperclip, FileText, Image, Sheet, FileSpreadsheet, Camera, List, Columns, CheckSquare, Square } from "lucide-react";
+import { TrendingDown, AlertTriangle, DollarSign, Wrench, Package, FileX, ChevronDown, ChevronUp, Search, Calendar, Building2, BarChart2, ClipboardList, Globe, Bell, FolderOpen, MapPin, Paperclip, FileText, Image, Sheet, FileSpreadsheet, Camera, List, Columns, CheckSquare, Square, FileDown } from "lucide-react";
 import { FeatureGuide, resetAllGuides } from "./components/FeatureGuide";
 
 // ═══════════════════════════════════════════════════════════════
@@ -3986,6 +3986,10 @@ const ModalHub = ({ type, data, app }) => {
       setSubFormOpen(true);
     };
     const deleteSub = (sId) => { if (confirm("Delete this submittal?")) app.setSubmittals(prev => prev.filter(s => s.id !== sId)); };
+    const generateSubPackage = async () => {
+      const { generateSubmittalsPackagePdf } = await import("./utils/submittalsPackagePdf.js");
+      generateSubmittalsPackagePdf(draft, projSubmittals, app.contacts || [], app.company || {});
+    };
     const filteredSubmittals = projSubmittals.filter(s => {
       if (subFilter === "all") return true;
       if (subFilter === "pending") return ["not started", "in progress", "submitted"].includes(s.status);
@@ -4278,7 +4282,14 @@ const ModalHub = ({ type, data, app }) => {
                     <span className="font-semi text-sm">Submittal Log</span>
                     <span className="badge badge-blue" style={{ fontSize: 9 }}>{projSubmittals.length}</span>
                   </div>
-                  <button className="btn btn-primary btn-sm" onClick={() => { resetSubForm(); setSubFormOpen(!subFormOpen); }}>+ Add Submittal</button>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {projSubmittals.length > 0 && (
+                      <button className="btn btn-ghost btn-sm" onClick={generateSubPackage} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <FileDown size={13} /> Generate Package
+                      </button>
+                    )}
+                    <button className="btn btn-primary btn-sm" onClick={() => { resetSubForm(); setSubFormOpen(!subFormOpen); }}>+ Add Submittal</button>
+                  </div>
                 </div>
 
                 {/* Quick Filters */}
