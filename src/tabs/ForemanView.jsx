@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
 import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, FileText, Ruler, Building2, ClipboardList } from "lucide-react";
+import { FeatureGuide } from "../components/FeatureGuide";
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
@@ -702,9 +703,12 @@ export function ForemanView({ app }) {
           <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
           <span className="text-xs text-muted">{activeForeman.name} · {t("Foreman Portal")}</span>
         </div>
-        <button className="settings-gear" onClick={() => setForemanTab("settings")} title={t("Settings")}>
-          &#9881;
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <FeatureGuide guideKey="foreman" />
+          <button className="settings-gear" onClick={() => setForemanTab("settings")} title={t("Settings")}>
+            &#9881;
+          </button>
+        </div>
       </header>
 
       <div className="employee-body">

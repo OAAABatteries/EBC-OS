@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from "react";
+import { FeatureGuide } from "../components/FeatureGuide";
 import { getHF, SCOPE_INIT, SCOPE_ITEM_MAP, DEFAULT_ASSUMPTIONS, DEFAULT_PROPOSAL_TERMS, SCOPE_TEMPLATES, PROFIT_SUGGESTIONS } from "../data/constants";
 import { generateProposalPdf, generateQuickProposalPdf, defaultIncludes, defaultExcludes } from "../utils/proposalPdf";
 import { buildScopeLines } from "../utils/scopeBuilder";
@@ -743,6 +744,7 @@ export function EstimatingTab({ app }) {
             <button className="btn btn-ghost" onClick={() => document.getElementById("ost-import").click()} style={{ fontSize: 13 }}>Import OST</button>
             <input type="file" id="scan-pdf" accept=".pdf" style={{ display: "none" }} onChange={handleScanPdf} />
             <button className="btn btn-ghost" onClick={() => document.getElementById("scan-pdf").click()} style={{ fontSize: 13 }}>Scan Bid PDF</button>
+            <FeatureGuide guideKey="estimating" />
             <button className="btn btn-ghost" onClick={() => setShowQuickProposal(true)} style={{ fontSize: 13 }}>Quick Proposal</button>
             <button className="btn btn-primary" onClick={createTakeoff}>+ New Takeoff</button>
           </div>
