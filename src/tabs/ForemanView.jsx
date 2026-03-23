@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
+import { PhaseTracker, getDefaultPhases } from "../components/PhaseTracker";
 import { listFiles, getFileUrl, downloadFile } from "../lib/supabase";
 
 const PdfViewer = lazy(() => import("../components/PdfViewer").then(m => ({ default: m.PdfViewer })));
@@ -80,7 +81,7 @@ function getWeekStart(d = new Date()) {
 
 export function ForemanView({ app }) {
   const {
-    employees, projects, crewSchedule, timeEntries, setTimeEntries,
+    employees, projects, setProjects, crewSchedule, timeEntries, setTimeEntries,
     materialRequests, setMaterialRequests,
     changeOrders, rfis, submittals,
     jsas, setJsas,
@@ -1062,67 +1063,99 @@ export function ForemanView({ app }) {
             )}
 
             {/* ═══ DASHBOARD TAB ═══ */}
-            {foremanTab === "dashboard" && (
-              <div className="emp-content">
-                <div className="section-header">
-                  <div className="section-title" style={{ fontSize: 16 }}>{selectedProject.name}</div>
-                </div>
-                <div className="text-xs text-muted mb-8">
-                  {selectedProject.gc} · {selectedProject.phase} · {selectedProject.address}
-                </div>
+            {foremanTab === "dashboard" && (() => {
+              const liveProject = projects.find(p => String(p.id) === String(selectedProjectId)) || selectedProject;
+              const projPhases = liveProject.phases || getDefaultPhases(liveProject);
+              const updateForemanPhases = (newPhases) => {
+                setProjects(prev => prev.map(p => String(p.id) === String(liveProject.id) ? { ...p, phases: newPhases } : p));
+              };
+              const activePhase = projPhases.find(ph => ph.status === "in progress");
+              const completedCount = projPhases.filter(ph => ph.status === "completed").length;
+              return (
+                <div className="emp-content">
+                  <div className="section-header">
+                    <div className="section-title" style={{ fontSize: 16 }}>{selectedProject.name}</div>
+                  </div>
+                  <div className="text-xs text-muted mb-8">
+                    {selectedProject.gc} · {selectedProject.phase} · {selectedProject.address}
+                  </div>
 
-                <div className="foreman-kpi-grid">
-                  <div className="foreman-kpi-card">
-                    <div className="foreman-kpi-label">{t("Allocated Hours")}</div>
-                    <div className="foreman-kpi-value">{allocatedHours.toLocaleString()}</div>
-                    <div className="foreman-kpi-sub">{t("hrs")}</div>
-                  </div>
-                  <div className="foreman-kpi-card">
-                    <div className="foreman-kpi-label">{t("Hours Used")}</div>
-                    <div className="foreman-kpi-value" style={{ color: budgetColor }}>{hoursUsed.toFixed(1)}</div>
-                    <div className="foreman-kpi-sub">{t("hrs")}</div>
-                  </div>
-                  <div className="foreman-kpi-card">
-                    <div className="foreman-kpi-label">{t("Hours Remaining")}</div>
-                    <div className="foreman-kpi-value" style={{ color: hoursRemaining < 0 ? "var(--red)" : "var(--green)" }}>
-                      {hoursRemaining.toFixed(1)}
+                  <div className="foreman-kpi-grid">
+                    <div className="foreman-kpi-card">
+                      <div className="foreman-kpi-label">{t("Allocated Hours")}</div>
+                      <div className="foreman-kpi-value">{allocatedHours.toLocaleString()}</div>
+                      <div className="foreman-kpi-sub">{t("hrs")}</div>
                     </div>
-                    <div className="foreman-kpi-sub">{t("hrs")}</div>
-                  </div>
-                  <div className="foreman-kpi-card">
-                    <div className="foreman-kpi-label">{t("Hours Used")}</div>
-                    <div className="foreman-kpi-value">{pctUsed}%</div>
-                    <div className="foreman-budget-bar">
-                      <div className="foreman-budget-fill"
-                        style={{ width: `${Math.min(pctUsed, 100)}%`, background: budgetColor }} />
+                    <div className="foreman-kpi-card">
+                      <div className="foreman-kpi-label">{t("Hours Used")}</div>
+                      <div className="foreman-kpi-value" style={{ color: budgetColor }}>{hoursUsed.toFixed(1)}</div>
+                      <div className="foreman-kpi-sub">{t("hrs")}</div>
+                    </div>
+                    <div className="foreman-kpi-card">
+                      <div className="foreman-kpi-label">{t("Hours Remaining")}</div>
+                      <div className="foreman-kpi-value" style={{ color: hoursRemaining < 0 ? "var(--red)" : "var(--green)" }}>
+                        {hoursRemaining.toFixed(1)}
+                      </div>
+                      <div className="foreman-kpi-sub">{t("hrs")}</div>
+                    </div>
+                    <div className="foreman-kpi-card">
+                      <div className="foreman-kpi-label">{t("Hours Used")}</div>
+                      <div className="foreman-kpi-value">{pctUsed}%</div>
+                      <div className="foreman-budget-bar">
+                        <div className="foreman-budget-fill"
+                          style={{ width: `${Math.min(pctUsed, 100)}%`, background: budgetColor }} />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-                  <div className="foreman-kpi-card" style={{ flex: 1 }}>
-                    <div className="foreman-kpi-label">{t("Crew Members")}</div>
-                    <div className="foreman-kpi-value" style={{ fontSize: 18 }}>{crewForProject.length}</div>
+                  <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+                    <div className="foreman-kpi-card" style={{ flex: 1 }}>
+                      <div className="foreman-kpi-label">{t("Crew Members")}</div>
+                      <div className="foreman-kpi-value" style={{ fontSize: 18 }}>{crewForProject.length}</div>
+                    </div>
+                    <div className="foreman-kpi-card" style={{ flex: 1 }}>
+                      <div className="foreman-kpi-label">{t("Materials")}</div>
+                      <div className="foreman-kpi-value" style={{ fontSize: 18 }}>{projectMatRequests.length}</div>
+                    </div>
+                    <div className="foreman-kpi-card" style={{ flex: 1 }}>
+                      <div className="foreman-kpi-label">{t("Progress")}</div>
+                      <div className="foreman-kpi-value" style={{ fontSize: 18 }}>{selectedProject.progress}%</div>
+                    </div>
                   </div>
-                  <div className="foreman-kpi-card" style={{ flex: 1 }}>
-                    <div className="foreman-kpi-label">{t("Materials")}</div>
-                    <div className="foreman-kpi-value" style={{ fontSize: 18 }}>{projectMatRequests.length}</div>
-                  </div>
-                  <div className="foreman-kpi-card" style={{ flex: 1 }}>
+
+                  <div className="foreman-kpi-card" style={{ marginBottom: 12 }}>
                     <div className="foreman-kpi-label">{t("Progress")}</div>
-                    <div className="foreman-kpi-value" style={{ fontSize: 18 }}>{selectedProject.progress}%</div>
+                    <div className="project-progress-bar" style={{ marginTop: 8 }}>
+                      <div className="project-progress-fill"
+                        style={{ width: `${selectedProject.progress}%` }} />
+                    </div>
                   </div>
-                </div>
 
-                <div className="foreman-kpi-card">
-                  <div className="foreman-kpi-label">{t("Progress")}</div>
-                  <div className="project-progress-bar" style={{ marginTop: 8 }}>
-                    <div className="project-progress-fill"
-                      style={{ width: `${selectedProject.progress}%` }} />
+                  {/* ── Phase Tracker ── */}
+                  <div className="foreman-kpi-card">
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                      <div>
+                        <div className="foreman-kpi-label">{t("Construction Phases")}</div>
+                        <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 2 }}>
+                          {completedCount}/{projPhases.length} {t("complete")}
+                          {activePhase ? ` · ${activePhase.name}` : ""}
+                        </div>
+                      </div>
+                      {activePhase && (
+                        <span className="badge badge-amber" style={{ fontSize: 10 }}>{activePhase.name}</span>
+                      )}
+                    </div>
+                    <PhaseTracker
+                      phases={projPhases}
+                      employees={employees}
+                      onUpdate={updateForemanPhases}
+                      readOnly={false}
+                      foremanName={activeForeman?.name || ""}
+                    />
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* ═══ CREW TAB ═══ */}
             {foremanTab === "crew" && (

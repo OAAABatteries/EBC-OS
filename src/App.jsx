@@ -11,6 +11,7 @@ import {
   initEmployees, initCompanyLocations, initTimeEntries, initCrewSchedule, initMaterialRequests,
   initTmTickets, DATA_VERSION
 } from "./data/constants";
+import { PhaseTracker, getDefaultPhases } from "./components/PhaseTracker";
 import { EstimatingTab } from "./tabs/Estimating";
 import { MoreTabs } from "./tabs/MoreTabs";
 import { MaterialsTab } from "./tabs/MaterialsTab";
@@ -3919,35 +3920,65 @@ const ModalHub = ({ type, data, app }) => {
 
           <div style={{ flex: 1, overflowY: "auto", paddingBottom: 16 }}>
             {/* ── Overview ── */}
-            {projTab === "overview" && (
-              <div className="flex-col gap-12">
-                <div className="flex gap-16 flex-wrap">
-                  <div><span className="text-dim text-xs">CONTRACT</span><div className="font-mono text-amber font-bold">{fmt(draft.contract)}</div></div>
-                  <div><span className="text-dim text-xs">BILLED</span><div className="font-mono">{fmt(totalBilled)}</div></div>
-                  <div><span className="text-dim text-xs">REMAINING</span><div className="font-mono" style={{ color: remaining > 0 ? "var(--green)" : "var(--red)" }}>{fmt(remaining)}</div></div>
-                  <div><span className="text-dim text-xs">PROGRESS</span><div className="font-mono">{draft.progress}%</div></div>
+            {projTab === "overview" && (() => {
+              const projPhases = draft.phases || getDefaultPhases(draft);
+              const updateProjPhases = (newPhases) => {
+                const updated = { ...draft, phases: newPhases };
+                setDraft(updated);
+                app.setProjects(prev => prev.map(p => String(p.id) === String(draft.id) ? updated : p));
+              };
+              const activePhase = projPhases.find(p => p.status === "in progress");
+              const completedCount = projPhases.filter(p => p.status === "completed").length;
+              return (
+                <div className="flex-col gap-12">
+                  <div className="flex gap-16 flex-wrap">
+                    <div><span className="text-dim text-xs">CONTRACT</span><div className="font-mono text-amber font-bold">{fmt(draft.contract)}</div></div>
+                    <div><span className="text-dim text-xs">BILLED</span><div className="font-mono">{fmt(totalBilled)}</div></div>
+                    <div><span className="text-dim text-xs">REMAINING</span><div className="font-mono" style={{ color: remaining > 0 ? "var(--green)" : "var(--red)" }}>{fmt(remaining)}</div></div>
+                    <div><span className="text-dim text-xs">PROGRESS</span><div className="font-mono">{draft.progress}%</div></div>
+                  </div>
+                  <div className="progress-bar"><div className="progress-fill" style={{ width: `${draft.progress}%` }} /></div>
+                  <div className="flex gap-16 flex-wrap">
+                    <div><span className="text-dim text-xs">ADDRESS</span><div className="text-sm">{draft.address || "—"}</div></div>
+                    {draft.suite && <div><span className="text-dim text-xs">SUITE</span><div className="text-sm">{draft.suite}</div></div>}
+                    {draft.parking && <div><span className="text-dim text-xs">PARKING</span><div className="text-sm">{draft.parking}</div></div>}
+                  </div>
+                  <div className="flex gap-16">
+                    <div><span className="text-dim text-xs">START</span><div>{draft.start || "TBD"}</div></div>
+                    <div><span className="text-dim text-xs">END</span><div>{draft.end || "TBD"}</div></div>
+                  </div>
+                  <div><span className="text-dim text-xs">SCOPE</span>
+                    <div className="flex gap-4 flex-wrap mt-4">{(draft.scope || []).map(s => <span key={s} className="badge badge-amber" style={{ fontSize: 10 }}>{s}</span>)}</div>
+                  </div>
+
+                  {/* ── Phase Tracker ── */}
+                  <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "14px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                      <div>
+                        <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.7px", color: "var(--text3)", fontWeight: 600 }}>Construction Phases</div>
+                        <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 2 }}>
+                          {completedCount} of {projPhases.length} complete
+                          {activePhase ? ` · Active: ${activePhase.name}` : ""}
+                        </div>
+                      </div>
+                    </div>
+                    <PhaseTracker
+                      phases={projPhases}
+                      employees={app.employees || []}
+                      onUpdate={updateProjPhases}
+                      readOnly={true}
+                    />
+                  </div>
+
+                  <div className="flex gap-16 flex-wrap" style={{ marginTop: 4 }}>
+                    <div><span className="text-dim text-xs">LABOR HOURS</span><div className="font-mono">{totalHrs.toFixed(1)}h</div></div>
+                    <div><span className="text-dim text-xs">CHANGE ORDERS</span><div className="font-mono">{projCOs.length}</div></div>
+                    <div><span className="text-dim text-xs">RFIs</span><div className="font-mono">{projRFIs.length}</div></div>
+                    <div><span className="text-dim text-xs">SUBMITTALS</span><div className="font-mono">{projSubmittals.length}</div></div>
+                  </div>
                 </div>
-                <div className="progress-bar"><div className="progress-fill" style={{ width: `${draft.progress}%` }} /></div>
-                <div className="flex gap-16 flex-wrap">
-                  <div><span className="text-dim text-xs">ADDRESS</span><div className="text-sm">{draft.address || "—"}</div></div>
-                  {draft.suite && <div><span className="text-dim text-xs">SUITE</span><div className="text-sm">{draft.suite}</div></div>}
-                  {draft.parking && <div><span className="text-dim text-xs">PARKING</span><div className="text-sm">{draft.parking}</div></div>}
-                </div>
-                <div className="flex gap-16">
-                  <div><span className="text-dim text-xs">START</span><div>{draft.start || "TBD"}</div></div>
-                  <div><span className="text-dim text-xs">END</span><div>{draft.end || "TBD"}</div></div>
-                </div>
-                <div><span className="text-dim text-xs">SCOPE</span>
-                  <div className="flex gap-4 flex-wrap mt-4">{(draft.scope || []).map(s => <span key={s} className="badge badge-amber" style={{ fontSize: 10 }}>{s}</span>)}</div>
-                </div>
-                <div className="flex gap-16 flex-wrap" style={{ marginTop: 8 }}>
-                  <div><span className="text-dim text-xs">LABOR HOURS</span><div className="font-mono">{totalHrs.toFixed(1)}h</div></div>
-                  <div><span className="text-dim text-xs">CHANGE ORDERS</span><div className="font-mono">{projCOs.length}</div></div>
-                  <div><span className="text-dim text-xs">RFIs</span><div className="font-mono">{projRFIs.length}</div></div>
-                  <div><span className="text-dim text-xs">SUBMITTALS</span><div className="font-mono">{projSubmittals.length}</div></div>
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* ── Change Orders ── */}
             {projTab === "change orders" && (
@@ -5501,6 +5532,40 @@ const ModalHub = ({ type, data, app }) => {
                 ))}
 
                 {items.length === 0 && !punchAdding && <div className="text-xs text-muted">No punch items yet.</div>}
+              </div>
+            );
+          })()}
+
+          {/* ── Construction Phases ── */}
+          {!isNew && (() => {
+            const editPhases = draft.phases || getDefaultPhases(draft);
+            const updateEditPhases = (newPhases) => {
+              const updated = { ...draft, phases: newPhases };
+              setDraft(updated);
+              app.setProjects(prev => prev.map(p => String(p.id) === String(draft.id) ? updated : p));
+            };
+            const activePhaseEdit = editPhases.find(p => p.status === "in progress");
+            const completedEditCount = editPhases.filter(p => p.status === "completed").length;
+            return (
+              <div style={{ marginTop: 16, borderTop: "2px solid var(--border)", paddingTop: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>Construction Phases</div>
+                    <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 2 }}>
+                      {completedEditCount}/{editPhases.length} complete
+                      {activePhaseEdit ? ` · Active: ${activePhaseEdit.name}` : ""}
+                    </div>
+                  </div>
+                  {activePhaseEdit && (
+                    <span className="badge badge-amber" style={{ fontSize: 10 }}>{activePhaseEdit.name}</span>
+                  )}
+                </div>
+                <PhaseTracker
+                  phases={editPhases}
+                  employees={app.employees || []}
+                  onUpdate={updateEditPhases}
+                  readOnly={false}
+                />
               </div>
             );
           })()}

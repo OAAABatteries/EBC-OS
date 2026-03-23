@@ -254,6 +254,32 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .cursor-pointer{cursor:pointer}.border-b{border-bottom:1px solid var(--border)}
 .opacity-50{opacity:0.5}.hidden{display:none}
 
+/* ══ PHASE TRACKER ══ */
+.phase-timeline{display:flex;align-items:flex-start;overflow-x:auto;padding:6px 2px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.phase-timeline::-webkit-scrollbar{display:none}
+.phase-node-wrap{display:flex;flex-direction:column;align-items:center;min-width:80px;flex-shrink:0}
+.phase-dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  border:none;cursor:pointer;flex-shrink:0;transition:all 0.2s ease;position:relative;z-index:1}
+.phase-dot-done{background:var(--green);color:#fff}
+.phase-dot-done:hover{filter:brightness(1.12);transform:scale(1.08)}
+.phase-dot-active{background:var(--amber);color:#000;box-shadow:0 0 14px var(--amber-glow)}
+.phase-dot-active:hover{filter:brightness(1.08);transform:scale(1.08)}
+.phase-dot-pending{background:var(--bg3);color:var(--text3);border:2px dashed var(--border2)}
+.phase-dot-pending:hover{border-color:var(--text2);color:var(--text2);transform:scale(1.06)}
+.phase-dot-open{box-shadow:0 0 0 3px var(--amber-dim) !important;transform:scale(1.12) !important}
+.phase-connector{height:2px;min-width:16px;flex:1;align-self:flex-start;margin-top:14px;max-width:52px;flex-shrink:1}
+.phase-connector-done{background:var(--green)}
+.phase-connector-active{background:linear-gradient(90deg,var(--green),var(--amber))}
+.phase-connector-pending{background:var(--border)}
+.phase-node-label{font-size:10px;color:var(--text3);text-align:center;margin-top:6px;line-height:1.3;
+  max-width:80px;cursor:pointer;transition:color 0.15s;padding:0 2px;word-break:break-word}
+.phase-node-label:hover{color:var(--text2)}
+.phase-label-done{color:var(--green)}
+.phase-label-active{color:var(--amber);font-weight:600}
+.phase-node-date{font-size:9px;color:var(--text3);text-align:center;font-family:var(--font-mono);margin-top:2px}
+.phase-detail-panel{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px;margin-top:12px;animation:fadeIn 0.15s ease}
+
 /* ══ MATERIAL LIBRARY ══ */
 .mat-cat-pill{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap}
 .clickable-row{cursor:pointer;transition:background 0.15s}.clickable-row:hover{background:var(--bg4)}
