@@ -45,6 +45,7 @@ import { NotificationPanel } from "./components/NotificationPanel";
 import { PerimeterMapModal } from "./components/PerimeterMapModal";
 import { polygonAreaSqFt } from "./utils/geofence";
 import { TrendingDown, AlertTriangle, DollarSign, Wrench, Package, FileX, ChevronDown, ChevronUp, Search, Calendar, Building2, BarChart2, ClipboardList, Globe, Bell, FolderOpen, MapPin, Paperclip, FileText, Image, Sheet, FileSpreadsheet, Camera, List, Columns, CheckSquare, Square } from "lucide-react";
+import { FeatureGuide, resetAllGuides } from "./components/FeatureGuide";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · App Component
@@ -882,6 +883,7 @@ function App({ auth, onLogout }) {
           </div>
         </div>
         <div className="flex gap-8">
+          <FeatureGuide guideKey="dashboard" />
           {dashCfg.showBrief && (
             <button className="btn btn-ghost" onClick={() => { showBrief ? setShowBrief(false) : runMorningBrief(); }} disabled={briefLoading}>
               {briefLoading ? t("Loading...") : t("Morning Brief")}
@@ -1426,6 +1428,7 @@ function App({ auth, onLogout }) {
           <button className="btn btn-ghost" onClick={() => setShowEmailScanner(!showEmailScanner)}>
             {showEmailScanner ? t("Close Scanner") : t("Scan Email")}
           </button>
+          <FeatureGuide guideKey="bids" />
           <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>{t("+ Add Bid")}</button>
         </div>
       </div>
@@ -2243,6 +2246,7 @@ function App({ auth, onLogout }) {
             URL.revokeObjectURL(url);
             show("Projects CSV exported");
           }}>{t("Export CSV")}</button>
+          <FeatureGuide guideKey="projects" />
           <button className="btn btn-primary" onClick={() => setModal({ type: "editProject", data: null })}>{t("+ Add Project")}</button>
         </div>
       </div>

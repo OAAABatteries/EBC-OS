@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Clock, ClipboardList, MapPin, AlertTriangle, Flame, DollarSign, Package } from "lucide-react";
+import { FeatureGuide } from "../components/FeatureGuide";
 import { NewHireWizard } from "../components/NewHireWizard";
 
 // ═══════════════════════════════════════════════════════════════
@@ -444,6 +445,7 @@ export function TimeClockAdmin({ app }) {
           <div className="section-sub">Employee time tracking, scheduling & labor management</div>
         </div>
         <div className="flex gap-8">
+          <FeatureGuide guideKey="timeclock" />
           <button className="btn btn-ghost" onClick={() => { showAnomaly ? setShowAnomaly(false) : runAnomalyScan(); }} disabled={anomalyLoading}>
             {anomalyLoading ? "Scanning..." : "AI Anomaly Scan"}
           </button>

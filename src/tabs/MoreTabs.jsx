@@ -1,4 +1,5 @@
 import { useState, useCallback, Fragment, lazy, Suspense } from "react";
+import { resetAllGuides } from "../components/FeatureGuide";
 import { ClipboardList, Folder, Search, Smartphone, Wrench, Shield, Download, ClipboardCopy, CheckCircle, AlertTriangle, AlertOctagon, Flame, Droplets, Heart, Globe, Wind, Zap, CheckSquare, Square } from "lucide-react";
 import { THEMES, OSHA_CHECKLIST, COMPANY_DEFAULTS, ASSEMBLIES } from "../data/constants";
 import { storePdf, getPdfUrl, deletePdf, fmtSize } from "../hooks/useSubmittalPdf";
@@ -5927,6 +5928,11 @@ function DataTab({ app }) {
             <strong>Import Data</strong>
             <p className="text2" style={{ margin: "4px 0 8px" }}>Restore data from a previously exported JSON file.</p>
             <input type="file" accept=".json" onChange={doImport} style={{ fontSize: 13 }} />
+          </div>
+          <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+            <strong>Feature Guides</strong>
+            <p className="text2" style={{ margin: "4px 0 8px" }}>Re-enable step-by-step guides for all sections. Guides will auto-trigger on your next visit to each section.</p>
+            <button className="btn btn-ghost btn-sm" onClick={() => { resetAllGuides(); app.show("Guides reset — they will show on next visit to each section", "ok"); }}>Reset All Guides</button>
           </div>
           <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
             <strong>Reset All Data</strong>
