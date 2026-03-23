@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { BarChart2 } from "lucide-react";
 import { T } from "../../data/translations";
 
 // ═══════════════════════════════════════════════════════════
@@ -184,7 +185,7 @@ export function CalendarAnalytics({ app, lang }) {
         <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 16, marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 22 }}>📊</span>
+              <BarChart2 style={{ width: 22, height: 22 }} />
               <div>
                 <div style={{ fontWeight: 700, fontSize: 14 }}>Workforce Score: {wfResult.insightScore}/100 ({wfResult.grade})</div>
                 <div style={{ fontSize: 12, color: "var(--text3)" }}>{wfResult.summary}</div>

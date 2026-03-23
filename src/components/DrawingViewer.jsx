@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { FileText } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import * as XLSX from "xlsx";
 import { uploadTakeoffPdf, downloadTakeoffPdf } from "../lib/supabase";
@@ -2012,7 +2013,7 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
                         border: isActivePdf ? "1px solid rgba(59,130,246,0.25)" : "1px solid transparent",
                         display: "flex", alignItems: "center", gap: 5,
                       }}>
-                      <span style={{ fontSize: 10, color: "#60a5fa" }}>📄</span>
+                      <FileText size={10} style={{ color: "#60a5fa", flexShrink: 0 }} />
                       <span style={{ fontSize: 10, fontWeight: 600, color: isActivePdf ? "#fff" : "#999",
                         flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {pf.name.replace(/\.pdf$/i, "")}

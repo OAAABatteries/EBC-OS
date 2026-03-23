@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { Package, Truck, Building2, CheckCircle } from "lucide-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -138,7 +139,7 @@ function DeliveryMap({ projects, materialRequests, companyLocations, auth, t }) 
     // Delivery points (highest priority — on top)
     deliveryPoints.forEach(d => {
       const color = STATUS_COLORS[d.status] || STATUS_COLORS.approved;
-      const symbol = d.status === "in-transit" ? "🚛" : "📦";
+      const symbol = d.status === "in-transit" ? "T" : "P";
       const m = L.marker([d.lat, d.lng], {
         icon: makeIcon(color, symbol),
         zIndexOffset: 1000,
@@ -172,11 +173,11 @@ function DeliveryMap({ projects, materialRequests, companyLocations, auth, t }) 
       {/* Stats bar */}
       <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
         <div className="card" style={{ padding: "8px 14px", display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ color: STATUS_COLORS.approved, fontSize: 16 }}>📦</span>
+          <Package style={{ width: 16, height: 16, color: STATUS_COLORS.approved }} />
           <span className="text-sm">{deliveryCount} {t("delivery stop")}{deliveryCount !== 1 ? "s" : ""}</span>
         </div>
         <div className="card" style={{ padding: "8px 14px", display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ color: STATUS_COLORS.project, fontSize: 16 }}>🏗</span>
+          <Building2 style={{ width: 16, height: 16, color: STATUS_COLORS.project }} />
           <span className="text-sm">{projectCount} {t("active project")}{projectCount !== 1 ? "s" : ""}</span>
         </div>
       </div>
@@ -396,7 +397,7 @@ export function DeliveriesTab({ app }) {
         <div>
           {queueItems.length === 0 ? (
             <div className="empty-state" style={{ padding: "40px 20px" }}>
-              <div className="empty-icon" style={{ fontSize: 40, marginBottom: 8 }}>📦</div>
+              <div className="empty-icon" style={{ marginBottom: 8 }}><Package style={{ width: 40, height: 40 }} /></div>
               <div className="empty-text">{t("No pending deliveries")}</div>
             </div>
           ) : (
@@ -449,7 +450,7 @@ export function DeliveriesTab({ app }) {
         <div>
           {inTransitItems.length === 0 ? (
             <div className="empty-state" style={{ padding: "40px 20px" }}>
-              <div className="empty-icon" style={{ fontSize: 40, marginBottom: 8 }}>🚛</div>
+              <div className="empty-icon" style={{ marginBottom: 8 }}><Truck style={{ width: 40, height: 40 }} /></div>
               <div className="empty-text">{t("No active deliveries")}</div>
             </div>
           ) : (
@@ -501,7 +502,7 @@ export function DeliveriesTab({ app }) {
         <div>
           {todayDelivered.length === 0 ? (
             <div className="empty-state" style={{ padding: "40px 20px" }}>
-              <div className="empty-icon" style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
+              <div className="empty-icon" style={{ marginBottom: 8 }}><CheckCircle style={{ width: 40, height: 40 }} /></div>
               <div className="empty-text">{t("No deliveries completed today")}</div>
             </div>
           ) : (

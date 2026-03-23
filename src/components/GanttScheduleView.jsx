@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { BarChart2, HardHat } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · Gantt Schedule View
@@ -190,7 +191,7 @@ export function GanttScheduleView({ projects, onProjectClick }) {
   if (ganttProjects.length === 0) {
     return (
       <div style={{ textAlign: "center", padding: 40 }}>
-        <div style={{ fontSize: 48, marginBottom: 12, opacity: 0.3 }}>📊</div>
+        <div style={{ marginBottom: 12, opacity: 0.3, display: "flex", justifyContent: "center" }}><BarChart2 style={{ width: 48, height: 48 }} /></div>
         <div style={{ color: "var(--text2)" }}>No projects with schedule dates</div>
         <div style={{ color: "var(--text3)", fontSize: 13, marginTop: 4 }}>Add start/end dates to projects to see the Gantt timeline</div>
       </div>
@@ -326,7 +327,7 @@ export function GanttScheduleView({ projects, onProjectClick }) {
                     display: "flex", alignItems: "center",
                     fontSize: 10, color: "var(--text3)", background: "var(--bg)",
                   }}>
-                    <span style={{ marginRight: 4 }}>👷</span> {p.crewCount} crew
+                    <HardHat style={{ width: 12, height: 12, marginRight: 4 }} /> {p.crewCount} crew
                   </div>
                 )}
               </div>

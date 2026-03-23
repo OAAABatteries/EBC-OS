@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Clock, ClipboardList, MapPin, AlertTriangle, Flame, DollarSign, Package } from "lucide-react";
 import { NewHireWizard } from "../components/NewHireWizard";
 
 // ═══════════════════════════════════════════════════════════════
@@ -37,6 +38,7 @@ export function TimeClockAdmin({ app }) {
     timeEntries, setTimeEntries, projects, show, setModal, modal,
     crewSchedule, setCrewSchedule, materialRequests, setMaterialRequests
   } = app;
+  const canManageHires = ["owner", "admin", "pm", "office_admin"].includes(app.auth?.role);
 
   const [sub, setSub] = useState("Live Status");
   const [editEmp, setEditEmp] = useState(null);
@@ -572,7 +574,7 @@ export function TimeClockAdmin({ app }) {
 
           {liveEntries.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">🕐</div>
+              <div className="empty-icon"><Clock style={{ width: 40, height: 40 }} /></div>
               <div className="empty-text">No one is currently clocked in</div>
             </div>
           ) : (
@@ -704,7 +706,7 @@ export function TimeClockAdmin({ app }) {
           <div className="section-title" style={{ marginBottom: 8 }}>All Time Entries</div>
           {allEntries.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">📋</div>
+              <div className="empty-icon"><ClipboardList style={{ width: 40, height: 40 }} /></div>
               <div className="empty-text">No time entries yet</div>
             </div>
           ) : (
@@ -804,16 +806,16 @@ export function TimeClockAdmin({ app }) {
                   const suite = proj?.suite ? ` (${proj.suite})` : "";
                   const parking = proj?.parking ? ` | Parking: ${proj.parking}` : "";
                   const time = a.hours ? `${a.hours.start}–${a.hours.end}` : "6:30–3:00";
-                  lines.push(`${emp.name} → ${a.projectName}${suite}\n  📍 ${addr}${parking}\n  🕐 ${time}`);
+                  lines.push(`${emp.name} → ${a.projectName}${suite}\n  @ ${addr}${parking}\n  ${time}`);
                 });
 
                 // Find unassigned
                 const unassigned = employees.filter(e => e.active && !assignedEmps.has(e.id));
                 if (unassigned.length > 0) {
-                  lines.push("\n⚠️ UNASSIGNED:\n" + unassigned.map(e => `  • ${e.name} (${e.role})`).join("\n"));
+                  lines.push("\nUNASSIGNED:\n" + unassigned.map(e => `  • ${e.name} (${e.role})`).join("\n"));
                 }
 
-                const dispatchMsg = `📋 EBC CREW DISPATCH — ${dayLabel} ${fmtWeekDate(dayDate)}\n${"─".repeat(40)}\n\n${lines.join("\n\n")}`;
+                const dispatchMsg = `EBC CREW DISPATCH — ${dayLabel} ${fmtWeekDate(dayDate)}\n${"─".repeat(40)}\n\n${lines.join("\n\n")}`;
 
                 // Copy to clipboard for SMS/WhatsApp
                 navigator.clipboard.writeText(dispatchMsg).then(() => {
@@ -822,7 +824,7 @@ export function TimeClockAdmin({ app }) {
                   // Fallback: show in prompt
                   window.prompt("Copy this dispatch:", dispatchMsg);
                 });
-              }}>📋 Send Dispatch</button>
+              }}><ClipboardList style={{ width: 14, height: 14, display: "inline", verticalAlign: "middle", marginRight: 4 }} />Send Dispatch</button>
             </div>
           </div>
 
@@ -1102,7 +1104,7 @@ export function TimeClockAdmin({ app }) {
             <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 16, marginBottom: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 22 }}>📋</span>
+                  <ClipboardList style={{ width: 22, height: 22 }} />
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14 }}>Attendance: {attResult.attendanceScore}/100 ({attResult.grade})</div>
                     <div style={{ fontSize: 12, color: "var(--text3)" }}>{attResult.summary}</div>
@@ -1179,7 +1181,7 @@ export function TimeClockAdmin({ app }) {
 
           {verificationData.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">📋</div>
+              <div className="empty-icon"><ClipboardList style={{ width: 40, height: 40 }} /></div>
               <div className="empty-text">No one was scheduled for this date</div>
             </div>
           ) : (
@@ -1236,7 +1238,7 @@ export function TimeClockAdmin({ app }) {
             <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 16, marginBottom: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 22 }}>🔥</span>
+                  <Flame style={{ width: 22, height: 22 }} />
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14 }}>Backlog Health: {burnResult.backlogHealth}/100 ({burnResult.grade})</div>
                     <div style={{ fontSize: 12, color: "var(--text3)" }}>{burnResult.summary}</div>
@@ -1385,7 +1387,7 @@ export function TimeClockAdmin({ app }) {
             <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 16, marginBottom: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 22 }}>💰</span>
+                  <DollarSign style={{ width: 22, height: 22 }} />
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14 }}>Cost Health: {ohResult.healthScore}/100 ({ohResult.grade})</div>
                     <div style={{ fontSize: 12, color: "var(--text3)" }}>{ohResult.summary}</div>
@@ -1557,7 +1559,7 @@ export function TimeClockAdmin({ app }) {
 
             {filtered.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">📦</div>
+                <div className="empty-icon"><Package style={{ width: 40, height: 40 }} /></div>
                 <div className="empty-text">No material requests</div>
               </div>
             ) : (
@@ -1634,21 +1636,25 @@ export function TimeClockAdmin({ app }) {
           <div className="flex-between mb-16">
             <span className="text-sm text-muted">{employees.length} employees</span>
             <div style={{ display: "flex", gap: 8 }}>
-              <button
-                className="btn btn-sm"
-                style={{ background: "rgba(224,148,34,0.12)", color: "#e09422", border: "1px solid rgba(224,148,34,0.3)" }}
-                onClick={() => setShowNewHire(true)}
-              >
-                New Hire Onboarding
-              </button>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() =>
-                  setEditEmp({ name: "", role: "Journeyman", pin: "", phone: "", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 35, active: true })
-                }
-              >
-                + Quick Add
-              </button>
+              {canManageHires && (
+                <button
+                  className="btn btn-sm"
+                  style={{ background: "rgba(224,148,34,0.12)", color: "#e09422", border: "1px solid rgba(224,148,34,0.3)" }}
+                  onClick={() => setShowNewHire(true)}
+                >
+                  New Hire Onboarding
+                </button>
+              )}
+              {canManageHires && (
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() =>
+                    setEditEmp({ name: "", role: "Journeyman", pin: "", phone: "", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 35, active: true })
+                  }
+                >
+                  + Quick Add
+                </button>
+              )}
             </div>
           </div>
           <div className="table-wrap">

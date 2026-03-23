@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Calendar } from "lucide-react";
+import { Calendar, Map, Settings, Navigation, Package, Truck, CheckCircle, MapPin, RefreshCw } from "lucide-react";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
 
@@ -244,9 +244,9 @@ export function DriverView({ app }) {
 
   // ═══ MAIN DRIVER VIEW ═══
   const driverTabs = [
-    { key: "route", label: `🗺️ ${t("Route")}`, count: optimizedStops.length },
+    { key: "route", label: t("Route"), count: optimizedStops.length },
     { key: "completed", label: t("Completed"), count: todayDelivered.length },
-    { key: "settings", label: "⚙️" },
+    { key: "settings", label: t("Settings") },
   ];
 
   return (
@@ -300,7 +300,7 @@ export function DriverView({ app }) {
                 {getMultiStopNavUrl() && (
                   <a href={getMultiStopNavUrl()} target="_blank" rel="noopener noreferrer"
                     className="btn btn-primary" style={{ display: "block", textAlign: "center", padding: "14px 20px", fontSize: 16, fontWeight: 700, textDecoration: "none" }}>
-                    🧭 {t("Navigate Full Route")}
+                    <Navigation size={16} style={{ display: "inline", marginRight: 6, verticalAlign: "middle" }} />{t("Navigate Full Route")}
                   </a>
                 )}
                 <div className="text-xs text-muted" style={{ textAlign: "center", marginTop: 6 }}>
@@ -312,7 +312,7 @@ export function DriverView({ app }) {
             {/* Stop list — draggable */}
             {optimizedStops.length === 0 ? (
               <div className="empty-state" style={{ padding: "40px 20px" }}>
-                <div className="empty-icon">📦</div>
+                <div className="empty-icon"><Package size={32} /></div>
                 <div className="empty-text">{t("No deliveries in queue")}</div>
                 <div className="text-xs text-muted" style={{ marginTop: 8 }}>{t("Approved material requests will appear here")}</div>
               </div>
@@ -387,18 +387,18 @@ export function DriverView({ app }) {
                       {/* Action buttons */}
                       <div className="flex gap-8">
                         {!stop.isInTransit ? (
-                          <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => handleStartDelivery(stop.id)}>
-                            🚛 {t("Start Delivery")}
+                          <button className="btn btn-primary btn-sm" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }} onClick={() => handleStartDelivery(stop.id)}>
+                            <Truck size={14} />{t("Start Delivery")}
                           </button>
                         ) : (
-                          <button className="btn btn-sm" style={{ flex: 1, background: "var(--green)", color: "#fff" }} onClick={() => handleMarkDelivered(stop.id)}>
-                            ✅ {t("Mark Delivered")}
+                          <button className="btn btn-sm" style={{ flex: 1, background: "var(--green)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }} onClick={() => handleMarkDelivered(stop.id)}>
+                            <CheckCircle size={14} />{t("Mark Delivered")}
                           </button>
                         )}
                         {getNavLink(stop) && (
                           <a href={getNavLink(stop)} target="_blank" rel="noopener noreferrer"
                             className="btn btn-ghost btn-sm" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                            📍 {t("Navigate")}
+                            <MapPin size={14} />{t("Navigate")}
                           </a>
                         )}
                       </div>
@@ -410,9 +410,9 @@ export function DriverView({ app }) {
 
             {/* Optimize button */}
             {manualOrder && optimizedStops.length > 1 && (
-              <button className="btn btn-ghost" style={{ marginTop: 12, width: "100%" }}
+              <button className="btn btn-ghost" style={{ marginTop: 12, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                 onClick={() => setManualOrder(null)}>
-                🔄 {t("Re-optimize Route")}
+                <RefreshCw size={14} />{t("Re-optimize Route")}
               </button>
             )}
           </div>
@@ -426,7 +426,7 @@ export function DriverView({ app }) {
             </div>
             {todayDelivered.length === 0 ? (
               <div className="empty-state" style={{ padding: "30px 20px" }}>
-                <div className="empty-icon">✅</div>
+                <div className="empty-icon"><CheckCircle size={32} /></div>
                 <div className="empty-text">{t("No deliveries completed today")}</div>
               </div>
             ) : (

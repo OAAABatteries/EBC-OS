@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { Phone, Mail, MapPin } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════════
 //  Business Card Generator — EBC branded cards per employee/role
@@ -106,9 +107,9 @@ export default function BusinessCardGenerator({ employees, app }) {
               <div className="bc-title">{card.title}</div>
               <div className="bc-divider" />
               <div className="bc-info">
-                {card.phone && <div className="bc-info-row">📞 <span>{card.phone}</span></div>}
-                {card.email && <div className="bc-info-row">✉️ <span>{card.email}</span></div>}
-                <div className="bc-info-row">📍 <span>Houston, TX</span></div>
+                {card.phone && <div className="bc-info-row"><Phone style={{ width: 16, height: 16 }} /> <span>{card.phone}</span></div>}
+                {card.email && <div className="bc-info-row"><Mail style={{ width: 16, height: 16 }} /> <span>{card.email}</span></div>}
+                <div className="bc-info-row"><MapPin style={{ width: 16, height: 16 }} /> <span>Houston, TX</span></div>
               </div>
               <div className="bc-company">
                 <div className="bc-company-name">Eagles Brothers</div>

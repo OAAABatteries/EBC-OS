@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useCallback } from "react";
+import { BarChart2, FileText, Building2, Ruler } from "lucide-react";
 import { ROLES } from "../data/roles";
 import { hashPasswordSync } from "../utils/passwordHash";
 
@@ -303,10 +304,10 @@ const wizardStyles = `
 `;
 
 const FEATURES = [
-  { icon: "\ud83d\udcca", label: "Dashboard", desc: "Real-time KPIs & analytics" },
-  { icon: "\ud83d\udcc4", label: "Bids", desc: "Track & manage all bids" },
-  { icon: "\ud83c\udfd7\ufe0f", label: "Projects", desc: "Full project lifecycle" },
-  { icon: "\ud83d\udccf", label: "Estimating", desc: "Material takeoffs & pricing" },
+  { icon: <BarChart2 style={{ width: 28, height: 28 }} />, label: "Dashboard", desc: "Real-time KPIs & analytics" },
+  { icon: <FileText style={{ width: 28, height: 28 }} />, label: "Bids", desc: "Track & manage all bids" },
+  { icon: <Building2 style={{ width: 28, height: 28 }} />, label: "Projects", desc: "Full project lifecycle" },
+  { icon: <Ruler style={{ width: 28, height: 28 }} />, label: "Estimating", desc: "Material takeoffs & pricing" },
 ];
 
 const ROLE_OPTIONS = Object.entries(ROLES).filter(([k]) => k !== "owner");
@@ -484,7 +485,9 @@ export function OnboardingWizard({ onComplete }) {
           {/* Step 3: Ready */}
           {step === 3 && (
             <div className="wizard-slide" style={{ alignItems: "center", justifyContent: "center" }}>
-              <div className="wizard-ready-icon">{"\ud83d\ude80"}</div>
+              <div className="wizard-ready-icon" style={{ display: "flex", justifyContent: "center" }}>
+                <Building2 style={{ width: 56, height: 56, color: "#e09422" }} />
+              </div>
               <div className="wizard-title">You're All Set!</div>
               <div className="wizard-desc" style={{ marginBottom: 32 }}>
                 EBC is ready. Your data, your team, your way.
