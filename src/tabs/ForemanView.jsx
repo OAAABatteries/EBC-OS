@@ -462,11 +462,15 @@ export function ForemanView({ app }) {
     );
     const projectIds = [...new Set(mySchedule.map(s => String(s.projectId)))];
     const scheduled = projects.filter(p => projectIds.includes(String(p.id)));
-    // Fallback: if no crew schedule entries, show all active projects so the portal isn't empty
-    if (scheduled.length === 0) {
+    // Also include projects directly assigned to this foreman by PM
+    const assigned = projects.filter(p => p.assignedForeman != null && String(p.assignedForeman) === fId);
+    // Combine, deduplicate by id
+    const combined = [...new Map([...scheduled, ...assigned].map(p => [String(p.id), p])).values()];
+    // Fallback: if no crew schedule entries and no direct assignment, show all active projects
+    if (combined.length === 0) {
       return projects.filter(p => p.status === "in-progress" || p.status === "active");
     }
-    return scheduled;
+    return combined;
   }, [activeForeman, crewSchedule, projects, weekStart]);
 
   // auto-select first project

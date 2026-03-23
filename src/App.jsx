@@ -1644,6 +1644,11 @@ function App({ auth, onLogout }) {
                         <span className={`badge ${STATUS_BADGE[b.status] || "badge-muted"}`} style={{ fontSize: 9 }}>{STATUS_LABEL[b.status] || b.status}</span>
                         {b.contact && <span className="text-xs text-dim">{b.contact}</span>}
                       </div>
+                      {b.estimatingBy && !b.convertedToProject && (
+                        <div className="text-xs mt-4" style={{ color: "var(--blue)", fontWeight: 600 }}>
+                          {b.estimatingBy.split(" ")[0]}
+                        </div>
+                      )}
                       {b.convertedToProject && (
                         <div className="text-xs mt-4" style={{ color: "var(--green)", fontStyle: "italic" }}>
                           → Moved to Projects
@@ -1929,6 +1934,11 @@ function App({ auth, onLogout }) {
               {b.convertedToProject && (
                 <div className="text-xs mt-4" style={{ color: "var(--green)", fontStyle: "italic", fontWeight: 500 }}>→ Moved to Projects</div>
               )}
+              {b.estimatingBy && !b.convertedToProject && (
+                <div className="text-xs mt-4" style={{ color: "var(--blue)", fontWeight: 600 }}>
+                  In progress: {b.estimatingBy.split(" ")[0]}{b.estimatingStarted ? ` · ${b.estimatingStarted}` : ""}
+                </div>
+              )}
               {/* Value + Owner row */}
               <div className="flex-between mt-6" style={{ alignItems: "flex-end" }}>
                 {hasValue ? <span className="font-mono font-bold text-amber" style={{ fontSize: 14 }}>{fmt(b.value)}</span> : <span className="text-xs text-muted" style={{ fontStyle: "italic" }}>No estimate</span>}
@@ -1969,6 +1979,7 @@ function App({ auth, onLogout }) {
                         scope: b.scope || [], sector: b.sector || "", contact: b.contact || "",
                         notes: b.notes || "", attachments: b.attachments || [],
                         laborBudget: 0, laborHours: 0, laborCost: 0, materialCost: 0,
+                        assignedForeman: b.assignedForeman || null,
                       };
                       setProjects(prev => [...prev, newProj]);
                       setBids(prev => prev.map(x => x.id === b.id ? { ...x, convertedToProject: true } : x));
@@ -2287,13 +2298,19 @@ function App({ auth, onLogout }) {
               setProjects(prev => prev.map(proj => proj.id === p.id ? { ...proj, lastAccessed: new Date().toISOString() } : proj));
               setModal({ type: "editProject", data: { ...p, lastAccessed: new Date().toISOString() } });
             }}>
-              {/* Top: phase + PM + health dot */}
+              {/* Top: phase + PM + foreman + health dot */}
               <div className="flex-between mb-4">
                 <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
                   <span className="badge badge-blue" style={{ fontSize: 10 }}>{p.phase || "No Phase"}</span>
                   {scheduleRisk && <span className="badge badge-red" style={{ fontSize: 9 }}>{scheduleRisk === "overdue" ? "OVERDUE" : "BEHIND"}</span>}
                 </span>
-                {p.pm && <span className="text-xs" style={{ color: "var(--blue)" }}>{p.pm.split(" ")[0]}</span>}
+                <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  {p.pm && <span className="text-xs" style={{ color: "var(--blue)" }}>{p.pm.split(" ")[0]}</span>}
+                  {p.assignedForeman != null && (() => {
+                    const fm = employees.find(e => String(e.id) === String(p.assignedForeman));
+                    return fm ? <span className="text-xs" style={{ color: "var(--text2)" }}>· {fm.name.split(" ")[0]}</span> : null;
+                  })()}
+                </span>
               </div>
               {/* Name + GC */}
               <div className="card-title font-head" style={{ fontSize: 14, marginBottom: 2, lineHeight: 1.3 }}>{p.name}</div>
@@ -3479,6 +3496,7 @@ const ModalHub = ({ type, data, app }) => {
   const [gcFilter, setGcFilter] = useState("");
   const [gcDropOpen, setGcDropOpen] = useState(false);
   const [showPerimeterMap, setShowPerimeterMap] = useState(false);
+  const [dupWarning, setDupWarning] = useState(null); // { pm, bidName } — bid dup alert
 
   const getInitial = () => {
     switch (type) {
@@ -3495,7 +3513,7 @@ const ModalHub = ({ type, data, app }) => {
           laborCost: 0, materialCost: 0,
           phase: "", start: "", end: "", pm: "", address: "",
           suite: "", parking: "", lat: "", lng: "",
-          closeOut: "", attachments: []
+          closeOut: "", attachments: [], assignedForeman: null
         };
       case "editContact":
         return data ? { ...data } : {
@@ -3607,6 +3625,7 @@ const ModalHub = ({ type, data, app }) => {
                 scope: awardedBid.scope || [],
                 sector: awardedBid.sector || "",
                 contact: awardedBid.contact || "",
+                assignedForeman: awardedBid.assignedForeman || null,
               };
               app.setProjects(prev => [...prev, newProject]);
               show(`Bid awarded! Project created: ${draft.name}`);
@@ -3699,6 +3718,7 @@ const ModalHub = ({ type, data, app }) => {
       scope: awardedBid.scope || [],
       sector: awardedBid.sector || "",
       contact: awardedBid.contact || "",
+      assignedForeman: awardedBid.assignedForeman || null,
     };
     app.setProjects(prev => [...prev, newProject]);
     show(`Bid awarded! Project created: ${awardedBid.name}`);
@@ -4883,6 +4903,19 @@ const ModalHub = ({ type, data, app }) => {
             </div>
           )}
 
+          {/* ── Duplicate PM Warning ── */}
+          {dupWarning && (
+            <div style={{ marginBottom: 12, padding: "12px 16px", background: "rgba(245,158,11,0.1)", border: "1px solid var(--amber)", borderRadius: "var(--radius)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 12, color: "var(--amber)", marginBottom: 2 }}>⚠ Potential Duplicate</div>
+                <div style={{ fontSize: 12, color: "var(--text2)" }}>
+                  <strong>{dupWarning.pm}</strong> is already estimating <strong>{dupWarning.bidName}</strong> from the same GC. Confirm you want to proceed.
+                </div>
+              </div>
+              <button className="btn btn-ghost btn-sm" style={{ flexShrink: 0, fontSize: 11 }} onClick={() => setDupWarning(null)}>Dismiss</button>
+            </div>
+          )}
+
           <div className="form-grid">
             <div className="form-group full">
               <label className="form-label">Bid Name</label>
@@ -4941,7 +4974,29 @@ const ModalHub = ({ type, data, app }) => {
             </div>
             <div className="form-group">
               <label className="form-label">Status</label>
-              <select className="form-select" value={draft.status} onChange={e => upd("status", e.target.value)}>
+              <select className="form-select" value={draft.status} onChange={e => {
+                const newStatus = e.target.value;
+                const ESTIMATING_ACTIVE = ["estimating", "takeoff", "awaiting_quotes", "pricing", "draft_ready"];
+                // When transitioning into active estimating and not yet claimed
+                if (ESTIMATING_ACTIVE.includes(newStatus) && !draft.estimatingBy) {
+                  const pmName = app.auth?.name || "";
+                  setDraft(d => ({ ...d, status: newStatus, estimatingBy: pmName, estimatingStarted: new Date().toISOString().slice(0, 10) }));
+                  // Check for duplicate: other bids from same GC already being estimated by a different PM
+                  if (pmName) {
+                    const dups = (app.bids || []).filter(b =>
+                      String(b.id) !== String(draft.id) &&
+                      b.estimatingBy &&
+                      b.estimatingBy !== pmName &&
+                      b.gc === draft.gc
+                    );
+                    if (dups.length > 0) {
+                      setDupWarning({ pm: dups[0].estimatingBy, bidName: dups[0].name });
+                    }
+                  }
+                } else {
+                  upd("status", newStatus);
+                }
+              }}>
                 <optgroup label="Pre-Bid">
                   <option value="invite_received">Invite Received</option>
                   <option value="reviewing">Reviewing Docs</option>
@@ -4965,6 +5020,12 @@ const ModalHub = ({ type, data, app }) => {
                   <option value="no_bid">No Bid</option>
                 </optgroup>
               </select>
+              {/* Estimating-by info */}
+              {draft.estimatingBy && (
+                <div style={{ marginTop: 6, fontSize: 11, color: "var(--blue)" }}>
+                  In progress by {draft.estimatingBy}{draft.estimatingStarted ? ` · started ${draft.estimatingStarted}` : ""}
+                </div>
+              )}
             </div>
             <div className="form-group">
               <label className="form-label">Sector</label>
@@ -4977,6 +5038,15 @@ const ModalHub = ({ type, data, app }) => {
                 <option value="Emmanuel Aguilar">Emmanuel Aguilar</option>
                 <option value="Abner Aguilar">Abner Aguilar</option>
                 <option value="Isai Aguilar">Isai Aguilar</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Assign Foreman (if awarded)</label>
+              <select className="form-select" value={draft.assignedForeman != null ? String(draft.assignedForeman) : ""} onChange={e => upd("assignedForeman", e.target.value ? Number(e.target.value) : null)}>
+                <option value="">— No Foreman —</option>
+                {(app.employees || []).filter(e => e.role === "Foreman").map(e => (
+                  <option key={e.id} value={e.id}>{e.name}</option>
+                ))}
               </select>
             </div>
             <div className="form-group">
@@ -5283,6 +5353,15 @@ const ModalHub = ({ type, data, app }) => {
                 <option value="Emmanuel Aguilar">Emmanuel Aguilar</option>
                 <option value="Abner Aguilar">Abner Aguilar</option>
                 <option value="Isai Aguilar">Isai Aguilar</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Assigned Foreman</label>
+              <select className="form-select" value={draft.assignedForeman != null ? String(draft.assignedForeman) : ""} onChange={e => upd("assignedForeman", e.target.value ? Number(e.target.value) : null)}>
+                <option value="">— No Foreman Assigned —</option>
+                {(app.employees || []).filter(e => e.role === "Foreman").map(e => (
+                  <option key={e.id} value={e.id}>{e.name}</option>
+                ))}
               </select>
             </div>
             <div className="form-group full">
