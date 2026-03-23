@@ -903,6 +903,135 @@ export function ForemanView({ app }) {
                               {new Date(te.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} → {new Date(te.clockOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                             </div>
                             <div className="text-xs text-muted">
+                              {projects.find(p => p.id === te.projectId)?.name || t("General")}
+                            </div>
+                          </div>
+                          <div style={{ fontWeight: 600, color: "var(--accent)" }}>{te.totalHours}h</div>
+                        </div>
+                      ))}
+                      <div className="text-sm font-semi" style={{ textAlign: "right", marginTop: 8, color: "var(--accent)" }}>
+                        {t("Total")}: {myTodayHours.toFixed(1)}h
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ═══ DASHBOARD TAB ═══ */}
+            {foremanTab === "dashboard" && (
+              <div className="emp-content">
+                <div style={{ textAlign: "center", padding: "30px 20px" }}>
+                  {/* Big clock display */}
+                  <div style={{ fontSize: 42, fontWeight: 700, marginBottom: 6, fontFamily: "monospace" }}>
+                    {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </div>
+                  <div className="text-sm text-muted" style={{ marginBottom: 24 }}>
+                    {new Date().toLocaleDateString(lang === "es" ? "es-US" : "en-US", { weekday: "long", month: "long", day: "numeric" })}
+                  </div>
+
+                  {gpsStatus && <div className="text-xs text-muted" style={{ marginBottom: 10 }}>{gpsStatus}</div>}
+
+                  {/* ── Project Lookup for Clock-In ── */}
+                  {!isClockedIn && (
+                    <div style={{ marginBottom: 20, textAlign: "left", maxWidth: 400, margin: "0 auto 20px" }}>
+                      <label className="form-label" style={{ textAlign: "center", display: "block", marginBottom: 8 }}>{t("Select Project")}</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        placeholder={t("Search project name or address...")}
+                        value={clockProjectSearch}
+                        onChange={(e) => setClockProjectSearch(e.target.value)}
+                        style={{ marginBottom: 6, textAlign: "center" }}
+                      />
+                      <div style={{ maxHeight: 200, overflowY: "auto", borderRadius: 8, background: "var(--glass-bg)" }}>
+                        {(myProjects || projects)
+                          .filter(p => {
+                            if (!clockProjectSearch.trim()) return true;
+                            const q = clockProjectSearch.toLowerCase();
+                            return (p.name || "").toLowerCase().includes(q) ||
+                                   (p.address || "").toLowerCase().includes(q) ||
+                                   (p.gc || "").toLowerCase().includes(q);
+                          })
+                          .slice(0, 10)
+                          .map(p => (
+                            <div
+                              key={p.id}
+                              onClick={() => { setSelectedProjectId(p.id); setClockProjectSearch(""); }}
+                              style={{
+                                padding: "10px 14px",
+                                cursor: "pointer",
+                                borderBottom: "1px solid var(--glass-border)",
+                                background: selectedProjectId === p.id ? "var(--accent-dim)" : "transparent",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                              }}
+                            >
+                              <div>
+                                <div className="text-sm font-semi">{p.name}</div>
+                                <div className="text-xs text-muted">{p.address || p.gc || ""}</div>
+                              </div>
+                              {selectedProjectId === p.id && <span style={{ color: "var(--green)", fontSize: 18 }}>✓</span>}
+                            </div>
+                          ))}
+                      </div>
+                      {selectedProject && (
+                        <div className="text-sm font-semi" style={{ textAlign: "center", marginTop: 10, color: "var(--accent)" }}>
+                          📍 {selectedProject.name}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!isClockedIn ? (
+                    <button
+                      className="btn btn-primary"
+                      style={{ width: 200, height: 200, borderRadius: "50%", fontSize: 22, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "0 auto" }}
+                      onClick={handleClockIn}
+                      disabled={!selectedProjectId}
+                    >
+                      <span style={{ fontSize: 40 }}>⏱️</span>
+                      {t("CLOCK IN")}
+                    </button>
+                  ) : (
+                    <>
+                      <div style={{ marginBottom: 16 }}>
+                        <div className="text-xs text-muted">{t("Clocked in at")}</div>
+                        <div style={{ fontSize: 20, fontWeight: 600, color: "var(--green)" }}>
+                          {new Date(clockEntry.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                        <div className="text-xs text-muted" style={{ marginTop: 4 }}>
+                          {(() => {
+                            const elapsed = Date.now() - new Date(clockEntry.clockIn).getTime();
+                            const hrs = Math.floor(elapsed / 3600000);
+                            const mins = Math.floor((elapsed % 3600000) / 60000);
+                            return `${hrs}h ${mins}m ${t("elapsed")}`;
+                          })()}
+                        </div>
+                      </div>
+                      <button
+                        className="btn"
+                        style={{ width: 200, height: 200, borderRadius: "50%", fontSize: 22, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "0 auto", background: "var(--red)", color: "#fff" }}
+                        onClick={handleClockOut}
+                      >
+                        <span style={{ fontSize: 40 }}>🛑</span>
+                        {t("CLOCK OUT")}
+                      </button>
+                    </>
+                  )}
+
+                  {/* Today's entries */}
+                  {myTodayEntries.length > 0 && (
+                    <div style={{ marginTop: 30, textAlign: "left" }}>
+                      <div className="section-title" style={{ fontSize: 14, marginBottom: 8 }}>{t("Today's Time Log")}</div>
+                      {myTodayEntries.map((te, i) => (
+                        <div key={i} className="foreman-crew-row" style={{ padding: "8px 12px", marginBottom: 4 }}>
+                          <div>
+                            <div className="text-sm font-semi">
+                              {new Date(te.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} → {new Date(te.clockOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </div>
+                            <div className="text-xs text-muted">
                               {projects.find(p => String(p.id) === String(te.projectId))?.name || t("General")}
                             </div>
                           </div>

@@ -1253,6 +1253,56 @@ function App({ auth, onLogout }) {
           </div>
         )}
       </div>}
+
+      {/* Role-tailored quick actions */}
+      {dashCfg.showQuickActions && (
+        <div className="flex gap-8 mt-16">
+          <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>{t("+ Add Bid")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("projects")}>{t("View Projects")}</button>
+        </div>
+      )}
+      {userRole === "office_admin" && (
+        <div className="flex gap-8 mt-16">
+          <button className="btn btn-primary" onClick={() => handleTabClick("documents")}>{t("Documents")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("calendar")}>{t("Calendar")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("contacts")}>{t("Contacts")}</button>
+        </div>
+      )}
+      {userRole === "accounting" && (
+        <div className="flex gap-8 mt-16">
+          <button className="btn btn-primary" onClick={() => handleTabClick("financials")}>{t("Financials")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("timeclock")}>{t("Time Clock")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("reports")}>{t("Reports")}</button>
+        </div>
+      )}
+      {userRole === "safety" && (
+        <div className="flex gap-8 mt-16">
+          <button className="btn btn-primary" onClick={() => handleTabClick("jsa")}>{t("JSA Forms")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("safety")}>{t("Safety")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("reports")}>{t("Reports")}</button>
+        </div>
+      )}
+      {userRole === "foreman" && (
+        <div className="flex gap-8 mt-16">
+          <button className="btn btn-primary" onClick={() => handleTabClick("projects")}>{t("Projects")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("schedule")}>{t("Schedule")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("materials")}>{t("Materials")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("jsa")}>{t("JSA")}</button>
+        </div>
+      )}
+      {userRole === "driver" && (
+        <div className="flex gap-8 mt-16">
+          <button className="btn btn-primary" onClick={() => handleTabClick("deliveries")}>{t("Deliveries")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("materials")}>{t("Materials")}</button>
+        </div>
+      )}
+      {userRole === "employee" && (
+        <div className="flex gap-8 mt-16">
+          <button className="btn btn-primary" onClick={() => handleTabClick("timeclock")}>{t("Time Clock")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("schedule")}>{t("Schedule")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("materials")}>{t("Materials")}</button>
+        </div>
+      )}
     </div>
   );
 
