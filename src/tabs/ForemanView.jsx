@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
 import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp } from "lucide-react";
+import { ReportProblemModal } from "../components/ReportProblemModal";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
 import { PhaseTracker, getDefaultPhases } from "../components/PhaseTracker";
@@ -87,6 +88,7 @@ export function ForemanView({ app }) {
     changeOrders, rfis, setRfis, submittals,
     jsas, setJsas,
     dailyReports, setDailyReports,
+    problems, setProblems,
     theme, setTheme, show
   } = app;
 
@@ -113,6 +115,7 @@ export function ForemanView({ app }) {
   const [loginError, setLoginError] = useState("");
 
   const [foremanTab, setForemanTab] = useState("clock");
+  const [showReportProblem, setShowReportProblem] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [clockEntry, setClockEntry] = useState(null); // { clockIn, lat, lng, projectId }
   const [gpsStatus, setGpsStatus] = useState("");
@@ -663,6 +666,22 @@ export function ForemanView({ app }) {
 
   return (
     <div className="employee-app">
+      {/* Report Problem Modal */}
+      {showReportProblem && (
+        <ReportProblemModal
+          reporter={activeForeman.name}
+          projects={myProjects.length > 0 ? myProjects : projects}
+          defaultProjectId={selectedProjectId}
+          t={t}
+          onSave={(problem) => {
+            setProblems(prev => [problem, ...(prev || [])]);
+            setShowReportProblem(false);
+            show("Problem reported", "ok");
+          }}
+          onClose={() => setShowReportProblem(false)}
+        />
+      )}
+
       {/* PDF Viewer overlay */}
       {activeDrawingData && (
         <Suspense fallback={null}>
@@ -930,6 +949,34 @@ export function ForemanView({ app }) {
                       </div>
                     </div>
                   )}
+
+                  {/* Report Problem button */}
+                  <div style={{ marginTop: 32 }}>
+                    <button
+                      onClick={() => setShowReportProblem(true)}
+                      style={{
+                        width: "100%",
+                        maxWidth: 320,
+                        padding: "16px 20px",
+                        borderRadius: 12,
+                        background: "rgba(245,158,11,0.10)",
+                        border: "2px solid rgba(245,158,11,0.35)",
+                        color: "var(--amber, #f59e0b)",
+                        fontWeight: 700,
+                        fontSize: 16,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                      </svg>
+                      {t("Report a Problem")}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

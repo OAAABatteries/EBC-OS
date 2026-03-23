@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { ReportProblemModal } from "../components/ReportProblemModal";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { useNotifications } from "../hooks/useNotifications";
 import { findNearestGeofence, getLocationsInRange, pointInPolygon, polygonAreaSqFt } from "../utils/geofence";
@@ -53,6 +54,7 @@ export function EmployeeView({ app }) {
     changeOrders, rfis, submittals, crewSchedule,
     materialRequests, setMaterialRequests,
     jsas, setJsas,
+    problems, setProblems,
     theme, setTheme, show
   } = app;
 
@@ -79,6 +81,7 @@ export function EmployeeView({ app }) {
   const [loginError, setLoginError] = useState("");
 
   const [empTab, setEmpTab] = useState("clock");
+  const [showReportProblem, setShowReportProblem] = useState(false);
   const [now, setNow] = useState(new Date());
   const [activeJsaId, setActiveJsaId] = useState(null);
 
@@ -847,6 +850,22 @@ export function EmployeeView({ app }) {
   // ═══════════════════════════════════════════════════════════════
   return (
     <div className="employee-app">
+      {/* Report Problem Modal */}
+      {showReportProblem && (
+        <ReportProblemModal
+          reporter={activeEmp.name}
+          projects={projects}
+          defaultProjectId={selectedProject?.id}
+          t={t}
+          onSave={(problem) => {
+            setProblems(prev => [problem, ...(prev || [])]);
+            setShowReportProblem(false);
+            show("Problem reported", "ok");
+          }}
+          onClose={() => setShowReportProblem(false)}
+        />
+      )}
+
       <header className="employee-header">
         <div>
           <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
@@ -1142,6 +1161,32 @@ export function EmployeeView({ app }) {
                 <span className="text-md font-bold text-amber">{weekTotal.toFixed(1)}h</span>
               </div>
             </div>
+
+            {/* Report Problem button */}
+            <button
+              onClick={() => setShowReportProblem(true)}
+              style={{
+                width: "100%",
+                marginTop: 16,
+                padding: "16px 20px",
+                borderRadius: 12,
+                background: "rgba(245,158,11,0.10)",
+                border: "2px solid rgba(245,158,11,0.35)",
+                color: "var(--amber, #f59e0b)",
+                fontWeight: 700,
+                fontSize: 16,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              {t("Report a Problem")}
+            </button>
           </div>
         )}
 
