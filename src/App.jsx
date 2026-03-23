@@ -5661,9 +5661,20 @@ const ModalHub = ({ type, data, app }) => {
                       )}
                       {sec.items.length > 5 && <div className="text-xs" style={{ marginTop: 4, cursor: "pointer", color: "var(--blue)" }}
                         onClick={() => { setModal(null); app.setSearch(draft.name || ""); app.setTab(sec.tab); }}>+{sec.items.length - 5} more →</div>}
-                      <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px", marginTop: 6 }} onClick={() => { setModal(null); app.setSearch(draft.name || ""); app.setTab(sec.tab); }}>
-                        View All →
-                      </button>
+                      <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
+                        <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px" }} onClick={() => { setModal(null); app.setSearch(draft.name || ""); app.setTab(sec.tab); }}>
+                          View All →
+                        </button>
+                        {sec.label === "Submittals" && sec.items.length > 0 && (
+                          <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px", display: "flex", alignItems: "center", gap: 3 }}
+                            onClick={async () => {
+                              const { generateSubmittalsPackagePdf } = await import("./utils/submittalsPackagePdf.js");
+                              generateSubmittalsPackagePdf(draft, sec.items, app.contacts || [], app.company || {});
+                            }}>
+                            <FileDown size={11} /> PDF
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
