@@ -7,7 +7,7 @@ import { isDemoMode } from "./defaults";
 const _demo = isDemoMode();
 
 // Bump this when seed data changes to bust stale localStorage caches
-export const DATA_VERSION = 13;
+export const DATA_VERSION = 14;
 
 // ── THEMES ────────────────────────────────────────────────────
 export const THEMES = {
@@ -336,6 +336,7 @@ const _demoBids = [
   {id:106,name:"FKC San Angelo",gc:"Bayshore",value:313400,due:"Mar 10, 2026",status:"submitted",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Commercial",risk:"",notes:"",contact:"Josh",month:"Mar",closeOut:null,bidDate:"Mar 10, 2026"},
   {id:107,name:"United - Aggieland Imaging - College Station - Outpatient MRI Facility",gc:"United",value:79600,due:"Mar 10, 2026",status:"submitted",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware","Lead-Lined Walls"],phase:"Medical",risk:"",notes:"",contact:"Mistie Williams",month:"Mar",closeOut:null,bidDate:"Mar 10, 2026"},
   {id:108,name:"United - Ogle School Remodel",gc:"United",value:300200,due:"Mar 6, 2026",status:"submitted",scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Commercial",risk:"",notes:"",contact:"Mistie Williams",month:"Mar",closeOut:null,bidDate:"Mar 6, 2026"},
+  {id:209,name:"MH Katy MP3 UTP OBGYN Level 4",gc:"Forney Construction",value:262000,due:"Mar 6, 2026",status:"submitted",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Medical",risk:"",notes:"Memorial Hermann Katy MP3 — OBGYN Level 4",contact:"Monica Waller",month:"Mar",closeOut:null,bidDate:"Mar 6, 2026"},
   {id:110,name:"Arch-Con - Regor Therapeutics",gc:"Arch-Con",value:89700,due:"Mar 5, 2026",status:"submitted",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Doors & Hardware"],phase:"Medical",risk:"",notes:"4 suites: 800 Gym ($30.1K) + 800 CEO ($32.5K) + 840 ($11.6K) + 830 ($15.5K)",contact:"Robert Fortney",month:"Mar",closeOut:null,bidDate:"Mar 5, 2026"},
   {id:111,name:"Structure Tone - 8303 Fallbrook Drive Generator Addition",gc:"Structure Tone",value:6000,due:"Mar 4, 2026",status:"submitted",scope:["Demo","Metal Framing","Drywall","Tape & Finish","Doors & Hardware"],phase:"Commercial",risk:"",notes:"",contact:"Alba Flores",month:"Mar",closeOut:null,bidDate:"Mar 4, 2026"},
   {id:112,name:"United - Sun City Retail - Building C",gc:"United",value:14300,due:"Mar 2, 2026",status:"submitted",scope:["Metal Framing","Drywall","Tape & Finish","Doors & Hardware"],phase:"Retail",risk:"",notes:"Georgetown, TX",contact:"Mistie Williams",month:"Mar",closeOut:null,bidDate:"Mar 2, 2026"},
@@ -383,7 +384,7 @@ const _demoBids = [
   {id:163,name:"Forney - BSLMC Cath Labs 4 & 9",gc:"Forney Construction",value:104500,due:"Mar 5, 2026",status:"awarded",scope:["Demo","Metal Framing","Drywall","Lead-Lined Walls","ACT Ceilings"],phase:"Medical",risk:"",notes:"Latest proposal 03/05/2026. Alts: +$3,100 + $4,800",contact:"Jennifer Averitt",month:"Mar",closeOut:null,bidDate:"Mar 5, 2026"},
   {id:164,name:"UTMB M87 PCP Cancer Services Clinic",gc:"York Construction",value:525400,due:"Jan 9, 2025",status:"submitted",scope:["Demo","Metal Framing","Drywall","Tape & Finish","Doors & Hardware"],phase:"Medical",risk:"",notes:"Galveston, TX",contact:"Yarelys Hernandez",month:"Jan",closeOut:null,bidDate:"Jan 9, 2025"},
   {id:165,name:"Potbellys Sandwich Shop - Woodlands",gc:"Warwick Construction",value:39700,due:"Jan 7, 2026",status:"submitted",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Retail",risk:"",notes:"The Woodlands, TX",contact:"Kendrick Quintanilla",month:"Jan",closeOut:null,bidDate:"Jan 7, 2026"},
-  {id:168,name:"United - Heart Care Clinic - NW Houston",gc:"United Constructors",value:83500,due:"Jan 5, 2026",status:"awarded",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Medical",risk:"",notes:"COMPLETE",contact:"Steve Williams",month:"Jan",closeOut:null,bidDate:"Jan 5, 2026"},
+  {id:168,name:"United - Heart Care Clinic - NW Houston",gc:"United Constructors",value:73900,due:"Jan 5, 2026",status:"awarded",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Medical",risk:"",notes:"COMPLETE",contact:"Steve Williams",month:"Jan",closeOut:null,bidDate:"Jan 5, 2026"},
   // 2025
   {id:169,name:"JP's Construction - Health Source",gc:"JP's Construction",value:40100,due:"Dec 22, 2025",status:"submitted",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Medical",risk:"",notes:"Alts: +$9,900 paint, +$7,500 demising",contact:"Robert",month:"Dec",closeOut:null,bidDate:"Dec 22, 2025"},
   {id:170,name:"Jacob White - Holler Brewing Expansion",gc:"Jacob White",value:28400,due:"Dec 22, 2025",status:"submitted",scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Commercial",risk:"",notes:"Budget pricing",contact:"Alex Vidosh",month:"Dec",closeOut:null,bidDate:"Dec 22, 2025"},
@@ -428,8 +429,10 @@ const _demoProjects = [
   {id:11,name:"Our Lady of Guadalupe Restroom",gc:"Forney Construction",contract:34700,status:"in-progress",phase:"Commercial",address:"2405 Navigation Blvd, Houston, TX 77003",suite:"",parking:"",lat:29.7560,lng:-95.3500,pm:"Abner Aguilar",laborHours:520,progress:50,start:"2026-02-17",end:"2026-05-15",crewCount:3,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
   {id:12,name:"Arch-Con - Sprouts Farmers Market",gc:"Arch-Con",contract:215100,laborCost:68000,materialCost:62000,status:"in-progress",phase:"Retail",address:"4775 W Panther Creek Dr, The Woodlands, TX 77381",suite:"",parking:"",lat:30.1740,lng:-95.4950,pm:"Abner Aguilar",laborHours:1800,progress:15,start:"2026-03-01",end:"2026-08-30",crewCount:5,scope:["Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
   {id:13,name:"MHMC Cancer Center CT",gc:"Forney Construction",contract:20900,status:"in-progress",phase:"Medical",address:"925 Gessner Rd, Houston, TX 77024",suite:"",parking:"",lat:29.7728,lng:-95.5560,pm:"Abner Aguilar",laborHours:0,progress:95,start:"2026-01-06",end:"2026-03-28",crewCount:2,scope:["Demo","Metal Framing","Drywall","ACT Ceilings"]},
-  {id:14,name:"Heart Care Clinic - NW Houston",gc:"United Constructors",contract:79200,status:"completed",phase:"Medical",address:"13325 Hargrave Rd, Houston, TX 77070",suite:"",parking:"",lat:29.9570,lng:-95.5730,pm:"Abner Aguilar",laborHours:0,progress:100,start:"2025-10-01",end:"2026-02-28",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
+  {id:14,name:"Heart Care Clinic - NW Houston",gc:"United Constructors",contract:73900,status:"completed",phase:"Medical",address:"13325 Hargrave Rd, Houston, TX 77070",suite:"",parking:"",lat:29.9570,lng:-95.5730,pm:"Abner Aguilar",laborHours:0,progress:100,start:"2025-10-01",end:"2026-02-28",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
   {id:15,name:"MH Pearland L4 Renovation",gc:"Harvey Cleary",contract:83700,status:"in-progress",phase:"Medical",address:"16100 South Fwy, Pearland, TX 77584",suite:"Level 4",parking:"",lat:29.5635,lng:-95.2860,pm:"Abner Aguilar",laborHours:0,progress:95,start:"2025-12-01",end:"2026-04-15",crewCount:4,scope:["Metal Framing","Drywall"]},
+  {id:17,name:"Escapology - Sugar Land",gc:"United Constructors",contract:116800,status:"in-progress",phase:"Commercial",address:"Sugar Land, TX 77479",suite:"",parking:"",lat:29.6196,lng:-95.6349,pm:"Abner Aguilar",laborHours:1400,progress:85,start:"2025-11-01",end:"2026-04-30",crewCount:4,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
+  {id:18,name:"Spring Cypress Oral Surgeons",gc:"Wier CC",contract:155100,status:"in-progress",phase:"Medical",address:"Tomball, TX 77375",suite:"",parking:"",lat:30.0974,lng:-95.6164,pm:"Abner Aguilar",laborHours:1800,progress:0,start:"2025-03-01",end:"2026-06-30",crewCount:4,scope:["Metal Framing","Drywall","Tape & Finish","Doors & Hardware"]},
 ];
 
 // ── SEED: CONTACTS ──
@@ -454,7 +457,7 @@ const _demoContacts = [
   {id:14,name:"Ethan Alvarez",company:"O'Donnell/Snider",role:"Project Manager",bids:0,wins:0,color:"#8b5cf6",last:"Mar 16",priority:"med",phone:"",email:"",notes:"PM on MH MC Hospital Single Plane IR & Neuro IR."},
   // United Constructors
   {id:15,name:"Justin Gayford",company:"United Constructors",role:"Project Manager",bids:0,wins:0,color:"#ef4444",last:"Mar 11",priority:"high",phone:"",email:"justin@unitedconstructors.com",notes:"Brunello Cucinelli PM. Active schedule coordination."},
-  {id:16,name:"Steve Williams",company:"United Constructors",role:"VP Interior Construction",bids:0,wins:0,color:"#ef4444",last:"Mar 12",priority:"high",phone:"",email:"swilliams@unitedconstructors.com",notes:"Heart Care Clinic. CO #2 approved 3/12."},
+  {id:16,name:"Steve Williams",company:"United Constructors",role:"VP Interior Construction",bids:0,wins:0,color:"#ef4444",last:"Mar 12",priority:"high",phone:"713-579-9738",email:"swilliams@unitedconstructors.com",notes:"Heart Care Clinic. CO #2 approved 3/12. Escapology Sugar Land PM."},
   {id:17,name:"Mistie Williams",company:"United Constructors",role:"Project Coordinator",bids:0,wins:0,color:"#ef4444",last:"Mar 2",priority:"med",phone:"713-579-9742",email:"mwilliams@unitedconstructors.com",notes:"Subcontracts and COs. Dotson, Escapology, Heart Care."},
   // Harvey Cleary
   {id:18,name:"Kristen Gallegos",company:"Harvey Cleary",role:"Senior PM",bids:0,wins:0,color:"#06b6d4",last:"Jan 29",priority:"med",phone:"281-253-0679",email:"kgallegos@harveycleary.com",notes:"MH Pearland L4 Renovation. AD System submittal approved 1/29."},
@@ -512,6 +515,7 @@ const _demoTmTickets = [];
 const _demoChangeOrders = [
   {id:1,projectId:13,number:"CO-001",desc:"MHMC Cancer Center — Laser cabinet modification (rework due to GE equipment move)",amount:800,status:"approved",submitted:"2026-03-17",approved:"2026-03-17"},
   {id:2,projectId:14,number:"CO-001",desc:"Heart Care Clinic — Equipment removal & delivery ($3,200) + credit for unused lead lined rock (-$7,500)",amount:-4300,status:"approved",submitted:"2026-03-11",approved:"2026-03-12"},
+  {id:3,projectId:9,number:"CO-001",desc:"MH League City CCC CT — Control arm removal",amount:800,status:"submitted",submitted:"2026-03-12",approved:null,contact:"Juan Hinojosa (Forney)"},
 ];
 
 // ── SEED: RFIs ──
