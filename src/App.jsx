@@ -44,6 +44,7 @@ import { useAlertEngine } from "./hooks/useAlertEngine";
 import { NotificationPanel } from "./components/NotificationPanel";
 import { PerimeterMapModal } from "./components/PerimeterMapModal";
 import { polygonAreaSqFt } from "./utils/geofence";
+import { TrendingDown, AlertTriangle, DollarSign, Wrench, Package, FileX, ChevronDown, ChevronUp } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · App Component
@@ -1082,6 +1083,17 @@ function App({ auth, onLogout }) {
               {k.sub && <div className="text-xs text-muted">{k.sub}</div>}
             </div>
           ))}
+          {dashActions.profitAlerts.length > 0 && (
+            <div style={{ padding: "6px 14px", cursor: "pointer", borderRadius: 6, background: "rgba(239,68,68,0.10)", border: "1px solid rgba(239,68,68,0.25)", minWidth: 80, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}
+              onClick={() => document.getElementById("profit-analysis-section")?.scrollIntoView({ behavior: "smooth" })}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <TrendingDown size={12} style={{ color: "var(--red)" }} />
+                <span className="text-xs" style={{ color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.6px" }}>Profit Alert</span>
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--red)" }}>{dashActions.profitAlerts.length}</div>
+              <div className="text-xs" style={{ color: "var(--red)", opacity: 0.8 }}>{dashActions.profitAlerts.filter(p => p.margin < 15).length > 0 ? `${dashActions.profitAlerts.filter(p => p.margin < 15).length} critical` : "below 30%"}</div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1112,31 +1124,93 @@ function App({ auth, onLogout }) {
         </div>
       )}
 
-      {/* ── Profit Margin Alerts — projects below 30% margin ── */}
-      {dashCfg.showKPIs && dashActions.profitAlerts.length > 0 && (
-        <div className="card" style={{ padding: "12px 16px", marginBottom: 16, borderLeft: "3px solid var(--red)" }}>
-          <div className="flex-between mb-8">
-            <div className="text-sm font-semi" style={{ color: "var(--red)" }}>Profit Alerts ({dashActions.profitAlerts.length})</div>
-            <span className="badge badge-red">Below 30%</span>
-          </div>
-          {dashActions.profitAlerts.slice(0, 6).map(p => {
-            const marginColor = p.margin < 0 ? "#dc2626" : p.margin < 15 ? "var(--red)" : "var(--amber)";
-            return (
-              <div key={p.id} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                onClick={() => setModal({ type: "editProject", data: p })}>
-                <div>
-                  <div className="text-sm" style={{ color: "var(--blue)" }}>{p.name}</div>
-                  <div className="text-xs text-muted">{p.gc} — Contract: {fmt(p.contract)} | Costs: {fmt(p.totalCost)}</div>
-                </div>
-                <span className={`badge ${p.margin < 15 ? "badge-red" : "badge-amber"}`} style={{ minWidth: 52, textAlign: "center" }}>
-                  {p.margin}%
-                </span>
+      {/* ── Profit Analysis — projects below 30% margin ── */}
+      {dashCfg.showKPIs && dashActions.profitAlerts.length > 0 && (() => {
+        const getProfitDiagnosis = (p) => {
+          const laborRatio = p.laborCost ? p.laborCost / p.contract : null;
+          const matRatio = p.materialCost ? p.materialCost / p.contract : null;
+          const issues = [];
+          // Labor is primary profit driver — healthy labor ratio is ~50% of contract (100% markup)
+          if (laborRatio !== null && laborRatio > 0.55) issues.push({ icon: <Wrench size={11} />, text: "Labor overrun" });
+          if (matRatio !== null && matRatio > 0.28) issues.push({ icon: <Package size={11} />, text: "Material overage" });
+          // Check negative COs
+          const projCOs = changeOrders.filter(co => String(co.projectId) === String(p.id) && co.amount < 0 && co.status === "approved");
+          if (projCOs.length > 0) issues.push({ icon: <FileX size={11} />, text: "CO reduced margin" });
+          if (issues.length === 0) {
+            if (p.margin < 0) return [{ icon: <AlertTriangle size={11} />, text: "Contract underwater" }];
+            if (p.margin < 15) return [{ icon: <AlertTriangle size={11} />, text: "Critical — review estimate vs actuals" }];
+            return [{ icon: <TrendingDown size={11} />, text: "Below 30% target" }];
+          }
+          return issues;
+        };
+        const criticalCount = dashActions.profitAlerts.filter(p => p.margin < 15).length;
+        const warnCount = dashActions.profitAlerts.filter(p => p.margin >= 15).length;
+        return (
+          <div id="profit-analysis-section" className="card" style={{ padding: "16px 18px", marginBottom: 16, borderLeft: "3px solid var(--red)" }}>
+            <div className="flex-between mb-12">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <TrendingDown size={16} style={{ color: "var(--red)" }} />
+                <span className="text-sm font-semi" style={{ color: "var(--text)" }}>Profit Analysis</span>
+                <span className="text-xs text-muted">— projects below 30% margin</span>
               </div>
-            );
-          })}
-          {dashActions.profitAlerts.length > 6 && <div className="text-xs text-muted" style={{ marginTop: 6 }}>+{dashActions.profitAlerts.length - 6} more</div>}
-        </div>
-      )}
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                {criticalCount > 0 && <span className="badge badge-red" style={{ display: "flex", alignItems: "center", gap: 4 }}><AlertTriangle size={10} /> {criticalCount} critical</span>}
+                {warnCount > 0 && <span className="badge badge-amber">{warnCount} warning</span>}
+              </div>
+            </div>
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Project</th>
+                    <th>GC</th>
+                    <th className="num">Contract</th>
+                    <th className="num">Est. Costs</th>
+                    <th className="num">Margin</th>
+                    <th>Diagnosis</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dashActions.profitAlerts.map(p => {
+                    const diagnosis = getProfitDiagnosis(p);
+                    const badgeClass = p.margin < 0 ? "badge-red" : p.margin < 15 ? "badge-red" : "badge-amber";
+                    return (
+                      <tr key={p.id} style={{ cursor: "pointer" }} onClick={() => setModal({ type: "editProject", data: p })}>
+                        <td>
+                          <div className="text-sm" style={{ color: "var(--blue)", fontWeight: 500 }}>{p.name}</div>
+                          <div className="text-xs text-muted">{p.phase}</div>
+                        </td>
+                        <td className="text-sm text-muted">{p.gc}</td>
+                        <td className="num">{fmt(p.contract)}</td>
+                        <td className="num" style={{ color: "var(--text2)" }}>{fmt(p.totalCost)}</td>
+                        <td className="num">
+                          <span className={`badge ${badgeClass}`} style={{ minWidth: 48, textAlign: "center", display: "inline-block" }}>
+                            {p.margin < 0 ? `${p.margin}%` : `${p.margin}%`}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                            {diagnosis.map((d, i) => (
+                              <div key={i} style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--text2)", fontSize: 12 }}>
+                                <span style={{ color: p.margin < 15 ? "var(--red)" : "var(--amber)", flexShrink: 0 }}>{d.icon}</span>
+                                <span>{d.text}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="text-xs text-muted" style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6 }}>
+              <DollarSign size={11} />
+              EBC target: 30%+ margin. Labor is the primary profit driver (100% markup). Enter costs per project to track actuals.
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Section 4: Charts — only if data exists, compact ── */}
       {dashCfg.showCharts && gcWinRates.length > 0 && (
