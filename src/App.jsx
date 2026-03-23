@@ -591,12 +591,15 @@ function App({ auth, onLogout }) {
   };
 
   // ── KPI computations ──
-  const pipeline = useMemo(() => bids.filter(b => !["awarded", "lost", "dead", "no_bid"].includes(b.status) && !b.convertedToProject).reduce((s, b) => s + (b.value || 0), 0), [bids]);
+  // Pipeline = submitted bids only (not yet awarded or lost)
+  const pipeline = useMemo(() => bids.filter(b => b.status === "submitted").reduce((s, b) => s + (b.value || 0), 0), [bids]);
   const activeProjects = projects.length;
-  const openBids = bids.filter(b => b.status === "submitted" || (b.status === "estimating" && b.due && new Date(b.due) >= new Date())).length;
+  // Open Bids = count of submitted bids only
+  const openBids = bids.filter(b => b.status === "submitted").length;
   const awarded = bids.filter(b => b.status === "awarded").length;
   const lost = bids.filter(b => b.status === "lost").length;
-  const winRate = awarded + lost > 0 ? Math.round((awarded / (awarded + lost)) * 100) : 0;
+  // Win Rate only meaningful when there are actual losses to compare against
+  const winRate = awarded > 0 && lost > 0 ? Math.round((awarded / (awarded + lost)) * 100) : null;
 
   // ── Phase 3 KPI computations ──
   const gcWinRates = useMemo(() => {
@@ -612,11 +615,10 @@ function App({ auth, onLogout }) {
     return Object.values(map).sort((a, b) => b.total - a.total).slice(0, 8);
   }, [bids]);
 
+  // Backlog = total contract value of all in-progress projects
   const backlog = useMemo(() => {
-    const awardedNotStarted = bids.filter(b => b.status === "awarded" && !b.convertedToProject).reduce((s, b) => s + (b.value || 0), 0);
-    const inProgressRemaining = projects.filter(p => (p.progress || 0) < 100).reduce((s, p) => s + ((p.contract || 0) * (1 - (p.progress || 0) / 100)), 0);
-    return awardedNotStarted + inProgressRemaining;
-  }, [bids, projects]);
+    return projects.filter(p => p.status === "in-progress").reduce((s, p) => s + (p.contract || 0), 0);
+  }, [projects]);
 
   const cashFlow = useMemo(() => {
     const now = new Date();
@@ -632,10 +634,13 @@ function App({ auth, onLogout }) {
     return buckets;
   }, [invoices]);
 
+  // Labor % = weighted average of (laborCost / contract) across in-progress projects with cost data
   const laborUtil = useMemo(() => {
-    const totalHours = projects.reduce((s, p) => s + (p.laborHours || 0), 0);
-    const billableHours = projects.filter(p => (p.progress || 0) > 0 && (p.progress || 0) < 100).reduce((s, p) => s + (p.laborHours || 0) * ((p.progress || 0) / 100), 0);
-    return totalHours > 0 ? Math.round((billableHours / totalHours) * 100) : 0;
+    const activeProjWithLabor = projects.filter(p => p.status === "in-progress" && (p.laborCost || 0) > 0 && (p.contract || 0) > 0);
+    if (activeProjWithLabor.length === 0) return null;
+    const totalLabor = activeProjWithLabor.reduce((s, p) => s + p.laborCost, 0);
+    const totalContract = activeProjWithLabor.reduce((s, p) => s + p.contract, 0);
+    return Math.round((totalLabor / totalContract) * 100);
   }, [projects]);
 
   // ── filtered bids ──
@@ -1073,9 +1078,9 @@ function App({ auth, onLogout }) {
           {[
             { label: "Backlog", val: backlog > 0 ? fmtK(backlog) : null, click: "projects" },
             { label: "Pipeline", val: pipeline > 0 ? fmtK(pipeline) : null, click: "bids" },
-            { label: "Win Rate", val: (awarded + lost) > 0 ? `${winRate}%` : null, sub: (awarded + lost) > 0 ? `${awarded}W/${lost}L` : null, click: "bids" },
+            { label: "Win Rate", val: winRate !== null ? `${winRate}%` : null, sub: winRate !== null ? `${awarded}W/${lost}L` : null, click: "bids" },
             { label: "A/R", val: (cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90) > 0 ? fmtK(cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90) : null, color: cashFlow.net90 > 0 ? "var(--red)" : undefined, click: "financials" },
-            { label: "Labor", val: laborUtil > 0 ? `${laborUtil}%` : null, color: laborUtil >= 70 ? "var(--green)" : laborUtil >= 50 ? "var(--amber)" : "var(--red)", click: "timeclock" },
+            { label: "Labor", val: laborUtil !== null ? `${laborUtil}%` : null, color: laborUtil !== null ? (laborUtil >= 70 ? "var(--green)" : laborUtil >= 50 ? "var(--amber)" : "var(--red)") : undefined, click: "timeclock" },
             { label: "Open Bids", val: openBids > 0 ? String(openBids) : null, click: "bids" },
           ].filter(k => k.val).map((k, i) => (
             <div key={i} style={{ padding: "6px 14px", cursor: "pointer", borderRadius: 6, background: "var(--bg3)", minWidth: 80, textAlign: "center" }}
