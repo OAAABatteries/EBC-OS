@@ -969,7 +969,7 @@ function App({ auth, onLogout }) {
         return (
           <div className="card" style={{ padding: "14px 16px", marginBottom: 16, borderLeft: "3px solid var(--blue)" }}>
             <div className="text-sm font-semi mb-8" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 15 }}>{"\u{1F4CD}"}</span> Today's Sites
+              <MapPin size={15} /> Today's Sites
               <span className="text-xs text-muted" style={{ fontWeight: 400 }}>({mySites.length} active)</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 8 }}>
