@@ -7,7 +7,7 @@ import { isDemoMode } from "./defaults";
 const _demo = isDemoMode();
 
 // Bump this when seed data changes to bust stale localStorage caches
-export const DATA_VERSION = 13;
+export const DATA_VERSION = 14;
 
 // ── THEMES ────────────────────────────────────────────────────
 export const THEMES = {
@@ -408,6 +408,7 @@ const _demoBids = [
   {id:200,name:"Chase Bank Modification to Dutch Bros. - Budget",gc:"United Constructors",value:25000,due:"Oct 28, 2025",status:"submitted",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Retail",risk:"",notes:"",contact:"Mistie Williams",month:"Oct",closeOut:null,bidDate:"Oct 28, 2025"},
   {id:205,name:"Escapology - Sugar Land",gc:"Escapology",value:116800,due:"Oct 8, 2025",status:"awarded",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Commercial",risk:"",notes:"Sugar Land, TX",contact:"Mistie Williams",month:"Oct",closeOut:null,bidDate:"Oct 8, 2025"},
   {id:206,name:"ROD - C120",gc:"United Constructors",value:3900,due:"Oct 8, 2025",status:"submitted",scope:["Demo","Drywall","Tape & Finish","Doors & Hardware"],phase:"Retail",risk:"",notes:"River Oaks District",contact:"Mistie Williams",month:"Oct",closeOut:null,bidDate:"Oct 8, 2025"},
+  {id:208,name:"PPER - Missouri City",gc:"WC Construction",value:22800,due:"Jan 22, 2026",status:"awarded",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Sound Insulation","Tape & Finish","Doors & Hardware","Densglass Sheathing"],phase:"Commercial",risk:"",notes:"Base: Drywall $17,600 + ACT $5,200. Alts: +$26,600 fluted cement board, +$8,200 demo flooring. 16ga metal stud framing repair, Type X L4 finish, 1/2\" Densglass sheathing, batt insulation, fire-rated wood blocking. Deck ≤24'.",contact:"Alejandra Ibarra",month:"Jan",closeOut:null,bidDate:"Jan 22, 2026"},
 ];
 
 // ── SEED: PROJECTS ──
@@ -430,6 +431,7 @@ const _demoProjects = [
   {id:13,name:"MHMC Cancer Center CT",gc:"Forney Construction",contract:20900,status:"in-progress",phase:"Medical",address:"925 Gessner Rd, Houston, TX 77024",suite:"",parking:"",lat:29.7728,lng:-95.5560,pm:"Abner Aguilar",laborHours:0,progress:95,start:"2026-01-06",end:"2026-03-28",crewCount:2,scope:["Demo","Metal Framing","Drywall","ACT Ceilings"]},
   {id:14,name:"Heart Care Clinic - NW Houston",gc:"United Constructors",contract:79200,status:"completed",phase:"Medical",address:"13325 Hargrave Rd, Houston, TX 77070",suite:"",parking:"",lat:29.9570,lng:-95.5730,pm:"Abner Aguilar",laborHours:0,progress:100,start:"2025-10-01",end:"2026-02-28",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
   {id:15,name:"MH Pearland L4 Renovation",gc:"Harvey Cleary",contract:83700,status:"in-progress",phase:"Medical",address:"16100 South Fwy, Pearland, TX 77584",suite:"Level 4",parking:"",lat:29.5635,lng:-95.2860,pm:"Abner Aguilar",laborHours:0,progress:95,start:"2025-12-01",end:"2026-04-15",crewCount:4,scope:["Metal Framing","Drywall"]},
+  {id:17,name:"PPER - Missouri City",gc:"WC Construction",contract:22800,status:"in-progress",phase:"Commercial",address:"Missouri City, TX 77489",suite:"",parking:"",lat:29.6188,lng:-95.5371,pm:"Abner Aguilar",laborHours:480,progress:65,start:"2026-01-27",end:"2026-04-30",crewCount:3,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Sound Insulation","Tape & Finish","Doors & Hardware","Densglass Sheathing"]},
 ];
 
 // ── SEED: CONTACTS ──
@@ -442,6 +444,9 @@ const _demoContacts = [
   {id:4,name:"Heidi Phillips",company:"WC Construction",role:"Project Manager",bids:0,wins:0,color:"#10b981",last:"Mar 18",priority:"high",phone:"409-893-2069",email:"hphillips@wcconstructioncompany.com",notes:"CB&I PM. Also 6WW Lobby, PPER Missouri City, WL Level 11."},
   {id:5,name:"Joseph Quan",company:"WC Construction",role:"Project Engineer",bids:0,wins:0,color:"#10b981",last:"Mar 20",priority:"high",phone:"832-991-5653",email:"jquan@wcconstructioncompany.com",notes:"CB&I PE. Submittals due Mar 24."},
   {id:6,name:"Adam Teeter",company:"WC Construction",role:"Superintendent",bids:0,wins:0,color:"#10b981",last:"Mar 18",priority:"med",phone:"832-570-3670",email:"ateeter@wcconstructioncompany.com",notes:"CB&I superintendent."},
+  {id:41,name:"Alejandra Ibarra",company:"WC Construction",role:"Office Manager / AP",bids:0,wins:1,color:"#10b981",last:"Mar 19",priority:"high",phone:"281-801-0076 ext 221",email:"aibarra@wcconstructioncompany.com",notes:"PPER Missouri City AP/billing contact. Invoice #4 flagged 3/19/2026 — lien waiver typo, correct amount $13,464.00. Status: Revise & Resubmit in Procore."},
+  {id:42,name:"Jeremy Price",company:"WC Construction",role:"Project Manager",bids:0,wins:1,color:"#10b981",last:"Mar 6",priority:"med",phone:"",email:"",notes:"PPER Missouri City PM. Requested thin-cut stone pricing for columns per architect 3/6/2026."},
+  {id:43,name:"Bo Ruiz",company:"WC Construction",role:"Superintendent",bids:0,wins:1,color:"#10b981",last:"Mar 5",priority:"med",phone:"",email:"",notes:"PPER Missouri City superintendent. 2 overdue punch list items as of 3/5/2026."},
   // Forney Construction
   {id:7,name:"Jason McIntyre",company:"Forney Construction",role:"Project Manager",bids:0,wins:0,color:"#f59e0b",last:"Mar 2",priority:"high",phone:"713-410-9824",email:"jason.mcintyre@forneyconstruction.com",notes:"PM on League City CCC CT, Pearland MEIC-CT, Woodlands RAD."},
   {id:8,name:"Natalie Pettis",company:"Forney Construction",role:"Asst. PM",bids:0,wins:0,color:"#f59e0b",last:"Mar 2",priority:"med",phone:"832-274-2512",email:"natalie.pettis@forneyconstruction.com",notes:"MHTW RAD APM. Also IAH RAC."},
@@ -502,7 +507,9 @@ const _demoContacts = [
 const _demoCallLog = [];
 
 // ── SEED: INVOICES ──
-const _demoInvoices = [];
+const _demoInvoices = [
+  {id:301,projectId:17,number:"0004",date:"2026-03-10",amount:13464,status:"pending",desc:"Invoice #4 — PPER Missouri City. REVISION REQUIRED: Lien waiver typo — corrected amount is $13,464.00. Flagged by Alejandra Ibarra 3/19/2026. Status: Revise & Resubmit in Procore.",paidDate:null},
+];
 
 // ── SEED: T&M TICKETS ──
 // Time & Material tracking — separate from original project contract
@@ -515,7 +522,9 @@ const _demoChangeOrders = [
 ];
 
 // ── SEED: RFIs ──
-const _demoRfis = [];
+const _demoRfis = [
+  {id:401,projectId:17,number:"RFI-001",subject:"Thin-cut stone pricing for columns per architect",status:"open",submitted:"2026-03-06",assigned:"Jeremy Price"},
+];
 
 // ── SEED: SUBMITTALS ──
 const _demoSubmittals = [];
@@ -532,6 +541,12 @@ const _demoDailyReports = [];
 
 // ── SEED: TAKEOFFS ──
 const _demoTakeoffs = [];
+
+// ── SEED: PUNCH LIST ──
+const _demoPunchItems = [
+  {id:501,projectId:17,description:"Punch item #1 — overdue (reminder since 3/5/2026)",location:"",assignedTo:"Bo Ruiz",priority:"high",status:"open",photos:[],createdAt:"2026-03-05T00:00:00.000Z",completedAt:null,signedOffBy:null,signedOffAt:null},
+  {id:502,projectId:17,description:"Punch item #2 — overdue (reminder since 3/5/2026)",location:"",assignedTo:"Bo Ruiz",priority:"high",status:"open",photos:[],createdAt:"2026-03-05T00:00:00.000Z",completedAt:null,signedOffBy:null,signedOffAt:null},
+];
 
 // ── OSHA CHECKLIST ──
 export const OSHA_CHECKLIST = [
@@ -689,6 +704,7 @@ export const initIncidents = _demo ? _demoIncidents : [];
 export const initToolboxTalks = _demo ? _demoToolboxTalks : [];
 export const initDailyReports = _demo ? _demoDailyReports : [];
 export const initTakeoffs = _demo ? _demoTakeoffs : [];
+export const initPunchItems = _demoPunchItems; // always load — real open punch items
 export const initEmployees = _demoEmployees; // always load — real EBC crew
 export const initCompanyLocations = _demoCompanyLocations; // always load — office/warehouse
 export const initMaterialRequests = _demoMaterialRequests; // always load — foreman portal needs this
