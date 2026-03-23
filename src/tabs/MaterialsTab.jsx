@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Send, RefreshCw, X, ChevronDown, ChevronUp, Package } from "lucide-react";
+import { Send, RefreshCw, X, ChevronDown, ChevronUp, Package, Search, ClipboardList, Layers, ClipboardCopy } from "lucide-react";
 import { MAT_CATS, MAT_CLR, ASM_TYPES } from "../data/materials";
 import { useNotifications, getNotificationPrefs } from "../hooks/useNotifications";
 import { initSuppliers } from "../data/constants";
@@ -252,7 +252,7 @@ export function MaterialsTab({ app }) {
     <div>
       <div className="flex gap-8 mb-16 flex-wrap" style={{ alignItems: "center" }}>
         <div className="search-wrap" style={{ flex: "1 1 200px" }}>
-          <span className="search-icon">🔍</span>
+          <Search style={{ width: 16, height: 16 }} className="search-icon" />
           <input className="search-input" placeholder="Search materials..." value={matSearch} onChange={e => setMatSearch(e.target.value)} />
         </div>
         <div className="flex gap-8">
@@ -345,7 +345,7 @@ export function MaterialsTab({ app }) {
     if (!editAsm) {
       return (
         <div className="empty-state">
-          <div className="empty-icon">🧱</div>
+          <div className="empty-icon"><Layers style={{ width: 40, height: 40 }} /></div>
           <div className="empty-text">Select an assembly from the list or create a new one</div>
           <button className="btn btn-primary mt-16" onClick={() => setEditAsm({
             name: "", type: "Wall", layers: [], area: 100, notes: ""
@@ -430,39 +430,39 @@ export function MaterialsTab({ app }) {
           <div className="flex gap-4 flex-wrap">
             {[
               // Studs by gauge
-              { label: "🧱 3-5/8\" 25ga", id: "m1" },
-              { label: "🧱 3-5/8\" 20ga", id: "m2" },
-              { label: "🧱 3-5/8\" 18ga", id: "fs358-18" },
-              { label: "🧱 3-5/8\" 16ga", id: "fs358-16" },
-              { label: "🧱 3-5/8\" 14ga", id: "fs358-14" },
-              { label: "🧱 6\" 20ga", id: "m3" },
-              { label: "🧱 6\" 16ga", id: "fs600-16" },
-              { label: "🧱 8\" 20ga", id: "m31" },
+              { label: "Stud 3-5/8\" 25ga", id: "m1" },
+              { label: "Stud 3-5/8\" 20ga", id: "m2" },
+              { label: "Stud 3-5/8\" 18ga", id: "fs358-18" },
+              { label: "Stud 3-5/8\" 16ga", id: "fs358-16" },
+              { label: "Stud 3-5/8\" 14ga", id: "fs358-14" },
+              { label: "Stud 6\" 20ga", id: "m3" },
+              { label: "Stud 6\" 16ga", id: "fs600-16" },
+              { label: "Stud 8\" 20ga", id: "m31" },
               // Tracks
-              { label: "📏 Track 3-5/8\"", id: "ft358-20" },
-              { label: "📏 Track 6\"", id: "ft600-20" },
-              { label: "📏 Deflection", id: "m6" },
+              { label: "Track 3-5/8\"", id: "ft358-20" },
+              { label: "Track 6\"", id: "ft600-20" },
+              { label: "Deflection", id: "m6" },
               // Board
-              { label: "📄 1/2\" Regular", id: "gwb-12r" },
-              { label: "📄 5/8\" Type X", id: "m7" },
-              { label: "📄 5/8\" Type C", id: "gwb-58c" },
-              { label: "📄 DensShield", id: "m8" },
-              { label: "📄 Impact GWB", id: "m9" },
-              { label: "📄 Lead-Lined", id: "m12" },
-              { label: "📄 QuietRock", id: "m36" },
-              { label: "📄 Mold Tough", id: "gwb-mr" },
+              { label: "1/2\" Regular", id: "gwb-12r" },
+              { label: "5/8\" Type X", id: "m7" },
+              { label: "5/8\" Type C", id: "gwb-58c" },
+              { label: "DensShield", id: "m8" },
+              { label: "Impact GWB", id: "m9" },
+              { label: "Lead-Lined", id: "m12" },
+              { label: "QuietRock", id: "m36" },
+              { label: "Mold Tough", id: "gwb-mr" },
               // Insulation
-              { label: "🧶 R-13 Batt", id: "m13" },
-              { label: "🧶 R-19 Batt", id: "m14" },
-              { label: "🧶 Mineral Wool", id: "m16" },
+              { label: "R-13 Batt", id: "m13" },
+              { label: "R-19 Batt", id: "m14" },
+              { label: "Mineral Wool", id: "m16" },
               // Ceiling
-              { label: "🔲 ACT Grid 2x2", id: "m17" },
-              { label: "🔲 Acoustic Tile", id: "m19" },
+              { label: "ACT Grid 2x2", id: "m17" },
+              { label: "Acoustic Tile", id: "m19" },
               // Finish & specialty
-              { label: "🎨 L4 Finish", id: "m26" },
-              { label: "🎨 L5 Finish", id: "m27" },
-              { label: "🔥 Fire Caulk", id: "m44" },
-              { label: "🪵 2x6 Blocking", id: "m50" },
+              { label: "L4 Finish", id: "m26" },
+              { label: "L5 Finish", id: "m27" },
+              { label: "Fire Caulk", id: "m44" },
+              { label: "2x6 Blocking", id: "m50" },
             ].map(p => (
               <button key={p.id} className="btn btn-sm btn-ghost" style={{ fontSize: 11, padding: "4px 10px" }}
                 onClick={() => addLayer(p.id)}>{p.label}</button>
@@ -527,7 +527,7 @@ export function MaterialsTab({ app }) {
                       <td style={{ textAlign: "right" }} className="font-mono">${(l.laborCost * l.qty).toFixed(0)}</td>
                       <td style={{ textAlign: "right" }} className="font-mono text-amber">${((l.matCost + l.laborCost) * l.qty).toFixed(0)}</td>
                       <td className="flex gap-4">
-                        <button className="btn btn-sm btn-ghost" title="Duplicate layer" onClick={() => duplicateLayer(i)}>📋</button>
+                        <button className="btn btn-sm btn-ghost" title="Duplicate layer" onClick={() => duplicateLayer(i)}><ClipboardCopy style={{ width: 14, height: 14 }} /></button>
                         <button className="btn btn-sm btn-ghost" style={{ color: "var(--red)" }} onClick={() => removeLayer(i)}>✕</button>
                       </td>
                     </tr>
@@ -566,7 +566,7 @@ export function MaterialsTab({ app }) {
 
       {customAssemblies.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">📦</div>
+          <div className="empty-icon"><Package style={{ width: 40, height: 40 }} /></div>
           <div className="empty-text">No custom assemblies yet</div>
           <div className="text-sm text-dim mt-8">Build assemblies from your material library</div>
         </div>
@@ -838,7 +838,7 @@ export function MaterialsTab({ app }) {
           <div className="text-xs text-dim mb-8">{visibleRequests.length} request{visibleRequests.length !== 1 ? "s" : ""}</div>
           {visibleRequests.length === 0 ? (
             <div className="empty-state" style={{ padding: "40px 20px" }}>
-              <div className="empty-icon" style={{ fontSize: 40, marginBottom: 8 }}>📋</div>
+              <div className="empty-icon" style={{ marginBottom: 8 }}><ClipboardList style={{ width: 40, height: 40 }} /></div>
               <div className="empty-text">No material requests yet</div>
             </div>
           ) : (

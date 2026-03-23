@@ -47,7 +47,7 @@ function calcSummary(tk, assemblies) {
 
 /* ── main export ─────────────────────────────────────────────── */
 
-const SCOPE_ICONS = { unchecked: "\u2b1c", checked: "\u2705", flagged: "\ud83d\udea9" };
+const SCOPE_ICONS = { unchecked: "○", checked: "✓", flagged: "⚑" };
 const SCOPE_CYCLE = { unchecked: "checked", checked: "flagged", flagged: "unchecked" };
 const SEV_BADGE = { critical: "badge-red", warning: "badge-amber", info: "badge-blue" };
 

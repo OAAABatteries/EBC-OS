@@ -1,4 +1,5 @@
 import { useState, useCallback, Fragment, lazy, Suspense } from "react";
+import { ClipboardList, Folder, Search, Smartphone, Wrench, Shield, Download, ClipboardCopy, CheckCircle, AlertTriangle, AlertOctagon, Flame, Droplets, Heart, Globe, Wind, Zap, CheckSquare, Square } from "lucide-react";
 import { THEMES, OSHA_CHECKLIST, COMPANY_DEFAULTS, ASSEMBLIES } from "../data/constants";
 import { storePdf, getPdfUrl, deletePdf, fmtSize } from "../hooks/useSubmittalPdf";
 import { TimeClockAdmin } from "./TimeClockAdmin";
@@ -3987,7 +3988,7 @@ function CertificationsTab({ app }) {
   const matrixEmps = users.filter(u => !["driver"].includes(u.role)); // field-relevant roles
 
   const statusBadge = (s) => s === "valid" ? "badge-green" : s === "expiring" ? "badge-amber" : "badge-red";
-  const statusIcon = (s) => s === "valid" ? "\u2705" : s === "expiring" ? "\u26a0\ufe0f" : "\ud83d\udea8";
+  const statusIcon = (s) => s === "valid" ? <CheckCircle size={14} style={{ color: "#10b981" }} /> : s === "expiring" ? <AlertTriangle size={14} style={{ color: "#f59e0b" }} /> : <AlertOctagon size={14} style={{ color: "#ef4444" }} />;
 
   return (
     <div className="mt-16">
@@ -4098,7 +4099,7 @@ function CertificationsTab({ app }) {
       <div className="mt-16">
         {filtered.length === 0 ? (
           <div className="card" style={{ textAlign: "center", padding: 40 }}>
-            <div style={{ fontSize: 40 }}>📋</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><ClipboardList style={{ width: 40, height: 40, opacity: 0.4 }} /></div>
             <div className="text-sm text-muted mt-8">No certifications match your filters.</div>
           </div>
         ) : (
@@ -4150,15 +4151,15 @@ function SDSBinder({ app }) {
   const sheets = app.sdsSheets || [];
 
   const GHS_PICTOGRAMS = [
-    { id: "flame", label: "Flame", icon: "\ud83d\udd25" },
-    { id: "exclamation", label: "Exclamation", icon: "\u2757" },
-    { id: "skull", label: "Skull & Crossbones", icon: "\u2620\ufe0f" },
-    { id: "corrosion", label: "Corrosion", icon: "\ud83e\uddea" },
-    { id: "health", label: "Health Hazard", icon: "\ud83c\udfe5" },
-    { id: "environment", label: "Environment", icon: "\ud83c\udf0d" },
-    { id: "oxidizer", label: "Oxidizer", icon: "\u26a0\ufe0f" },
-    { id: "gas", label: "Gas Cylinder", icon: "\ud83e\udea8" },
-    { id: "explosive", label: "Explosive", icon: "\ud83d\udca5" },
+    { id: "flame", label: "Flame", icon: "[F]" },
+    { id: "exclamation", label: "Exclamation", icon: "[!]" },
+    { id: "skull", label: "Skull & Crossbones", icon: "[X]" },
+    { id: "corrosion", label: "Corrosion", icon: "[C]" },
+    { id: "health", label: "Health Hazard", icon: "[H]" },
+    { id: "environment", label: "Environment", icon: "[E]" },
+    { id: "oxidizer", label: "Oxidizer", icon: "[O]" },
+    { id: "gas", label: "Gas Cylinder", icon: "[G]" },
+    { id: "explosive", label: "Explosive", icon: "[Ex]" },
   ];
 
   const HAZARD_CLASSES = [
@@ -4378,7 +4379,7 @@ function SDSBinder({ app }) {
           <input className="form-input mb-16" placeholder="Search by product, manufacturer, or hazard class..." value={search} onChange={e => setSearch(e.target.value)} />
           {filtered.length === 0 ? (
             <div className="card" style={{ textAlign: "center", padding: 40 }}>
-              <div style={{ fontSize: 40 }}>📋</div>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><ClipboardList style={{ width: 40, height: 40, opacity: 0.4 }} /></div>
               <div className="text-sm text-muted mt-8">No SDS sheets yet. Click "+ Add SDS" to upload your first safety data sheet.</div>
             </div>
           ) : filtered.map(renderSheetCard)}
@@ -4389,7 +4390,7 @@ function SDSBinder({ app }) {
         <div className="mt-16">
           {projectsWithSDS.length === 0 && unassigned.length === sheets.length ? (
             <div className="card" style={{ textAlign: "center", padding: 40 }}>
-              <div style={{ fontSize: 40 }}>📁</div>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Folder style={{ width: 40, height: 40, opacity: 0.4 }} /></div>
               <div className="text-sm text-muted mt-8">No SDS sheets assigned to projects yet. Edit an SDS sheet to assign it to a project.</div>
             </div>
           ) : (
@@ -4428,13 +4429,13 @@ function SDSBinder({ app }) {
           {search.length > 0 ? (
             filtered.length > 0 ? filtered.map(renderSheetCard) : (
               <div className="card" style={{ textAlign: "center", padding: 40 }}>
-                <div style={{ fontSize: 40 }}>🔍</div>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Search style={{ width: 40, height: 40, opacity: 0.4 }} /></div>
                 <div className="text-sm text-muted mt-8">No SDS sheets match "{search}"</div>
               </div>
             )
           ) : (
             <div className="card" style={{ textAlign: "center", padding: 40 }}>
-              <div style={{ fontSize: 40 }}>📱</div>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Smartphone style={{ width: 40, height: 40, opacity: 0.4 }} /></div>
               <div className="text-sm text-muted mt-8">Start typing to search SDS sheets. Designed for quick field access.</div>
             </div>
           )}
@@ -4450,6 +4451,7 @@ function SDSBinder({ app }) {
 function Settings({ app }) {
   const userRole = app.auth?.role || "owner";
   const isOwnerOrAdmin = userRole === "owner" || userRole === "admin";
+  const isForeman = userRole === "foreman";
   const isFullAccess = ["owner", "admin", "pm"].includes(userRole);
 
   // Simplified settings for non-business roles
@@ -4458,6 +4460,7 @@ function Settings({ app }) {
     ? ["Company", ...(canSeeInsurance ? ["Insurance"] : []), "Assemblies", "Equipment", "Margin Tiers", "Business Cards", "Data", "QuickBooks", "Theme", "API", "Account"]
     : [...(canSeeInsurance ? ["Insurance"] : []), "Theme", "Account"];
   if (isOwnerOrAdmin) tabs.push("Users");
+  if (isForeman) tabs.push("Team");
   const [sub, setSub] = useState(isFullAccess ? "Company" : "Theme");
   return (
     <div>
@@ -4474,6 +4477,7 @@ function Settings({ app }) {
       {sub === "Account" && <AccountTab app={app} />}
       {sub === "Insurance" && <InsuranceTab app={app} />}
       {sub === "Users" && isOwnerOrAdmin && <UsersTab app={app} />}
+      {sub === "Team" && isForeman && <ForemanTeamTab app={app} />}
 
       {/* ── Account / Logout ── */}
       <div className="card mt-16" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
@@ -4713,7 +4717,7 @@ function EquipmentTab({ app }) {
 
       {filtered.length === 0 && (
         <div className="empty-state mt-16">
-          <div className="empty-icon">🔧</div>
+          <div className="empty-icon"><Wrench style={{ width: 40, height: 40 }} /></div>
           <div className="empty-text">No equipment matches this filter</div>
         </div>
       )}
@@ -5209,7 +5213,7 @@ function InsuranceTab({ app }) {
       <div className="mt-16">
         {policies.length === 0 ? (
           <div className="card" style={{ textAlign: "center", padding: 40 }}>
-            <div style={{ fontSize: 40 }}>🛡️</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Shield style={{ width: 40, height: 40, opacity: 0.4 }} /></div>
             <div className="text-sm text-muted mt-8">No insurance policies on file. Add your GL, WC, Auto, and Umbrella policies.</div>
           </div>
         ) : policies.map(pol => {
@@ -5230,14 +5234,126 @@ function InsuranceTab({ app }) {
               </div>
               {pol.notes && <div className="text-xs text-muted" style={{ marginTop: 6 }}>{pol.notes}</div>}
               <div className="flex gap-4" style={{ marginTop: 8 }}>
-                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10 }} onClick={() => shareCOI(pol)}>📋 Copy COI Info</button>
-                {pol.file && <button className="btn btn-ghost btn-sm" style={{ fontSize: 10 }} onClick={() => { const a = document.createElement("a"); a.href = pol.file.dataUrl; a.download = pol.file.name; a.click(); }}>⬇️ Download</button>}
+                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, display: "flex", alignItems: "center", gap: 4 }} onClick={() => shareCOI(pol)}><ClipboardCopy style={{ width: 12, height: 12 }} /> Copy COI Info</button>
+                {pol.file && <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, display: "flex", alignItems: "center", gap: 4 }} onClick={() => { const a = document.createElement("a"); a.href = pol.file.dataUrl; a.download = pol.file.name; a.click(); }}><Download style={{ width: 12, height: 12 }} /> Download</button>}
                 <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, color: "var(--amber)" }} onClick={() => startEdit(pol)}>Edit</button>
                 <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, color: "var(--red)" }} onClick={() => deletePol(pol)}>Remove</button>
               </div>
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Foreman Team Invite (Foreman only — helpers & crew only) ── */
+function ForemanTeamTab({ app }) {
+  const FOREMAN_INVITE_ROLES = { employee: "Employee / Crew", driver: "Driver" };
+  const [users, setUsers] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ebc_users") || "[]"); } catch { return []; }
+  });
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", role: "employee", pin: "" });
+
+  const refresh = () => {
+    try { setUsers(JSON.parse(localStorage.getItem("ebc_users") || "[]")); } catch {}
+  };
+
+  const addCrewMember = async () => {
+    if (!form.name || !form.email) { app.show("Name and email required", "err"); return; }
+    const existing = users.find(u => u.email.toLowerCase() === form.email.toLowerCase());
+    if (existing) { app.show("Email already exists", "err"); return; }
+    if (!["employee", "driver"].includes(form.role)) {
+      app.show("Foremen can only invite crew members and drivers", "err"); return;
+    }
+    const { hashPasswordSync: hps } = await import("../utils/passwordHash");
+    const newUser = {
+      id: crypto.randomUUID(),
+      name: form.name,
+      email: form.email.toLowerCase(),
+      password: hps(form.name.split(" ")[0] + "123!"),
+      role: form.role,
+      pin: hps(form.pin || String(1000 + users.length + 1)),
+      hourlyRate: 35,
+      active: true,
+      mustChangePassword: true,
+      invitedBy: app.auth?.name || "Foreman",
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [...users, newUser];
+    localStorage.setItem("ebc_users", JSON.stringify(updated));
+    setUsers(updated);
+    setForm({ name: "", email: "", role: "employee", pin: "" });
+    setAdding(false);
+    app.show(`Added ${newUser.name} — temp password: ${form.name.split(" ")[0]}123!`, "ok");
+  };
+
+  const crewMembers = users.filter(u => ["employee", "driver"].includes(u.role));
+
+  return (
+    <div className="mt-16">
+      <div className="flex-between">
+        <div>
+          <div className="section-title">Invite Crew Member</div>
+          <div className="text-xs text-muted mt-4">As a foreman, you can add crew members and drivers to the team.</div>
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={() => setAdding(!adding)}>+ Add Crew</button>
+      </div>
+
+      {adding && (
+        <div className="card mt-16">
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Full Name</label>
+              <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="John Doe" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Email</label>
+              <input className="form-input" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="john@ebconstructors.com" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Role</label>
+              <select className="form-select" value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
+                {Object.entries(FOREMAN_INVITE_ROLES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">PIN (4-digit)</label>
+              <input className="form-input" maxLength={6} value={form.pin} onChange={e => setForm({ ...form, pin: e.target.value.replace(/\D/g, "") })} placeholder="Auto-generated" />
+            </div>
+          </div>
+          <div className="mt-16" style={{ display: "flex", gap: 8 }}>
+            <button className="btn btn-primary btn-sm" onClick={addCrewMember}>Add to Team</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
+          </div>
+          <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 8 }}>
+            Temp password will be: [FirstName]123! — user will be prompted to change on first login.
+          </div>
+        </div>
+      )}
+
+      <div className="mt-16">
+        <div className="text-sm font-semi mb-8">Crew &amp; Drivers ({crewMembers.length})</div>
+        {crewMembers.length === 0 ? (
+          <div className="empty-state"><div className="empty-text">No crew members yet</div></div>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              {crewMembers.map(u => (
+                <tr key={u.id} style={{ opacity: u.active === false ? 0.5 : 1 }}>
+                  <td style={{ fontWeight: 500 }}>{u.name}</td>
+                  <td style={{ fontSize: 12 }}>{u.email}</td>
+                  <td><span className="badge badge-blue" style={{ fontSize: 10 }}>{FOREMAN_INVITE_ROLES[u.role] || u.role}</span></td>
+                  <td><span className={`badge ${u.active === false ? "badge-red" : "badge-green"}`} style={{ fontSize: 10 }}>{u.active === false ? "Inactive" : "Active"}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

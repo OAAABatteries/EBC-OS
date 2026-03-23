@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DollarSign, TrendingUp, Heart, Wrench, HardHat } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════════
 //  Job Application Portal — Public-facing careers page
@@ -77,14 +78,14 @@ export default function JobPortal() {
         <div className="job-card">
           <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>Why EBC?</div>
           {[
-            ["💰", "Competitive Pay", "Top rates for skilled labor. Weekly pay."],
-            ["📈", "Growth", "Clear path from apprentice to foreman to PM."],
-            ["🏥", "Benefits", "Health insurance, PTO, bonuses for performance."],
-            ["🛠️", "Quality Work", "We take pride in our craft. No shortcuts."],
-            ["👷", "Respect", "Family company. Your work matters here."],
-          ].map(([icon, title, desc]) => (
+            [DollarSign, "Competitive Pay", "Top rates for skilled labor. Weekly pay."],
+            [TrendingUp, "Growth", "Clear path from apprentice to foreman to PM."],
+            [Heart, "Benefits", "Health insurance, PTO, bonuses for performance."],
+            [Wrench, "Quality Work", "We take pride in our craft. No shortcuts."],
+            [HardHat, "Respect", "Family company. Your work matters here."],
+          ].map(([Icon, title, desc]) => (
             <div key={title} className="perk">
-              <div className="perk-icon">{icon}</div>
+              <div className="perk-icon"><Icon style={{ width: 24, height: 24 }} /></div>
               <div className="perk-text"><div className="perk-title">{title}</div><div style={{ color: "#94a3b8", fontSize: 12 }}>{desc}</div></div>
             </div>
           ))}

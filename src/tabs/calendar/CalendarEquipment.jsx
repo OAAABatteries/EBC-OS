@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Wrench, AlertTriangle } from "lucide-react";
 import { T } from "../../data/translations";
 import { EQUIPMENT_TYPES } from "../../data/calendarConstants";
 
@@ -134,7 +135,7 @@ export function CalendarEquipment({ app, lang }) {
         <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 16, marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 22 }}>🔧</span>
+              <Wrench style={{ width: 22, height: 22 }} />
               <div>
                 <div style={{ fontWeight: 700, fontSize: 14 }}>Utilization: {eqOptResult.utilizationScore}/100 ({eqOptResult.grade})</div>
                 <div style={{ fontSize: 12, color: "var(--text3)" }}>{eqOptResult.summary}</div>
@@ -181,7 +182,7 @@ export function CalendarEquipment({ app, lang }) {
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: "var(--red)", marginBottom: 6 }}>Maintenance Alerts</div>
               {eqOptResult.maintenanceAlerts.map((m, i) => (
-                <div key={i} style={{ fontSize: 12, color: "var(--text2)", paddingLeft: 8, marginBottom: 3 }}>⚠️ <strong>{m.equipment}:</strong> {m.alert}</div>
+                <div key={i} style={{ fontSize: 12, color: "var(--text2)", paddingLeft: 8, marginBottom: 3, display: "flex", alignItems: "center", gap: 4 }}><AlertTriangle style={{ width: 14, height: 14, color: "#f59e0b" }} /> <strong>{m.equipment}:</strong> {m.alert}</div>
               ))}
             </div>
           )}

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { AlertTriangle, Zap } from "lucide-react";
 import { T } from "../data/translations";
 import {
   PPE_ITEMS, RISK_LIKELIHOOD, RISK_SEVERITY, riskColor,
@@ -836,7 +837,7 @@ export function JSATab({ app }) {
         {/* Weather warning */}
         {form.indoorOutdoor !== "indoor" && weatherHazard && form.weather !== "clear" && (
           <div className="jsa-weather-warn">
-            ⚠️ {lang === "es" ? weatherHazard.hazardEs : weatherHazard.hazard}
+            <AlertTriangle style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle", marginRight: 4 }} />{lang === "es" ? weatherHazard.hazardEs : weatherHazard.hazard}
           </div>
         )}
 
@@ -1006,7 +1007,7 @@ export function JSATab({ app }) {
         {/* Save */}
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
           <button className="btn btn-ghost" style={{ color: "var(--amber)", marginRight: "auto" }} onClick={runAiAutoFill} disabled={aiJsaLoading}>
-            {aiJsaLoading ? "Generating..." : "⚡ AI Auto-Fill"}
+            {aiJsaLoading ? "Generating..." : <><Zap style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle", marginRight: 4 }} />AI Auto-Fill</>}
           </button>
           <button className="cal-nav-btn" onClick={() => setSubTab("list")}>{t("Cancel")}</button>
           <button className="btn btn-primary" onClick={saveJsa}>{t("Create JSA")}</button>

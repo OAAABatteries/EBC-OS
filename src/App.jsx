@@ -44,7 +44,7 @@ import { useAlertEngine } from "./hooks/useAlertEngine";
 import { NotificationPanel } from "./components/NotificationPanel";
 import { PerimeterMapModal } from "./components/PerimeterMapModal";
 import { polygonAreaSqFt } from "./utils/geofence";
-import { TrendingDown, AlertTriangle, DollarSign, Wrench, Package, FileX, ChevronDown, ChevronUp } from "lucide-react";
+import { TrendingDown, AlertTriangle, DollarSign, Wrench, Package, FileX, ChevronDown, ChevronUp, Search, Calendar, Building2, BarChart2, ClipboardList, Globe, Bell, FolderOpen, MapPin, Paperclip, FileText, Image, Sheet, FileSpreadsheet, Camera, List, Columns, CheckSquare, Square } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · App Component
@@ -96,7 +96,7 @@ const STATUS_LABEL = {
 const BID_ACTIVE_STATUSES = ["invite_received", "reviewing", "assigned", "takeoff", "awaiting_quotes", "pricing", "draft_ready", "estimating", "submitted", "clarifications", "negotiating"];
 const RISK_BADGE = { High: "badge-red", Med: "badge-amber", Low: "badge-green" };
 const PRIORITY_BADGE = { high: "badge-red", med: "badge-amber", low: "badge-green" };
-const SCOPE_ICONS = { unchecked: "\u2b1c", checked: "\u2705", flagged: "\ud83d\udea9" };
+const SCOPE_ICONS = { unchecked: "○", checked: "✓", flagged: "⚑" };
 const SCOPE_CYCLE = { unchecked: "checked", checked: "flagged", flagged: "unchecked" };
 const BID_FILTERS = ["All", "Active", "Submitted", "Awarded", "Lost", "No Bid"];
 
@@ -1399,7 +1399,7 @@ function App({ auth, onLogout }) {
         </div>
         <div className="flex gap-8">
           <div className="search-wrap">
-            <span className="search-icon">🔍</span>
+            <Search style={{ width: 16, height: 16 }} className="search-icon" />
             <input
               className="search-input"
               placeholder={t("Search bids...")}
@@ -1621,9 +1621,9 @@ function App({ auth, onLogout }) {
           ))}
         </div>
         <div className="flex gap-4">
-          <button className={`btn btn-sm ${bidViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("list")}>☰ List</button>
-          <button className={`btn btn-sm ${bidViewMode === "pipeline" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("pipeline")}>⬛ Pipeline</button>
-          <button className={`btn btn-sm ${bidViewMode === "calendar" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("calendar")}>📅 Calendar</button>
+          <button className={`btn btn-sm ${bidViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("list")} style={{ display: "flex", alignItems: "center", gap: 4 }}><List style={{ width: 14, height: 14 }} /> List</button>
+          <button className={`btn btn-sm ${bidViewMode === "pipeline" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("pipeline")} style={{ display: "flex", alignItems: "center", gap: 4 }}><Columns style={{ width: 14, height: 14 }} /> Pipeline</button>
+          <button className={`btn btn-sm ${bidViewMode === "calendar" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("calendar")} style={{ display: "flex", alignItems: "center", gap: 4 }}><Calendar style={{ width: 14, height: 14 }} /> Calendar</button>
         </div>
       </div>
 
@@ -1971,7 +1971,7 @@ function App({ auth, onLogout }) {
       {/* ═══ LIST VIEW ═══ */}
       {bidViewMode === "list" && filteredBids.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">📂</div>
+          <div className="empty-icon"><FolderOpen style={{ width: 40, height: 40 }} /></div>
           <div className="empty-text">{t("No bids match your filter")}</div>
         </div>
       ) : bidViewMode === "list" ? (
@@ -2249,8 +2249,8 @@ function App({ auth, onLogout }) {
 
       {/* View Toggle: List | Schedule */}
       <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
-        <button className={`btn btn-sm ${projectViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("list")}>☰ List</button>
-        <button className={`btn btn-sm ${projectViewMode === "schedule" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("schedule")}>📊 Schedule</button>
+        <button className={`btn btn-sm ${projectViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("list")} style={{ display: "flex", alignItems: "center", gap: 4 }}><List style={{ width: 14, height: 14 }} /> List</button>
+        <button className={`btn btn-sm ${projectViewMode === "schedule" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("schedule")} style={{ display: "flex", alignItems: "center", gap: 4 }}><BarChart2 style={{ width: 14, height: 14 }} /> Schedule</button>
       </div>
 
       {/* Schedule / Gantt View */}
@@ -2335,7 +2335,7 @@ function App({ auth, onLogout }) {
 
       {filteredProjects.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">🏗️</div>
+          <div className="empty-icon"><Building2 style={{ width: 40, height: 40 }} /></div>
           <div className="empty-text">{search ? t("No matching projects") : t("No projects yet")}</div>
         </div>
       ) : (
@@ -2509,7 +2509,7 @@ function App({ auth, onLogout }) {
                   {closeoutResult.checklist.map((c, i) => (
                     <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                       <div className="flex-between">
-                        <span className="text-sm">{c.status === "complete" ? "✅" : c.status === "pending" ? "🔶" : "⬜"} {c.item}</span>
+                        <span className="text-sm">{c.status === "complete" ? "✓" : c.status === "pending" ? "–" : "○"} {c.item}</span>
                         <div className="flex gap-4">
                           <span className="badge badge-muted">{c.category}</span>
                           <span className={`badge ${c.priority === "critical" ? "badge-red" : c.priority === "high" ? "badge-amber" : "badge-muted"}`}>{c.priority}</span>
@@ -3002,7 +3002,7 @@ function App({ auth, onLogout }) {
 
         {filteredScope.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📋</div>
+            <div className="empty-icon"><ClipboardList style={{ width: 40, height: 40 }} /></div>
             <div className="empty-text">{t("No items match this filter")}</div>
           </div>
         ) : (
@@ -3107,7 +3107,7 @@ function App({ auth, onLogout }) {
 
               {gapResult.gaps?.length === 0 && gapResult.extras?.length === 0 && gapResult.risks?.length === 0 && (
                 <div className="empty-state">
-                  <div className="empty-icon">✅</div>
+                  <div className="empty-icon"><ClipboardList style={{ width: 40, height: 40, color: "#10b981" }} /></div>
                   <div className="empty-text">{t("No gaps found — scope looks aligned")}</div>
                 </div>
               )}
@@ -3130,7 +3130,7 @@ function App({ auth, onLogout }) {
         </div>
         <div className="flex gap-8">
           <div className="search-wrap">
-            <span className="search-icon">🔍</span>
+            <Search style={{ width: 16, height: 16 }} className="search-icon" />
             <input
               className="search-input"
               placeholder={t("Search contacts...")}
@@ -3357,7 +3357,7 @@ function App({ auth, onLogout }) {
           onClick={() => setLang(lang === "en" ? "es" : "en")}
           title={lang === "en" ? "Cambiar a Español" : "Switch to English"}
         >
-          {lang === "en" ? "🌐 ES" : "🌐 EN"}
+          <Globe style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle", marginRight: 4 }} />{lang === "en" ? "ES" : "EN"}
         </button>
         <div style={{ position: "relative", marginRight: 4 }}>
           <button
@@ -3366,7 +3366,7 @@ function App({ auth, onLogout }) {
             onClick={() => setNotifOpen(!notifOpen)}
             title="Alerts"
           >
-            {"\uD83D\uDD14"}
+            <Bell style={{ width: 20, height: 20 }} />
             {alertBadgeCount > 0 && (
               <span style={{
                 position: "absolute", top: -2, right: -2, background: "var(--red)", color: "#fff",
@@ -4545,7 +4545,7 @@ const ModalHub = ({ type, data, app }) => {
                 {/* RFI List */}
                 {filteredRFIs.length === 0 ? (
                   <div className="text-center text-muted" style={{ padding: 32 }}>
-                    <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
+                    <div style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}><ClipboardList style={{ width: 32, height: 32, opacity: 0.4 }} /></div>
                     <div className="text-sm">{rfiFilter === "all" ? "No RFIs yet" : `No ${rfiFilter} RFIs`}</div>
                     <div className="text-xs text-dim mt-4">Click "+ Add RFI" to create one</div>
                   </div>
@@ -4794,7 +4794,7 @@ const ModalHub = ({ type, data, app }) => {
                             <div className="flex gap-8" style={{ alignItems: "flex-start", flex: 1 }}>
                               <button onClick={() => toggleItem(ci.id)}
                                 style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 0, lineHeight: 1, marginTop: 1, flexShrink: 0 }}>
-                                {isDone ? "\u2705" : "\u2b1c"}
+                                {isDone ? <CheckSquare size={16} style={{ color: "#10b981" }} /> : <Square size={16} style={{ color: "var(--text3)" }} />}
                               </button>
                               <div style={{ flex: 1 }}>
                                 <div className="text-sm" style={{ textDecoration: isDone ? "line-through" : "none", opacity: isDone ? 0.7 : 1 }}>
@@ -5292,8 +5292,8 @@ const ModalHub = ({ type, data, app }) => {
                         padding: "8px 12px", fontSize: 12
                       }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
-                          <span style={{ fontSize: 16 }}>
-                            {att.type?.includes("pdf") ? "📄" : att.type?.includes("image") ? "🖼️" : att.type?.includes("sheet") || att.type?.includes("excel") ? "📊" : "📎"}
+                          <span style={{ display: "flex", alignItems: "center" }}>
+                            {att.type?.includes("pdf") ? <FileText style={{ width: 16, height: 16 }} /> : att.type?.includes("image") ? <Image style={{ width: 16, height: 16 }} /> : att.type?.includes("sheet") || att.type?.includes("excel") ? <BarChart2 style={{ width: 16, height: 16 }} /> : <Paperclip style={{ width: 16, height: 16 }} />}
                           </span>
                           <span style={{ color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {att.name}
@@ -5471,7 +5471,7 @@ const ModalHub = ({ type, data, app }) => {
                   disabled={!draft.lat || !draft.lng}
                   title={!draft.lat || !draft.lng ? "Set Lat/Lng first" : "Draw polygon boundary on map"}
                 >
-                  📍 {draft.perimeter && draft.perimeter.length >= 3 ? "Edit Perimeter" : "Set Perimeter"}
+                  <MapPin style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle", marginRight: 4 }} />{draft.perimeter && draft.perimeter.length >= 3 ? "Edit Perimeter" : "Set Perimeter"}
                 </button>
                 {draft.perimeter && draft.perimeter.length >= 3 ? (
                   <span style={{ fontSize: 12, color: "var(--green, #10b981)" }}>
@@ -5536,7 +5536,7 @@ const ModalHub = ({ type, data, app }) => {
                   }}
                 />
                 <label htmlFor="proposal-upload" className="btn btn-ghost" style={{ cursor: "pointer" }}>
-                  📎 Upload Proposal / Files
+                  <Paperclip style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle", marginRight: 4 }} />Upload Proposal / Files
                 </label>
                 <div className="text-xs text-dim" style={{ marginTop: 6 }}>PDF, Word, Excel, Images</div>
               </div>
@@ -5547,7 +5547,7 @@ const ModalHub = ({ type, data, app }) => {
                   {draft.attachments.map((att, i) => (
                     <div key={att.id || i} className="flex-between" style={{ padding: "8px 12px", background: "var(--bg3)", borderRadius: 6, marginBottom: 4 }}>
                       <div className="flex gap-8" style={{ alignItems: "center" }}>
-                        <span>{att.type?.includes("pdf") ? "📄" : att.type?.includes("image") ? "🖼️" : att.type?.includes("sheet") || att.type?.includes("excel") ? "📊" : "📁"}</span>
+                        <span style={{ display: "flex", alignItems: "center" }}>{att.type?.includes("pdf") ? <FileText style={{ width: 16, height: 16 }} /> : att.type?.includes("image") ? <Image style={{ width: 16, height: 16 }} /> : att.type?.includes("sheet") || att.type?.includes("excel") ? <BarChart2 style={{ width: 16, height: 16 }} /> : <FolderOpen style={{ width: 16, height: 16 }} />}</span>
                         <div>
                           <div className="text-sm font-semi">{att.name}</div>
                           <div className="text-xs text-dim">{(att.size / 1024).toFixed(0)} KB · {new Date(att.uploadedAt || att.uploaded || Date.now()).toLocaleDateString()}</div>
@@ -5560,7 +5560,7 @@ const ModalHub = ({ type, data, app }) => {
                             link.href = att.data;
                             link.download = att.name;
                             link.click();
-                          }}>⬇️</button>
+                          }}>↓</button>
                         <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, color: "var(--red)" }}
                           onClick={() => setDraft(d => ({ ...d, attachments: d.attachments.filter((_, j) => j !== i) }))}>✕</button>
                       </div>
@@ -5593,13 +5593,13 @@ const ModalHub = ({ type, data, app }) => {
             const hasIssues = agingRfis.length > 0 || pendingCOs.length > 0 || overdueInvs.length > 0;
 
             const sections = [
-              { label: "RFIs", items: projRfis, icon: "📝", tab: "documents", fields: (r) => `#${r.number || ""} — ${r.subject || r.desc || ""}`, badge: (r) => r.status, urgent: openRfis.length },
-              { label: "Submittals", items: projSubmittals, icon: "📋", tab: "documents", fields: (s) => `#${s.number || ""} — ${s.description || s.desc || ""}`, badge: (s) => s.status, urgent: pendingSubs.length },
-              { label: "Change Orders", items: projCOs, icon: "📑", tab: "financials", fields: (c) => `#${c.number || ""} — ${c.desc || ""} (${fmt(c.amount || 0)})`, badge: (c) => c.status, urgent: pendingCOs.length },
-              { label: "Invoices", items: projInvoices, icon: "💰", tab: "financials", fields: (i) => `#${i.number} — ${fmt(i.amount)} — ${i.date || ""}`, badge: (i) => i.status, urgent: overdueInvs.length },
-              { label: "Daily Reports", items: projDailyReports, icon: "📊", tab: "safety", fields: (d) => `${d.date || ""} — ${d.crewSize || 0} crew — ${(d.work || "").slice(0, 60)}`, badge: () => null, urgent: 0 },
-              { label: "JSAs", items: projJSAs, icon: "⚠️", tab: "jsa", fields: (j) => `${j.date || ""} — ${j.title || j.location || ""}`, badge: () => null, urgent: 0 },
-              { label: "T&M Tickets", items: projTM, icon: "🔧", tab: "financials", fields: (t) => `${t.ticketNumber || ""} — ${t.description || ""} (${fmt(calcLaborTotal(t.laborEntries || []) + calcMatTotal(t.materialEntries || []))})`, badge: (t) => t.status, urgent: pendingTM.length },
+              { label: "RFIs", items: projRfis, icon: null, tab: "documents", fields: (r) => `#${r.number || ""} — ${r.subject || r.desc || ""}`, badge: (r) => r.status, urgent: openRfis.length },
+              { label: "Submittals", items: projSubmittals, icon: null, tab: "documents", fields: (s) => `#${s.number || ""} — ${s.description || s.desc || ""}`, badge: (s) => s.status, urgent: pendingSubs.length },
+              { label: "Change Orders", items: projCOs, icon: null, tab: "financials", fields: (c) => `#${c.number || ""} — ${c.desc || ""} (${fmt(c.amount || 0)})`, badge: (c) => c.status, urgent: pendingCOs.length },
+              { label: "Invoices", items: projInvoices, icon: null, tab: "financials", fields: (i) => `#${i.number} — ${fmt(i.amount)} — ${i.date || ""}`, badge: (i) => i.status, urgent: overdueInvs.length },
+              { label: "Daily Reports", items: projDailyReports, icon: null, tab: "safety", fields: (d) => `${d.date || ""} — ${d.crewSize || 0} crew — ${(d.work || "").slice(0, 60)}`, badge: () => null, urgent: 0 },
+              { label: "JSAs", items: projJSAs, icon: null, tab: "jsa", fields: (j) => `${j.date || ""} — ${j.title || j.location || ""}`, badge: () => null, urgent: 0 },
+              { label: "T&M Tickets", items: projTM, icon: null, tab: "financials", fields: (t) => `${t.ticketNumber || ""} — ${t.description || ""} (${fmt(calcLaborTotal(t.laborEntries || []) + calcMatTotal(t.materialEntries || []))})`, badge: (t) => t.status, urgent: pendingTM.length },
             ];
 
             const totalDocs = sections.reduce((s, sec) => s + sec.items.length, 0);
@@ -5622,7 +5622,7 @@ const ModalHub = ({ type, data, app }) => {
                   {sections.map(sec => (
                     <div key={sec.label} style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", border: "1px solid var(--border)" }}>
                       <div className="flex-between" style={{ marginBottom: 6 }}>
-                        <div style={{ fontWeight: 600, fontSize: 12 }}>{sec.icon} {sec.label}</div>
+                        <div style={{ fontWeight: 600, fontSize: 12 }}>{sec.label}</div>
                         <span style={{ display: "flex", gap: 4 }}>
                           {sec.urgent > 0 && <span className="badge badge-red" style={{ fontSize: 9 }}>{sec.urgent} open</span>}
                           <span className="badge badge-blue" style={{ fontSize: 9 }}>{sec.items.length}</span>
@@ -5773,7 +5773,7 @@ const ModalHub = ({ type, data, app }) => {
                         <span className={`badge ${PRIORITY_BADGE[item.priority]}`} style={{ fontSize: 9 }}>{item.priority}</span>
                         <button className={`badge ${STATUS_BADGE[item.status]}`} style={{ fontSize: 9, cursor: "pointer", border: "none" }} onClick={() => cyclePunchStatus(item)} title="Click to advance status">{item.status}</button>
                         <label style={{ cursor: "pointer", fontSize: 12 }} title="Attach photo">
-                          📷<input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e) => addPunchPhoto(item.id, e)} />
+                          <Camera style={{ width: 16, height: 16 }} /><input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e) => addPunchPhoto(item.id, e)} />
                         </label>
                         <button className="btn btn-ghost" style={{ fontSize: 10, padding: "1px 4px", color: "var(--red)" }} onClick={() => deletePunch(item)}>✕</button>
                       </div>
@@ -5869,7 +5869,7 @@ const ModalHub = ({ type, data, app }) => {
                         <div className="text-sm" style={{ marginBottom: 4 }}>{prob.description}</div>
                         <div className="text-xs text-muted">
                           {prob.reporter} · {new Date(prob.reportedAt).toLocaleDateString()} {new Date(prob.reportedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          {prob.gps && <span style={{ marginLeft: 6 }}>📍 {prob.gps.lat?.toFixed(4)}, {prob.gps.lng?.toFixed(4)}</span>}
+                          {prob.gps && <span style={{ marginLeft: 6, display: "inline-flex", alignItems: "center", gap: 2 }}><MapPin style={{ width: 12, height: 12 }} />{prob.gps.lat?.toFixed(4)}, {prob.gps.lng?.toFixed(4)}</span>}
                         </div>
                       </div>
                     ))}

@@ -1,4 +1,5 @@
 import { useState, Fragment } from "react";
+import { BarChart2, Building2, HardHat, Bell, CheckCircle } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · Smart Notification Panel
@@ -12,9 +13,9 @@ const URGENCY_COLORS = {
 };
 
 const CATEGORY_INFO = {
-  bids: { label: "Bid Pipeline", icon: "\uD83D\uDCCA" },
-  projects: { label: "Project Management", icon: "\uD83D\uDEA7" },
-  crew: { label: "Crew / HR", icon: "\uD83D\uDC77" },
+  bids: { label: "Bid Pipeline", icon: <BarChart2 size={14} /> },
+  projects: { label: "Project Management", icon: <Building2 size={14} /> },
+  crew: { label: "Crew / HR", icon: <HardHat size={14} /> },
 };
 
 const CATEGORY_ORDER = ["bids", "projects", "crew"];
@@ -90,7 +91,7 @@ export function NotificationPanel({ grouped, badgeCount, dismissAlert, dismissAl
       {/* ── Empty state ── */}
       {!hasAlerts && (
         <div style={{ padding: 40, textAlign: "center" }}>
-          <div style={{ fontSize: 36 }}>{"\u2705"}</div>
+          <div style={{ display: "flex", justifyContent: "center" }}><CheckCircle size={36} style={{ color: "#10b981" }} /></div>
           <div className="text-sm" style={{ marginTop: 8, fontWeight: 600 }}>All caught up!</div>
           <div className="text-xs text-muted" style={{ marginTop: 4 }}>No alerts need your attention right now.</div>
         </div>
@@ -100,7 +101,7 @@ export function NotificationPanel({ grouped, badgeCount, dismissAlert, dismissAl
       {hasAlerts && CATEGORY_ORDER.map(cat => {
         const items = grouped[cat] || [];
         if (items.length === 0) return null;
-        const info = CATEGORY_INFO[cat] || { label: cat, icon: "\uD83D\uDD14" };
+        const info = CATEGORY_INFO[cat] || { label: cat, icon: <Bell size={14} /> };
         const isCollapsed = collapsed[cat];
         const critCount = items.filter(a => a.urgency === "critical").length;
         const warnCount = items.filter(a => a.urgency === "warning").length;

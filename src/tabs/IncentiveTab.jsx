@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Award } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════════
 //  Incentive & Appreciation System
@@ -183,7 +184,7 @@ export function IncentiveTab({ app }) {
       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text2)", marginBottom: 8, marginTop: 8 }}>Manual Project Tracking</div>
       {incentiveProjects.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">🏆</div>
+          <div className="empty-icon"><Award style={{ width: 40, height: 40 }} /></div>
           <div className="empty-text">No completed projects tracked yet</div>
           <div className="text-sm text-dim mt-8">Add completed projects to track GC appreciation tiers</div>
         </div>

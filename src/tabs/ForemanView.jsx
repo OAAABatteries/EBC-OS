@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
-import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp } from "lucide-react";
+import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, FileText, Ruler, Building2, ClipboardList } from "lucide-react";
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
@@ -656,7 +656,7 @@ export function ForemanView({ app }) {
   const budgetColor = pctUsed > 90 ? "var(--red)" : pctUsed > 70 ? "var(--yellow)" : "var(--green)";
 
   const tabDefs = [
-    { key: "clock", label: isClockedIn ? `🟢 ${t("Clock")}` : t("Clock") },
+    { key: "clock", label: t("Clock") },
     { key: "dashboard", label: t("Dashboard") },
     { key: "crew", label: t("Crew"), count: crewForProject.length },
     { key: "hours", label: t("Hours") },
@@ -726,7 +726,7 @@ export function ForemanView({ app }) {
 
         {myProjects.length === 0 && foremanTab !== "settings" && (
           <div className="empty-state" style={{ padding: "40px 20px" }}>
-            <div className="empty-icon">📋</div>
+            <div className="empty-icon"><ClipboardList size={32} /></div>
             <div className="empty-text">{t("No projects assigned")}</div>
           </div>
         )}
@@ -887,8 +887,8 @@ export function ForemanView({ app }) {
                           ))}
                       </div>
                       {selectedProject && (
-                        <div className="text-sm font-semi" style={{ textAlign: "center", marginTop: 10, color: "var(--accent)" }}>
-                          📍 {selectedProject.name}
+                        <div className="text-sm font-semi" style={{ textAlign: "center", marginTop: 10, color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                          <MapPin size={14} />{selectedProject.name}
                         </div>
                       )}
                     </div>
@@ -901,7 +901,7 @@ export function ForemanView({ app }) {
                       onClick={handleClockIn}
                       disabled={!selectedProjectId}
                     >
-                      <span style={{ fontSize: 40 }}>⏱️</span>
+                      <Clock size={40} />
                       {t("CLOCK IN")}
                     </button>
                   ) : (
@@ -925,7 +925,7 @@ export function ForemanView({ app }) {
                         style={{ width: 200, height: 200, borderRadius: "50%", fontSize: 22, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "0 auto", background: "var(--red)", color: "#fff" }}
                         onClick={handleClockOut}
                       >
-                        <span style={{ fontSize: 40 }}>🛑</span>
+                        <StopCircle size={40} />
                         {t("CLOCK OUT")}
                       </button>
                     </>
@@ -1044,8 +1044,8 @@ export function ForemanView({ app }) {
                           ))}
                       </div>
                       {selectedProject && (
-                        <div className="text-sm font-semi" style={{ textAlign: "center", marginTop: 10, color: "var(--accent)" }}>
-                          📍 {selectedProject.name}
+                        <div className="text-sm font-semi" style={{ textAlign: "center", marginTop: 10, color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                          <MapPin size={14} />{selectedProject.name}
                         </div>
                       )}
                     </div>
@@ -1058,7 +1058,7 @@ export function ForemanView({ app }) {
                       onClick={handleClockIn}
                       disabled={!selectedProjectId}
                     >
-                      <span style={{ fontSize: 40 }}>⏱️</span>
+                      <Clock size={40} />
                       {t("CLOCK IN")}
                     </button>
                   ) : (
@@ -1082,7 +1082,7 @@ export function ForemanView({ app }) {
                         style={{ width: 200, height: 200, borderRadius: "50%", fontSize: 22, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "0 auto", background: "var(--red)", color: "#fff" }}
                         onClick={handleClockOut}
                       >
-                        <span style={{ fontSize: 40 }}>🛑</span>
+                        <StopCircle size={40} />
                         {t("CLOCK OUT")}
                       </button>
                     </>
@@ -1585,7 +1585,7 @@ export function ForemanView({ app }) {
                 </div>
                 {projectMatRequests.length === 0 ? (
                   <div className="empty-state" style={{ padding: "20px" }}>
-                    <div className="empty-icon">📦</div>
+                    <div className="empty-icon"><Package size={32} /></div>
                     <div className="empty-text">{t("No material requests yet")}</div>
                   </div>
                 ) : (
@@ -1637,7 +1637,7 @@ export function ForemanView({ app }) {
 
                     {myJsas.length === 0 ? (
                       <div className="empty-state" style={{ padding: "30px 20px" }}>
-                        <div className="empty-icon">🛡️</div>
+                        <div className="empty-icon"><Shield size={32} /></div>
                         <div className="empty-text">{t("No JSAs yet. Create one for today's work.")}</div>
                       </div>
                     ) : myJsas.sort((a, b) => b.date.localeCompare(a.date)).map(j => {
@@ -1939,7 +1939,7 @@ export function ForemanView({ app }) {
                             borderLeft: rcSelected[c.id] ? "4px solid #10b981" : "4px solid var(--border)",
                             opacity: rcSelected[c.id] ? 1 : 0.5,
                           }} onClick={() => setRcSelected(prev => ({ ...prev, [c.id]: !prev[c.id] }))}>
-                            <span style={{ fontSize: 20, width: 28, textAlign: "center" }}>{rcSelected[c.id] ? "✅" : "⬜"}</span>
+                            <span style={{ width: 28, display: "flex", justifyContent: "center" }}>{rcSelected[c.id] ? <CheckCircle size={20} style={{ color: "#10b981" }} /> : <Square size={20} style={{ color: "var(--text3)" }} />}</span>
                             <div>
                               <div style={{ fontSize: 14, fontWeight: 600 }}>{c.name}</div>
                               <div style={{ fontSize: 11, color: "var(--text3)" }}>{c.role || "Crew"}</div>
@@ -2123,7 +2123,7 @@ export function ForemanView({ app }) {
                     const finalJsa = (jsas || []).find(j => j.id === rcJsaId);
                     return (
                       <div style={{ textAlign: "center" }}>
-                        <div style={{ fontSize: 48, marginBottom: 8 }}>✅</div>
+                        <div style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}><CheckCircle size={48} style={{ color: "#10b981" }} /></div>
                         <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>{t("Pre-Task Safety Complete")}</div>
                         <div style={{ fontSize: 14, color: "var(--text2)", marginBottom: 20 }}>
                           {(finalJsa?.crewSignOn || []).length} {t("crew members signed")} · {finalJsa?.title}
@@ -2395,7 +2395,7 @@ export function ForemanView({ app }) {
 
                       {weatherHazard && jsaForm.weather !== "clear" && (
                         <div className="jsa-weather-warn" style={{ marginBottom: 12 }}>
-                          ⚠️ {lang === "es" ? weatherHazard.hazardEs : weatherHazard.hazard}
+                          <AlertTriangle size={14} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />{lang === "es" ? weatherHazard.hazardEs : weatherHazard.hazard}
                         </div>
                       )}
 
@@ -2515,7 +2515,7 @@ export function ForemanView({ app }) {
                     {cloudDrawings.map(d => (
                       <div key={d.id} className="card" style={{ padding: 14 }}>
                         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                          <div style={{ fontSize: 28 }}>📄</div>
+                          <FileText size={28} style={{ color: "var(--text2)", flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div className="text-sm font-semi" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
                             <div className="text-xs text-muted">
@@ -2550,18 +2550,18 @@ export function ForemanView({ app }) {
                         {/* Default drawing sets (placeholder when cloud is empty) */}
                         {(() => {
                           const defaultSets = [
-                            { id: "d1", name: t("Architectural Plans"), icon: "📐", desc: t("Floor plans, elevations, sections") },
-                            { id: "d2", name: t("Structural Framing Plans"), icon: "🏗️", desc: t("Framing layouts, details") },
-                            { id: "d3", name: t("Reflected Ceiling Plan"), icon: "📐", desc: t("Ceiling grid, fixtures") },
-                            { id: "d4", name: t("Wall Type Details"), icon: "🔍", desc: t("Assembly details, fire ratings") },
-                            { id: "d5", name: t("Door & Hardware Schedule"), icon: "📋", desc: t("Door types, hardware sets") },
+                            { id: "d1", name: t("Architectural Plans"), Icon: Ruler, desc: t("Floor plans, elevations, sections") },
+                            { id: "d2", name: t("Structural Framing Plans"), Icon: Building2, desc: t("Framing layouts, details") },
+                            { id: "d3", name: t("Reflected Ceiling Plan"), Icon: Ruler, desc: t("Ceiling grid, fixtures") },
+                            { id: "d4", name: t("Wall Type Details"), Icon: Search, desc: t("Assembly details, fire ratings") },
+                            { id: "d5", name: t("Door & Hardware Schedule"), Icon: ClipboardList, desc: t("Door types, hardware sets") },
                           ];
                           return (
                             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
                               {defaultSets.map(d => (
                                 <div key={d.id} className="card" style={{ padding: 14, opacity: 0.6 }}>
                                   <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                                    <div style={{ fontSize: 28 }}>{d.icon}</div>
+                                    <d.Icon size={28} style={{ color: "var(--text2)", flexShrink: 0 }} />
                                     <div style={{ flex: 1 }}>
                                       <div className="text-sm font-semi">{d.name}</div>
                                       <div className="text-xs text-muted">{d.desc}</div>
@@ -2897,7 +2897,7 @@ export function ForemanView({ app }) {
                     .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || ""))
                     .map(r => {
                       const isExpanded = expandedReportId === r.id;
-                      const weatherIcon = { Clear: "\u2600\uFE0F", Cloudy: "\u2601\uFE0F", Rain: "\uD83C\uDF27\uFE0F", Storm: "\u26C8\uFE0F", Wind: "\uD83C\uDF2C\uFE0F", Snow: "\u2744\uFE0F", Hot: "\uD83D\uDD25", Cold: "\u2744\uFE0F" }[r.weatherCondition || r.weather] || "";
+                      const weatherIcon = { Clear: "Clear", Cloudy: "Cloudy", Rain: "Rain", Storm: "Storm", Wind: "Windy", Snow: "Snow", Hot: "Hot", Cold: "Cold" }[r.weatherCondition || r.weather] || (r.weatherCondition || r.weather || "");
                       const crewN = (r.crewPresent || []).length || r.crewCount || 0;
                       return (
                         <div key={r.id} className="card" style={{ padding: "12px 14px", marginBottom: 8, cursor: "pointer", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 10 }}
@@ -3071,7 +3071,7 @@ export function ForemanView({ app }) {
                     })}
                   {(dailyReports || []).filter(r => myProjectIds.has(r.projectId)).length === 0 && !showReportForm && (
                     <div className="empty-state" style={{ padding: "30px 20px" }}>
-                      <div className="empty-icon">{"\uD83D\uDCCB"}</div>
+                      <div className="empty-icon"><ClipboardList size={32} /></div>
                       <div className="empty-text">{t("No daily reports yet")}</div>
                       <div className="text-xs text-muted">{t("Tap + New Report to get started")}</div>
                     </div>

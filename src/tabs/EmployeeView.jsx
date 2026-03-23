@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Search, MapPin, Calendar, Clock, AlertTriangle, Shield, Package, ClipboardList, FileText, PenLine } from "lucide-react";
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { useNotifications } from "../hooks/useNotifications";
@@ -281,10 +282,10 @@ export function EmployeeView({ app }) {
         iconAnchor: [8, 8],
       });
       const marker = L.marker([p.lat, p.lng], { icon }).addTo(map);
-      const suiteHtml = p.suite ? `<br/>📍 Suite/Area: <b>${p.suite}</b>` : "";
-      const parkingHtml = p.parking ? `<br/>🅿️ Parking: ${p.parking}` : "";
+      const suiteHtml = p.suite ? `<br/>Suite/Area: <b>${p.suite}</b>` : "";
+      const parkingHtml = p.parking ? `<br/>Parking: ${p.parking}` : "";
       const navLink = `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
-      marker.bindPopup(`<div style="font-size:12px;min-width:180px"><b style="color:${color}">${p.name}</b><br/>${p.gc} · ${p.phase}<br/>${p.address || ""}${suiteHtml}${parkingHtml}<br/><a href="${navLink}" target="_blank" style="color:#3b82f6;text-decoration:underline;font-size:11px">📍 Navigate</a></div>`);
+      marker.bindPopup(`<div style="font-size:12px;min-width:180px"><b style="color:${color}">${p.name}</b><br/>${p.gc} · ${p.phase}<br/>${p.address || ""}${suiteHtml}${parkingHtml}<br/><a href="${navLink}" target="_blank" style="color:#3b82f6;text-decoration:underline;font-size:11px">Navigate</a></div>`);
       clockMarkersRef.current.push(marker);
     });
     // add user position marker
@@ -583,10 +584,10 @@ export function EmployeeView({ app }) {
   // ── role-aware tabs ──
   const tabs = useMemo(() => {
     const base = [
-      { key: "clock", label: isClockedIn ? `🟢 ${t("Clock")}` : t("Clock") },
+      { key: "clock", label: t("Clock") },
       { key: "schedule", label: t("Schedule") },
       { key: "materials", label: t("Materials") },
-      { key: "settings", label: "⚙️" },
+      { key: "settings", label: t("Settings") },
     ];
     return base;
   }, [activeEmp, lang, isClockedIn]);
@@ -959,7 +960,7 @@ export function EmployeeView({ app }) {
                       style={{ width: "100%", opacity: 0.7 }}
                       onClick={() => setShowProjectSearch(true)}
                     >
-                      🔍 {t("Search project manually")}
+                      <Search size={14} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />{t("Search project manually")}
                     </button>
                   ) : (
                     <>
@@ -1017,8 +1018,8 @@ export function EmployeeView({ app }) {
 
               {/* Show selected project */}
               {!isClockedIn && selectedProject && (
-                <div className="text-sm font-semi" style={{ textAlign: "center", marginBottom: 12, color: "var(--accent)" }}>
-                  📍 {selectedProject.name}
+                <div className="text-sm font-semi" style={{ textAlign: "center", marginBottom: 12, color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                  <MapPin size={14} />{selectedProject.name}
                 </div>
               )}
 
@@ -1073,10 +1074,10 @@ export function EmployeeView({ app }) {
               <div ref={clockMapRef} style={{ width: "100%", height: drawingPerimeter ? 380 : 280, borderRadius: "var(--radius)", transition: "height 0.3s", cursor: drawingPerimeter ? "crosshair" : "" }} />
               {/* Tile switcher */}
               <div style={{ position: "absolute", top: 8, right: 8, zIndex: 1000, display: "flex", gap: 2, background: "rgba(0,0,0,0.7)", borderRadius: 6, padding: 2 }}>
-                {[["dark", "🌑"], ["satellite", "🛰️"], ["street", "🗺️"]].map(([key, icon]) => (
+                {[["dark", "Dark"], ["satellite", "Sat"], ["street", "Street"]].map(([key, label]) => (
                   <button key={key} onClick={() => setMapStyle(key)}
-                    style={{ padding: "4px 8px", fontSize: 12, border: "none", borderRadius: 4, cursor: "pointer", background: mapStyle === key ? "var(--amber)" : "transparent", color: mapStyle === key ? "#000" : "#fff" }}>
-                    {icon}
+                    style={{ padding: "4px 8px", fontSize: 11, border: "none", borderRadius: 4, cursor: "pointer", background: mapStyle === key ? "var(--amber)" : "transparent", color: mapStyle === key ? "#000" : "#fff" }}>
+                    {label}
                   </button>
                 ))}
               </div>
@@ -1224,7 +1225,7 @@ export function EmployeeView({ app }) {
             </div>
             {mySchedule.length === 0 && (
               <div className="empty-state" style={{ padding: "30px 20px" }}>
-                <div className="empty-icon">📅</div>
+                <div className="empty-icon"><Calendar size={32} /></div>
                 <div className="empty-text">{t("No schedule this week")}</div>
               </div>
             )}
@@ -1242,7 +1243,7 @@ export function EmployeeView({ app }) {
             </div>
             {weekEntries.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">🕐</div>
+                <div className="empty-icon"><Clock size={32} /></div>
                 <div className="empty-text">{t("No entries this week")}</div>
               </div>
             ) : (
@@ -1314,7 +1315,7 @@ export function EmployeeView({ app }) {
                     <div style={{ marginBottom: 16 }}>
                       {/* Hazard acknowledgment header */}
                       <div style={{ background: "var(--amber-dim)", border: "1px solid var(--amber)", borderRadius: 8, padding: 12, marginBottom: 12, textAlign: "center" }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--amber)" }}>⚠️ {t("Review & Sign")}</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--amber)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><AlertTriangle size={16} />{t("Review & Sign")}</div>
                         <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 4 }}>
                           {lang === "es" ? "Revise los peligros abajo y firme para reconocer" : "Review hazards below and sign to acknowledge"}
                         </div>
@@ -1359,7 +1360,7 @@ export function EmployeeView({ app }) {
                           } : j));
                           show(t("You have signed the JSA"), "ok");
                         }}>
-                        ✍️ {t("I Acknowledge & Sign")}
+                        <PenLine size={16} style={{ display: "inline", marginRight: 6, verticalAlign: "middle" }} />{t("I Acknowledge & Sign")}
                       </button>
                     </div>
                   );
@@ -1442,7 +1443,7 @@ export function EmployeeView({ app }) {
                 <div style={{ background: "rgba(245,158,11,0.12)", border: "2px solid var(--amber)", borderRadius: 10, padding: 14, marginBottom: 16, cursor: "pointer", animation: "fadeIn 0.3s" }}
                   onClick={() => setActiveJsaId(unsignedJsas[0].id)}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <span style={{ fontSize: 24 }}>⚠️</span>
+                    <AlertTriangle size={24} style={{ color: "var(--amber)", flexShrink: 0 }} />
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: "var(--amber)" }}>{t("You have an unsigned safety briefing")}</div>
                       <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>{unsignedJsas[0].title} — {t("Tap to review & sign")}</div>
@@ -1453,7 +1454,7 @@ export function EmployeeView({ app }) {
 
               {myJsaList.length === 0 ? (
                 <div className="empty-state" style={{ padding: "30px 20px" }}>
-                  <div className="empty-icon">🛡️</div>
+                  <div className="empty-icon"><Shield size={32} /></div>
                   <div className="empty-text">{t("No active JSAs for your projects")}</div>
                 </div>
               ) : myJsaList.map(j => {
@@ -1566,7 +1567,7 @@ export function EmployeeView({ app }) {
             </div>
             {myMatRequests.length === 0 ? (
               <div className="empty-state" style={{ padding: "30px 20px" }}>
-                <div className="empty-icon">📦</div>
+                <div className="empty-icon"><Package size={32} /></div>
                 <div className="empty-text">{t("No material requests yet")}</div>
               </div>
             ) : (
@@ -1599,7 +1600,7 @@ export function EmployeeView({ app }) {
             </div>
             {myCOs.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">📋</div>
+                <div className="empty-icon"><ClipboardList size={32} /></div>
                 <div className="empty-text">{t("No change orders for your projects")}</div>
               </div>
             ) : (
@@ -1631,7 +1632,7 @@ export function EmployeeView({ app }) {
             </div>
             {myRFIs.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">📝</div>
+                <div className="empty-icon"><FileText size={32} /></div>
                 <div className="empty-text">{t("No RFIs for your projects")}</div>
               </div>
             ) : (

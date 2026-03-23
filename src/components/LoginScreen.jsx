@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useEffect } from "react";
+import { Globe } from "lucide-react";
 import { SEED_ACCOUNTS, seedAccountsIfEmpty } from "../data/seedAccounts";
 import { ROLES } from "../data/roles";
 import { supabase, isSupabaseConfigured, signIn as supaSignIn, signUp as supaSignUp } from "../lib/supabase";
@@ -582,7 +583,7 @@ export function LoginScreen({ onLogin }) {
         onClick={() => setLang(lang === "en" ? "es" : "en")}
         title={lang === "en" ? "Cambiar a Español" : "Switch to English"}
       >
-        {lang === "en" ? "🌐 ES" : "🌐 EN"}
+        <Globe style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle", marginRight: 4 }} />{lang === "en" ? "ES" : "EN"}
       </button>
 
       <div className="login-card">
