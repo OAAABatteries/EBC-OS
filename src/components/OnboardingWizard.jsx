@@ -14,17 +14,9 @@ import { ROLES } from "../data/roles";
 import { hashPasswordSync } from "../utils/passwordHash";
 
 const wizardStyles = `
-@keyframes wizLogoFloat {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-6px); }
-}
 @keyframes wizPulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(224,148,34,0.4); }
   50% { box-shadow: 0 0 0 14px rgba(224,148,34,0); }
-}
-@keyframes wizGlow {
-  0%, 100% { filter: drop-shadow(0 0 10px rgba(224,148,34,0.3)); }
-  50% { filter: drop-shadow(0 0 22px rgba(224,148,34,0.6)); }
 }
 @keyframes slideFromRight {
   from { opacity: 0; transform: translateX(48px); }
@@ -133,7 +125,7 @@ const wizardStyles = `
   object-fit: contain;
   display: block;
   margin: 0 auto 14px;
-  animation: wizLogoFloat 4s ease-in-out infinite, wizGlow 4s ease-in-out infinite;
+  /* no animation — clean static logo */
 }
 .wizard-step-label {
   text-align: center;
