@@ -694,6 +694,16 @@ const _demoTimeEntries = _seedTimeEntries();
 
 // ── CONDITIONAL EXPORTS ──
 // Projects & employees ALWAYS load (real EBC data), other seed data is demo-only
+// ── SEED: MATERIAL SUPPLIERS ──
+export const initSuppliers = [
+  { id: "sup1", name: "ABC Supply Co.", contact: "Sales Team", email: "sales@abcsupply.com", phone: "713-555-0100", specialty: ["Framing", "Drywall", "Insulation", "Accessories"] },
+  { id: "sup2", name: "ClarkDietrich Building Systems", contact: "Houston Branch", email: "houston@clarkdietrich.com", phone: "713-555-0201", specialty: ["Framing"] },
+  { id: "sup3", name: "USG Corporation", contact: "Southwest Region Rep", email: "sw-sales@usg.com", phone: "713-555-0302", specialty: ["Drywall", "Finishing", "Ceiling"] },
+  { id: "sup4", name: "Performance Drywall Supply", contact: "Orders Desk", email: "orders@performancedrywall.com", phone: "713-555-0403", specialty: ["Drywall", "Finishing", "Insulation"] },
+  { id: "sup5", name: "Contractor Supply Warehouse", contact: "Inside Sales", email: "sales@cswhouston.com", phone: "713-555-0504", specialty: ["Framing", "Fasteners", "Accessories"] },
+  { id: "sup6", name: "GoldStone Supply Houston", contact: "Sales Desk", email: "sales@goldstonesupply.com", phone: "713-555-0605", specialty: ["Drywall", "Framing", "Ceiling", "Insulation"] },
+];
+
 export const initBids = _demoBids; // always load — real EBC bid list
 export const initProjects = _demoProjects; // always load — real EBC project list
 export const initContacts = _demoContacts; // always load — real GC contacts

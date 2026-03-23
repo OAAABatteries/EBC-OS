@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Calendar } from "lucide-react";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
 
@@ -8,6 +9,7 @@ import { THEMES } from "../data/constants";
 // ═══════════════════════════════════════════════════════════════
 
 const DRIVER_SESSION_KEY = "ebc_activeDriver";
+const DELIVERY_SCHEDULE_KEY = "ebc_deliverySchedules";
 
 // Simple distance calc (Haversine) for route optimization
 function haversine(lat1, lng1, lat2, lng2) {
@@ -70,12 +72,26 @@ export function DriverView({ app }) {
   const [driverLat, setDriverLat] = useState(null);
   const [driverLng, setDriverLng] = useState(null);
   const [dragIdx, setDragIdx] = useState(null);
+  const [deliverySchedules, setDeliverySchedules] = useState(() => {
+    try {
+      const saved = localStorage.getItem(DELIVERY_SCHEDULE_KEY);
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
 
   // ── persist ──
   useEffect(() => {
     if (activeDriver) localStorage.setItem(DRIVER_SESSION_KEY, JSON.stringify(activeDriver));
     else localStorage.removeItem(DRIVER_SESSION_KEY);
   }, [activeDriver]);
+
+  useEffect(() => {
+    localStorage.setItem(DELIVERY_SCHEDULE_KEY, JSON.stringify(deliverySchedules));
+  }, [deliverySchedules]);
+
+  const setScheduleDate = (reqId, date) => {
+    setDeliverySchedules(prev => ({ ...prev, [reqId]: date }));
+  };
 
   // ── GPS ──
   useEffect(() => {
@@ -345,6 +361,28 @@ export function DriverView({ app }) {
                         {stop.distFromPrev ? ` · ~${stop.distFromPrev.toFixed(1)} mi` : ""}
                       </div>
                       {stop.notes && <div className="text-xs text-dim mb-8">{stop.notes}</div>}
+
+                      {/* Delivery schedule */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                        <Calendar size={13} style={{ color: "var(--text3)", flexShrink: 0 }} />
+                        <label className="text-xs" style={{ color: "var(--text2)", minWidth: 48 }}>Scheduled:</label>
+                        <input
+                          type="date"
+                          className="form-input"
+                          style={{ flex: 1, fontSize: 12, padding: "3px 8px", height: "auto" }}
+                          value={deliverySchedules[stop.id] || ""}
+                          onChange={e => setScheduleDate(stop.id, e.target.value)}
+                          onClick={e => e.stopPropagation()}
+                        />
+                        {deliverySchedules[stop.id] && (
+                          <button
+                            className="btn-icon"
+                            style={{ fontSize: 11, color: "var(--text3)" }}
+                            onClick={e => { e.stopPropagation(); setScheduleDate(stop.id, ""); }}
+                            title="Clear date"
+                          >✕</button>
+                        )}
+                      </div>
 
                       {/* Action buttons */}
                       <div className="flex gap-8">

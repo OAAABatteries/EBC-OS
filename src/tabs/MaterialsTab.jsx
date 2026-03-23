@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
+import { Send, RefreshCw, X, ChevronDown, ChevronUp, Package } from "lucide-react";
 import { MAT_CATS, MAT_CLR, ASM_TYPES } from "../data/materials";
 import { useNotifications, getNotificationPrefs } from "../hooks/useNotifications";
+import { initSuppliers } from "../data/constants";
 
 // ═══════════════════════════════════════════════════════════════
 //  Materials & Assembly Editor Tab
@@ -21,6 +23,13 @@ export function MaterialsTab({ app }) {
   const [optResult, setOptResult] = useState(null);
   const [optLoading, setOptLoading] = useState(false);
   const [showOpt, setShowOpt] = useState(false);
+
+  // ── Supplier email modals ──
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [showPricingModal, setShowPricingModal] = useState(false);
+  const [supplierEmail, setSupplierEmail] = useState(initSuppliers[0]?.email || "");
+  const [supplierName, setSupplierName] = useState(initSuppliers[0]?.name || "");
+  const [selectedMatIds, setSelectedMatIds] = useState(null); // null = all
 
   const runOptimize = async () => {
     if (!app.apiKey) { show("Set API key in Settings first", "err"); return; }
@@ -154,6 +163,88 @@ export function MaterialsTab({ app }) {
     setEditAsm(null);
   };
 
+  // ── Supplier email helpers ──
+  const EBC_HEADER = `Eagles Brothers Constructors\n3810 Mangum Rd, Suite 100, Houston, TX 77092\nPhone: (832) 603-3726 | info@eaglesbrosconstructors.com\n`;
+
+  const openSendToSupplier = () => {
+    setSelectedMatIds(filtered.map(m => m.id));
+    setShowSendModal(true);
+  };
+
+  const openRequestPricing = () => {
+    setSelectedMatIds(materials.map(m => m.id));
+    setShowPricingModal(true);
+  };
+
+  const toggleMatId = (id) => {
+    setSelectedMatIds(prev => {
+      if (!prev) return materials.map(m => m.id).filter(i => i !== id);
+      return prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id];
+    });
+  };
+
+  const sendTakeoffEmail = () => {
+    const mats = materials.filter(m => (selectedMatIds || []).includes(m.id));
+    if (mats.length === 0) { show("Select at least one material", "err"); return; }
+    const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const rows = mats.map(m =>
+      `  ${m.name.padEnd(36)} | ${m.unit.padEnd(4)} | ${(m.note || m.category || "")}`
+    ).join("\n");
+    const subject = encodeURIComponent(`EBC Material Takeoff — ${today}`);
+    const body = encodeURIComponent(
+      `${EBC_HEADER}\nDate: ${today}\nTo: ${supplierName}\n\nDear ${supplierName} Sales Team,\n\nPlease review the following material takeoff and provide pricing and lead time availability at your earliest convenience.\n\n${"─".repeat(70)}\nMATERIAL TAKEOFF\n${"─".repeat(70)}\n${"  Item".padEnd(38)}| Unit | Spec / Note\n${"─".repeat(70)}\n${rows}\n${"─".repeat(70)}\n\nPlease confirm unit pricing, availability, and estimated lead times for each item listed above.\n\nThank you,\nEBC Project Management\nEagles Brothers Constructors\n(832) 603-3726\n`
+    );
+    window.open(`mailto:${supplierEmail}?subject=${subject}&body=${body}`);
+    setShowSendModal(false);
+    show("Email client opened", "ok");
+  };
+
+  const sendPricingRequest = () => {
+    const mats = materials.filter(m => (selectedMatIds || []).includes(m.id));
+    if (mats.length === 0) { show("Select at least one material", "err"); return; }
+    const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const rows = mats.map(m =>
+      `  ${m.name.padEnd(36)} | ${m.unit.padEnd(4)} | Current: $${m.matCost.toFixed(2)}`
+    ).join("\n");
+    const subject = encodeURIComponent(`EBC Pricing Update Request — ${today}`);
+    const body = encodeURIComponent(
+      `${EBC_HEADER}\nDate: ${today}\nTo: ${supplierName}\n\nDear ${supplierName} Sales Team,\n\nWe are requesting updated pricing on the following materials in our inventory. Current pricing is shown for reference — please reply with your updated unit pricing.\n\n${"─".repeat(70)}\nPRICING UPDATE REQUEST\n${"─".repeat(70)}\n${"  Item".padEnd(38)}| Unit | Current Price\n${"─".repeat(70)}\n${rows}\n${"─".repeat(70)}\n\nPlease reply with updated pricing at your earliest convenience. If pricing has not changed, a simple confirmation is appreciated.\n\nThank you,\nEBC Project Management\nEagles Brothers Constructors\n(832) 603-3726\n`
+    );
+    window.open(`mailto:${supplierEmail}?subject=${subject}&body=${body}`);
+    setShowPricingModal(false);
+    show("Email client opened", "ok");
+  };
+
+  // ── Supplier modal shared supplier selector ──
+  const renderSupplierSelector = () => (
+    <div style={{ marginBottom: 16 }}>
+      <label className="form-label">Supplier</label>
+      <select
+        className="form-select"
+        value={supplierEmail}
+        onChange={e => {
+          const sup = initSuppliers.find(s => s.email === e.target.value);
+          setSupplierEmail(e.target.value);
+          if (sup) setSupplierName(sup.name);
+        }}
+      >
+        {initSuppliers.map(s => (
+          <option key={s.id} value={s.email}>{s.name}</option>
+        ))}
+        <option value="">— Enter manually —</option>
+      </select>
+      {!initSuppliers.find(s => s.email === supplierEmail) && (
+        <input
+          className="form-input"
+          style={{ marginTop: 8 }}
+          placeholder="Supplier email address"
+          value={supplierEmail}
+          onChange={e => setSupplierEmail(e.target.value)}
+        />
+      )}
+    </div>
+  );
+
   // ═══════════════════════════════════════════════════════════════
   //  VIEW: MATERIAL LIBRARY
   // ═══════════════════════════════════════════════════════════════
@@ -164,7 +255,15 @@ export function MaterialsTab({ app }) {
           <span className="search-icon">🔍</span>
           <input className="search-input" placeholder="Search materials..." value={matSearch} onChange={e => setMatSearch(e.target.value)} />
         </div>
-        <button className="btn btn-primary" onClick={() => setEditMat({ name: "", category: "Framing", unit: "LF", matCost: 0, laborCost: 0, note: "" })}>+ Add Material</button>
+        <div className="flex gap-8">
+          <button className="btn btn-ghost btn-sm" style={{ display: "flex", alignItems: "center", gap: 6 }} onClick={openSendToSupplier}>
+            <Send size={14} /> Send Takeoff
+          </button>
+          <button className="btn btn-ghost btn-sm" style={{ display: "flex", alignItems: "center", gap: 6 }} onClick={openRequestPricing}>
+            <RefreshCw size={14} /> Request Pricing
+          </button>
+          <button className="btn btn-primary" onClick={() => setEditMat({ name: "", category: "Framing", unit: "LF", matCost: 0, laborCost: 0, note: "" })}>+ Add Material</button>
+        </div>
       </div>
 
       <div className="flex gap-4 mb-16 flex-wrap">
@@ -772,6 +871,111 @@ export function MaterialsTab({ app }) {
       )}
 
       {renderMatModal()}
+
+      {/* ═══ SEND TO SUPPLIER MODAL ═══ */}
+      {showSendModal && (
+        <div className="modal-overlay" onClick={() => setShowSendModal(false)}>
+          <div className="modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Send size={16} /> Send Material Takeoff to Supplier
+              </div>
+              <button className="modal-close" onClick={() => setShowSendModal(false)}><X size={14} /></button>
+            </div>
+
+            {renderSupplierSelector()}
+
+            <div className="form-label" style={{ marginBottom: 6 }}>Materials to Include</div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelectedMatIds(materials.map(m => m.id))}>All</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelectedMatIds([])}>None</button>
+              {catFilter !== "All" && (
+                <button className="btn btn-ghost btn-sm" onClick={() => setSelectedMatIds(filtered.map(m => m.id))}>
+                  Current filter ({filtered.length})
+                </button>
+              )}
+            </div>
+            <div style={{ maxHeight: 260, overflowY: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", marginBottom: 16 }}>
+              {materials.map(m => {
+                const checked = (selectedMatIds || []).includes(m.id);
+                const clr = MAT_CLR[m.category] || {};
+                return (
+                  <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 12px", borderBottom: "1px solid var(--border)", cursor: "pointer", background: checked ? "var(--amber-dim)" : "transparent" }}>
+                    <input type="checkbox" checked={checked} onChange={() => toggleMatId(m.id)} style={{ accentColor: "var(--amber)" }} />
+                    <span className="mat-cat-pill" style={{ background: clr.bg, color: clr.color, border: `1px solid ${clr.border}`, fontSize: 10, padding: "1px 6px" }}>{m.category}</span>
+                    <span className="text-sm" style={{ flex: 1 }}>{m.name}</span>
+                    <span className="text-xs text-dim">{m.unit}</span>
+                    {m.note && <span className="text-xs text-dim" style={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.note}</span>}
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="text-xs text-dim" style={{ marginBottom: 12 }}>
+              {(selectedMatIds || []).length} of {materials.length} materials selected · Opens your default email client
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setShowSendModal(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={sendTakeoffEmail} disabled={!(selectedMatIds || []).length}>
+                <Send size={14} style={{ marginRight: 6 }} /> Open in Email Client
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ REQUEST PRICING UPDATE MODAL ═══ */}
+      {showPricingModal && (
+        <div className="modal-overlay" onClick={() => setShowPricingModal(false)}>
+          <div className="modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <RefreshCw size={16} /> Request Pricing Update
+              </div>
+              <button className="modal-close" onClick={() => setShowPricingModal(false)}><X size={14} /></button>
+            </div>
+
+            {renderSupplierSelector()}
+
+            <div className="form-label" style={{ marginBottom: 6 }}>Items for Pricing Review</div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelectedMatIds(materials.map(m => m.id))}>All ({materials.length})</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelectedMatIds([])}>None</button>
+              {catFilter !== "All" && (
+                <button className="btn btn-ghost btn-sm" onClick={() => setSelectedMatIds(filtered.map(m => m.id))}>
+                  Current filter ({filtered.length})
+                </button>
+              )}
+            </div>
+            <div style={{ maxHeight: 260, overflowY: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", marginBottom: 16 }}>
+              {materials.map(m => {
+                const checked = (selectedMatIds || []).includes(m.id);
+                const clr = MAT_CLR[m.category] || {};
+                return (
+                  <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 12px", borderBottom: "1px solid var(--border)", cursor: "pointer", background: checked ? "var(--amber-dim)" : "transparent" }}>
+                    <input type="checkbox" checked={checked} onChange={() => toggleMatId(m.id)} style={{ accentColor: "var(--amber)" }} />
+                    <span className="mat-cat-pill" style={{ background: clr.bg, color: clr.color, border: `1px solid ${clr.border}`, fontSize: 10, padding: "1px 6px" }}>{m.category}</span>
+                    <span className="text-sm" style={{ flex: 1 }}>{m.name}</span>
+                    <span className="text-xs font-mono" style={{ color: "var(--amber)" }}>${m.matCost.toFixed(2)}/{m.unit}</span>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="text-xs text-dim" style={{ marginBottom: 12 }}>
+              {(selectedMatIds || []).length} items · Current pricing will be included so supplier can flag changes
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setShowPricingModal(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={sendPricingRequest} disabled={!(selectedMatIds || []).length}>
+                <RefreshCw size={14} style={{ marginRight: 6 }} /> Open in Email Client
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
