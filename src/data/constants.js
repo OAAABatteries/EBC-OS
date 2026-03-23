@@ -7,7 +7,7 @@ import { isDemoMode } from "./defaults";
 const _demo = isDemoMode();
 
 // Bump this when seed data changes to bust stale localStorage caches
-export const DATA_VERSION = 16;
+export const DATA_VERSION = 17;
 
 // ── THEMES ────────────────────────────────────────────────────
 export const THEMES = {
@@ -419,7 +419,6 @@ const _demoProjects = [
   {id:1,name:"Endurance - Woodside Laboratory",gc:"Endurance Builders",contract:74800,status:"in-progress",phase:"Commercial",address:"4200 San Jacinto St, Houston, TX 77004",suite:"",parking:"",lat:29.7224,lng:-95.3785,pm:"Abner Aguilar",laborHours:1200,progress:0,start:"2026-03-30",end:"2026-08-21",crewCount:5,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
   {id:2,name:"WCC - CB&I CEO/Lvl 2/Lvl 7",gc:"WC Construction",contract:59800,status:"in-progress",phase:"Commercial",address:"1725 Hughes Landing Blvd, The Woodlands, TX 77380",suite:"CEO Office / Level 2 / Level 7",parking:"",lat:30.1658,lng:-95.4613,pm:"Abner Aguilar",laborHours:900,progress:5,start:"2026-03-20",end:"2026-06-15",crewCount:4,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish"]},
   {id:3,name:"Forney - BSLMC Cath Labs 4 & 9",gc:"Forney Construction",contract:104500,status:"on-hold",phase:"Medical",address:"6720 Bertner Ave, Houston, TX 77030",suite:"Cath Labs 4 & 9",parking:"",lat:29.7066,lng:-95.3966,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-05-01",end:"2026-09-30",scope:["Demo","Metal Framing","Drywall","Lead-Lined Walls","ACT Ceilings"]},
-  {id:4,name:"Brunello Cucinelli - Store Buildout",gc:"Brodson",contract:308400,laborCost:192000,materialCost:79000,status:"in-progress",phase:"Retail",address:"4444 Westheimer Rd, Houston, TX 77027",suite:"F155",parking:"",lat:29.7376,lng:-95.4328,pm:"Abner Aguilar",laborHours:2400,progress:35,start:"2026-02-10",end:"2026-07-15",crewCount:6,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phases:[{key:"layout",name:"Layout",status:"completed",startDate:"2026-02-10",completedDate:"2026-02-12",assignedForeman:"Oscar Alvarez",notes:"Layout complete. GC verified control lines."},{key:"framing",name:"Framing",status:"completed",startDate:"2026-02-13",completedDate:"2026-03-07",assignedForeman:"Oscar Alvarez",notes:"Metal stud framing done. ACT soffit framing in progress."},{key:"drywall",name:"Drywall",status:"in progress",startDate:"2026-03-08",completedDate:"",assignedForeman:"Oscar Alvarez",notes:"Hanging board on Level 1 retail walls. 60% hung."},{key:"finish",name:"Finish",status:"not started",startDate:"",completedDate:"",assignedForeman:"",notes:""},{key:"touchup1",name:"Touch Up Pt 1",status:"not started",startDate:"",completedDate:"",assignedForeman:"",notes:""},{key:"touchup2",name:"Touch Up Pt 2",status:"not started",startDate:"",completedDate:"",assignedForeman:"",notes:""},{key:"finalTouchUp",name:"Final Touch Up",status:"not started",startDate:"",completedDate:"",assignedForeman:"",notes:""}]},
   {id:16,name:"ROD - Brunello Cucinelli Expansion (Landlord Work)",gc:"United Constructors",contract:49900,status:"in-progress",phase:"Retail",address:"4444 Westheimer Rd, Houston, TX 77027",suite:"",parking:"",lat:29.7376,lng:-95.4328,pm:"Abner Aguilar",laborHours:400,progress:20,start:"2026-03-01",end:"2026-05-30",crewCount:3,scope:["Metal Framing","Drywall"]},
   {id:5,name:"Texas Heart Center - Baytown",gc:"Bayshore",contract:54200,laborCost:25000,materialCost:16800,status:"in-progress",phase:"Medical",address:"1602 W Baker Rd, Baytown, TX 77521",suite:"",parking:"",lat:29.7633,lng:-94.9774,pm:"Abner Aguilar",laborHours:800,progress:40,start:"2026-02-24",end:"2026-06-20",crewCount:4,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Lead-Lined Walls","Doors & Hardware"]},
   {id:6,name:"MH Woodlands RAD Equipment Replacement",gc:"Forney Construction",contract:10500,laborCost:5200,materialCost:3800,status:"in-progress",phase:"Medical",address:"9250 Pinecroft Dr, The Woodlands, TX 77380",suite:"",parking:"",lat:30.1620,lng:-95.4710,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-03-10",end:"2026-04-25",crewCount:2,scope:["Demo","Metal Framing","Drywall","ACT Ceilings"]},
@@ -653,8 +652,6 @@ const _ws = _currentWeekStart();
 
 // ── SEED: MATERIAL REQUESTS ──
 const _demoMaterialRequests = [
-  { id: "mr1", employeeId: 1, employeeName: "Oscar Alvarez", projectId: 4, projectName: "Brunello Cucinelli - Store Buildout", material: '5/8" Type X GWB', qty: 120, unit: "SHT", notes: "Level 5 finish walls — need delivered by Thursday", status: "requested", requestedAt: new Date(Date.now() - 86400000).toISOString() },
-  { id: "mr2", employeeId: 1, employeeName: "Oscar Alvarez", projectId: 4, projectName: "Brunello Cucinelli - Store Buildout", material: '3-5/8" 25ga Metal Studs', qty: 200, unit: "EA", notes: "", status: "approved", requestedAt: new Date(Date.now() - 172800000).toISOString(), approvedAt: new Date(Date.now() - 86400000).toISOString() },
   { id: "mr3", employeeId: 5, employeeName: "David Ramirez", projectId: 5, projectName: "Texas Heart Center - Baytown", material: "Lead-Lined Drywall (1/32\" Pb)", qty: 40, unit: "SHT", notes: "X-ray room — confirm lead spec with GC", status: "requested", requestedAt: new Date(Date.now() - 43200000).toISOString() },
   { id: "mr4", employeeId: 9, employeeName: "Antonio Hernandez", projectId: 12, projectName: "Arch-Con - Sprouts Farmers Market", material: "Mud & Tape Compound (5gal)", qty: 10, unit: "BKT", notes: "", status: "approved", requestedAt: new Date(Date.now() - 259200000).toISOString(), approvedAt: new Date(Date.now() - 172800000).toISOString() },
 ];
@@ -662,13 +659,7 @@ const _demoMaterialRequests = [
 // ── SEED: CREW SCHEDULE ──
 // Assigns foremen + crew to active projects for the current week
 const _demoCrewSchedule = [
-  // Oscar Alvarez (Foreman id:1) → Brunello Cucinelli (id:4) with crew
-  { id: "cs1", employeeId: 1, projectId: 4, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: true }, hours: { start: "06:30", end: "15:00" } },
-  { id: "cs2", employeeId: 2, projectId: 4, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: true }, hours: { start: "06:30", end: "15:00" } },
-  { id: "cs3", employeeId: 3, projectId: 4, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: false }, hours: { start: "07:00", end: "15:30" } },
-  { id: "cs4", employeeId: 10, projectId: 4, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: true }, hours: { start: "06:30", end: "15:00" } },
-  { id: "cs5", employeeId: 11, projectId: 4, weekStart: _ws, days: { mon: true, tue: false, wed: true, thu: false, fri: true }, hours: { start: "07:00", end: "15:30" } },
-  // Oscar also on ROD Brunello Expansion (id:16)
+  // Oscar Alvarez (Foreman id:1) → ROD Brunello Cucinelli Expansion (id:16)
   { id: "cs6", employeeId: 1, projectId: 16, weekStart: _ws, days: { mon: false, tue: false, wed: false, thu: false, fri: true }, hours: { start: "06:30", end: "15:00" } },
 
   // David Ramirez (Foreman id:5) → Texas Heart Center Baytown (id:5) + MH MC Single Plane IR (id:7)
@@ -707,13 +698,6 @@ function _seedTimeEntries() {
       totalHours, geofenceStatus: "inside",
     };
   };
-  // Oscar's crew on Brunello (id:4)
-  for (let d = 0; d < 5; d++) {
-    entries.push(mkEntry(1, "Oscar Alvarez", 4, "Brunello Cucinelli - Store Buildout", d, 6, 30, 15, 0));
-    entries.push(mkEntry(2, "Ricardo Mendez", 4, "Brunello Cucinelli - Store Buildout", d, 6, 30, 15, 0));
-    entries.push(mkEntry(3, "Carlos Fuentes", 4, "Brunello Cucinelli - Store Buildout", d, 7, 0, 15, 30));
-    entries.push(mkEntry(10, "Jose Perez", 4, "Brunello Cucinelli - Store Buildout", d, 6, 30, 15, 0));
-  }
   // David's crew on THC Baytown (id:5)
   for (let d = 0; d < 3; d++) {
     entries.push(mkEntry(5, "David Ramirez", 5, "Texas Heart Center - Baytown", d, 6, 0, 14, 30));
