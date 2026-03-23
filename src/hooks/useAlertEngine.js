@@ -378,7 +378,7 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
         id: `cert_expired_${cert.id}`,
         category: "crew",
         urgency: "critical",
-        icon: "\uD83D\uDEA8",
+        icon: "alert",
         title: `Cert expired: ${empName}`,
         message: `${cert.name} expired ${Math.abs(daysLeft)} days ago.`,
         action: { label: "View Employee", type: "openEmployee" },
