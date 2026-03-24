@@ -44,7 +44,7 @@ import { useAlertEngine } from "./hooks/useAlertEngine";
 import { NotificationPanel } from "./components/NotificationPanel";
 import { PerimeterMapModal } from "./components/PerimeterMapModal";
 import { polygonAreaSqFt } from "./utils/geofence";
-import { TrendingDown, AlertTriangle, DollarSign, Wrench, Package, FileX, ChevronDown, ChevronUp, Search, Calendar, Building2, BarChart2, ClipboardList, Globe, Bell, FolderOpen, MapPin, Paperclip, FileText, Image, Sheet, FileSpreadsheet, Camera, List, Columns, CheckSquare, Square, FileDown, Volume2, MessageSquare, Pin, PinOff, Truck, HardHat } from "lucide-react";
+import { TrendingDown, AlertTriangle, DollarSign, Wrench, Package, FileX, ChevronDown, ChevronUp, Search, Calendar, Building2, BarChart2, ClipboardList, Globe, Bell, FolderOpen, MapPin, Paperclip, FileText, Image, Sheet, FileSpreadsheet, Camera, List, Columns, CheckSquare, Square, FileDown, Volume2, MessageSquare, Pin, PinOff, Truck, HardHat, Clipboard } from "lucide-react";
 import { FeatureGuide, resetAllGuides } from "./components/FeatureGuide";
 
 // ═══════════════════════════════════════════════════════════════
@@ -3581,6 +3581,78 @@ const ModalHub = ({ type, data, app }) => {
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiWarnings, setAiWarnings] = useState([]);
   const [pdfScanning, setPdfScanning] = useState(false);
+  const [showEmailImport, setShowEmailImport] = useState(false);
+  const [emailImportText, setEmailImportText] = useState("");
+
+  const parseEmailBid = () => {
+    const text = emailImportText;
+    if (!text.trim()) { show("Paste an email body first", "err"); return; }
+
+    const first = (patterns) => {
+      for (const re of patterns) {
+        const m = text.match(re);
+        if (m && m[1]) return m[1].trim().replace(/\s+/g, " ");
+      }
+      return "";
+    };
+
+    const name = first([
+      /(?:project[:\s]+|re[:\s]+(?:bid (?:invite|invitation|request)|invitation to bid)[:\s]+)([^\n|,–—]{4,80})/i,
+      /project name[:\s]+([^\n,]{4,80})/i,
+      /ITB[:\s#]+([^\n,]{4,80})/i,
+      /subject[:\s]+.*?(?:bid|invite|invitation)[:\s]+([^\n,]{4,80})/i,
+      /for[:\s]+([A-Z][^\n]{10,70}(?:hospital|medical|school|center|tower|building|facility|project)[^\n]{0,30})/i,
+    ]);
+
+    const gc = first([
+      /(?:from[:\s]+|invited by[:\s]+|general contractor[:\s]+|gc[:\s]+|on behalf of[:\s]+)([A-Za-z][^\n,–—]{2,60})/i,
+      /([A-Z][a-zA-Z\s]+(?:Construction|Contractors?|Builders?|Building|Group|Corp|Inc|LLC|LP|Co\.|Company))/,
+      /invited to bid (?:for|on) .+ (?:by|from) ([A-Za-z][^\n,]{2,50})/i,
+    ]);
+
+    const due = first([
+      /(?:bid due|due date|bid date|submission deadline|bids? (?:are )?due)[:\s]+([A-Za-z]+\.?\s+\d{1,2},?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4})/i,
+      /(?:due|deadline)[:\s]+([A-Za-z]+\.?\s+\d{1,2},?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4})/i,
+      /(\d{1,2}\/\d{1,2}\/\d{2,4})/,
+    ]);
+
+    const address = first([
+      /(?:project (?:location|address|site)|location|address|site)[:\s]+([^\n]{8,80}(?:st|ave|blvd|dr|rd|way|pkwy|ln|houston|tx)[^\n]{0,40})/i,
+      /(\d{3,5}\s+[A-Z][^\n]{5,60}(?:St\.?|Ave\.?|Blvd\.?|Dr\.?|Rd\.?|Way|Pkwy)[^\n]{0,30})/i,
+    ]);
+
+    const scopeRaw = first([
+      /(?:scope of work|work scope|work includes?|bid includes?)[:\s]+([^\n]{10,200}(?:\n[^\n]{0,100}){0,4})/i,
+      /(?:work type|trade|division)[:\s]+([^\n]{5,100})/i,
+    ]);
+
+    const scopeTags = [];
+    const scopeLower = (scopeRaw + " " + text).toLowerCase();
+    if (scopeLower.includes("metal fram") || scopeLower.includes("light gauge") || scopeLower.includes("stud") || scopeLower.includes("framing")) scopeTags.push("Metal Framing");
+    if (scopeLower.includes("drywall") || scopeLower.includes("gwb") || scopeLower.includes("gypsum")) scopeTags.push("GWB");
+    if (scopeLower.includes("ceiling") || scopeLower.includes("act") || scopeLower.includes("acoustical")) scopeTags.push("ACT");
+    if (scopeLower.includes("demo") || scopeLower.includes("demolit")) scopeTags.push("Demo");
+    if (scopeLower.includes("insul")) scopeTags.push("Insulation");
+    if (scopeLower.includes("fireproof") || scopeLower.includes("firestop")) scopeTags.push("Fireproofing");
+    if (scopeLower.includes("lead")) scopeTags.push("Lead-Lined");
+    if (scopeLower.includes("frp") || scopeLower.includes("fiberglass")) scopeTags.push("FRP");
+    if (scopeLower.includes("icra") || scopeLower.includes("infection control")) scopeTags.push("ICRA");
+    if (scopeLower.includes("l5") || scopeLower.includes("level 5") || scopeLower.includes("level-5")) scopeTags.push("L5 Finish");
+    if (scopeLower.includes("shaft wall")) scopeTags.push("Shaft Wall");
+
+    setDraft(d => ({
+      ...d,
+      name: name || d.name,
+      gc: gc || d.gc,
+      due: due || d.due,
+      address: address || d.address,
+      scope: scopeTags.length > 0 ? scopeTags : d.scope,
+      notes: scopeRaw ? (d.notes ? d.notes + "\n" + scopeRaw : scopeRaw) : d.notes,
+    }));
+    setShowEmailImport(false);
+    setEmailImportText("");
+    show("Email parsed — review and adjust fields", "ok");
+  };
   const [quickContact, setQuickContact] = useState(null); // inline add-contact from bid form
   const [contactFilter, setContactFilter] = useState("");
   const [contactDropOpen, setContactDropOpen] = useState(false);
@@ -4019,6 +4091,10 @@ const ModalHub = ({ type, data, app }) => {
       setSubFormOpen(true);
     };
     const deleteSub = (sId) => { if (confirm("Delete this submittal?")) app.setSubmittals(prev => prev.filter(s => s.id !== sId)); };
+    const generateSubPackage = async () => {
+      const { generateSubmittalsPackagePdf } = await import("./utils/submittalsPackagePdf.js");
+      generateSubmittalsPackagePdf(draft, projSubmittals, app.contacts || [], app.company || {});
+    };
     const filteredSubmittals = projSubmittals.filter(s => {
       if (subFilter === "all") return true;
       if (subFilter === "pending") return ["not started", "in progress", "submitted"].includes(s.status);
@@ -5375,10 +5451,26 @@ const ModalHub = ({ type, data, app }) => {
                 {pdfScanning ? "Scanning..." : "Scan Proposal PDF"}
                 <input type="file" accept=".pdf" style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} onChange={(e) => { if (e.target.files?.[0]) handlePdfScan(e.target.files[0]); e.target.value = ""; }} disabled={pdfScanning} />
               </label>
-              {isNew && <button className="btn btn-sm" style={{ background: "var(--amber-dim)", color: "var(--amber)", border: "1px solid var(--amber)", fontSize: 11 }} onClick={() => setShowAiPanel(!showAiPanel)}>{showAiPanel ? "Hide AI" : "Analyze Bid Package"}</button>}
+              {isNew && <button className="btn btn-sm" style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(16,185,129,0.12)", color: "var(--green)", border: "1px solid var(--green)", fontSize: 11 }} onClick={() => { setShowEmailImport(!showEmailImport); setShowAiPanel(false); }}><Clipboard size={12} />{showEmailImport ? "Close" : "Paste Bid Invite"}</button>}
+              {isNew && <button className="btn btn-sm" style={{ background: "var(--amber-dim)", color: "var(--amber)", border: "1px solid var(--amber)", fontSize: 11 }} onClick={() => { setShowAiPanel(!showAiPanel); setShowEmailImport(false); }}>{showAiPanel ? "Hide AI" : "Analyze Bid Package"}</button>}
               <button className="modal-close" onClick={close}>✕</button>
             </div>
           </div>
+
+          {showEmailImport && (
+            <div style={{ marginBottom: 16, padding: 16, background: "rgba(16,185,129,0.06)", borderRadius: "var(--radius)", border: "1px solid var(--green)" }}>
+              <div style={{ fontSize: 12, color: "var(--green)", fontWeight: 600, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><Clipboard size={13} />PASTE BID INVITE EMAIL</div>
+              <div style={{ fontSize: 11, color: "var(--text2)", marginBottom: 8 }}>Paste the full email body from Procore, BuildingConnected, or any bid invite. Regex patterns will extract project name, GC, address, due date, and scope tags.</div>
+              <textarea className="form-textarea" value={emailImportText} onChange={e => setEmailImportText(e.target.value)} placeholder={"Paste bid invite email here...\n\nExample:\nFrom: ABC Construction\nProject: Houston Medical Center Renovation\nBid Due: April 15, 2026\nProject Address: 1234 Main St, Houston, TX 77002\nScope of Work: Metal Framing, Drywall, ACT\n\nThe AI parser will extract key fields automatically."} style={{ minHeight: 130, fontSize: 12 }} />
+              <div className="flex-between mt-8">
+                <span className="text2" style={{ fontSize: 11 }}>{emailImportText.length > 0 ? `${emailImportText.length} characters` : "Paste email text above"}</span>
+                <div className="flex gap-8">
+                  <button className="btn btn-ghost btn-sm" onClick={() => { setEmailImportText(""); setShowEmailImport(false); }}>Cancel</button>
+                  <button className="btn btn-sm" style={{ background: "var(--green)", color: "#fff" }} onClick={parseEmailBid}>Import Fields</button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {showAiPanel && (
             <div style={{ marginBottom: 16, padding: 16, background: "var(--bg3)", borderRadius: "var(--radius)", border: "1px solid var(--amber-dim)" }}>
@@ -6066,9 +6158,20 @@ const ModalHub = ({ type, data, app }) => {
                       )}
                       {sec.items.length > 5 && <div className="text-xs" style={{ marginTop: 4, cursor: "pointer", color: "var(--blue)" }}
                         onClick={() => { setModal(null); app.setSearch(draft.name || ""); app.setTab(sec.tab); }}>+{sec.items.length - 5} more →</div>}
-                      <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px", marginTop: 6 }} onClick={() => { setModal(null); app.setSearch(draft.name || ""); app.setTab(sec.tab); }}>
-                        View All →
-                      </button>
+                      <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
+                        <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px" }} onClick={() => { setModal(null); app.setSearch(draft.name || ""); app.setTab(sec.tab); }}>
+                          View All →
+                        </button>
+                        {sec.label === "Submittals" && sec.items.length > 0 && (
+                          <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px", display: "flex", alignItems: "center", gap: 3 }}
+                            onClick={async () => {
+                              const { generateSubmittalsPackagePdf } = await import("./utils/submittalsPackagePdf.js");
+                              generateSubmittalsPackagePdf(draft, sec.items, app.contacts || [], app.company || {});
+                            }}>
+                            <FileDown size={11} /> PDF
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
