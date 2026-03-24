@@ -274,6 +274,47 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
     }
   });
 
+  // 8b) Frames & Hardware submittals: overdue delivery or unapproved past due date
+  (submittals || []).forEach(s => {
+    if ((s.category || "General") !== "Frames & Hardware") return;
+    if (s.status === "approved") return;
+    const projName = (projects || []).find(pr => String(pr.id) === String(s.projectId))?.name || "Unknown";
+    // Flag if scheduled delivery is in the past and not approved
+    if (s.scheduledDelivery) {
+      const delivDate = parseDate(s.scheduledDelivery);
+      if (delivDate && daysBetween(delivDate, now) > 0) {
+        alerts.push({
+          id: `frame_delivery_${s.id}`,
+          category: "projects",
+          urgency: "warning",
+          icon: "alert",
+          title: `Frame delivery overdue: ${s.desc || s.number}`,
+          message: `${projName} — ${[s.frameType, s.frameMaterial, s.fireRating].filter(Boolean).join(", ")} delivery was scheduled ${s.scheduledDelivery}.`,
+          action: { label: "View Submittals", type: "openProject" },
+          nav: { tab: "documents", projectId: s.projectId },
+          ts: now.toISOString(),
+        });
+      }
+    }
+    // Flag if submittal is in "preparing" or "submitted" state with due date past
+    if (s.due) {
+      const dueDate = parseDate(s.due);
+      if (dueDate && daysBetween(dueDate, now) > 0 && s.status !== "approved") {
+        alerts.push({
+          id: `frame_sub_due_${s.id}`,
+          category: "projects",
+          urgency: "critical",
+          icon: "file",
+          title: `Frame submittal overdue: ${s.number || s.desc}`,
+          message: `${projName} — ${s.desc} approval needed.`,
+          action: { label: "View Submittals", type: "openProject" },
+          nav: { tab: "documents", projectId: s.projectId },
+          ts: now.toISOString(),
+        });
+      }
+    }
+  });
+
   // 9) RFIs open >7 days
   (rfis || []).forEach(r => {
     if (r.status === "Answered" || r.status === "Closed" || r.status === "closed" || r.status === "answered") return;
