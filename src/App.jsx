@@ -44,7 +44,7 @@ import { useAlertEngine } from "./hooks/useAlertEngine";
 import { NotificationPanel } from "./components/NotificationPanel";
 import { PerimeterMapModal } from "./components/PerimeterMapModal";
 import { polygonAreaSqFt } from "./utils/geofence";
-import { TrendingDown, AlertTriangle, DollarSign, Wrench, Package, FileX, ChevronDown, ChevronUp, Search, Calendar, Building2, BarChart2, ClipboardList, Globe, Bell, FolderOpen, MapPin, Paperclip, FileText, Image, Sheet, FileSpreadsheet, Camera, List, Columns, CheckSquare, Square, FileDown, Volume2, MessageSquare, Pin, PinOff, Truck, HardHat, Clipboard } from "lucide-react";
+import { TrendingDown, AlertTriangle, DollarSign, Wrench, Package, FileX, ChevronDown, ChevronUp, Search, Calendar, Building2, BarChart2, ClipboardList, Globe, Bell, FolderOpen, MapPin, Paperclip, FileText, Image, Sheet, FileSpreadsheet, Camera, List, Columns, CheckSquare, Square, FileDown, Volume2, MessageSquare, Pin, PinOff, Truck, HardHat, Clipboard, LayoutDashboard, Briefcase, Calculator, MoreHorizontal } from "lucide-react";
 import { FeatureGuide, resetAllGuides } from "./components/FeatureGuide";
 
 // ═══════════════════════════════════════════════════════════════
@@ -3515,6 +3515,40 @@ function App({ auth, onLogout }) {
         {tab === "foreman" && <ForemanView app={{...app, auth: { ...app.auth, role: "foreman", name: app.auth?.name || "Admin" }}} />}
         {["financials", "documents", "schedule", "reports", "safety", "timeclock", "sds", "map", "settings"].includes(tab) && <MoreTabs app={app} />}
       </main>
+
+      {/* ── Bottom Nav (mobile only) ── */}
+      <nav className="bottom-nav">
+        <div className="bottom-nav-inner">
+          {visiblePrimary.map(pt => {
+            const icons = {
+              dashboard: <LayoutDashboard />,
+              bids: <Briefcase />,
+              projects: <Building2 />,
+              estimating: <Calculator />,
+            };
+            return (
+              <button
+                key={pt.key}
+                className={`bottom-nav-item${tab === pt.key ? " active" : ""}`}
+                onClick={() => { handleTabClick(pt.key); moreOpen && setMoreOpen(false); }}
+              >
+                {icons[pt.key] || <LayoutDashboard />}
+                <span>{t(pt.label)}</span>
+              </button>
+            );
+          })}
+          {visibleSecondary.length > 0 && (
+            <button
+              className={`bottom-nav-item${SECONDARY_KEYS.includes(tab) ? " active" : ""}`}
+              onClick={() => setMobileNav(true)}
+            >
+              <MoreHorizontal />
+              <span>{t("More")}</span>
+              {SECONDARY_KEYS.includes(tab) && <span className="bottom-nav-dot" />}
+            </button>
+          )}
+        </div>
+      </nav>
 
       <div className="toast-wrap">
         {toasts.map(t => (
