@@ -167,6 +167,8 @@ function createCondition(template, index) {
     height: template.height || 0,
     qty: 0, // running total
     cost: 0, // running cost
+    attachTo: null, // parent conditionId for deduction (count conditions only)
+    deductWidth: 0, // feet per count to deduct from parent (e.g., 3' door)
   };
 }
 
@@ -248,6 +250,10 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   const [undoStack, setUndoStack] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
   const [continuousMode, setContinuousMode] = useState(true); // auto-start next measurement
+  const [showCondNames, setShowCondNames] = useState(true); // show condition name labels on measurements
+  const [hoveredMeasId, setHoveredMeasId] = useState(null); // for hover tooltip
+  const [backoutMode, setBackoutMode] = useState(null); // null = off, measurementId = drawing backout for that parent
+  const [showAttachSetup, setShowAttachSetup] = useState(false); // show attachment config panel
   const [completedPages, setCompletedPages] = useState(_init.completedPages || {}); // { [pageKey]: true }
   const [draggingHandle, setDraggingHandle] = useState(null); // { measurementId, vertexIdx, pageKey } or { measurementId, pointKey:'point', pageKey }
   const preDragMeasRef = useRef(null); // snapshot of measurement before drag for undo
@@ -397,13 +403,14 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     return { adds, dels, net: adds.cost - dels.cost, total: allCo.length };
   }, [coMeasurements, conditions, assemblies]);
 
-  // Compute condition totals from all measurements + typical group instances
+  // Compute condition totals from all measurements + typical group instances + deductions
   const condTotals = useMemo(() => {
     const totals = {};
-    conditions.forEach(c => { totals[c.id] = { qty: 0, cost: 0 }; });
+    conditions.forEach(c => { totals[c.id] = { qty: 0, grossQty: 0, cost: 0, deductions: 0 }; });
     Object.values(measurements).forEach(pageMeas => {
       pageMeas.forEach(m => {
         if (!totals[m.conditionId]) return;
+        if (m.backoutOf) return; // backouts handled separately below
         const qty = m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0);
         totals[m.conditionId].qty += qty;
         const cond = conditions.find(c => c.id === m.conditionId);
@@ -426,6 +433,39 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         if (asm) totals[m.conditionId].cost += extraQty * ((asm.matRate || 0) + (asm.labRate || 0));
       });
     });
+    // Store gross qty before deductions
+    conditions.forEach(c => { if (totals[c.id]) totals[c.id].grossQty = totals[c.id].qty; });
+    // ── Attachment deductions: count conditions subtract from parent linear ──
+    conditions.forEach(countCond => {
+      if (!countCond.attachTo || !countCond.deductWidth) return;
+      if (!totals[countCond.attachTo]) return;
+      const totalCount = totals[countCond.id]?.qty || 0;
+      const deductLF = totalCount * countCond.deductWidth;
+      totals[countCond.attachTo].qty = Math.max(0, totals[countCond.attachTo].qty - deductLF);
+      totals[countCond.attachTo].deductions += deductLF;
+      // Recalculate parent cost based on net qty
+      const parentCond = conditions.find(c => c.id === countCond.attachTo);
+      const parentAsm = parentCond ? (assemblies || []).find(a => a.code === parentCond.asmCode) : null;
+      if (parentAsm) totals[countCond.attachTo].cost = totals[countCond.attachTo].qty * ((parentAsm.matRate || 0) + (parentAsm.labRate || 0));
+    });
+    // ── Backout deductions: backout area measurements subtract from parent's condition ──
+    const allMeasFlat = Object.values(measurements).flat();
+    const measById = {};
+    allMeasFlat.forEach(m => { measById[m.id] = m; });
+    allMeasFlat.forEach(m => {
+      if (m.type === "area" && m.backoutOf) {
+        const parentMeas = measById[m.backoutOf];
+        if (parentMeas && totals[parentMeas.conditionId]) {
+          const backoutSf = m.totalSf || 0;
+          totals[parentMeas.conditionId].qty = Math.max(0, totals[parentMeas.conditionId].qty - backoutSf);
+          totals[parentMeas.conditionId].deductions += backoutSf;
+          // Recalculate parent cost
+          const pCond = conditions.find(c => c.id === parentMeas.conditionId);
+          const pAsm = pCond ? (assemblies || []).find(a => a.code === pCond.asmCode) : null;
+          if (pAsm) totals[parentMeas.conditionId].cost = totals[parentMeas.conditionId].qty * ((pAsm.matRate || 0) + (pAsm.labRate || 0));
+        }
+      }
+    });
     return totals;
   }, [measurements, conditions, assemblies, typicalGroups]);
 
@@ -435,13 +475,13 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     const rows = [];
     if (summaryGroupBy === "condition") {
       conditions.forEach(c => {
-        const meas = allMeas.filter(m => m.conditionId === c.id);
-        if (meas.length === 0) return;
-        const qty = meas.reduce((s, m) => s + (m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0)), 0);
+        const meas = allMeas.filter(m => m.conditionId === c.id && !m.backoutOf);
+        if (meas.length === 0 && !(condTotals[c.id]?.qty > 0)) return;
+        const t = condTotals[c.id] || { qty: 0, grossQty: 0, cost: 0, deductions: 0 };
         const asm = (assemblies || []).find(a => a.code === c.asmCode);
-        const matCost = asm ? qty * (asm.matRate || 0) : 0;
-        const labCost = asm ? qty * (asm.labRate || 0) : 0;
-        rows.push({ key: c.id, name: c.name, folder: c.folder, color: c.color, unit: c.type === "count" ? "EA" : c.type === "area" ? "SF" : "LF", qty, matCost, labCost, total: matCost + labCost, measCount: meas.length });
+        const matCost = asm ? t.qty * (asm.matRate || 0) : 0;
+        const labCost = asm ? t.qty * (asm.labRate || 0) : 0;
+        rows.push({ key: c.id, name: c.name, folder: c.folder, color: c.color, unit: c.type === "count" ? "EA" : c.type === "area" ? "SF" : "LF", qty: t.qty, grossQty: t.grossQty, deductions: t.deductions, matCost, labCost, total: matCost + labCost, measCount: meas.length });
       });
     } else if (summaryGroupBy === "bidArea") {
       bidAreas.forEach(ba => {
@@ -486,7 +526,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       });
     }
     return rows;
-  }, [measurements, conditions, assemblies, bidAreas, summaryGroupBy, sheetNames]);
+  }, [measurements, conditions, assemblies, bidAreas, summaryGroupBy, sheetNames, condTotals]);
 
   // Grand total with mat/lab split (includes typical group instances)
   const { grandTotal, totalMat, totalLab } = useMemo(() => {
@@ -529,23 +569,24 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     // Sort conditions by folder then name for clean grouping
     const sortedConds = [...conditions].sort((a, b) => a.folder.localeCompare(b.folder) || a.name.localeCompare(b.name));
     sortedConds.forEach(c => {
-      const meas = allMeas.filter(m => m.conditionId === c.id);
-      if (meas.length === 0) return;
-      const qty = meas.reduce((s, m) => s + (m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0)), 0);
+      const meas = allMeas.filter(m => m.conditionId === c.id && !m.backoutOf);
+      const t = condTotals[c.id] || { qty: 0, grossQty: 0, deductions: 0 };
+      if (meas.length === 0 && t.qty <= 0) return;
       const unit = c.type === "count" ? "EA" : c.type === "area" ? "SF" : "LF";
       const asm = (assemblies || []).find(a => a.code === c.asmCode);
-      const matCost = asm ? qty * (asm.matRate || 0) : 0;
-      const labCost = asm ? qty * (asm.labRate || 0) : 0;
+      const matCost = asm ? t.qty * (asm.matRate || 0) : 0;
+      const labCost = asm ? t.qty * (asm.labRate || 0) : 0;
       // Add folder header row when folder changes
       if (c.folder !== currentFolder) {
-        condRows.push({ Folder: c.folder, Condition: "", Code: "", Qty: "", Unit: "", "Mat $": "", "Lab $": "", "Total $": "" });
+        condRows.push({ Folder: c.folder, Condition: "", Code: "", "Gross Qty": "", "Net Qty": "", Unit: "", "Mat $": "", "Lab $": "", "Total $": "" });
         currentFolder = c.folder;
       }
       condRows.push({
         Folder: "",
-        Condition: c.name,
+        Condition: c.name + (c.attachTo ? ` (deducts from ${conditions.find(cc => cc.id === c.attachTo)?.name || "?"})` : ""),
         Code: c.asmCode || "",
-        Qty: Math.round(qty),
+        "Gross Qty": t.deductions > 0 ? Math.round(t.grossQty) : Math.round(t.qty),
+        "Net Qty": t.deductions > 0 ? Math.round(t.qty) : "",
         Unit: unit,
         "Mat $": Math.round(matCost * 100) / 100,
         "Lab $": Math.round(labCost * 100) / 100,
@@ -557,7 +598,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       Folder: "",
       Condition: "GRAND TOTAL",
       Code: "",
-      Qty: "",
+      "Gross Qty": "",
+      "Net Qty": "",
       Unit: "",
       "Mat $": Math.round(totalMat * 100) / 100,
       "Lab $": Math.round(totalLab * 100) / 100,
@@ -568,9 +610,10 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     // Set column widths
     ws1["!cols"] = [
       { wch: 14 }, // Folder
-      { wch: 30 }, // Condition
+      { wch: 36 }, // Condition
       { wch: 8 },  // Code
-      { wch: 10 }, // Qty
+      { wch: 10 }, // Gross Qty
+      { wch: 10 }, // Net Qty
       { wch: 6 },  // Unit
       { wch: 12 }, // Mat $
       { wch: 12 }, // Lab $
@@ -661,7 +704,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     // ── Download ──
     const safeName = (fileName || "takeoff").replace(/\.pdf$/i, "").replace(/[^a-zA-Z0-9_\- ]/g, "");
     XLSX.writeFile(wb, `${safeName}_Takeoff_${today.replace(/\//g, "-")}.xlsx`);
-  }, [measurements, conditions, assemblies, bidAreas, grandTotal, totalMat, totalLab, fileName, coMeasurements, coSummary]);
+  }, [measurements, conditions, assemblies, bidAreas, grandTotal, totalMat, totalLab, fileName, coMeasurements, coSummary, condTotals]);
 
   // Folders
   const folders = useMemo(() => {
@@ -1122,24 +1165,47 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         }
       } else if (m.type === "area") {
         const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+        const isBackout = !!m.backoutOf;
         // Selection glow
         if (isSelected) { ctx.strokeStyle = "#fff"; ctx.lineWidth = lw + 3; ctx.setLineDash([]); ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.closePath(); ctx.stroke(); }
-        ctx.fillStyle = color + (isSelected ? "44" : "22");
-        ctx.strokeStyle = color;
+        ctx.fillStyle = isBackout ? "rgba(239,68,68,0.15)" : color + (isSelected ? "44" : "22");
+        ctx.strokeStyle = isBackout ? "#ef4444" : color;
         ctx.lineWidth = lw;
-        ctx.setLineDash([]);
+        if (isBackout) ctx.setLineDash([6, 4]); else ctx.setLineDash([]);
         ctx.beginPath();
         pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
-        pts.forEach(p => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(p.x, p.y, isSelected ? 5 : 4, 0, Math.PI * 2); ctx.fill(); });
+        ctx.setLineDash([]);
+        // Hatch pattern for backouts
+        if (isBackout) {
+          ctx.save();
+          ctx.beginPath();
+          pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+          ctx.closePath();
+          ctx.clip();
+          ctx.strokeStyle = "rgba(239,68,68,0.3)";
+          ctx.lineWidth = 1;
+          const minX = Math.min(...pts.map(p => p.x));
+          const maxX = Math.max(...pts.map(p => p.x));
+          const minY = Math.min(...pts.map(p => p.y));
+          const maxY = Math.max(...pts.map(p => p.y));
+          for (let d = minX + minY - (maxX - minX); d < maxX + maxY; d += 12) {
+            ctx.beginPath();
+            ctx.moveTo(d, minY);
+            ctx.lineTo(d - maxY + minY, maxY);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+        pts.forEach(p => { ctx.fillStyle = isBackout ? "#ef4444" : color; ctx.beginPath(); ctx.arc(p.x, p.y, isSelected ? 5 : 4, 0, Math.PI * 2); ctx.fill(); });
         ctx.font = `bold ${labelSize}px sans-serif`;
         const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
         const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
-        const txt = `${m.totalSf.toFixed(0)} SF`;
+        const txt = isBackout ? `-${m.totalSf.toFixed(0)} SF` : `${m.totalSf.toFixed(0)} SF`;
         const tw = ctx.measureText(txt).width + 10;
-        ctx.fillStyle = isSelected ? "rgba(59,130,246,0.9)" : "rgba(0,0,0,0.75)";
+        ctx.fillStyle = isBackout ? "rgba(239,68,68,0.9)" : isSelected ? "rgba(59,130,246,0.9)" : "rgba(0,0,0,0.75)";
         ctx.fillRect(cx - tw / 2, cy - labelSize / 2 - 2, tw, labelSize + 4);
         ctx.fillStyle = "#fff";
         ctx.textAlign = "center";
@@ -1169,8 +1235,115 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         ctx.fillStyle = "#fff";
         ctx.textAlign = "center";
         ctx.fillText(m.count || 1, pt.x + r + 11, pt.y + 3);
+        // Attachment deduction label (red badge below count)
+        const countCond = conditions.find(c => c.id === m.conditionId);
+        if (countCond?.attachTo && countCond.deductWidth > 0) {
+          const dlabel = `-${countCond.deductWidth}'`;
+          ctx.font = `bold ${smallLabel - 1}px sans-serif`;
+          const tw = ctx.measureText(dlabel).width + 6;
+          ctx.fillStyle = "rgba(239,68,68,0.85)";
+          ctx.fillRect(pt.x - tw / 2, pt.y + r + 2, tw, 12);
+          ctx.fillStyle = "#fff";
+          ctx.textAlign = "center";
+          ctx.fillText(dlabel, pt.x, pt.y + r + 11);
+        }
       }
     });
+
+    // ── Condition name labels on measurements (toggle with N key) ──
+    if (showCondNames) {
+      pageMeasurements.forEach(m => {
+        const cond = conditions.find(c => c.id === m.conditionId);
+        if (!cond || hiddenFolders[cond.folder]) return;
+        let lx, ly;
+        if (m.type === "linear" && m.vertices?.length >= 2) {
+          const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+          lx = pts[0].x; ly = pts[0].y - 10;
+        } else if (m.type === "area" && m.vertices?.length >= 3) {
+          const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+          lx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+          ly = pts.reduce((s, p) => s + p.y, 0) / pts.length + labelSize + 8;
+        } else if (m.type === "count" && m.point) {
+          lx = m.point.x * scale; ly = m.point.y * scale - 16;
+        } else return;
+        const name = cond.name.length > 20 ? cond.name.slice(0, 18) + ".." : cond.name;
+        ctx.font = `${smallLabel - 1}px sans-serif`;
+        const tw = ctx.measureText(name).width + 6;
+        ctx.fillStyle = cond.color + "CC";
+        ctx.fillRect(lx - tw / 2, ly - smallLabel + 1, tw, smallLabel + 1);
+        ctx.fillStyle = "#fff";
+        ctx.textAlign = "center";
+        ctx.fillText(name, lx, ly);
+      });
+    }
+
+    // ── Right-angle (90°) indicators at polygon corners ──
+    pageMeasurements.forEach(m => {
+      if (m.type !== "linear" && m.type !== "area") return;
+      if (!m.vertices || m.vertices.length < 3) return;
+      const cond = conditions.find(c => c.id === m.conditionId);
+      if (cond && hiddenFolders[cond.folder]) return;
+      const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+      const color = cond?.color || "#3b82f6";
+      for (let i = (m.type === "area" ? 0 : 1); i < pts.length - (m.type === "area" ? 0 : 1); i++) {
+        const prev = pts[(i - 1 + pts.length) % pts.length];
+        const curr = pts[i % pts.length];
+        const next = pts[(i + 1) % pts.length];
+        const dx1 = prev.x - curr.x, dy1 = prev.y - curr.y;
+        const dx2 = next.x - curr.x, dy2 = next.y - curr.y;
+        const dot = dx1 * dx2 + dy1 * dy2;
+        const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1) || 1;
+        const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2) || 1;
+        const cosA = dot / (len1 * len2);
+        if (Math.abs(cosA) < 0.08) { // within ~4.5° of 90°
+          const sz = Math.min(10, len1 * 0.2, len2 * 0.2);
+          const ux1 = dx1 / len1 * sz, uy1 = dy1 / len1 * sz;
+          const ux2 = dx2 / len2 * sz, uy2 = dy2 / len2 * sz;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.moveTo(curr.x + ux1, curr.y + uy1);
+          ctx.lineTo(curr.x + ux1 + ux2, curr.y + uy1 + uy2);
+          ctx.lineTo(curr.x + ux2, curr.y + uy2);
+          ctx.stroke();
+        }
+      }
+    });
+
+    // ── Hover tooltip ──
+    if (hoveredMeasId && !selectedMeasId) {
+      const hm = pageMeasurements.find(m => m.id === hoveredMeasId);
+      if (hm && mousePos) {
+        const hCond = conditions.find(c => c.id === hm.conditionId);
+        const hAsm = hCond?.asmCode && assemblies?.find(a => a.code === hCond.asmCode);
+        const hQty = hm.type === "count" ? (hm.count || 1) : hm.type === "linear" ? (hm.totalFt || 0) : (hm.totalSf || 0);
+        const hUnit = hm.type === "count" ? "EA" : hm.type === "linear" ? "LF" : "SF";
+        const hCost = hAsm ? hQty * ((hAsm.matRate || 0) + (hAsm.labRate || 0)) : 0;
+        const ba = bidAreas.find(b => b.id === hm.bidAreaId);
+        const lines = [
+          hCond?.name || "Unknown",
+          `${Math.round(hQty * 10) / 10} ${hUnit}` + (hCost > 0 ? ` · $${Math.round(hCost)}` : ""),
+          ba ? `Area: ${ba.name}` : null,
+          hm.backoutOf ? "BACKOUT" : null,
+        ].filter(Boolean);
+        const tx = mousePos.x + 16, ty = mousePos.y - 10;
+        ctx.font = `${smallLabel}px sans-serif`;
+        const maxW = Math.max(...lines.map(l => ctx.measureText(l).width)) + 12;
+        const boxH = lines.length * (smallLabel + 3) + 6;
+        ctx.fillStyle = "rgba(0,0,0,0.9)";
+        ctx.fillRect(tx, ty - boxH, maxW, boxH);
+        ctx.strokeStyle = (hCond?.color || "#3b82f6") + "88";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(tx, ty - boxH, maxW, boxH);
+        ctx.fillStyle = "#fff";
+        ctx.textAlign = "left";
+        lines.forEach((line, li) => {
+          ctx.fillStyle = li === 0 ? (hCond?.color || "#3b82f6") : "#ccc";
+          ctx.fillText(line, tx + 6, ty - boxH + (li + 1) * (smallLabel + 3));
+        });
+      }
+    }
 
     // Draw resize handles on completed measurements (when in PAN mode and not drawing)
     if (mode === MODE.PAN && activeVertices.length === 0) {
@@ -1364,6 +1537,17 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       ctx.fillText(coLabel, 14, ch - 37);
     }
 
+    // Backout mode indicator
+    if (backoutMode) {
+      const ch = canvas.height / dpr;
+      const parentMeas = pageMeasurements.find(pm => pm.id === backoutMode);
+      const parentCond = parentMeas ? conditions.find(c => c.id === parentMeas.conditionId) : null;
+      const boLabel = `BACKOUT: Drawing hole in ${parentCond?.name || "area"}`;
+      ctx.fillStyle = "rgba(239,68,68,0.85)"; ctx.fillRect(8, ch - 70, ctx.measureText(boLabel).width + 20 || 220, 18);
+      ctx.fillStyle = "#fff"; ctx.font = "bold 10px sans-serif"; ctx.textAlign = "left";
+      ctx.fillText(boLabel, 14, ch - 57);
+    }
+
     // Scale indicator
     if (ppf) {
       const ch = canvas.height / dpr;
@@ -1371,9 +1555,11 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       ctx.fillStyle = "#4ade80"; ctx.font = "10px sans-serif"; ctx.textAlign = "left";
       ctx.fillText(`Scale set (${(1 / ppf).toFixed(4)}'/px)`, 14, ch - 14);
     }
-  }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond, hiddenFolders, selectedMeasIds, selectedMeasId, typicalGroups, measurements, pageKey, placingTypicalId, coPageMeasurements, coMode, shiftHeld, draggingHandle]);
+  }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond, hiddenFolders, selectedMeasIds, selectedMeasId, typicalGroups, measurements, pageKey, placingTypicalId, coPageMeasurements, coMode, shiftHeld, draggingHandle, backoutMode, showCondNames, hoveredMeasId, assemblies, bidAreas]);
 
   useEffect(() => { requestAnimationFrame(drawOverlay); }, [drawOverlay]);
+  // Reset setup panels when switching conditions
+  useEffect(() => { setShowAttachSetup(false); setShowLinkSetup(false); }, [activeCondId]);
 
   // ── Canvas interactions ──
   const getCanvasCoords = (e) => { const r = overlayCanvasRef.current.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
@@ -1504,6 +1690,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     } else {
       const areaPx = polyArea(activeVertices);
       const m = { id: "m_" + ts, type: "area", conditionId: activeCond.id, bidAreaId: activeBidAreaId, vertices: activeVertices, totalSf: areaPx / (ppf * ppf), page: pageKey };
+      // Tag as backout if in backout mode
+      if (backoutMode) m.backoutOf = backoutMode;
       newMeasurements.push(m);
     }
 
@@ -1523,6 +1711,34 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
   const handleCanvasMove = (e) => {
     if (mode === MODE.LINEAR || mode === MODE.AREA || mode === MODE.COUNT) setMousePos(getCanvasCoords(e));
+    // Hover detection for tooltips
+    const pt = getNormCoords(e);
+    const scale = fitScaleRef.current * zoom;
+    const threshold = 20 / scale;
+    let nearest = null, nearestDist = threshold;
+    pageMeasurements.forEach(m => {
+      if (m.type === "count" && m.point) {
+        const d = dist(pt, m.point);
+        if (d < nearestDist) { nearest = m; nearestDist = d; }
+      } else if (m.vertices) {
+        m.vertices.forEach(v => { const d = dist(pt, v); if (d < nearestDist) { nearest = m; nearestDist = d; } });
+        // Also check line segments for linear
+        if (m.type === "linear") {
+          for (let i = 1; i < m.vertices.length; i++) {
+            const a = m.vertices[i - 1], b = m.vertices[i];
+            const ab = { x: b.x - a.x, y: b.y - a.y };
+            const ap = { x: pt.x - a.x, y: pt.y - a.y };
+            const t = Math.max(0, Math.min(1, (ap.x * ab.x + ap.y * ab.y) / (ab.x * ab.x + ab.y * ab.y + 1e-9)));
+            const proj = { x: a.x + t * ab.x, y: a.y + t * ab.y };
+            const d = dist(pt, proj);
+            if (d < nearestDist) { nearest = m; nearestDist = d; }
+          }
+        }
+      }
+    });
+    setHoveredMeasId(nearest?.id || null);
+    // Update mousePos for tooltip position
+    if (nearest) setMousePos(getCanvasCoords(e));
   };
 
   const confirmCalibration = () => {
@@ -1654,7 +1870,18 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     const targetKey = pk || pageKey;
     const meas = (measurements[targetKey] || []).find(m => m.id === id);
     if (meas) setUndoStack(prev => [...prev, { action: "delete", pageKey: targetKey, measurementId: id, measurementData: meas }]);
-    setMeasurements(prev => ({ ...prev, [targetKey]: (prev[targetKey] || []).filter(m => m.id !== id) }));
+    setMeasurements(prev => {
+      const next = { ...prev, [targetKey]: (prev[targetKey] || []).filter(m => m.id !== id) };
+      // Clear orphaned backouts when parent area is deleted
+      if (meas?.type === "area") {
+        Object.keys(next).forEach(pk => {
+          next[pk] = next[pk].map(m => m.backoutOf === id ? { ...m, backoutOf: undefined } : m);
+        });
+      }
+      return next;
+    });
+    // Exit backout mode if we deleted the parent
+    if (backoutMode === id) setBackoutMode(null);
   };
   const cancelActive = () => { setActiveVertices([]); setMousePos(null); setCalPoints([]); setShowCalPrompt(false); };
 
@@ -1724,8 +1951,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   };
 
   // Nav
-  const prevPage = () => { setPage(p => Math.max(1, p - 1)); setActiveVertices([]); };
-  const nextPage = () => { setPage(p => Math.min(numPages, p + 1)); setActiveVertices([]); };
+  const prevPage = () => { setPage(p => Math.max(1, p - 1)); setActiveVertices([]); setBackoutMode(null); };
+  const nextPage = () => { setPage(p => Math.min(numPages, p + 1)); setActiveVertices([]); setBackoutMode(null); };
   const zoomIn = () => setZoom(s => Math.min(6, s + 0.25));
   const zoomOut = () => setZoom(s => Math.max(0.25, s - 0.25));
   const resetZoom = () => setZoom(1);
@@ -1733,6 +1960,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   // Scroll wheel zoom centered on cursor position
   const handleWheel = useCallback((e) => {
     e.preventDefault();
+    e.stopPropagation();
     const container = containerRef.current;
     if (!container) { setZoom(s => Math.min(6, Math.max(0.15, s * (e.deltaY > 0 ? 0.9 : 1.1)))); return; }
     const rect = container.getBoundingClientRect();
@@ -1753,6 +1981,14 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       return next;
     });
   }, []);
+
+  // Register wheel listener as non-passive so preventDefault() actually works (blocks page scroll)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [handleWheel]);
 
   // Click-drag pan
   const [isPanning, setIsPanning] = useState(false);
@@ -1877,6 +2113,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     const handler = (e) => {
       // Escape always works — even when focused on an input (e.g. calibration prompt)
       if (e.key === "Escape") {
+        if (backoutMode) { setBackoutMode(null); return; }
         if (showCalPrompt || calPoints.length > 0 || activeVertices.length > 0) { cancelActive(); e.target.blur?.(); }
         else handleClose();
         return;
@@ -1893,10 +2130,11 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         if (selectedMeasId) { deleteMeasurement(selectedMeasId); setSelectedMeasId(null); }
         return;
       }
-      if (e.key === "l" || e.key === "L") { if (ppf) { setMode(MODE.LINEAR); cancelActive(); } return; }
+      if (e.key === "l" || e.key === "L") { if (backoutMode) return; if (ppf) { setMode(MODE.LINEAR); cancelActive(); } return; }
       if (e.key === "a" || e.key === "A") { if (ppf) { setMode(MODE.AREA); cancelActive(); } return; }
-      if (e.key === "c" || e.key === "C") { setMode(MODE.COUNT); cancelActive(); return; }
-      if (e.key === "s" || e.key === "S") { setMode(MODE.CALIBRATE); cancelActive(); return; }
+      if (e.key === "c" || e.key === "C") { if (backoutMode) return; setMode(MODE.COUNT); cancelActive(); return; }
+      if (e.key === "s" || e.key === "S") { if (backoutMode) return; setMode(MODE.CALIBRATE); cancelActive(); return; }
+      if (e.key === "n" || e.key === "N") { setShowCondNames(v => !v); return; }
       if (e.key === "f" || e.key === "F") { resetZoom(); return; }
       if (e.key === "=" || e.key === "+") { zoomIn(); return; }
       if (e.key === "-") { zoomOut(); return; }
@@ -1927,6 +2165,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       folder: asm.unit === "EA" ? "Counts" : asm.unit === "SF" ? "Ceilings" : "Walls",
       color: COND_COLORS[conditions.length % COND_COLORS.length],
       height: asm.unit === "LF" ? 10 : 0,
+      attachTo: null,
+      deductWidth: 0,
     };
     setConditions(prev => [...prev, newCond]);
     setActiveCondId(newCond.id);
@@ -1941,7 +2181,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   const btnDis = { ...btn, opacity: 0.4, cursor: "default" };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.97)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div style={{ width: "100%", height: "100%", background: "rgba(0,0,0,0.97)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
       {/* ── Top Toolbar ── */}
       <div style={{ flexShrink: 0, borderBottom: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.85)" }}>
@@ -1970,6 +2210,9 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
             <button onClick={() => setContinuousMode(m => !m)}
               style={continuousMode ? { ...btn, padding: "4px 10px", fontSize: 12, background: "rgba(16,185,129,0.2)", borderColor: "rgba(16,185,129,0.5)", color: "#10b981" } : { ...btn, padding: "4px 10px", fontSize: 12 }}
               title="Continuous mode: auto-start next measurement">{continuousMode ? "⟳ On" : "⟳ Off"}</button>
+            <button onClick={() => setShowCondNames(v => !v)}
+              style={showCondNames ? { ...btn, padding: "4px 10px", fontSize: 12, background: "rgba(139,92,246,0.2)", borderColor: "rgba(139,92,246,0.5)", color: "#a78bfa" } : { ...btn, padding: "4px 10px", fontSize: 12 }}
+              title="Toggle condition name labels (N)">Names</button>
           </div>
         </div>
         {/* Row 2: Page Navigation + Zoom — prominent */}
@@ -2134,7 +2377,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
         {/* Canvas area OR Summary view */}
         {viewMode === "drawing" ? (
-          <div ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onWheel={handleWheel}
+          <div ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove}
             onMouseDown={handlePanStart} onMouseMove={handlePanMove} onMouseUp={handlePanEnd} onMouseLeave={handlePanEnd}
             style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: 12,
               cursor: draggingHandle ? "grabbing" : spaceHeld ? "grab" : mode === MODE.PAN ? (isPanning ? "grabbing" : "grab") : "crosshair" }}>
@@ -2221,6 +2464,13 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                     <span style={{ color: "#aaa" }}>|</span>
                     <span>{sm.type === "linear" ? `${sm.totalFt?.toFixed(1)}' LF` : sm.type === "area" ? `${sm.totalSf?.toFixed(0)} SF` : `${sm.count || 1} EA`}</span>
                     {cost > 0 && <><span style={{ color: "#aaa" }}>|</span><span style={{ color: "#4ade80" }}>${cost.toFixed(0)}</span></>}
+                    {sm.backoutOf && <span style={{ fontSize: 9, color: "#f87171", fontWeight: 600 }}>BACKOUT</span>}
+                    {sm.type === "area" && !sm.backoutOf && (
+                      <button onClick={() => { setBackoutMode(backoutMode === sm.id ? null : sm.id); setMode(MODE.AREA); setSelectedMeasId(null); }}
+                        style={{ ...btn, padding: "2px 8px", fontSize: 10, color: backoutMode === sm.id ? "#f87171" : "#f59e0b", borderColor: backoutMode === sm.id ? "rgba(239,68,68,0.4)" : "rgba(245,158,11,0.3)" }}>
+                        {backoutMode === sm.id ? "Exit Backout" : "Backout"}
+                      </button>
+                    )}
                     <button onClick={() => { deleteMeasurement(selectedMeasId); setSelectedMeasId(null); }} style={{ ...btn, padding: "2px 8px", fontSize: 10, color: "#ef4444", borderColor: "rgba(239,68,68,0.3)" }}>Delete</button>
                     <button onClick={() => setSelectedMeasId(null)} style={{ ...btn, padding: "2px 8px", fontSize: 10 }}>✕</button>
                   </div>
@@ -2418,7 +2668,15 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                         </div>
                         {totals.qty > 0 && (
                           <div style={{ fontSize: 9, color: "#888" }}>
-                            {Math.round(totals.qty)} {unit} &middot; {fmt(totals.cost)} &middot; {Object.values(measurements).flat().filter(m => m.conditionId === c.id).length}&#x1f4cf;
+                            {totals.deductions > 0
+                              ? <><span style={{ textDecoration: "line-through", color: "#666" }}>{Math.round(totals.grossQty)}</span> <span style={{ color: "#f87171" }}>{Math.round(totals.qty)}</span> {unit}</>
+                              : <>{Math.round(totals.qty)} {unit}</>
+                            } &middot; {fmt(totals.cost)} &middot; {Object.values(measurements).flat().filter(m => m.conditionId === c.id).length}&#x1f4cf;
+                          </div>
+                        )}
+                        {c.attachTo && c.deductWidth > 0 && (
+                          <div style={{ fontSize: 8, color: "#f87171" }}>
+                            &#x2192; -{c.deductWidth}'/ea from {conditions.find(cc => cc.id === c.attachTo)?.name?.slice(0, 15) || "?"}
                           </div>
                         )}
                       </div>
@@ -2441,7 +2699,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                           <span onClick={(e) => {
                             e.stopPropagation();
                             if (confirm(`Delete condition "${c.name}"?`)) {
-                              setConditions(prev => prev.filter(cc => cc.id !== c.id));
+                              setConditions(prev => prev.filter(cc => cc.id !== c.id).map(cc => cc.attachTo === c.id ? { ...cc, attachTo: null, deductWidth: 0 } : cc));
                               if (activeCondId === c.id) setActiveCondId(null);
                             }
                           }}
@@ -2620,15 +2878,30 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               <div style={{ marginTop: 6, padding: "4px 8px", borderRadius: 4, background: "rgba(255,255,255,0.04)", border: `1px solid ${activeCond.color}33` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ fontSize: 10, color: activeCond.color, fontWeight: 600 }}>{activeCond.name}</div>
-                  {activeCond.type === "linear" && (
-                    <button onClick={() => setShowLinkSetup(!showLinkSetup)}
-                      style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.15)", background: (condLinks[activeCond.id]?.length > 0) ? "rgba(74,222,128,0.15)" : "transparent", color: (condLinks[activeCond.id]?.length > 0) ? "#4ade80" : "#888", cursor: "pointer" }}>
-                      {condLinks[activeCond.id]?.length > 0 ? `${condLinks[activeCond.id].length} linked` : "Link"}
-                    </button>
-                  )}
+                  <div style={{ display: "flex", gap: 3 }}>
+                    {activeCond.type === "linear" && (
+                      <button onClick={() => { setShowLinkSetup(!showLinkSetup); setShowAttachSetup(false); }}
+                        style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.15)", background: (condLinks[activeCond.id]?.length > 0) ? "rgba(74,222,128,0.15)" : "transparent", color: (condLinks[activeCond.id]?.length > 0) ? "#4ade80" : "#888", cursor: "pointer" }}>
+                        {condLinks[activeCond.id]?.length > 0 ? `${condLinks[activeCond.id].length} linked` : "Link"}
+                      </button>
+                    )}
+                    {activeCond.type === "count" && (
+                      <button onClick={() => { setShowAttachSetup(!showAttachSetup); setShowLinkSetup(false); }}
+                        style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.15)", background: activeCond.attachTo ? "rgba(239,68,68,0.15)" : "transparent", color: activeCond.attachTo ? "#f87171" : "#888", cursor: "pointer" }}>
+                        {activeCond.attachTo ? `→ ${conditions.find(c => c.id === activeCond.attachTo)?.name?.slice(0, 12) || "?"}` : "Attach"}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div style={{ fontSize: 9, color: "#888" }}>
-                  {Math.round(condTotals[activeCond.id]?.qty || 0)} {activeCond.type === "count" ? "EA" : activeCond.type === "area" ? "SF" : "LF"} &middot; {fmt(condTotals[activeCond.id]?.cost || 0)}
+                  {(() => {
+                    const t = condTotals[activeCond.id];
+                    const unit = activeCond.type === "count" ? "EA" : activeCond.type === "area" ? "SF" : "LF";
+                    const hasDeductions = t && t.deductions > 0;
+                    return hasDeductions
+                      ? <><span style={{ textDecoration: "line-through", color: "#666" }}>{Math.round(t.grossQty)} {unit}</span> <span style={{ color: "#f87171" }}>{Math.round(t.qty)} {unit} net</span> &middot; {fmt(t.cost)}</>
+                      : <>{Math.round(t?.qty || 0)} {unit} &middot; {fmt(t?.cost || 0)}</>;
+                  })()}
                 </div>
                 {/* Multi-Condition Link Setup */}
                 {showLinkSetup && activeCond.type === "linear" && (
@@ -2673,19 +2946,53 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                     })}
                   </div>
                 )}
+                {/* Attachment Setup (count conditions → deduct from linear parent) */}
+                {showAttachSetup && activeCond.type === "count" && (
+                  <div style={{ marginTop: 6, padding: "6px", borderRadius: 4, background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.15)" }}>
+                    <div style={{ fontSize: 9, color: "#f87171", marginBottom: 4 }}>Deduct from parent wall:</div>
+                    <select value={activeCond.attachTo || ""}
+                      onChange={e => {
+                        const val = e.target.value || null;
+                        setConditions(prev => prev.map(c => c.id === activeCond.id ? { ...c, attachTo: val } : c));
+                      }}
+                      style={{ width: "100%", fontSize: 9, padding: "3px 4px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#ccc", marginBottom: 4 }}>
+                      <option value="">None (no deduction)</option>
+                      {conditions.filter(c => c.type === "linear" && c.id !== activeCond.id).map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    {activeCond.attachTo && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ fontSize: 9, color: "#aaa" }}>Width per count:</span>
+                        <input type="number" value={activeCond.deductWidth || 0} min={0} step={0.5}
+                          onChange={e => {
+                            const w = Math.max(0, parseFloat(e.target.value) || 0);
+                            setConditions(prev => prev.map(c => c.id === activeCond.id ? { ...c, deductWidth: w } : c));
+                          }}
+                          style={{ width: 44, fontSize: 9, padding: "2px 4px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#fff", textAlign: "center" }} />
+                        <span style={{ fontSize: 9, color: "#aaa" }}>ft</span>
+                      </div>
+                    )}
+                    {activeCond.attachTo && activeCond.deductWidth > 0 && (
+                      <div style={{ fontSize: 8, color: "#888", marginTop: 3 }}>
+                        Each count deducts {activeCond.deductWidth}' LF from {conditions.find(c => c.id === activeCond.attachTo)?.name || "parent"}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
             {onAddToTakeoff && Object.values(measurements).some(pm => pm.length > 0) && (
               <button onClick={() => {
-                // Aggregate by condition (sum quantities across all pages)
+                // Aggregate by condition using condTotals (net quantities with deductions applied)
                 const agg = {};
-                Object.values(measurements).flat().forEach(m => {
-                  const cond = conditions.find(c => c.id === m.conditionId);
-                  if (!cond?.asmCode) return;
-                  const key = cond.asmCode;
-                  const qty = m.type === "count" ? (m.count || 1) : m.type === "linear" ? m.totalFt : m.totalSf;
-                  if (!agg[key]) agg[key] = { code: cond.asmCode, qty: 0, unit: m.type === "count" ? "EA" : m.type === "linear" ? "LF" : "SF", label: cond.name, bidArea: bidAreas.find(ba => ba.id === m.bidAreaId)?.name || "" };
-                  agg[key].qty += qty;
+                conditions.forEach(c => {
+                  if (!c.asmCode) return;
+                  const t = condTotals[c.id];
+                  if (!t || t.qty <= 0) return;
+                  const key = c.asmCode;
+                  if (!agg[key]) agg[key] = { code: c.asmCode, qty: 0, unit: c.type === "count" ? "EA" : c.type === "linear" ? "LF" : "SF", label: c.name, bidArea: "" };
+                  agg[key].qty += t.qty;
                 });
                 Object.values(agg).forEach(item => {
                   onAddToTakeoff({ ...item, qty: Math.round(item.qty) });

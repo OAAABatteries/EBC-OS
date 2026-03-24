@@ -509,6 +509,12 @@ function App({ auth, onLogout }) {
 
   // ── ephemeral state ──
   const [tab, setTab] = useState("dashboard");
+  // Listen for tab-switch events from external routes (e.g., TakeoffRoute close)
+  useEffect(() => {
+    const handler = (e) => { if (e.detail) setTab(e.detail); };
+    window.addEventListener("ebc-set-tab", handler);
+    return () => window.removeEventListener("ebc-set-tab", handler);
+  }, []);
   const [modal, setModal] = useState(null);
   const [initialProjTab, setInitialProjTab] = useState("overview");
   const [moreOpen, setMoreOpen] = useState(false);

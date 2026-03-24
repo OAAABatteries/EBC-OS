@@ -3,7 +3,6 @@ import { FeatureGuide } from "../components/FeatureGuide";
 import { getHF, SCOPE_INIT, SCOPE_ITEM_MAP, DEFAULT_ASSUMPTIONS, DEFAULT_PROPOSAL_TERMS, SCOPE_TEMPLATES, PROFIT_SUGGESTIONS } from "../data/constants";
 import { generateProposalPdf, generateQuickProposalPdf, defaultIncludes, defaultExcludes } from "../utils/proposalPdf";
 import { buildScopeLines } from "../utils/scopeBuilder";
-import { DrawingViewer } from "../components/DrawingViewer";
 import { uploadTakeoffPdf, downloadTakeoffPdf, getSignedUrl, uploadProjectDrawing, insertProjectDrawing, getDrawingsByBid } from "../lib/supabase";
 
 /* ── helpers ─────────────────────────────────────────────────── */
@@ -71,91 +70,16 @@ export function EstimatingTab({ app }) {
   const [histLoading, setHistLoading] = useState(false);
   const [showHist, setShowHist] = useState(false);
 
-  // ── Drawing Viewer state ──
-  const [showDrawing, setShowDrawing] = useState(false);
-  const [drawingPdfData, setDrawingPdfData] = useState(null);   // legacy: raw bytes
-  const [drawingStorageUrl, setDrawingStorageUrl] = useState(null); // cloud: signed URL for streaming
-  const [drawingFileName, setDrawingFileName] = useState("");
+  // ── Drawing state (DrawingViewer is now on its own route at #/takeoff/:id) ──
   const drawingFileRef = useRef();
   const ostFileRef = useRef();
   const scanPdfRef = useRef();
-
-  // Loading state for drawing upload
   const [drawingLoading, setDrawingLoading] = useState(false);
 
   // Upload drawing: direct sync click on file input (must be synchronous for browser to allow file picker)
   const uploadDrawing = useCallback(() => {
     if (drawingFileRef.current) drawingFileRef.current.click();
   }, []);
-
-  // Open existing drawing: try cloud URL (streaming) → legacy IDB → legacy Supabase download → prompt re-upload
-  const openDrawing = useCallback(async (tkId, drawingState) => {
-    // If we already have a URL or pdfData in memory, just open
-    if (drawingStorageUrl || drawingPdfData) { setShowDrawing(true); return; }
-
-    // 1) Try cloud-first: look up project_drawings by bid
-    const tk = takeoffs.find(t => t.id === tkId);
-    if (tk?.bidId) {
-      try {
-        const drawings = await getDrawingsByBid(tk.bidId);
-        if (drawings.length > 0) {
-          const url = await getSignedUrl(drawings[0].storagePath);
-          if (url) {
-            console.log("[OpenDrawing] Streaming from cloud URL");
-            setDrawingStorageUrl(url);
-            setDrawingFileName(drawings[0].fileName);
-            setShowDrawing(true);
-            return;
-          }
-        }
-      } catch (e) { console.warn("[Cloud] Failed to get drawing URL:", e); }
-    }
-
-    // 2) Legacy fallback: try IDB cache
-    const fileName = drawingState?.pdfFileNames?.[0] || drawingState?.drawingFileName || "";
-    if (drawingState?.pdfFileNames?.length > 0) {
-      try {
-        const IDB_NAME = "ebc_takeoff_pdfs";
-        const db = await new Promise((resolve, reject) => {
-          const req = indexedDB.open(IDB_NAME, 2);
-          req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains("pdfs")) req.result.createObjectStore("pdfs"); };
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
-        });
-        const data = await new Promise((resolve, reject) => {
-          const tx = db.transaction("pdfs", "readonly");
-          const req = tx.objectStore("pdfs").get(`${tkId}_0`);
-          req.onsuccess = () => resolve(req.result || null);
-          req.onerror = () => reject(req.error);
-        });
-        if (data) {
-          console.log("[OpenDrawing] Loaded from IDB cache (legacy)");
-          setDrawingPdfData(new Uint8Array(data));
-          setDrawingFileName(fileName);
-          setShowDrawing(true);
-          return;
-        }
-      } catch (e) { console.warn("[IDB] Failed to load cached PDF:", e); }
-    }
-
-    // 3) Legacy fallback: try Supabase download (full bytes)
-    if (fileName) {
-      try {
-        show("Downloading drawing from cloud...", "info");
-        const buf = await downloadTakeoffPdf(tkId, fileName, 0);
-        if (buf) {
-          console.log("[OpenDrawing] Downloaded from Supabase (legacy bytes)");
-          setDrawingPdfData(new Uint8Array(buf));
-          setDrawingFileName(fileName);
-          setShowDrawing(true);
-          return;
-        }
-      } catch (e) { console.warn("[Supabase] Failed to download PDF:", e); }
-    }
-
-    // 4) Nothing found — tell user to upload
-    show("No drawing found. Click 'Upload Drawing' to add one.", "err");
-  }, [drawingStorageUrl, drawingPdfData, takeoffs]);
 
   // ── Scope Checklist & Gap Analysis state ──
   const [showScopePanel, setShowScopePanel] = useState(false);
@@ -1253,44 +1177,7 @@ export function EstimatingTab({ app }) {
 
   return (
     <div>
-      {/* Drawing Viewer overlay */}
-      {showDrawing && (drawingStorageUrl || drawingPdfData || tk.drawingState?.pdfFileNames?.length > 0) && (
-        <DrawingViewer
-          pdfData={drawingPdfData || null}
-          storageUrl={drawingStorageUrl || null}
-          fileName={drawingFileName}
-          assemblies={assemblies}
-          takeoffId={tk.id}
-          initialTakeoffState={tk.drawingState || null}
-          onTakeoffStateChange={(state) => {
-            updateTakeoff(tk.id, (prev) => ({ ...prev, drawingState: state }));
-          }}
-          onClose={() => setShowDrawing(false)}
-          onAddToTakeoff={({ code, qty, unit, label }) => {
-            const targetRoom = (tk.rooms || [])[0];
-            if (!targetRoom) {
-              show("Add a room first", "err");
-              return;
-            }
-            updateTakeoff(tk.id, (prev) => ({
-              ...prev,
-              rooms: prev.rooms.map(rm => rm.id === targetRoom.id ? {
-                ...rm,
-                items: [...rm.items, {
-                  id: "dv_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
-                  code,
-                  desc: label || assemblies.find(a => a.code === code)?.name || code,
-                  qty,
-                  unit,
-                  height: 10,
-                  diff: 1,
-                }]
-              } : rm)
-            }));
-            show(`Added ${qty} ${unit} of ${code}`, "ok");
-          }}
-        />
-      )}
+      {/* Drawing Viewer now opens as full-screen route at #/takeoff/:id */}
 
       {/* back + header */}
       <div className="section-header flex-between">
@@ -1309,17 +1196,13 @@ export function EstimatingTab({ app }) {
             <button className="btn btn-ghost btn-sm" disabled style={{ opacity: 0.7 }}>
               Uploading...
             </button>
-          ) : drawingStorageUrl || drawingPdfData || tk.drawingState?.pdfFileNames?.length > 0 ? (
-            <button className="btn btn-ghost btn-sm" onClick={() => openDrawing(tk.id, tk.drawingState)}>
-              Open Drawing
-            </button>
           ) : (
-            <button className="btn btn-ghost btn-sm" onClick={uploadDrawing}>
-              Upload Drawing
+            <button className="btn btn-ghost btn-sm" onClick={() => { window.location.hash = `#/takeoff/${tk.id}`; }}>
+              {tk.drawingState?.pdfFileNames?.length > 0 ? "Open Drawing" : "Upload Drawing"}
             </button>
           )}
           {tk.drawingState && (
-            <button className="btn btn-ghost btn-sm" style={{ color: "#10b981" }} onClick={() => openDrawing(tk.id, tk.drawingState)}>
+            <button className="btn btn-ghost btn-sm" style={{ color: "#10b981" }} onClick={() => { window.location.hash = `#/takeoff/${tk.id}`; }}>
               Resume Takeoff ({Object.values(tk.drawingState.measurements || {}).flat().length} meas)
             </button>
           )}
@@ -1332,62 +1215,25 @@ export function EstimatingTab({ app }) {
               const file = e.target.files?.[0];
               if (!file) return;
               e.target.value = "";
-              const sizeMB = (file.size / 1024 / 1024).toFixed(1);
-              show(`Uploading ${file.name} (${sizeMB} MB) to cloud...`, "info");
-              setDrawingLoading(true);
-              setDrawingFileName(file.name);
+              // Save filename to takeoff, then navigate to full-screen takeoff route
               updateTakeoff(tk.id, { drawingFileName: file.name });
-              // Upload directly to Supabase Storage (no FileReader into memory)
-              (async () => {
-                try {
-                  const { path, fileName: uploadedName, fileSize } = await uploadProjectDrawing(null, tk.bidId, file);
-                  // Create project_drawings metadata record
-                  await insertProjectDrawing({
-                    bidId: tk.bidId || null,
-                    storagePath: path,
-                    fileName: uploadedName,
-                    fileSize,
-                    revision: 1,
-                    isCurrent: true,
-                  });
-                  // Get signed URL for streaming (no full download needed)
-                  const url = await getSignedUrl(path);
-                  if (url) {
-                    setDrawingStorageUrl(url);
-                    setDrawingLoading(false);
-                    setShowDrawing(true);
-                    show(`Drawing uploaded: ${uploadedName} (${sizeMB} MB)`, "ok");
-                  } else {
-                    // Fallback: read file locally if signed URL fails
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                      setDrawingPdfData(new Uint8Array(ev.target.result));
-                      setDrawingLoading(false);
-                      setShowDrawing(true);
-                      show(`Drawing loaded locally: ${uploadedName}`, "ok");
-                    };
-                    reader.readAsArrayBuffer(file);
-                  }
-                } catch (err) {
-                  console.error("[Upload] Failed:", err);
-                  // Fallback: load locally if cloud upload fails
-                  show(`Cloud upload failed, loading locally...`, "info");
-                  const reader = new FileReader();
-                  reader.onload = (ev) => {
-                    setDrawingPdfData(new Uint8Array(ev.target.result));
-                    setDrawingLoading(false);
-                    setShowDrawing(true);
-                    // Try legacy upload in background
-                    const pdfBytes = new Uint8Array(ev.target.result);
-                    uploadTakeoffPdf(tk.id, pdfBytes, file.name, 0).catch(() => {});
-                  };
-                  reader.onerror = () => {
-                    setDrawingLoading(false);
-                    show("Failed to load PDF file", "err");
-                  };
-                  reader.readAsArrayBuffer(file);
-                }
-              })();
+              // Cache file in IDB so TakeoffRoute can read it
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                const bytes = new Uint8Array(ev.target.result);
+                // Store in IDB for the takeoff route to pick up
+                const req = indexedDB.open("ebc_takeoff_pdfs", 2);
+                req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains("pdfs")) req.result.createObjectStore("pdfs"); };
+                req.onsuccess = () => {
+                  const tx = req.result.transaction("pdfs", "readwrite");
+                  tx.objectStore("pdfs").put(bytes.buffer, `${tk.id}_0`);
+                  tx.oncomplete = () => { window.location.hash = `#/takeoff/${tk.id}`; };
+                  tx.onerror = () => { window.location.hash = `#/takeoff/${tk.id}`; };
+                };
+                req.onerror = () => { window.location.hash = `#/takeoff/${tk.id}`; };
+              };
+              reader.onerror = () => show("Failed to read PDF", "err");
+              reader.readAsArrayBuffer(file);
             }}
           />
           <button className="btn btn-ghost btn-sm" onClick={() => runHistComparison(tk)} disabled={histLoading}>

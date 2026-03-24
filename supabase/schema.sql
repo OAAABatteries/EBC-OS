@@ -589,6 +589,13 @@ CREATE POLICY "ebc_files_auth_delete" ON storage.objects
 CREATE POLICY "ebc_files_public_read" ON storage.objects
   FOR SELECT TO public USING (bucket_id = 'ebc-files');
 
+-- Anon upload fallback (single-company app, not multi-tenant)
+CREATE POLICY "ebc_files_anon_upload" ON storage.objects
+  FOR INSERT TO anon WITH CHECK (bucket_id = 'ebc-files');
+
+CREATE POLICY "ebc_files_anon_update" ON storage.objects
+  FOR UPDATE TO anon USING (bucket_id = 'ebc-files');
+
 -- ═════════════════════════════════════════════════════════════
 --  ENABLE REALTIME on key tables
 -- ═════════════════════════════════════════════════════════════

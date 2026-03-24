@@ -72,6 +72,38 @@ export function onAuthStateChange(callback) {
   return supabase.auth.onAuthStateChange(callback);
 }
 
+/**
+ * Ensure Supabase has a valid auth session.
+ * Checks for existing session first, then tries auto-provisioning
+ * from localStorage credentials if no session exists.
+ * Returns true if authenticated, false otherwise.
+ */
+export async function ensureSupabaseAuth() {
+  if (!supabase) return false;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) return true;
+    // Try auto-provision from localStorage auth
+    const authStr = localStorage.getItem("ebc_auth");
+    if (authStr) {
+      const auth = JSON.parse(authStr);
+      const email = auth.email || `${(auth.username || auth.name || "user").toLowerCase().replace(/\s+/g, ".")}@ebconstructors.local`;
+      const password = auth.passwordHash || auth.pin || "ebc_default_2024";
+      try {
+        await signIn(email, password);
+        return true;
+      } catch {
+        // Sign-in failed, try sign-up
+        try {
+          await signUp(email, password, { name: auth.name || auth.username || "EBC User", role: auth.role || "pm" });
+          return true;
+        } catch { return false; }
+      }
+    }
+    return false;
+  } catch { return false; }
+}
+
 // ═════════════════════════════════════════════════════════════
 //  CASE CONVERSION (camelCase ↔ snake_case)
 //  App uses camelCase, Postgres uses snake_case

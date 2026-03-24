@@ -6,6 +6,7 @@ import App from './App.jsx'
 const GCPortal       = lazy(() => import('./components/GCPortal.jsx'));
 const JobPortal      = lazy(() => import('./components/JobPortal.jsx'));
 const CustomerPortal = lazy(() => import('./components/CustomerPortal.jsx'));
+const TakeoffRoute   = lazy(() => import('./routes/TakeoffRoute.jsx'));
 
 function Router() {
   const [hash, setHash] = useState(window.location.hash);
@@ -23,6 +24,9 @@ function Router() {
   }
   if (hash === '#/customer-portal') {
     return <Suspense fallback={<div style={{padding:40,color:'#f59e0b',background:'#0a0e1a',minHeight:'100vh'}}>Loading...</div>}><CustomerPortal /></Suspense>;
+  }
+  if (hash.startsWith('#/takeoff/')) {
+    return <Suspense fallback={<div style={{padding:40,color:'#f59e0b',background:'#0a0e1a',minHeight:'100vh'}}>Loading takeoff...</div>}><TakeoffRoute /></Suspense>;
   }
   return <App />;
 }
