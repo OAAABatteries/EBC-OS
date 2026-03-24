@@ -227,7 +227,14 @@ function AuthGate() {
     } catch { return null; }
   });
   const [onboardingDone, setOnboardingDone] = useState(() => {
-    try { return localStorage.getItem("ebc_onboarding_complete") === "true"; } catch { return false; }
+    try {
+      const stored = localStorage.getItem("ebc_auth");
+      const authData = stored ? JSON.parse(stored) : null;
+      const role = authData?.role || "employee";
+      // Check role-specific key first, fall back to legacy key
+      return localStorage.getItem(`ebc_onboarding_completed_${role}`) === "true"
+        || localStorage.getItem("ebc_onboarding_complete") === "true";
+    } catch { return false; }
   });
 
   // Listen for Supabase auth state changes (session refresh, sign-out from another tab, etc.)
@@ -322,7 +329,7 @@ function AuthGate() {
     return <LoginScreen onLogin={handleLogin} />;
   }
   if (!onboardingDone) {
-    return <OnboardingWizard onComplete={handleOnboardingComplete} />;
+    return <OnboardingWizard auth={auth} onComplete={handleOnboardingComplete} />;
   }
 
   return <App auth={auth} onLogout={handleLogout} />;

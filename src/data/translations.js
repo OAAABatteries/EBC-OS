@@ -502,4 +502,62 @@ export const T = {
   "Review & Sign": { es: "Revisar y Firmar" },
   "Signed": { es: "Firmado" },
   "Not Signed": { es: "Sin Firmar" },
+
+  // ── Onboarding Wizard ──
+  "Welcome to EBC-OS": { es: "Bienvenido a EBC-OS" },
+  "Get Started": { es: "Empezar" },
+  "Next": { es: "Siguiente" },
+  "Back": { es: "Atrás" },
+  "Skip": { es: "Omitir" },
+  "Never show again": { es: "No mostrar más" },
+  "Launch EBC-OS": { es: "Abrir EBC-OS" },
+  "You're All Set!": { es: "¡Todo Listo!" },
+  "EBC-OS is ready. Revisit this tour anytime in Settings.": { es: "EBC-OS está listo. Puedes volver a ver este tutorial en Configuración." },
+  "Owner / Admin": { es: "Propietario / Admin" },
+  "Project Manager": { es: "Gerente de Proyecto" },
+  "Foreman / Superintendent": { es: "Capataz / Superintendente" },
+  "Employee / Crew": { es: "Empleado / Cuadrilla" },
+  "Driver": { es: "Conductor" },
+
+  // Onboarding — shared steps
+  "Dashboard & KPIs": { es: "Dashboard y KPIs" },
+  "Bid Pipeline": { es: "Pipeline de Licitaciones" },
+  "Project Management": { es: "Gestión de Proyectos" },
+  "Team Management": { es: "Gestión del Equipo" },
+  "Profit Analysis & Alerts": { es: "Análisis de Ganancias" },
+  "Customer Portal": { es: "Portal del Cliente" },
+  "Settings & Themes": { es: "Configuración" },
+  "Dashboard Quick Actions": { es: "Acciones Rápidas" },
+  "Project Detail": { es: "Detalle del Proyecto" },
+  "Assigning Foremen": { es: "Asignar Capataces" },
+  "Material Takeoffs": { es: "Materiales y Takeoffs" },
+  "Profit Monitoring": { es: "Monitoreo de Ganancias" },
+  "Notification System": { es: "Notificaciones" },
+
+  // Onboarding — foreman/field
+  "Clock In / Out": { es: "Entrada / Salida" },
+  "Crew Management": { es: "Gestión de Cuadrilla" },
+  "Phase Tracking": { es: "Actualizar Fases" },
+  "JSA / Pre-Task Safety": { es: "JSA / Seguridad Pre-Tarea" },
+  "Material Requests": { es: "Solicitar Materiales" },
+  "Daily Reports": { es: "Reportes Diarios" },
+  "Report a Problem": { es: "Reportar un Problema" },
+  "Drawings & Documents": { es: "Planos y Documentos" },
+
+  // Onboarding — employee
+  "Your Schedule": { es: "Tu Horario" },
+  "Safety Sign-Off": { es: "Firma de Seguridad" },
+  "Your Hours": { es: "Tus Horas" },
+  "Log your time": { es: "Registra tu tiempo" },
+  "PIN → Project → Done. That's it.": { es: "PIN → Proyecto → Listo. Fácil." },
+  "Sign every morning": { es: "Firma cada mañana" },
+  "Review hazards → sign → work safe": { es: "Lee los peligros → firma → trabaja seguro" },
+
+  // Onboarding — driver
+  "Your Delivery Route": { es: "Tu Ruta" },
+  "Schedule Deliveries": { es: "Programar Entregas" },
+  "Deliver & Navigate": { es: "Entregar y Navegar" },
+  "Mark Delivered": { es: "Marcar Entregado" },
+  "Navigate to Site": { es: "Navegar al Sitio" },
+  "One tap to confirm delivery": { es: "Un toque para confirmar la entrega" },
 };
