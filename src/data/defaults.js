@@ -19,7 +19,7 @@ export const EMPTY_STATE = {
   takeoffs: [],
   employees: [],
   timeEntries: [],
-  crewSchedule: [],
+  teamSchedule: [],
   materialRequests: [],
   tmTickets: [],
   jsas: [],

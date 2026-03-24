@@ -417,7 +417,7 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
     if (daysLeft < 0) {
       alerts.push({
         id: `cert_expired_${cert.id}`,
-        category: "crew",
+        category: "team",
         urgency: "critical",
         icon: "alert",
         title: `Cert expired: ${empName}`,
@@ -429,7 +429,7 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
     } else if (daysLeft <= 30) {
       alerts.push({
         id: `cert_expiring_${cert.id}`,
-        category: "crew",
+        category: "team",
         urgency: daysLeft <= 7 ? "critical" : "warning",
         icon: "clipboard",
         title: `Cert expiring: ${empName}`,
@@ -456,7 +456,7 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
     if (weekEntries.length === 0 && activeEmps.length > 0) {
       alerts.push({
         id: `no_time_${emp.id}_${startOfWeek.toISOString().slice(0, 10)}`,
-        category: "crew",
+        category: "team",
         urgency: "info",
         icon: "clock",
         title: `${emp.name || "Employee"} — no time entries`,
@@ -510,7 +510,7 @@ export function useAlertEngine({ bids, projects, contacts, submittals, rfis, cha
   const badgeCount = activeAlerts.length;
 
   const grouped = useMemo(() => {
-    const g = { bids: [], projects: [], crew: [] };
+    const g = { bids: [], projects: [], team: [] };
     activeAlerts.forEach(a => {
       if (g[a.category]) g[a.category].push(a);
       else g.bids.push(a); // fallback

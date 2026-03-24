@@ -23,7 +23,7 @@ const MONTH_NAMES = [
 
 // Event types that are manually created (not auto-generated)
 const MANUAL_TYPES = EVENT_TYPES.filter(
-  (et) => !["crew", "gantt", "pto", "weather", "equipment", "sub"].includes(et.key)
+  (et) => !["team", "gantt", "pto", "weather", "equipment", "sub"].includes(et.key)
 );
 
 // ── Date helpers (no external libs) ──
@@ -97,7 +97,7 @@ function emptyForm() {
 
 export function CalendarView({ app }) {
   const {
-    calendarEvents, setCalendarEvents, crewSchedule, schedule,
+    calendarEvents, setCalendarEvents, teamSchedule, schedule,
     ptoRequests, setPtoRequests, equipmentBookings, setEquipmentBookings,
     equipment, setEquipment, subSchedule, setSubSchedule,
     weatherAlerts, certifications, scheduleConflicts, setScheduleConflicts,
@@ -131,7 +131,7 @@ export function CalendarView({ app }) {
     setWeekPlanResult(null);
     try {
       const { planWeekSchedule } = await import("../utils/api.js");
-      const res = await planWeekSchedule(app.apiKey, (calendarEvents || []).slice(0, 30), (projects || []).slice(0, 10), (employees || []).slice(0, 15), (crewSchedule || []).slice(0, 30), (schedule || []).slice(0, 20));
+      const res = await planWeekSchedule(app.apiKey, (calendarEvents || []).slice(0, 30), (projects || []).slice(0, 10), (employees || []).slice(0, 15), (teamSchedule || []).slice(0, 30), (schedule || []).slice(0, 20));
       setWeekPlanResult(res);
       setShowWeekPlan(true);
       show("Week plan generated", "ok");
@@ -145,7 +145,7 @@ export function CalendarView({ app }) {
   // ── Conflict detection ──
   const conflicts = useMemo(() => {
     return detectAllConflicts({
-      crewSchedule: crewSchedule || [],
+      teamSchedule: teamSchedule || [],
       employees: employees || [],
       projects: projects || [],
       equipment: equipment || [],
@@ -155,7 +155,7 @@ export function CalendarView({ app }) {
       ptoRequests: ptoRequests || [],
       dateRange: null,
     });
-  }, [crewSchedule, employees, projects, equipment, equipmentBookings, certifications, calendarEvents, ptoRequests]);
+  }, [teamSchedule, employees, projects, equipment, equipmentBookings, certifications, calendarEvents, ptoRequests]);
 
   const unresolvedCount = useMemo(() => conflicts.filter((c) => !c.resolved).length, [conflicts]);
 
@@ -205,22 +205,22 @@ export function CalendarView({ app }) {
       }
 
       // 2. Crew schedule
-      if (crewSchedule) {
+      if (teamSchedule) {
         const d = toDate(dateStr);
         const monday = getMonday(d);
         const weekStr = toStr(monday);
         const dayIdx = (d.getDay() + 6) % 7;
         const dayKey = DAY_KEYS[dayIdx];
 
-        for (const cs of crewSchedule) {
+        for (const cs of teamSchedule) {
           if (cs.weekStart === weekStr && cs.days?.[dayKey]) {
             const emp = (employees || []).find((e) => String(e.id) === String(cs.employeeId));
             const proj = (projects || []).find((p) => String(p.id) === String(cs.projectId));
             events.push({
               id: "crew_" + cs.id + "_" + dateStr,
-              type: "crew",
+              type: "team",
               title: `${emp?.name || "Employee"} @ ${proj?.name || "Project"}`,
-              color: getEventTypeObj("crew").color,
+              color: getEventTypeObj("team").color,
               time: cs.hours?.start || null,
               projectId: cs.projectId,
               raw: cs,
@@ -331,7 +331,7 @@ export function CalendarView({ app }) {
         return true;
       });
     },
-    [calendarEvents, crewSchedule, schedule, ptoRequests, equipmentBookings, subSchedule, weatherAlerts, materialRequests, employees, projects, equipment, filterTypes, filterProject, expandRecurring]
+    [calendarEvents, teamSchedule, schedule, ptoRequests, equipmentBookings, subSchedule, weatherAlerts, materialRequests, employees, projects, equipment, filterTypes, filterProject, expandRecurring]
   );
 
   // ── Weather lookup for a date ──
@@ -402,7 +402,7 @@ export function CalendarView({ app }) {
   };
 
   const openEditEvent = (ev) => {
-    if (!ev.raw || ["crew", "gantt", "pto", "weather", "equipment", "sub"].includes(ev.type)) return;
+    if (!ev.raw || ["team", "gantt", "pto", "weather", "equipment", "sub"].includes(ev.type)) return;
     const raw = ev.raw;
     setEventForm({
       type: raw.type || "other",
@@ -572,7 +572,7 @@ export function CalendarView({ app }) {
                     {d.keyEvents?.map((e, j) => (
                       <div key={j} className="text-xs" style={{ color: "var(--amber)", marginBottom: 2 }}>• {e}</div>
                     ))}
-                    <div className="text-xs text-dim mt-4">{d.crewNeeds}</div>
+                    <div className="text-xs text-dim mt-4">{d.teamNeeds}</div>
                   </div>
                 ))}
               </div>
@@ -580,13 +580,13 @@ export function CalendarView({ app }) {
           )}
 
           {/* Crew Allocation */}
-          {weekPlanResult.crewAllocation?.length > 0 && (
+          {weekPlanResult.teamAllocation?.length > 0 && (
             <div style={{ marginBottom: 16 }}>
               <div className="text-sm font-semi mb-8">Crew Allocation</div>
               <table className="data-table" style={{ fontSize: 12 }}>
                 <thead><tr><th>Project</th><th>Crew</th><th>Trade</th><th>Days</th><th>Notes</th></tr></thead>
                 <tbody>
-                  {weekPlanResult.crewAllocation.map((c, i) => (
+                  {weekPlanResult.teamAllocation.map((c, i) => (
                     <tr key={i}>
                       <td className="font-semi">{c.project}</td>
                       <td>{c.recommendedCrew}</td>

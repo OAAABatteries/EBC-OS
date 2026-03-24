@@ -52,7 +52,7 @@ export function EmployeeView({ app }) {
   const {
     employees, projects, setProjects, companyLocations,
     timeEntries, setTimeEntries,
-    changeOrders, rfis, submittals, crewSchedule,
+    changeOrders, rfis, submittals, teamSchedule,
     materialRequests, setMaterialRequests,
     jsas, setJsas,
     problems, setProblems,
@@ -549,12 +549,12 @@ export function EmployeeView({ app }) {
     [rfis, myProjectIds]
   );
 
-  // ── my crew schedule this week ──
+  // ── my team schedule this week ──
   const mySchedule = useMemo(() => {
     if (!activeEmp) return [];
     const weekStr = toDateStr(getWeekStart(new Date()));
-    return crewSchedule.filter(s => s.employeeId === activeEmp.id && s.weekStart === weekStr);
-  }, [activeEmp, crewSchedule]);
+    return teamSchedule.filter(s => s.employeeId === activeEmp.id && s.weekStart === weekStr);
+  }, [activeEmp, teamSchedule]);
 
   // ── my assigned project IDs (from schedule) ──
   const myScheduledProjectIds = useMemo(() => {
@@ -1289,7 +1289,7 @@ export function EmployeeView({ app }) {
             const allHazards = jsa.steps.flatMap(s => s.hazards || []);
             const maxRisk = Math.max(0, ...allHazards.map(h => (h.likelihood || 1) * (h.severity || 1)));
             const rc = riskColor(maxRisk);
-            const alreadySigned = (jsa.crewSignOn || []).some(c => c.employeeId === activeEmp.id);
+            const alreadySigned = (jsa.teamSignOn || []).some(c => c.employeeId === activeEmp.id);
             const proj = projects.find(p => p.id === jsa.projectId);
 
             return (
@@ -1356,7 +1356,7 @@ export function EmployeeView({ app }) {
                           if (!canvas) return;
                           const sigData = canvas.toDataURL("image/png");
                           setJsas(prev => prev.map(j => j.id === jsa.id ? {
-                            ...j, crewSignOn: [...(j.crewSignOn || []), { employeeId: activeEmp.id, name: activeEmp.name, signedAt: new Date().toISOString(), signature: sigData }]
+                            ...j, teamSignOn: [...(j.teamSignOn || []), { employeeId: activeEmp.id, name: activeEmp.name, signedAt: new Date().toISOString(), signature: sigData }]
                           } : j));
                           show(t("You have signed the JSA"), "ok");
                         }}>
@@ -1418,8 +1418,8 @@ export function EmployeeView({ app }) {
 
                 {/* Crew who signed */}
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Crew Signed")} ({(jsa.crewSignOn || []).length})</div>
-                  {(jsa.crewSignOn || []).map((c, i) => (
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Crew Signed")} ({(jsa.teamSignOn || []).length})</div>
+                  {(jsa.teamSignOn || []).map((c, i) => (
                     <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                       <span style={{ fontSize: 13, fontWeight: c.employeeId === activeEmp.id ? 700 : 400 }}>
                         {c.name} {c.employeeId === activeEmp.id ? "(You)" : ""}
@@ -1433,7 +1433,7 @@ export function EmployeeView({ app }) {
           }
 
           // List view
-          const unsignedJsas = myJsaList.filter(j => j.status === "active" && !(j.crewSignOn || []).some(c => c.employeeId === activeEmp.id));
+          const unsignedJsas = myJsaList.filter(j => j.status === "active" && !(j.teamSignOn || []).some(c => c.employeeId === activeEmp.id));
           return (
             <div className="emp-content">
               <div className="section-title" style={{ fontSize: 16, marginBottom: 12 }}>{t("Job Safety Analysis")}</div>
@@ -1460,7 +1460,7 @@ export function EmployeeView({ app }) {
               ) : myJsaList.map(j => {
                 const maxRisk = Math.max(0, ...j.steps.flatMap(s => (s.hazards || []).map(h => (h.likelihood || 1) * (h.severity || 1))));
                 const rc = riskColor(maxRisk);
-                const signed = (j.crewSignOn || []).some(c => c.employeeId === activeEmp.id);
+                const signed = (j.teamSignOn || []).some(c => c.employeeId === activeEmp.id);
                 const proj = projects.find(p => p.id === j.projectId);
                 return (
                   <div key={j.id} className="card" style={{ padding: 12, marginBottom: 8, cursor: "pointer", borderLeft: signed ? "3px solid #10b981" : "3px solid var(--amber)" }}

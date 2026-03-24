@@ -32,7 +32,7 @@ export const ROLES = {
   foreman: {
     label: "Superintendent / Foreman",
     access: ["dashboard", "projects", "schedule", "reports", "safety", "jsa", "materials", "timeclock", "sds", "map", "settings"],
-    description: "Field operations and crew management"
+    description: "Field operations and team management"
   },
   safety: {
     label: "Safety Officer",
@@ -50,7 +50,7 @@ export const ROLES = {
     description: "Office operations, documents, scheduling"
   },
   employee: {
-    label: "Employee / Crew",
+    label: "Employee / Team",
     access: ["dashboard", "timeclock", "schedule", "materials", "sds", "settings"],
     description: "Clock in/out, schedule, material requests"
   },

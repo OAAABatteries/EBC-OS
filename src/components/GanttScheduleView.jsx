@@ -174,7 +174,7 @@ export function GanttScheduleView({ projects, onProjectClick }) {
     const active = ganttProjects.filter(p => p.ganttStatus === "in-progress" || p.ganttStatus === "behind").length;
     const totalCrew = ganttProjects
       .filter(p => p.ganttStatus === "in-progress" || p.ganttStatus === "behind")
-      .reduce((sum, p) => sum + (p.crewCount || 0), 0);
+      .reduce((sum, p) => sum + (p.teamSize || 0), 0);
     // Weeks of backlog = sum of remaining weeks across upcoming + in-progress
     const backlogWeeks = ganttProjects
       .filter(p => p.ganttStatus !== "completed")
@@ -320,14 +320,14 @@ export function GanttScheduleView({ projects, onProjectClick }) {
                   </div>
                 </div>
                 {/* Crew row */}
-                {p.crewCount > 0 && (
+                {p.teamSize > 0 && (
                   <div style={{
                     height: CREW_ROW_HEIGHT, padding: "2px 12px",
                     borderBottom: "1px solid var(--border)", borderRight: "1px solid var(--border)",
                     display: "flex", alignItems: "center",
                     fontSize: 10, color: "var(--text3)", background: "var(--bg)",
                   }}>
-                    <HardHat style={{ width: 12, height: 12, marginRight: 4 }} /> {p.crewCount} crew
+                    <HardHat style={{ width: 12, height: 12, marginRight: 4 }} /> {p.teamSize} team
                   </div>
                 )}
               </div>
@@ -379,11 +379,11 @@ export function GanttScheduleView({ projects, onProjectClick }) {
               const barWidth = Math.max(8, ((p.endDate.getTime() - p.startDate.getTime()) / totalMs) * totalWidth);
               const color = STATUS_COLORS[p.ganttStatus] || STATUS_COLORS["in-progress"];
 
-              // Calculate top offset accounting for crew rows of previous projects
+              // Calculate top offset accounting for team rows of previous projects
               let topOffset = 0;
               for (let i = 0; i < idx; i++) {
                 topOffset += ROW_HEIGHT;
-                if (ganttProjects[i].crewCount > 0) topOffset += CREW_ROW_HEIGHT;
+                if (ganttProjects[i].teamSize > 0) topOffset += CREW_ROW_HEIGHT;
               }
 
               return (
@@ -449,7 +449,7 @@ export function GanttScheduleView({ projects, onProjectClick }) {
                     </div>
                   </div>
                   {/* Crew allocation row */}
-                  {p.crewCount > 0 && (
+                  {p.teamSize > 0 && (
                     <div style={{
                       position: "absolute",
                       top: topOffset + ROW_HEIGHT,
@@ -470,7 +470,7 @@ export function GanttScheduleView({ projects, onProjectClick }) {
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 9, color: "var(--text3)",
                       }}>
-                        {p.crewCount} crew
+                        {p.teamSize} team
                       </div>
                     </div>
                   )}
@@ -480,7 +480,7 @@ export function GanttScheduleView({ projects, onProjectClick }) {
 
             {/* Spacer to ensure scrollable height */}
             <div style={{
-              height: ganttProjects.reduce((h, p) => h + ROW_HEIGHT + (p.crewCount > 0 ? CREW_ROW_HEIGHT : 0), 0),
+              height: ganttProjects.reduce((h, p) => h + ROW_HEIGHT + (p.teamSize > 0 ? CREW_ROW_HEIGHT : 0), 0),
               pointerEvents: "none",
             }} />
           </div>
@@ -513,7 +513,7 @@ export function GanttScheduleView({ projects, onProjectClick }) {
           <div style={{ display: "flex", gap: 12, fontSize: 10, marginTop: 4 }}>
             <span style={{ color: STATUS_COLORS[tooltip.project.ganttStatus] }}>{STATUS_LABELS[tooltip.project.ganttStatus]}</span>
             <span style={{ color: "var(--text2)" }}>{tooltip.project.progress || 0}% complete</span>
-            {tooltip.project.crewCount > 0 && <span style={{ color: "var(--text2)" }}>{tooltip.project.crewCount} crew</span>}
+            {tooltip.project.teamSize > 0 && <span style={{ color: "var(--text2)" }}>{tooltip.project.teamSize} team</span>}
             {tooltip.project.contract > 0 && <span style={{ color: "var(--text2)" }}>{fmtK(tooltip.project.contract)}</span>}
           </div>
         </div>

@@ -28,10 +28,10 @@ const URGENCY_COLORS = {
 const CATEGORY_INFO = {
   bids: { label: "Bid Pipeline", icon: <BarChart2 size={14} /> },
   projects: { label: "Project Management", icon: <Building2 size={14} /> },
-  crew: { label: "Crew / HR", icon: <HardHat size={14} /> },
+  team: { label: "Crew / HR", icon: <HardHat size={14} /> },
 };
 
-const CATEGORY_ORDER = ["bids", "projects", "crew"];
+const CATEGORY_ORDER = ["bids", "projects", "team"];
 
 export function NotificationPanel({ grouped, badgeCount, dismissAlert, dismissAll, onClose, onNav }) {
   const [collapsed, setCollapsed] = useState({});

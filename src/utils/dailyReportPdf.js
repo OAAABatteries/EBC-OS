@@ -73,7 +73,7 @@ export function generateDailyReportPdf(report, project) {
   const colW = (CW - 6) / 3;
   infoBox("Foreman", report.foremanName || "—", ML, colW);
   infoBox("Weather", `${report.temperature || "—"}°F / ${report.weatherCondition || report.weather || "—"}`, ML + colW + 3, colW);
-  infoBox("Crew on Site", String((report.crewPresent || []).length || report.crewCount || 0), ML + (colW + 3) * 2, colW);
+  infoBox("Crew on Site", String((report.teamPresent || []).length || report.teamSize || 0), ML + (colW + 3) * 2, colW);
   y += 20;
 
   // Project / GC info
@@ -119,12 +119,12 @@ export function generateDailyReportPdf(report, project) {
   };
 
   // ── Crew Present ──
-  if (report.crewPresent && report.crewPresent.length > 0) {
+  if (report.teamPresent && report.teamPresent.length > 0) {
     sectionTitle("Crew on Site");
     doc.setFontSize(9);
-    const crewNames = report.crewPresent.map((c, i) => `${i + 1}. ${typeof c === "string" ? c : c.name || "Worker"}`).join("   ");
-    const crewLines = doc.splitTextToSize(safe(crewNames), CW - 6);
-    crewLines.forEach(line => {
+    const teamNames = report.teamPresent.map((c, i) => `${i + 1}. ${typeof c === "string" ? c : c.name || "Worker"}`).join("   ");
+    const teamLines = doc.splitTextToSize(safe(teamNames), CW - 6);
+    teamLines.forEach(line => {
       checkPage(6);
       doc.text(line, ML + 3, y);
       y += 4.5;

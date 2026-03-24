@@ -116,7 +116,7 @@ function SignaturePad({ signatureData, onSave, onClear, label }) {
 // ═══════════════════════════════════════════════════════════════
 //  JSA Module — Job Safety Analysis
 //  Better than Procore: structured workflow, hazard library,
-//  risk matrix, bilingual, crew sign-on, weather-aware
+//  risk matrix, bilingual, team sign-on, weather-aware
 // ═══════════════════════════════════════════════════════════════
 
 const SUB_TABS = [
@@ -146,7 +146,7 @@ export function JSATab({ app }) {
     date: new Date().toISOString().slice(0, 10),
     shift: "day", weather: "clear", indoorOutdoor: "outdoor",
     steps: [], ppe: [], permits: [],
-    crewMembers: [],
+    teamMembers: [],
   });
   const updForm = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -257,7 +257,7 @@ export function JSATab({ app }) {
                 </div>
                 <div style={{ textAlign: "right", fontSize: 11, color: "var(--text3)" }}>
                   <div>{j.steps.length} {t("steps")}</div>
-                  <div>{(j.crewSignOn || []).length} {t("signed")}</div>
+                  <div>{(j.teamSignOn || []).length} {t("signed")}</div>
                 </div>
               </div>
               {/* PPE icons */}
@@ -312,9 +312,9 @@ export function JSATab({ app }) {
               const riskLbl = riskColor(maxR).label;
               const ppeList = (jsa.ppe || []).map(k => PPE_ITEMS.find(p=>p.key===k)?.label).filter(Boolean).join(", ");
               const permitList = (jsa.permits || []).map(k => PERMIT_TYPES.find(p=>p.key===k)?.label).filter(Boolean).join(", ");
-              const crewList = (jsa.crewSignOn || []).map(c => c.name);
-              const crewMembersList = (jsa.crewMembers || []).map(c => c.name + (c.role ? ` (${c.role})` : ''));
-              const allCrew = [...new Set([...crewList, ...crewMembersList])];
+              const teamList = (jsa.teamSignOn || []).map(c => c.name);
+              const teamMembersList = (jsa.teamMembers || []).map(c => c.name + (c.role ? ` (${c.role})` : ''));
+              const allTeam = [...new Set([...teamList, ...teamMembersList])];
               const html = `<!DOCTYPE html><html><head><title>JSA — ${jsa.title}</title><style>
                 body{font-family:Arial,sans-serif;max-width:850px;margin:0 auto;padding:20px;color:#111;font-size:12px}
                 h1{font-size:20px;margin:0 0 2px} h2{font-size:14px;margin:12px 0 6px;border-bottom:1px solid #ccc;padding-bottom:4px}
@@ -359,12 +359,12 @@ export function JSATab({ app }) {
                 <h2>Crew Members / Signatures</h2>
                 <div class="sig-grid">
                   ${(() => {
-                    // Build signature map from crewSignOn and crewMembers
+                    // Build signature map from teamSignOn and teamMembers
                     const sigMap = {};
-                    (jsa.crewSignOn || []).forEach(c => { if (c.signature) sigMap[c.name] = c.signature; });
-                    (jsa.crewMembers || []).forEach(c => { if (c.signature) sigMap[c.name] = c.signature; });
-                    if (allCrew.length > 0) {
-                      return allCrew.map(n => {
+                    (jsa.teamSignOn || []).forEach(c => { if (c.signature) sigMap[c.name] = c.signature; });
+                    (jsa.teamMembers || []).forEach(c => { if (c.signature) sigMap[c.name] = c.signature; });
+                    if (allTeam.length > 0) {
+                      return allTeam.map(n => {
                         const sig = sigMap[n];
                         return '<div><strong>'+n+'</strong><div class="sig-box">'+(sig ? '<img src="'+sig+'" style="width:200px;height:50px;object-fit:contain;display:block;margin:4px 0"/>' : 'Signature: ________________')+'<br/>Date: '+jsa.date+'</div></div>';
                       }).join('');
@@ -385,10 +385,10 @@ export function JSATab({ app }) {
               const maxR2 = Math.max(0, ...allH2.map(h => (h.likelihood||1)*(h.severity||1)));
               const ppeLabels = (jsa.ppe || []).map(k => PPE_ITEMS.find(p=>p.key===k)?.label || k).filter(Boolean);
               const permitLabels = (jsa.permits || []).map(k => PERMIT_TYPES.find(p=>p.key===k)?.label || k).filter(Boolean);
-              // Build crew list with signatures from both crewSignOn and crewMembers
-              const crewMap = {};
-              (jsa.crewSignOn || []).forEach(c => { crewMap[c.name] = { name: c.name, signature: c.signature || null }; });
-              (jsa.crewMembers || []).forEach(c => { if (!crewMap[c.name]) crewMap[c.name] = { name: c.name, signature: c.signature || null }; else if (c.signature) crewMap[c.name].signature = c.signature; });
+              // Build team list with signatures from both teamSignOn and teamMembers
+              const teamMap = {};
+              (jsa.teamSignOn || []).forEach(c => { teamMap[c.name] = { name: c.name, signature: c.signature || null }; });
+              (jsa.teamMembers || []).forEach(c => { if (!teamMap[c.name]) teamMap[c.name] = { name: c.name, signature: c.signature || null }; else if (c.signature) teamMap[c.name].signature = c.signature; });
               generateJsaPdf({
                 ...jsa,
                 projectName: projN,
@@ -396,7 +396,7 @@ export function JSATab({ app }) {
                 riskLevel: maxR2 <= 6 ? "Low" : maxR2 <= 12 ? "Medium" : maxR2 <= 19 ? "High" : "Critical",
                 ppe: ppeLabels,
                 permits: permitLabels,
-                crewMembers: Object.values(crewMap),
+                teamMembers: Object.values(teamMap),
               });
             }}>{t("Export PDF")}</button>
             <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }} onClick={() => {
@@ -434,7 +434,7 @@ export function JSATab({ app }) {
           </div>
           <div className="jsa-risk-item">
             <div style={{ fontSize: 11, color: "var(--text3)" }}>{t("Crew Signed")}</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#10b981" }}>{(jsa.crewSignOn || []).length}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#10b981" }}>{(jsa.teamSignOn || []).length}</div>
           </div>
         </div>
 
@@ -515,9 +515,9 @@ export function JSATab({ app }) {
         {/* Crew Sign-On with Signatures */}
         <div className="jsa-section">
           <div className="jsa-section-title">{t("Crew Sign-On")}</div>
-          <div className="jsa-crew-list">
-            {(jsa.crewSignOn || []).map((c, i) => (
-              <div key={i} className="jsa-crew-item" style={{ flexDirection: "column", alignItems: "flex-start", gap: 6, padding: "10px 12px" }}>
+          <div className="jsa-team-list">
+            {(jsa.teamSignOn || []).map((c, i) => (
+              <div key={i} className="jsa-team-item" style={{ flexDirection: "column", alignItems: "flex-start", gap: 6, padding: "10px 12px" }}>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", width: "100%" }}>
                   <span style={{ fontWeight: 600, fontSize: 13 }}>{c.name}</span>
                   <span style={{ fontSize: 11, color: "#10b981" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
@@ -526,15 +526,15 @@ export function JSATab({ app }) {
                   label={t("Touch to Sign") + " — " + c.name}
                   signatureData={c.signature || null}
                   onSave={(dataUrl) => {
-                    const updated = [...(jsa.crewSignOn || [])];
+                    const updated = [...(jsa.teamSignOn || [])];
                     updated[i] = { ...updated[i], signature: dataUrl, signedAt: new Date().toISOString() };
-                    updateJsa({ crewSignOn: updated });
+                    updateJsa({ teamSignOn: updated });
                     show(t("Signature saved"));
                   }}
                   onClear={() => {
-                    const updated = [...(jsa.crewSignOn || [])];
+                    const updated = [...(jsa.teamSignOn || [])];
                     updated[i] = { ...updated[i], signature: null };
-                    updateJsa({ crewSignOn: updated });
+                    updateJsa({ teamSignOn: updated });
                   }}
                 />
               </div>
@@ -548,15 +548,15 @@ export function JSATab({ app }) {
                     if (!e.target.value) return;
                     const emp = (employees || []).find(em => em.id === Number(e.target.value));
                     if (!emp) return;
-                    if ((jsa.crewSignOn || []).some(c => c.employeeId === emp.id)) { show(t("Already signed on")); return; }
+                    if ((jsa.teamSignOn || []).some(c => c.employeeId === emp.id)) { show(t("Already signed on")); return; }
                     updateJsa({
-                      crewSignOn: [...(jsa.crewSignOn || []), { employeeId: emp.id, name: emp.name, signedAt: new Date().toISOString(), signature: null }]
+                      teamSignOn: [...(jsa.teamSignOn || []), { employeeId: emp.id, name: emp.name, signedAt: new Date().toISOString(), signature: null }]
                     });
                     show(t("Crew member signed on"));
                     e.target.value = "";
                   }}
                 >
-                  <option value="">{t("+ Add crew member...")}</option>
+                  <option value="">{t("+ Add team member...")}</option>
                   {(employees || []).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                 </select>
               </div>
@@ -578,12 +578,12 @@ export function JSATab({ app }) {
         </div>
 
         {/* Crew Members / Signatures */}
-        {(jsa.crewMembers || []).length > 0 && (
+        {(jsa.teamMembers || []).length > 0 && (
           <div className="jsa-section">
             <div className="jsa-section-title">{t("Crew Members")}</div>
-            <div className="jsa-crew-list">
-              {jsa.crewMembers.map((cm, i) => (
-                <div key={i} className="jsa-crew-item" style={{ flexDirection: "column", alignItems: "flex-start", gap: 6, padding: "10px 12px" }}>
+            <div className="jsa-team-list">
+              {jsa.teamMembers.map((cm, i) => (
+                <div key={i} className="jsa-team-item" style={{ flexDirection: "column", alignItems: "flex-start", gap: 6, padding: "10px 12px" }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <span style={{ fontWeight: 600, fontSize: 13 }}>{cm.name}</span>
                     {cm.role && <span style={{ fontSize: 11, color: "var(--text3)" }}>{cm.role}</span>}
@@ -593,15 +593,15 @@ export function JSATab({ app }) {
                       label={t("Touch to Sign") + " — " + cm.name}
                       signatureData={cm.signature || null}
                       onSave={(dataUrl) => {
-                        const updated = [...(jsa.crewMembers || [])];
+                        const updated = [...(jsa.teamMembers || [])];
                         updated[i] = { ...updated[i], signature: dataUrl };
-                        updateJsa({ crewMembers: updated });
+                        updateJsa({ teamMembers: updated });
                         show(t("Signature saved"));
                       }}
                       onClear={() => {
-                        const updated = [...(jsa.crewMembers || [])];
+                        const updated = [...(jsa.teamMembers || [])];
                         updated[i] = { ...updated[i], signature: null };
-                        updateJsa({ crewMembers: updated });
+                        updateJsa({ teamMembers: updated });
                       }}
                     />
                   )}
@@ -712,7 +712,7 @@ export function JSATab({ app }) {
         ...form,
         projectId: Number(form.projectId),
         status: "draft",
-        crewSignOn: [],
+        teamSignOn: [],
         toolboxTalk: { topic: "", notes: "", discussed: false },
         nearMisses: [],
         createdAt: new Date().toISOString(),
@@ -721,7 +721,7 @@ export function JSATab({ app }) {
       };
       setJsas(prev => [...prev, newJsa]);
       show(t("JSA created"));
-      setForm({ projectId: "", trades: ["framing"], templateId: "", title: "", location: "", supervisor: "", competentPerson: "", gc: "", date: new Date().toISOString().slice(0, 10), shift: "day", weather: "clear", indoorOutdoor: "outdoor", steps: [], ppe: [], permits: [], crewMembers: [] });
+      setForm({ projectId: "", trades: ["framing"], templateId: "", title: "", location: "", supervisor: "", competentPerson: "", gc: "", date: new Date().toISOString().slice(0, 10), shift: "day", weather: "clear", indoorOutdoor: "outdoor", steps: [], ppe: [], permits: [], teamMembers: [] });
       setActiveJsa(newJsa.id);
       setSubTab("detail");
     };
@@ -967,34 +967,34 @@ export function JSATab({ app }) {
         {/* Crew Members / Signatures */}
         <div className="jsa-section" style={{ marginTop: 16 }}>
           <div className="jsa-section-title">{t("Crew Members / Signatures")}</div>
-          <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 8 }}>{t("Add crew members who will acknowledge this JSA")}</div>
-          {(form.crewMembers || []).map((cm, i) => (
+          <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 8 }}>{t("Add team members who will acknowledge this JSA")}</div>
+          {(form.teamMembers || []).map((cm, i) => (
             <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
               <input className="form-input" style={{ flex: 1, fontSize: 12 }} value={cm.name} placeholder={t("Name")}
                 onChange={e => {
-                  const updated = [...form.crewMembers];
+                  const updated = [...form.teamMembers];
                   updated[i] = { ...updated[i], name: e.target.value };
-                  updForm("crewMembers", updated);
+                  updForm("teamMembers", updated);
                 }} />
               <input className="form-input" style={{ flex: 1, fontSize: 12 }} value={cm.role || ""} placeholder={t("Role / Trade")}
                 onChange={e => {
-                  const updated = [...form.crewMembers];
+                  const updated = [...form.teamMembers];
                   updated[i] = { ...updated[i], role: e.target.value };
-                  updForm("crewMembers", updated);
+                  updForm("teamMembers", updated);
                 }} />
               <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)", padding: "2px 8px" }}
-                onClick={() => updForm("crewMembers", form.crewMembers.filter((_, j) => j !== i))}>x</button>
+                onClick={() => updForm("teamMembers", form.teamMembers.filter((_, j) => j !== i))}>x</button>
             </div>
           ))}
           <div style={{ display: "flex", gap: 8 }}>
             <button className="cal-nav-btn" style={{ fontSize: 12 }}
-              onClick={() => updForm("crewMembers", [...(form.crewMembers || []), { name: "", role: "" }])}>{t("+ Add Crew Member")}</button>
+              onClick={() => updForm("teamMembers", [...(form.teamMembers || []), { name: "", role: "" }])}>{t("+ Add Crew Member")}</button>
             {(employees || []).length > 0 && (
               <select className="form-select" style={{ fontSize: 11, maxWidth: 200 }}
                 onChange={e => {
                   if (!e.target.value) return;
                   const emp = employees.find(em => em.id === Number(e.target.value));
-                  if (emp) updForm("crewMembers", [...(form.crewMembers || []), { name: emp.name, role: emp.role || emp.trade || "" }]);
+                  if (emp) updForm("teamMembers", [...(form.teamMembers || []), { name: emp.name, role: emp.role || emp.trade || "" }]);
                   e.target.value = "";
                 }}>
                 <option value="">{t("Pick from employees...")}</option>

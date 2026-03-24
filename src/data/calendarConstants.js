@@ -19,7 +19,7 @@ export const EVENT_TYPES = [
   { key: "commissioning", label: "Commissioning", labelEs: "Comisionamiento", color: "#14b8a6" },
   { key: "pto", label: "PTO", labelEs: "Tiempo Libre", color: "#64748b" },
   { key: "weather", label: "Weather", labelEs: "Clima", color: "#78716c" },
-  { key: "crew", label: "Crew Assignment", labelEs: "Asignación", color: "#e09422" },
+  { key: "team", label: "Crew Assignment", labelEs: "Asignación", color: "#e09422" },
   { key: "gantt", label: "Gantt Task", labelEs: "Tarea Gantt", color: "#22c55e" },
   { key: "equipment", label: "Equipment", labelEs: "Equipo", color: "#0ea5e9" },
   { key: "sub", label: "Subcontractor", labelEs: "Subcontratista", color: "#d946ef" },

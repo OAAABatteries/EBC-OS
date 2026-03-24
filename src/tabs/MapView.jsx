@@ -40,12 +40,12 @@ function fmtContract(n) {
 }
 
 export function MapView({ app }) {
-  const { projects, crewSchedule, employees, timeEntries = [], materialRequests = [] } = app;
+  const { projects, teamSchedule, employees, timeEntries = [], materialRequests = [] } = app;
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markersRef = useRef([]);
   const circlesRef = useRef([]);
-  const crewLayerRef = useRef(null);
+  const teamLayerRef = useRef(null);
   const deliveryLayerRef = useRef(null);
   const [viewMode, setViewMode] = useState("ebc");
   const [mapStyle, setMapStyle] = useState("dark");
@@ -64,7 +64,7 @@ export function MapView({ app }) {
     setRouteResult(null);
     try {
       const { optimizeProjectRoutes } = await import("../utils/api.js");
-      const res = await optimizeProjectRoutes(app.apiKey, projects.slice(0, 15), (crewSchedule || []).slice(0, 30), (employees || []).slice(0, 15));
+      const res = await optimizeProjectRoutes(app.apiKey, projects.slice(0, 15), (teamSchedule || []).slice(0, 30), (employees || []).slice(0, 15));
       setRouteResult(res);
       setShowRoute(true);
       app.show("Route analysis complete", "ok");
@@ -87,17 +87,17 @@ export function MapView({ app }) {
     return projects.filter((p) => p.pm === viewMode);
   }, [projects, viewMode]);
 
-  // Get crew count per project
-  const crewCounts = useMemo(() => {
+  // Get team count per project
+  const teamSizes = useMemo(() => {
     const counts = {};
-    crewSchedule.forEach((s) => {
+    teamSchedule.forEach((s) => {
       if (!counts[s.projectId]) counts[s.projectId] = new Set();
       counts[s.projectId].add(s.employeeId);
     });
     const result = {};
     Object.entries(counts).forEach(([id, set]) => { result[id] = set.size; });
     return result;
-  }, [crewSchedule]);
+  }, [teamSchedule]);
 
   // Init map
   useEffect(() => {
@@ -146,7 +146,7 @@ export function MapView({ app }) {
 
       const marker = L.marker([p.lat, p.lng], { icon: makeMarkerIcon(p) });
       const color = PHASE_COLORS[p.phase] || "#e09422";
-      const crew = crewCounts[p.id] || 0;
+      const teamList = teamSizes[p.id] || 0;
 
       marker.bindPopup(`
         <div class="map-popup-content">
@@ -155,7 +155,7 @@ export function MapView({ app }) {
           <div class="map-popup-row"><span class="map-popup-label">Contract</span> ${fmt(p.contract)}</div>
           <div class="map-popup-row"><span class="map-popup-label">Phase</span> <span style="color:${color}">${p.phase}</span></div>
           <div class="map-popup-row"><span class="map-popup-label">PM</span> ${p.pm || "—"}</div>
-          ${crew > 0 ? `<div class="map-popup-row"><span class="map-popup-label">Crew</span> ${crew} assigned</div>` : ""}
+          ${team > 0 ? `<div class="map-popup-row"><span class="map-popup-label">Crew</span> ${team} assigned</div>` : ""}
           <div class="map-popup-row"><span class="map-popup-label">Geofence</span> ${p.perimeter && p.perimeter.length >= 3 ? `Polygon (${p.perimeter.length} pts)` : `${p.radiusFt || 1000}ft radius`}</div>
         </div>
       `, { className: "map-popup", maxWidth: 260 });
@@ -193,22 +193,22 @@ export function MapView({ app }) {
       const group = L.featureGroup(markersRef.current);
       mapInstance.current.fitBounds(group.getBounds().pad(0.1));
     }
-  }, [filtered, showGeofences, crewCounts, app.fmt]);
+  }, [filtered, showGeofences, teamSizes, app.fmt]);
 
   // ── Crew position markers ──
   useEffect(() => {
     if (!mapInstance.current) return;
 
-    // Clear previous crew layer
-    if (crewLayerRef.current) {
-      crewLayerRef.current.clearLayers();
-      mapInstance.current.removeLayer(crewLayerRef.current);
-      crewLayerRef.current = null;
+    // Clear previous team layer
+    if (teamLayerRef.current) {
+      teamLayerRef.current.clearLayers();
+      mapInstance.current.removeLayer(teamLayerRef.current);
+      teamLayerRef.current = null;
     }
 
     if (!showCrew) return;
 
-    const crewGroup = L.layerGroup();
+    const teamGroup = L.layerGroup();
     const activeClockins = timeEntries.filter(
       (e) => e.clockIn && !e.clockOut && e.clockInLat && e.clockInLng
     );
@@ -237,11 +237,11 @@ export function MapView({ app }) {
         </div>
       `, { className: "map-popup", maxWidth: 240 });
 
-      marker.addTo(crewGroup);
+      marker.addTo(teamGroup);
     });
 
-    crewGroup.addTo(mapInstance.current);
-    crewLayerRef.current = crewGroup;
+    teamGroup.addTo(mapInstance.current);
+    teamLayerRef.current = teamGroup;
   }, [showCrew, timeEntries, employees, projects]);
 
   // ── Delivery route markers ──
@@ -330,7 +330,7 @@ export function MapView({ app }) {
               {routeResult.clusterAnalysis.map((c, i) => (
                 <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "var(--bg3)", border: "1px solid var(--border)" }}>
                   <div className="text-sm font-semi">{c.cluster} — {c.area}</div>
-                  <div className="text-xs text-muted mt-2">Projects: {(c.projects || []).join(", ")} · Crew: {c.crewCount}</div>
+                  <div className="text-xs text-muted mt-2">Projects: {(c.projects || []).join(", ")} · Crew: {c.teamSize}</div>
                   <div className="text-xs mt-2" style={{ color: "var(--green)" }}>{c.recommendation}</div>
                 </div>
               ))}

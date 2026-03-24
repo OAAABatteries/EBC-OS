@@ -282,7 +282,7 @@ const _demoJSAs = [
     ],
     ppe: ["hard_hat", "safety_glasses", "safety_boots", "gloves_cut", "hearing", "hi_vis"],
     permits: [],
-    crewSignOn: [
+    teamSignOn: [
       { employeeId: 5, name: "Oscar Ramirez", signedAt: "2026-03-14T06:30:00" },
       { employeeId: 6, name: "Marco Lopez", signedAt: "2026-03-14T06:31:00" },
       { employeeId: 7, name: "Diego Herrera", signedAt: "2026-03-14T06:31:00" },

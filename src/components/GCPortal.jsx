@@ -152,7 +152,7 @@ function getDailyReportSummary(project) {
   const summaries = [
     "Framing continues on schedule. No issues reported.",
     "Board hanging in progress, 60% of area complete.",
-    "Taping crew on site, mudding Level 2 corridors.",
+    "Taping team on site, mudding Level 2 corridors.",
     "Demo complete, framing layout started.",
     "ACT ceiling grid installed, tiles going up Monday.",
     "Lead-lined drywall installation — radiation shielding verified.",
@@ -256,7 +256,7 @@ export default function GCPortal() {
   const [tab, setTab] = useState("dashboard");
   const [bidForm, setBidForm] = useState({ projectName: "", address: "", scope: "", timeline: "", notes: "", plans: null });
   const [manpowerForm, setManpowerForm] = useState({
-    project: "", tradeNeeded: "Drywall", crewSize: "", startDate: "", endDate: "",
+    project: "", tradeNeeded: "Drywall", teamSize: "", startDate: "", endDate: "",
     notes: "", certs: [],
   });
   const [submitted, setSubmitted] = useState(null);
@@ -315,7 +315,7 @@ export default function GCPortal() {
             <div style={{ textAlign: "center", marginBottom: 28 }}>
               <div className="gcp-logo-icon" style={{ width: 56, height: 56, fontSize: 20, margin: "0 auto 16px", borderRadius: 14 }}>EBC</div>
               <div className="gcp-section-title">Welcome to the GC Portal</div>
-              <div className="gcp-section-desc" style={{ marginBottom: 0 }}>Access your project dashboard, request crews, and track documents.</div>
+              <div className="gcp-section-desc" style={{ marginBottom: 0 }}>Access your project dashboard, request teams, and track documents.</div>
             </div>
             <div style={{ marginBottom: 16 }}>
               <label className="gcp-label">Your Email</label>
@@ -351,10 +351,10 @@ export default function GCPortal() {
   };
 
   const handleManpowerRequest = () => {
-    if (!manpowerForm.project || !manpowerForm.crewSize) return;
+    if (!manpowerForm.project || !manpowerForm.teamSize) return;
     setSubmitted("manpower");
     setTimeout(() => setSubmitted(null), 5000);
-    setManpowerForm({ project: "", tradeNeeded: "Drywall", crewSize: "", startDate: "", endDate: "", notes: "", certs: [] });
+    setManpowerForm({ project: "", tradeNeeded: "Drywall", teamSize: "", startDate: "", endDate: "", notes: "", certs: [] });
   };
 
   const toggleCert = (cert) => {
@@ -373,7 +373,7 @@ export default function GCPortal() {
     }));
   };
 
-  const totalCrewOnSite = gcProjects.reduce((sum, p) => sum + (p.crewCount || 0), 0);
+  const totalCrewOnSite = gcProjects.reduce((sum, p) => sum + (p.teamSize || 0), 0);
   const activeCount = gcProjects.filter(p => p.status === "in-progress").length;
 
   const TABS = [
@@ -425,7 +425,7 @@ export default function GCPortal() {
           <div className="gcp-success">
             {submitted === "bid"
               ? "Bid request submitted! Our estimating team will reach out within 24 hours."
-              : "Manpower request submitted! We'll confirm crew availability shortly."}
+              : "Manpower request submitted! We'll confirm team availability shortly."}
           </div>
         )}
 
@@ -492,7 +492,7 @@ export default function GCPortal() {
                   <div className="gcp-stat-row">
                     <div className="gcp-stat">
                       <div className="gcp-stat-label">Crew on Site</div>
-                      <div className="gcp-stat-value">{p.crewCount || 0}</div>
+                      <div className="gcp-stat-value">{p.teamSize || 0}</div>
                     </div>
                     <div className="gcp-stat">
                       <div className="gcp-stat-label">PM</div>
@@ -650,7 +650,7 @@ export default function GCPortal() {
         {tab === "manpower" && (
           <div>
             <div className="gcp-section-title">Request Manpower</div>
-            <div className="gcp-section-desc">Need additional crew? Fill out the details and we will confirm availability.</div>
+            <div className="gcp-section-desc">Need additional team? Fill out the details and we will confirm availability.</div>
             <div className="gcp-card">
               <div className="gcp-grid" style={{ marginBottom: 16 }}>
                 <div>
@@ -674,8 +674,8 @@ export default function GCPortal() {
                 <div>
                   <label className="gcp-label">Number of Workers *</label>
                   <input className="gcp-input" type="number" min="1" placeholder="e.g. 4"
-                    value={manpowerForm.crewSize}
-                    onChange={e => setManpowerForm(f => ({ ...f, crewSize: e.target.value }))} />
+                    value={manpowerForm.teamSize}
+                    onChange={e => setManpowerForm(f => ({ ...f, teamSize: e.target.value }))} />
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   <div>

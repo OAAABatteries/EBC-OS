@@ -133,7 +133,7 @@ export const TABLE_MAP = {
   employees:         "users",
   timeEntries:       "time_entries",
   materialRequests:  "material_requests",
-  crewSchedule:      "crew_schedule",
+  teamSchedule:      "crew_schedule",
   company:           "company",
   assemblies:        "assemblies",
   calendarEvents:    "calendar_events",

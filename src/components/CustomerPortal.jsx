@@ -11,7 +11,7 @@ import { useSyncedState } from "../hooks/useSyncedState";
 //  Customer Portal — External-facing portal for GCs/Customers
 //  Access via: yoursite.com/#/customer-portal
 //  EBC brand: dark navy, amber accents, white eagle
-//  Read-only except for crew performance feedback
+//  Read-only except for team performance feedback
 // ═══════════════════════════════════════════════════════════════
 
 // ── Demo access codes → project IDs ──────────────────────────
@@ -723,7 +723,7 @@ export default function CustomerPortal() {
             {/* Submit form */}
             <div className="cp-card">
               <div className="cp-card-title"><Star size={16} color="#d97706" />Crew Performance Feedback</div>
-              <div className="cp-card-sub">Share your experience with the EBC crew on site. All feedback is reviewed by management.</div>
+              <div className="cp-card-sub">Share your experience with the EBC team on site. All feedback is reviewed by management.</div>
 
               {fbSuccess && (
                 <div className="cp-success">
@@ -757,7 +757,7 @@ export default function CustomerPortal() {
                 <label className="cp-form-label">Comments</label>
                 <textarea
                   className="cp-textarea"
-                  placeholder="How was the crew's professionalism, cleanliness, communication, and quality of work?"
+                  placeholder="How was the team's professionalism, cleanliness, communication, and quality of work?"
                   value={fbComment}
                   onChange={e => setFbComment(e.target.value)}
                 />
@@ -802,7 +802,7 @@ export default function CustomerPortal() {
               <div className="cp-card" style={{ textAlign: "center", padding: "32px 20px" }}>
                 <Star size={32} color="#1e3550" style={{ marginBottom: 12 }} />
                 <div style={{ color: "#3a5470", fontSize: 13 }}>No feedback submitted yet for this project.</div>
-                <div style={{ color: "#2a5580", fontSize: 12, marginTop: 6 }}>Be the first to rate the crew above.</div>
+                <div style={{ color: "#2a5580", fontSize: 12, marginTop: 6 }}>Be the first to rate the team above.</div>
               </div>
             )}
           </>

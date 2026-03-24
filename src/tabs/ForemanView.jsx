@@ -84,7 +84,7 @@ function getWeekStart(d = new Date()) {
 
 export function ForemanView({ app }) {
   const {
-    employees, projects, setProjects, crewSchedule, timeEntries, setTimeEntries,
+    employees, projects, setProjects, teamSchedule, timeEntries, setTimeEntries,
     materialRequests, setMaterialRequests,
     changeOrders, rfis, setRfis, submittals,
     jsas, setJsas,
@@ -121,8 +121,8 @@ export function ForemanView({ app }) {
   const [clockEntry, setClockEntry] = useState(null); // { clockIn, lat, lng, projectId }
   const [gpsStatus, setGpsStatus] = useState("");
   const [clockProjectSearch, setClockProjectSearch] = useState("");
-  const [crewClocks, setCrewClocks] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("ebc_crewClocks") || "{}"); } catch { return {}; }
+  const [teamClocks, setCrewClocks] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ebc_teamClocks") || "{}"); } catch { return {}; }
   });
   const [drawingZoom, setDrawingZoom] = useState(1);
   const [activeDrawingId, setActiveDrawingId] = useState(null);
@@ -146,7 +146,7 @@ export function ForemanView({ app }) {
   const updJsaForm = (k, v) => setJsaForm(f => ({ ...f, [k]: v }));
 
   // ── Pre-Task Safety Roll Call state ──
-  const [rcStep, setRcStep] = useState("pick"); // pick | crew | sign | supervisor | done
+  const [rcStep, setRcStep] = useState("pick"); // pick | team | sign | supervisor | done
   const [rcJsaId, setRcJsaId] = useState(null);
   const [rcWeather, setRcWeather] = useState("clear");
   const [rcSignIdx, setRcSignIdx] = useState(0);
@@ -157,9 +157,9 @@ export function ForemanView({ app }) {
 
   // ── Crew tab: add member ──
   const [showCrewAdd, setShowCrewAdd] = useState(false);
-  const [crewAddSearch, setCrewAddSearch] = useState("");
+  const [teamAddSearch, setCrewAddSearch] = useState("");
   const [extraCrewIds, setExtraCrewIds] = useState([]);
-  const crewAddRef = useRef(null);
+  const teamAddRef = useRef(null);
 
   // ── Pre-task safety: indoor/outdoor + hazard multi-select ──
   const [rcIndoorOutdoor, setRcIndoorOutdoor] = useState("indoor");
@@ -175,7 +175,7 @@ export function ForemanView({ app }) {
     date: new Date().toISOString().slice(0, 10),
     temperature: "",
     weatherCondition: "Clear",
-    crewPresent: [],
+    teamPresent: [],
     quickTasks: [],
     workPerformed: "",
     materialsReceived: "",
@@ -189,7 +189,7 @@ export function ForemanView({ app }) {
   };
   const [reportForm, setReportForm] = useState({ ...EMPTY_REPORT_FORM });
   const [showReportForm, setShowReportForm] = useState(false);
-  const [crewSearch, setCrewSearch] = useState("");
+  const [teamSearch, setCrewSearch] = useState("");
   const [expandedReportId, setExpandedReportId] = useState(null);
   const [editingReportId, setEditingReportId] = useState(null);
 
@@ -214,10 +214,10 @@ export function ForemanView({ app }) {
     if (!yesterday) { show(t("No previous report to copy from"), "warn"); return; }
     setReportForm(f => ({
       ...f,
-      crewPresent: yesterday.crewPresent || [],
+      teamPresent: yesterday.teamPresent || [],
       equipmentOnSite: yesterday.equipmentOnSite || "",
     }));
-    show(t("Copied crew & equipment from last report"));
+    show(t("Copied team & equipment from last report"));
   }, [dailyReports, selectedProjectId, show, t]);
 
   // ── persist session ──
@@ -323,22 +323,22 @@ export function ForemanView({ app }) {
     show?.(`${t("Clocked out")} · ${totalHours}h ✓`);
   };
 
-  // ── crew clock-in/out ──
-  const persistCrewClocks = (updated) => {
+  // ── team clock-in/out ──
+  const persistTeamClocks = (updated) => {
     setCrewClocks(updated);
-    localStorage.setItem("ebc_crewClocks", JSON.stringify(updated));
+    localStorage.setItem("ebc_teamClocks", JSON.stringify(updated));
   };
 
   const handleCrewClockIn = async (empId) => {
     const loc = await getLocation();
     const entry = { clockIn: new Date().toISOString(), lat: loc?.lat || null, lng: loc?.lng || null, projectId: selectedProjectId };
-    persistCrewClocks({ ...crewClocks, [empId]: entry });
+    persistTeamClocks({ ...teamClocks, [empId]: entry });
     const emp = employees.find(e => e.id === empId);
     show?.(`${emp?.name || "Crew"} ${t("clocked in")} ✓`);
   };
 
   const handleCrewClockOut = async (empId) => {
-    const entry = crewClocks[empId];
+    const entry = teamClocks[empId];
     if (!entry) return;
     const loc = await getLocation();
     const totalMs = Date.now() - new Date(entry.clockIn).getTime();
@@ -361,9 +361,9 @@ export function ForemanView({ app }) {
       geofenceStatus: "inside",
     };
     if (setTimeEntries) setTimeEntries(prev => [...prev, newEntry]);
-    const updated = { ...crewClocks };
+    const updated = { ...teamClocks };
     delete updated[empId];
-    persistCrewClocks(updated);
+    persistTeamClocks(updated);
     show?.(`${emp?.name || "Crew"} ${t("clocked out")} · ${totalHours}h ✓`);
   };
 
@@ -458,7 +458,7 @@ export function ForemanView({ app }) {
   const myProjects = useMemo(() => {
     if (!activeForeman) return [];
     const fId = String(activeForeman.id);
-    const mySchedule = crewSchedule.filter(
+    const mySchedule = teamSchedule.filter(
       s => String(s.employeeId) === fId && s.weekStart === weekStart
     );
     const projectIds = [...new Set(mySchedule.map(s => String(s.projectId)))];
@@ -467,12 +467,12 @@ export function ForemanView({ app }) {
     const assigned = projects.filter(p => p.assignedForeman != null && String(p.assignedForeman) === fId);
     // Combine, deduplicate by id
     const combined = [...new Map([...scheduled, ...assigned].map(p => [String(p.id), p])).values()];
-    // Fallback: if no crew schedule entries and no direct assignment, show all active projects
+    // Fallback: if no team schedule entries and no direct assignment, show all active projects
     if (combined.length === 0) {
       return projects.filter(p => p.status === "in-progress" || p.status === "active");
     }
     return combined;
-  }, [activeForeman, crewSchedule, projects, weekStart]);
+  }, [activeForeman, teamSchedule, projects, weekStart]);
 
   // auto-select first project
   useEffect(() => {
@@ -486,11 +486,11 @@ export function ForemanView({ app }) {
     [projects, selectedProjectId]
   );
 
-  // ── computed: crew for selected project ──
-  const crewForProject = useMemo(() => {
+  // ── computed: team for selected project ──
+  const teamForProject = useMemo(() => {
     if (!selectedProjectId) return [];
     const pId = String(selectedProjectId);
-    const entries = crewSchedule.filter(
+    const entries = teamSchedule.filter(
       s => String(s.projectId) === pId && s.weekStart === weekStart
     );
     return entries.map(s => {
@@ -506,13 +506,13 @@ export function ForemanView({ app }) {
         .reduce((sum, te) => sum + te.totalHours, 0);
       return { ...emp, days: s.days, todayHours, weekHours, scheduleHours: s.hours };
     }).filter(Boolean);
-  }, [selectedProjectId, crewSchedule, employees, timeEntries, weekStart]);
+  }, [selectedProjectId, teamSchedule, employees, timeEntries, weekStart]);
 
   // ── computed: hours used (from time entries) ──
   const hoursUsed = useMemo(() => {
     if (!selectedProjectId) return 0;
-    return crewForProject.reduce((sum, c) => sum + c.weekHours, 0);
-  }, [crewForProject, selectedProjectId]);
+    return teamForProject.reduce((sum, c) => sum + c.weekHours, 0);
+  }, [teamForProject, selectedProjectId]);
 
   // ── computed: material requests for project ──
   const projectMatRequests = useMemo(() => {
@@ -536,9 +536,9 @@ export function ForemanView({ app }) {
     return (rfis || []).filter(r => String(r.projectId) === String(selectedProjectId));
   }, [rfis, selectedProjectId]);
 
-  // weekly burn rate in hours: sum of scheduled hours per crew member this week
+  // weekly burn rate in hours: sum of scheduled hours per team member this week
   const weeklyBurnHours = useMemo(() => {
-    return crewForProject.reduce((sum, c) => {
+    return teamForProject.reduce((sum, c) => {
       const daysThisWeek = DAY_KEYS.filter(d => c.days?.[d]).length;
       const hrs = c.scheduleHours || {};
       const startH = parseFloat(hrs.start || hrs.startDate || "0");
@@ -548,7 +548,7 @@ export function ForemanView({ app }) {
         : 8;
       return sum + (daysThisWeek * dailyHours);
     }, 0);
-  }, [crewForProject]);
+  }, [teamForProject]);
 
   // ── actions ──
   const handleApprove = (reqId) => {
@@ -697,7 +697,7 @@ export function ForemanView({ app }) {
   const tabDefs = [
     { key: "clock", label: t("Clock") },
     { key: "dashboard", label: t("Dashboard") },
-    { key: "crew", label: t("Crew"), count: crewForProject.length },
+    { key: "team", label: t("Crew"), count: teamForProject.length },
     { key: "hours", label: t("Hours") },
     { key: "jsa", label: t("JSA"), count: activeJsaCount },
     { key: "materials", label: t("Materials"), count: projectMatRequests.filter(r => r.status === "requested" || r.status === "pending").length },
@@ -980,7 +980,7 @@ export function ForemanView({ app }) {
                     <div style={{ marginTop: 30, textAlign: "left" }}>
                       <div className="section-title" style={{ fontSize: 14, marginBottom: 8 }}>{t("Today's Time Log")}</div>
                       {myTodayEntries.map((te, i) => (
-                        <div key={i} className="foreman-crew-row" style={{ padding: "8px 12px", marginBottom: 4 }}>
+                        <div key={i} className="foreman-team-row" style={{ padding: "8px 12px", marginBottom: 4 }}>
                           <div>
                             <div className="text-sm font-semi">
                               {new Date(te.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} → {new Date(te.clockOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -1137,7 +1137,7 @@ export function ForemanView({ app }) {
                     <div style={{ marginTop: 30, textAlign: "left" }}>
                       <div className="section-title" style={{ fontSize: 14, marginBottom: 8 }}>{t("Today's Time Log")}</div>
                       {myTodayEntries.map((te, i) => (
-                        <div key={i} className="foreman-crew-row" style={{ padding: "8px 12px", marginBottom: 4 }}>
+                        <div key={i} className="foreman-team-row" style={{ padding: "8px 12px", marginBottom: 4 }}>
                           <div>
                             <div className="text-sm font-semi">
                               {new Date(te.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} → {new Date(te.clockOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -1159,21 +1159,21 @@ export function ForemanView({ app }) {
                   <div style={{ marginTop: 30, textAlign: "left" }}>
                     <div className="section-title" style={{ fontSize: 14, marginBottom: 12 }}>{t("Crew Time Clock")}</div>
 
-                    {/* Add crew member — searchable dropdown */}
+                    {/* Add team member — searchable dropdown */}
                     <div style={{ position: "relative", marginBottom: 16 }}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <div style={{ flex: 1, position: "relative" }}>
                           <input
                             type="text"
-                            placeholder={t("Search or select crew member...")}
-                            value={crewSearch || ""}
+                            placeholder={t("Search or select team member...")}
+                            value={teamSearch || ""}
                             onChange={e => setCrewSearch(e.target.value)}
-                            onFocus={() => setCrewSearch(crewSearch || "")}
+                            onFocus={() => setCrewSearch(teamSearch || "")}
                             style={{ width: "100%", padding: "10px 14px", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 8, color: "var(--text)", fontSize: 14 }}
                           />
                           {/* Dropdown list */}
-                          {crewSearch !== null && crewSearch !== undefined && (() => {
-                            const q = (crewSearch || "").toLowerCase().trim();
+                          {teamSearch !== null && teamSearch !== undefined && (() => {
+                            const q = (teamSearch || "").toLowerCase().trim();
                             const allEmp = employees.filter(e => e.id !== activeForeman?.id);
                             const filtered = q.length > 0
                               ? allEmp.filter(e => e.name.toLowerCase().includes(q))
@@ -1187,8 +1187,8 @@ export function ForemanView({ app }) {
                             return (
                               <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "0 0 8px 8px", maxHeight: 260, overflowY: "auto" }}>
                                 {filtered.slice(0, 15).map(c => {
-                                  const isIn = !!crewClocks[c.id];
-                                  const isAssigned = crewForProject.some(cp => cp.id === c.id);
+                                  const isIn = !!teamClocks[c.id];
+                                  const isAssigned = teamForProject.some(cp => cp.id === c.id);
                                   return (
                                     <div key={c.id}
                                       style={{ padding: "8px 14px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid var(--border)", cursor: "pointer" }}
@@ -1222,9 +1222,9 @@ export function ForemanView({ app }) {
                       </div>
                     </div>
 
-                    {/* Currently clocked-in crew */}
+                    {/* Currently clocked-in team */}
                     {(() => {
-                      const clockedInIds = Object.keys(crewClocks).map(Number);
+                      const clockedInIds = Object.keys(teamClocks).map(Number);
                       const clockedIn = clockedInIds.map(id => employees.find(e => e.id === id)).filter(Boolean);
                       if (clockedIn.length === 0) return null;
                       return (
@@ -1232,19 +1232,19 @@ export function ForemanView({ app }) {
                           <div className="text-xs text-muted" style={{ marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{t("Clocked In")} ({clockedIn.length})</div>
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>
                             {clockedIn.map(c => {
-                              const clockData = crewClocks[c.id];
-                              const isAssigned = crewForProject.some(cp => cp.id === c.id);
+                              const clockData = teamClocks[c.id];
+                              const isAssigned = teamForProject.some(cp => cp.id === c.id);
                               const todayEntries = timeEntries.filter(te => te.employeeId === c.id && new Date(te.clockIn).toDateString() === todayStr && te.totalHours);
                               const todayTotal = todayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
                               return (
-                                <div key={c.id} className="foreman-crew-row" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, borderLeft: "3px solid var(--green)" }}>
+                                <div key={c.id} className="foreman-team-row" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, borderLeft: "3px solid var(--green)" }}>
                                   <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                                     {c.name.split(" ").map(n => n[0]).join("")}
                                   </div>
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div className="text-sm font-semi">{c.name}</div>
                                     <div className="text-xs text-muted">
-                                      {c.role || c.title || ""}{!isAssigned && <span style={{ color: "var(--amber)" }}> · {t("Other crew")}</span>}
+                                      {c.role || c.title || ""}{!isAssigned && <span style={{ color: "var(--amber)" }}> · {t("Other team")}</span>}
                                       {todayTotal > 0 ? ` · ${todayTotal.toFixed(1)}h ${t("today")}` : ""}
                                     </div>
                                     {clockData && (
@@ -1266,9 +1266,9 @@ export function ForemanView({ app }) {
                       );
                     })()}
 
-                    {/* Assigned crew not yet clocked in */}
+                    {/* Assigned team not yet clocked in */}
                     {(() => {
-                      const notIn = crewForProject.filter(c => c.id !== activeForeman?.id && !crewClocks[c.id]);
+                      const notIn = teamForProject.filter(c => c.id !== activeForeman?.id && !teamClocks[c.id]);
                       if (notIn.length === 0) return null;
                       return (
                         <div>
@@ -1278,7 +1278,7 @@ export function ForemanView({ app }) {
                               const todayEntries = timeEntries.filter(te => te.employeeId === c.id && new Date(te.clockIn).toDateString() === todayStr && te.totalHours);
                               const todayTotal = todayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
                               return (
-                                <div key={c.id} className="foreman-crew-row" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, opacity: 0.7 }}>
+                                <div key={c.id} className="foreman-team-row" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, opacity: 0.7 }}>
                                   <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--glass-bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "var(--text3)", flexShrink: 0 }}>
                                     {c.name.split(" ").map(n => n[0]).join("")}
                                   </div>
@@ -1351,7 +1351,7 @@ export function ForemanView({ app }) {
                   <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
                     <div className="foreman-kpi-card" style={{ flex: 1 }}>
                       <div className="foreman-kpi-label">{t("Crew Members")}</div>
-                      <div className="foreman-kpi-value" style={{ fontSize: 18 }}>{crewForProject.length}</div>
+                      <div className="foreman-kpi-value" style={{ fontSize: 18 }}>{teamForProject.length}</div>
                     </div>
                     <div className="foreman-kpi-card" style={{ flex: 1 }}>
                       <div className="foreman-kpi-label">{t("Materials")}</div>
@@ -1398,15 +1398,15 @@ export function ForemanView({ app }) {
             })()}
 
             {/* ═══ CREW TAB ═══ */}
-            {foremanTab === "crew" && (() => {
-              const scheduledIds = new Set(crewForProject.map(c => String(c.id)));
+            {foremanTab === "team" && (() => {
+              const scheduledIds = new Set(teamForProject.map(c => String(c.id)));
               const extraCrew = extraCrewIds
                 .map(id => employees.find(e => String(e.id) === String(id)))
                 .filter(Boolean);
-              const allDisplayCrew = [...crewForProject, ...extraCrew];
+              const allDisplayCrew = [...teamForProject, ...extraCrew];
 
-              const crewAddFiltered = (() => {
-                const q = crewAddSearch.toLowerCase().trim();
+              const teamAddFiltered = (() => {
+                const q = teamAddSearch.toLowerCase().trim();
                 return (employees || [])
                   .filter(e => e.active !== false && !scheduledIds.has(String(e.id)) && !extraCrewIds.some(id => String(id) === String(e.id)))
                   .filter(e => !q || e.name.toLowerCase().includes(q))
@@ -1427,17 +1427,17 @@ export function ForemanView({ app }) {
                     </button>
                   </div>
 
-                  {/* Add crew member dropdown */}
+                  {/* Add team member dropdown */}
                   {showCrewAdd && (
                     <div style={{ marginBottom: 14, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: "1px solid var(--border)" }}>
                         <Search size={14} style={{ color: "var(--text3)", flexShrink: 0 }} />
                         <input
-                          ref={crewAddRef}
+                          ref={teamAddRef}
                           autoFocus
                           type="text"
                           placeholder={t("Search employees...")}
-                          value={crewAddSearch}
+                          value={teamAddSearch}
                           onChange={e => setCrewAddSearch(e.target.value)}
                           style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--text)", fontSize: 14 }}
                         />
@@ -1445,10 +1445,10 @@ export function ForemanView({ app }) {
                           <X size={14} />
                         </button>
                       </div>
-                      {crewAddFiltered.length === 0 ? (
+                      {teamAddFiltered.length === 0 ? (
                         <div style={{ padding: "12px 14px", fontSize: 13, color: "var(--text3)" }}>{t("No employees found")}</div>
                       ) : (
-                        crewAddFiltered.map(emp => (
+                        teamAddFiltered.map(emp => (
                           <div
                             key={emp.id}
                             style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid var(--border)", cursor: "pointer" }}
@@ -1475,22 +1475,22 @@ export function ForemanView({ app }) {
                   {allDisplayCrew.length === 0 ? (
                     <div className="empty-state" style={{ padding: "30px 20px" }}>
                       <div style={{ fontSize: 36, marginBottom: 8, opacity: 0.5 }}><UserPlus size={36} /></div>
-                      <div className="empty-text">{t("No crew assigned")}</div>
+                      <div className="empty-text">{t("No team assigned")}</div>
                       <div className="text-xs text-muted" style={{ marginTop: 6 }}>{t("Tap Add Crew to add members")}</div>
                     </div>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {crewForProject.map(c => (
-                        <div key={c.id} className="foreman-crew-row">
+                      {teamForProject.map(c => (
+                        <div key={c.id} className="foreman-team-row">
                           <div>
-                            <div className="foreman-crew-name">{c.name}</div>
-                            <div className="foreman-crew-role">{t(c.role)}</div>
+                            <div className="foreman-team-name">{c.name}</div>
+                            <div className="foreman-team-role">{t(c.role)}</div>
                             <div className="text-xs text-muted" style={{ marginTop: 2 }}>
                               {DAY_KEYS.filter(d => c.days?.[d]).map(d => t(d.charAt(0).toUpperCase() + d.slice(1))).join(", ")}
                             </div>
                           </div>
                           <div style={{ textAlign: "right" }}>
-                            <div className="foreman-crew-hours">{fmtHours(c.todayHours)}</div>
+                            <div className="foreman-team-hours">{fmtHours(c.todayHours)}</div>
                             <div className="text-xs text-muted">{t("Hours Today")}</div>
                             <div className="text-xs text-dim" style={{ marginTop: 2 }}>
                               {fmtHours(c.weekHours)} {t("This Week").toLowerCase()}
@@ -1499,10 +1499,10 @@ export function ForemanView({ app }) {
                         </div>
                       ))}
                       {extraCrew.map(c => (
-                        <div key={c.id} className="foreman-crew-row" style={{ borderLeft: "3px solid var(--amber)" }}>
+                        <div key={c.id} className="foreman-team-row" style={{ borderLeft: "3px solid var(--amber)" }}>
                           <div>
-                            <div className="foreman-crew-name">{c.name}</div>
-                            <div className="foreman-crew-role">{t(c.role)}</div>
+                            <div className="foreman-team-name">{c.name}</div>
+                            <div className="foreman-team-role">{t(c.role)}</div>
                             <div className="text-xs" style={{ color: "var(--amber)", marginTop: 2 }}>+ {t("Added today")}</div>
                           </div>
                           <button
@@ -1552,8 +1552,8 @@ export function ForemanView({ app }) {
                 <div className="section-header" style={{ marginBottom: 8 }}>
                   <div className="section-title" style={{ fontSize: 14 }}>{t("Crew Members")}</div>
                 </div>
-                {crewForProject.length === 0 ? (
-                  <div className="text-sm text-muted">{t("No crew assigned")}</div>
+                {teamForProject.length === 0 ? (
+                  <div className="text-sm text-muted">{t("No team assigned")}</div>
                 ) : (
                   <div className="foreman-kpi-card">
                     <div className="foreman-cost-row" style={{ fontWeight: 600, fontSize: 10, textTransform: "uppercase", color: "var(--text3)" }}>
@@ -1562,7 +1562,7 @@ export function ForemanView({ app }) {
                       <span style={{ flex: 1, textAlign: "right" }}>{t("Hours Today")}</span>
                       <span style={{ flex: 1, textAlign: "right" }}>{t("Hours This Week")}</span>
                     </div>
-                    {crewForProject.map(c => (
+                    {teamForProject.map(c => (
                       <div key={c.id} className="foreman-cost-row">
                         <span style={{ flex: 2 }}>
                           <span style={{ color: "var(--text)", fontWeight: 500 }}>{c.name}</span>
@@ -1576,10 +1576,10 @@ export function ForemanView({ app }) {
                       <span style={{ flex: 2, color: "var(--text)" }}>Total</span>
                       <span style={{ flex: 1 }}></span>
                       <span style={{ flex: 1, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--text2)" }}>
-                        {fmtHours(crewForProject.reduce((s, c) => s + c.todayHours, 0))}
+                        {fmtHours(teamForProject.reduce((s, c) => s + c.todayHours, 0))}
                       </span>
                       <span style={{ flex: 1, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--amber)" }}>
-                        {fmtHours(crewForProject.reduce((s, c) => s + c.weekHours, 0))}
+                        {fmtHours(teamForProject.reduce((s, c) => s + c.weekHours, 0))}
                       </span>
                     </div>
                   </div>
@@ -1696,7 +1696,7 @@ export function ForemanView({ app }) {
                               <span className="jsa-status-badge" style={{ background: statusClr + "22", color: statusClr, fontSize: 10 }}>{j.status.toUpperCase()}</span>
                               <span className="jsa-risk-badge" style={{ background: rc.bg + "22", color: rc.bg, fontSize: 10 }}>{rc.label}</span>
                             </div>
-                            <span style={{ fontSize: 11, color: "var(--text3)" }}>{(j.crewSignOn || []).length} {t("signed")}</span>
+                            <span style={{ fontSize: 11, color: "var(--text3)" }}>{(j.teamSignOn || []).length} {t("signed")}</span>
                           </div>
                           <div style={{ fontSize: 14, fontWeight: 600 }}>{j.title}</div>
                           <div style={{ fontSize: 11, color: "var(--text3)" }}>{proj?.name} · {j.date}</div>
@@ -1936,7 +1936,7 @@ export function ForemanView({ app }) {
                               competentPerson: activeForeman.name,
                               status: "draft",
                               steps, ppe: [...tmpl.ppe], permits: [...tmpl.permits],
-                              crewSignOn: [], nearMisses: [],
+                              teamSignOn: [], nearMisses: [],
                               toolboxTalk: { topic: "", notes: "", discussed: false },
                               createdAt: new Date().toISOString(),
                               createdBy: activeForeman.name, audit: [],
@@ -1944,9 +1944,9 @@ export function ForemanView({ app }) {
                             setJsas(prev => [...prev, newJsa]);
                             setRcJsaId(newJsa.id);
                             const sel = {};
-                            crewForProject.forEach(c => { sel[c.id] = true; });
+                            teamForProject.forEach(c => { sel[c.id] = true; });
                             setRcSelected(sel);
-                            setRcStep("crew");
+                            setRcStep("team");
                           }}
                         >
                           {t("Proceed")} ({selectedCount} {t("hazards selected")})
@@ -1956,10 +1956,10 @@ export function ForemanView({ app }) {
                   }
 
                   // ── STEP 2: CREW ROLL CALL ──
-                  if (rcStep === "crew") {
-                    const allCrew = [...crewForProject];
-                    // Include any employees not in crewForProject that were manually added
-                    const crewIds = new Set(allCrew.map(c => c.id));
+                  if (rcStep === "team") {
+                    const allTeam = [...teamForProject];
+                    // Include any employees not in teamForProject that were manually added
+                    const teamIds = new Set(allTeam.map(c => c.id));
                     return (
                       <div>
                         <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
@@ -1973,11 +1973,11 @@ export function ForemanView({ app }) {
                         </div>
 
                         {/* Crew list */}
-                        {allCrew.length === 0 ? (
+                        {allTeam.length === 0 ? (
                           <div className="card" style={{ padding: 16, textAlign: "center", color: "var(--text3)" }}>
-                            {t("No crew scheduled. Add crew members below.")}
+                            {t("No team scheduled. Add team members below.")}
                           </div>
-                        ) : allCrew.map(c => (
+                        ) : allTeam.map(c => (
                           <div key={c.id} className="card" style={{
                             padding: 12, marginBottom: 6, display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
                             borderLeft: rcSelected[c.id] ? "4px solid #10b981" : "4px solid var(--border)",
@@ -1991,19 +1991,19 @@ export function ForemanView({ app }) {
                           </div>
                         ))}
 
-                        {/* Add crew */}
+                        {/* Add team */}
                         {rcAddingCrew ? (
                           <select className="form-select" style={{ fontSize: 12, marginTop: 8 }} autoFocus
                             onChange={e => {
                               if (!e.target.value) return;
                               const emp = employees.find(em => em.id === Number(e.target.value));
-                              if (!emp || crewIds.has(emp.id)) return;
-                              crewForProject.push({ id: emp.id, name: emp.name, role: emp.role || "Crew" });
+                              if (!emp || teamIds.has(emp.id)) return;
+                              teamForProject.push({ id: emp.id, name: emp.name, role: emp.role || "Crew" });
                               setRcSelected(prev => ({ ...prev, [emp.id]: true }));
                               setRcAddingCrew(false);
                             }} onBlur={() => setRcAddingCrew(false)}>
                             <option value="">{t("Select employee...")}</option>
-                            {(employees || []).filter(e => !crewIds.has(e.id) && e.active !== false).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                            {(employees || []).filter(e => !teamIds.has(e.id) && e.active !== false).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                           </select>
                         ) : (
                           <button className="cal-nav-btn" style={{ marginTop: 8, fontSize: 12 }} onClick={() => setRcAddingCrew(true)}>
@@ -2015,7 +2015,7 @@ export function ForemanView({ app }) {
                         <button className="btn btn-primary" style={{ width: "100%", marginTop: 20, padding: "14px", fontSize: 16 }}
                           disabled={Object.values(rcSelected).filter(Boolean).length === 0}
                           onClick={() => {
-                            const queue = crewForProject.filter(c => rcSelected[c.id]).map(c => ({ employeeId: c.id, name: c.name }));
+                            const queue = teamForProject.filter(c => rcSelected[c.id]).map(c => ({ employeeId: c.id, name: c.name }));
                             setRcQueue(queue);
                             setRcSignIdx(0);
                             setRcStep("sign");
@@ -2107,7 +2107,7 @@ export function ForemanView({ app }) {
                             if (!sigData) { show(t("Please sign first"), "err"); return; }
                             // Add signature to JSA
                             updateRcJsa({
-                              crewSignOn: [...(rcJsa?.crewSignOn || []), {
+                              teamSignOn: [...(rcJsa?.teamSignOn || []), {
                                 employeeId: current.employeeId,
                                 name: current.name,
                                 signedAt: new Date().toISOString(),
@@ -2118,7 +2118,7 @@ export function ForemanView({ app }) {
                               setRcSignIdx(rcSignIdx + 1);
                               sigRef.current = null;
                             } else {
-                              // All crew signed — move to supervisor sign-off
+                              // All team signed — move to supervisor sign-off
                               setRcStep("supervisor");
                               sigRef.current = null;
                             }
@@ -2137,7 +2137,7 @@ export function ForemanView({ app }) {
                           <div style={{ fontSize: 16, fontWeight: 700, color: "var(--amber)" }}>{t("Supervisor Sign-Off")}</div>
                           <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>{activeForeman.name}</div>
                           <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 4 }}>
-                            {(rcJsa?.crewSignOn || []).length} {t("crew members signed")}
+                            {(rcJsa?.teamSignOn || []).length} {t("team members signed")}
                           </div>
                         </div>
 
@@ -2170,12 +2170,12 @@ export function ForemanView({ app }) {
                         <div style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}><CheckCircle size={48} style={{ color: "#10b981" }} /></div>
                         <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>{t("Pre-Task Safety Complete")}</div>
                         <div style={{ fontSize: 14, color: "var(--text2)", marginBottom: 20 }}>
-                          {(finalJsa?.crewSignOn || []).length} {t("crew members signed")} · {finalJsa?.title}
+                          {(finalJsa?.teamSignOn || []).length} {t("team members signed")} · {finalJsa?.title}
                         </div>
 
-                        {/* Signed crew list */}
+                        {/* Signed team list */}
                         <div style={{ textAlign: "left", marginBottom: 20 }}>
-                          {(finalJsa?.crewSignOn || []).map((c, i) => (
+                          {(finalJsa?.teamSignOn || []).map((c, i) => (
                             <div key={i} className="flex-between" style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
                               <span style={{ fontSize: 13, fontWeight: 500 }}>{c.name}</span>
                               <span style={{ fontSize: 11, color: "#10b981" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
@@ -2241,7 +2241,7 @@ export function ForemanView({ app }) {
                           <div style={{ fontSize: 10, color: "var(--text3)" }}>{t("Hazards")}</div>
                         </div>
                         <div className="card" style={{ padding: 10, textAlign: "center" }}>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: "#10b981" }}>{(jsa.crewSignOn || []).length}</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, color: "#10b981" }}>{(jsa.teamSignOn || []).length}</div>
                           <div style={{ fontSize: 10, color: "var(--text3)" }}>{t("Crew Signed")}</div>
                         </div>
                       </div>
@@ -2292,8 +2292,8 @@ export function ForemanView({ app }) {
 
                       {/* Crew Sign-On */}
                       <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Crew Sign-On")} ({(jsa.crewSignOn || []).length})</div>
-                        {(jsa.crewSignOn || []).map((c, i) => (
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Crew Sign-On")} ({(jsa.teamSignOn || []).length})</div>
+                        {(jsa.teamSignOn || []).map((c, i) => (
                           <div key={i} className="flex-between" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                             <span style={{ fontSize: 13, fontWeight: 500 }}>{c.name}</span>
                             <span style={{ fontSize: 11, color: "#10b981" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
@@ -2305,13 +2305,13 @@ export function ForemanView({ app }) {
                               if (!e.target.value) return;
                               const emp = (employees || []).find(em => em.id === Number(e.target.value));
                               if (!emp) return;
-                              if ((jsa.crewSignOn || []).some(c => c.employeeId === emp.id)) { show(t("Already signed on")); return; }
-                              updateJsa({ crewSignOn: [...(jsa.crewSignOn || []), { employeeId: emp.id, name: emp.name, signedAt: new Date().toISOString() }] });
+                              if ((jsa.teamSignOn || []).some(c => c.employeeId === emp.id)) { show(t("Already signed on")); return; }
+                              updateJsa({ teamSignOn: [...(jsa.teamSignOn || []), { employeeId: emp.id, name: emp.name, signedAt: new Date().toISOString() }] });
                               show(t("Crew member signed on"));
                               e.target.value = "";
                             }}>
-                            <option value="">{t("+ Add crew member...")}</option>
-                            {crewForProject.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                            <option value="">{t("+ Add team member...")}</option>
+                            {teamForProject.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                           </select>
                         )}
                       </div>
@@ -2367,7 +2367,7 @@ export function ForemanView({ app }) {
                       ...jsaForm,
                       projectId: Number(jsaForm.projectId),
                       status: "draft",
-                      crewSignOn: [],
+                      teamSignOn: [],
                       toolboxTalk: { topic: "", notes: "", discussed: false },
                       nearMisses: [],
                       createdAt: new Date().toISOString(),
@@ -2628,7 +2628,7 @@ export function ForemanView({ app }) {
                     <div className="section-title" style={{ fontSize: 13, marginBottom: 8 }}>{t("Downloaded for Offline")}</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                       {Object.entries(downloadedDrawings).map(([path, info]) => (
-                        <div key={path} className="foreman-crew-row" style={{ padding: "8px 12px" }}>
+                        <div key={path} className="foreman-team-row" style={{ padding: "8px 12px" }}>
                           <div>
                             <div className="text-sm font-semi">{path.split("/").pop().replace(".pdf", "").replace(/_/g, " ")}</div>
                             <div className="text-xs text-muted">{t("Cached")} {new Date(info.cachedAt).toLocaleDateString()}{info.size ? ` · ${(info.size / 1048576).toFixed(1)} MB` : ""}</div>
@@ -2713,19 +2713,19 @@ export function ForemanView({ app }) {
 
                     {/* Crew on Site — checkboxes */}
                     <div style={{ marginTop: 12 }}>
-                      <label className="form-label">{t("Crew on Site")} ({(reportForm.crewPresent || []).length})</label>
+                      <label className="form-label">{t("Crew on Site")} ({(reportForm.teamPresent || []).length})</label>
                       <div style={{ maxHeight: 140, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 8, padding: 8, background: "var(--surface1)" }}>
-                        {crewForProject.length > 0 ? crewForProject.map(c => (
+                        {teamForProject.length > 0 ? teamForProject.map(c => (
                           <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", fontSize: 13, cursor: "pointer" }}>
                             <input type="checkbox"
-                              checked={(reportForm.crewPresent || []).some(cp => (typeof cp === "string" ? cp : cp.id) === c.id)}
+                              checked={(reportForm.teamPresent || []).some(cp => (typeof cp === "string" ? cp : cp.id) === c.id)}
                               onChange={e => {
                                 setReportForm(f => {
-                                  const present = f.crewPresent || [];
+                                  const present = f.teamPresent || [];
                                   if (e.target.checked) {
-                                    return { ...f, crewPresent: [...present, { id: c.id, name: c.name }] };
+                                    return { ...f, teamPresent: [...present, { id: c.id, name: c.name }] };
                                   } else {
-                                    return { ...f, crewPresent: present.filter(cp => (typeof cp === "string" ? cp : cp.id) !== c.id) };
+                                    return { ...f, teamPresent: present.filter(cp => (typeof cp === "string" ? cp : cp.id) !== c.id) };
                                   }
                                 });
                               }} />
@@ -2733,7 +2733,7 @@ export function ForemanView({ app }) {
                             {c.todayHours > 0 && <span className="text-xs text-muted">({c.todayHours.toFixed(1)}h)</span>}
                           </label>
                         )) : (
-                          <div className="text-xs text-muted" style={{ padding: 8 }}>{t("No crew assigned to this project this week")}</div>
+                          <div className="text-xs text-muted" style={{ padding: 8 }}>{t("No team assigned to this project this week")}</div>
                         )}
                       </div>
                     </div>
@@ -2901,8 +2901,8 @@ export function ForemanView({ app }) {
                           temperature: reportForm.temperature,
                           weatherCondition: reportForm.weatherCondition,
                           weather: reportForm.weatherCondition,
-                          crewPresent: reportForm.crewPresent || [],
-                          crewCount: (reportForm.crewPresent || []).length,
+                          teamPresent: reportForm.teamPresent || [],
+                          teamSize: (reportForm.teamPresent || []).length,
                           quickTasks: reportForm.quickTasks || [],
                           workPerformed: reportForm.workPerformed,
                           materialsReceived: reportForm.materialsReceived,
@@ -2942,14 +2942,14 @@ export function ForemanView({ app }) {
                     .map(r => {
                       const isExpanded = expandedReportId === r.id;
                       const weatherIcon = { Clear: "Clear", Cloudy: "Cloudy", Rain: "Rain", Storm: "Storm", Wind: "Windy", Snow: "Snow", Hot: "Hot", Cold: "Cold" }[r.weatherCondition || r.weather] || (r.weatherCondition || r.weather || "");
-                      const crewN = (r.crewPresent || []).length || r.crewCount || 0;
+                      const teamN = (r.teamPresent || []).length || r.teamSize || 0;
                       return (
                         <div key={r.id} className="card" style={{ padding: "12px 14px", marginBottom: 8, cursor: "pointer", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 10 }}
                           onClick={() => setExpandedReportId(isExpanded ? null : r.id)}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <div>
                               <div className="text-sm font-semi">{r.date} {weatherIcon} {r.temperature ? `${r.temperature}°F` : ""}</div>
-                              <div className="text-xs text-muted">{r.projectName || t("Project")} · {crewN} {t("crew")} · {r.foremanName || ""}</div>
+                              <div className="text-xs text-muted">{r.projectName || t("Project")} · {teamN} {t("team")} · {r.foremanName || ""}</div>
                               {r.hoursWorked && <div className="text-xs text-muted">{r.hoursWorked} hrs logged</div>}
                             </div>
                             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -2969,11 +2969,11 @@ export function ForemanView({ app }) {
                               onClick={e => e.stopPropagation()}>
 
                               {/* Crew Present */}
-                              {(r.crewPresent || []).length > 0 && (
+                              {(r.teamPresent || []).length > 0 && (
                                 <div style={{ marginBottom: 8 }}>
                                   <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 2 }}>{t("Crew on Site")}</div>
                                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                                    {r.crewPresent.map((c, i) => (
+                                    {r.teamPresent.map((c, i) => (
                                       <span key={i} className="badge badge-blue" style={{ fontSize: 10 }}>{typeof c === "string" ? c : c.name}</span>
                                     ))}
                                   </div>
@@ -3067,7 +3067,7 @@ export function ForemanView({ app }) {
                                       date: r.date || new Date().toISOString().slice(0, 10),
                                       temperature: r.temperature || "",
                                       weatherCondition: r.weatherCondition || r.weather || "Clear",
-                                      crewPresent: r.crewPresent || [],
+                                      teamPresent: r.teamPresent || [],
                                       quickTasks: r.quickTasks || [],
                                       workPerformed: r.workPerformed || "",
                                       materialsReceived: r.materialsReceived || "",

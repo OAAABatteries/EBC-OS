@@ -437,13 +437,13 @@ export async function generateJsaPdf(jsa) {
   doc.text("Crew Members — By signing, I acknowledge I have reviewed and understand this JSA", ML, y + 4);
   y += 10;
 
-  const crew = (jsa.crewSignOn || jsa.crewMembers || []).map(c => ({ name: c.name, signature: c.signature || null }));
+  const teamList = (jsa.teamSignOn || jsa.teamMembers || []).map(c => ({ name: c.name, signature: c.signature || null }));
   const sigW = (CW - 8) / 2;  // 2 per row with gap
   const sigH = 30;             // ~1.2 inches
   const sigGap = 8;
   const rowGap = 15;
 
-  crew.forEach((member, i) => {
+  teamList.forEach((member, i) => {
     const col = i % 2;
     const isNewRow = col === 0;
 
@@ -485,17 +485,17 @@ export async function generateJsaPdf(jsa) {
     doc.text(safe(member.name || `Crew Member ${i + 1}`), sx + 2, sy + sigH + 4);
 
     // Advance y after completing a row (2 signatures)
-    if (col === 1 || i === crew.length - 1) {
+    if (col === 1 || i === teamList.length - 1) {
       y += sigH + rowGap;
     }
   });
 
-  // If no crew
-  if (crew.length === 0) {
+  // If no team
+  if (teamList.length === 0) {
     doc.setFont("helvetica", "italic");
     doc.setFontSize(9);
     doc.setTextColor(...C.medGray);
-    doc.text("No crew members signed on to this JSA", ML + 3, y + 4);
+    doc.text("No team members signed on to this JSA", ML + 3, y + 4);
     y += 10;
   }
 

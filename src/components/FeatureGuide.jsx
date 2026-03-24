@@ -40,7 +40,7 @@ export const GUIDE_STEPS = {
     {
       title: "Command Center Overview",
       description:
-        "Your dashboard shows the full health of EBC at a glance. KPI cards at the top track active bids, open projects, billed revenue, and total crew — updated in real time.",
+        "Your dashboard shows the full health of EBC at a glance. KPI cards at the top track active bids, open projects, billed revenue, and total team — updated in real time.",
     },
     {
       title: "Profit Alerts",
@@ -55,12 +55,12 @@ export const GUIDE_STEPS = {
     {
       title: "Charts & Pipeline",
       description:
-        "The charts below show your bid win rate, revenue by project, and crew utilization over time. Use them in Monday morning reviews to spot trends early.",
+        "The charts below show your bid win rate, revenue by project, and team utilization over time. Use them in Monday morning reviews to spot trends early.",
     },
     {
       title: "Morning Brief",
       description:
-        "Hit 'Morning Brief' for an AI-generated summary of your day — open bids, crew status, and any items that need your signature or follow-up.",
+        "Hit 'Morning Brief' for an AI-generated summary of your day — open bids, team status, and any items that need your signature or follow-up.",
     },
   ],
 
@@ -139,7 +139,7 @@ export const GUIDE_STEPS = {
     {
       title: "Foreman Portal Overview",
       description:
-        "The Foreman Portal is your field command center. From here you manage your crew's daily clock-in/out, submit JSAs, request materials, and log RFIs — all from your phone.",
+        "The Foreman Portal is your field command center. From here you manage your team's daily clock-in/out, submit JSAs, request materials, and log RFIs — all from your phone.",
     },
     {
       title: "Clock In / Clock Out",
@@ -149,7 +149,7 @@ export const GUIDE_STEPS = {
     {
       title: "Crew Management",
       description:
-        "Add crew members to your active job from the Crew tab. Each worker can be clocked in individually or as a group. Their hours flow directly into the Time Clock Admin for payroll.",
+        "Add team members to your active job from the Crew tab. Each worker can be clocked in individually or as a group. Their hours flow directly into the Time Clock Admin for payroll.",
     },
     {
       title: "Job Safety Analysis (JSA)",
@@ -167,12 +167,12 @@ export const GUIDE_STEPS = {
     {
       title: "Time Clock Admin Overview",
       description:
-        "Time Clock Admin is where payroll prep happens. You see live crew status, the full weekly time log, and can export hours to QuickBooks for payroll processing.",
+        "Time Clock Admin is where payroll prep happens. You see live team status, the full weekly time log, and can export hours to QuickBooks for payroll processing.",
     },
     {
       title: "Live Status",
       description:
-        "The Live Status tab shows every crew member currently clocked in, their job site, and elapsed hours. Red flags appear if someone has been clocked in over 12 hours.",
+        "The Live Status tab shows every team member currently clocked in, their job site, and elapsed hours. Red flags appear if someone has been clocked in over 12 hours.",
     },
     {
       title: "Crew Scheduling",

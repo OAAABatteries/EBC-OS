@@ -52,23 +52,23 @@ function projName(projId, projects) {
   return p ? p.name : `Project #${projId}`;
 }
 
-// ── Get crew schedule entries for a specific date ──
-export function getCrewForDate(date, crewSchedule) {
+// ── Get team schedule entries for a specific date ──
+export function getCrewForDate(date, teamSchedule) {
   const d = typeof date === "string" ? toDate(date) : date;
   const monday = getMonday(d);
   const weekStr = toStr(monday);
   const dayIdx = (d.getDay() + 6) % 7; // 0=mon, 6=sun
   const dayKey = DAY_KEYS[dayIdx];
 
-  return crewSchedule.filter(cs => {
+  return teamSchedule.filter(cs => {
     if (cs.weekStart !== weekStr) return false;
     return cs.days?.[dayKey];
   });
 }
 
-// ── Employee weekly hours from crew schedule ──
-export function getEmployeeWeeklyHours(empId, crewSchedule, weekStart) {
-  const entries = crewSchedule.filter(cs => cs.weekStart === weekStart && cs.employeeId === empId);
+// ── Employee weekly hours from team schedule ──
+export function getEmployeeWeeklyHours(empId, teamSchedule, weekStart) {
+  const entries = teamSchedule.filter(cs => cs.weekStart === weekStart && cs.employeeId === empId);
   let total = 0;
   for (const cs of entries) {
     const dayCount = DAY_KEYS.filter(k => cs.days?.[k]).length;
@@ -79,13 +79,13 @@ export function getEmployeeWeeklyHours(empId, crewSchedule, weekStart) {
 }
 
 // ── Count consecutive scheduled days for an employee ──
-export function getConsecutiveDays(empId, crewSchedule) {
+export function getConsecutiveDays(empId, teamSchedule) {
   const today = new Date();
   let count = 0;
   for (let i = 0; i < 30; i++) {
     const d = addDays(today, -i);
-    const crew = getCrewForDate(d, crewSchedule);
-    if (crew.some(cs => cs.employeeId === empId)) {
+    const teamList = getCrewForDate(d, teamSchedule);
+    if (teamList.some(cs => cs.employeeId === empId)) {
       count++;
     } else {
       break;
@@ -99,13 +99,13 @@ export function getConsecutiveDays(empId, crewSchedule) {
 // ═══════════════════════════════════════════════════════════════
 
 // 1. Employee double-booking (same employee, 2+ projects, same day)
-export function detectDoubleBooking(crewSchedule, employees, projects, dateRange) {
+export function detectDoubleBooking(teamSchedule, employees, projects, dateRange) {
   const conflicts = [];
   const { start, end } = dateRange;
   for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
-    const crew = getCrewForDate(d, crewSchedule);
+    const teamList = getCrewForDate(d, teamSchedule);
     const byEmployee = {};
-    for (const cs of crew) {
+    for (const cs of team) {
       if (!byEmployee[cs.employeeId]) byEmployee[cs.employeeId] = [];
       byEmployee[cs.employeeId].push(cs);
     }
@@ -121,7 +121,7 @@ export function detectDoubleBooking(crewSchedule, employees, projects, dateRange
           entityType: "employee",
           entityId: empId,
           description: `${empName(empId, employees)} assigned to ${uniqueProjects.length} projects: ${uniqueProjects.map(p => projName(p, projects)).join(", ")}`,
-          relatedIds: { crewScheduleIds: entries.map(e => e.id) },
+          relatedIds: { teamScheduleIds: entries.map(e => e.id) },
           resolved: false,
           detectedAt: new Date().toISOString(),
         });
@@ -185,13 +185,13 @@ export function detectCertExpirations(certifications, employees, daysAhead = 30)
 }
 
 // 4. Overtime risk (approaching 40h)
-export function detectOvertimeRisk(crewSchedule, employees, dateRange) {
+export function detectOvertimeRisk(teamSchedule, employees, dateRange) {
   const conflicts = [];
   const monday = getMonday(dateRange.start);
   const weekStr = toStr(monday);
   for (const emp of employees) {
     if (!emp.active) continue;
-    const hours = getEmployeeWeeklyHours(emp.id, crewSchedule, weekStr);
+    const hours = getEmployeeWeeklyHours(emp.id, teamSchedule, weekStr);
     if (hours > 40) {
       conflicts.push({
         id: `ot_${emp.id}_${weekStr}`,
@@ -224,11 +224,11 @@ export function detectOvertimeRisk(crewSchedule, employees, dateRange) {
 }
 
 // 5. Fatigue (consecutive days > maxConsecutive)
-export function detectFatigue(crewSchedule, employees, maxConsecutive = 6) {
+export function detectFatigue(teamSchedule, employees, maxConsecutive = 6) {
   const conflicts = [];
   for (const emp of employees) {
     if (!emp.active) continue;
-    const consecutive = getConsecutiveDays(emp.id, crewSchedule);
+    const consecutive = getConsecutiveDays(emp.id, teamSchedule);
     if (consecutive >= maxConsecutive) {
       conflicts.push({
         id: `fatigue_${emp.id}`,
@@ -248,13 +248,13 @@ export function detectFatigue(crewSchedule, employees, maxConsecutive = 6) {
 }
 
 // 6. Apprentice-to-journeyman ratio
-export function detectRatioViolation(crewSchedule, employees, projects, dateRange) {
+export function detectRatioViolation(teamSchedule, employees, projects, dateRange) {
   const conflicts = [];
   const { start, end } = dateRange;
   for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
-    const crew = getCrewForDate(d, crewSchedule);
+    const teamList = getCrewForDate(d, teamSchedule);
     const byProject = {};
-    for (const cs of crew) {
+    for (const cs of team) {
       if (!byProject[cs.projectId]) byProject[cs.projectId] = [];
       byProject[cs.projectId].push(cs);
     }
@@ -324,14 +324,14 @@ export function detectPermitExpiration(calendarEvents, daysAhead = 14) {
 }
 
 // 8. Foreman overload (on 3+ projects same day)
-export function detectForemanOverload(crewSchedule, employees, projects, dateRange) {
+export function detectForemanOverload(teamSchedule, employees, projects, dateRange) {
   const conflicts = [];
   const foremen = employees.filter(e => e.role === "Foreman" && e.active);
   const { start, end } = dateRange;
   for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
-    const crew = getCrewForDate(d, crewSchedule);
+    const teamList = getCrewForDate(d, teamSchedule);
     for (const f of foremen) {
-      const assignments = crew.filter(cs => cs.employeeId === f.id);
+      const assignments = teamList.filter(cs => cs.employeeId === f.id);
       const uniqueProjects = [...new Set(assignments.map(a => a.projectId))];
       if (uniqueProjects.length >= 3) {
         conflicts.push({
@@ -352,16 +352,16 @@ export function detectForemanOverload(crewSchedule, employees, projects, dateRan
   return conflicts;
 }
 
-// 9. PTO conflicts (approved PTO but still on crew schedule)
-export function detectPtoConflicts(ptoRequests, crewSchedule, employees) {
+// 9. PTO conflicts (approved PTO but still on team schedule)
+export function detectPtoConflicts(ptoRequests, teamSchedule, employees) {
   const conflicts = [];
   const approved = ptoRequests.filter(p => p.status === "approved");
   for (const pto of approved) {
     const start = toDate(pto.startDate);
     const end = toDate(pto.endDate);
     for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
-      const crew = getCrewForDate(d, crewSchedule);
-      const assigned = crew.filter(cs => cs.employeeId === pto.employeeId);
+      const teamList = getCrewForDate(d, teamSchedule);
+      const assigned = teamList.filter(cs => cs.employeeId === pto.employeeId);
       if (assigned.length > 0) {
         conflicts.push({
           id: `pto_${pto.id}_${toStr(d)}`,
@@ -370,7 +370,7 @@ export function detectPtoConflicts(ptoRequests, crewSchedule, employees) {
           date: toStr(d),
           entityType: "employee",
           entityId: pto.employeeId,
-          description: `${empName(pto.employeeId, employees)} has approved PTO but is on crew schedule`,
+          description: `${empName(pto.employeeId, employees)} has approved PTO but is on team schedule`,
           relatedIds: { ptoId: pto.id },
           resolved: false,
           detectedAt: new Date().toISOString(),
@@ -386,7 +386,7 @@ export function detectPtoConflicts(ptoRequests, crewSchedule, employees) {
 // ═══════════════════════════════════════════════════════════════
 
 export function detectAllConflicts({
-  crewSchedule, employees, projects, equipment, equipmentBookings,
+  teamSchedule, employees, projects, equipment, equipmentBookings,
   certifications, calendarEvents, ptoRequests, dateRange,
 }) {
   const start = dateRange?.start ? toDate(dateRange.start) : getMonday(new Date());
@@ -394,15 +394,15 @@ export function detectAllConflicts({
   const range = { start, end };
 
   const all = [
-    ...detectDoubleBooking(crewSchedule || [], employees || [], projects || [], range),
+    ...detectDoubleBooking(teamSchedule || [], employees || [], projects || [], range),
     ...detectEquipmentConflicts(equipmentBookings || [], equipment || [], projects || []),
     ...detectCertExpirations(certifications || [], employees || [], 30),
-    ...detectOvertimeRisk(crewSchedule || [], employees || [], range),
-    ...detectFatigue(crewSchedule || [], employees || [], 6),
-    ...detectRatioViolation(crewSchedule || [], employees || [], projects || [], range),
+    ...detectOvertimeRisk(teamSchedule || [], employees || [], range),
+    ...detectFatigue(teamSchedule || [], employees || [], 6),
+    ...detectRatioViolation(teamSchedule || [], employees || [], projects || [], range),
     ...detectPermitExpiration(calendarEvents || [], 14),
-    ...detectForemanOverload(crewSchedule || [], employees || [], projects || [], range),
-    ...detectPtoConflicts(ptoRequests || [], crewSchedule || [], employees || []),
+    ...detectForemanOverload(teamSchedule || [], employees || [], projects || [], range),
+    ...detectPtoConflicts(ptoRequests || [], teamSchedule || [], employees || []),
   ];
 
   // Deduplicate by id

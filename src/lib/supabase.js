@@ -298,9 +298,9 @@ export const saveToolboxTalk = (t) => _upsert("toolbox_talks", t);
 export const deleteToolboxTalk = (id) => _remove("toolbox_talks", id);
 
 // ── Crew Schedule ───────────────────────────────────────────
-export const getCrewSchedule = (opts) => _getAll("crew_schedule", { orderBy: "week_start", ...opts });
-export const saveCrewScheduleEntry = (c) => _upsert("crew_schedule", c);
-export const deleteCrewScheduleEntry = (id) => _remove("crew_schedule", id);
+export const getTeamSchedule = (opts) => _getAll("crew_schedule", { orderBy: "week_start", ...opts });
+export const saveTeamScheduleEntry = (c) => _upsert("crew_schedule", c);
+export const deleteTeamScheduleEntry = (id) => _remove("crew_schedule", id);
 
 // ═════════════════════════════════════════════════════════════
 //  FILE STORAGE

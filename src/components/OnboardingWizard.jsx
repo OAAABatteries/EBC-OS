@@ -951,12 +951,12 @@ function PMStepForemen() {
     <div className="wizard-slide">
       <div className="wizard-step-label">Step 5 of 7</div>
       <div className="wizard-title">Assign Foremen</div>
-      <div className="wizard-desc">Assign foremen to projects and manage field crews from your desk.</div>
+      <div className="wizard-desc">Assign foremen to projects and manage field teams from your desk.</div>
       <div className="wizard-illustration">
         <div className="wiz-info-list">
           {[
             { icon: <HardHat style={{ width: 16, height: 16, color: "#e09422" }} />,   bg: "rgba(224,148,34,0.1)", title: "Assign to Projects", sub: "Tie a foreman to each active project" },
-            { icon: <Users style={{ width: 16, height: 16, color: "#3b82f6" }} />,     bg: "rgba(59,130,246,0.1)", title: "Crew Visibility",    sub: "See who's on-site and crew hours in real time" },
+            { icon: <Users style={{ width: 16, height: 16, color: "#3b82f6" }} />,     bg: "rgba(59,130,246,0.1)", title: "Crew Visibility",    sub: "See who's on-site and team hours in real time" },
             { icon: <ClipboardCheck style={{ width: 16, height: 16, color: "#10b981" }} />, bg: "rgba(16,185,129,0.1)", title: "Daily Reports",  sub: "Review foreman reports submitted each day" },
             { icon: <Bell style={{ width: 16, height: 16, color: "#8b5cf6" }} />,      bg: "rgba(139,92,246,0.1)", title: "Alerts",             sub: "Get notified if no report is filed by EOD" },
           ].map((item, i) => (
@@ -1100,7 +1100,7 @@ function ForemanStep3() {
           </div>
           <div className="wiz-info-list" style={{ width: "100%" }}>
             {[
-              { label: "Ver cuadrilla activa",  sub: "See active crew on-site", color: "#e09422" },
+              { label: "Ver cuadrilla activa",  sub: "See active team on-site", color: "#e09422" },
               { label: "Horas por trabajador",  sub: "Hours per worker today",  color: "#3b82f6" },
               { label: "Solicitar materiales",  sub: "Request materials",        color: "#10b981" },
             ].map((r, i) => (

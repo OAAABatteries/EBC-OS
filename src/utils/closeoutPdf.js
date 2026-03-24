@@ -227,7 +227,7 @@ export function generateCloseoutPdf(project, data) {
     textLine("Total Reports", data.dailyReports.length);
     const w = [25, 15, 15, 120];
     tableRow(["Date", "Crew", "Hours", "Work Performed"], w, true);
-    data.dailyReports.slice(0, 30).forEach(d => tableRow([d.date || "", String(d.crewSize || ""), String(d.hours || ""), (d.work || "").slice(0, 80)], w));
+    data.dailyReports.slice(0, 30).forEach(d => tableRow([d.date || "", String(d.teamSize || ""), String(d.hours || ""), (d.work || "").slice(0, 80)], w));
     if (data.dailyReports.length > 30) {
       doc.setFontSize(8);
       doc.text(`... and ${data.dailyReports.length - 30} more reports`, ML, y + 4);

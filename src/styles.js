@@ -737,11 +737,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .foreman-kpi-label{font-size:9px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px}
 .foreman-kpi-value{font-size:22px;font-weight:700;color:var(--amber);font-family:var(--font-mono)}
 .foreman-kpi-sub{font-size:11px;color:var(--text2);margin-top:2px}
-.foreman-crew-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;
+.foreman-team-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;
   border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg2);margin-bottom:6px}
-.foreman-crew-name{font-size:13px;font-weight:600;color:var(--text)}
-.foreman-crew-role{font-size:11px;color:var(--text2)}
-.foreman-crew-hours{font-size:13px;font-family:var(--font-mono);color:var(--amber)}
+.foreman-team-name{font-size:13px;font-weight:600;color:var(--text)}
+.foreman-team-role{font-size:11px;color:var(--text2)}
+.foreman-team-hours{font-size:13px;font-family:var(--font-mono);color:var(--amber)}
 .foreman-budget-bar{height:10px;border-radius:5px;background:var(--bg4);overflow:hidden;margin:8px 0}
 .foreman-budget-fill{height:100%;border-radius:5px;transition:width 0.4s ease}
 .foreman-project-select{width:100%;padding:8px 12px;border-radius:var(--radius-sm);
@@ -1148,8 +1148,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .jsa-hazard-info{display:flex;flex-direction:column;gap:2px}
 .jsa-controls-list{display:flex;flex-direction:column;gap:3px;margin-top:6px}
 .jsa-control-item{font-size:12px;color:var(--text2);padding-left:8px}
-.jsa-crew-list{display:flex;flex-direction:column;gap:6px}
-.jsa-crew-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border)}
+.jsa-team-list{display:flex;flex-direction:column;gap:6px}
+.jsa-team-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border)}
 .jsa-toolbox{padding:10px 14px;background:var(--bg3);border-radius:var(--radius);border-left:3px solid var(--amber)}
 .jsa-near-miss{padding:8px 12px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:var(--radius);font-size:12px;color:var(--text);margin-bottom:6px}
 .jsa-template-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
