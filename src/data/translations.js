@@ -505,6 +505,7 @@ export const T = {
 
   // ── Onboarding Wizard ──
   "Welcome": { es: "Bienvenido" },
+  "Welcome to EBC-OS": { es: "Bienvenido a EBC-OS" },
   "Get Started": { es: "Comenzar" },
   "Next": { es: "Siguiente" },
   "Back": { es: "Atrás" },
@@ -513,7 +514,30 @@ export const T = {
   "Launch EBC-OS": { es: "Iniciar EBC-OS" },
   "You're All Set!": { es: "¡Todo Listo!" },
   "You can revisit this tour anytime in Settings.": { es: "Puedes volver a este recorrido en Configuración." },
-  // Foreman onboarding
+  "EBC-OS is ready. Revisit this tour anytime in Settings.": { es: "EBC-OS está listo. Puedes volver a ver este tutorial en Configuración." },
+  "Owner / Admin": { es: "Propietario / Admin" },
+  "Project Manager": { es: "Gerente de Proyecto" },
+  "Foreman / Superintendent": { es: "Capataz / Superintendente" },
+  "Employee / Crew": { es: "Empleado / Cuadrilla" },
+  "Driver": { es: "Conductor" },
+
+  // Onboarding — shared steps
+  "Dashboard & KPIs": { es: "Dashboard y KPIs" },
+  "Bid Pipeline": { es: "Pipeline de Licitaciones" },
+  "Project Management": { es: "Gestión de Proyectos" },
+  "Team Management": { es: "Gestión del Equipo" },
+  "Profit Analysis & Alerts": { es: "Análisis de Ganancias" },
+  "Customer Portal": { es: "Portal del Cliente" },
+  "Settings & Themes": { es: "Configuración" },
+  "Dashboard Quick Actions": { es: "Acciones Rápidas" },
+  "Project Detail": { es: "Detalle del Proyecto" },
+  "Assigning Foremen": { es: "Asignar Capataces" },
+  "Material Takeoffs": { es: "Materiales y Takeoffs" },
+  "Profit Monitoring": { es: "Monitoreo de Ganancias" },
+  "Notification System": { es: "Notificaciones" },
+
+  // Onboarding — foreman/field
+  "Clock In / Out": { es: "Entrada / Salida" },
   "Bienvenido a EBC-OS": { es: "Bienvenido a EBC-OS" },
   "Tu portal de campo.": { es: "Tu portal de campo." },
   "Entrada / Salida": { es: "Entrada / Salida" },
@@ -524,18 +548,40 @@ export const T = {
   "Completa el JSA antes de trabajar.": { es: "Completa el JSA antes de trabajar." },
   "Reporte Diario": { es: "Reporte Diario" },
   "Documenta el trabajo cada día.": { es: "Documenta el trabajo cada día." },
-  // Employee onboarding
+  "Crew Management": { es: "Gestión de Cuadrilla" },
+  "Phase Tracking": { es: "Actualizar Fases" },
+  "JSA / Pre-Task Safety": { es: "JSA / Seguridad Pre-Tarea" },
+  "Material Requests": { es: "Solicitar Materiales" },
+  "Daily Reports": { es: "Reportes Diarios" },
+  "Report a Problem": { es: "Reportar un Problema" },
+  "Drawings & Documents": { es: "Planos y Documentos" },
+
+  // Onboarding — employee
   "Bienvenido": { es: "Bienvenido" },
   "Pulsa para entrar y salir del trabajo.": { es: "Pulsa para entrar y salir del trabajo." },
   "Reportar Problema": { es: "Reportar Problema" },
   "Avisa si algo está mal.": { es: "Avisa si algo está mal." },
   "Tu Horario": { es: "Tu Horario" },
   "Ve cuándo y dónde trabajas.": { es: "Ve cuándo y dónde trabajas." },
-  // Driver onboarding
+  "Your Schedule": { es: "Tu Horario" },
+  "Safety Sign-Off": { es: "Firma de Seguridad" },
+  "Your Hours": { es: "Tus Horas" },
+  "Log your time": { es: "Registra tu tiempo" },
+  "PIN → Project → Done. That's it.": { es: "PIN → Proyecto → Listo. Fácil." },
+  "Sign every morning": { es: "Firma cada mañana" },
+  "Review hazards → sign → work safe": { es: "Lee los peligros → firma → trabaja seguro" },
+
+  // Onboarding — driver
   "Ruta de Entrega": { es: "Ruta de Entrega" },
   "Ve tus entregas del día.": { es: "Ve tus entregas del día." },
   "Programar Entrega": { es: "Programar Entrega" },
   "Confirma la hora y el lugar.": { es: "Confirma la hora y el lugar." },
   "Marcar Entregado": { es: "Marcar Entregado" },
   "Confirma cuando termines.": { es: "Confirma cuando termines." },
+  "Your Delivery Route": { es: "Tu Ruta" },
+  "Schedule Deliveries": { es: "Programar Entregas" },
+  "Deliver & Navigate": { es: "Entregar y Navegar" },
+  "Mark Delivered": { es: "Marcar Entregado" },
+  "Navigate to Site": { es: "Navegar al Sitio" },
+  "One tap to confirm delivery": { es: "Un toque para confirmar la entrega" },
 };
