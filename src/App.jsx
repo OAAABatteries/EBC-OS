@@ -3589,6 +3589,26 @@ const ModalHub = ({ type, data, app }) => {
   const [showPerimeterMap, setShowPerimeterMap] = useState(false);
   const [dupWarning, setDupWarning] = useState(null); // { pm, bidName } — bid dup alert
 
+  // ── Shared: Sound Testing / Site Logistics / Notes ──
+  const [soundForm, setSoundForm] = useState({ roomType: "office", roomLabel: "", wallDetails: "", wallLF: "" });
+  const [showSoundForm, setShowSoundForm] = useState(false);
+  const [projectNotes, setProjectNotes] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ebc_projectNotes") || "[]"); } catch { return []; }
+  });
+  const [noteText, setNoteText] = useState("");
+  const [notesFilter, setNotesFilter] = useState("all");
+  const [siteLogistics, setSiteLogistics] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ebc_siteLogistics") || "{}"); } catch { return {}; }
+  });
+  const saveProjectNotes = (notes) => {
+    localStorage.setItem("ebc_projectNotes", JSON.stringify(notes));
+    setProjectNotes(notes);
+  };
+  const saveSiteLogistics = (log) => {
+    localStorage.setItem("ebc_siteLogistics", JSON.stringify(log));
+    setSiteLogistics(log);
+  };
+
   const getInitial = () => {
     switch (type) {
       case "editBid":
@@ -4069,31 +4089,6 @@ const ModalHub = ({ type, data, app }) => {
       if (rfiFilter === "overdue") { const d = rfiDaysOut(r); return d !== null && d > 7; }
       return true;
     });
-
-    // ── Sound Testing state ──
-    const [soundForm, setSoundForm] = useState({ roomType: "office", roomLabel: "", wallDetails: "", wallLF: "" });
-    const [showSoundForm, setShowSoundForm] = useState(false);
-
-    // ── Notes state (shared via localStorage) ──
-    const [projectNotes, setProjectNotes] = useState(() => {
-      try { return JSON.parse(localStorage.getItem("ebc_projectNotes") || "[]"); } catch { return []; }
-    });
-    const [noteText, setNoteText] = useState("");
-    const [notesFilter, setNotesFilter] = useState("all");
-
-    // ── Site Logistics state ──
-    const [siteLogistics, setSiteLogistics] = useState(() => {
-      try { return JSON.parse(localStorage.getItem("ebc_siteLogistics") || "{}"); } catch { return {}; }
-    });
-
-    const saveProjectNotes = (notes) => {
-      localStorage.setItem("ebc_projectNotes", JSON.stringify(notes));
-      setProjectNotes(notes);
-    };
-    const saveSiteLogistics = (log) => {
-      localStorage.setItem("ebc_siteLogistics", JSON.stringify(log));
-      setSiteLogistics(log);
-    };
 
     return (
       <div className="modal-overlay" onMouseDown={handleOverlayDown} onMouseUp={handleOverlayUp(close)}>
@@ -6301,6 +6296,206 @@ const ModalHub = ({ type, data, app }) => {
                           {prob.reporter} · {new Date(prob.reportedAt).toLocaleDateString()} {new Date(prob.reportedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           {prob.gps && <span style={{ marginLeft: 6, display: "inline-flex", alignItems: "center", gap: 2 }}><MapPin style={{ width: 12, height: 12 }} />{prob.gps.lat?.toFixed(4)}, {prob.gps.lng?.toFixed(4)}</span>}
                         </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* ── Sound Quality Testing ── */}
+          {!isNew && (() => {
+            const ROOM_TYPES = [
+              { key: "office", label: "Standard Office", stc: "40-45", assembly: "3-5/8\" 20ga studs · Single layer 5/8\" Type X each side · 3.5\" batt", materials: ["3-5/8\" 20ga Steel Stud (LF)", "5/8\" Type X Drywall (SF)", "3.5\" Batt Insulation (SF)"], costSF: 8.50, note: "Standard partition meets basic office privacy." },
+              { key: "executive", label: "Executive Office", stc: "45-50", assembly: "3-5/8\" 20ga studs · Double layer 5/8\" Type X one side · 3.5\" batt", materials: ["3-5/8\" 20ga Steel Stud (LF)", "5/8\" Type X Drywall — 2 layers one side (SF)", "3.5\" Batt Insulation (SF)"], costSF: 11.00, note: "Double layer on one side increases STC without RC." },
+              { key: "conference", label: "Conference Room", stc: "50+", assembly: "3-5/8\" 20ga studs · Double layer 5/8\" Type X · Resilient Channel RC-1 · 3.5\" batt", materials: ["3-5/8\" 20ga Steel Stud (LF)", "5/8\" Type X Drywall — 2 layers (SF)", "Resilient Channel RC-1 (LF)", "3.5\" Batt Insulation (SF)"], costSF: 14.00, note: "RC channel decouples drywall to minimize flanking paths." },
+              { key: "medical_exam", label: "Medical / Exam Room", stc: "50-55", assembly: "3-5/8\" 20ga studs · Soundbreak XP or QuietRock 545 each side · 3.5\" batt", materials: ["3-5/8\" 20ga Steel Stud (LF)", "QuietRock 545 or Soundbreak XP (SF)", "3.5\" Batt Insulation (SF)"], costSF: 18.00, note: "QuietRock/Soundbreak XP: STC 52-56 in a single layer (HIPAA)." },
+              { key: "hospital_patient", label: "Hospital Patient Room", stc: "55+", assembly: "3-5/8\" 20ga studs · Double layer 5/8\" Type X each side · RC-1 · 3.5\" batt", materials: ["3-5/8\" 20ga Steel Stud (LF)", "5/8\" Type X Drywall — 2 layers (SF)", "Resilient Channel RC-1 (LF)", "3.5\" Batt Insulation (SF)"], costSF: 22.00, note: "High-performance per FGI/HICPAC acoustic standards." },
+              { key: "restroom", label: "Restroom / Plumbing Wall", stc: "50+", assembly: "6\" 20ga studs · Double layer 5/8\" Type X · RC-1 · 3.5\" batt", materials: ["6\" 20ga Steel Stud (LF)", "5/8\" Type X Drywall — 2 layers (SF)", "Resilient Channel RC-1 (LF)", "3.5\" Batt Insulation (SF)"], costSF: 16.00, note: "Deeper 6\" cavity + RC reduces airborne and impact noise." },
+            ];
+            const soundTests = draft.soundTests || [];
+            const selRT = ROOM_TYPES.find(r => r.key === soundForm.roomType) || ROOM_TYPES[0];
+            const wallLFNum = parseFloat(soundForm.wallLF) || 0;
+            const estSF = wallLFNum > 0 ? Math.round(wallLFNum * 9) : 0;
+            const estCost = estSF > 0 ? Math.round(estSF * selRT.costSF) : 0;
+            const saveTest = () => {
+              if (!soundForm.roomLabel.trim()) { show("Enter a room label", "err"); return; }
+              const newTest = { id: crypto.randomUUID(), roomLabel: soundForm.roomLabel.trim(), roomType: soundForm.roomType, wallDetails: soundForm.wallDetails, wallLF: soundForm.wallLF, stc: selRT.stc, assembly: selRT.assembly, materials: selRT.materials, estimatedCost: estCost, estimatedSF: estSF, date: new Date().toISOString().slice(0, 10) };
+              const updated = { ...draft, soundTests: [...soundTests, newTest] };
+              app.setProjects(prev => prev.map(p => String(p.id) === String(draft.id) ? updated : p));
+              setDraft(updated);
+              setSoundForm({ roomType: "office", roomLabel: "", wallDetails: "", wallLF: "" });
+              setShowSoundForm(false);
+              show("Acoustic recommendation saved", "ok");
+            };
+            return (
+              <div style={{ marginTop: 16, borderTop: "2px solid var(--border)", paddingTop: 16 }}>
+                <div className="flex-between" style={{ marginBottom: 10 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                    <Volume2 size={16} style={{ color: "var(--blue)" }} />
+                    Sound Testing ({soundTests.length})
+                  </div>
+                  <button className="btn btn-sm btn-ghost" onClick={() => setShowSoundForm(v => !v)}>{showSoundForm ? "Cancel" : "+ Add Room"}</button>
+                </div>
+                {showSoundForm && (
+                  <div style={{ padding: 12, borderRadius: 8, background: "rgba(59,130,246,0.06)", border: "1px solid var(--blue-dim)", marginBottom: 10 }}>
+                    <div className="flex gap-8 flex-wrap mb-8">
+                      <div style={{ flex: "0 0 160px" }}>
+                        <label className="text-xs text-dim">Room Label</label>
+                        <input className="input input-sm" placeholder="e.g. Conf Room A" value={soundForm.roomLabel} onChange={e => setSoundForm(p => ({ ...p, roomLabel: e.target.value }))} />
+                      </div>
+                      <div style={{ flex: "0 0 200px" }}>
+                        <label className="text-xs text-dim">Room Type</label>
+                        <select className="input input-sm" value={soundForm.roomType} onChange={e => setSoundForm(p => ({ ...p, roomType: e.target.value }))}>
+                          {ROOM_TYPES.map(r => <option key={r.key} value={r.key}>{r.label} (STC {r.stc})</option>)}
+                        </select>
+                      </div>
+                      <div style={{ flex: "0 0 100px" }}>
+                        <label className="text-xs text-dim">Wall LF</label>
+                        <input className="input input-sm" type="number" min="0" placeholder="LF" value={soundForm.wallLF} onChange={e => setSoundForm(p => ({ ...p, wallLF: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="mb-8">
+                      <label className="text-xs text-dim">Notes / Existing Conditions</label>
+                      <input className="input input-sm" placeholder="Stud size, height, special conditions..." value={soundForm.wallDetails} onChange={e => setSoundForm(p => ({ ...p, wallDetails: e.target.value }))} />
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 8 }}>
+                      <strong>Assembly:</strong> {selRT.assembly} &nbsp;·&nbsp; <span style={{ color: "var(--amber)" }}>STC {selRT.stc}</span>
+                      {estCost > 0 && <span style={{ marginLeft: 8 }}>· Est. cost: <strong>{fmt(estCost)}</strong></span>}
+                    </div>
+                    <button className="btn btn-sm btn-primary" onClick={saveTest}>Save</button>
+                  </div>
+                )}
+                {soundTests.length === 0 && !showSoundForm && <div className="text-xs text-muted">No acoustic tests yet.</div>}
+                {soundTests.map((test, i) => (
+                  <div key={test.id || i} style={{ fontSize: 12, padding: "6px 10px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <strong>{test.roomLabel}</strong> <span className="badge badge-blue" style={{ fontSize: 9 }}>STC {test.stc}</span>
+                      <div style={{ color: "var(--text3)", marginTop: 2 }}>{test.assembly}</div>
+                      {test.estimatedCost > 0 && <span style={{ color: "var(--amber)" }}>Est. {fmt(test.estimatedCost)}</span>}
+                    </div>
+                    <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 12 }} onClick={() => {
+                      const updated = { ...draft, soundTests: soundTests.filter((_, j) => j !== i) };
+                      app.setProjects(prev => prev.map(p => String(p.id) === String(draft.id) ? updated : p));
+                      setDraft(updated);
+                    }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* ── Site Logistics ── */}
+          {!isNew && (() => {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const logKey = `${draft.id}_${todayStr}`;
+            const todayLog = siteLogistics[logKey] || {};
+            const LOGISTICS_ITEMS = [
+              { id: "dumpster", label: "Dumpster doors accessible and able to open", critical: true, icon: "🗑️" },
+              { id: "porta_potty", label: "Porta-potty on site and serviced", critical: false, icon: "🚽" },
+              { id: "staging_clear", label: "Material staging area clear and organized", critical: false, icon: "📦" },
+              { id: "safety_signage", label: "Safety signage posted at all entry points", critical: false, icon: "⚠️" },
+              { id: "fire_exit", label: "Fire exits unobstructed", critical: true, icon: "🚪" },
+              { id: "first_aid", label: "First aid kit accessible and stocked", critical: false, icon: "🩺" },
+              { id: "temp_power", label: "Temporary power / lighting operational", critical: false, icon: "💡" },
+              { id: "deliveries_clear", label: "Delivery access path clear", critical: false, icon: "🚚" },
+            ];
+            const checkedCount = LOGISTICS_ITEMS.filter(i => todayLog[i.id]).length;
+            const critUnchecked = LOGISTICS_ITEMS.filter(i => i.critical && !todayLog[i.id]);
+            return (
+              <div style={{ marginTop: 16, borderTop: "2px solid var(--border)", paddingTop: 16 }}>
+                <div className="flex-between" style={{ marginBottom: 10 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                    <HardHat size={16} style={{ color: "var(--amber)" }} />
+                    Site Logistics · {todayStr}
+                    {critUnchecked.length > 0 && <span className="badge badge-red" style={{ fontSize: 9 }}>{critUnchecked.length} critical</span>}
+                  </div>
+                  <span className={`badge ${checkedCount === LOGISTICS_ITEMS.length ? "badge-green" : checkedCount > 0 ? "badge-amber" : "badge-muted"}`} style={{ fontSize: 10 }}>{checkedCount}/{LOGISTICS_ITEMS.length}</span>
+                </div>
+                {critUnchecked.length > 0 && (
+                  <div style={{ padding: "6px 10px", borderRadius: 6, background: "rgba(239,68,68,0.07)", border: "1px solid var(--red)", marginBottom: 8, fontSize: 11, color: "var(--red)" }}>
+                    ⚠️ Critical unchecked: {critUnchecked.map(i => i.label).join(" · ")}
+                  </div>
+                )}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 4 }}>
+                  {LOGISTICS_ITEMS.map(item => {
+                    const checked = !!todayLog[item.id];
+                    return (
+                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 6, background: checked ? "rgba(16,185,129,0.06)" : "var(--bg3)", border: `1px solid ${checked ? "var(--green)" : item.critical && !checked ? "var(--red)" : "var(--border)"}`, cursor: "pointer" }}
+                        onClick={() => {
+                          const updated = { ...siteLogistics, [logKey]: { ...todayLog, [item.id]: !checked, date: todayStr, projectId: draft.id } };
+                          saveSiteLogistics(updated);
+                          if (item.critical && checked) show(`⚠️ ${item.label} — unchecked`, "warn");
+                        }}>
+                        {checked ? <CheckSquare size={14} style={{ color: "var(--green)", flexShrink: 0 }} /> : <Square size={14} style={{ color: "var(--text3)", flexShrink: 0 }} />}
+                        <span style={{ fontSize: 11 }}>{item.icon} {item.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── Team Notes ── */}
+          {!isNew && (() => {
+            const projId = String(draft.id);
+            const allNotes = projectNotes.filter(n => String(n.projectId) === projId);
+            const catLabel = (cat) => ({ pm: "PM", field: "Field", office: "Office" }[cat] || cat);
+            const catBadge = (cat) => ({ pm: "badge-blue", field: "badge-amber", office: "badge-green" }[cat] || "badge-muted");
+            const fmtTime = (ts) => { try { const d = new Date(ts); return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); } catch { return ts; } };
+            const filterMap = { all: allNotes, pm: allNotes.filter(n => n.category === "pm"), field: allNotes.filter(n => n.category === "field"), office: allNotes.filter(n => n.category === "office") };
+            const visibleNotes = allNotes.filter(n => notesFilter === "all" || n.category === notesFilter).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(b.timestamp) - new Date(a.timestamp));
+            const addNote = (category) => {
+              if (!noteText.trim()) { show("Enter a note", "err"); return; }
+              const newNote = { id: crypto.randomUUID(), projectId: projId, text: noteText.trim(), author: app.auth?.name || "PM", role: app.auth?.role || "pm", category, pinned: false, timestamp: new Date().toISOString() };
+              saveProjectNotes([newNote, ...projectNotes]);
+              setNoteText("");
+              show("Note posted", "ok");
+            };
+            return (
+              <div style={{ marginTop: 16, borderTop: "2px solid var(--border)", paddingTop: 16 }}>
+                <div className="flex-between" style={{ marginBottom: 10 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                    <MessageSquare size={16} style={{ color: "var(--green)" }} />
+                    Team Notes ({allNotes.length})
+                  </div>
+                </div>
+                <textarea className="input" rows={2} placeholder="Post a note to the project team..." value={noteText} onChange={e => setNoteText(e.target.value)} style={{ width: "100%", fontSize: 12, marginBottom: 8, resize: "vertical" }} />
+                <div className="flex gap-6 mb-10">
+                  <button className="btn btn-sm btn-primary" onClick={() => addNote("pm")} disabled={!noteText.trim()}>PM Note</button>
+                  <button className="btn btn-sm btn-ghost" onClick={() => addNote("field")} disabled={!noteText.trim()}>Field Note</button>
+                  <button className="btn btn-sm btn-ghost" onClick={() => addNote("office")} disabled={!noteText.trim()}>Office Note</button>
+                  <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+                    {["all", "pm", "field", "office"].map(f => (
+                      <button key={f} className={`btn btn-sm ${notesFilter === f ? "btn-primary" : "btn-ghost"}`} onClick={() => setNotesFilter(f)} style={{ fontSize: 10, textTransform: "capitalize", padding: "2px 8px" }}>
+                        {f === "all" ? `All (${allNotes.length})` : `${catLabel(f)} (${filterMap[f]?.length || 0})`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {visibleNotes.length === 0 ? (
+                  <div className="text-xs text-muted">No notes yet.</div>
+                ) : (
+                  <div style={{ maxHeight: 240, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+                    {visibleNotes.map(note => (
+                      <div key={note.id} style={{ padding: "8px 10px", borderRadius: 7, background: note.pinned ? "rgba(245,158,11,0.05)" : "var(--bg3)", border: `1px solid ${note.pinned ? "var(--amber)" : "var(--border)"}` }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            {note.pinned && <Pin size={10} style={{ color: "var(--amber)" }} />}
+                            <span style={{ fontWeight: 600, fontSize: 12 }}>{note.author}</span>
+                            <span className={`badge ${catBadge(note.category)}`} style={{ fontSize: 8 }}>{catLabel(note.category)}</span>
+                          </div>
+                          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                            <span style={{ fontSize: 10, color: "var(--text3)" }}>{fmtTime(note.timestamp)}</span>
+                            <button onClick={() => saveProjectNotes(projectNotes.map(n => n.id === note.id ? { ...n, pinned: !n.pinned } : n))} style={{ background: "none", border: "none", cursor: "pointer", color: note.pinned ? "var(--amber)" : "var(--text3)", padding: "1px 3px" }}>
+                              {note.pinned ? <PinOff size={11} /> : <Pin size={11} />}
+                            </button>
+                            <button onClick={() => saveProjectNotes(projectNotes.filter(n => n.id !== note.id))} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 11, padding: "1px 3px" }}>✕</button>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 12, whiteSpace: "pre-wrap", lineHeight: 1.4 }}>{note.text}</div>
                       </div>
                     ))}
                   </div>
