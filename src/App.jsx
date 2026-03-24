@@ -226,9 +226,17 @@ function AuthGate() {
       return stored ? JSON.parse(stored) : null;
     } catch { return null; }
   });
-  const [onboardingDone, setOnboardingDone] = useState(() => {
-    try { return localStorage.getItem("ebc_onboarding_complete") === "true"; } catch { return false; }
-  });
+  const [onboardingDone, setOnboardingDone] = useState(false);
+
+  // Recompute whenever auth changes — check role-specific key first, then legacy key
+  useEffect(() => {
+    if (!auth) { setOnboardingDone(false); return; }
+    const roleKey = `ebc_onboarding_completed_${auth.role}`;
+    const done =
+      localStorage.getItem(roleKey) === "true" ||
+      localStorage.getItem("ebc_onboarding_complete") === "true";
+    setOnboardingDone(done);
+  }, [auth?.role, auth?.id]);
 
   // Listen for Supabase auth state changes (session refresh, sign-out from another tab, etc.)
   useEffect(() => {
@@ -322,7 +330,7 @@ function AuthGate() {
     return <LoginScreen onLogin={handleLogin} />;
   }
   if (!onboardingDone) {
-    return <OnboardingWizard onComplete={handleOnboardingComplete} />;
+    return <OnboardingWizard onComplete={handleOnboardingComplete} currentUser={auth} />;
   }
 
   return <App auth={auth} onLogout={handleLogout} />;

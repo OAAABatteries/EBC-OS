@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  EBC-OS · Onboarding Wizard
+//  EBC-OS · Onboarding Wizard  (role-aware)
 //  Eagles Brothers Constructors · Houston, TX
 // ═══════════════════════════════════════════════════════════════
 
@@ -8,16 +8,32 @@ import {
   BarChart2, FileText, Building2, Clock, HardHat,
   TrendingUp, DollarSign, CheckCircle, Users, ClipboardList,
   ArrowRight, Target, Layers, UserPlus, Zap, Package,
-  ChevronLeft, ChevronRight, X
+  ChevronLeft, ChevronRight, X, Bell, Truck, MapPin,
+  AlertTriangle, Calendar, ShieldCheck, BookOpen, Wrench,
+  ClipboardCheck, Navigation, CheckSquare
 } from "lucide-react";
 import { ROLES } from "../data/roles";
 import { hashPasswordSync } from "../utils/passwordHash";
 
-const wizardStyles = `
-@keyframes wizPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(224,148,34,0.4); }
-  50% { box-shadow: 0 0 0 14px rgba(224,148,34,0); }
+// ─── helpers ────────────────────────────────────────────────────
+const ADMIN_ROLES  = ["owner", "admin", "office_admin"];
+const FIELD_ROLES  = ["foreman", "employee", "driver"];
+
+function roleFamily(role) {
+  if (ADMIN_ROLES.includes(role))  return "admin";
+  if (role === "pm")               return "pm";
+  if (role === "foreman")          return "foreman";
+  if (role === "employee")         return "employee";
+  if (role === "driver")           return "driver";
+  return "admin"; // fallback
 }
+
+function storageKey(role) {
+  return `ebc_onboarding_completed_${role}`;
+}
+
+// ─── styles ─────────────────────────────────────────────────────
+const wizardStyles = `
 @keyframes slideFromRight {
   from { opacity: 0; transform: translateX(48px); }
   to   { opacity: 1; transform: translateX(0); }
@@ -72,7 +88,7 @@ const wizardStyles = `
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 20px;
   padding: 40px 40px 32px;
-  box-shadow: 0 32px 100px rgba(0,0,0,0.6), 0 0 60px rgba(224,148,34,0.04);
+  box-shadow: 0 32px 100px rgba(0,0,0,0.6);
   min-height: 520px;
   display: flex;
   flex-direction: column;
@@ -115,8 +131,8 @@ const wizardStyles = `
   display: flex;
   flex-direction: column;
 }
-.wizard-slide.forward { animation: slideFromRight 0.35s ease; }
-.wizard-slide.backward { animation: slideFromLeft 0.35s ease; }
+.wizard-slide.forward  { animation: slideFromRight 0.35s ease; }
+.wizard-slide.backward { animation: slideFromLeft  0.35s ease; }
 
 /* ── Step header ── */
 .wizard-logo {
@@ -125,7 +141,6 @@ const wizardStyles = `
   object-fit: contain;
   display: block;
   margin: 0 auto 14px;
-  /* no animation — clean static logo */
 }
 .wizard-step-label {
   text-align: center;
@@ -145,6 +160,14 @@ const wizardStyles = `
   letter-spacing: 0.5px;
   line-height: 1.1;
 }
+.wizard-title-sub {
+  font-family: 'Barlow', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: #455068;
+  text-align: center;
+  margin-top: 3px;
+}
 .wizard-desc {
   font-size: 14px;
   color: #8494ad;
@@ -152,14 +175,21 @@ const wizardStyles = `
   margin-top: 8px;
   line-height: 1.65;
 }
+.wizard-desc-sub {
+  font-size: 12px;
+  color: #455068;
+  text-align: center;
+  margin-top: 4px;
+  line-height: 1.5;
+}
 
-/* ── Illustrations ── */
+/* ── Illustration area ── */
 .wizard-illustration {
   margin-top: 24px;
   flex: 1;
 }
 
-/* KPI grid (Dashboard step) */
+/* KPI grid */
 .wiz-kpi-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -177,8 +207,7 @@ const wizardStyles = `
 }
 .wiz-kpi-card:hover { border-color: rgba(224,148,34,0.2); }
 .wiz-kpi-icon {
-  width: 36px;
-  height: 36px;
+  width: 36px; height: 36px;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -192,17 +221,12 @@ const wizardStyles = `
   color: #f0f4fa;
   line-height: 1;
 }
-.wiz-kpi-label {
-  font-size: 11px;
-  color: #8494ad;
-  margin-top: 2px;
-}
+.wiz-kpi-label { font-size: 11px; color: #8494ad; margin-top: 2px; }
 
-/* Pipeline (Bid Pipeline step) */
+/* Pipeline */
 .wiz-pipeline {
   display: flex;
   align-items: center;
-  gap: 0;
   overflow-x: auto;
   padding: 4px 0;
   -webkit-overflow-scrolling: touch;
@@ -217,8 +241,7 @@ const wizardStyles = `
   flex-shrink: 0;
 }
 .wiz-pipeline-dot {
-  width: 44px;
-  height: 44px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -243,46 +266,15 @@ const wizardStyles = `
   padding-bottom: 16px;
 }
 
-/* Phase bar (Project step) */
-.wiz-phases {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.wiz-phase-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.wiz-phase-name {
-  font-size: 12px;
-  color: #8494ad;
-  width: 80px;
-  flex-shrink: 0;
-  font-weight: 500;
-}
-.wiz-phase-bar-bg {
-  flex: 1;
-  height: 8px;
-  background: rgba(28,34,51,0.8);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.wiz-phase-bar-fill {
-  height: 100%;
-  border-radius: 4px;
-  background: linear-gradient(90deg, #e09422, #f0a83a);
-  transition: width 0.8s ease;
-}
-.wiz-phase-pct {
-  font-size: 11px;
-  color: #455068;
-  width: 32px;
-  text-align: right;
-  flex-shrink: 0;
-}
+/* Phase bars */
+.wiz-phases { display: flex; flex-direction: column; gap: 10px; }
+.wiz-phase-row { display: flex; align-items: center; gap: 12px; }
+.wiz-phase-name { font-size: 12px; color: #8494ad; width: 80px; flex-shrink: 0; font-weight: 500; }
+.wiz-phase-bar-bg { flex: 1; height: 8px; background: rgba(28,34,51,0.8); border-radius: 4px; overflow: hidden; }
+.wiz-phase-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #e09422, #f0a83a); }
+.wiz-phase-pct { font-size: 11px; color: #455068; width: 32px; text-align: right; flex-shrink: 0; }
 
-/* Field tools (Foreman + Time Clock) */
+/* Field cards */
 .wiz-field-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -298,8 +290,7 @@ const wizardStyles = `
 }
 .wiz-field-card:hover { border-color: rgba(224,148,34,0.25); }
 .wiz-field-card-icon {
-  width: 52px;
-  height: 52px;
+  width: 52px; height: 52px;
   border-radius: 14px;
   display: flex;
   align-items: center;
@@ -313,34 +304,71 @@ const wizardStyles = `
   color: #f0f4fa;
   margin-bottom: 4px;
 }
-.wiz-field-card-desc {
-  font-size: 11px;
-  color: #8494ad;
-  line-height: 1.5;
+.wiz-field-card-desc { font-size: 11px; color: #8494ad; line-height: 1.5; }
+.wiz-field-bullets { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 4px; }
+.wiz-field-bullet {
+  font-size: 11px; color: #8494ad;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
 }
-.wiz-field-bullets {
-  list-style: none;
-  padding: 0;
-  margin: 8px 0 0;
+.wiz-field-bullet::before {
+  content: ''; width: 4px; height: 4px;
+  background: #e09422; border-radius: 50%; flex-shrink: 0;
+}
+
+/* ── Field-first big icon (foreman / employee / driver) ── */
+.wiz-big-icon-wrap {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 20px;
+  padding: 8px 0 16px;
 }
-.wiz-field-bullet {
-  font-size: 11px;
-  color: #8494ad;
+.wiz-big-icon {
+  width: 100px;
+  height: 100px;
+  border-radius: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
 }
-.wiz-field-bullet::before {
-  content: '';
-  width: 4px;
-  height: 4px;
-  background: #e09422;
-  border-radius: 50%;
-  flex-shrink: 0;
+.wiz-big-icon-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  width: 100%;
+  max-width: 320px;
+}
+.wiz-big-icon-cell {
+  background: rgba(28,34,51,0.5);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 18px 12px 14px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.wiz-big-icon-cell-icon {
+  width: 56px; height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wiz-big-icon-cell-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #f0f4fa;
+  line-height: 1.1;
+}
+.wiz-big-icon-cell-sub {
+  font-size: 10px;
+  color: #455068;
+  line-height: 1.3;
 }
 
 /* Team invite form */
@@ -350,19 +378,9 @@ const wizardStyles = `
   gap: 10px;
   margin-top: 16px;
 }
-.wizard-team-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
+.wizard-team-field { display: flex; flex-direction: column; gap: 4px; }
 .wizard-team-field.full { grid-column: 1 / -1; }
-.wizard-team-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #8494ad;
-  font-weight: 600;
-}
+.wizard-team-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #8494ad; font-weight: 600; }
 .wizard-team-input, .wizard-team-select {
   background: rgba(6,8,12,0.8);
   border: 1px solid #1c2233;
@@ -425,7 +443,6 @@ const wizardStyles = `
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: wizPulse 2.5s ease-in-out infinite;
 }
 .wizard-feature-chips {
   display: flex;
@@ -455,30 +472,17 @@ const wizardStyles = `
   padding-top: 20px;
   border-top: 1px solid rgba(255,255,255,0.05);
 }
-.wizard-dots {
-  display: flex;
-  gap: 7px;
-  align-items: center;
-}
+.wizard-dots { display: flex; gap: 7px; align-items: center; }
 .wizard-dot {
-  width: 7px;
-  height: 7px;
+  width: 7px; height: 7px;
   border-radius: 50%;
   background: #1c2233;
   transition: all 0.3s;
   cursor: pointer;
 }
-.wizard-dot.active {
-  background: #e09422;
-  width: 22px;
-  border-radius: 4px;
-  box-shadow: 0 0 8px rgba(224,148,34,0.4);
-}
+.wizard-dot.active { background: #e09422; width: 22px; border-radius: 4px; }
 .wizard-dot.done { background: #2c3448; }
-.wizard-nav {
-  display: flex;
-  gap: 8px;
-}
+.wizard-nav { display: flex; gap: 8px; }
 .wizard-btn {
   background: linear-gradient(135deg, #e09422 0%, #d4861a 100%);
   color: #000;
@@ -506,18 +510,39 @@ const wizardStyles = `
 }
 .wizard-btn-ghost:hover { border-color: #455068; color: #d4dae6; background: transparent; transform: none; }
 .wizard-launch {
-  animation: wizPulse 2s ease-in-out infinite;
   font-size: 17px;
   padding: 14px 40px;
 }
 
+/* ── Info row list ── */
+.wiz-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+.wiz-info-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(28,34,51,0.4);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.wiz-info-row-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.wiz-info-row-text { font-size: 13px; color: #8494ad; }
+.wiz-info-row-text strong { color: #d4dae6; display: block; font-size: 13px; margin-bottom: 1px; }
+
 @media (max-width: 520px) {
-  .wizard-card {
-    margin: 10px;
-    padding: 28px 20px 24px;
-    min-height: auto;
-    border-radius: 16px;
-  }
+  .wizard-card { margin: 10px; padding: 28px 20px 24px; min-height: auto; border-radius: 16px; }
   .wizard-title { font-size: 24px; }
   .wiz-kpi-grid { gap: 8px; }
   .wiz-kpi-card { padding: 12px 10px; gap: 8px; }
@@ -525,43 +550,52 @@ const wizardStyles = `
   .wizard-team-form { grid-template-columns: 1fr; }
   .wiz-pipeline { gap: 0; }
   .wizard-btn { padding: 10px 16px; font-size: 14px; }
+  .wiz-big-icon-grid { gap: 10px; }
+  .wiz-big-icon { width: 80px; height: 80px; }
 }
 `;
 
-// Step data
-const TOTAL_STEPS = 7;
-
+// ─── shared data ────────────────────────────────────────────────
 const PIPELINE_STAGES = [
-  { label: "Invite", color: "#3b82f6", bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.3)" },
-  { label: "Takeoff", color: "#e09422", bg: "rgba(224,148,34,0.12)", border: "rgba(224,148,34,0.3)" },
-  { label: "Pricing", color: "#e09422", bg: "rgba(224,148,34,0.12)", border: "rgba(224,148,34,0.3)" },
-  { label: "Submitted", color: "#8b5cf6", bg: "rgba(139,92,246,0.12)", border: "rgba(139,92,246,0.3)" },
-  { label: "Awarded", color: "#10b981", bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)" },
+  { label: "Invite",     color: "#3b82f6", bg: "rgba(59,130,246,0.12)",  border: "rgba(59,130,246,0.3)" },
+  { label: "Takeoff",    color: "#e09422", bg: "rgba(224,148,34,0.12)",  border: "rgba(224,148,34,0.3)" },
+  { label: "Pricing",    color: "#e09422", bg: "rgba(224,148,34,0.12)",  border: "rgba(224,148,34,0.3)" },
+  { label: "Submitted",  color: "#8b5cf6", bg: "rgba(139,92,246,0.12)",  border: "rgba(139,92,246,0.3)" },
+  { label: "Awarded",    color: "#10b981", bg: "rgba(16,185,129,0.12)",  border: "rgba(16,185,129,0.3)" },
 ];
 
 const PROJECT_PHASES = [
-  { name: "Design", pct: 100, color: "#10b981" },
-  { name: "Framing", pct: 78, color: "#e09422" },
-  { name: "Drywall", pct: 42, color: "#e09422" },
-  { name: "Tape & Bed", pct: 15, color: "#3b82f6" },
-  { name: "Punch", pct: 0, color: "#455068" },
+  { name: "Design",    pct: 100, color: "#10b981" },
+  { name: "Framing",   pct: 78,  color: "#e09422" },
+  { name: "Drywall",   pct: 42,  color: "#e09422" },
+  { name: "Tape & Bed",pct: 15,  color: "#3b82f6" },
+  { name: "Punch",     pct: 0,   color: "#455068" },
 ];
 
 const ROLE_OPTIONS = Object.entries(ROLES).filter(([k]) => k !== "owner");
 
-function StepWelcome() {
+// ═══════════════════════════════════════════════════════════════
+//  ADMIN / OWNER STEPS
+// ═══════════════════════════════════════════════════════════════
+
+function AdminStepWelcome({ userName }) {
   return (
     <div className="wizard-slide" style={{ alignItems: "center" }}>
-      <img src="/ebc-eagle-white.png" alt="EBC" className="wizard-logo" style={{ width: 80, height: "auto" }}
-        onError={(e) => { e.target.src = "/eagle-white.png"; e.target.onerror = () => { e.target.style.display = "none"; }; }} />
-      <div className="wizard-title" style={{ marginTop: 8 }}>Welcome to EBC-OS</div>
+      <img
+        src="/ebc-eagle-white.png" alt="EBC" className="wizard-logo"
+        style={{ width: 80, height: "auto" }}
+        onError={(e) => { e.target.src = "/eagle-white.png"; e.target.onerror = () => { e.target.style.display = "none"; }; }}
+      />
+      <div className="wizard-title" style={{ marginTop: 8 }}>
+        Welcome to EBC-OS{userName ? `, ${userName.split(" ")[0]}` : ""}
+      </div>
       <div className="wizard-desc">
         Your all-in-one construction management platform.<br />
         Built for Eagles Brothers — bids, projects, field, and finance in one place.
       </div>
       <div className="wizard-illustration">
         <div className="wizard-feature-chips" style={{ marginTop: 32 }}>
-          {["Bid Pipeline","Project Management","Foreman Portal","Time Clock","Estimating","Safety & JSA","Deliveries","Reports"].map(f => (
+          {["Bid Pipeline","Project Management","Team Management","Profit Alerts","Estimating","Safety & JSA","Deliveries","Reports"].map(f => (
             <div key={f} className="wizard-chip">
               <Zap style={{ width: 11, height: 11, color: "#e09422" }} />
               {f}
@@ -573,23 +607,23 @@ function StepWelcome() {
   );
 }
 
-function StepDashboard() {
+function AdminStepDashboard() {
   return (
     <div className="wizard-slide">
-      <div className="wizard-step-label">Feature 1 of 5</div>
-      <div className="wizard-title">Dashboard</div>
-      <div className="wizard-desc">Real-time KPIs and business intelligence at a glance.</div>
+      <div className="wizard-step-label">Step 2 of 7</div>
+      <div className="wizard-title">Dashboard KPIs</div>
+      <div className="wizard-desc">Real-time business intelligence at a glance.</div>
       <div className="wizard-illustration">
         <div className="wiz-kpi-grid">
           {[
-            { icon: <BarChart2 style={{ width: 18, height: 18, color: "#3b82f6" }} />, iconBg: "rgba(59,130,246,0.12)", value: "8", label: "Active Bids" },
-            { icon: <DollarSign style={{ width: 18, height: 18, color: "#10b981" }} />, iconBg: "rgba(16,185,129,0.12)", value: "$2.4M", label: "Bid Volume" },
-            { icon: <Building2 style={{ width: 18, height: 18, color: "#e09422" }} />, iconBg: "rgba(224,148,34,0.12)", value: "12", label: "Active Projects" },
-            { icon: <CheckCircle style={{ width: 18, height: 18, color: "#10b981" }} />, iconBg: "rgba(16,185,129,0.12)", value: "94%", label: "On Schedule" },
-            { icon: <TrendingUp style={{ width: 18, height: 18, color: "#e09422" }} />, iconBg: "rgba(224,148,34,0.12)", value: "+18%", label: "Win Rate" },
-            { icon: <Clock style={{ width: 18, height: 18, color: "#8b5cf6" }} />, iconBg: "rgba(139,92,246,0.12)", value: "312h", label: "This Week" },
+            { icon: <BarChart2 style={{ width: 18, height: 18, color: "#3b82f6" }} />, iconBg: "rgba(59,130,246,0.12)", value: "8",    label: "Active Bids" },
+            { icon: <DollarSign style={{ width: 18, height: 18, color: "#10b981" }} />, iconBg: "rgba(16,185,129,0.12)",  value: "$2.4M", label: "Bid Volume" },
+            { icon: <Building2 style={{ width: 18, height: 18, color: "#e09422" }} />,  iconBg: "rgba(224,148,34,0.12)", value: "12",   label: "Active Projects" },
+            { icon: <CheckCircle style={{ width: 18, height: 18, color: "#10b981" }} />, iconBg: "rgba(16,185,129,0.12)", value: "94%",  label: "On Schedule" },
+            { icon: <TrendingUp style={{ width: 18, height: 18, color: "#e09422" }} />,  iconBg: "rgba(224,148,34,0.12)", value: "+18%", label: "Win Rate" },
+            { icon: <Clock style={{ width: 18, height: 18, color: "#8b5cf6" }} />,       iconBg: "rgba(139,92,246,0.12)", value: "312h", label: "This Week" },
           ].map((kpi, i) => (
-            <div key={i} className="wiz-kpi-card" style={{ ...(i === 4 ? { gridColumn: "1/2" } : {}), ...(i === 5 ? { gridColumn: "2/3" } : {}) }}>
+            <div key={i} className="wiz-kpi-card">
               <div className="wiz-kpi-icon" style={{ background: kpi.iconBg }}>{kpi.icon}</div>
               <div>
                 <div className="wiz-kpi-value">{kpi.value}</div>
@@ -603,10 +637,10 @@ function StepDashboard() {
   );
 }
 
-function StepBidPipeline() {
+function AdminStepBidPipeline() {
   return (
     <div className="wizard-slide">
-      <div className="wizard-step-label">Feature 2 of 5</div>
+      <div className="wizard-step-label">Step 3 of 7</div>
       <div className="wizard-title">Bid Pipeline</div>
       <div className="wizard-desc">Track every opportunity from invite to award. Never miss a deadline.</div>
       <div className="wizard-illustration">
@@ -620,23 +654,20 @@ function StepBidPipeline() {
                 <div className="wiz-pipeline-name" style={{ color: s.color }}>{s.label}</div>
               </div>
               {i < PIPELINE_STAGES.length - 1 && (
-                <div className="wiz-pipeline-arrow">
-                  <ArrowRight style={{ width: 16, height: 16 }} />
-                </div>
+                <div className="wiz-pipeline-arrow"><ArrowRight style={{ width: 16, height: 16 }} /></div>
               )}
             </div>
           ))}
         </div>
-
-        <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+        <div className="wiz-info-list" style={{ marginTop: 16 }}>
           {[
-            { label: "Bid documents & scope tracking", icon: <FileText style={{ width: 13, height: 13 }} /> },
-            { label: "GC & customer contact management", icon: <Users style={{ width: 13, height: 13 }} /> },
-            { label: "Win/loss analytics and trends", icon: <TrendingUp style={{ width: 13, height: 13 }} /> },
+            { icon: <FileText style={{ width: 14, height: 14, color: "#e09422" }} />, bg: "rgba(224,148,34,0.1)", title: "Bid documents & scope tracking" },
+            { icon: <Users style={{ width: 14, height: 14, color: "#3b82f6" }} />,    bg: "rgba(59,130,246,0.1)", title: "GC & customer contact management" },
+            { icon: <TrendingUp style={{ width: 14, height: 14, color: "#10b981" }} />, bg: "rgba(16,185,129,0.1)", title: "Win/loss analytics and trends" },
           ].map((f, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(28,34,51,0.4)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 8, padding: "9px 12px" }}>
-              <span style={{ color: "#e09422" }}>{f.icon}</span>
-              <span style={{ fontSize: 13, color: "#8494ad" }}>{f.label}</span>
+            <div key={i} className="wiz-info-row">
+              <div className="wiz-info-row-icon" style={{ background: f.bg }}>{f.icon}</div>
+              <div className="wiz-info-row-text">{f.title}</div>
             </div>
           ))}
         </div>
@@ -645,10 +676,10 @@ function StepBidPipeline() {
   );
 }
 
-function StepProjects() {
+function AdminStepProjects() {
   return (
     <div className="wizard-slide">
-      <div className="wizard-step-label">Feature 3 of 5</div>
+      <div className="wizard-step-label">Step 4 of 7</div>
       <div className="wizard-title">Project Management</div>
       <div className="wizard-desc">Full project lifecycle — phases, RFIs, submittals, change orders, and punch lists.</div>
       <div className="wizard-illustration">
@@ -663,7 +694,7 @@ function StepProjects() {
             </div>
           ))}
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 18 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 16 }}>
           {["RFIs","Submittals","Change Orders","Punch Lists","Daily Reports","T&M Tickets"].map(tag => (
             <span key={tag} style={{ fontSize: 11, background: "rgba(28,34,51,0.6)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 5, padding: "3px 9px", color: "#8494ad" }}>{tag}</span>
           ))}
@@ -673,47 +704,7 @@ function StepProjects() {
   );
 }
 
-function StepFieldTools() {
-  return (
-    <div className="wizard-slide">
-      <div className="wizard-step-label">Features 4 & 5 of 5</div>
-      <div className="wizard-title">Field-First Tools</div>
-      <div className="wizard-desc">Built for foremen and workers — fast, mobile-ready, and offline-capable.</div>
-      <div className="wizard-illustration">
-        <div className="wiz-field-cards">
-          <div className="wiz-field-card">
-            <div className="wiz-field-card-icon" style={{ background: "rgba(224,148,34,0.1)" }}>
-              <HardHat style={{ width: 26, height: 26, color: "#e09422" }} />
-            </div>
-            <div className="wiz-field-card-title">Foreman Portal</div>
-            <div className="wiz-field-card-desc">Manage your crew from the field</div>
-            <ul className="wiz-field-bullets">
-              <li className="wiz-field-bullet">Daily reports</li>
-              <li className="wiz-field-bullet">Crew scheduling</li>
-              <li className="wiz-field-bullet">Safety talks</li>
-              <li className="wiz-field-bullet">Material requests</li>
-            </ul>
-          </div>
-          <div className="wiz-field-card">
-            <div className="wiz-field-card-icon" style={{ background: "rgba(16,185,129,0.1)" }}>
-              <Clock style={{ width: 26, height: 26, color: "#10b981" }} />
-            </div>
-            <div className="wiz-field-card-title">Time Clock</div>
-            <div className="wiz-field-card-desc">Accurate payroll, every time</div>
-            <ul className="wiz-field-bullets">
-              <li className="wiz-field-bullet">PIN-based punch in/out</li>
-              <li className="wiz-field-bullet">Per-project tracking</li>
-              <li className="wiz-field-bullet">Overtime alerts</li>
-              <li className="wiz-field-bullet">Payroll export</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StepTeam({ teamMembers, onAddMember, onRemoveMember }) {
+function AdminStepTeam({ teamMembers, onAddMember, onRemoveMember }) {
   const [memberName, setMemberName] = useState("");
   const [memberEmail, setMemberEmail] = useState("");
   const [memberRole, setMemberRole] = useState("pm");
@@ -727,8 +718,8 @@ function StepTeam({ teamMembers, onAddMember, onRemoveMember }) {
 
   return (
     <div className="wizard-slide">
-      <div className="wizard-step-label">Optional</div>
-      <div className="wizard-title">Invite Your Team</div>
+      <div className="wizard-step-label">Step 5 of 7</div>
+      <div className="wizard-title">Team Management</div>
       <div className="wizard-desc">Add team members now — or skip and do it later in Settings.</div>
       <div className="wizard-illustration">
         <div className="wizard-team-form">
@@ -772,7 +763,35 @@ function StepTeam({ teamMembers, onAddMember, onRemoveMember }) {
   );
 }
 
-function StepReady({ onComplete }) {
+function AdminStepProfitAlerts() {
+  return (
+    <div className="wizard-slide">
+      <div className="wizard-step-label">Step 6 of 7</div>
+      <div className="wizard-title">Profit Alerts</div>
+      <div className="wizard-desc">Real-time alerts keep you ahead of budget overruns and margin risks.</div>
+      <div className="wizard-illustration">
+        <div className="wiz-info-list">
+          {[
+            { icon: <TrendingUp style={{ width: 16, height: 16, color: "#10b981" }} />, bg: "rgba(16,185,129,0.1)",  title: "Gross Margin Tracker", sub: "Live % vs. target on every project" },
+            { icon: <AlertTriangle style={{ width: 16, height: 16, color: "#e09422" }} />, bg: "rgba(224,148,34,0.1)", title: "Budget Overrun Warnings", sub: "Alerts when costs exceed approved budget" },
+            { icon: <DollarSign style={{ width: 16, height: 16, color: "#8b5cf6" }} />, bg: "rgba(139,92,246,0.1)", title: "Change Order Impact", sub: "See how COs shift your bottom line instantly" },
+            { icon: <BarChart2 style={{ width: 16, height: 16, color: "#3b82f6" }} />, bg: "rgba(59,130,246,0.1)", title: "Labor vs. Revenue Ratio", sub: "Weekly burn-rate vs. billed amounts" },
+          ].map((item, i) => (
+            <div key={i} className="wiz-info-row">
+              <div className="wiz-info-row-icon" style={{ background: item.bg }}>{item.icon}</div>
+              <div className="wiz-info-row-text">
+                <strong>{item.title}</strong>
+                {item.sub}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminStepSettings({ onComplete }) {
   return (
     <div className="wizard-slide">
       <div className="wizard-ready-wrap">
@@ -792,12 +811,728 @@ function StepReady({ onComplete }) {
   );
 }
 
-export function OnboardingWizard({ onComplete }) {
-  const [step, setStep] = useState(0);
+// ═══════════════════════════════════════════════════════════════
+//  PM STEPS
+// ═══════════════════════════════════════════════════════════════
+
+function PMStepWelcome({ userName }) {
+  return (
+    <div className="wizard-slide" style={{ alignItems: "center" }}>
+      <img
+        src="/ebc-eagle-white.png" alt="EBC" className="wizard-logo"
+        style={{ width: 80, height: "auto" }}
+        onError={(e) => { e.target.src = "/eagle-white.png"; e.target.onerror = () => { e.target.style.display = "none"; }; }}
+      />
+      <div className="wizard-title" style={{ marginTop: 8 }}>
+        Welcome, {userName ? userName.split(" ")[0] : "PM"}
+      </div>
+      <div className="wizard-desc">
+        Your project management command center.<br />
+        Bids, projects, field coordination, and takeoffs — all in one place.
+      </div>
+      <div className="wizard-illustration">
+        <div className="wizard-feature-chips" style={{ marginTop: 28 }}>
+          {["Bid Pipeline","Project Details","COs & RFIs","Submittals","Assign Foremen","Takeoffs","Notifications"].map(f => (
+            <div key={f} className="wizard-chip">
+              <Target style={{ width: 11, height: 11, color: "#e09422" }} />
+              {f}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PMStepDashboard() {
+  return (
+    <div className="wizard-slide">
+      <div className="wizard-step-label">Step 2 of 7</div>
+      <div className="wizard-title">Your Dashboard</div>
+      <div className="wizard-desc">Track your active bids and project health at a glance.</div>
+      <div className="wizard-illustration">
+        <div className="wiz-kpi-grid">
+          {[
+            { icon: <FileText style={{ width: 18, height: 18, color: "#e09422" }} />,    iconBg: "rgba(224,148,34,0.12)", value: "4",    label: "My Bids" },
+            { icon: <Building2 style={{ width: 18, height: 18, color: "#3b82f6" }} />,   iconBg: "rgba(59,130,246,0.12)",  value: "6",    label: "My Projects" },
+            { icon: <ClipboardList style={{ width: 18, height: 18, color: "#8b5cf6" }} />, iconBg: "rgba(139,92,246,0.12)", value: "3",   label: "Open RFIs" },
+            { icon: <CheckCircle style={{ width: 18, height: 18, color: "#10b981" }} />, iconBg: "rgba(16,185,129,0.12)",  value: "11",   label: "Pending Submittals" },
+            { icon: <DollarSign style={{ width: 18, height: 18, color: "#10b981" }} />,  iconBg: "rgba(16,185,129,0.12)",  value: "$84K", label: "Pending COs" },
+            { icon: <TrendingUp style={{ width: 18, height: 18, color: "#e09422" }} />,  iconBg: "rgba(224,148,34,0.12)", value: "92%",  label: "On Schedule" },
+          ].map((kpi, i) => (
+            <div key={i} className="wiz-kpi-card">
+              <div className="wiz-kpi-icon" style={{ background: kpi.iconBg }}>{kpi.icon}</div>
+              <div><div className="wiz-kpi-value">{kpi.value}</div><div className="wiz-kpi-label">{kpi.label}</div></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PMStepBidPipeline() {
+  return (
+    <div className="wizard-slide">
+      <div className="wizard-step-label">Step 3 of 7</div>
+      <div className="wizard-title">Bid Pipeline</div>
+      <div className="wizard-desc">Manage your bids from invite to award. Own your estimating queue.</div>
+      <div className="wizard-illustration">
+        <div className="wiz-pipeline">
+          {PIPELINE_STAGES.map((s, i) => (
+            <div key={s.label} style={{ display: "flex", alignItems: "center" }}>
+              <div className="wiz-pipeline-stage">
+                <div className="wiz-pipeline-dot" style={{ background: s.bg, borderColor: s.border, color: s.color }}>
+                  <FileText style={{ width: 18, height: 18 }} />
+                </div>
+                <div className="wiz-pipeline-name" style={{ color: s.color }}>{s.label}</div>
+              </div>
+              {i < PIPELINE_STAGES.length - 1 && (
+                <div className="wiz-pipeline-arrow"><ArrowRight style={{ width: 16, height: 16 }} /></div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="wiz-info-list" style={{ marginTop: 14 }}>
+          {[
+            { icon: <FileText style={{ width: 14, height: 14, color: "#e09422" }} />, bg: "rgba(224,148,34,0.1)", text: "Claim bids and lock your estimating queue" },
+            { icon: <Layers style={{ width: 14, height: 14, color: "#3b82f6" }} />,   bg: "rgba(59,130,246,0.1)", text: "Attach plans, scope sheets, and addenda" },
+            { icon: <Target style={{ width: 14, height: 14, color: "#10b981" }} />,   bg: "rgba(16,185,129,0.1)", text: "Track bid deadlines and submission status" },
+          ].map((f, i) => (
+            <div key={i} className="wiz-info-row">
+              <div className="wiz-info-row-icon" style={{ background: f.bg }}>{f.icon}</div>
+              <div className="wiz-info-row-text">{f.text}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PMStepProjectDetail() {
+  return (
+    <div className="wizard-slide">
+      <div className="wizard-step-label">Step 4 of 7</div>
+      <div className="wizard-title">Project Detail</div>
+      <div className="wizard-desc">COs, RFIs, and submittals — everything tracked in one view.</div>
+      <div className="wizard-illustration">
+        <div className="wiz-field-cards">
+          <div className="wiz-field-card">
+            <div className="wiz-field-card-icon" style={{ background: "rgba(224,148,34,0.1)" }}>
+              <DollarSign style={{ width: 26, height: 26, color: "#e09422" }} />
+            </div>
+            <div className="wiz-field-card-title">Change Orders</div>
+            <ul className="wiz-field-bullets">
+              <li className="wiz-field-bullet">Draft & submit COs</li>
+              <li className="wiz-field-bullet">Track approval status</li>
+              <li className="wiz-field-bullet">Impact on contract</li>
+            </ul>
+          </div>
+          <div className="wiz-field-card">
+            <div className="wiz-field-card-icon" style={{ background: "rgba(59,130,246,0.1)" }}>
+              <ClipboardList style={{ width: 26, height: 26, color: "#3b82f6" }} />
+            </div>
+            <div className="wiz-field-card-title">RFIs & Submittals</div>
+            <ul className="wiz-field-bullets">
+              <li className="wiz-field-bullet">Log open RFIs</li>
+              <li className="wiz-field-bullet">Track submittal status</li>
+              <li className="wiz-field-bullet">GC response log</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PMStepForemen() {
+  return (
+    <div className="wizard-slide">
+      <div className="wizard-step-label">Step 5 of 7</div>
+      <div className="wizard-title">Assign Foremen</div>
+      <div className="wizard-desc">Assign foremen to projects and manage field crews from your desk.</div>
+      <div className="wizard-illustration">
+        <div className="wiz-info-list">
+          {[
+            { icon: <HardHat style={{ width: 16, height: 16, color: "#e09422" }} />,   bg: "rgba(224,148,34,0.1)", title: "Assign to Projects", sub: "Tie a foreman to each active project" },
+            { icon: <Users style={{ width: 16, height: 16, color: "#3b82f6" }} />,     bg: "rgba(59,130,246,0.1)", title: "Crew Visibility",    sub: "See who's on-site and crew hours in real time" },
+            { icon: <ClipboardCheck style={{ width: 16, height: 16, color: "#10b981" }} />, bg: "rgba(16,185,129,0.1)", title: "Daily Reports",  sub: "Review foreman reports submitted each day" },
+            { icon: <Bell style={{ width: 16, height: 16, color: "#8b5cf6" }} />,      bg: "rgba(139,92,246,0.1)", title: "Alerts",             sub: "Get notified if no report is filed by EOD" },
+          ].map((item, i) => (
+            <div key={i} className="wiz-info-row">
+              <div className="wiz-info-row-icon" style={{ background: item.bg }}>{item.icon}</div>
+              <div className="wiz-info-row-text"><strong>{item.title}</strong>{item.sub}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PMStepTakeoffs() {
+  return (
+    <div className="wizard-slide">
+      <div className="wizard-step-label">Step 6 of 7</div>
+      <div className="wizard-title">Material Takeoffs</div>
+      <div className="wizard-desc">Build detailed material lists directly from your bid or project scope.</div>
+      <div className="wizard-illustration">
+        <div className="wiz-info-list">
+          {[
+            { icon: <Package style={{ width: 16, height: 16, color: "#e09422" }} />,   bg: "rgba(224,148,34,0.1)", title: "Line-item takeoffs", sub: "Qty, unit cost, and total per material" },
+            { icon: <Layers style={{ width: 16, height: 16, color: "#3b82f6" }} />,    bg: "rgba(59,130,246,0.1)", title: "Phase breakdowns",   sub: "Organize by construction phase" },
+            { icon: <DollarSign style={{ width: 16, height: 16, color: "#10b981" }} />, bg: "rgba(16,185,129,0.1)", title: "Cost roll-up",       sub: "Automatic totals feed into bid pricing" },
+            { icon: <TrendingUp style={{ width: 16, height: 16, color: "#8b5cf6" }} />, bg: "rgba(139,92,246,0.1)", title: "AI Analyzer",        sub: "Flag risk items and missing scope" },
+          ].map((item, i) => (
+            <div key={i} className="wiz-info-row">
+              <div className="wiz-info-row-icon" style={{ background: item.bg }}>{item.icon}</div>
+              <div className="wiz-info-row-text"><strong>{item.title}</strong>{item.sub}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PMStepReady({ onComplete }) {
+  return (
+    <div className="wizard-slide">
+      <div className="wizard-ready-wrap">
+        <div className="wizard-ready-ring">
+          <CheckCircle style={{ width: 44, height: 44, color: "#e09422" }} />
+        </div>
+        <div className="wizard-title">You're All Set!</div>
+        <div className="wizard-desc" style={{ maxWidth: 340, margin: "0 auto" }}>
+          EBC-OS is ready. Manage your projects with confidence.<br />
+          <span style={{ color: "#455068", fontSize: 12 }}>You can revisit this tour anytime in Settings.</span>
+        </div>
+        <button className="wizard-btn wizard-launch" onClick={onComplete}>
+          Launch EBC-OS
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FOREMAN STEPS  (Spanish-first)
+// ═══════════════════════════════════════════════════════════════
+
+function ForemanStep1({ userName }) {
+  return (
+    <div className="wizard-slide" style={{ alignItems: "center" }}>
+      <img
+        src="/ebc-eagle-white.png" alt="EBC" className="wizard-logo"
+        style={{ width: 80, height: "auto" }}
+        onError={(e) => { e.target.src = "/eagle-white.png"; e.target.onerror = () => { e.target.style.display = "none"; }; }}
+      />
+      <div className="wizard-title" style={{ marginTop: 8 }}>
+        Bienvenido{userName ? `, ${userName.split(" ")[0]}` : ""}
+      </div>
+      <div className="wizard-title-sub">Welcome to EBC-OS</div>
+      <div className="wizard-desc">Tu portal de campo para EBC.<br />Gestiona tu cuadrilla desde cualquier lugar.</div>
+      <div className="wizard-desc-sub">Field portal for Eagles Brothers Constructors.</div>
+      <div className="wizard-illustration">
+        <div className="wiz-big-icon-grid">
+          {[
+            { icon: <HardHat style={{ width: 28, height: 28, color: "#e09422" }} />,      bg: "rgba(224,148,34,0.12)",  label: "Cuadrilla",      sub: "Crew" },
+            { icon: <Clock style={{ width: 28, height: 28, color: "#10b981" }} />,         bg: "rgba(16,185,129,0.12)",  label: "Tiempo",         sub: "Time" },
+            { icon: <ShieldCheck style={{ width: 28, height: 28, color: "#3b82f6" }} />,   bg: "rgba(59,130,246,0.12)",  label: "Seguridad",      sub: "Safety" },
+            { icon: <ClipboardList style={{ width: 28, height: 28, color: "#8b5cf6" }} />, bg: "rgba(139,92,246,0.12)", label: "Reportes",       sub: "Reports" },
+          ].map((c, i) => (
+            <div key={i} className="wiz-big-icon-cell">
+              <div className="wiz-big-icon-cell-icon" style={{ background: c.bg }}>{c.icon}</div>
+              <div className="wiz-big-icon-cell-label">{c.label}</div>
+              <div className="wiz-big-icon-cell-sub">{c.sub}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ForemanStep2() {
+  return (
+    <div className="wizard-slide" style={{ alignItems: "center" }}>
+      <div className="wizard-step-label">Paso 2 · Step 2</div>
+      <div className="wizard-title">Entrada / Salida</div>
+      <div className="wizard-title-sub">Clock In / Clock Out</div>
+      <div className="wizard-desc">Registra tu tiempo cada día con tu PIN.<br />Tu pago depende de esto.</div>
+      <div className="wizard-desc-sub">Log your time every day with your PIN.</div>
+      <div className="wizard-illustration">
+        <div className="wiz-big-icon-wrap">
+          <div className="wiz-big-icon" style={{ background: "rgba(16,185,129,0.12)", border: "2px solid rgba(16,185,129,0.2)" }}>
+            <Clock style={{ width: 54, height: 54, color: "#10b981" }} />
+          </div>
+          <div className="wiz-info-list" style={{ width: "100%" }}>
+            {[
+              { label: "Pulsa → Entrada",  sub: "Tap → Clock In",   color: "#10b981" },
+              { label: "Selecciona proyecto", sub: "Select your project", color: "#e09422" },
+              { label: "Al salir → Salida", sub: "At end → Clock Out", color: "#ef4444" },
+            ].map((r, i) => (
+              <div key={i} className="wiz-info-row">
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: r.color, flexShrink: 0 }} />
+                <div className="wiz-info-row-text"><strong>{r.label}</strong>{r.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ForemanStep3() {
+  return (
+    <div className="wizard-slide" style={{ alignItems: "center" }}>
+      <div className="wizard-step-label">Paso 3 · Step 3</div>
+      <div className="wizard-title">Cuadrilla</div>
+      <div className="wizard-title-sub">Crew Management</div>
+      <div className="wizard-desc">Gestiona a tu equipo en el campo.<br />Asigna trabajos y revisa horas.</div>
+      <div className="wizard-desc-sub">Manage your team, assign tasks, review hours.</div>
+      <div className="wizard-illustration">
+        <div className="wiz-big-icon-wrap">
+          <div className="wiz-big-icon" style={{ background: "rgba(224,148,34,0.12)", border: "2px solid rgba(224,148,34,0.2)" }}>
+            <Users style={{ width: 54, height: 54, color: "#e09422" }} />
+          </div>
+          <div className="wiz-info-list" style={{ width: "100%" }}>
+            {[
+              { label: "Ver cuadrilla activa",  sub: "See active crew on-site", color: "#e09422" },
+              { label: "Horas por trabajador",  sub: "Hours per worker today",  color: "#3b82f6" },
+              { label: "Solicitar materiales",  sub: "Request materials",        color: "#10b981" },
+            ].map((r, i) => (
+              <div key={i} className="wiz-info-row">
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: r.color, flexShrink: 0 }} />
+                <div className="wiz-info-row-text"><strong>{r.label}</strong>{r.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ForemanStep4() {
+  return (
+    <div className="wizard-slide" style={{ alignItems: "center" }}>
+      <div className="wizard-step-label">Paso 4 · Step 4</div>
+      <div className="wizard-title">Seguridad (JSA)</div>
+      <div className="wizard-title-sub">Safety — Job Safety Analysis</div>
+      <div className="wizard-desc">Completa el JSA antes de comenzar cualquier trabajo.<br />Es obligatorio cada día.</div>
+      <div className="wizard-desc-sub">Complete the JSA before starting work. Required daily.</div>
+      <div className="wizard-illustration">
+        <div className="wiz-big-icon-wrap">
+          <div className="wiz-big-icon" style={{ background: "rgba(59,130,246,0.12)", border: "2px solid rgba(59,130,246,0.2)" }}>
+            <ShieldCheck style={{ width: 54, height: 54, color: "#3b82f6" }} />
+          </div>
+          <div className="wiz-info-list" style={{ width: "100%" }}>
+            {[
+              { label: "JSA diario",          sub: "Daily job safety analysis",   color: "#3b82f6" },
+              { label: "Reporte de incidente", sub: "File an incident report",     color: "#ef4444" },
+              { label: "Hojas SDS",            sub: "Access material SDS sheets",  color: "#e09422" },
+            ].map((r, i) => (
+              <div key={i} className="wiz-info-row">
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: r.color, flexShrink: 0 }} />
+                <div className="wiz-info-row-text"><strong>{r.label}</strong>{r.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ForemanStep5({ onComplete }) {
+  return (
+    <div className="wizard-slide" style={{ alignItems: "center" }}>
+      <div className="wizard-step-label">Paso 5 · Step 5</div>
+      <div className="wizard-ready-wrap">
+        <div className="wiz-big-icon" style={{ background: "rgba(139,92,246,0.12)", border: "2px solid rgba(139,92,246,0.2)", width: 96, height: 96, borderRadius: "50%" }}>
+          <ClipboardList style={{ width: 48, height: 48, color: "#8b5cf6" }} />
+        </div>
+        <div className="wizard-title">Reporte Diario</div>
+        <div className="wizard-title-sub">Daily Report</div>
+        <div className="wizard-desc">Documenta el trabajo de cada día.<br />Fotos, horas, y notas de progreso.</div>
+        <div className="wizard-desc-sub">Document work each day — photos, hours, progress notes.</div>
+        <button className="wizard-btn wizard-launch" onClick={onComplete}>
+          Comenzar · Start
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  EMPLOYEE STEPS  (Spanish-first, dead simple, pictogram-heavy)
+// ═══════════════════════════════════════════════════════════════
+
+function EmployeeStep1({ userName }) {
+  return (
+    <div className="wizard-slide" style={{ alignItems: "center" }}>
+      <img
+        src="/ebc-eagle-white.png" alt="EBC" className="wizard-logo"
+        style={{ width: 80, height: "auto" }}
+        onError={(e) => { e.target.src = "/eagle-white.png"; e.target.onerror = () => { e.target.style.display = "none"; }; }}
+      />
+      <div className="wizard-title" style={{ marginTop: 8 }}>
+        Bienvenido{userName ? `, ${userName.split(" ")[0]}` : ""}
+      </div>
+      <div className="wizard-title-sub">Welcome</div>
+      <div className="wizard-desc" style={{ fontSize: 16 }}>Estás en EBC-OS.<br />Tu app de trabajo.</div>
+      <div className="wizard-desc-sub">You're on EBC-OS — your work app.</div>
+      <div className="wizard-illustration">
+        <div className="wiz-big-icon-grid">
+          {[
+            { icon: <Clock style={{ width: 32, height: 32, color: "#10b981" }} />,          bg: "rgba(16,185,129,0.12)", label: "Entrada/Salida", sub: "Clock In/Out" },
+            { icon: <AlertTriangle style={{ width: 32, height: 32, color: "#ef4444" }} />,  bg: "rgba(239,68,68,0.12)",  label: "Problema",       sub: "Report Issue" },
+            { icon: <Calendar style={{ width: 32, height: 32, color: "#3b82f6" }} />,       bg: "rgba(59,130,246,0.12)", label: "Horario",        sub: "Schedule" },
+          ].map((c, i) => (
+            <div key={i} className="wiz-big-icon-cell" style={{ ...(i === 2 ? { gridColumn: "1 / -1", maxWidth: 160, margin: "0 auto", width: "100%" } : {}) }}>
+              <div className="wiz-big-icon-cell-icon" style={{ background: c.bg }}>{c.icon}</div>
+              <div className="wiz-big-icon-cell-label">{c.label}</div>
+              <div className="wiz-big-icon-cell-sub">{c.sub}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmployeeStep2() {
+  return (
+    <div className="wizard-slide" style={{ alignItems: "center" }}>
+      <div className="wizard-step-label">Paso 2 · Step 2</div>
+      <div className="wizard-title">Entrada / Salida</div>
+      <div className="wizard-title-sub">Clock In / Clock Out</div>
+      <div className="wizard-illustration">
+        <div className="wiz-big-icon-wrap" style={{ gap: 16 }}>
+          <div className="wiz-big-icon" style={{ background: "rgba(16,185,129,0.12)", border: "2px solid rgba(16,185,129,0.2)", width: 110, height: 110, borderRadius: 32 }}>
+            <Clock style={{ width: 60, height: 60, color: "#10b981" }} />
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 700, color: "#f0f4fa" }}>Pulsa el botón</div>
+            <div style={{ fontSize: 13, color: "#455068", marginTop: 4 }}>Tap the button</div>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 12, padding: "12px 24px", textAlign: "center" }}>
+              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 700, color: "#10b981" }}>ENTRADA</div>
+              <div style={{ fontSize: 11, color: "#455068" }}>Clock In</div>
+            </div>
+            <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 24px", textAlign: "center" }}>
+              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 700, color: "#ef4444" }}>SALIDA</div>
+              <div style={{ fontSize: 11, color: "#455068" }}>Clock Out</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 12, color: "#455068", textAlign: "center" }}>Necesitas tu PIN · You need your PIN</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmployeeStep3() {
+  return (
+    <div className="wizard-slide" style={{ alignItems: "center" }}>
+      <div className="wizard-step-label">Paso 3 · Step 3</div>
+      <div className="wizard-title">Reportar Problema</div>
+      <div className="wizard-title-sub">Report a Problem</div>
+      <div className="wizard-desc">¿Algo está mal? Avísanos.<br />Tu seguridad es primero.</div>
+      <div className="wizard-desc-sub">Something wrong? Let us know. Safety first.</div>
+      <div className="wizard-illustration">
+        <div className="wiz-big-icon-wrap">
+          <div className="wiz-big-icon" style={{ background: "rgba(239,68,68,0.1)", border: "2px solid rgba(239,68,68,0.2)", width: 100, height: 100, borderRadius: 28 }}>
+            <AlertTriangle style={{ width: 54, height: 54, color: "#ef4444" }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
+            {[
+              { es: "Peligro en el sitio",   en: "Site hazard" },
+              { es: "Equipo dañado",         en: "Damaged equipment" },
+              { es: "Necesito ayuda",        en: "I need help" },
+            ].map((r, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(28,34,51,0.4)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 10, padding: "11px 14px" }}>
+                <AlertTriangle style={{ width: 16, height: 16, color: "#ef4444", flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#f0f4fa" }}>{r.es}</div>
+                  <div style={{ fontSize: 11, color: "#455068" }}>{r.en}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmployeeStep4({ onComplete }) {
+  return (
+    <div className="wizard-slide" style={{ alignItems: "center" }}>
+      <div className="wizard-ready-wrap">
+        <div className="wiz-big-icon" style={{ background: "rgba(59,130,246,0.12)", border: "2px solid rgba(59,130,246,0.2)", width: 96, height: 96, borderRadius: "50%" }}>
+          <Calendar style={{ width: 48, height: 48, color: "#3b82f6" }} />
+        </div>
+        <div className="wizard-title">Tu Horario</div>
+        <div className="wizard-title-sub">Your Schedule</div>
+        <div className="wizard-desc" style={{ fontSize: 15 }}>
+          Ve cuándo y dónde trabajas cada semana.
+        </div>
+        <div className="wizard-desc-sub">See when and where you work each week.</div>
+        <button className="wizard-btn wizard-launch" onClick={onComplete} style={{ marginTop: 12 }}>
+          Comenzar · Start
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DRIVER STEPS  (Spanish-first)
+// ═══════════════════════════════════════════════════════════════
+
+function DriverStep1({ userName }) {
+  return (
+    <div className="wizard-slide" style={{ alignItems: "center" }}>
+      <img
+        src="/ebc-eagle-white.png" alt="EBC" className="wizard-logo"
+        style={{ width: 80, height: "auto" }}
+        onError={(e) => { e.target.src = "/eagle-white.png"; e.target.onerror = () => { e.target.style.display = "none"; }; }}
+      />
+      <div className="wizard-title" style={{ marginTop: 8 }}>
+        Bienvenido{userName ? `, ${userName.split(" ")[0]}` : ""}
+      </div>
+      <div className="wizard-title-sub">Welcome, Driver</div>
+      <div className="wizard-desc">Tu portal de entregas para EBC.<br />Gestiona tus entregas del día.</div>
+      <div className="wizard-desc-sub">Your delivery portal for Eagles Brothers.</div>
+      <div className="wizard-illustration">
+        <div className="wiz-big-icon-grid">
+          {[
+            { icon: <Truck style={{ width: 30, height: 30, color: "#e09422" }} />,         bg: "rgba(224,148,34,0.12)", label: "Entregas",  sub: "Deliveries" },
+            { icon: <MapPin style={{ width: 30, height: 30, color: "#3b82f6" }} />,        bg: "rgba(59,130,246,0.12)", label: "Ruta",      sub: "Route" },
+            { icon: <CheckSquare style={{ width: 30, height: 30, color: "#10b981" }} />,   bg: "rgba(16,185,129,0.12)", label: "Completado",sub: "Done" },
+            { icon: <Bell style={{ width: 30, height: 30, color: "#8b5cf6" }} />,          bg: "rgba(139,92,246,0.12)",label: "Alertas",   sub: "Alerts" },
+          ].map((c, i) => (
+            <div key={i} className="wiz-big-icon-cell">
+              <div className="wiz-big-icon-cell-icon" style={{ background: c.bg }}>{c.icon}</div>
+              <div className="wiz-big-icon-cell-label">{c.label}</div>
+              <div className="wiz-big-icon-cell-sub">{c.sub}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DriverStep2() {
+  return (
+    <div className="wizard-slide" style={{ alignItems: "center" }}>
+      <div className="wizard-step-label">Paso 2 · Step 2</div>
+      <div className="wizard-title">Ruta de Entrega</div>
+      <div className="wizard-title-sub">Delivery Route</div>
+      <div className="wizard-desc">Ve todas tus entregas del día.<br />Con dirección y detalles del material.</div>
+      <div className="wizard-desc-sub">See all today's deliveries with address and material details.</div>
+      <div className="wizard-illustration">
+        <div className="wiz-big-icon-wrap">
+          <div className="wiz-big-icon" style={{ background: "rgba(224,148,34,0.12)", border: "2px solid rgba(224,148,34,0.2)", width: 100, height: 100, borderRadius: 28 }}>
+            <Truck style={{ width: 56, height: 56, color: "#e09422" }} />
+          </div>
+          <div className="wiz-info-list" style={{ width: "100%" }}>
+            {[
+              { es: "Lista de entregas pendientes", en: "Pending delivery queue",   color: "#e09422" },
+              { es: "Dirección en mapa",            en: "Address on map",           color: "#3b82f6" },
+              { es: "Material y cantidad",          en: "Material & quantity",      color: "#10b981" },
+            ].map((r, i) => (
+              <div key={i} className="wiz-info-row">
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: r.color, flexShrink: 0 }} />
+                <div className="wiz-info-row-text"><strong>{r.es}</strong>{r.en}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DriverStep3() {
+  return (
+    <div className="wizard-slide" style={{ alignItems: "center" }}>
+      <div className="wizard-step-label">Paso 3 · Step 3</div>
+      <div className="wizard-title">Programar Entrega</div>
+      <div className="wizard-title-sub">Schedule Deliveries</div>
+      <div className="wizard-desc">Confirma la hora y el lugar de entrega.<br />Mantén al equipo informado.</div>
+      <div className="wizard-desc-sub">Confirm delivery time and location. Keep the team informed.</div>
+      <div className="wizard-illustration">
+        <div className="wiz-big-icon-wrap">
+          <div className="wiz-big-icon" style={{ background: "rgba(59,130,246,0.12)", border: "2px solid rgba(59,130,246,0.2)", width: 100, height: 100, borderRadius: 28 }}>
+            <Navigation style={{ width: 52, height: 52, color: "#3b82f6" }} />
+          </div>
+          <div className="wiz-info-list" style={{ width: "100%" }}>
+            {[
+              { es: "Acepta la entrega",       en: "Accept the delivery",    color: "#10b981" },
+              { es: "Confirma horario",        en: "Confirm the schedule",   color: "#e09422" },
+              { es: "Navega al sitio",         en: "Navigate to site",       color: "#3b82f6" },
+            ].map((r, i) => (
+              <div key={i} className="wiz-info-row">
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: r.color, flexShrink: 0 }} />
+                <div className="wiz-info-row-text"><strong>{r.es}</strong>{r.en}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DriverStep4({ onComplete }) {
+  return (
+    <div className="wizard-slide" style={{ alignItems: "center" }}>
+      <div className="wizard-ready-wrap">
+        <div className="wiz-big-icon" style={{ background: "rgba(16,185,129,0.12)", border: "2px solid rgba(16,185,129,0.2)", width: 96, height: 96, borderRadius: "50%" }}>
+          <CheckSquare style={{ width: 48, height: 48, color: "#10b981" }} />
+        </div>
+        <div className="wizard-title">Marcar Entregado</div>
+        <div className="wizard-title-sub">Mark as Delivered</div>
+        <div className="wizard-desc" style={{ fontSize: 15 }}>
+          Confirma cuando termines cada entrega.<br />El sistema se actualiza automáticamente.
+        </div>
+        <div className="wizard-desc-sub">Confirm when done. System updates automatically.</div>
+        <button className="wizard-btn wizard-launch" onClick={onComplete} style={{ marginTop: 12 }}>
+          Comenzar · Start
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ROLE FLOW DEFINITIONS
+// ═══════════════════════════════════════════════════════════════
+
+function buildSteps({ family, userName, onComplete, teamMembers, onAddMember, onRemoveMember }) {
+  switch (family) {
+    case "admin":
+      return [
+        <AdminStepWelcome userName={userName} />,
+        <AdminStepDashboard />,
+        <AdminStepBidPipeline />,
+        <AdminStepProjects />,
+        <AdminStepTeam teamMembers={teamMembers} onAddMember={onAddMember} onRemoveMember={onRemoveMember} />,
+        <AdminStepProfitAlerts />,
+        <AdminStepSettings onComplete={onComplete} />,
+      ];
+    case "pm":
+      return [
+        <PMStepWelcome userName={userName} />,
+        <PMStepDashboard />,
+        <PMStepBidPipeline />,
+        <PMStepProjectDetail />,
+        <PMStepForemen />,
+        <PMStepTakeoffs />,
+        <PMStepReady onComplete={onComplete} />,
+      ];
+    case "foreman":
+      return [
+        <ForemanStep1 userName={userName} />,
+        <ForemanStep2 />,
+        <ForemanStep3 />,
+        <ForemanStep4 />,
+        <ForemanStep5 onComplete={onComplete} />,
+      ];
+    case "employee":
+      return [
+        <EmployeeStep1 userName={userName} />,
+        <EmployeeStep2 />,
+        <EmployeeStep3 />,
+        <EmployeeStep4 onComplete={onComplete} />,
+      ];
+    case "driver":
+      return [
+        <DriverStep1 userName={userName} />,
+        <DriverStep2 />,
+        <DriverStep3 />,
+        <DriverStep4 onComplete={onComplete} />,
+      ];
+    default:
+      return [
+        <AdminStepWelcome userName={userName} />,
+        <AdminStepDashboard />,
+        <AdminStepBidPipeline />,
+        <AdminStepProjects />,
+        <AdminStepTeam teamMembers={teamMembers} onAddMember={onAddMember} onRemoveMember={onRemoveMember} />,
+        <AdminStepProfitAlerts />,
+        <AdminStepSettings onComplete={onComplete} />,
+      ];
+  }
+}
+
+function isSpanishFirst(family) {
+  return ["foreman", "employee", "driver"].includes(family);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MAIN EXPORT
+// ═══════════════════════════════════════════════════════════════
+
+export function OnboardingWizard({ onComplete, currentUser }) {
+  const role   = currentUser?.role || "owner";
+  const family = roleFamily(role);
+  const userName = currentUser?.name || "";
+  const spanishFirst = isSpanishFirst(family);
+
+  const [step, setStep]       = useState(0);
   const [animKey, setAnimKey] = useState(0);
   const [slideDir, setSlideDir] = useState(1);
   const [teamMembers, setTeamMembers] = useState([]);
   const touchStartX = useRef(null);
+
+  const handleComplete = useCallback(() => {
+    localStorage.setItem(storageKey(role), "true");
+    localStorage.setItem("ebc_onboarding_complete", "true");
+    onComplete();
+  }, [onComplete, role]);
+
+  const handleAddMember = useCallback(({ name, email, role: memberRole, pin }) => {
+    const users = JSON.parse(localStorage.getItem("ebc_users") || "[]");
+    const newUser = {
+      id: users.length + 1, name, email: email.toLowerCase(),
+      password: hashPasswordSync(pin || "ebc2026"), role: memberRole,
+      pin: pin ? hashPasswordSync(pin) : null,
+      mustChangePassword: true, createdAt: new Date().toISOString(),
+    };
+    users.push(newUser);
+    localStorage.setItem("ebc_users", JSON.stringify(users));
+    setTeamMembers(prev => [...prev, { name, email, role: memberRole }]);
+  }, []);
+
+  const handleRemoveMember = useCallback((idx) => {
+    setTeamMembers(prev => {
+      const member = prev[idx];
+      try {
+        const users = JSON.parse(localStorage.getItem("ebc_users") || "[]");
+        localStorage.setItem("ebc_users", JSON.stringify(users.filter(u => u.email?.toLowerCase() !== member.email?.toLowerCase())));
+      } catch {}
+      return prev.filter((_, i) => i !== idx);
+    });
+  }, []);
+
+  const stepContent = buildSteps({
+    family, userName,
+    onComplete: handleComplete,
+    teamMembers,
+    onAddMember: handleAddMember,
+    onRemoveMember: handleRemoveMember,
+  });
+
+  const totalSteps = stepContent.length;
+  const isLastStep = step === totalSteps - 1;
 
   const goTo = (target) => {
     if (target === step) return;
@@ -806,7 +1541,7 @@ export function OnboardingWizard({ onComplete }) {
     setStep(target);
   };
 
-  const next = () => { if (step < TOTAL_STEPS - 1) goTo(step + 1); };
+  const next = () => { if (step < totalSteps - 1) goTo(step + 1); };
   const prev = () => { if (step > 0) goTo(step - 1); };
 
   const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
@@ -817,47 +1552,15 @@ export function OnboardingWizard({ onComplete }) {
     touchStartX.current = null;
   };
 
-  const handleAddMember = useCallback(({ name, email, role, pin }) => {
-    const users = JSON.parse(localStorage.getItem("ebc_users") || "[]");
-    const newUser = {
-      id: users.length + 1, name, email: email.toLowerCase(),
-      password: hashPasswordSync(pin || "ebc2026"), role,
-      pin: pin ? hashPasswordSync(pin) : null,
-      mustChangePassword: true, createdAt: new Date().toISOString(),
-    };
-    users.push(newUser);
-    localStorage.setItem("ebc_users", JSON.stringify(users));
-    setTeamMembers(prev => [...prev, { name, email, role }]);
-  }, []);
-
-  const handleRemoveMember = (idx) => {
-    const member = teamMembers[idx];
-    try {
-      const users = JSON.parse(localStorage.getItem("ebc_users") || "[]");
-      localStorage.setItem("ebc_users", JSON.stringify(users.filter(u => u.email.toLowerCase() !== member.email.toLowerCase())));
-    } catch {}
-    setTeamMembers(prev => prev.filter((_, i) => i !== idx));
-  };
-
-  const handleComplete = useCallback(() => {
-    localStorage.setItem("ebc_onboarding_complete", "true");
-    onComplete();
-  }, [onComplete]);
-
   const handleNeverShow = () => handleComplete();
 
   const slideClass = `wizard-slide ${slideDir > 0 ? "forward" : "backward"}`;
-  const isLastStep = step === TOTAL_STEPS - 1;
 
-  const stepContent = [
-    <StepWelcome />,
-    <StepDashboard />,
-    <StepBidPipeline />,
-    <StepProjects />,
-    <StepFieldTools />,
-    <StepTeam teamMembers={teamMembers} onAddMember={handleAddMember} onRemoveMember={handleRemoveMember} />,
-    <StepReady onComplete={handleComplete} />,
-  ];
+  const skipLabel  = spanishFirst ? "Omitir · Skip"        : "Skip";
+  const neverLabel = spanishFirst ? "No mostrar de nuevo"  : "Never show again";
+  const backLabel  = spanishFirst ? "Atrás"                : "Back";
+  const nextLabel  = spanishFirst ? "Siguiente"            : "Next";
+  const startLabel = spanishFirst ? "Comenzar"             : "Get Started";
 
   return (
     <div className="wizard-screen" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
@@ -866,29 +1569,28 @@ export function OnboardingWizard({ onComplete }) {
       <div className="wizard-grid" />
 
       <div className="wizard-card">
-        {/* Top bar: Skip + Never show */}
+        {/* Top bar */}
         <div className="wizard-topbar">
-          <button className="wizard-topbar-btn danger" onClick={handleNeverShow} title="Don't show onboarding again">
-            <X style={{ width: 13, height: 13 }} /> Never show again
+          <button className="wizard-topbar-btn danger" onClick={handleNeverShow} title="Never show onboarding again">
+            <X style={{ width: 13, height: 13 }} /> {neverLabel}
           </button>
           <button className="wizard-topbar-btn" onClick={handleComplete}>
-            Skip
+            {skipLabel}
           </button>
         </div>
 
-        {/* Slide content */}
+        {/* Slide */}
         <div className="wizard-content">
           <div key={animKey} className={slideClass} style={{ flex: 1 }}>
             {stepContent[step]}
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Footer: dots + nav (hidden on last step which has its own CTA) */}
         {!isLastStep && (
           <div className="wizard-footer">
-            {/* Progress dots */}
             <div className="wizard-dots">
-              {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+              {Array.from({ length: totalSteps }, (_, i) => (
                 <div
                   key={i}
                   className={`wizard-dot${i === step ? " active" : i < step ? " done" : ""}`}
@@ -897,19 +1599,15 @@ export function OnboardingWizard({ onComplete }) {
                 />
               ))}
             </div>
-
-            {/* Nav buttons */}
             <div className="wizard-nav">
               {step > 0 && (
                 <button className="wizard-btn wizard-btn-ghost" onClick={prev}>
-                  <ChevronLeft style={{ width: 16, height: 16 }} /> Back
+                  <ChevronLeft style={{ width: 16, height: 16 }} /> {backLabel}
                 </button>
               )}
               <button className="wizard-btn" onClick={next}>
-                {step === TOTAL_STEPS - 2
-                  ? (teamMembers.length > 0 ? <>Next <ChevronRight style={{ width: 16, height: 16 }} /></> : <>Skip <ChevronRight style={{ width: 16, height: 16 }} /></>)
-                  : <>{step === 0 ? "Get Started" : "Next"} <ChevronRight style={{ width: 16, height: 16 }} /></>
-                }
+                {step === 0 ? startLabel : nextLabel}
+                <ChevronRight style={{ width: 16, height: 16 }} />
               </button>
             </div>
           </div>
