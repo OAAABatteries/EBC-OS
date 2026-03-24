@@ -884,22 +884,28 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
   // ── Load initial PDF into pdfFiles on mount ──
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfLoadProgress, setPdfLoadProgress] = useState(0); // 0-100
   useEffect(() => {
     if (!storageUrl && !pdfData) return;
     let cancelled = false;
     setPdfLoading(true);
+    setPdfLoadProgress(0);
 
-    // Prefer URL streaming (range requests — only fetches pages being viewed)
-    // Fall back to raw bytes for legacy/offline
     const source = storageUrl
       ? { url: storageUrl }
       : { data: pdfData.slice().buffer };
 
     console.log(`[DrawingViewer] Loading PDF via ${storageUrl ? "URL streaming" : "raw bytes"}${storageUrl ? "" : ` (${(pdfData.byteLength / 1024 / 1024).toFixed(1)}MB)`}`);
     const loadTask = pdfjsLib.getDocument(source);
+    loadTask.onProgress = (progress) => {
+      if (!cancelled && progress.total > 0) {
+        setPdfLoadProgress(Math.min(95, Math.round((progress.loaded / progress.total) * 100)));
+      }
+    };
     loadTask.promise.then((doc) => {
       if (!cancelled) {
-        pdfDocRef.current = doc; // track current valid doc
+        setPdfLoadProgress(100);
+        pdfDocRef.current = doc;
         setPdfFiles([{ name: fileName || "Drawing", data: null, doc, numPages: doc.numPages, storageUrl }]);
         setPdf(doc);
         setNumPages(doc.numPages);
@@ -923,7 +929,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         setPdfLoading(false);
       }
     });
-    return () => { cancelled = true; pdfDocRef.current = null; };
+    return () => { cancelled = true; };
   }, [storageUrl, pdfData]);
 
   // ── Auto-load PDFs: IDB cache → Supabase cloud → show re-upload UI ──
@@ -966,6 +972,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       }
       console.log(`[Restore] Restored ${loaded.length} PDFs successfully`);
       setPdfFiles(loaded);
+      pdfDocRef.current = loaded[0].doc;
       setPdf(loaded[0].doc);
       setNumPages(loaded[0].numPages);
       setPage(1);
@@ -980,6 +987,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   useEffect(() => {
     const pf = pdfFiles[activePdfIdx];
     if (!pf) return;
+    pdfDocRef.current = pf.doc;
     setPdf(pf.doc);
     setNumPages(pf.numPages);
     setPage(1);
@@ -1011,14 +1019,9 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   // ── Render page ──
   useEffect(() => {
     if (!pdf || !pdfCanvasRef.current) return;
-    // Skip if this pdf doc is stale (React StrictMode double-mount race)
-    if (pdfDocRef.current && pdf !== pdfDocRef.current) return;
     let cancelled = false;
     setRendering(true);
-    // Wrap in try/catch to handle destroyed PDF documents
-    let pagePromise;
-    try { pagePromise = pdf.getPage(page); } catch (e) { console.warn("[DrawingViewer] PDF destroyed, skipping render:", e.message); setRendering(false); return; }
-    pagePromise.then((p) => {
+    pdf.getPage(page).then((p) => {
       if (cancelled) return;
       const container = containerRef.current;
       const cw = container ? container.clientWidth - 32 : 800;
@@ -2226,14 +2229,14 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "3px 10px 4px", gap: 8, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
           <button onClick={prevPage} style={page <= 1 ? { ...btnDis, padding: "4px 10px", fontSize: 13 } : { ...btn, padding: "4px 10px", fontSize: 13 }} disabled={page <= 1}>◀ Prev</button>
           <select value={page} onChange={e => { setPage(Number(e.target.value)); setActiveVertices([]); }}
-            style={{ padding: "4px 8px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: 13, minWidth: 180, maxWidth: 300, fontWeight: 500 }}>
+            style={{ padding: "4px 8px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.3)", background: "#1a1a2e", color: "#fff", fontSize: 13, minWidth: 180, maxWidth: 300, fontWeight: 500 }}>
             {Array.from({ length: numPages }, (_, i) => i + 1).map(pg => {
               const pk = activePdfIdx + ":" + pg;
               const name = sheetNames[pk] || `Page ${pg}`;
               const hasMeas = (measurements[pk] || []).length > 0;
               const isComplete = completedPages[pk];
               const indicator = isComplete ? "✓ " : hasMeas ? "● " : "  ";
-              return <option key={pg} value={pg}>{indicator}{pg} - {name}</option>;
+              return <option key={pg} value={pg} style={{ background: "#1a1a2e", color: "#fff" }}>{indicator}{pg} - {name}</option>;
             })}
           </select>
           <button onClick={nextPage} style={page >= numPages ? { ...btnDis, padding: "4px 10px", fontSize: 13 } : { ...btn, padding: "4px 10px", fontSize: 13 }} disabled={page >= numPages}>Next ▶</button>
@@ -2403,6 +2406,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                       const data = new Uint8Array(ev.target.result);
                       pdfjsLib.getDocument({ data }).promise.then((doc) => {
                         setPdfFiles([{ name: file.name, data, doc, numPages: doc.numPages }]);
+                        pdfDocRef.current = doc;
                         setPdf(doc);
                         setNumPages(doc.numPages);
                         setPage(1);
@@ -2418,9 +2422,14 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
             )}
             <div style={{ position: "relative", display: "inline-block" }}>
               {pdfLoading && (
-                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 10, background: "rgba(0,0,0,0.8)", padding: "24px 40px", borderRadius: 12, textAlign: "center" }}>
-                  <div style={{ fontSize: 14, color: "#fff", marginBottom: 8 }}>Loading PDF...</div>
-                  <div style={{ fontSize: 11, color: "#8494ad" }}>Large drawings may take a moment</div>
+                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 10, background: "rgba(0,0,0,0.9)", padding: "32px 48px", borderRadius: 12, textAlign: "center", minWidth: 280, border: "1px solid rgba(224,148,34,0.3)" }}>
+                  <div style={{ fontSize: 15, color: "#fff", marginBottom: 12, fontWeight: 600 }}>Loading Drawing...</div>
+                  <div style={{ width: "100%", height: 8, background: "rgba(255,255,255,0.1)", borderRadius: 4, overflow: "hidden", marginBottom: 8 }}>
+                    <div style={{ width: `${pdfLoadProgress || 5}%`, height: "100%", background: "linear-gradient(90deg, #e09422, #f59e0b)", borderRadius: 4, transition: "width 0.3s ease" }} />
+                  </div>
+                  <div style={{ fontSize: 11, color: "#8494ad" }}>
+                    {pdfLoadProgress > 0 ? `${pdfLoadProgress}% — ` : ""}Large drawings may take a moment
+                  </div>
                 </div>
               )}
               <canvas ref={pdfCanvasRef} />

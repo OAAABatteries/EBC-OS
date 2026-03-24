@@ -28,7 +28,7 @@
     "jspdf": "^4.2.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.577.0",
-    "pdfjs-dist": "^5.5.207",
+    "pdfjs-dist": "^4.10.38",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "recharts": "^3.8.0",

@@ -216,9 +216,13 @@ export default function TakeoffRoute() {
   // ── Loading state ──
   if (loading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", background: "#0a0e1a", color: "#fff", gap: 16 }}>
-        <div style={{ fontSize: 16 }}>Loading takeoff...</div>
-        <div style={{ fontSize: 12, color: "#888" }}>{takeoff?.name || takeoffId}</div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", background: "#0a0e1a", color: "#fff", gap: 20 }}>
+        <div style={{ fontSize: 18, fontWeight: 600 }}>Loading Drawing...</div>
+        <div style={{ width: 280, height: 8, background: "rgba(255,255,255,0.1)", borderRadius: 4, overflow: "hidden" }}>
+          <div style={{ width: "60%", height: "100%", background: "linear-gradient(90deg, #e09422, #f59e0b)", borderRadius: 4, animation: "pulse 1.5s ease-in-out infinite" }} />
+        </div>
+        <div style={{ fontSize: 13, color: "#888" }}>{takeoff?.name || "Takeoff"}</div>
+        <div style={{ fontSize: 11, color: "#555" }}>Checking cloud storage, then local cache...</div>
       </div>
     );
   }
