@@ -3411,7 +3411,7 @@ function App({ auth, onLogout }) {
                     const proj = projects.find(p => String(p.id) === String(projectId));
                     if (proj) {
                       // Map hyphenated nav keys to spaced tab names
-                      const tabMap = { "change-orders": "change orders", submittals: "submittals", rfis: "rfis", closeout: "closeout", financials: "financials", crew: "crew", overview: "overview" };
+                      const tabMap = { "change-orders": "change orders", submittals: "submittals", rfis: "rfis", closeout: "closeout", financials: "financials", team: "team", overview: "overview" };
                       setInitialProjTab(tabMap[destProjTab] || destProjTab || "overview");
                       setTimeout(() => setModal({ type: "editProject", data: { ...proj, lastAccessed: new Date().toISOString() } }), 50);
                     }
@@ -4011,7 +4011,7 @@ const ModalHub = ({ type, data, app }) => {
     const totalBilled = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);
     const remaining = (draft.contract || 0) - totalBilled;
     const [projTab, setProjTab] = useState(app.initialProjTab || "overview");
-    const projTabs = ["overview", "change orders", "submittals", "rfis", "crew", "financials", "closeout", "sound", "logistics", "notes"];
+    const projTabs = ["overview", "change orders", "submittals", "rfis", "team", "financials", "closeout", "sound", "logistics", "notes"];
     const [coFormOpen, setCoFormOpen] = useState(false);
     const [coEditId, setCoEditId] = useState(null);
     const [coExpandedId, setCoExpandedId] = useState(null);
@@ -4754,9 +4754,9 @@ const ModalHub = ({ type, data, app }) => {
             )}
 
             {/* ── Crew ── */}
-            {projTab === "crew" && (
+            {projTab === "team" && (
               <div>
-                {projCrew.length === 0 ? <div className="text-sm text-dim" style={{ textAlign: "center", padding: 24 }}>No crew assigned</div> : (
+                {projCrew.length === 0 ? <div className="text-sm text-dim" style={{ textAlign: "center", padding: 24 }}>No team assigned</div> : (
                   <table className="data-table">
                     <thead><tr><th>Employee</th><th>Days</th><th>Hours</th></tr></thead>
                     <tbody>
@@ -6110,7 +6110,7 @@ const ModalHub = ({ type, data, app }) => {
               { label: "Submittals", items: projSubmittals, icon: null, tab: "documents", fields: (s) => `#${s.number || ""} — ${s.description || s.desc || ""}`, badge: (s) => s.status, urgent: pendingSubs.length },
               { label: "Change Orders", items: projCOs, icon: null, tab: "financials", fields: (c) => `#${c.number || ""} — ${c.desc || ""} (${fmt(c.amount || 0)})`, badge: (c) => c.status, urgent: pendingCOs.length },
               { label: "Invoices", items: projInvoices, icon: null, tab: "financials", fields: (i) => `#${i.number} — ${fmt(i.amount)} — ${i.date || ""}`, badge: (i) => i.status, urgent: overdueInvs.length },
-              { label: "Daily Reports", items: projDailyReports, icon: null, tab: "safety", fields: (d) => `${d.date || ""} — ${d.teamSize || 0} crew — ${(d.work || "").slice(0, 60)}`, badge: () => null, urgent: 0 },
+              { label: "Daily Reports", items: projDailyReports, icon: null, tab: "safety", fields: (d) => `${d.date || ""} — ${d.teamSize || 0} team — ${(d.work || "").slice(0, 60)}`, badge: () => null, urgent: 0 },
               { label: "JSAs", items: projJSAs, icon: null, tab: "jsa", fields: (j) => `${j.date || ""} — ${j.title || j.location || ""}`, badge: () => null, urgent: 0 },
               { label: "T&M Tickets", items: projTM, icon: null, tab: "financials", fields: (t) => `${t.ticketNumber || ""} — ${t.description || ""} (${fmt(calcLaborTotal(t.laborEntries || []) + calcMatTotal(t.materialEntries || []))})`, badge: (t) => t.status, urgent: pendingTM.length },
             ];
