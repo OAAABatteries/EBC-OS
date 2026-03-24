@@ -1623,10 +1623,17 @@ function RfisTab({ app }) {
 }
 
 /* ── Submittals ──────────────────────────────────────────────── */
+const SUBMITTAL_CATEGORIES = ["All", "General", "Frames & Hardware", "Mechanical", "Electrical", "Structural", "Other"];
+const FRAME_TYPES = ["Door Frame", "Window Frame", "Borrowed Lite", "Sidelite", "Transom", "Other"];
+const FRAME_MATERIALS = ["HM (Hollow Metal)", "Wood", "Aluminum", "Steel", "Fiberglass"];
+const FIRE_RATINGS = ["Non-Rated", "20 min", "45 min", "60 min", "90 min", "3-hr"];
+
 function SubmittalsTab({ app }) {
   const emptyForm = () => ({
     projectId: "", number: "", desc: "", specSection: "", status: "preparing",
     submitted: "", due: "", pdfFile: null, linkedMaterialIds: [], linkedAssemblyCodes: [],
+    category: "General",
+    frameType: "", frameSize: "", frameMaterial: "", fireRating: "", scheduledDelivery: "",
   });
 
   const [adding, setAdding] = useState(false);
@@ -1636,9 +1643,14 @@ function SubmittalsTab({ app }) {
   const [reviewId, setReviewId] = useState(null);
   const [reviewResult, setReviewResult] = useState(null);
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [catFilter, setCatFilter] = useState("All");
 
   const pName = (pid) => app.projects.find(p => p.id === pid)?.name || "Unknown";
   const subFiltered = app.submittals.filter(sub => {
+    if (catFilter !== "All") {
+      const subCat = sub.category || "General";
+      if (subCat !== catFilter) return false;
+    }
     if (!app.search) return true;
     const q = app.search.toLowerCase();
     return (sub.number || "").toLowerCase().includes(q) || pName(sub.projectId).toLowerCase().includes(q) || (sub.desc || "").toLowerCase().includes(q) || (sub.specSection || "").toLowerCase().includes(q);
@@ -1684,6 +1696,12 @@ function SubmittalsTab({ app }) {
       ...pdfData,
       linkedMaterialIds: form.linkedMaterialIds,
       linkedAssemblyCodes: form.linkedAssemblyCodes,
+      category: form.category || "General",
+      frameType: form.frameType || "",
+      frameSize: form.frameSize || "",
+      frameMaterial: form.frameMaterial || "",
+      fireRating: form.fireRating || "",
+      scheduledDelivery: form.scheduledDelivery || "",
     };
     app.setSubmittals(prev => [...prev, newItem]);
     app.show("Submittal added");
@@ -1876,6 +1894,12 @@ function SubmittalsTab({ app }) {
               <input className="form-input" value={form.number} onChange={e => setForm({ ...form, number: e.target.value })} />
             </div>
             <div className="form-group">
+              <label className="form-label">Category</label>
+              <select className="form-select" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                {SUBMITTAL_CATEGORIES.filter(c => c !== "All").map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
               <label className="form-label">Spec Section</label>
               <input className="form-input" value={form.specSection} onChange={e => setForm({ ...form, specSection: e.target.value })} />
             </div>
@@ -1901,6 +1925,43 @@ function SubmittalsTab({ app }) {
             <label className="form-label">Description</label>
             <input className="form-input" value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} />
           </div>
+          {/* ── Frames & Hardware extra fields ── */}
+          {form.category === "Frames & Hardware" && (
+            <div style={{ padding: "12px 0", borderTop: "1px solid var(--border)", marginTop: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--amber)", letterSpacing: "0.05em", marginBottom: 10 }}>FRAME DETAILS</div>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Frame Type</label>
+                  <select className="form-select" value={form.frameType} onChange={e => setForm({ ...form, frameType: e.target.value })}>
+                    <option value="">Select...</option>
+                    {FRAME_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Material</label>
+                  <select className="form-select" value={form.frameMaterial} onChange={e => setForm({ ...form, frameMaterial: e.target.value })}>
+                    <option value="">Select...</option>
+                    {FRAME_MATERIALS.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Size (W×H)</label>
+                  <input className="form-input" value={form.frameSize} onChange={e => setForm({ ...form, frameSize: e.target.value })} placeholder="e.g. 3'0&quot; x 7'0&quot;" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Fire Rating</label>
+                  <select className="form-select" value={form.fireRating} onChange={e => setForm({ ...form, fireRating: e.target.value })}>
+                    <option value="">Select...</option>
+                    {FIRE_RATINGS.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Scheduled Delivery</label>
+                  <input className="form-input" type="date" value={form.scheduledDelivery} onChange={e => setForm({ ...form, scheduledDelivery: e.target.value })} />
+                </div>
+              </div>
+            </div>
+          )}
           <div className="form-group mt-8">
             <label className="form-label">Attach PDF</label>
             <div className="sub-pdf-upload">
@@ -1916,20 +1977,46 @@ function SubmittalsTab({ app }) {
         </div>
       )}
 
+      {/* ── Category filter ── */}
+      <div className="flex gap-4 mt-12 mb-4 flex-wrap">
+        {SUBMITTAL_CATEGORIES.map(c => {
+          const count = c === "All" ? app.submittals.length : app.submittals.filter(s => (s.category || "General") === c).length;
+          return (
+            <button key={c} className={`btn btn-sm ${catFilter === c ? "btn-primary" : "btn-ghost"}`} onClick={() => setCatFilter(c)}>
+              {c} {count > 0 && <span style={{ marginLeft: 4, opacity: 0.7, fontSize: 10 }}>({count})</span>}
+            </button>
+          );
+        })}
+      </div>
+
       {/* ── Submittals table ── */}
       <div className="table-wrap mt-16">
         <table className="data-table">
           <thead>
-            <tr><th>Sub #</th><th>Project</th><th>Description</th><th>Spec</th><th>Status</th><th>PDF</th><th>Linked</th><th>Due</th><th></th></tr>
+            <tr><th>Sub #</th><th>Project</th><th>Category</th><th>Description</th><th>Spec</th><th>Status</th><th>PDF</th><th>Linked</th><th>Due / Delivery</th><th></th></tr>
           </thead>
           <tbody>
-            {subFiltered.length === 0 && <tr><td colSpan={9} style={{ textAlign: "center" }}>{app.search ? "No matching submittals" : "No submittals"}</td></tr>}
-            {subFiltered.map(sub => (
+            {subFiltered.length === 0 && <tr><td colSpan={10} style={{ textAlign: "center" }}>{app.search ? "No matching submittals" : "No submittals"}</td></tr>}
+            {subFiltered.map(sub => {
+              const isFrame = (sub.category || "General") === "Frames & Hardware";
+              return (
               <Fragment key={sub.id}>
                 <tr onClick={() => openEdit(sub)} style={{ cursor: "pointer" }}>
                   <td style={{ fontWeight: 600 }}>{sub.number}</td>
                   <td style={{ fontSize: 12 }}>{pName(sub.projectId)}</td>
-                  <td>{sub.desc}</td>
+                  <td>
+                    <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: isFrame ? "rgba(245,158,11,0.15)" : "var(--bg3)", color: isFrame ? "var(--amber)" : "var(--text2)" }}>
+                      {sub.category || "General"}
+                    </span>
+                  </td>
+                  <td>
+                    <div>{sub.desc}</div>
+                    {isFrame && sub.frameType && (
+                      <div style={{ fontSize: 10, color: "var(--text2)", marginTop: 2 }}>
+                        {[sub.frameType, sub.frameMaterial, sub.frameSize, sub.fireRating].filter(Boolean).join(" · ")}
+                      </div>
+                    )}
+                  </td>
                   <td style={{ fontSize: 12 }}>{sub.specSection}</td>
                   <td><span className={`badge ${badge(sub.status)}`}>{sub.status}</span></td>
                   <td>
@@ -1940,7 +2027,12 @@ function SubmittalsTab({ app }) {
                     ) : <span style={{ fontSize: 11, color: "var(--text3)" }}>—</span>}
                   </td>
                   <td>{renderLinked(sub)}</td>
-                  <td style={{ fontSize: 12 }}>{sub.due}</td>
+                  <td style={{ fontSize: 12 }}>
+                    <div>{sub.due}</div>
+                    {isFrame && sub.scheduledDelivery && (
+                      <div style={{ fontSize: 10, color: "var(--text2)", marginTop: 2 }}>Del: {sub.scheduledDelivery}</div>
+                    )}
+                  </td>
                   <td>
                     <div className="flex gap-4">
                     <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }}
@@ -1954,7 +2046,7 @@ function SubmittalsTab({ app }) {
                   </td>
                 </tr>
                 {reviewId === sub.id && reviewResult && (
-                  <tr><td colSpan={9} style={{ padding: 0 }}>
+                  <tr><td colSpan={10} style={{ padding: 0 }}>
                     <div style={{ padding: 16, background: "var(--bg3)", borderTop: "1px solid var(--border)" }}>
                       {/* Score + Status */}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
@@ -2012,7 +2104,8 @@ function SubmittalsTab({ app }) {
                   </td></tr>
                 )}
               </Fragment>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       </div>
@@ -2036,6 +2129,12 @@ function SubmittalsTab({ app }) {
               <div className="form-group">
                 <label className="form-label">Submittal #</label>
                 <input className="form-input" value={editSub.number} onChange={e => setEditSub({ ...editSub, number: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Category</label>
+                <select className="form-select" value={editSub.category || "General"} onChange={e => setEditSub({ ...editSub, category: e.target.value })}>
+                  {SUBMITTAL_CATEGORIES.filter(c => c !== "All").map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Spec Section</label>
@@ -2063,6 +2162,43 @@ function SubmittalsTab({ app }) {
                 <input className="form-input" value={editSub.desc} onChange={e => setEditSub({ ...editSub, desc: e.target.value })} />
               </div>
             </div>
+            {/* ── Frames & Hardware extra fields (edit) ── */}
+            {(editSub.category || "General") === "Frames & Hardware" && (
+              <div style={{ padding: "12px 0", borderTop: "1px solid var(--border)", marginTop: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--amber)", letterSpacing: "0.05em", marginBottom: 10 }}>FRAME DETAILS</div>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label">Frame Type</label>
+                    <select className="form-select" value={editSub.frameType || ""} onChange={e => setEditSub({ ...editSub, frameType: e.target.value })}>
+                      <option value="">Select...</option>
+                      {FRAME_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Material</label>
+                    <select className="form-select" value={editSub.frameMaterial || ""} onChange={e => setEditSub({ ...editSub, frameMaterial: e.target.value })}>
+                      <option value="">Select...</option>
+                      {FRAME_MATERIALS.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Size (W×H)</label>
+                    <input className="form-input" value={editSub.frameSize || ""} onChange={e => setEditSub({ ...editSub, frameSize: e.target.value })} placeholder="e.g. 3'0&quot; x 7'0&quot;" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Fire Rating</label>
+                    <select className="form-select" value={editSub.fireRating || ""} onChange={e => setEditSub({ ...editSub, fireRating: e.target.value })}>
+                      <option value="">Select...</option>
+                      {FIRE_RATINGS.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Scheduled Delivery</label>
+                    <input className="form-input" type="date" value={editSub.scheduledDelivery || ""} onChange={e => setEditSub({ ...editSub, scheduledDelivery: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* PDF section */}
             <div className="form-group mt-16">

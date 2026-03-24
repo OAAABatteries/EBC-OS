@@ -1,16 +1,52 @@
 import { useState, useMemo } from "react";
-import { Send, RefreshCw, X, ChevronDown, ChevronUp, Package, Search, ClipboardList, Layers, ClipboardCopy } from "lucide-react";
+import { Send, RefreshCw, X, ChevronDown, ChevronUp, Package, Search, ClipboardList, Layers, ClipboardCopy, Database, MapPin, ArrowDownToLine } from "lucide-react";
 import { MAT_CATS, MAT_CLR, ASM_TYPES } from "../data/materials";
 import { useNotifications, getNotificationPrefs } from "../hooks/useNotifications";
 import { initSuppliers } from "../data/constants";
+import { useLocalStorage } from "../hooks/useLocalStorage";
 
 // ═══════════════════════════════════════════════════════════════
 //  Materials & Assembly Editor Tab
 //  + Material Requests (for foremen, employees, drivers)
 // ═══════════════════════════════════════════════════════════════
 
-const FULL_VIEWS = ["Material Library", "Assembly Editor", "Assembly List", "Requests"];
+const FULL_VIEWS = ["Material Library", "Assembly Editor", "Assembly List", "Requests", "Warehouse"];
 const FIELD_VIEWS = ["Requests"];
+
+const INIT_WAREHOUSE = [
+  // Studs
+  { id: "wh1",  name: '3-5/8" 25ga Stud',        manufacturer: "ClarkDietrich", qty: 2400, unit: "LF", location: "Warehouse", category: "Framing",   updated: "2026-03-20" },
+  { id: "wh2",  name: '3-5/8" 20ga Stud',        manufacturer: "ClarkDietrich", qty: 1800, unit: "LF", location: "Warehouse", category: "Framing",   updated: "2026-03-20" },
+  { id: "wh3",  name: '3-5/8" 18ga Stud',        manufacturer: "ClarkDietrich", qty:  600, unit: "LF", location: "Warehouse", category: "Framing",   updated: "2026-03-18" },
+  { id: "wh4",  name: '3-5/8" 16ga Stud',        manufacturer: "ClarkDietrich", qty:  300, unit: "LF", location: "Warehouse", category: "Framing",   updated: "2026-03-15" },
+  { id: "wh5",  name: '3-5/8" 14ga Stud',        manufacturer: "ClarkDietrich", qty:  150, unit: "LF", location: "Warehouse", category: "Framing",   updated: "2026-03-10" },
+  { id: "wh6",  name: '6" 20ga Stud',            manufacturer: "ClarkDietrich", qty: 1200, unit: "LF", location: "Warehouse", category: "Framing",   updated: "2026-03-18" },
+  { id: "wh7",  name: '6" 16ga Stud',            manufacturer: "ClarkDietrich", qty:  400, unit: "LF", location: "Warehouse", category: "Framing",   updated: "2026-03-15" },
+  { id: "wh8",  name: '8" 20ga Stud',            manufacturer: "ClarkDietrich", qty:  500, unit: "LF", location: "Warehouse", category: "Framing",   updated: "2026-03-12" },
+  { id: "wh9",  name: '3-5/8" Track',            manufacturer: "ClarkDietrich", qty: 1500, unit: "LF", location: "Warehouse", category: "Framing",   updated: "2026-03-20" },
+  { id: "wh10", name: '6" Track',                manufacturer: "ClarkDietrich", qty:  800, unit: "LF", location: "Warehouse", category: "Framing",   updated: "2026-03-18" },
+  // Board
+  { id: "wh11", name: '5/8" Type X Gypsum',      manufacturer: "USG",           qty:  320, unit: "SHT", location: "Warehouse", category: "Drywall",   updated: "2026-03-19" },
+  { id: "wh12", name: '1/2" Regular Gypsum',     manufacturer: "USG",           qty:  200, unit: "SHT", location: "Warehouse", category: "Drywall",   updated: "2026-03-19" },
+  { id: "wh13", name: '5/8" Type C Gypsum',      manufacturer: "USG",           qty:   80, unit: "SHT", location: "Warehouse", category: "Drywall",   updated: "2026-03-15" },
+  { id: "wh14", name: '5/8" DensGlass Gold',     manufacturer: "Georgia-Pacific",qty:  60, unit: "SHT", location: "Warehouse", category: "Drywall",   updated: "2026-03-10" },
+  // Joint Compound
+  { id: "wh15", name: 'All-Purpose Joint Compound (5 gal)', manufacturer: "USG", qty: 24, unit: "BKT", location: "Warehouse", category: "Finishing", updated: "2026-03-17" },
+  { id: "wh16", name: 'Setting Compound 45 (25lb)',         manufacturer: "USG", qty: 12, unit: "BAG", location: "Warehouse", category: "Finishing", updated: "2026-03-17" },
+  // Insulation
+  { id: "wh17", name: '3-5/8" R-13 Batt Insulation',       manufacturer: "Owens Corning", qty: 20, unit: "BDL", location: "Warehouse", category: "Insulation", updated: "2026-03-14" },
+  { id: "wh18", name: '6" R-19 Batt Insulation',           manufacturer: "Owens Corning", qty: 10, unit: "BDL", location: "Warehouse", category: "Insulation", updated: "2026-03-14" },
+  // Screws
+  { id: "wh19", name: '1-5/8" Coarse Drywall Screws',      manufacturer: "Grabber",       qty: 12, unit: "BOX", location: "Warehouse", category: "Fasteners", updated: "2026-03-20" },
+  { id: "wh20", name: '3" Fine Drywall Screws',            manufacturer: "Grabber",       qty:  8, unit: "BOX", location: "Warehouse", category: "Fasteners", updated: "2026-03-20" },
+  { id: "wh21", name: 'Self-Drilling Framing Screws #8',   manufacturer: "Grabber",       qty: 10, unit: "BOX", location: "Warehouse", category: "Fasteners", updated: "2026-03-18" },
+  // Corner Bead / Trim
+  { id: "wh22", name: '1-1/4" x 1-1/4" Metal Corner Bead', manufacturer: "Trim-Tex",     qty: 200, unit: "PCS", location: "Warehouse", category: "Finishing", updated: "2026-03-16" },
+  { id: "wh23", name: 'L-Bead 1/2"',                       manufacturer: "Trim-Tex",     qty:  80, unit: "PCS", location: "Warehouse", category: "Finishing", updated: "2026-03-16" },
+  // Tape
+  { id: "wh24", name: 'Paper Drywall Tape (500ft roll)',    manufacturer: "USG",           qty: 24, unit: "ROLL", location: "Warehouse", category: "Finishing", updated: "2026-03-15" },
+  { id: "wh25", name: 'Fiberglass Mesh Tape',              manufacturer: "USG",           qty: 12, unit: "ROLL", location: "Warehouse", category: "Finishing", updated: "2026-03-15" },
+];
 const UNITS = ["EA", "LF", "SF", "BDL", "BOX", "BKT", "BAG", "GAL", "SHT", "PCS", "ROLL"];
 const REQ_STATUS_BADGE = { requested: "badge-amber", approved: "badge-blue", "in-transit": "badge-amber", delivered: "badge-green", denied: "badge-red" };
 
@@ -57,6 +93,10 @@ export function MaterialsTab({ app }) {
   const [view, setView] = useState(isFieldRole ? "Requests" : "Material Library");
   const [catFilter, setCatFilter] = useState("All");
   const [matSearch, setMatSearch] = useState("");
+  const [warehouse, setWarehouse] = useLocalStorage("ebc_warehouse", INIT_WAREHOUSE);
+  const [whSearch, setWhSearch] = useState("");
+  const [whCatFilter, setWhCatFilter] = useState("All");
+  const [editWhItem, setEditWhItem] = useState(null);
   const [editMat, setEditMat] = useState(null);
   const [editAsm, setEditAsm] = useState(null);
 
@@ -777,6 +817,168 @@ export function MaterialsTab({ app }) {
       {view === "Material Library" && renderLibrary()}
       {view === "Assembly Editor" && renderEditor()}
       {view === "Assembly List" && renderList()}
+
+      {/* ═══ WAREHOUSE INVENTORY VIEW ═══ */}
+      {view === "Warehouse" && (() => {
+        const whCats = ["All", ...Array.from(new Set(warehouse.map(i => i.category)))];
+        const whFiltered = warehouse.filter(item => {
+          if (whCatFilter !== "All" && item.category !== whCatFilter) return false;
+          if (whSearch) {
+            const q = whSearch.toLowerCase();
+            return item.name.toLowerCase().includes(q) || item.manufacturer.toLowerCase().includes(q) || item.category.toLowerCase().includes(q) || item.location.toLowerCase().includes(q);
+          }
+          return true;
+        });
+        const handleRequestFromWarehouse = (item) => {
+          const proj = (app.projects || []).find(p => p.status === "in-progress" || p.status === "active");
+          const newReq = {
+            id: crypto.randomUUID(),
+            employeeId: app.auth?.id,
+            employeeName: app.auth?.name || "Unknown",
+            projectId: proj?.id || "",
+            projectName: proj?.name || proj?.project || "",
+            material: item.name,
+            qty: 1,
+            unit: item.unit,
+            notes: `From Warehouse — ${item.manufacturer} | Location: ${item.location} | On Hand: ${item.qty} ${item.unit}`,
+            status: "requested",
+            requestedAt: new Date().toISOString(),
+            warehouseItemId: item.id,
+          };
+          app.setMaterialRequests(prev => [newReq, ...(prev || [])]);
+          show(`Requested: ${item.name}`, "ok");
+        };
+        return (
+          <div>
+            <div className="flex-between mb-16">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Database size={18} style={{ color: "var(--amber)" }} />
+                <span className="font-semi">{warehouse.length} items in inventory</span>
+              </div>
+              <button className="btn btn-primary btn-sm" onClick={() => setEditWhItem({ id: "", name: "", manufacturer: "", qty: 0, unit: "LF", location: "Warehouse", category: "Framing", updated: new Date().toISOString().slice(0, 10) })}>+ Add Item</button>
+            </div>
+            <div className="flex gap-8 mb-12 flex-wrap" style={{ alignItems: "center" }}>
+              <div className="search-wrap" style={{ flex: "1 1 200px" }}>
+                <Search style={{ width: 16, height: 16 }} className="search-icon" />
+                <input className="search-input" placeholder="Search inventory..." value={whSearch} onChange={e => setWhSearch(e.target.value)} />
+              </div>
+              <div className="flex gap-4 flex-wrap">
+                {whCats.map(c => (
+                  <button key={c} className={`btn btn-sm ${whCatFilter === c ? "btn-primary" : "btn-ghost"}`} onClick={() => setWhCatFilter(c)}>{c}</button>
+                ))}
+              </div>
+            </div>
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Manufacturer</th>
+                    <th>Category</th>
+                    <th style={{ textAlign: "right" }}>Qty On Hand</th>
+                    <th>Unit</th>
+                    <th>Location</th>
+                    <th>Last Updated</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {whFiltered.length === 0 && (
+                    <tr><td colSpan={8} style={{ textAlign: "center", color: "var(--text3)" }}>{whSearch ? "No matching items" : "No inventory items"}</td></tr>
+                  )}
+                  {whFiltered.map(item => {
+                    const low = item.qty <= 5;
+                    return (
+                      <tr key={item.id} className="clickable-row" onClick={() => setEditWhItem({ ...item })}>
+                        <td className="font-semi">{item.name}</td>
+                        <td style={{ fontSize: 12 }}>{item.manufacturer}</td>
+                        <td><span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "var(--bg3)", color: "var(--text2)" }}>{item.category}</span></td>
+                        <td style={{ textAlign: "right" }}>
+                          <span style={{ fontWeight: 700, color: low ? "var(--red)" : item.qty <= 20 ? "var(--amber)" : "var(--text1)" }}>{item.qty}</span>
+                          {low && <span style={{ fontSize: 10, color: "var(--red)", marginLeft: 4 }}>LOW</span>}
+                        </td>
+                        <td style={{ fontSize: 12 }}>{item.unit}</td>
+                        <td>
+                          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
+                            <MapPin size={11} style={{ color: "var(--text3)" }} />
+                            {item.location}
+                          </div>
+                        </td>
+                        <td style={{ fontSize: 11, color: "var(--text3)" }}>{item.updated}</td>
+                        <td>
+                          <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}
+                            onClick={e => { e.stopPropagation(); handleRequestFromWarehouse(item); }}>
+                            <ArrowDownToLine size={12} /> Request
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {/* Edit/Add item modal */}
+            {editWhItem && (
+              <div className="modal-overlay" onClick={() => setEditWhItem(null)}>
+                <div className="modal" onClick={e => e.stopPropagation()}>
+                  <div className="modal-header">
+                    <div className="modal-title">{editWhItem.id ? "Edit Inventory Item" : "Add Inventory Item"}</div>
+                    <button className="modal-close" onClick={() => setEditWhItem(null)}>✕</button>
+                  </div>
+                  <div className="form-grid">
+                    <div className="form-group full">
+                      <label className="form-label">Product Name</label>
+                      <input className="form-input" value={editWhItem.name} onChange={e => setEditWhItem(i => ({ ...i, name: e.target.value }))} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Manufacturer</label>
+                      <input className="form-input" value={editWhItem.manufacturer} onChange={e => setEditWhItem(i => ({ ...i, manufacturer: e.target.value }))} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Category</label>
+                      <select className="form-select" value={editWhItem.category} onChange={e => setEditWhItem(i => ({ ...i, category: e.target.value }))}>
+                        {MAT_CATS.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Qty On Hand</label>
+                      <input className="form-input" type="number" value={editWhItem.qty} onChange={e => setEditWhItem(i => ({ ...i, qty: Number(e.target.value) }))} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Unit</label>
+                      <select className="form-select" value={editWhItem.unit} onChange={e => setEditWhItem(i => ({ ...i, unit: e.target.value }))}>
+                        {["LF","SF","EA","SHT","BDL","BOX","BKT","BAG","ROLL","PCS"].map(u => <option key={u} value={u}>{u}</option>)}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Location</label>
+                      <input className="form-input" value={editWhItem.location} onChange={e => setEditWhItem(i => ({ ...i, location: e.target.value }))} placeholder="e.g. Warehouse, Job Site" />
+                    </div>
+                  </div>
+                  <div className="modal-actions">
+                    {editWhItem.id && (
+                      <button className="btn btn-ghost" style={{ color: "var(--red)" }} onClick={() => { setWarehouse(prev => prev.filter(i => i.id !== editWhItem.id)); setEditWhItem(null); show("Item removed"); }}>Delete</button>
+                    )}
+                    <button className="btn btn-ghost" onClick={() => setEditWhItem(null)}>Cancel</button>
+                    <button className="btn btn-primary" onClick={() => {
+                      if (!editWhItem.name) { show("Product name required", "err"); return; }
+                      const updated = { ...editWhItem, updated: new Date().toISOString().slice(0, 10) };
+                      if (updated.id) {
+                        setWarehouse(prev => prev.map(i => i.id === updated.id ? updated : i));
+                        show("Item updated");
+                      } else {
+                        setWarehouse(prev => [...prev, { ...updated, id: "wh_" + Date.now() }]);
+                        show("Item added");
+                      }
+                      setEditWhItem(null);
+                    }}>Save</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ═══ REQUESTS VIEW ═══ */}
       {view === "Requests" && (
