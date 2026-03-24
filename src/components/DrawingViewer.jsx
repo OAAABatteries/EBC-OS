@@ -366,6 +366,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   const overlayCanvasRef = useRef(null);
   const containerRef = useRef(null);
   const fitScaleRef = useRef(1);
+  const pdfDocRef = useRef(null); // tracks the current valid PDF document (avoids StrictMode stale doc issues)
   const touchRef = useRef({ startDist: 0, startScale: 1 });
 
   const ppf = calibrations[pageKey] || null;
@@ -898,6 +899,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     const loadTask = pdfjsLib.getDocument(source);
     loadTask.promise.then((doc) => {
       if (!cancelled) {
+        pdfDocRef.current = doc; // track current valid doc
         setPdfFiles([{ name: fileName || "Drawing", data: null, doc, numPages: doc.numPages, storageUrl }]);
         setPdf(doc);
         setNumPages(doc.numPages);
@@ -921,7 +923,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         setPdfLoading(false);
       }
     });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; pdfDocRef.current = null; };
   }, [storageUrl, pdfData]);
 
   // ── Auto-load PDFs: IDB cache → Supabase cloud → show re-upload UI ──
@@ -1009,9 +1011,11 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   // ── Render page ──
   useEffect(() => {
     if (!pdf || !pdfCanvasRef.current) return;
+    // Skip if this pdf doc is stale (React StrictMode double-mount race)
+    if (pdfDocRef.current && pdf !== pdfDocRef.current) return;
     let cancelled = false;
     setRendering(true);
-    // Wrap in try/catch to handle destroyed PDF documents (React StrictMode double-mount)
+    // Wrap in try/catch to handle destroyed PDF documents
     let pagePromise;
     try { pagePromise = pdf.getPage(page); } catch (e) { console.warn("[DrawingViewer] PDF destroyed, skipping render:", e.message); setRendering(false); return; }
     pagePromise.then((p) => {
