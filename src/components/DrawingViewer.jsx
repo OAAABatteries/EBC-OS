@@ -1132,7 +1132,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       const lw = isSelected ? 4 : 2.5;
 
       if (m.type === "linear") {
-        const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+        const pts = (m.vertices || []).filter(v => v).map(v => ({ x: v.x * scale, y: v.y * scale }));
         // Selection glow
         if (isSelected) { ctx.strokeStyle = "#fff"; ctx.lineWidth = lw + 3; ctx.setLineDash([]); ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.stroke(); }
         ctx.strokeStyle = color;
@@ -1177,7 +1177,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           ctx.fillText(txt, mid.x, mid.y - 8);
         }
       } else if (m.type === "area") {
-        const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+        const pts = (m.vertices || []).filter(v => v).map(v => ({ x: v.x * scale, y: v.y * scale }));
         const isBackout = !!m.backoutOf;
         // Selection glow
         if (isSelected) { ctx.strokeStyle = "#fff"; ctx.lineWidth = lw + 3; ctx.setLineDash([]); ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.closePath(); ctx.stroke(); }
@@ -1270,10 +1270,10 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         if (!cond || hiddenFolders[cond.folder]) return;
         let lx, ly;
         if (m.type === "linear" && m.vertices?.length >= 2) {
-          const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+          const pts = (m.vertices || []).filter(v => v).map(v => ({ x: v.x * scale, y: v.y * scale }));
           lx = pts[0].x; ly = pts[0].y - 10;
         } else if (m.type === "area" && m.vertices?.length >= 3) {
-          const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+          const pts = (m.vertices || []).filter(v => v).map(v => ({ x: v.x * scale, y: v.y * scale }));
           lx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
           ly = pts.reduce((s, p) => s + p.y, 0) / pts.length + labelSize + 8;
         } else if (m.type === "count" && m.point) {
@@ -1405,7 +1405,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     // Draw active measurement in progress
     if (activeVertices.length > 0 && activeCond) {
       const color = activeCond.color;
-      const pts = activeVertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+      const pts = activeVertices.filter(v => v).map(v => ({ x: v.x * scale, y: v.y * scale }));
       // White outline for contrast against any background
       ctx.strokeStyle = "#fff"; ctx.lineWidth = 5; ctx.setLineDash([]);
       ctx.beginPath();
@@ -1459,7 +1459,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       pageMeasurements.filter(m => selectedMeasIds.has(m.id)).forEach(m => {
         ctx.strokeStyle = "#22d3ee"; ctx.lineWidth = 3; ctx.setLineDash([5, 3]);
         if (m.vertices) {
-          const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+          const pts = (m.vertices || []).filter(v => v).map(v => ({ x: v.x * scale, y: v.y * scale }));
           ctx.beginPath();
           pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
           if (m.type === "area") ctx.closePath();
@@ -1520,7 +1520,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       const coColor = m.coType === "delete" ? "#ef4444" : "#22c55e";
       ctx.globalAlpha = 0.7;
       if (m.type === "linear" && m.vertices) {
-        const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+        const pts = (m.vertices || []).filter(v => v).map(v => ({ x: v.x * scale, y: v.y * scale }));
         ctx.strokeStyle = coColor; ctx.lineWidth = 3; ctx.setLineDash([8, 4]);
         ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.stroke();
         ctx.setLineDash([]);
@@ -1530,7 +1530,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         ctx.fillStyle = coColor; ctx.fillRect(mid.x - tw / 2, mid.y - 18, tw, 16);
         ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.fillText(lbl, mid.x, mid.y - 6);
       } else if (m.type === "area" && m.vertices) {
-        const pts = m.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+        const pts = (m.vertices || []).filter(v => v).map(v => ({ x: v.x * scale, y: v.y * scale }));
         ctx.fillStyle = coColor + "22"; ctx.strokeStyle = coColor; ctx.lineWidth = 2.5; ctx.setLineDash([8, 4]);
         ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.closePath(); ctx.fill(); ctx.stroke();
         ctx.setLineDash([]);
@@ -1579,7 +1579,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     }
   }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond, hiddenFolders, selectedMeasIds, selectedMeasId, typicalGroups, measurements, pageKey, placingTypicalId, coPageMeasurements, coMode, shiftHeld, draggingHandle, backoutMode, showCondNames, hoveredMeasId, assemblies, bidAreas]);
 
-  useEffect(() => { drawOverlay(); }, [drawOverlay]);
+  useEffect(() => { requestAnimationFrame(drawOverlay); }, [drawOverlay]);
   // Reset setup panels when switching conditions
   useEffect(() => { setShowAttachSetup(false); setShowLinkSetup(false); }, [activeCondId]);
 
@@ -1666,9 +1666,10 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
       pendingClickRef.current = pt;
       clickTimerRef.current = setTimeout(() => {
-        if (pendingClickRef.current) {
-          setActiveVertices(prev => [...prev, pendingClickRef.current]);
-          pendingClickRef.current = null;
+        const ptToAdd = pendingClickRef.current;
+        pendingClickRef.current = null;
+        if (ptToAdd) {
+          setActiveVertices(prev => [...prev, ptToAdd]);
         }
       }, 200); // 200ms window — if dblclick fires within this, vertex is cancelled
     }
