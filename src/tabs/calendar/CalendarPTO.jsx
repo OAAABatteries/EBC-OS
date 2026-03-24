@@ -26,7 +26,7 @@ const STATUS_COLORS = { pending: "#f59e0b", approved: "#10b981", denied: "#ef444
 
 export function CalendarPTO({ app, lang }) {
   const {
-    ptoRequests, setPtoRequests, employees, crewSchedule, show,
+    ptoRequests, setPtoRequests, employees, teamSchedule, show,
   } = app;
 
   const t = (key) => (lang === "es" && T[key]?.es ? T[key].es : key);
@@ -46,7 +46,7 @@ export function CalendarPTO({ app, lang }) {
     setPtoImpact(null);
     try {
       const { analyzePtoImpact } = await import("../../utils/api.js");
-      const res = await analyzePtoImpact(app.apiKey, ptoRequests?.slice(0, 20), (employees || []).filter(e => e.active).slice(0, 20), crewSchedule?.slice(0, 30), app.projects?.slice(0, 10));
+      const res = await analyzePtoImpact(app.apiKey, ptoRequests?.slice(0, 20), (employees || []).filter(e => e.active).slice(0, 20), teamSchedule?.slice(0, 30), app.projects?.slice(0, 10));
       setPtoImpact(res);
       setShowPtoImpact(true);
       show("PTO impact analysis complete");
@@ -102,7 +102,7 @@ export function CalendarPTO({ app, lang }) {
     show("PTO request submitted");
   };
 
-  // Check crew schedule conflicts
+  // Check team schedule conflicts
   const hasCrewConflict = (empId, startDate, endDate) => {
     const start = toDate(startDate);
     const end = toDate(endDate);
@@ -111,7 +111,7 @@ export function CalendarPTO({ app, lang }) {
       const weekStr = toStr(mon);
       const dayIdx = (d.getDay() + 6) % 7;
       const dayKey = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"][dayIdx];
-      const assigned = (crewSchedule || []).filter(cs =>
+      const assigned = (teamSchedule || []).filter(cs =>
         cs.weekStart === weekStr && cs.employeeId === empId && cs.days?.[dayKey]
       );
       if (assigned.length > 0) return true;
@@ -334,7 +334,7 @@ export function CalendarPTO({ app, lang }) {
             {/* Conflict warning */}
             {form.employeeId && form.startDate && form.endDate && hasCrewConflict(Number(form.employeeId), form.startDate, form.endDate) && (
               <div style={{ padding: "8px 12px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius)", color: "#ef4444", fontSize: 12 }}>
-                {t("Warning: This employee is on the crew schedule during this period")}
+                {t("Warning: This employee is on the team schedule during this period")}
               </div>
             )}
 

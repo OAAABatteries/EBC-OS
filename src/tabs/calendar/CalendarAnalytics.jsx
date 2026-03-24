@@ -29,7 +29,7 @@ const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Se
 
 export function CalendarAnalytics({ app, lang }) {
   const {
-    crewSchedule, employees, projects, timeEntries,
+    teamSchedule, employees, projects, timeEntries,
     schedule, equipmentBookings, equipment, show,
   } = app;
 
@@ -49,7 +49,7 @@ export function CalendarAnalytics({ app, lang }) {
     for (let w = 0; w < 4; w++) {
       const weekStart = addDays(monday, w * 7);
       const weekStr = toStr(weekStart);
-      const entries = (crewSchedule || []).filter(cs => cs.weekStart === weekStr);
+      const entries = (teamSchedule || []).filter(cs => cs.weekStart === weekStr);
 
       const byEmployee = {};
       for (const cs of entries) {
@@ -71,22 +71,22 @@ export function CalendarAnalytics({ app, lang }) {
         totalHours: empHours.reduce((s, e) => s + e.hours, 0),
         totalOT: empHours.reduce((s, e) => s + e.overtime, 0),
         empHours: empHours.sort((a, b) => b.hours - a.hours),
-        crewCount: empHours.length,
+        teamSize: empHours.length,
       });
     }
     return result;
-  }, [monday, crewSchedule, employees]);
+  }, [monday, teamSchedule, employees]);
 
   // ── Project utilization ──
   const projectUtil = useMemo(() => {
     const weekStr = toStr(monday);
-    const entries = (crewSchedule || []).filter(cs => cs.weekStart === weekStr);
+    const entries = (teamSchedule || []).filter(cs => cs.weekStart === weekStr);
     const byProject = {};
     for (const cs of entries) {
-      if (!byProject[cs.projectId]) byProject[cs.projectId] = { hours: 0, crew: new Set() };
+      if (!byProject[cs.projectId]) byProject[cs.projectId] = { hours: 0, team: new Set() };
       const days = DAY_KEYS.filter(k => cs.days?.[k]).length;
       byProject[cs.projectId].hours += days * parseHours(cs.hours?.start, cs.hours?.end);
-      byProject[cs.projectId].crew.add(cs.employeeId);
+      byProject[cs.projectId].team.add(cs.employeeId);
     }
     return Object.entries(byProject).map(([pid, data]) => {
       const proj = (projects || []).find(p => String(p.id) === String(pid));
@@ -94,18 +94,18 @@ export function CalendarAnalytics({ app, lang }) {
         projectId: Number(pid),
         name: proj?.name || `#${pid}`,
         hours: data.hours,
-        crew: data.crew.size,
+        team: data.team.size,
         laborHours: proj?.laborHours || 0,
       };
     }).sort((a, b) => b.hours - a.hours);
-  }, [monday, crewSchedule, projects]);
+  }, [monday, teamSchedule, projects]);
 
   // ── Crew availability ──
   const availability = useMemo(() => {
     const active = (employees || []).filter(e => e.active);
     const weekStr = toStr(monday);
     const scheduled = new Set();
-    for (const cs of (crewSchedule || [])) {
+    for (const cs of (teamSchedule || [])) {
       if (cs.weekStart === weekStr) scheduled.add(cs.employeeId);
     }
     return {
@@ -114,7 +114,7 @@ export function CalendarAnalytics({ app, lang }) {
       available: active.length - scheduled.size,
       utilization: active.length > 0 ? Math.round((scheduled.size / active.length) * 100) : 0,
     };
-  }, [employees, crewSchedule, monday]);
+  }, [employees, teamSchedule, monday]);
 
   // ── Equipment utilization ──
   const eqUtil = useMemo(() => {
@@ -300,7 +300,7 @@ export function CalendarAnalytics({ app, lang }) {
                 <div>
                   <div className="cal-lookahead-week-label">{w.label}</div>
                   <div style={{ fontSize: 11, color: "var(--text3)" }}>
-                    {w.crewCount} {t("crew")} · {w.totalHours.toFixed(0)} {t("total hrs")} · {w.totalOT.toFixed(0)} {t("OT hrs")}
+                    {w.teamSize} {t("team")} · {w.totalHours.toFixed(0)} {t("total hrs")} · {w.totalOT.toFixed(0)} {t("OT hrs")}
                   </div>
                 </div>
                 {w.totalOT > 0 && <span style={{ color: "#ef4444", fontSize: 12, fontWeight: 600 }}>{w.totalOT.toFixed(0)}h OT</span>}
@@ -379,13 +379,13 @@ export function CalendarAnalytics({ app, lang }) {
         <div>
           <div className="cal-lookahead-section-title">{t("Project Resource Allocation — This Week")}</div>
           {projectUtil.length === 0 && (
-            <div style={{ color: "var(--text3)", fontSize: 13, padding: 16 }}>{t("No crew scheduled this week")}</div>
+            <div style={{ color: "var(--text3)", fontSize: 13, padding: 16 }}>{t("No team scheduled this week")}</div>
           )}
           {projectUtil.map(p => (
             <div key={p.projectId} className="cal-lookahead-card" style={{ marginBottom: 12 }}>
               <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{p.name}</div>
               <div style={{ display: "flex", gap: 16, fontSize: 12, color: "var(--text3)", marginBottom: 8 }}>
-                <span>{p.crew} {t("crew")}</span>
+                <span>{p.team} {t("team")}</span>
                 <span>{p.hours.toFixed(0)} {t("hrs this week")}</span>
                 {p.laborHours > 0 && <span>{p.laborHours} {t("total allocated")}</span>}
               </div>

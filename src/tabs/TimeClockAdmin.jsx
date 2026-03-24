@@ -37,7 +37,7 @@ export function TimeClockAdmin({ app }) {
   const {
     employees, setEmployees, companyLocations, setCompanyLocations,
     timeEntries, setTimeEntries, projects, show, setModal, modal,
-    crewSchedule, setCrewSchedule, materialRequests, setMaterialRequests
+    teamSchedule, setCrewSchedule, materialRequests, setMaterialRequests
   } = app;
   const canManageHires = ["owner", "admin", "pm", "office_admin"].includes(app.auth?.role);
 
@@ -47,7 +47,7 @@ export function TimeClockAdmin({ app }) {
   const [editLoc, setEditLoc] = useState(null);
   const [matFilter, setMatFilter] = useState("All");
 
-  // ── crew schedule state ──
+  // ── team schedule state ──
   const [weekOffset, setWeekOffset] = useState(0);
   const currentWeekStart = useMemo(() => {
     const ws = getWeekStart(new Date());
@@ -70,9 +70,9 @@ export function TimeClockAdmin({ app }) {
   const [anomalyLoading, setAnomalyLoading] = useState(false);
   const [showAnomaly, setShowAnomaly] = useState(false);
 
-  // ── crew optimizer state ──
-  const [crewOptResult, setCrewOptResult] = useState(null);
-  const [crewOptLoading, setCrewOptLoading] = useState(false);
+  // ── team optimizer state ──
+  const [teamOptResult, setCrewOptResult] = useState(null);
+  const [teamOptLoading, setCrewOptLoading] = useState(false);
   const [showCrewOpt, setShowCrewOpt] = useState(false);
 
   // ── overhead projector state ──
@@ -113,7 +113,7 @@ export function TimeClockAdmin({ app }) {
     setAnomalyResult(null);
     try {
       const { detectLaborAnomalies } = await import("../utils/api.js");
-      const res = await detectLaborAnomalies(app.apiKey, timeEntries.slice(0, 50), employees, crewSchedule.slice(0, 30), projects.slice(0, 10));
+      const res = await detectLaborAnomalies(app.apiKey, timeEntries.slice(0, 50), employees, teamSchedule.slice(0, 30), projects.slice(0, 10));
       setAnomalyResult(res);
       setShowAnomaly(true);
       show("Anomaly scan complete", "ok");
@@ -138,8 +138,8 @@ export function TimeClockAdmin({ app }) {
 
   // ── this week's schedule ──
   const weekSchedule = useMemo(
-    () => crewSchedule.filter((s) => s.weekStart === weekStr),
-    [crewSchedule, weekStr]
+    () => teamSchedule.filter((s) => s.weekStart === weekStr),
+    [teamSchedule, weekStr]
   );
 
   const fmtTime = (iso) => {
@@ -184,7 +184,7 @@ export function TimeClockAdmin({ app }) {
     setEditLoc(null);
   };
 
-  // ── crew schedule helpers ──
+  // ── team schedule helpers ──
   const getAssignment = (empId, dayKey) => {
     return weekSchedule.find(
       (s) => s.employeeId === empId && s.days[dayKey]
@@ -229,13 +229,13 @@ export function TimeClockAdmin({ app }) {
     const prevWS = new Date(currentWeekStart);
     prevWS.setDate(prevWS.getDate() - 7);
     const prevStr = toDateStr(prevWS);
-    const prevSchedule = crewSchedule.filter((s) => s.weekStart === prevStr);
+    const prevSchedule = teamSchedule.filter((s) => s.weekStart === prevStr);
     if (prevSchedule.length === 0) {
       show("No schedule found for previous week", "err");
       return;
     }
     // Remove existing entries for current week
-    const cleaned = crewSchedule.filter((s) => s.weekStart !== weekStr);
+    const cleaned = teamSchedule.filter((s) => s.weekStart !== weekStr);
     const copied = prevSchedule.map((s, i) => ({
       ...s,
       id: crypto.randomUUID(),
@@ -251,7 +251,7 @@ export function TimeClockAdmin({ app }) {
     const dayKey = dayOfWeek === 0 ? "sun" : DAY_KEYS[dayOfWeek - 1];
     const vWeekStart = toDateStr(getWeekStart(new Date(verifyDate)));
 
-    const daySchedule = crewSchedule.filter(
+    const daySchedule = teamSchedule.filter(
       (s) => s.weekStart === vWeekStart && s.days[dayKey]
     );
 
@@ -304,7 +304,7 @@ export function TimeClockAdmin({ app }) {
         detail,
       };
     });
-  }, [verifyDate, crewSchedule, timeEntries, employees]);
+  }, [verifyDate, teamSchedule, timeEntries, employees]);
 
   const verifyCounts = useMemo(() => {
     const counts = { "on-time": 0, late: 0, "no-show": 0, "early-out": 0 };
@@ -327,8 +327,8 @@ export function TimeClockAdmin({ app }) {
       const laborRemaining = Math.max(0, laborBudget - laborSpent);
       const burnPct = laborBudget > 0 ? Math.min(100, Math.round((laborSpent / laborBudget) * 100)) : 0;
 
-      // Estimate weeks remaining based on current crew weekly hours
-      const weeklyCrewEntries = crewSchedule.filter((s) => s.projectId === proj.id);
+      // Estimate weeks remaining based on current team weekly hours
+      const weeklyCrewEntries = teamSchedule.filter((s) => s.projectId === proj.id);
       const weeklyHours = weeklyCrewEntries.reduce((sum, s) => {
         const daysCount = Object.values(s.days).filter(Boolean).length;
         const [sh, sm] = (s.hours?.start || "06:30").split(":").map(Number);
@@ -349,12 +349,12 @@ export function TimeClockAdmin({ app }) {
 
       return { ...proj, laborSpent: Math.round(laborSpent), totalHours: Math.round(totalHours * 10) / 10, laborRemaining: Math.round(laborRemaining), burnPct, weeksRemaining, weeklyCost: Math.round(weeklyCost) };
     });
-  }, [projects, timeEntries, employees, crewSchedule]);
+  }, [projects, timeEntries, employees, teamSchedule]);
 
   // ── overhead data ──
   const overheadData = useMemo(() => {
     // Current week burn rate
-    const currentSchedule = crewSchedule.filter((s) => s.weekStart === weekStr);
+    const currentSchedule = teamSchedule.filter((s) => s.weekStart === weekStr);
     let weeklyBurn = 0;
     currentSchedule.forEach((s) => {
       const emp = employees.find((e) => e.id === s.employeeId);
@@ -382,7 +382,7 @@ export function TimeClockAdmin({ app }) {
     });
 
     return { weeklyBurn: Math.round(weeklyBurn), monthlyBurn, totalLaborBudget, totalLaborSpent: Math.round(totalLaborSpent), totalRemaining: Math.round(totalRemaining), projectOverhead };
-  }, [crewSchedule, employees, projects, laborData, weekStr]);
+  }, [teamSchedule, employees, projects, laborData, weekStr]);
 
   const runOverheadProject = async () => {
     if (!app.apiKey) { show("Set API key in Settings first", "err"); return; }
@@ -390,7 +390,7 @@ export function TimeClockAdmin({ app }) {
     setOhResult(null);
     try {
       const { projectOverheadCosts } = await import("../utils/api.js");
-      const res = await projectOverheadCosts(app.apiKey, overheadData, projects.slice(0, 10), timeEntries?.slice(-20), crewSchedule?.slice(0, 20));
+      const res = await projectOverheadCosts(app.apiKey, overheadData, projects.slice(0, 10), timeEntries?.slice(-20), teamSchedule?.slice(0, 20));
       setOhResult(res);
       setShowOh(true);
       show("Overhead projection complete", "ok");
@@ -424,7 +424,7 @@ export function TimeClockAdmin({ app }) {
     setBurnResult(null);
     try {
       const { predictLaborBurn } = await import("../utils/api.js");
-      const res = await predictLaborBurn(app.apiKey, laborData?.slice(0, 15), crewSchedule?.slice(0, 25), projects?.slice(0, 10));
+      const res = await predictLaborBurn(app.apiKey, laborData?.slice(0, 15), teamSchedule?.slice(0, 25), projects?.slice(0, 10));
       setBurnResult(res);
       setShowBurn(true);
       show("Burn prediction complete", "ok");
@@ -523,7 +523,7 @@ export function TimeClockAdmin({ app }) {
                     <span className="text-sm font-semi">{p.project}</span>
                     <span className={`badge ${p.efficiency === "high" ? "badge-green" : p.efficiency === "low" ? "badge-red" : "badge-muted"}`}>{p.efficiency}</span>
                   </div>
-                  <div className="text-xs text-muted mt-2">Avg {p.avgHoursPerDay}h/day · Crew: {p.crewSize} · {p.note}</div>
+                  <div className="text-xs text-muted mt-2">Avg {p.avgHoursPerDay}h/day · Crew: {p.teamSize} · {p.note}</div>
                 </div>
               ))}
             </div>
@@ -781,8 +781,8 @@ export function TimeClockAdmin({ app }) {
               )}
             </div>
             <div className="flex gap-8">
-              <button className="btn btn-ghost btn-sm" style={{ color: "var(--amber)" }} onClick={() => { showCrewOpt ? setShowCrewOpt(false) : runCrewOptimize(); }} disabled={crewOptLoading}>
-                {crewOptLoading ? "Optimizing..." : "AI Optimize"}
+              <button className="btn btn-ghost btn-sm" style={{ color: "var(--amber)" }} onClick={() => { showCrewOpt ? setShowCrewOpt(false) : runCrewOptimize(); }} disabled={teamOptLoading}>
+                {teamOptLoading ? "Optimizing..." : "AI Optimize"}
               </button>
               <button className="btn btn-ghost btn-sm" onClick={copyPreviousWeek}>Copy Previous Week</button>
               <button className="btn btn-primary btn-sm" onClick={() => {
@@ -795,7 +795,7 @@ export function TimeClockAdmin({ app }) {
                 const dayDate = getDayDate(currentWeekStart, dayIdx);
 
                 const assignments = weekSchedule.filter(s => s.days?.[dayKey]);
-                if (assignments.length === 0) { show("No crew scheduled for " + dayLabel); return; }
+                if (assignments.length === 0) { show("No team scheduled for " + dayLabel); return; }
 
                 const lines = [];
                 const assignedEmps = new Set();
@@ -821,7 +821,7 @@ export function TimeClockAdmin({ app }) {
 
                 // Copy to clipboard for SMS/WhatsApp
                 navigator.clipboard.writeText(dispatchMsg).then(() => {
-                  show(`Dispatch copied — ${assignments.length} crew assigned for ${dayLabel}. Paste into group chat.`, "ok");
+                  show(`Dispatch copied — ${assignments.length} team assigned for ${dayLabel}. Paste into group chat.`, "ok");
                 }).catch(() => {
                   // Fallback: show in prompt
                   window.prompt("Copy this dispatch:", dispatchMsg);
@@ -831,7 +831,7 @@ export function TimeClockAdmin({ app }) {
           </div>
 
           {/* AI Crew Optimizer Panel */}
-          {showCrewOpt && crewOptResult && (
+          {showCrewOpt && teamOptResult && (
             <div className="card" style={{ padding: 20, marginBottom: 16 }}>
               <div className="flex-between mb-12">
                 <div className="text-sm font-semi">AI Crew Optimization</div>
@@ -842,40 +842,40 @@ export function TimeClockAdmin({ app }) {
               <div className="flex gap-16 mb-12" style={{ alignItems: "center" }}>
                 <div style={{ textAlign: "center" }}>
                   <div className="text-xs text-muted">Efficiency</div>
-                  <div style={{ fontSize: 32, fontWeight: 800, color: crewOptResult.score >= 70 ? "var(--green)" : crewOptResult.score >= 40 ? "var(--amber)" : "var(--red)" }}>
-                    {crewOptResult.score}/100
+                  <div style={{ fontSize: 32, fontWeight: 800, color: teamOptResult.score >= 70 ? "var(--green)" : teamOptResult.score >= 40 ? "var(--amber)" : "var(--red)" }}>
+                    {teamOptResult.score}/100
                   </div>
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="text-xs text-muted">Grade</div>
-                  <div style={{ fontSize: 32, fontWeight: 800, color: "var(--amber)" }}>{crewOptResult.grade}</div>
+                  <div style={{ fontSize: 32, fontWeight: 800, color: "var(--amber)" }}>{teamOptResult.grade}</div>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div className="text-sm text-muted">{crewOptResult.summary}</div>
+                  <div className="text-sm text-muted">{teamOptResult.summary}</div>
                 </div>
               </div>
 
               {/* Gaps */}
-              {crewOptResult.gaps?.length > 0 && (
+              {teamOptResult.gaps?.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Crew Gaps ({crewOptResult.gaps.length})</div>
-                  {crewOptResult.gaps.map((g, i) => (
+                  <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Crew Gaps ({teamOptResult.gaps.length})</div>
+                  {teamOptResult.gaps.map((g, i) => (
                     <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                       <div className="flex-between">
                         <span className="text-sm font-semi">{g.project} — {g.day}</span>
                         <span className={`badge ${g.priority === "critical" ? "badge-red" : g.priority === "high" ? "badge-amber" : "badge-muted"}`}>{g.priority}</span>
                       </div>
-                      <div className="text-xs text-muted mt-2">Need {g.crewNeeded}, have {g.currentCrew} (short {g.shortfall})</div>
+                      <div className="text-xs text-muted mt-2">Need {g.teamNeeded}, have {g.currentTeam} (short {g.shortfall})</div>
                     </div>
                   ))}
                 </div>
               )}
 
               {/* Suggested Moves */}
-              {crewOptResult.moves?.length > 0 && (
+              {teamOptResult.moves?.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
                   <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Suggested Reassignments</div>
-                  {crewOptResult.moves.map((m, i) => (
+                  {teamOptResult.moves.map((m, i) => (
                     <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "var(--bg3)", border: "1px solid var(--border)" }}>
                       <div className="text-sm font-semi">{m.employee}</div>
                       <div className="text-xs text-muted mt-2">{m.from} → {m.to} ({m.day})</div>
@@ -886,10 +886,10 @@ export function TimeClockAdmin({ app }) {
               )}
 
               {/* Unassigned */}
-              {crewOptResult.unassigned?.length > 0 && (
+              {teamOptResult.unassigned?.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
                   <div className="text-sm font-semi mb-8">Unassigned Employees</div>
-                  {crewOptResult.unassigned.map((u, i) => (
+                  {teamOptResult.unassigned.map((u, i) => (
                     <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                       <span className="text-sm font-semi">{u.employee}</span>
                       <span className="text-xs text-muted ml-8">Days: {(u.days || []).join(", ")}</span>
@@ -900,10 +900,10 @@ export function TimeClockAdmin({ app }) {
               )}
 
               {/* Balancing */}
-              {crewOptResult.balancing?.length > 0 && (
+              {teamOptResult.balancing?.length > 0 && (
                 <div>
                   <div className="text-sm font-semi mb-8">Balancing Tips</div>
-                  {crewOptResult.balancing.map((b, i) => (
+                  {teamOptResult.balancing.map((b, i) => (
                     <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                       <div className="text-sm">{b.observation}</div>
                       <div className="text-xs text-muted mt-2">{b.suggestion} — {b.benefit}</div>
@@ -1015,7 +1015,7 @@ export function TimeClockAdmin({ app }) {
                       return (
                         <td
                           key={dayKey}
-                          className="crew-cell"
+                          className="team-cell"
                           style={{ textAlign: "center", cursor: "pointer", minWidth: 100 }}
                           onClick={() => setAssignModal({ empId: emp.id, empName: emp.name, dayKey, current: assignment })}
                         >

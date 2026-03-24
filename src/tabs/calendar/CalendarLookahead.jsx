@@ -4,7 +4,7 @@ import { EVENT_TYPES } from "../../data/calendarConstants";
 
 // ═══════════════════════════════════════════════════════════
 //  CalendarLookahead — 3-6 week rolling lookahead
-//  Shows upcoming crew, events, deliveries, inspections,
+//  Shows upcoming team, events, deliveries, inspections,
 //  subs, and weather in a weekly column layout
 // ═══════════════════════════════════════════════════════════
 
@@ -33,7 +33,7 @@ const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "O
 
 export function CalendarLookahead({ app, lang }) {
   const {
-    crewSchedule, schedule, calendarEvents, ptoRequests,
+    teamSchedule, schedule, calendarEvents, ptoRequests,
     equipmentBookings, equipment, subSchedule, weatherAlerts,
     materialRequests, employees, projects,
   } = app;
@@ -60,17 +60,17 @@ export function CalendarLookahead({ app, lang }) {
       const endStr = toStr(weekEnd);
 
       // Crew assignments this week
-      const crewEntries = (crewSchedule || []).filter(cs => cs.weekStart === weekStr);
-      const crewByProject = {};
-      for (const cs of crewEntries) {
+      const teamEntries = (teamSchedule || []).filter(cs => cs.weekStart === weekStr);
+      const teamByProject = {};
+      for (const cs of teamEntries) {
         if (filterProject && cs.projectId !== filterProject) continue;
-        if (!crewByProject[cs.projectId]) crewByProject[cs.projectId] = [];
-        crewByProject[cs.projectId].push(cs);
+        if (!teamByProject[cs.projectId]) teamByProject[cs.projectId] = [];
+        teamByProject[cs.projectId].push(cs);
       }
 
       // Man hours this week
       let totalHours = 0;
-      for (const cs of crewEntries) {
+      for (const cs of teamEntries) {
         if (filterProject && cs.projectId !== filterProject) continue;
         const days = DAY_KEYS.filter(k => cs.days?.[k]).length;
         totalHours += days * parseHours(cs.hours?.start, cs.hours?.end);
@@ -120,18 +120,18 @@ export function CalendarLookahead({ app, lang }) {
       }
 
       // Unique employees scheduled
-      const uniqueEmps = new Set(crewEntries.map(cs => cs.employeeId));
+      const uniqueEmps = new Set(teamEntries.map(cs => cs.employeeId));
 
       result.push({
         weekStart, weekEnd, weekStr, endStr,
-        crewByProject, totalHours, events, ganttTasks,
+        teamByProject, totalHours, events, ganttTasks,
         ptos, eqBookings, subs, weather,
-        crewCount: uniqueEmps.size,
-        projectCount: Object.keys(crewByProject).length,
+        teamSize: uniqueEmps.size,
+        projectCount: Object.keys(teamByProject).length,
       });
     }
     return result;
-  }, [weeks, monday, crewSchedule, schedule, calendarEvents, ptoRequests, equipmentBookings, subSchedule, weatherAlerts, filterProject]);
+  }, [weeks, monday, teamSchedule, schedule, calendarEvents, ptoRequests, equipmentBookings, subSchedule, weatherAlerts, filterProject]);
 
   const projName = (id) => (projects || []).find(p => String(p.id) === String(id))?.name || `#${id}`;
   const empName = (id) => (employees || []).find(e => String(e.id) === String(id))?.name || `#${id}`;
@@ -144,7 +144,7 @@ export function CalendarLookahead({ app, lang }) {
       const { generateLookahead } = await import("../../utils/api.js");
       const summaryData = weekData.map(w => ({
         week: `${MONTH[w.weekStart.getMonth()]} ${w.weekStart.getDate()}`,
-        crewCount: w.crewCount,
+        teamSize: w.teamSize,
         projectCount: w.projectCount,
         totalHours: w.totalHours,
         events: w.events.length,
@@ -278,7 +278,7 @@ export function CalendarLookahead({ app, lang }) {
               {/* KPI row */}
               <div className="cal-lookahead-kpis">
                 <div className="cal-lookahead-kpi">
-                  <div className="cal-lookahead-kpi-val">{w.crewCount}</div>
+                  <div className="cal-lookahead-kpi-val">{w.teamSize}</div>
                   <div className="cal-lookahead-kpi-lbl">{t("Crew")}</div>
                 </div>
                 <div className="cal-lookahead-kpi">
@@ -299,10 +299,10 @@ export function CalendarLookahead({ app, lang }) {
               {isExpanded && (
                 <div className="cal-lookahead-detail">
                   {/* Crew by project */}
-                  {Object.entries(w.crewByProject).length > 0 && (
+                  {Object.entries(w.teamByProject).length > 0 && (
                     <div className="cal-lookahead-section">
                       <div className="cal-lookahead-section-title">{t("Crew Assignments")}</div>
-                      {Object.entries(w.crewByProject).map(([pid, entries]) => (
+                      {Object.entries(w.teamByProject).map(([pid, entries]) => (
                         <div key={pid} className="cal-lookahead-item">
                           <span style={{ color: "var(--accent)", fontWeight: 600, fontSize: 12 }}>{projName(Number(pid))}</span>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 2 }}>

@@ -152,7 +152,7 @@ Return a JSON object with:
 - healthSummary: string — 2-3 sentence overall portfolio health
 - alerts: array of objects { project: string, type: "overbudget"|"behind"|"risk"|"opportunity", message: string, priority: "high"|"medium"|"low" }
 - recommendations: array of objects { action: string, impact: string, urgency: "now"|"this_week"|"next_week" }
-- kpis: { avgMargin: number, cashFlowStatus: string, crewUtilization: string }
+- kpis: { avgMargin: number, cashFlowStatus: string, teamUtilization: string }
 - wins: array of strings — positive developments to celebrate
 
 Keep it actionable and specific. A PM should be able to scan this in 2 minutes and know exactly what needs attention.
@@ -372,7 +372,7 @@ Guidelines:
 - Be technically specific — reference partition types, assembly codes, UL ratings, finish levels where relevant
 - If the RFI is about scope, clarify what's included/excluded in EBC's scope
 - If about materials, reference industry standards (ASTM, GA, etc.)
-- If about schedule, be realistic about lead times and crew availability
+- If about schedule, be realistic about lead times and team availability
 - Keep it professional and concise (2-4 paragraphs)
 - End with "Please advise if you need additional information."
 - Do NOT include subject line, just the response body
@@ -382,10 +382,10 @@ Write the response now:`;
   return callClaude(apiKey, prompt, 512);
 }
 
-export async function forecastLaborDemand(apiKey, scheduleData, projectData, crewData) {
+export async function forecastLaborDemand(apiKey, scheduleData, projectData, teamData) {
   const prompt = `You are a construction workforce planning analyst for Eagles Brothers Constructors (EBC), a Houston drywall and interior framing subcontractor.
 
-Analyze the schedule, project pipeline, and crew data to forecast labor demand:
+Analyze the schedule, project pipeline, and team data to forecast labor demand:
 
 ACTIVE SCHEDULE:
 ${JSON.stringify(scheduleData, null, 2)}
@@ -394,18 +394,18 @@ PROJECTS:
 ${JSON.stringify(projectData, null, 2)}
 
 CREW DATA:
-${JSON.stringify(crewData, null, 2)}
+${JSON.stringify(teamData, null, 2)}
 
 Return a JSON object with:
 - weeklyForecast: array of objects for the next 4 weeks:
-  { week: string (e.g. "Mar 16-22"), crewsNeeded: number, hoursEstimate: number, projects: array of strings, bottleneck: string|null }
-- crewGaps: array of objects { week: string, shortfall: number, trade: string, recommendation: string } — weeks where demand exceeds supply
-- peakWeek: { week: string, reason: string, crewsNeeded: number }
+  { week: string (e.g. "Mar 16-22"), teamsNeeded: number, hoursEstimate: number, projects: array of strings, bottleneck: string|null }
+- teamGaps: array of objects { week: string, shortfall: number, trade: string, recommendation: string } — weeks where demand exceeds supply
+- peakWeek: { week: string, reason: string, teamsNeeded: number }
 - recommendations: array of objects { action: string, impact: string, priority: "high"|"medium"|"low" }
 - overtime: { likelihood: string, weeks: array of strings, estimatedHours: number }
 - summary: string — 2-3 sentence labor outlook
 
-Factor in: project overlaps, ramp-up/ramp-down periods, typical drywall crew productivity (a framing crew does ~400 LF/day, hanging crew ~1500 SF/day, finishing crew ~2000 SF/day). Houston weather can impact outdoor staging.
+Factor in: project overlaps, ramp-up/ramp-down periods, typical drywall team productivity (a framing team does ~400 LF/day, hanging team ~1500 SF/day, finishing team ~2000 SF/day). Houston weather can impact outdoor staging.
 
 Return ONLY valid JSON, no other text.`;
 
@@ -535,7 +535,7 @@ Return a JSON object with:
 - duration: string — estimated time (usually "10-15 minutes")
 - objectives: array of strings — 3-4 learning objectives
 - content: array of objects { heading: string, points: array of strings } — 3-5 main sections with bullet points
-- discussion: array of strings — 3-4 discussion questions to engage the crew
+- discussion: array of strings — 3-4 discussion questions to engage the team
 - keyTakeaways: array of strings — 3 key points to remember
 - relevantToProjects: array of strings — which active projects this applies to
 - complianceRef: string|null — OSHA standard reference if applicable (e.g. "29 CFR 1926.451")
@@ -750,13 +750,13 @@ ${JSON.stringify(projectData, null, 2)}
 
 Return a JSON object with:
 - conflicts: array of objects { type: "overlap"|"resource"|"dependency"|"gap", projects: array of strings, detail: string, severity: "critical"|"warning"|"info", resolution: string }
-- resourceCollisions: array of objects { crew: string, dates: string, projects: array of strings, recommendation: string }
+- resourceCollisions: array of objects { team: string, dates: string, projects: array of strings, recommendation: string }
 - sequenceIssues: array of objects { project: string, issue: string, correctSequence: string, impact: string }
 - optimizations: array of objects { suggestion: string, benefit: string, projects: array of strings, priority: "high"|"medium"|"low" }
 - criticalPath: array of objects { project: string, bottleneck: string, slackDays: number, recommendation: string }
 - summary: string — 2-3 sentence schedule health assessment
 
-Drywall sequence matters: framing → rough-in inspection → insulation → board hang → tape/finish → paint-ready. Flag any out-of-sequence tasks. Consider crew availability across overlapping projects.
+Drywall sequence matters: framing → rough-in inspection → insulation → board hang → tape/finish → paint-ready. Flag any out-of-sequence tasks. Consider team availability across overlapping projects.
 
 Return ONLY valid JSON, no other text.`;
 
@@ -807,7 +807,7 @@ Return ONLY valid JSON, no other text.`;
   }
 }
 
-export async function detectLaborAnomalies(apiKey, timeEntries, employees, crewSchedule, projects) {
+export async function detectLaborAnomalies(apiKey, timeEntries, employees, teamSchedule, projects) {
   const prompt = `You are a construction workforce analytics specialist for Eagles Brothers Constructors (EBC), a Houston drywall and interior framing subcontractor.
 
 Analyze time clock data for anomalies, patterns, and optimization opportunities:
@@ -819,7 +819,7 @@ EMPLOYEES:
 ${JSON.stringify(employees, null, 2)}
 
 CREW SCHEDULE:
-${JSON.stringify(crewSchedule, null, 2)}
+${JSON.stringify(teamSchedule, null, 2)}
 
 PROJECTS:
 ${JSON.stringify(projects, null, 2)}
@@ -829,7 +829,7 @@ Return a JSON object with:
 - overtimeRisk: array of objects { employee: string, currentHours: number, projectedWeekly: number, alert: string }
 - attendancePatterns: array of objects { pattern: string, employees: array of strings, frequency: string, impact: string }
 - costAlerts: array of objects { project: string, issue: string, estimatedImpact: string, action: string }
-- productivity: array of objects { project: string, avgHoursPerDay: number, crewSize: number, efficiency: "high"|"normal"|"low", note: string }
+- productivity: array of objects { project: string, avgHoursPerDay: number, teamSize: number, efficiency: "high"|"normal"|"low", note: string }
 - recommendations: array of objects { action: string, priority: "high"|"medium"|"low", impact: string, category: "cost"|"compliance"|"safety"|"efficiency" }
 - summary: string — 3-4 sentence workforce health assessment
 
@@ -926,7 +926,7 @@ Return ONLY valid JSON, no other text.`;
   }
 }
 
-export async function planWeekSchedule(apiKey, calendarEvents, projects, employees, crewSchedule, schedule) {
+export async function planWeekSchedule(apiKey, calendarEvents, projects, employees, teamSchedule, schedule) {
   const prompt = `You are a construction project coordinator for Eagles Brothers Constructors (EBC), a Houston drywall and interior framing subcontractor.
 
 Analyze the upcoming week's calendar and provide intelligent scheduling recommendations:
@@ -941,7 +941,7 @@ EMPLOYEES:
 ${JSON.stringify(employees, null, 2)}
 
 CREW SCHEDULE:
-${JSON.stringify(crewSchedule, null, 2)}
+${JSON.stringify(teamSchedule, null, 2)}
 
 GANTT SCHEDULE:
 ${JSON.stringify(schedule, null, 2)}
@@ -950,15 +950,15 @@ TODAY: ${new Date().toISOString().slice(0, 10)}
 
 Return a JSON object with:
 - weekOverview: string — 2-3 sentence summary of the upcoming week
-- dailyPlan: array of objects { day: string (Mon-Fri), focus: string, keyEvents: array of strings, crewNeeds: string, priority: "high"|"normal"|"light" }
+- dailyPlan: array of objects { day: string (Mon-Fri), focus: string, keyEvents: array of strings, teamNeeds: string, priority: "high"|"normal"|"light" }
 - conflicts: array of objects { issue: string, days: array of strings, resolution: string, severity: "critical"|"warning"|"info" }
 - suggestions: array of objects { suggestion: string, reason: string, impact: string, priority: "high"|"medium"|"low" }
 - inspectionPrep: array of objects { project: string, inspection: string, prepSteps: array of strings, deadline: string } — upcoming inspections to prepare for
-- crewAllocation: array of objects { project: string, recommendedCrew: number, trade: string, days: string, notes: string }
+- teamAllocation: array of objects { project: string, recommendedCrew: number, trade: string, days: string, notes: string }
 - risks: array of objects { risk: string, mitigation: string, likelihood: "high"|"medium"|"low" }
 - summary: string — 2-3 sentence actionable planning brief
 
-Consider: project deadlines, inspection schedules, crew availability, weather impacts, material deliveries, GC meetings. Prioritize critical-path activities.
+Consider: project deadlines, inspection schedules, team availability, weather impacts, material deliveries, GC meetings. Prioritize critical-path activities.
 
 Return ONLY valid JSON, no other text.`;
 
@@ -971,13 +971,13 @@ Return ONLY valid JSON, no other text.`;
   }
 }
 
-export async function optimizeCrewSchedule(apiKey, crewSchedule, employees, projects, schedule, weekStr) {
+export async function optimizeCrewSchedule(apiKey, teamSchedule, employees, projects, schedule, weekStr) {
   const prompt = `You are a construction workforce optimization specialist for Eagles Brothers Constructors (EBC), a Houston drywall and interior framing subcontractor.
 
-Optimize the crew schedule for the week of ${weekStr}:
+Optimize the team schedule for the week of ${weekStr}:
 
 CURRENT CREW SCHEDULE:
-${JSON.stringify(crewSchedule, null, 2)}
+${JSON.stringify(teamSchedule, null, 2)}
 
 EMPLOYEES:
 ${JSON.stringify(employees, null, 2)}
@@ -994,12 +994,12 @@ Return a JSON object with:
 - unassigned: array of objects { employee: string, days: array of strings, skills: string, recommendation: string } — employees without assignments
 - overloaded: array of objects { project: string, issue: string, suggestion: string }
 - moves: array of objects { employee: string, from: string, to: string, day: string, reason: string, impact: string } — suggested reassignments
-- gaps: array of objects { project: string, day: string, crewNeeded: number, currentCrew: number, shortfall: number, priority: "critical"|"high"|"medium" }
+- gaps: array of objects { project: string, day: string, teamNeeded: number, currentTeam: number, shortfall: number, priority: "critical"|"high"|"medium" }
 - balancing: array of objects { observation: string, suggestion: string, benefit: string }
 - travelOptimization: array of objects { suggestion: string, employees: array of strings, savings: string } — minimize drive time between job sites
-- summary: string — 2-3 sentence crew optimization assessment
+- summary: string — 2-3 sentence team optimization assessment
 
-Optimize for: minimize idle time, balance crew loads across projects, keep experienced employees on complex jobs, avoid single-person crews for safety, minimize travel between sites, ensure critical-path tasks have full crews.
+Optimize for: minimize idle time, balance team loads across projects, keep experienced employees on complex jobs, avoid single-person teams for safety, minimize travel between sites, ensure critical-path tasks have full teams.
 
 Return ONLY valid JSON, no other text.`;
 
@@ -1055,22 +1055,22 @@ Return ONLY valid JSON, no other text.`;
   }
 }
 
-export async function optimizeProjectRoutes(apiKey, projects, crewSchedule, employees) {
+export async function optimizeProjectRoutes(apiKey, projects, teamSchedule, employees) {
   const prompt = `You are a construction logistics optimizer for Eagles Brothers Constructors (EBC), a Houston drywall and interior framing subcontractor.
 
-Analyze EBC's project locations and crew assignments to optimize routes and logistics:
+Analyze EBC's project locations and team assignments to optimize routes and logistics:
 
 PROJECTS (with locations):
 ${JSON.stringify(projects, null, 2)}
 
 CREW SCHEDULE:
-${JSON.stringify(crewSchedule, null, 2)}
+${JSON.stringify(teamSchedule, null, 2)}
 
 EMPLOYEES:
 ${JSON.stringify(employees, null, 2)}
 
 Return a JSON object with:
-- clusterAnalysis: array of objects { cluster: string, projects: array of strings, area: string, crewCount: number, recommendation: string }
+- clusterAnalysis: array of objects { cluster: string, projects: array of strings, area: string, teamSize: number, recommendation: string }
 - routeSuggestions: array of objects { employee: string, currentRoute: string, optimizedRoute: string, timeSaved: string, fuelSaved: string }
 - geographicInsights: array of objects { insight: string, projects: array of strings, impact: string }
 - logisticsAlerts: array of objects { alert: string, severity: "critical"|"warning"|"info", action: string }
@@ -1188,8 +1188,8 @@ ${JSON.stringify(dashData, null, 2)}
 Return a JSON object with:
 - greeting: string — personalized morning greeting for Abner
 - todaysFocus: array of objects { item: string, priority: "critical"|"high"|"normal", project: string|null }
-- urgentAlerts: array of objects { alert: string, type: "financial"|"schedule"|"safety"|"crew"|"weather", action: string }
-- crewSnapshot: { clockedIn: number, expected: number, onSite: string }
+- urgentAlerts: array of objects { alert: string, type: "financial"|"schedule"|"safety"|"team"|"weather", action: string }
+- teamSnapshot: { clockedIn: number, expected: number, onSite: string }
 - moneyMoves: array of objects { item: string, amount: string, action: string, deadline: string }
 - bidUpdates: array of objects { bid: string, status: string, action: string }
 - inspectionsDue: array of objects { project: string, inspection: string, date: string }
@@ -1225,7 +1225,7 @@ EMPLOYEES:
 ${JSON.stringify(employees, null, 2)}
 
 Return a JSON object with:
-- weeklyInsights: array of objects { week: string, crewUtilization: number, riskLevel: "high"|"medium"|"low", keyMilestones: array of strings, recommendation: string }
+- weeklyInsights: array of objects { week: string, teamUtilization: number, riskLevel: "high"|"medium"|"low", keyMilestones: array of strings, recommendation: string }
 - resourcePeaks: array of objects { week: string, demand: number, available: number, gap: number, solution: string }
 - milestoneTracker: array of objects { milestone: string, project: string, targetWeek: string, status: "on_track"|"at_risk"|"behind", action: string }
 - workloadBalance: array of objects { project: string, weeklyHours: array of numbers, trend: "ramping_up"|"steady"|"winding_down", note: string }
@@ -1234,7 +1234,7 @@ Return a JSON object with:
 - sixWeekOutlook: string — 3-4 sentence lookahead summary
 - summary: string — 2-3 sentence immediate action brief
 
-Focus on: crew allocation balance, upcoming inspections, material lead times, PTO coverage, equipment needs, and weather windows for exterior work.
+Focus on: team allocation balance, upcoming inspections, material lead times, PTO coverage, equipment needs, and weather windows for exterior work.
 
 Return ONLY valid JSON, no other text.`;
 
@@ -1258,7 +1258,7 @@ Return a JSON object with:
 - summary: string — 3-4 sentence overview of field operations this period
 - byProject: array of objects { project: string, status: string, highlights: array of strings, concerns: array of strings }
 - safetyNotes: array of strings — any safety observations or near-misses mentioned
-- laborNotes: string — crew productivity observations, staffing issues
+- laborNotes: string — team productivity observations, staffing issues
 - materialNotes: string — material deliveries, shortages, or waste issues
 - weatherImpact: string|null — any weather-related delays or impacts
 - actionItems: array of objects { item: string, priority: "high"|"medium"|"low", assignTo: string }
@@ -1279,7 +1279,7 @@ Return ONLY valid JSON, no other text.`;
 // ═══════════════════════════════════════════════════════════════
 //  Sprint 13 — PTO Impact Analyzer
 // ═══════════════════════════════════════════════════════════════
-export async function analyzePtoImpact(apiKey, ptoRequests, employees, crewSchedule, projects) {
+export async function analyzePtoImpact(apiKey, ptoRequests, employees, teamSchedule, projects) {
   const prompt = `You are an AI workforce analyst for Eagles Brothers Constructors (EBC), a drywall/framing subcontractor in Houston.
 
 Analyze the PTO situation and identify coverage gaps and risks.
@@ -1291,7 +1291,7 @@ ACTIVE EMPLOYEES:
 ${JSON.stringify(employees?.slice(0, 20) || [], null, 2)}
 
 CREW SCHEDULE (current/upcoming):
-${JSON.stringify(crewSchedule?.slice(0, 30) || [], null, 2)}
+${JSON.stringify(teamSchedule?.slice(0, 30) || [], null, 2)}
 
 ACTIVE PROJECTS:
 ${JSON.stringify(projects?.slice(0, 10) || [], null, 2)}
@@ -1307,7 +1307,7 @@ Return JSON:
   "recommendations": [string]
 }
 
-Focus on: crew conflicts with PTO, understaffed projects, peak absence periods, and coverage strategies. Be specific to drywall/framing operations.
+Focus on: team conflicts with PTO, understaffed projects, peak absence periods, and coverage strategies. Be specific to drywall/framing operations.
 
 Return ONLY valid JSON, no other text.`;
 
@@ -1365,7 +1365,7 @@ Return ONLY valid JSON, no other text.`;
 // ═══════════════════════════════════════════════════════════════
 //  Sprint 13 — Overhead Cost Projector
 // ═══════════════════════════════════════════════════════════════
-export async function projectOverheadCosts(apiKey, overheadData, projects, timeEntries, crewSchedule) {
+export async function projectOverheadCosts(apiKey, overheadData, projects, timeEntries, teamSchedule) {
   const prompt = `You are an AI financial analyst for Eagles Brothers Constructors (EBC), a drywall/framing subcontractor in Houston. EBC makes ~100% markup on labor — labor IS the profit driver.
 
 Analyze overhead/labor costs and project future burn rates.
@@ -1384,7 +1384,7 @@ RECENT TIME ENTRIES (sample):
 ${JSON.stringify(timeEntries?.slice(-20) || [], null, 2)}
 
 CREW SCHEDULE:
-${JSON.stringify(crewSchedule?.slice(0, 20) || [], null, 2)}
+${JSON.stringify(teamSchedule?.slice(0, 20) || [], null, 2)}
 
 Return JSON:
 {
@@ -1398,7 +1398,7 @@ Return JSON:
   "quarterProjection": { "projectedSpend": number, "projectedRevenue": number, "projectedProfit": number, "profitMargin": string }
 }
 
-Since labor is EBC's profit driver (~100% markup), focus on: labor cost trends, burn rate sustainability, over-budget projects, crew efficiency, and profit margin protection. Be Houston construction market aware.
+Since labor is EBC's profit driver (~100% markup), focus on: labor cost trends, burn rate sustainability, over-budget projects, team efficiency, and profit margin protection. Be Houston construction market aware.
 
 Return ONLY valid JSON, no other text.`;
 
@@ -1443,7 +1443,7 @@ Return JSON:
   "strategicRecommendations": [{ "title": string, "impact": "high"|"medium"|"low", "detail": string }]
 }
 
-Focus on: crew utilization optimization, overtime cost control, staffing balance across projects, equipment deployment efficiency, and actionable workforce strategies for a drywall sub.
+Focus on: team utilization optimization, overtime cost control, staffing balance across projects, equipment deployment efficiency, and actionable workforce strategies for a drywall sub.
 
 Return ONLY valid JSON, no other text.`;
 
@@ -1488,7 +1488,7 @@ Return JSON:
   "costOfAbsenteeism": { "dailyCost": string, "weeklyCost": string, "recommendation": string }
 }
 
-Focus on: tardiness patterns, no-show trends, early departures, project-specific attendance issues, and cost impact of poor attendance for a construction crew.
+Focus on: tardiness patterns, no-show trends, early departures, project-specific attendance issues, and cost impact of poor attendance for a construction team.
 
 Return ONLY valid JSON, no other text.`;
 
@@ -1504,7 +1504,7 @@ Return ONLY valid JSON, no other text.`;
 // ═══════════════════════════════════════════════════════════════
 //  Sprint 14 — Labor Backlog Burn Predictor
 // ═══════════════════════════════════════════════════════════════
-export async function predictLaborBurn(apiKey, laborData, crewSchedule, projects) {
+export async function predictLaborBurn(apiKey, laborData, teamSchedule, projects) {
   const prompt = `You are an AI labor cost analyst for Eagles Brothers Constructors (EBC), a drywall/framing subcontractor in Houston. EBC makes ~100% markup on labor.
 
 Analyze labor backlog data and predict burn rates and completion timelines.
@@ -1513,7 +1513,7 @@ LABOR BACKLOG DATA:
 ${JSON.stringify(laborData?.slice(0, 15) || [], null, 2)}
 
 CREW SCHEDULE:
-${JSON.stringify(crewSchedule?.slice(0, 25) || [], null, 2)}
+${JSON.stringify(teamSchedule?.slice(0, 25) || [], null, 2)}
 
 PROJECTS:
 ${JSON.stringify(projects?.slice(0, 10) || [], null, 2)}
@@ -1530,7 +1530,7 @@ Return JSON:
   "weeklyBurnTrend": [{ "week": string, "projected": number, "risk": "low"|"medium"|"high" }]
 }
 
-Focus on: which projects will go over labor budget, burn rate sustainability, crew reallocation opportunities, and early warnings. Since labor = profit for EBC, this is critical financial analysis.
+Focus on: which projects will go over labor budget, burn rate sustainability, team reallocation opportunities, and early warnings. Since labor = profit for EBC, this is critical financial analysis.
 
 Return ONLY valid JSON, no other text.`;
 

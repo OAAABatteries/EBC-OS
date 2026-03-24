@@ -210,7 +210,7 @@ export function CalendarConflicts({ app, lang, conflicts }) {
             <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>{t("Resolution Action")}</label>
             <select value={resolveAction} onChange={e => setResolveAction(e.target.value)} style={{ width: "100%", padding: 8, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)", marginBottom: 12 }}>
               <option value="dismiss">{t("Dismiss — Not applicable")}</option>
-              <option value="reassign">{t("Reassign crew / equipment")}</option>
+              <option value="reassign">{t("Reassign team / equipment")}</option>
               <option value="override">{t("Approve override")}</option>
             </select>
 
