@@ -2293,13 +2293,13 @@ function Schedule({ app }) {
         phase: p.phase,
         scope: p.scope,
       }));
-      const crewData = (app.crewSchedule || []).map(c => ({
+      const teamData = (app.teamSchedule || []).map(c => ({
         crew: c.crew || c.name,
         members: c.members || c.size,
         project: c.project,
         available: c.available,
       }));
-      const result = await forecastLaborDemand(app.apiKey, scheduleData, projectData, crewData);
+      const result = await forecastLaborDemand(app.apiKey, scheduleData, projectData, teamData);
       setLaborResult(result);
       app.show("Labor forecast complete", "ok");
     } catch (e) {
@@ -2414,7 +2414,7 @@ function Schedule({ app }) {
                       {laborResult.weeklyForecast.map((w, i) => (
                         <tr key={i}>
                           <td className="font-semi">{w.week}</td>
-                          <td style={{ fontWeight: 700, color: "var(--amber)" }}>{w.crewsNeeded}</td>
+                          <td style={{ fontWeight: 700, color: "var(--amber)" }}>{w.teamsNeeded}</td>
                           <td>{w.hoursEstimate}h</td>
                           <td style={{ fontSize: 12 }}>{(w.projects || []).join(", ")}</td>
                           <td style={{ fontSize: 12, color: w.bottleneck ? "var(--red)" : "var(--text3)" }}>{w.bottleneck || "None"}</td>
@@ -2426,10 +2426,10 @@ function Schedule({ app }) {
               )}
 
               {/* Crew Gaps */}
-              {laborResult.crewGaps?.length > 0 && (
+              {laborResult.teamGaps?.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
                   <div className="text-sm font-semi mb-8">Crew Gaps</div>
-                  {laborResult.crewGaps.map((g, i) => (
+                  {laborResult.teamGaps.map((g, i) => (
                     <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, background: "rgba(239,68,68,0.08)", borderLeft: "3px solid var(--red)", fontSize: 13 }}>
                       <div className="flex-between">
                         <span className="font-semi">{g.week}</span>
@@ -2444,7 +2444,7 @@ function Schedule({ app }) {
               {/* Peak Week */}
               {laborResult.peakWeek && (
                 <div style={{ padding: 10, borderRadius: 6, background: "rgba(245,158,11,0.1)", border: "1px solid var(--amber)", marginBottom: 12, fontSize: 13 }}>
-                  <span className="font-semi">Peak Week: </span>{laborResult.peakWeek.week} — {laborResult.peakWeek.crewsNeeded} crews needed
+                  <span className="font-semi">Peak Week: </span>{laborResult.peakWeek.week} — {laborResult.peakWeek.teamsNeeded} crews needed
                   <div className="text-xs text-muted mt-4">{laborResult.peakWeek.reason}</div>
                 </div>
               )}
@@ -3630,7 +3630,7 @@ function ToolboxTalksTab({ app }) {
 /* ── Daily Reports ───────────────────────────────────────────── */
 function DailyReportsTab({ app }) {
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ projectId: "", date: "", crewSize: "", hours: "", work: "", issues: "", weather: "", safety: "", photos: [] });
+  const [form, setForm] = useState({ projectId: "", date: "", teamSize: "", hours: "", work: "", issues: "", weather: "", safety: "", photos: [] });
   const [editDr, setEditDr] = useState(null);
   const [digestResult, setDigestResult] = useState(null);
   const [digestLoading, setDigestLoading] = useState(false);
@@ -3659,7 +3659,7 @@ function DailyReportsTab({ app }) {
       const { generateDailyReportDigest } = await import("../utils/api.js");
       const reports = app.dailyReports.map(r => ({
         date: r.date, project: pName(r.projectId),
-        crewSize: r.crewSize, hours: r.hours,
+        teamSize: r.teamSize, hours: r.hours,
         work: r.work, issues: r.issues, weather: r.weather, safety: r.safety,
       }));
       const result = await generateDailyReportDigest(app.apiKey, reports);
@@ -3678,7 +3678,7 @@ function DailyReportsTab({ app }) {
       id: app.nextId(),
       projectId: Number(form.projectId),
       date: form.date,
-      crewSize: Number(form.crewSize) || 0,
+      teamSize: Number(form.teamSize) || 0,
       hours: Number(form.hours) || 0,
       work: form.work,
       issues: form.issues,
@@ -3689,7 +3689,7 @@ function DailyReportsTab({ app }) {
     app.setDailyReports(prev => [...prev, newItem]);
     app.show("Daily report added", "ok");
     setAdding(false);
-    setForm({ projectId: "", date: "", crewSize: "", hours: "", work: "", issues: "", weather: "", safety: "", photos: [] });
+    setForm({ projectId: "", date: "", teamSize: "", hours: "", work: "", issues: "", weather: "", safety: "", photos: [] });
   };
 
   return (
@@ -3699,7 +3699,7 @@ function DailyReportsTab({ app }) {
         <div className="flex gap-8">
           <button className="btn btn-ghost btn-sm" onClick={() => {
             const headers = ["Date","Project","Crew Size","Hours","Work","Issues","Weather","Safety"];
-            const rows = drFiltered.map(r => [r.date, `"${pName(r.projectId)}"`, r.crewSize, r.hours, `"${(r.work||'').replace(/"/g,'""')}"`, `"${(r.issues||'').replace(/"/g,'""')}"`, r.weather||'', `"${(r.safety||'').replace(/"/g,'""')}"`]);
+            const rows = drFiltered.map(r => [r.date, `"${pName(r.projectId)}"`, r.teamSize, r.hours, `"${(r.work||'').replace(/"/g,'""')}"`, `"${(r.issues||'').replace(/"/g,'""')}"`, r.weather||'', `"${(r.safety||'').replace(/"/g,'""')}"`]);
             const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
             const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = 'ebc_daily_reports.csv'; a.click(); URL.revokeObjectURL(url);
@@ -3798,7 +3798,7 @@ function DailyReportsTab({ app }) {
             </div>
             <div className="form-group">
               <label className="form-label">Crew Size</label>
-              <input className="form-input" type="number" value={form.crewSize} onChange={e => setForm({ ...form, crewSize: e.target.value })} />
+              <input className="form-input" type="number" value={form.teamSize} onChange={e => setForm({ ...form, teamSize: e.target.value })} />
             </div>
             <div className="form-group">
               <label className="form-label">Total Hours</label>
@@ -3858,7 +3858,7 @@ function DailyReportsTab({ app }) {
               <div className="form-grid" style={{ marginBottom: 12 }}>
                 <div className="form-group"><label className="form-label">Date</label><input className="form-input" type="date" value={editDr.date} onChange={e => setEditDr(d => ({ ...d, date: e.target.value }))} /></div>
                 <div className="form-group"><label className="form-label">Project</label><select className="form-select" value={editDr.projectId} onChange={e => setEditDr(d => ({ ...d, projectId: Number(e.target.value) }))}><option value="">Select...</option>{app.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
-                <div className="form-group"><label className="form-label">Crew Size</label><input className="form-input" type="number" value={editDr.crewSize} onChange={e => setEditDr(d => ({ ...d, crewSize: Number(e.target.value) }))} /></div>
+                <div className="form-group"><label className="form-label">Crew Size</label><input className="form-input" type="number" value={editDr.teamSize} onChange={e => setEditDr(d => ({ ...d, teamSize: Number(e.target.value) }))} /></div>
                 <div className="form-group"><label className="form-label">Hours</label><input className="form-input" type="number" value={editDr.hours} onChange={e => setEditDr(d => ({ ...d, hours: Number(e.target.value) }))} /></div>
                 <div className="form-group"><label className="form-label">Weather</label><input className="form-input" value={editDr.weather} onChange={e => setEditDr(d => ({ ...d, weather: e.target.value }))} /></div>
                 <div className="form-group"><label className="form-label">Safety</label><input className="form-input" value={editDr.safety} onChange={e => setEditDr(d => ({ ...d, safety: e.target.value }))} /></div>
@@ -3882,7 +3882,7 @@ function DailyReportsTab({ app }) {
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
-                <div><span className="text2">Crew Size:</span> {rpt.crewSize}</div>
+                <div><span className="text2">Crew Size:</span> {rpt.teamSize}</div>
                 <div><span className="text2">Hours:</span> {rpt.hours}</div>
               </div>
               <div style={{ marginTop: 8 }}><span className="text2">Work:</span> {rpt.work}</div>
@@ -5426,7 +5426,7 @@ function ForemanTeamTab({ app }) {
     app.show(`Added ${newUser.name} — temp password: ${form.name.split(" ")[0]}123!`, "ok");
   };
 
-  const crewMembers = users.filter(u => ["employee", "driver"].includes(u.role));
+  const teamMembers = users.filter(u => ["employee", "driver"].includes(u.role));
 
   return (
     <div className="mt-16">
@@ -5471,8 +5471,8 @@ function ForemanTeamTab({ app }) {
       )}
 
       <div className="mt-16">
-        <div className="text-sm font-semi mb-8">Crew &amp; Drivers ({crewMembers.length})</div>
-        {crewMembers.length === 0 ? (
+        <div className="text-sm font-semi mb-8">Crew &amp; Drivers ({teamMembers.length})</div>
+        {teamMembers.length === 0 ? (
           <div className="empty-state"><div className="empty-text">No crew members yet</div></div>
         ) : (
           <table className="data-table">
@@ -5480,7 +5480,7 @@ function ForemanTeamTab({ app }) {
               <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr>
             </thead>
             <tbody>
-              {crewMembers.map(u => (
+              {teamMembers.map(u => (
                 <tr key={u.id} style={{ opacity: u.active === false ? 0.5 : 1 }}>
                   <td style={{ fontWeight: 500 }}>{u.name}</td>
                   <td style={{ fontSize: 12 }}>{u.email}</td>
@@ -5607,7 +5607,7 @@ function UsersTab({ app }) {
       if (e.clockIn && e.clockOut) return s + (new Date(e.clockOut) - new Date(e.clockIn)) / 3600000;
       return s;
     }, 0);
-    const assignedProjects = (app.crewSchedule || [])
+    const assignedProjects = (app.teamSchedule || [])
       .filter(cs => cs.employeeId === user.id || (cs.crew || []).includes(user.id))
       .map(cs => app.projects.find(p => p.id === cs.projectId)?.name)
       .filter(Boolean);

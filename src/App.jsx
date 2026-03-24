@@ -370,7 +370,7 @@ function App({ auth, onLogout }) {
   const [employees, setEmployees, _syncEmployees] = useSyncedState("employees", initEmployees);
   const [companyLocations, setCompanyLocations, _syncLocations] = useSyncedState("companyLocations", initCompanyLocations);
   const [timeEntries, setTimeEntries, _syncTimeEntries] = useSyncedState("timeEntries", initTimeEntries);
-  const [crewSchedule, setCrewSchedule, _syncCrewSchedule] = useSyncedState("crewSchedule", initCrewSchedule);
+  const [teamSchedule, setCrewSchedule, _syncCrewSchedule] = useSyncedState("teamSchedule", initCrewSchedule);
   const [materialRequests, setMaterialRequests, _syncMaterialRequests] = useSyncedState("materialRequests", initMaterialRequests);
   const [calendarEvents, setCalendarEvents, _syncCalendarEvents] = useSyncedState("calendarEvents", initCalendarEvents);
   const [ptoRequests, setPtoRequests, _syncPtoRequests] = useSyncedState("ptoRequests", initPtoRequests);
@@ -580,7 +580,7 @@ function App({ auth, onLogout }) {
     toolboxTalks, setToolboxTalks, dailyReports, setDailyReports, takeoffs, setTakeoffs,
     company, setCompany, assemblies, setAssemblies, theme, setTheme,
     materials, setMaterials, customAssemblies, setCustomAssemblies, incentiveProjects, setIncentiveProjects, apiKey, setApiKey,
-    employees, setEmployees, companyLocations, setCompanyLocations, timeEntries, setTimeEntries, crewSchedule, setCrewSchedule, materialRequests, setMaterialRequests,
+    employees, setEmployees, companyLocations, setCompanyLocations, timeEntries, setTimeEntries, teamSchedule, setCrewSchedule, materialRequests, setMaterialRequests,
     calendarEvents, setCalendarEvents, ptoRequests, setPtoRequests,
     equipment: calEquipment, setEquipment: setCalEquipment, equipmentBookings, setEquipmentBookings,
     certifications, setCertifications, subSchedule, setSubSchedule, weatherAlerts, setWeatherAlerts,
@@ -4004,7 +4004,7 @@ const ModalHub = ({ type, data, app }) => {
     const projCOs = app.changeOrders.filter(co => co.projectId === draft.id);
     const projRFIs = (app.rfis || []).filter(r => r.projectId === draft.id);
     const projSubmittals = (app.submittals || []).filter(s => s.projectId === draft.id);
-    const projCrew = app.crewSchedule.filter(s => s.projectId === draft.id);
+    const projCrew = app.teamSchedule.filter(s => s.projectId === draft.id);
     const projTime = app.timeEntries.filter(t => t.projectId === draft.id && t.clockOut);
     const totalHrs = projTime.reduce((s, t) => s + (t.totalHours || 0), 0);
     const projInvoices = app.invoices.filter(i => i.projectId === draft.id);
@@ -4091,10 +4091,6 @@ const ModalHub = ({ type, data, app }) => {
       setSubFormOpen(true);
     };
     const deleteSub = (sId) => { if (confirm("Delete this submittal?")) app.setSubmittals(prev => prev.filter(s => s.id !== sId)); };
-    const generateSubPackage = async () => {
-      const { generateSubmittalsPackagePdf } = await import("./utils/submittalsPackagePdf.js");
-      generateSubmittalsPackagePdf(draft, projSubmittals, app.contacts || [], app.company || {});
-    };
     const filteredSubmittals = projSubmittals.filter(s => {
       if (subFilter === "all") return true;
       if (subFilter === "pending") return ["not started", "in progress", "submitted"].includes(s.status);
@@ -6114,7 +6110,7 @@ const ModalHub = ({ type, data, app }) => {
               { label: "Submittals", items: projSubmittals, icon: null, tab: "documents", fields: (s) => `#${s.number || ""} — ${s.description || s.desc || ""}`, badge: (s) => s.status, urgent: pendingSubs.length },
               { label: "Change Orders", items: projCOs, icon: null, tab: "financials", fields: (c) => `#${c.number || ""} — ${c.desc || ""} (${fmt(c.amount || 0)})`, badge: (c) => c.status, urgent: pendingCOs.length },
               { label: "Invoices", items: projInvoices, icon: null, tab: "financials", fields: (i) => `#${i.number} — ${fmt(i.amount)} — ${i.date || ""}`, badge: (i) => i.status, urgent: overdueInvs.length },
-              { label: "Daily Reports", items: projDailyReports, icon: null, tab: "safety", fields: (d) => `${d.date || ""} — ${d.crewSize || 0} crew — ${(d.work || "").slice(0, 60)}`, badge: () => null, urgent: 0 },
+              { label: "Daily Reports", items: projDailyReports, icon: null, tab: "safety", fields: (d) => `${d.date || ""} — ${d.teamSize || 0} crew — ${(d.work || "").slice(0, 60)}`, badge: () => null, urgent: 0 },
               { label: "JSAs", items: projJSAs, icon: null, tab: "jsa", fields: (j) => `${j.date || ""} — ${j.title || j.location || ""}`, badge: () => null, urgent: 0 },
               { label: "T&M Tickets", items: projTM, icon: null, tab: "financials", fields: (t) => `${t.ticketNumber || ""} — ${t.description || ""} (${fmt(calcLaborTotal(t.laborEntries || []) + calcMatTotal(t.materialEntries || []))})`, badge: (t) => t.status, urgent: pendingTM.length },
             ];
