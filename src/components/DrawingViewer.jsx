@@ -1406,7 +1406,13 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     if (activeVertices.length > 0 && activeCond) {
       const color = activeCond.color;
       const pts = activeVertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
-      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+      // White outline for contrast against any background
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 5; ctx.setLineDash([]);
+      ctx.beginPath();
+      pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+      ctx.stroke();
+      // Colored dashed line on top
+      ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.setLineDash([6, 4]);
       ctx.beginPath();
       pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
       // Default = snap preview line to angle; Shift = free trace
@@ -1418,7 +1424,10 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       if (cursorTarget) ctx.lineTo(cursorTarget.x, cursorTarget.y);
       if (mode === MODE.AREA && pts.length > 1) ctx.closePath();
       ctx.stroke(); ctx.setLineDash([]);
-      pts.forEach(p => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill(); });
+      pts.forEach(p => {
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill();
+      });
 
       // Show angle indicator when snapping (default mode, not holding Shift)
       if (cursorTarget && !shiftHeld && activeVertices.length > 0) {
@@ -2503,18 +2512,23 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                   </div>
                 );
               })()}
-              {/* ── Floating Finish button while drawing ── */}
-              {(mode === MODE.LINEAR || mode === MODE.AREA) && activeVertices.length >= 2 && ppf && activeCond && (
-                <button onClick={finishMeasurement}
-                  style={{
-                    position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)",
-                    padding: "8px 24px", borderRadius: 8, fontSize: 13, fontWeight: 700,
-                    background: "var(--amber, #e09422)", color: "#000", border: "2px solid rgba(0,0,0,0.3)",
-                    cursor: "pointer", zIndex: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
-                    animation: "pulse 1.5s ease-in-out infinite",
-                  }}>
-                  ✓ Finish ({activeVertices.length} pts) — Right-click, Dbl-click, or Enter
-                </button>
+              {/* ── Floating Finish hint while drawing ── */}
+              {(mode === MODE.LINEAR || mode === MODE.AREA) && activeVertices.length >= 2 && ppf && activeCond && !localStorage.getItem("ebc_hide_finish_hint") && (
+                <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                  <button onClick={finishMeasurement}
+                    style={{
+                      padding: "8px 24px", borderRadius: 8, fontSize: 13, fontWeight: 700,
+                      background: "var(--amber, #e09422)", color: "#000", border: "2px solid rgba(0,0,0,0.3)",
+                      cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+                    }}>
+                    Finish ({activeVertices.length} pts) — Right-click or Enter
+                  </button>
+                  <button onClick={() => { localStorage.setItem("ebc_hide_finish_hint", "1"); cancelActive(); }}
+                    style={{ padding: "4px 8px", borderRadius: 6, background: "rgba(0,0,0,0.7)", border: "1px solid rgba(255,255,255,0.2)", color: "#888", fontSize: 10, cursor: "pointer" }}
+                    title="Don't show this hint again">
+                    Don't show again
+                  </button>
+                </div>
               )}
             </div>
           </div>
