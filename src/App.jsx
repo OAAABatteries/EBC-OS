@@ -44,7 +44,7 @@ import { useAlertEngine } from "./hooks/useAlertEngine";
 import { NotificationPanel } from "./components/NotificationPanel";
 import { PerimeterMapModal } from "./components/PerimeterMapModal";
 import { polygonAreaSqFt } from "./utils/geofence";
-import { TrendingDown, AlertTriangle, DollarSign, Wrench, Package, FileX, ChevronDown, ChevronUp, Search, Calendar, Building2, BarChart2, ClipboardList, Globe, Bell, FolderOpen, MapPin, Paperclip, FileText, Image, Sheet, FileSpreadsheet, Camera, List, Columns, CheckSquare, Square, FileDown } from "lucide-react";
+import { TrendingDown, AlertTriangle, DollarSign, Wrench, Package, FileX, ChevronDown, ChevronUp, Search, Calendar, Building2, BarChart2, ClipboardList, Globe, Bell, FolderOpen, MapPin, Paperclip, FileText, Image, Sheet, FileSpreadsheet, Camera, List, Columns, CheckSquare, Square, FileDown, Volume2, MessageSquare, Pin, PinOff, Truck, HardHat } from "lucide-react";
 import { FeatureGuide, resetAllGuides } from "./components/FeatureGuide";
 
 // ═══════════════════════════════════════════════════════════════
@@ -3919,7 +3919,7 @@ const ModalHub = ({ type, data, app }) => {
     const totalBilled = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);
     const remaining = (draft.contract || 0) - totalBilled;
     const [projTab, setProjTab] = useState(app.initialProjTab || "overview");
-    const projTabs = ["overview", "change orders", "submittals", "rfis", "crew", "financials", "closeout"];
+    const projTabs = ["overview", "change orders", "submittals", "rfis", "crew", "financials", "closeout", "sound", "logistics", "notes"];
     const [coFormOpen, setCoFormOpen] = useState(false);
     const [coEditId, setCoEditId] = useState(null);
     const [coExpandedId, setCoExpandedId] = useState(null);
@@ -4069,6 +4069,31 @@ const ModalHub = ({ type, data, app }) => {
       if (rfiFilter === "overdue") { const d = rfiDaysOut(r); return d !== null && d > 7; }
       return true;
     });
+
+    // ── Sound Testing state ──
+    const [soundForm, setSoundForm] = useState({ roomType: "office", roomLabel: "", wallDetails: "", wallLF: "" });
+    const [showSoundForm, setShowSoundForm] = useState(false);
+
+    // ── Notes state (shared via localStorage) ──
+    const [projectNotes, setProjectNotes] = useState(() => {
+      try { return JSON.parse(localStorage.getItem("ebc_projectNotes") || "[]"); } catch { return []; }
+    });
+    const [noteText, setNoteText] = useState("");
+    const [notesFilter, setNotesFilter] = useState("all");
+
+    // ── Site Logistics state ──
+    const [siteLogistics, setSiteLogistics] = useState(() => {
+      try { return JSON.parse(localStorage.getItem("ebc_siteLogistics") || "{}"); } catch { return {}; }
+    });
+
+    const saveProjectNotes = (notes) => {
+      localStorage.setItem("ebc_projectNotes", JSON.stringify(notes));
+      setProjectNotes(notes);
+    };
+    const saveSiteLogistics = (log) => {
+      localStorage.setItem("ebc_siteLogistics", JSON.stringify(log));
+      setSiteLogistics(log);
+    };
 
     return (
       <div className="modal-overlay" onMouseDown={handleOverlayDown} onMouseUp={handleOverlayUp(close)}>
@@ -4919,6 +4944,382 @@ const ModalHub = ({ type, data, app }) => {
                   </button>
                 </div>
               </div>
+              );
+            })()}
+
+            {/* ── Sound Quality Testing ── */}
+            {projTab === "sound" && (() => {
+              const ROOM_TYPES = [
+                { key: "office", label: "Standard Office", stc: "40-45", stcDesc: "Adequate speech privacy", assembly: "3-5/8\" 20ga studs · Single layer 5/8\" Type X each side · 3.5\" batt insulation", materials: ["3-5/8\" 20ga Steel Stud (LF)", "5/8\" Type X Drywall (SF)", "3.5\" Fiberglass Batt Insulation (SF)"], costSF: 8.50, note: "Standard partition meets basic office privacy." },
+                { key: "executive", label: "Executive / Private Office", stc: "45-50", stcDesc: "Good speech privacy", assembly: "3-5/8\" 20ga studs · Double layer 5/8\" Type X one side · 3.5\" batt insulation", materials: ["3-5/8\" 20ga Steel Stud (LF)", "5/8\" Type X Drywall — 2 layers one side (SF)", "3.5\" Fiberglass Batt Insulation (SF)"], costSF: 11.00, note: "Double layer on one side increases STC without resilient channel." },
+                { key: "conference", label: "Conference Room", stc: "50+", stcDesc: "Very good speech privacy", assembly: "3-5/8\" 20ga studs · Double layer 5/8\" Type X one side · Resilient Channel RC-1 · 3.5\" batt insulation", materials: ["3-5/8\" 20ga Steel Stud (LF)", "5/8\" Type X Drywall — 2 layers (SF)", "Resilient Channel RC-1 (LF)", "3.5\" Fiberglass Batt Insulation (SF)"], costSF: 14.00, note: "RC channel decouples drywall to minimize flanking paths." },
+                { key: "medical_exam", label: "Medical / Exam Room", stc: "50-55", stcDesc: "Enhanced privacy (HIPAA)", assembly: "3-5/8\" 20ga studs · Soundbreak XP or QuietRock 545 each side · 3.5\" batt insulation", materials: ["3-5/8\" 20ga Steel Stud (LF)", "QuietRock 545 or Soundbreak XP (SF)", "3.5\" Fiberglass Batt Insulation (SF)"], costSF: 18.00, note: "QuietRock/Soundbreak XP provides STC 52-56 in a single layer — ideal for HIPAA compliance." },
+                { key: "hospital_patient", label: "Hospital Patient Room", stc: "55+", stcDesc: "Maximum privacy (FGI Guidelines)", assembly: "3-5/8\" 20ga studs · Double layer 5/8\" Type X each side · Resilient Channel RC-1 · 3.5\" batt insulation", materials: ["3-5/8\" 20ga Steel Stud (LF)", "5/8\" Type X Drywall — 2 layers each side (SF)", "Resilient Channel RC-1 (LF)", "3.5\" Fiberglass Batt Insulation (SF)"], costSF: 22.00, note: "High-performance assembly per FGI/HICPAC acoustic standards for acute care." },
+                { key: "restroom", label: "Restroom / Plumbing Wall", stc: "50+", stcDesc: "Minimize plumbing noise", assembly: "6\" 20ga studs · Double layer 5/8\" Type X each side · Resilient Channel RC-1 · 3.5\" batt insulation", materials: ["6\" 20ga Steel Stud (LF)", "5/8\" Type X Drywall — 2 layers (SF)", "Resilient Channel RC-1 (LF)", "3.5\" Fiberglass Batt Insulation (SF)"], costSF: 16.00, note: "Deeper 6\" cavity for plumbing + RC channel reduces both airborne and impact noise." },
+              ];
+              const soundTests = draft.soundTests || [];
+              const selRT = ROOM_TYPES.find(r => r.key === soundForm.roomType) || ROOM_TYPES[0];
+              const wallLFNum = parseFloat(soundForm.wallLF) || 0;
+              const estSF = wallLFNum > 0 ? Math.round(wallLFNum * 9) : 0;
+              const estCost = estSF > 0 ? Math.round(estSF * selRT.costSF) : 0;
+
+              const saveTest = () => {
+                if (!soundForm.roomLabel.trim()) { show("Enter a room label/name", "err"); return; }
+                const newTest = {
+                  id: crypto.randomUUID(),
+                  roomLabel: soundForm.roomLabel.trim(),
+                  roomType: soundForm.roomType,
+                  wallDetails: soundForm.wallDetails,
+                  wallLF: soundForm.wallLF,
+                  stc: selRT.stc,
+                  assembly: selRT.assembly,
+                  materials: selRT.materials,
+                  estimatedCost: estCost,
+                  estimatedSF: estSF,
+                  date: new Date().toISOString().slice(0, 10),
+                };
+                const updated = { ...draft, soundTests: [...soundTests, newTest] };
+                app.setProjects(prev => prev.map(p => String(p.id) === String(draft.id) ? updated : p));
+                setDraft(updated);
+                setSoundForm({ roomType: "office", roomLabel: "", wallDetails: "", wallLF: "" });
+                setShowSoundForm(false);
+                show("Acoustic recommendation saved", "ok");
+              };
+
+              return (
+                <div className="flex-col gap-12">
+                  <div className="flex-between">
+                    <div className="flex gap-8" style={{ alignItems: "center" }}>
+                      <Volume2 size={16} style={{ color: "var(--blue)" }} />
+                      <div>
+                        <div className="font-semi text-sm">Sound Quality Testing</div>
+                        <div className="text-xs text-muted">STC-based acoustic recommendations by room type</div>
+                      </div>
+                    </div>
+                    <button className="btn btn-sm btn-primary" onClick={() => setShowSoundForm(v => !v)}>
+                      {showSoundForm ? "Cancel" : "+ Add Room"}
+                    </button>
+                  </div>
+
+                  {showSoundForm && (
+                    <div className="card" style={{ padding: 16, border: "1px solid var(--blue-dim)" }}>
+                      <div className="text-xs font-semi mb-8" style={{ color: "var(--blue)" }}>NEW ACOUSTIC RECOMMENDATION</div>
+                      <div className="flex gap-8 flex-wrap mb-8">
+                        <div style={{ flex: "0 0 180px" }}>
+                          <label className="text-xs text-dim">Room Label / Name</label>
+                          <input className="input input-sm" placeholder="e.g. Suite 200 Conf Room" value={soundForm.roomLabel} onChange={e => setSoundForm(p => ({ ...p, roomLabel: e.target.value }))} />
+                        </div>
+                        <div style={{ flex: "0 0 220px" }}>
+                          <label className="text-xs text-dim">Room Type</label>
+                          <select className="input input-sm" value={soundForm.roomType} onChange={e => setSoundForm(p => ({ ...p, roomType: e.target.value }))}>
+                            {ROOM_TYPES.map(r => <option key={r.key} value={r.key}>{r.label} (STC {r.stc})</option>)}
+                          </select>
+                        </div>
+                        <div style={{ flex: "0 0 120px" }}>
+                          <label className="text-xs text-dim">Wall Linear Feet</label>
+                          <input className="input input-sm" type="number" min="0" placeholder="LF" value={soundForm.wallLF} onChange={e => setSoundForm(p => ({ ...p, wallLF: e.target.value }))} />
+                        </div>
+                      </div>
+                      <div className="mb-8">
+                        <label className="text-xs text-dim">Existing Wall Details / Notes</label>
+                        <textarea className="input input-sm" rows={2} placeholder="Stud size, height, special conditions..." value={soundForm.wallDetails} onChange={e => setSoundForm(p => ({ ...p, wallDetails: e.target.value }))} style={{ resize: "vertical" }} />
+                      </div>
+
+                      {/* Live recommendation preview */}
+                      <div style={{ background: "rgba(59,130,246,0.07)", border: "1px solid var(--blue-dim)", borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                        <div className="flex-between mb-6">
+                          <span className="text-xs font-semi" style={{ color: "var(--blue)" }}>RECOMMENDED ASSEMBLY</span>
+                          <span className="badge badge-blue" style={{ fontSize: 10 }}>STC {selRT.stc}</span>
+                        </div>
+                        <div className="font-semi text-sm mb-4">{selRT.label} — {selRT.stcDesc}</div>
+                        <div className="text-xs mb-6" style={{ color: "var(--text2)", lineHeight: 1.5 }}>{selRT.assembly}</div>
+                        <div className="text-xs text-muted mb-8" style={{ fontStyle: "italic" }}>{selRT.note}</div>
+                        <div className="text-xs font-semi mb-4" style={{ color: "var(--text3)" }}>MATERIALS NEEDED:</div>
+                        <div className="flex-col gap-2 mb-8">
+                          {selRT.materials.map((m, i) => (
+                            <div key={i} className="text-xs" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <span style={{ color: "var(--green)", fontSize: 14 }}>✓</span> {m}
+                            </div>
+                          ))}
+                        </div>
+                        {estSF > 0 && (
+                          <div className="flex gap-12">
+                            <div><span className="text-xs text-dim">EST. WALL SF</span><div className="font-mono text-sm">{estSF.toLocaleString()} SF</div></div>
+                            <div><span className="text-xs text-dim">EST. ADDITIONAL COST</span><div className="font-mono text-sm" style={{ color: "var(--amber)" }}>{fmt(estCost)}</div></div>
+                            <div><span className="text-xs text-dim">UNIT RATE</span><div className="font-mono text-sm">${selRT.costSF.toFixed(2)}/SF</div></div>
+                          </div>
+                        )}
+                      </div>
+
+                      <button className="btn btn-sm btn-primary" onClick={saveTest}>Save Recommendation</button>
+                    </div>
+                  )}
+
+                  {soundTests.length === 0 && !showSoundForm ? (
+                    <div className="text-sm text-dim" style={{ textAlign: "center", padding: 32 }}>No acoustic tests added. Click "+ Add Room" to generate a recommendation.</div>
+                  ) : (
+                    soundTests.map((test, i) => {
+                      const rt = ROOM_TYPES.find(r => r.key === test.roomType);
+                      return (
+                        <div key={test.id || i} className="card" style={{ padding: 12 }}>
+                          <div className="flex-between mb-4">
+                            <div className="flex gap-8" style={{ alignItems: "center" }}>
+                              <Volume2 size={13} style={{ color: "var(--blue)" }} />
+                              <span className="font-semi text-sm">{test.roomLabel}</span>
+                              <span className="text-xs text-muted">{rt?.label || test.roomType}</span>
+                            </div>
+                            <div className="flex gap-8" style={{ alignItems: "center" }}>
+                              <span className="badge badge-blue" style={{ fontSize: 10 }}>STC {test.stc}</span>
+                              <span className="text-xs text-muted">{test.date}</span>
+                              <button className="btn btn-sm btn-ghost" style={{ color: "var(--red)", padding: "2px 6px", fontSize: 10 }} onClick={() => {
+                                const updated = { ...draft, soundTests: soundTests.filter((_, j) => j !== i) };
+                                app.setProjects(prev => prev.map(p => String(p.id) === String(draft.id) ? updated : p));
+                                setDraft(updated);
+                              }}>✕</button>
+                            </div>
+                          </div>
+                          <div className="text-xs" style={{ color: "var(--text2)", marginBottom: 4 }}>{test.assembly}</div>
+                          {test.wallDetails && <div className="text-xs text-muted mb-4">Notes: {test.wallDetails}</div>}
+                          <div className="flex gap-8 flex-wrap">
+                            {test.materials?.map((m, j) => (
+                              <span key={j} className="badge badge-muted" style={{ fontSize: 9 }}>{m}</span>
+                            ))}
+                          </div>
+                          {(test.estimatedCost > 0 || test.estimatedSF > 0) && (
+                            <div className="flex gap-12 mt-8">
+                              {test.estimatedSF > 0 && <div><span className="text-xs text-dim">WALL SF</span><div className="font-mono text-xs">{test.estimatedSF.toLocaleString()} SF</div></div>}
+                              {test.estimatedCost > 0 && <div><span className="text-xs text-dim">EST. COST</span><div className="font-mono text-xs" style={{ color: "var(--amber)" }}>{fmt(test.estimatedCost)}</div></div>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* ── Site Logistics ── */}
+            {projTab === "logistics" && (() => {
+              const today = new Date().toISOString().slice(0, 10);
+              const logKey = `${draft.id}_${today}`;
+              const todayLog = siteLogistics[logKey] || {};
+              const LOGISTICS_ITEMS = [
+                { id: "dumpster", label: "Dumpster doors accessible and able to open", critical: true, icon: "🗑️" },
+                { id: "porta_potty", label: "Porta-potty on site and serviced", critical: false, icon: "🚽" },
+                { id: "staging_clear", label: "Material staging area clear and organized", critical: false, icon: "📦" },
+                { id: "safety_signage", label: "Safety signage posted at all entry points", critical: false, icon: "⚠️" },
+                { id: "fire_exit", label: "Fire exits unobstructed", critical: true, icon: "🚪" },
+                { id: "first_aid", label: "First aid kit accessible and stocked", critical: false, icon: "🩺" },
+                { id: "temp_power", label: "Temporary power / lighting operational", critical: false, icon: "💡" },
+                { id: "deliveries_clear", label: "Delivery access path clear", critical: false, icon: "🚚" },
+              ];
+
+              const toggleLogItem = (itemId) => {
+                const updated = {
+                  ...siteLogistics,
+                  [logKey]: { ...todayLog, [itemId]: !todayLog[itemId], date: today, projectId: draft.id },
+                };
+                saveSiteLogistics(updated);
+                // Alert PM if critical item is unchecked
+                const item = LOGISTICS_ITEMS.find(i => i.id === itemId);
+                if (item?.critical && todayLog[itemId]) {
+                  show(`⚠️ Alert: "${item.label}" marked unchecked — PM should be notified`, "warn");
+                }
+              };
+
+              const checkedCount = LOGISTICS_ITEMS.filter(i => todayLog[i.id]).length;
+              const criticalUnchecked = LOGISTICS_ITEMS.filter(i => i.critical && !todayLog[i.id]);
+
+              // Build history (last 7 days)
+              const history = [];
+              for (let d = 0; d < 7; d++) {
+                const dt = new Date(); dt.setDate(dt.getDate() - d);
+                const dk = `${draft.id}_${dt.toISOString().slice(0, 10)}`;
+                if (siteLogistics[dk]) history.push({ date: dt.toISOString().slice(0, 10), log: siteLogistics[dk] });
+              }
+
+              return (
+                <div className="flex-col gap-12">
+                  <div className="flex gap-8" style={{ alignItems: "center" }}>
+                    <HardHat size={16} style={{ color: "var(--amber)" }} />
+                    <div>
+                      <div className="font-semi text-sm">Site Logistics</div>
+                      <div className="text-xs text-muted">Daily site readiness checklist · {today}</div>
+                    </div>
+                    <div className="ml-auto">
+                      <span className={`badge ${checkedCount === LOGISTICS_ITEMS.length ? "badge-green" : checkedCount > 0 ? "badge-amber" : "badge-muted"}`} style={{ fontSize: 10 }}>
+                        {checkedCount}/{LOGISTICS_ITEMS.length} checked
+                      </span>
+                    </div>
+                  </div>
+
+                  {criticalUnchecked.length > 0 && (
+                    <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid var(--red)", borderRadius: 8, padding: "10px 12px" }}>
+                      <div className="flex gap-8 mb-4" style={{ alignItems: "center" }}>
+                        <AlertTriangle size={14} style={{ color: "var(--red)" }} />
+                        <span className="text-xs font-semi" style={{ color: "var(--red)" }}>PM ALERT — Critical items unchecked:</span>
+                      </div>
+                      {criticalUnchecked.map(i => (
+                        <div key={i.id} className="text-xs text-muted" style={{ marginLeft: 22 }}>• {i.label}</div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex-col gap-4">
+                    {LOGISTICS_ITEMS.map(item => {
+                      const checked = !!todayLog[item.id];
+                      return (
+                        <div key={item.id} className="card" style={{ padding: "10px 12px", borderLeft: `3px solid ${checked ? "var(--green)" : item.critical ? "var(--red)" : "var(--border)"}`, background: checked ? "rgba(16,185,129,0.05)" : item.critical && !checked ? "rgba(239,68,68,0.04)" : undefined }}>
+                          <div className="flex gap-10" style={{ alignItems: "center" }}>
+                            <button onClick={() => toggleLogItem(item.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1, flexShrink: 0 }}>
+                              {checked ? <CheckSquare size={16} style={{ color: "var(--green)" }} /> : <Square size={16} style={{ color: "var(--text3)" }} />}
+                            </button>
+                            <span style={{ fontSize: 16 }}>{item.icon}</span>
+                            <div style={{ flex: 1 }}>
+                              <span className="text-sm" style={{ textDecoration: checked ? "line-through" : "none", opacity: checked ? 0.7 : 1 }}>{item.label}</span>
+                              {item.critical && !checked && (
+                                <span className="badge badge-red" style={{ fontSize: 9, marginLeft: 6 }}>Critical</span>
+                              )}
+                            </div>
+                            <span className={`badge ${checked ? "badge-green" : item.critical ? "badge-red" : "badge-muted"}`} style={{ fontSize: 9 }}>
+                              {checked ? "OK" : item.critical ? "Action Needed" : "Pending"}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* History */}
+                  {history.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semi mb-8" style={{ color: "var(--text3)" }}>RECENT HISTORY (Last 7 Days)</div>
+                      <div className="flex-col gap-4">
+                        {history.map(({ date, log }) => {
+                          const cnt = LOGISTICS_ITEMS.filter(i => log[i.id]).length;
+                          return (
+                            <div key={date} style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 10px", background: "var(--bg3)", borderRadius: 6 }}>
+                              <span className="text-xs text-muted" style={{ minWidth: 80 }}>{date}</span>
+                              <div className="progress-bar" style={{ flex: 1, height: 6 }}>
+                                <div className="progress-fill" style={{ width: `${(cnt / LOGISTICS_ITEMS.length) * 100}%`, background: cnt === LOGISTICS_ITEMS.length ? "var(--green)" : cnt >= 4 ? "var(--amber)" : "var(--red)", borderRadius: 3 }} />
+                              </div>
+                              <span className="text-xs text-muted">{cnt}/{LOGISTICS_ITEMS.length}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* ── Team Notes ── */}
+            {projTab === "notes" && (() => {
+              const projId = String(draft.id);
+              const allNotes = projectNotes.filter(n => String(n.projectId) === projId);
+              const pinnedNotes = allNotes.filter(n => n.pinned);
+              const unpinnedNotes = allNotes.filter(n => !n.pinned);
+              const filterMap = { all: allNotes, pm: allNotes.filter(n => n.category === "pm"), field: allNotes.filter(n => n.category === "field"), office: allNotes.filter(n => n.category === "office") };
+              const visibleNotes = [...pinnedNotes.filter(n => notesFilter === "all" || n.category === notesFilter), ...unpinnedNotes.filter(n => notesFilter === "all" || n.category === notesFilter)];
+
+              const addNote = (category) => {
+                if (!noteText.trim()) { show("Enter a note", "err"); return; }
+                const newNote = {
+                  id: crypto.randomUUID(),
+                  projectId: projId,
+                  text: noteText.trim(),
+                  author: app.auth?.name || "PM",
+                  role: app.auth?.role || "pm",
+                  category,
+                  pinned: false,
+                  timestamp: new Date().toISOString(),
+                };
+                saveProjectNotes([newNote, ...projectNotes]);
+                setNoteText("");
+                show("Note posted", "ok");
+              };
+
+              const togglePin = (noteId) => {
+                saveProjectNotes(projectNotes.map(n => n.id === noteId ? { ...n, pinned: !n.pinned } : n));
+              };
+
+              const deleteNote = (noteId) => {
+                saveProjectNotes(projectNotes.filter(n => n.id !== noteId));
+              };
+
+              const catBadge = (cat) => ({ pm: "badge-blue", field: "badge-amber", office: "badge-green" }[cat] || "badge-muted");
+              const catLabel = (cat) => ({ pm: "PM", field: "Field", office: "Office" }[cat] || cat);
+              const fmtTime = (ts) => {
+                try {
+                  const d = new Date(ts);
+                  return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                } catch { return ts; }
+              };
+
+              return (
+                <div className="flex-col gap-12">
+                  <div className="flex gap-8" style={{ alignItems: "center" }}>
+                    <MessageSquare size={16} style={{ color: "var(--green)" }} />
+                    <div>
+                      <div className="font-semi text-sm">Team Notes</div>
+                      <div className="text-xs text-muted">{allNotes.length} note{allNotes.length !== 1 ? "s" : ""} · visible to all project team</div>
+                    </div>
+                  </div>
+
+                  {/* Compose */}
+                  <div style={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 8, padding: 12 }}>
+                    <textarea
+                      className="input"
+                      rows={3}
+                      placeholder="Post a note to the project team..."
+                      value={noteText}
+                      onChange={e => setNoteText(e.target.value)}
+                      style={{ width: "100%", fontSize: 13, marginBottom: 8, resize: "vertical" }}
+                    />
+                    <div className="flex gap-8">
+                      <button className="btn btn-sm btn-primary" onClick={() => addNote("pm")} disabled={!noteText.trim()}>Post as PM Note</button>
+                      <button className="btn btn-sm btn-ghost" onClick={() => addNote("office")} disabled={!noteText.trim()}>Office Note</button>
+                      <button className="btn btn-sm btn-ghost" onClick={() => addNote("field")} disabled={!noteText.trim()}>Field Note</button>
+                    </div>
+                  </div>
+
+                  {/* Filters */}
+                  <div className="flex gap-4">
+                    {["all", "pm", "field", "office"].map(f => (
+                      <button key={f} className={`btn btn-sm ${notesFilter === f ? "btn-primary" : "btn-ghost"}`} onClick={() => setNotesFilter(f)} style={{ textTransform: "capitalize" }}>
+                        {f === "all" ? `All (${allNotes.length})` : `${catLabel(f)} (${filterMap[f]?.length || 0})`}
+                      </button>
+                    ))}
+                  </div>
+
+                  {visibleNotes.length === 0 ? (
+                    <div className="text-sm text-dim" style={{ textAlign: "center", padding: 32 }}>No notes yet. Post the first note above.</div>
+                  ) : (
+                    <div className="flex-col gap-8">
+                      {visibleNotes.map(note => (
+                        <div key={note.id} className="card" style={{ padding: 12, borderLeft: `3px solid ${note.pinned ? "var(--amber)" : "var(--border)"}`, background: note.pinned ? "rgba(245,158,11,0.04)" : undefined }}>
+                          <div className="flex-between mb-6">
+                            <div className="flex gap-8" style={{ alignItems: "center" }}>
+                              {note.pinned && <Pin size={12} style={{ color: "var(--amber)" }} />}
+                              <span className="font-semi text-sm">{note.author}</span>
+                              <span className={`badge ${catBadge(note.category)}`} style={{ fontSize: 9 }}>{catLabel(note.category)} Note</span>
+                            </div>
+                            <div className="flex gap-6" style={{ alignItems: "center" }}>
+                              <span className="text-xs text-muted">{fmtTime(note.timestamp)}</span>
+                              <button onClick={() => togglePin(note.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: note.pinned ? "var(--amber)" : "var(--text3)" }} title={note.pinned ? "Unpin" : "Pin"}>
+                                {note.pinned ? <PinOff size={12} /> : <Pin size={12} />}
+                              </button>
+                              <button onClick={() => deleteNote(note.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text3)", fontSize: 11 }}>✕</button>
+                            </div>
+                          </div>
+                          <div className="text-sm" style={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{note.text}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               );
             })()}
           </div>

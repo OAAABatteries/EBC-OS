@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
-import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, FileText, Ruler, Building2, ClipboardList } from "lucide-react";
+import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, FileText, Ruler, Building2, ClipboardList, HardHat, MessageSquare, Pin, PinOff } from "lucide-react";
 import { FeatureGuide } from "../components/FeatureGuide";
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { T } from "../data/translations";
@@ -656,6 +656,44 @@ export function ForemanView({ app }) {
   const pctUsed = allocatedHours > 0 ? Math.round((hoursUsed / allocatedHours) * 100) : 0;
   const budgetColor = pctUsed > 90 ? "var(--red)" : pctUsed > 70 ? "var(--yellow)" : "var(--green)";
 
+  // ── Site Logistics state ──
+  const [siteLogistics, setSiteLogistics] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ebc_siteLogistics") || "{}"); } catch { return {}; }
+  });
+  const saveSiteLogistics = (log) => {
+    localStorage.setItem("ebc_siteLogistics", JSON.stringify(log));
+    setSiteLogistics(log);
+  };
+
+  // ── Project Notes state ──
+  const [projectNotes, setProjectNotes] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ebc_projectNotes") || "[]"); } catch { return []; }
+  });
+  const [foremanNoteText, setForemanNoteText] = useState("");
+  const [foremanNotesFilter, setForemanNotesFilter] = useState("all");
+  const saveProjectNotes = (notes) => {
+    localStorage.setItem("ebc_projectNotes", JSON.stringify(notes));
+    setProjectNotes(notes);
+  };
+
+  const today = new Date().toISOString().slice(0, 10);
+  const projLogKey = `${selectedProjectId}_${today}`;
+  const todayLog = siteLogistics[projLogKey] || {};
+  const LOGISTICS_ITEMS = [
+    { id: "dumpster", label: t("Dumpster doors accessible and able to open"), critical: true, icon: "🗑️" },
+    { id: "porta_potty", label: t("Porta-potty on site and serviced"), critical: false, icon: "🚽" },
+    { id: "staging_clear", label: t("Material staging area clear and organized"), critical: false, icon: "📦" },
+    { id: "safety_signage", label: t("Safety signage posted at all entry points"), critical: false, icon: "⚠️" },
+    { id: "fire_exit", label: t("Fire exits unobstructed"), critical: true, icon: "🚪" },
+    { id: "first_aid", label: t("First aid kit accessible and stocked"), critical: false, icon: "🩺" },
+    { id: "temp_power", label: t("Temporary power / lighting operational"), critical: false, icon: "💡" },
+    { id: "deliveries_clear", label: t("Delivery access path clear"), critical: false, icon: "🚚" },
+  ];
+  const logCheckedCount = LOGISTICS_ITEMS.filter(i => todayLog[i.id]).length;
+  const criticalUnchecked = LOGISTICS_ITEMS.filter(i => i.critical && !todayLog[i.id]);
+
+  const projNotesCount = (projectNotes || []).filter(n => String(n.projectId) === String(selectedProjectId)).length;
+
   const tabDefs = [
     { key: "clock", label: t("Clock") },
     { key: "dashboard", label: t("Dashboard") },
@@ -665,6 +703,8 @@ export function ForemanView({ app }) {
     { key: "materials", label: t("Materials"), count: projectMatRequests.filter(r => r.status === "requested" || r.status === "pending").length },
     { key: "drawings", label: t("Drawings") },
     { key: "reports", label: t("Daily Report"), count: (dailyReports || []).filter(r => r.projectId === selectedProjectId && r.date === new Date().toISOString().slice(0, 10)).length },
+    { key: "site", label: t("Site"), count: criticalUnchecked.length },
+    { key: "notes", label: t("Notes"), count: projNotesCount },
     { key: "documents", label: t("Documents") },
     { key: "settings", label: t("Settings") },
   ];
@@ -3164,6 +3204,178 @@ export function ForemanView({ app }) {
                       ))
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* ═══ SITE LOGISTICS TAB ═══ */}
+            {foremanTab === "site" && (
+              <div className="emp-content">
+                <div className="section-header" style={{ marginBottom: 12 }}>
+                  <div className="flex gap-8" style={{ alignItems: "center" }}>
+                    <HardHat size={18} style={{ color: "var(--amber)" }} />
+                    <div>
+                      <div className="section-title" style={{ fontSize: 16 }}>{t("Site Logistics")}</div>
+                      <div className="text-xs text-muted">{t("Daily checklist")} · {today}</div>
+                    </div>
+                  </div>
+                  <span className={`badge ${logCheckedCount === LOGISTICS_ITEMS.length ? "badge-green" : logCheckedCount > 0 ? "badge-amber" : "badge-red"}`} style={{ fontSize: 11 }}>
+                    {logCheckedCount}/{LOGISTICS_ITEMS.length}
+                  </span>
+                </div>
+
+                {criticalUnchecked.length > 0 && (
+                  <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid var(--red)", borderRadius: 10, padding: "10px 12px", marginBottom: 12 }}>
+                    <div className="flex gap-8 mb-4" style={{ alignItems: "center" }}>
+                      <AlertTriangle size={14} style={{ color: "var(--red)" }} />
+                      <span className="text-sm font-semi" style={{ color: "var(--red)" }}>{t("Critical items need attention — PM notified")}</span>
+                    </div>
+                    {criticalUnchecked.map(i => (
+                      <div key={i.id} className="text-xs text-muted" style={{ marginLeft: 22 }}>• {i.label}</div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex-col gap-6">
+                  {LOGISTICS_ITEMS.map(item => {
+                    const checked = !!todayLog[item.id];
+                    return (
+                      <div key={item.id} style={{ background: checked ? "rgba(16,185,129,0.07)" : item.critical && !checked ? "rgba(239,68,68,0.04)" : "var(--card)", border: `1px solid ${checked ? "var(--green)" : item.critical && !checked ? "var(--red)" : "var(--border)"}`, borderRadius: 10, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+                        onClick={() => {
+                          const updated = {
+                            ...siteLogistics,
+                            [projLogKey]: { ...todayLog, [item.id]: !checked, date: today, projectId: selectedProjectId },
+                          };
+                          saveSiteLogistics(updated);
+                          if (item.critical && checked) {
+                            show(`⚠️ ${item.label} — unchecked. PM alerted.`, "warn");
+                          } else if (!checked) {
+                            show(`✓ ${item.label}`, "ok");
+                          }
+                        }}
+                      >
+                        {checked ? <CheckSquare size={20} style={{ color: "var(--green)", flexShrink: 0 }} /> : <Square size={20} style={{ color: "var(--text3)", flexShrink: 0 }} />}
+                        <span style={{ fontSize: 20 }}>{item.icon}</span>
+                        <div style={{ flex: 1 }}>
+                          <span className="text-sm" style={{ textDecoration: checked ? "line-through" : "none", opacity: checked ? 0.7 : 1 }}>{item.label}</span>
+                          {item.critical && !checked && (
+                            <span className="badge badge-red" style={{ fontSize: 9, marginLeft: 8 }}>Critical</span>
+                          )}
+                        </div>
+                        <span className={`badge ${checked ? "badge-green" : item.critical ? "badge-red" : "badge-muted"}`} style={{ fontSize: 10 }}>
+                          {checked ? "OK" : item.critical ? "Needed" : "Pending"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ═══ NOTES TAB ═══ */}
+            {foremanTab === "notes" && (
+              <div className="emp-content">
+                <div className="section-header" style={{ marginBottom: 12 }}>
+                  <div className="flex gap-8" style={{ alignItems: "center" }}>
+                    <MessageSquare size={18} style={{ color: "var(--accent)" }} />
+                    <div>
+                      <div className="section-title" style={{ fontSize: 16 }}>{t("Team Notes")}</div>
+                      <div className="text-xs text-muted">{t("Visible to all project team members")}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Compose */}
+                <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, padding: 14, marginBottom: 12 }}>
+                  <textarea
+                    style={{ width: "100%", minHeight: 80, padding: 10, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg3)", color: "var(--text)", fontSize: 14, resize: "vertical", marginBottom: 10 }}
+                    placeholder={t("Post a field note to the project team...")}
+                    value={foremanNoteText}
+                    onChange={e => setForemanNoteText(e.target.value)}
+                  />
+                  <div className="flex gap-8">
+                    <button className="btn btn-primary btn-sm" onClick={() => {
+                      if (!foremanNoteText.trim()) return;
+                      const newNote = {
+                        id: crypto.randomUUID(),
+                        projectId: String(selectedProjectId),
+                        text: foremanNoteText.trim(),
+                        author: activeForeman.name,
+                        role: "foreman",
+                        category: "field",
+                        pinned: false,
+                        timestamp: new Date().toISOString(),
+                      };
+                      saveProjectNotes([newNote, ...(projectNotes || [])]);
+                      setForemanNoteText("");
+                      show(t("Field note posted"), "ok");
+                    }} disabled={!foremanNoteText.trim()}>
+                      {t("Post Field Note")}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filter bar */}
+                <div className="flex gap-4 mb-12" style={{ overflowX: "auto" }}>
+                  {["all", "pm", "field", "office"].map(f => {
+                    const projNotes = (projectNotes || []).filter(n => String(n.projectId) === String(selectedProjectId));
+                    const cnt = f === "all" ? projNotes.length : projNotes.filter(n => n.category === f).length;
+                    const label = f === "all" ? "All" : f === "pm" ? "PM" : f === "field" ? "Field" : "Office";
+                    return (
+                      <button key={f} className={`btn btn-sm ${foremanNotesFilter === f ? "btn-primary" : "btn-ghost"}`}
+                        onClick={() => setForemanNotesFilter(f)} style={{ whiteSpace: "nowrap" }}>
+                        {label} ({cnt})
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Notes list */}
+                {(() => {
+                  const projNotes = (projectNotes || []).filter(n => String(n.projectId) === String(selectedProjectId));
+                  const filtered = foremanNotesFilter === "all" ? projNotes : projNotes.filter(n => n.category === foremanNotesFilter);
+                  const pinned = filtered.filter(n => n.pinned);
+                  const unpinned = filtered.filter(n => !n.pinned);
+                  const visible = [...pinned, ...unpinned];
+
+                  if (visible.length === 0) return (
+                    <div className="empty-state" style={{ padding: "32px 20px" }}>
+                      <div className="empty-icon"><MessageSquare size={28} /></div>
+                      <div className="empty-text">{t("No notes yet")}</div>
+                    </div>
+                  );
+
+                  const catBadge = (cat) => ({ pm: "badge-blue", field: "badge-amber", office: "badge-green" }[cat] || "badge-muted");
+                  const catLabel = (cat) => ({ pm: "PM", field: "Field", office: "Office" }[cat] || cat);
+                  const fmtTime = (ts) => { try { const d = new Date(ts); return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); } catch { return ts; } };
+
+                  return (
+                    <div className="flex-col gap-8">
+                      {visible.map(note => (
+                        <div key={note.id} style={{ background: note.pinned ? "rgba(245,158,11,0.05)" : "var(--card)", border: `1px solid ${note.pinned ? "var(--amber)" : "var(--border)"}`, borderRadius: 10, padding: 14 }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                            <div className="flex gap-8" style={{ alignItems: "center" }}>
+                              {note.pinned && <Pin size={11} style={{ color: "var(--amber)" }} />}
+                              <span className="font-semi text-sm">{note.author}</span>
+                              <span className={`badge ${catBadge(note.category)}`} style={{ fontSize: 9 }}>{catLabel(note.category)}</span>
+                            </div>
+                            <div className="flex gap-6" style={{ alignItems: "center" }}>
+                              <span className="text-xs text-muted">{fmtTime(note.timestamp)}</span>
+                              <button onClick={() => saveProjectNotes(projectNotes.map(n => n.id === note.id ? { ...n, pinned: !n.pinned } : n))}
+                                style={{ background: "none", border: "none", cursor: "pointer", color: note.pinned ? "var(--amber)" : "var(--text3)", padding: "2px 4px" }}>
+                                {note.pinned ? <PinOff size={12} /> : <Pin size={12} />}
+                              </button>
+                              {note.author === activeForeman.name && (
+                                <button onClick={() => saveProjectNotes(projectNotes.filter(n => n.id !== note.id))}
+                                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 12, padding: "2px 4px" }}>✕</button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-sm" style={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{note.text}</div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </>
