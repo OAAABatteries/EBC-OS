@@ -52,14 +52,16 @@ export default function TakeoffRoute() {
     if (isSupabaseConfigured()) ensureSupabaseAuth().catch(() => {});
   }, []);
 
-  // ── Load PDF (cloud URL → IDB cache → Supabase download) ──
+  // ── Load PDF (cloud URL → IDB cache → Supabase download) ── runs ONCE on mount
+  const takeoffRef = useRef(takeoff); // snapshot at mount time — don't re-run on state saves
   useEffect(() => {
-    if (!takeoff) { setLoading(false); setError("Takeoff not found"); return; }
+    const tk = takeoffRef.current;
+    if (!tk) { setLoading(false); setError("Takeoff not found"); return; }
     let cancelled = false;
 
     (async () => {
       // 1) Cloud-first: signed URL streaming
-      if (takeoff.bidId) {
+      if (tk.bidId) {
         try {
           const drawings = await getDrawingsByBid(takeoff.bidId);
           if (drawings.length > 0) {
@@ -75,7 +77,7 @@ export default function TakeoffRoute() {
       }
 
       // 2) IDB cache
-      const cachedName = takeoff.drawingState?.pdfFileNames?.[0] || takeoff.drawingFileName || "";
+      const cachedName = tk.drawingState?.pdfFileNames?.[0] || tk.drawingFileName || "";
       if (cachedName) {
         try {
           const db = await new Promise((resolve, reject) => {
@@ -117,7 +119,7 @@ export default function TakeoffRoute() {
     })();
 
     return () => { cancelled = true; };
-  }, [takeoff, takeoffId]);
+  }, [takeoffId]); // only re-run if takeoff ID changes, NOT on state saves
 
   // ── Save takeoff state back to localStorage ──
   const handleStateChange = useCallback((state) => {
