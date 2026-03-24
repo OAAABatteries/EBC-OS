@@ -921,7 +921,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         setPdfLoading(false);
       }
     });
-    return () => { cancelled = true; loadTask.destroy?.(); };
+    return () => { cancelled = true; };
   }, [storageUrl, pdfData]);
 
   // ── Auto-load PDFs: IDB cache → Supabase cloud → show re-upload UI ──
@@ -1011,7 +1011,10 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     if (!pdf || !pdfCanvasRef.current) return;
     let cancelled = false;
     setRendering(true);
-    pdf.getPage(page).then((p) => {
+    // Wrap in try/catch to handle destroyed PDF documents (React StrictMode double-mount)
+    let pagePromise;
+    try { pagePromise = pdf.getPage(page); } catch (e) { console.warn("[DrawingViewer] PDF destroyed, skipping render:", e.message); setRendering(false); return; }
+    pagePromise.then((p) => {
       if (cancelled) return;
       const container = containerRef.current;
       const cw = container ? container.clientWidth - 32 : 800;
@@ -1034,8 +1037,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         overlay.style.width = `${vp.width}px`;
         overlay.style.height = `${vp.height}px`;
       }
-      p.render({ canvasContext: ctx, viewport: vp }).promise.then(() => { if (!cancelled) setRendering(false); });
-    });
+      p.render({ canvasContext: ctx, viewport: vp }).promise.then(() => { if (!cancelled) setRendering(false); }).catch(() => {});
+    }).catch((err) => { if (!cancelled) { console.warn("[DrawingViewer] getPage failed:", err.message); setRendering(false); } });
     return () => { cancelled = true; };
   }, [pdf, page, zoom]);
 
