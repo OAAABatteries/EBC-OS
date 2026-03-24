@@ -2448,6 +2448,13 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                 onDoubleClick={handleCanvasDoubleClick} onMouseMove={handleCanvasMove}
                 onContextMenu={(e) => {
                   e.preventDefault();
+                  // Right-click while drawing = finish measurement (standard CAD behavior)
+                  if ((mode === MODE.LINEAR || mode === MODE.AREA) && activeVertices.length >= 2 && ppf && activeCond) {
+                    if (clickTimerRef.current) { clearTimeout(clickTimerRef.current); clickTimerRef.current = null; }
+                    pendingClickRef.current = null;
+                    finishMeasurement();
+                    return;
+                  }
                   // Find nearest measurement to right-click point
                   const pt = getNormCoords(e);
                   const scale = fitScaleRef.current * zoom;
@@ -2506,7 +2513,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                     cursor: "pointer", zIndex: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
                     animation: "pulse 1.5s ease-in-out infinite",
                   }}>
-                  ✓ Finish ({activeVertices.length} pts) — Dbl-click or Enter
+                  ✓ Finish ({activeVertices.length} pts) — Right-click, Dbl-click, or Enter
                 </button>
               )}
             </div>
