@@ -552,7 +552,7 @@ const ROLE_OPTIONS = Object.entries(ROLES).filter(([k]) => k !== "owner");
 function StepWelcome() {
   return (
     <div className="wizard-slide" style={{ alignItems: "center" }}>
-      <img src="/logo-ebc-white.png" alt="EBC" className="wizard-logo" style={{ width: 100, height: "auto" }}
+      <img src="/ebc-eagle-white.png" alt="EBC" className="wizard-logo" style={{ width: 80, height: "auto" }}
         onError={(e) => { e.target.src = "/eagle-white.png"; e.target.onerror = () => { e.target.style.display = "none"; }; }} />
       <div className="wizard-title" style={{ marginTop: 8 }}>Welcome to EBC-OS</div>
       <div className="wizard-desc">

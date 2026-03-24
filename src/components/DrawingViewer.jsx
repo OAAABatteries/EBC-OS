@@ -3,6 +3,7 @@ import { FileText } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import * as XLSX from "xlsx";
 import { uploadTakeoffPdf, downloadTakeoffPdf } from "../lib/supabase";
+import { extractPdfText, analyzePlans, analysisToConditions } from "../services/planAnalyzer";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.mjs",
@@ -169,7 +170,7 @@ function createCondition(template, index) {
   };
 }
 
-export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, assemblies, initialTakeoffState, onTakeoffStateChange, takeoffId }) {
+export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToTakeoff, assemblies, initialTakeoffState, onTakeoffStateChange, takeoffId }) {
   // ── Multi-PDF management ──
   // pdfFiles: [{ name, data (Uint8Array), doc (pdfjs doc), numPages }]
   const [pdfFiles, setPdfFiles] = useState([]);
@@ -201,14 +202,14 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const [showSheets, setShowSheets] = useState(false);
   const [editingSheet, setEditingSheet] = useState(null);
 
-  // Conditions system
+  // Conditions system — starts empty; user adds what they need via + Add or Template
   const [conditions, setConditions] = useState(() =>
     _init.conditions && _init.conditions.length > 0
       ? _init.conditions
-      : DRYWALL_TEMPLATE.map((t, i) => createCondition(t, i))
+      : []
   );
   const [activeCondId, setActiveCondId] = useState(_init.activeCondId || null);
-  const [openFolders, setOpenFolders] = useState({ Walls: true, Ceilings: true, Counts: true, Insulation: false, "Add-Ons": false });
+  const [openFolders, setOpenFolders] = useState({ Walls: true, Ceilings: true, Counts: true, Insulation: true, "Add-Ons": true });
   const [showAddCond, setShowAddCond] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [hiddenFolders, setHiddenFolders] = useState(_init.hiddenFolders || {}); // { folderName: true } = hidden
@@ -269,6 +270,35 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   const [typicalName, setTypicalName] = useState("");
   const [placingTypicalId, setPlacingTypicalId] = useState(null); // ID of typical being placed
   const [showTypicalPanel, setShowTypicalPanel] = useState(false);
+
+  // ── AI Plan Analysis ──
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [showAnalysis, setShowAnalysis] = useState(false);
+
+  const runPlanAnalysis = useCallback(async () => {
+    if (!pdf || analyzing) return;
+    // Get API key from localStorage (same place Settings stores it)
+    const apiKey = (() => { try { return JSON.parse(localStorage.getItem("ebc_apiKey") || "null"); } catch { return null; } })();
+    if (!apiKey) { alert("Set your Claude API key in Settings first."); return; }
+    setAnalyzing(true);
+    setShowAnalysis(true);
+    try {
+      const { fullText } = await extractPdfText(pdf);
+      const result = await analyzePlans(apiKey, fullText, assemblies);
+      setAnalysisResult(result);
+      // Auto-add conditions if user has none yet
+      if (conditions.length === 0 && result.conditions?.length > 0) {
+        const newConds = analysisToConditions(result.conditions, assemblies);
+        setConditions(newConds);
+      }
+    } catch (err) {
+      console.error("[PlanAnalysis] Failed:", err);
+      alert("Plan analysis failed: " + err.message);
+    } finally {
+      setAnalyzing(false);
+    }
+  }, [pdf, analyzing, assemblies, conditions.length]);
 
   // ── Click debounce for double-click finish (prevent extra vertices) ──
   const clickTimerRef = useRef(null);
@@ -809,27 +839,47 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
   }, [sheetNames]);
 
   // ── Load initial PDF into pdfFiles on mount ──
+  const [pdfLoading, setPdfLoading] = useState(false);
   useEffect(() => {
-    if (!pdfData) return;
+    if (!storageUrl && !pdfData) return;
     let cancelled = false;
-    pdfjsLib.getDocument({ data: pdfData }).promise.then((doc) => {
+    setPdfLoading(true);
+
+    // Prefer URL streaming (range requests — only fetches pages being viewed)
+    // Fall back to raw bytes for legacy/offline
+    const source = storageUrl
+      ? { url: storageUrl }
+      : { data: pdfData.slice().buffer };
+
+    console.log(`[DrawingViewer] Loading PDF via ${storageUrl ? "URL streaming" : "raw bytes"}${storageUrl ? "" : ` (${(pdfData.byteLength / 1024 / 1024).toFixed(1)}MB)`}`);
+    const loadTask = pdfjsLib.getDocument(source);
+    loadTask.promise.then((doc) => {
       if (!cancelled) {
-        setPdfFiles([{ name: fileName || "Drawing", data: pdfData, doc, numPages: doc.numPages }]);
+        setPdfFiles([{ name: fileName || "Drawing", data: null, doc, numPages: doc.numPages, storageUrl }]);
         setPdf(doc);
         setNumPages(doc.numPages);
         setPage(1);
         setActivePdfIdx(0);
-        // Save to IndexedDB (local cache) + Supabase Storage (cloud persistence)
-        if (takeoffId) {
-          savePdfToIDB(`${takeoffId}_0`, pdfData).catch(() => {});
-          uploadTakeoffPdf(takeoffId, pdfData, fileName || "Drawing.pdf", 0).catch(() => {});
+        setPdfLoading(false);
+        // Only cache to IDB/upload if using legacy bytes path (not URL streaming)
+        if (pdfData && !storageUrl) {
+          setTimeout(() => {
+            if (takeoffId) {
+              savePdfToIDB(`${takeoffId}_0`, pdfData).catch(() => {});
+              uploadTakeoffPdf(takeoffId, pdfData, fileName || "Drawing.pdf", 0).catch(() => {});
+            }
+          }, 1000);
         }
-        // Auto-name pages from title blocks
         autoNamePages(doc, 0);
       }
+    }).catch((err) => {
+      if (!cancelled) {
+        console.error("[DrawingViewer] Failed to load PDF:", err);
+        setPdfLoading(false);
+      }
     });
-    return () => { cancelled = true; };
-  }, [pdfData]);
+    return () => { cancelled = true; loadTask.destroy?.(); };
+  }, [storageUrl, pdfData]);
 
   // ── Auto-load PDFs: IDB cache → Supabase cloud → show re-upload UI ──
   useEffect(() => {
@@ -2117,6 +2167,12 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
               </div>
             )}
             <div style={{ position: "relative", display: "inline-block" }}>
+              {pdfLoading && (
+                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 10, background: "rgba(0,0,0,0.8)", padding: "24px 40px", borderRadius: 12, textAlign: "center" }}>
+                  <div style={{ fontSize: 14, color: "#fff", marginBottom: 8 }}>Loading PDF...</div>
+                  <div style={{ fontSize: 11, color: "#8494ad" }}>Large drawings may take a moment</div>
+                </div>
+              )}
               <canvas ref={pdfCanvasRef} />
               <canvas ref={revisionCanvasRef}
                 style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none",
@@ -2275,6 +2331,10 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>Conditions</span>
               <div style={{ display: "flex", gap: 3 }}>
+                <button onClick={runPlanAnalysis} disabled={analyzing || !pdf}
+                  style={{ ...btn, fontSize: 9, padding: "2px 6px", background: analyzing ? "rgba(224,148,34,0.3)" : "rgba(224,148,34,0.15)", color: "#e09422", border: "1px solid rgba(224,148,34,0.4)" }}>
+                  {analyzing ? "Analyzing..." : "AI Analyze"}
+                </button>
                 <button onClick={() => setShowTemplatePicker(true)} style={{ ...btn, fontSize: 9, padding: "2px 6px" }}>Template</button>
                 <button onClick={() => setShowAddCond(!showAddCond)} style={{ ...btn, fontSize: 10, padding: "2px 8px" }}>+ Add</button>
               </div>
@@ -2298,6 +2358,22 @@ export function DrawingViewer({ pdfData, fileName, onClose, onAddToTakeoff, asse
             {!ppf && (
               <div style={{ fontSize: 11, color: "#f59e0b", padding: "10px 8px", background: "rgba(245,158,11,0.08)", borderRadius: 6, border: "1px solid rgba(245,158,11,0.2)", marginBottom: 8 }}>
                 Set scale first (S key), then select a condition and start measuring.
+              </div>
+            )}
+
+            {/* Empty state — no conditions yet */}
+            {conditions.length === 0 && !showAddCond && !analyzing && (
+              <div style={{ fontSize: 12, color: "#8494ad", padding: "16px 8px", textAlign: "center", lineHeight: 1.5 }}>
+                No conditions yet.<br/>
+                Click <b style={{ color: "#e09422" }}>AI Analyze</b> to auto-detect scope, <b style={{ color: "#e09422" }}>+ Add</b> to add manually, or <b style={{ color: "#e09422" }}>Template</b> for a preset.
+              </div>
+            )}
+
+            {/* AI Analysis loading */}
+            {analyzing && (
+              <div style={{ fontSize: 12, color: "#e09422", padding: "16px 8px", textAlign: "center", lineHeight: 1.5 }}>
+                Analyzing plans...<br/>
+                <span style={{ fontSize: 10, color: "#8494ad" }}>Reading all pages and identifying EBC scope</span>
               </div>
             )}
 

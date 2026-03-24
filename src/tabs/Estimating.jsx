@@ -4,7 +4,7 @@ import { getHF, SCOPE_INIT, SCOPE_ITEM_MAP, DEFAULT_ASSUMPTIONS, DEFAULT_PROPOSA
 import { generateProposalPdf, generateQuickProposalPdf, defaultIncludes, defaultExcludes } from "../utils/proposalPdf";
 import { buildScopeLines } from "../utils/scopeBuilder";
 import { DrawingViewer } from "../components/DrawingViewer";
-import { uploadTakeoffPdf, downloadTakeoffPdf } from "../lib/supabase";
+import { uploadTakeoffPdf, downloadTakeoffPdf, getSignedUrl, uploadProjectDrawing, insertProjectDrawing, getDrawingsByBid } from "../lib/supabase";
 
 /* ── helpers ─────────────────────────────────────────────────── */
 
@@ -73,16 +73,46 @@ export function EstimatingTab({ app }) {
 
   // ── Drawing Viewer state ──
   const [showDrawing, setShowDrawing] = useState(false);
-  const [drawingPdfData, setDrawingPdfData] = useState(null);
+  const [drawingPdfData, setDrawingPdfData] = useState(null);   // legacy: raw bytes
+  const [drawingStorageUrl, setDrawingStorageUrl] = useState(null); // cloud: signed URL for streaming
   const [drawingFileName, setDrawingFileName] = useState("");
   const drawingFileRef = useRef();
+  const ostFileRef = useRef();
+  const scanPdfRef = useRef();
 
-  // Try to open drawing: memory → IDB cache → Supabase cloud → file picker
+  // Loading state for drawing upload
+  const [drawingLoading, setDrawingLoading] = useState(false);
+
+  // Upload drawing: direct sync click on file input (must be synchronous for browser to allow file picker)
+  const uploadDrawing = useCallback(() => {
+    if (drawingFileRef.current) drawingFileRef.current.click();
+  }, []);
+
+  // Open existing drawing: try cloud URL (streaming) → legacy IDB → legacy Supabase download → prompt re-upload
   const openDrawing = useCallback(async (tkId, drawingState) => {
-    // If we already have pdfData in memory, just open
-    if (drawingPdfData) { setShowDrawing(true); return; }
+    // If we already have a URL or pdfData in memory, just open
+    if (drawingStorageUrl || drawingPdfData) { setShowDrawing(true); return; }
+
+    // 1) Try cloud-first: look up project_drawings by bid
+    const tk = takeoffs.find(t => t.id === tkId);
+    if (tk?.bidId) {
+      try {
+        const drawings = await getDrawingsByBid(tk.bidId);
+        if (drawings.length > 0) {
+          const url = await getSignedUrl(drawings[0].storagePath);
+          if (url) {
+            console.log("[OpenDrawing] Streaming from cloud URL");
+            setDrawingStorageUrl(url);
+            setDrawingFileName(drawings[0].fileName);
+            setShowDrawing(true);
+            return;
+          }
+        }
+      } catch (e) { console.warn("[Cloud] Failed to get drawing URL:", e); }
+    }
+
+    // 2) Legacy fallback: try IDB cache
     const fileName = drawingState?.pdfFileNames?.[0] || drawingState?.drawingFileName || "";
-    // Try IDB cache first
     if (drawingState?.pdfFileNames?.length > 0) {
       try {
         const IDB_NAME = "ebc_takeoff_pdfs";
@@ -99,7 +129,7 @@ export function EstimatingTab({ app }) {
           req.onerror = () => reject(req.error);
         });
         if (data) {
-          console.log("[OpenDrawing] Loaded from IDB cache");
+          console.log("[OpenDrawing] Loaded from IDB cache (legacy)");
           setDrawingPdfData(new Uint8Array(data));
           setDrawingFileName(fileName);
           setShowDrawing(true);
@@ -107,36 +137,25 @@ export function EstimatingTab({ app }) {
         }
       } catch (e) { console.warn("[IDB] Failed to load cached PDF:", e); }
     }
-    // Try Supabase Storage (cloud fallback)
+
+    // 3) Legacy fallback: try Supabase download (full bytes)
     if (fileName) {
       try {
         show("Downloading drawing from cloud...", "info");
         const buf = await downloadTakeoffPdf(tkId, fileName, 0);
         if (buf) {
-          console.log("[OpenDrawing] Downloaded from Supabase Storage");
-          const pdfBytes = new Uint8Array(buf);
-          setDrawingPdfData(pdfBytes);
+          console.log("[OpenDrawing] Downloaded from Supabase (legacy bytes)");
+          setDrawingPdfData(new Uint8Array(buf));
           setDrawingFileName(fileName);
           setShowDrawing(true);
-          // Re-cache in IDB for next time
-          try {
-            const IDB_NAME = "ebc_takeoff_pdfs";
-            const db = await new Promise((resolve, reject) => {
-              const req = indexedDB.open(IDB_NAME, 2);
-              req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains("pdfs")) req.result.createObjectStore("pdfs"); };
-              req.onsuccess = () => resolve(req.result);
-              req.onerror = () => reject(req.error);
-            });
-            const tx = db.transaction("pdfs", "readwrite");
-            tx.objectStore("pdfs").put(pdfBytes.buffer, `${tkId}_0`);
-          } catch (e) { console.warn("[IDB] Failed to re-cache PDF:", e); }
           return;
         }
       } catch (e) { console.warn("[Supabase] Failed to download PDF:", e); }
     }
-    // Final fallback: open file picker
-    if (drawingFileRef.current) drawingFileRef.current.click();
-  }, [drawingPdfData]);
+
+    // 4) Nothing found — tell user to upload
+    show("No drawing found. Click 'Upload Drawing' to add one.", "err");
+  }, [drawingStorageUrl, drawingPdfData, takeoffs]);
 
   // ── Scope Checklist & Gap Analysis state ──
   const [showScopePanel, setShowScopePanel] = useState(false);
@@ -709,6 +728,16 @@ export function EstimatingTab({ app }) {
 
     navigator.clipboard.writeText(text).then(() => {
       show("Proposal copied to clipboard", "ok");
+    }).catch(() => {
+      // Fallback for non-HTTPS or denied clipboard access
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.cssText = "position:fixed;left:-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      show("Proposal copied to clipboard", "ok");
     });
   }
 
@@ -740,10 +769,10 @@ export function EstimatingTab({ app }) {
             </div>
           </div>
           <div className="flex gap-8">
-            <input type="file" id="ost-import" accept=".csv,.txt" style={{ display: "none" }} onChange={handleOstFile} />
-            <button className="btn btn-ghost" onClick={() => document.getElementById("ost-import").click()} style={{ fontSize: 13 }}>Import OST</button>
-            <input type="file" id="scan-pdf" accept=".pdf" style={{ display: "none" }} onChange={handleScanPdf} />
-            <button className="btn btn-ghost" onClick={() => document.getElementById("scan-pdf").click()} style={{ fontSize: 13 }}>Scan Bid PDF</button>
+            <input type="file" ref={ostFileRef} accept=".csv,.txt" style={{ display: "none" }} onChange={handleOstFile} />
+            <button className="btn btn-ghost" onClick={() => ostFileRef.current?.click()} style={{ fontSize: 13 }}>Import OST</button>
+            <input type="file" ref={scanPdfRef} accept=".pdf" style={{ display: "none" }} onChange={handleScanPdf} />
+            <button className="btn btn-ghost" onClick={() => scanPdfRef.current?.click()} style={{ fontSize: 13 }}>Scan Bid PDF</button>
             <FeatureGuide guideKey="estimating" />
             <button className="btn btn-ghost" onClick={() => setShowQuickProposal(true)} style={{ fontSize: 13 }}>Quick Proposal</button>
             <button className="btn btn-primary" onClick={createTakeoff}>+ New Takeoff</button>
@@ -1225,9 +1254,10 @@ export function EstimatingTab({ app }) {
   return (
     <div>
       {/* Drawing Viewer overlay */}
-      {showDrawing && (drawingPdfData || tk.drawingState?.pdfFileNames?.length > 0) && (
+      {showDrawing && (drawingStorageUrl || drawingPdfData || tk.drawingState?.pdfFileNames?.length > 0) && (
         <DrawingViewer
           pdfData={drawingPdfData || null}
+          storageUrl={drawingStorageUrl || null}
           fileName={drawingFileName}
           assemblies={assemblies}
           takeoffId={tk.id}
@@ -1271,11 +1301,23 @@ export function EstimatingTab({ app }) {
             onChange={(v) => updateTakeoff(tk.id, { name: v })}
             style={{ fontSize: 18, fontWeight: 700 }}
           />
+          <span style={{ fontSize: 11, color: "var(--text3)", opacity: 0.7 }}>Auto-saved</span>
         </div>
-        <div className="flex gap-8">
-          <button className="btn btn-ghost btn-sm" onClick={() => openDrawing(tk.id, tk.drawingState)}>
-            {drawingPdfData || tk.drawingState?.pdfFileNames?.length > 0 ? "Open Drawing" : "Upload Drawing"}
-          </button>
+        <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
+          {/* Upload: sync click for file picker. Open: async cache/cloud lookup */}
+          {drawingLoading ? (
+            <button className="btn btn-ghost btn-sm" disabled style={{ opacity: 0.7 }}>
+              Uploading...
+            </button>
+          ) : drawingStorageUrl || drawingPdfData || tk.drawingState?.pdfFileNames?.length > 0 ? (
+            <button className="btn btn-ghost btn-sm" onClick={() => openDrawing(tk.id, tk.drawingState)}>
+              Open Drawing
+            </button>
+          ) : (
+            <button className="btn btn-ghost btn-sm" onClick={uploadDrawing}>
+              Upload Drawing
+            </button>
+          )}
           {tk.drawingState && (
             <button className="btn btn-ghost btn-sm" style={{ color: "#10b981" }} onClick={() => openDrawing(tk.id, tk.drawingState)}>
               Resume Takeoff ({Object.values(tk.drawingState.measurements || {}).flat().length} meas)
@@ -1289,27 +1331,93 @@ export function EstimatingTab({ app }) {
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (!file) return;
-              const reader = new FileReader();
-              reader.onload = (ev) => {
-                const pdfBytes = new Uint8Array(ev.target.result);
-                setDrawingPdfData(pdfBytes);
-                setDrawingFileName(file.name);
-                updateTakeoff(tk.id, { drawingFileName: file.name });
-                setShowDrawing(true);
-                // Upload to Supabase Storage in background (cloud persistence)
-                uploadTakeoffPdf(tk.id, pdfBytes, file.name, 0).catch(() => {});
-              };
-              reader.readAsArrayBuffer(file);
               e.target.value = "";
+              const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+              show(`Uploading ${file.name} (${sizeMB} MB) to cloud...`, "info");
+              setDrawingLoading(true);
+              setDrawingFileName(file.name);
+              updateTakeoff(tk.id, { drawingFileName: file.name });
+              // Upload directly to Supabase Storage (no FileReader into memory)
+              (async () => {
+                try {
+                  const { path, fileName: uploadedName, fileSize } = await uploadProjectDrawing(null, tk.bidId, file);
+                  // Create project_drawings metadata record
+                  await insertProjectDrawing({
+                    bidId: tk.bidId || null,
+                    storagePath: path,
+                    fileName: uploadedName,
+                    fileSize,
+                    revision: 1,
+                    isCurrent: true,
+                  });
+                  // Get signed URL for streaming (no full download needed)
+                  const url = await getSignedUrl(path);
+                  if (url) {
+                    setDrawingStorageUrl(url);
+                    setDrawingLoading(false);
+                    setShowDrawing(true);
+                    show(`Drawing uploaded: ${uploadedName} (${sizeMB} MB)`, "ok");
+                  } else {
+                    // Fallback: read file locally if signed URL fails
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      setDrawingPdfData(new Uint8Array(ev.target.result));
+                      setDrawingLoading(false);
+                      setShowDrawing(true);
+                      show(`Drawing loaded locally: ${uploadedName}`, "ok");
+                    };
+                    reader.readAsArrayBuffer(file);
+                  }
+                } catch (err) {
+                  console.error("[Upload] Failed:", err);
+                  // Fallback: load locally if cloud upload fails
+                  show(`Cloud upload failed, loading locally...`, "info");
+                  const reader = new FileReader();
+                  reader.onload = (ev) => {
+                    setDrawingPdfData(new Uint8Array(ev.target.result));
+                    setDrawingLoading(false);
+                    setShowDrawing(true);
+                    // Try legacy upload in background
+                    const pdfBytes = new Uint8Array(ev.target.result);
+                    uploadTakeoffPdf(tk.id, pdfBytes, file.name, 0).catch(() => {});
+                  };
+                  reader.onerror = () => {
+                    setDrawingLoading(false);
+                    show("Failed to load PDF file", "err");
+                  };
+                  reader.readAsArrayBuffer(file);
+                }
+              })();
             }}
           />
           <button className="btn btn-ghost btn-sm" onClick={() => runHistComparison(tk)} disabled={histLoading}>
             {histLoading ? "Comparing..." : "Compare to History"}
           </button>
-          <button className="btn btn-ghost btn-sm" onClick={() => copyProposal(tk)}>Copy Proposal</button>
-          <button className="btn btn-sm" style={{ background: "var(--gold)", color: "#fff" }} onClick={() => {
+          <button className="btn btn-ghost btn-sm" onClick={() => {
+            copyProposal(tk);
+          }}>Copy Proposal</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => {
             setScopeModalTkId(tk.id);
             setScopeModalStep(tk.scopeChecklistCompleted ? 2 : 1);
+          }}>Scope Review</button>
+          <button className="btn btn-sm" style={{ background: "var(--gold)", color: "#fff" }} onClick={async () => {
+            if (!tk.scopeChecklistCompleted) {
+              setScopeModalTkId(tk.id);
+              setScopeModalStep(1);
+              show("Complete Scope Review first to generate proposal PDF", "info");
+              return;
+            }
+            try {
+              const bid = bids.find(b => b.id === tk.bidId);
+              const fileName = await generateProposalPdf({
+                takeoff: tk, bid, company, assemblies, submittals,
+                calcItem, calcRoom, calcSummary,
+                scopeLines: tk.scopeLines,
+                proposalTerms: tk.proposalTerms,
+                proposalNumber: tk.proposalNumber,
+              });
+              show(`PDF exported: ${fileName}`, "ok");
+            } catch (e) { show("PDF export failed: " + e.message, "err"); }
           }}>Export PDF</button>
         </div>
       </div>
@@ -1331,56 +1439,7 @@ export function EstimatingTab({ app }) {
         <span style={{ fontSize: 13, color: "var(--text2)", marginLeft: 8 }}>Created: {tk.created}</span>
       </div>
 
-      {/* markup settings */}
-      <div className="flex gap-8" style={{ marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
-        {[
-          { label: "Waste %", key: "wastePct" },
-          { label: "Tax %", key: "taxRate" },
-          { label: "Overhead %", key: "overheadPct" },
-          { label: "Profit %", key: "profitPct" },
-        ].map(({ label, key }) => (
-          <div key={key} className="flex gap-8" style={{ alignItems: "center" }}>
-            <label style={{ fontSize: 12, color: "var(--text2)", whiteSpace: "nowrap" }}>{label}</label>
-            <input
-              className="form-input"
-              type="number"
-              step="0.01"
-              style={{ width: 72 }}
-              value={tk[key]}
-              onChange={(e) => updateTakeoff(tk.id, { [key]: parseFloat(e.target.value) || 0 })}
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* ── Default Markups (company-wide defaults for new takeoffs) ── */}
-      <details style={{ marginBottom: 16 }}>
-        <summary style={{ cursor: "pointer", fontSize: 13, color: "var(--text2)", fontWeight: 600 }}>Default Markups (for new takeoffs)</summary>
-        <div className="card mt-8" style={{ padding: 12 }}>
-          <div className="form-grid" style={{ gap: 10 }}>
-            <div className="form-group">
-              <label className="form-label">Tax Rate (%)</label>
-              <input className="form-input" type="number" step="0.01" value={company.defaultTax}
-                onChange={e => app.setCompany(c => ({ ...c, defaultTax: Number(e.target.value) }))} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Waste (%)</label>
-              <input className="form-input" type="number" step="0.01" value={company.defaultWaste}
-                onChange={e => app.setCompany(c => ({ ...c, defaultWaste: Number(e.target.value) }))} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Overhead (%)</label>
-              <input className="form-input" type="number" step="0.01" value={company.defaultOverhead}
-                onChange={e => app.setCompany(c => ({ ...c, defaultOverhead: Number(e.target.value) }))} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Profit (%)</label>
-              <input className="form-input" type="number" step="0.01" value={company.defaultProfit}
-                onChange={e => app.setCompany(c => ({ ...c, defaultProfit: Number(e.target.value) }))} />
-            </div>
-          </div>
-        </div>
-      </details>
+      {/* Markups moved to Bid Summary section below — takeoff phase is about scope & measurements */}
 
       {/* ── Gap Analysis (standalone) ── */}
       <div style={{ marginBottom: 16 }}>
@@ -1647,27 +1706,57 @@ export function EstimatingTab({ app }) {
       </div>
 
       {/* bid summary — only show when there's actual data */}
-      {summary.grandTotal > 0 ? (
+      {/* ── Takeoff Totals (raw measurements — no markups) ── */}
+      {summary.subtotal > 0 && (
         <div className="takeoff-summary" style={{ marginTop: 24 }}>
-          <h3 style={{ marginBottom: 12, fontSize: 15 }}>Bid Summary</h3>
+          <h3 style={{ marginBottom: 12, fontSize: 15 }}>Takeoff Totals</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
             <div className="summary-row"><span>Materials</span><span>{fmt(summary.matSub)}</span></div>
             <div className="summary-row"><span>Labor</span><span>{fmt(summary.labSub)}</span></div>
           </div>
           <div className="summary-row" style={{ borderTop: "1px solid var(--border)", marginTop: 4, paddingTop: 4 }}>
-            <span>Subtotal</span><span>{fmt(summary.subtotal)}</span>
+            <span>Raw Subtotal</span><span style={{ fontWeight: 700 }}>{fmt(summary.subtotal)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Bid Pricing (markups — this is the proposal/bid phase) ── */}
+      {summary.subtotal > 0 && (
+        <div className="takeoff-summary" style={{ marginTop: 16 }}>
+          <h3 style={{ marginBottom: 12, fontSize: 15 }}>Bid Pricing</h3>
+          <div className="flex gap-8" style={{ marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
+            {[
+              { label: "Waste %", key: "wastePct" },
+              { label: "Tax %", key: "taxRate" },
+              { label: "Overhead %", key: "overheadPct" },
+              { label: "Profit %", key: "profitPct" },
+            ].map(({ label, key }) => (
+              <div key={key} className="flex gap-8" style={{ alignItems: "center" }}>
+                <label style={{ fontSize: 12, color: "var(--text2)", whiteSpace: "nowrap" }}>{label}</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  step="0.01"
+                  style={{ width: 72 }}
+                  value={tk[key]}
+                  onChange={(e) => updateTakeoff(tk.id, { [key]: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+            ))}
           </div>
           <div className="summary-row"><span>Waste ({tk.wastePct}%)</span><span>{fmt(summary.wasteAmt)}</span></div>
           <div className="summary-row"><span>Tax on Materials ({tk.taxRate}%)</span><span>{fmt(summary.taxAmt)}</span></div>
           <div className="summary-row"><span>Overhead ({tk.overheadPct}%)</span><span>{fmt(summary.overheadAmt)}</span></div>
           <div className="summary-row"><span>Profit ({tk.profitPct}%)</span><span>{fmt(summary.profitAmt)}</span></div>
-          <div className="summary-row total"><span>GRAND TOTAL</span><span>{fmt(summary.grandTotal)}</span></div>
+          <div className="summary-row total"><span>BID TOTAL</span><span>{fmt(summary.grandTotal)}</span></div>
         </div>
-      ) : (tk.rooms || []).length > 0 ? (
+      )}
+
+      {(tk.rooms || []).length > 0 && summary.subtotal === 0 && (
         <div style={{ marginTop: 24, padding: "12px 16px", borderRadius: 6, background: "var(--bg3)", border: "1px solid var(--border)", fontSize: 13, color: "var(--text2)" }}>
-          Add line items to your areas to see the bid summary. Totals appear here automatically.
+          Add quantities to your line items to see totals. Markups and bid pricing appear after you have measurements.
         </div>
-      ) : null}
+      )}
 
       {/* Historical Comparison Panel */}
       {showHist && (

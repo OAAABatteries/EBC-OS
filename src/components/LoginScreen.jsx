@@ -88,11 +88,31 @@ const loginStyles = `
   transform: translateY(-12px);
   pointer-events: none;
 }
+.splash-logo-lockup {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 .splash-logo {
-  width: 260px;
-  max-width: 72vw;
+  width: 80px;
+  max-width: 25vw;
   object-fit: contain;
   animation: logoGlow 3s ease-in-out infinite;
+}
+.splash-logo-text {
+  text-align: left;
+}
+.splash-logo-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.92);
+  line-height: 1.25;
+}
+.splash-logo-name b {
+  font-weight: 700;
+  font-size: 22px;
 }
 .splash-tagline {
   font-family: 'Barlow Condensed', sans-serif;
@@ -144,12 +164,32 @@ const loginStyles = `
   align-items: center;
   margin-bottom: 28px;
 }
-.login-logo-wide {
-  width: 200px;
-  max-width: 60vw;
-  object-fit: contain;
+.login-logo-lockup {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   margin-bottom: 10px;
+}
+.login-logo-eagle {
+  width: 64px;
+  max-width: 20vw;
+  object-fit: contain;
   animation: logoGlow 4s ease-in-out infinite;
+}
+.login-logo-text {
+  text-align: left;
+}
+.login-logo-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 1.2px;
+  color: rgba(255,255,255,0.88);
+  line-height: 1.25;
+}
+.login-logo-name b {
+  font-weight: 700;
+  font-size: 18px;
 }
 .login-subtitle {
   font-size: 11px;
@@ -407,8 +447,12 @@ const loginStyles = `
     padding: 28px 20px;
     border-radius: 14px;
   }
-  .login-logo-wide { width: 170px; }
-  .splash-logo { width: 200px; }
+  .login-logo-eagle { width: 52px; }
+  .login-logo-name { font-size: 13px; }
+  .login-logo-name b { font-size: 15px; }
+  .splash-logo { width: 64px; }
+  .splash-logo-name { font-size: 15px; }
+  .splash-logo-name b { font-size: 18px; }
   .login-input { font-size: 16px; } /* prevent iOS zoom */
 }
 `;
@@ -603,15 +647,20 @@ export function LoginScreen({ onLogin }) {
       {/* ── Splash overlay ── */}
       {!splashGone && (
         <div className={`login-splash${splashExiting ? " exiting" : ""}`}>
-          <img
-            src="/logo-ebc-white.png"
-            alt="EBC"
-            className="splash-logo"
-            onError={(e) => {
-              e.target.src = "/eagle-white.png";
-              e.target.onerror = () => { e.target.style.display = "none"; };
-            }}
-          />
+          <div className="splash-logo-lockup">
+            <img
+              src="/ebc-eagle-white.png"
+              alt="EBC"
+              className="splash-logo"
+              onError={(e) => {
+                e.target.src = "/eagle-white.png";
+                e.target.onerror = () => { e.target.style.display = "none"; };
+              }}
+            />
+            <div className="splash-logo-text">
+              <span className="splash-logo-name"><b>E</b>AGLES<br/><b>B</b>ROTHERS<br/><b>C</b>ONSTRUCTORS INC.</span>
+            </div>
+          </div>
           <div className="splash-tagline">{t("Construction Management")}</div>
           <div className="splash-loading-dots">
             <div className="splash-loading-dot" />
@@ -625,16 +674,21 @@ export function LoginScreen({ onLogin }) {
       <div className={`login-card${cardVisible ? " visible" : ""}`}>
         {/* Logo */}
         <div className="login-logo-wrap">
-          <img
-            src="/logo-ebc-white.png"
-            alt="EBC"
-            className="login-logo-wide"
-            onError={(e) => {
-              e.target.src = "/eagle-white.png";
-              e.target.onerror = () => { e.target.style.display = "none"; };
-            }}
-          />
-          <div className="login-subtitle">{t("Construction Management")}</div>
+          <div className="login-logo-lockup">
+            <img
+              src="/ebc-eagle-white.png"
+              alt="EBC"
+              className="login-logo-eagle"
+              onError={(e) => {
+                e.target.src = "/eagle-white.png";
+                e.target.onerror = () => { e.target.style.display = "none"; };
+              }}
+            />
+            <div className="login-logo-text">
+              <span className="login-logo-name"><b>E</b>AGLES<br/><b>B</b>ROTHERS<br/><b>C</b>ONSTRUCTORS INC.</span>
+            </div>
+          </div>
+          <div className="login-subtitle">{t("CONSTRUCTION MANAGEMENT")}</div>
         </div>
         <div className="login-divider-line" />
 

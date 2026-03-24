@@ -397,6 +397,64 @@ export async function listTakeoffPdfs(takeoffId) {
 }
 
 // ═════════════════════════════════════════════════════════════
+//  PROJECT DRAWINGS (Cloud-first PDF storage)
+// ═════════════════════════════════════════════════════════════
+
+/**
+ * Get a signed URL for streaming PDF via range requests (pdfjs compatible).
+ * @param {string} path - Storage path (e.g. "project-drawings/abc/file.pdf")
+ * @param {number} expiresIn - Seconds until URL expires (default 1 hour)
+ */
+export async function getSignedUrl(path, expiresIn = 3600, bucket = DEFAULT_BUCKET) {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresIn);
+    if (error) { console.warn("[Supabase] Signed URL error:", error.message); return null; }
+    return data?.signedUrl || null;
+  } catch (e) { console.warn("[Supabase] getSignedUrl failed:", e.message); return null; }
+}
+
+/**
+ * Upload a drawing File directly to Supabase Storage (no FileReader needed).
+ * Returns { path, fileName, fileSize } on success.
+ */
+export async function uploadProjectDrawing(projectId, bidId, file, bucket = DEFAULT_BUCKET) {
+  if (!supabase) throw new Error("Supabase not configured");
+  const uuid = crypto.randomUUID();
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const folder = projectId || bidId || "unassigned";
+  const path = `project-drawings/${folder}/${uuid}_${safeName}`;
+  const { error } = await supabase.storage.from(bucket).upload(path, file, {
+    upsert: false,
+    cacheControl: "86400",
+  });
+  if (error) throw error;
+  return { path, fileName: file.name, fileSize: file.size };
+}
+
+// Project drawings CRUD (metadata in project_drawings table)
+export const getProjectDrawings = (opts) => _getAll("project_drawings", { orderBy: "created_at", ascending: false, ...opts });
+export async function getDrawingsByBid(bidId) {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase.from("project_drawings").select("*").eq("bid_id", bidId).eq("is_current", true).order("created_at", { ascending: false });
+    if (error) { console.warn("[Supabase] getDrawingsByBid:", error.message); return []; }
+    return (data || []).map(keysToCamel);
+  } catch { return []; }
+}
+export async function getDrawingsByProject(projectId) {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase.from("project_drawings").select("*").eq("project_id", projectId).eq("is_current", true).order("created_at", { ascending: false });
+    if (error) { console.warn("[Supabase] getDrawingsByProject:", error.message); return []; }
+    return (data || []).map(keysToCamel);
+  } catch { return []; }
+}
+export const insertProjectDrawing = (d) => _insert("project_drawings", d);
+export const updateProjectDrawing = (id, updates) => _update("project_drawings", id, updates);
+export const deleteProjectDrawing = (id) => _remove("project_drawings", id);
+
+// ═════════════════════════════════════════════════════════════
 //  REALTIME SUBSCRIPTIONS
 // ═════════════════════════════════════════════════════════════
 

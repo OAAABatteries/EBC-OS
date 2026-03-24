@@ -608,5 +608,63 @@ ALTER PUBLICATION supabase_realtime ADD TABLE equipment_bookings;
 ALTER PUBLICATION supabase_realtime ADD TABLE calendar_events;
 
 -- ═════════════════════════════════════════════════════════════
+--  PROJECT DRAWINGS (Cloud-first PDF storage)
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS project_drawings (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id    UUID REFERENCES projects(id) ON DELETE CASCADE,
+  bid_id        UUID REFERENCES bids(id) ON DELETE SET NULL,
+  storage_path  TEXT NOT NULL,
+  file_name     TEXT NOT NULL,
+  file_size     BIGINT DEFAULT 0,
+  num_pages     INTEGER DEFAULT 0,
+  revision      INTEGER DEFAULT 1,
+  is_current    BOOLEAN DEFAULT TRUE,
+  uploaded_by   UUID REFERENCES users(id) ON DELETE SET NULL,
+  mime_type     TEXT DEFAULT 'application/pdf',
+  notes         TEXT DEFAULT '',
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_project_drawings_project ON project_drawings(project_id);
+CREATE INDEX IF NOT EXISTS idx_project_drawings_bid ON project_drawings(bid_id);
+ALTER TABLE project_drawings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "auth_full_access_drawings" ON project_drawings FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "anon_read_drawings" ON project_drawings FOR SELECT TO anon USING (true);
+ALTER PUBLICATION supabase_realtime ADD TABLE project_drawings;
+
+-- ═════════════════════════════════════════════════════════════
+--  EMAIL SCANS (Auto-populated from Gmail)
+-- ═════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS email_scans (
+  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  gmail_message_id  TEXT UNIQUE NOT NULL,
+  gmail_thread_id   TEXT DEFAULT '',
+  from_email        TEXT DEFAULT '',
+  from_name         TEXT DEFAULT '',
+  subject           TEXT DEFAULT '',
+  received_at       TIMESTAMPTZ,
+  classification    TEXT DEFAULT 'unclassified',
+  confidence        NUMERIC(3,2) DEFAULT 0,
+  extracted_data    JSONB DEFAULT '{}',
+  status            TEXT DEFAULT 'pending',
+  bid_id            UUID REFERENCES bids(id) ON DELETE SET NULL,
+  contact_id        UUID REFERENCES contacts(id) ON DELETE SET NULL,
+  rejection_reason  TEXT DEFAULT '',
+  processed_at      TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_email_scans_status ON email_scans(status);
+CREATE INDEX IF NOT EXISTS idx_email_scans_classification ON email_scans(classification);
+ALTER TABLE email_scans ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "auth_full_access_emails" ON email_scans FOR ALL TO authenticated USING (true) WITH CHECK (true);
+ALTER PUBLICATION supabase_realtime ADD TABLE email_scans;
+
+-- ═════════════════════════════════════════════════════════════
+--  BUMP FILE SIZE LIMIT (100MB for large permit sets)
+-- ═════════════════════════════════════════════════════════════
+UPDATE storage.buckets SET file_size_limit = 104857600 WHERE id = 'ebc-files';
+
+-- ═════════════════════════════════════════════════════════════
 --  DONE! Your EBC-OS database is ready.
 -- ═════════════════════════════════════════════════════════════

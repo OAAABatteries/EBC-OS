@@ -148,6 +148,8 @@ export const TABLE_MAP = {
   materials:         "materials",
   customAssemblies:  "custom_assemblies",
   incentiveProjects: "incentive_projects",
+  projectDrawings:   "project_drawings",
+  emailScans:        "email_scans",
 };
 
 /**
