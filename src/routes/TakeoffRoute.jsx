@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { DrawingViewer } from "../components/DrawingViewer";
 import { getDrawingsByBid, getSignedUrl, downloadTakeoffPdf, uploadProjectDrawing, insertProjectDrawing, isSupabaseConfigured, ensureSupabaseAuth } from "../lib/supabase";
+import { ASSEMBLIES } from "../data/constants";
 
 const STORAGE_KEY_TAKEOFFS = "ebc_takeoffs";
 const STORAGE_KEY_ASSEMBLIES = "ebc_assemblies";
@@ -33,7 +34,10 @@ export default function TakeoffRoute() {
     const all = readLS(STORAGE_KEY_TAKEOFFS) || [];
     return all.find(t => t.id === takeoffId) || null;
   });
-  const [assemblies] = useState(() => readLS(STORAGE_KEY_ASSEMBLIES) || []);
+  const [assemblies] = useState(() => {
+    const custom = readLS(STORAGE_KEY_ASSEMBLIES);
+    return (custom && custom.length > 0) ? custom : ASSEMBLIES;
+  });
 
   // ── PDF loading state ──
   const [pdfData, setPdfData] = useState(null);

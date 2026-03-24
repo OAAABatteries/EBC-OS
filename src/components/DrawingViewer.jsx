@@ -4,6 +4,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import * as XLSX from "xlsx";
 import { uploadTakeoffPdf, downloadTakeoffPdf } from "../lib/supabase";
 import { extractPdfText, analyzePlans, analysisToConditions } from "../services/planAnalyzer";
+import { ConditionPropsDialog } from "./ConditionPropsDialog";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.mjs",
@@ -213,6 +214,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   const [activeCondId, setActiveCondId] = useState(_init.activeCondId || null);
   const [openFolders, setOpenFolders] = useState({ Walls: true, Ceilings: true, Counts: true, Insulation: true, "Add-Ons": true });
   const [showAddCond, setShowAddCond] = useState(false);
+  const [showCondProps, setShowCondProps] = useState(false); // Condition Properties dialog
+  const [editingCondId, setEditingCondId] = useState(null); // null = new, id = editing existing
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [hiddenFolders, setHiddenFolders] = useState(_init.hiddenFolders || {}); // { folderName: true } = hidden
 
@@ -2145,6 +2148,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       if (e.key === "c" || e.key === "C") { if (backoutMode) return; setMode(MODE.COUNT); cancelActive(); return; }
       if (e.key === "s" || e.key === "S") { if (backoutMode) return; setMode(MODE.CALIBRATE); cancelActive(); return; }
       if (e.key === "n" || e.key === "N") { setShowCondNames(v => !v); return; }
+      if (e.key === "Insert") { setShowCondProps(true); setEditingCondId(null); return; }
       if (e.key === "f" || e.key === "F") { resetZoom(); return; }
       if (e.key === "=" || e.key === "+") { zoomIn(); return; }
       if (e.key === "-") { zoomOut(); return; }
@@ -2602,7 +2606,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                   {analyzing ? "Analyzing..." : "AI Analyze"}
                 </button>
                 <button onClick={() => setShowTemplatePicker(true)} style={{ ...btn, fontSize: 9, padding: "2px 6px" }}>Template</button>
-                <button onClick={() => setShowAddCond(!showAddCond)} style={{ ...btn, fontSize: 10, padding: "2px 8px" }}>+ Add</button>
+                <button onClick={() => { setShowCondProps(true); setEditingCondId(null); }} style={{ ...btn, fontSize: 10, padding: "2px 8px" }}>+ Add</button>
               </div>
             </div>
 
@@ -2612,14 +2616,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                 style={{ width: "100%", padding: "4px 8px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: 10, marginBottom: 6 }} />
             )}
 
-            {/* Add condition dropdown */}
-            {showAddCond && (
-              <select autoFocus value="" onChange={e => { if (e.target.value) addCondition(e.target.value); }}
-                style={{ width: "100%", padding: "6px 8px", borderRadius: 4, border: "1px solid var(--amber)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: 11, marginBottom: 8 }}>
-                <option value="">Select assembly...</option>
-                {(assemblies || []).map(a => <option key={a.code} value={a.code}>{a.code} — {a.name} ({a.unit})</option>)}
-              </select>
-            )}
+            {/* Add condition dropdown (legacy — replaced by Insert dialog) */}
 
             {!ppf && (
               <div style={{ fontSize: 11, color: "#f59e0b", padding: "10px 8px", background: "rgba(245,158,11,0.08)", borderRadius: 6, border: "1px solid rgba(245,158,11,0.2)", marginBottom: 8 }}>
@@ -2671,6 +2668,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                         if (ppf) setMode(c.type);
                         cancelActive();
                       }}
+                      onDoubleClick={(e) => { e.stopPropagation(); setEditingCondId(c.id); setShowCondProps(true); }}
                       style={{
                         display: "flex", alignItems: "center", gap: 6, padding: "5px 8px 5px 20px", cursor: "pointer",
                         borderRadius: 4, marginTop: 1,
@@ -3061,6 +3059,33 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           ))}
           </>}
         </div>
+      )}
+
+      {/* Condition Properties Dialog (Insert key) */}
+      {showCondProps && (
+        <ConditionPropsDialog
+          assemblies={assemblies}
+          conditions={conditions}
+          editingCond={editingCondId ? conditions.find(c => c.id === editingCondId) : null}
+          onClose={() => { setShowCondProps(false); setEditingCondId(null); }}
+          onSave={(data, existingId) => {
+            if (existingId) {
+              // Edit existing condition
+              setConditions(prev => prev.map(c => c.id === existingId ? { ...c, ...data } : c));
+            } else {
+              // Create new condition
+              const newCond = {
+                id: "cond_" + Date.now(),
+                ...data,
+                attachTo: null,
+                deductWidth: 0,
+              };
+              setConditions(prev => [...prev, newCond]);
+              setActiveCondId(newCond.id);
+              if (ppf) setMode(data.type);
+            }
+          }}
+        />
       )}
 
       {/* Template picker modal */}

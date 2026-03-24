@@ -178,37 +178,37 @@ export const THEMES = {
 // Prices updated from EBC price book (2022-2026 supplier quotes)
 export const ASSEMBLIES = [
   // ── WALLS ──
-  {code:"A2",name:'3-5/8" 20ga Freestanding Wall',unit:"LF",p8:44.02,p10:54.95,p14:82.38,p20:128.89,matRate:14.02,labRate:40.93,verified:true},
-  {code:"A3",name:'2-1/2" 20ga Partition',unit:"LF",p8:42.18,p10:52.66,p14:78.94,p20:123.50,matRate:12.73,labRate:39.93,verified:true},
-  {code:"A4",name:'8" 20ga Partition',unit:"LF",p8:53.66,p10:66.79,p14:99.72,p20:155.42,matRate:20.36,labRate:46.43,verified:true},
-  {code:"B1",name:'6" 20ga Freestanding Wall',unit:"LF",p8:49.27,p10:61.33,p14:91.68,p20:143.09,matRate:16.03,labRate:45.30,verified:true},
-  {code:"DW1",name:'6" Deck Wall 20ga',unit:"LF",p8:49.27,p10:61.33,p14:91.68,p20:143.09,matRate:16.03,labRate:45.30,verified:true},
-  {code:"DW2",name:'6" Deck Wall 16ga (Heavy)',unit:"LF",p8:54.89,p10:68.31,p14:102.00,p20:159.04,matRate:19.51,labRate:48.80,verified:true},
-  {code:"C2",name:"C2 Furring (One Side)",unit:"LF",p8:20.62,p10:25.42,p14:38.06,p20:59.61,matRate:7.82,labRate:17.60,verified:true},
+  {code:"A2",cat:"Walls",name:'3-5/8" 20ga Freestanding Wall',unit:"LF",p8:44.02,p10:54.95,p14:82.38,p20:128.89,matRate:14.02,labRate:40.93,verified:true},
+  {code:"A3",cat:"Walls",name:'2-1/2" 20ga Partition',unit:"LF",p8:42.18,p10:52.66,p14:78.94,p20:123.50,matRate:12.73,labRate:39.93,verified:true},
+  {code:"A4",cat:"Walls",name:'8" 20ga Partition',unit:"LF",p8:53.66,p10:66.79,p14:99.72,p20:155.42,matRate:20.36,labRate:46.43,verified:true},
+  {code:"B1",cat:"Walls",name:'6" 20ga Freestanding Wall',unit:"LF",p8:49.27,p10:61.33,p14:91.68,p20:143.09,matRate:16.03,labRate:45.30,verified:true},
+  {code:"DW1",cat:"Walls",name:'6" Deck Wall 20ga',unit:"LF",p8:49.27,p10:61.33,p14:91.68,p20:143.09,matRate:16.03,labRate:45.30,verified:true},
+  {code:"DW2",cat:"Walls",name:'6" Deck Wall 16ga (Heavy)',unit:"LF",p8:54.89,p10:68.31,p14:102.00,p20:159.04,matRate:19.51,labRate:48.80,verified:true},
+  {code:"C2",cat:"Walls",name:"C2 Furring (One Side)",unit:"LF",p8:20.62,p10:25.42,p14:38.06,p20:59.61,matRate:7.82,labRate:17.60,verified:true},
   // ── CEILINGS / SOFFITS ──
-  {code:"FD1",name:"Furr-Down / Soffit",unit:"LF",special:"33% progress rate",matRate:12.50,labRate:36.00,verified:true},
-  {code:"GC1",name:"GWB Suspended Ceiling",unit:"SF",special:"25% progress rate",matRate:2.20,labRate:5.15,verified:true},
-  {code:"ACT1",name:"2x2 ACT Grid + Tile (Std)",unit:"SF",p8:null,p10:7.27,p14:null,p20:null,matRate:3.02,labRate:4.25,verified:true},
-  {code:"ACT2",name:"2x4 ACT Grid + Tile (Std)",unit:"SF",p8:null,p10:6.72,p14:null,p20:null,matRate:2.82,labRate:3.90,verified:true},
+  {code:"FD1",cat:"Ceilings",name:"Furr-Down / Soffit",unit:"LF",special:"33% progress rate",matRate:12.50,labRate:36.00,verified:true},
+  {code:"GC1",cat:"Ceilings",name:"GWB Suspended Ceiling",unit:"SF",special:"25% progress rate",matRate:2.20,labRate:5.15,verified:true},
+  {code:"ACT1",cat:"Ceilings",name:"2x2 ACT Grid + Tile (Std)",unit:"SF",p8:null,p10:7.27,p14:null,p20:null,matRate:3.02,labRate:4.25,verified:true},
+  {code:"ACT2",cat:"Ceilings",name:"2x4 ACT Grid + Tile (Std)",unit:"SF",p8:null,p10:6.72,p14:null,p20:null,matRate:2.82,labRate:3.90,verified:true},
   // ── INSULATION ──
-  {code:"INS1",name:'R-13 Batt Insulation (3-5/8")',unit:"SF",p8:null,p10:1.25,p14:null,p20:null,matRate:0.45,labRate:0.80,verified:true},
-  {code:"INS2",name:'R-19 Batt Insulation (6")',unit:"SF",p8:null,p10:1.39,p14:null,p20:null,matRate:0.49,labRate:0.90,verified:true},
-  {code:"INS3",name:'R-21 Batt Insulation (6")',unit:"SF",p8:null,p10:1.59,p14:null,p20:null,matRate:0.69,labRate:0.90,verified:true},
-  {code:"INS4",name:'3" Mineral Wool',unit:"SF",p8:null,p10:2.35,p14:null,p20:null,matRate:0.85,labRate:1.50,verified:true},
+  {code:"INS1",cat:"Insulation",name:'R-13 Batt Insulation (3-5/8")',unit:"SF",p8:null,p10:1.25,p14:null,p20:null,matRate:0.45,labRate:0.80,verified:true},
+  {code:"INS2",cat:"Insulation",name:'R-19 Batt Insulation (6")',unit:"SF",p8:null,p10:1.39,p14:null,p20:null,matRate:0.49,labRate:0.90,verified:true},
+  {code:"INS3",cat:"Insulation",name:'R-21 Batt Insulation (6")',unit:"SF",p8:null,p10:1.59,p14:null,p20:null,matRate:0.69,labRate:0.90,verified:true},
+  {code:"INS4",cat:"Insulation",name:'3" Mineral Wool',unit:"SF",p8:null,p10:2.35,p14:null,p20:null,matRate:0.85,labRate:1.50,verified:true},
   // ── SPECIALTIES ──
-  {code:"FP1",name:"Spray Fireproofing (Beam/Col)",unit:"SF",p8:null,p10:4.50,p14:null,p20:null,matRate:2.10,labRate:2.40,verified:false},
-  {code:"FRP1",name:"FRP Wall Panel (Glue-Up)",unit:"SF",p8:null,p10:6.20,p14:null,p20:null,matRate:3.50,labRate:2.70,verified:false},
-  {code:"LL1",name:'Lead-Lined GWB (1/32" Pb)',unit:"SF",p8:null,p10:10.71,p14:null,p20:null,matRate:4.21,labRate:6.50,verified:true},
-  {code:"ICRA1",name:"ICRA Dust Barrier (Temp)",unit:"LF",p8:null,p10:22.00,p14:null,p20:null,matRate:8.00,labRate:14.00,verified:true},
+  {code:"FP1",cat:"Specialties",name:"Spray Fireproofing (Beam/Col)",unit:"SF",p8:null,p10:4.50,p14:null,p20:null,matRate:2.10,labRate:2.40,verified:false},
+  {code:"FRP1",cat:"Specialties",name:"FRP Wall Panel (Glue-Up)",unit:"SF",p8:null,p10:6.20,p14:null,p20:null,matRate:3.50,labRate:2.70,verified:false},
+  {code:"LL1",cat:"Specialties",name:'Lead-Lined GWB (1/32" Pb)',unit:"SF",p8:null,p10:10.71,p14:null,p20:null,matRate:4.21,labRate:6.50,verified:true},
+  {code:"ICRA1",cat:"Specialties",name:"ICRA Dust Barrier (Temp)",unit:"LF",p8:null,p10:22.00,p14:null,p20:null,matRate:8.00,labRate:14.00,verified:true},
   // ── SHAFT WALL ──
-  {code:"SW1",name:"Shaft Wall System (1-hr)",unit:"LF",p8:null,p10:46.35,p14:null,p20:null,matRate:14.35,labRate:32.00,verified:true},
+  {code:"SW1",cat:"Shaft Wall",name:"Shaft Wall System (1-hr)",unit:"LF",p8:null,p10:46.35,p14:null,p20:null,matRate:14.35,labRate:32.00,verified:true},
   // ── PROFIT ADD-ONS ──
-  {code:"CB",name:"Corner Bead (Paper-Faced)",unit:"LF",p8:null,p10:2.05,p14:null,p20:null,matRate:0.85,labRate:1.20,verified:true},
-  {code:"CJ",name:"Control Joint (Zinc)",unit:"EA",p8:null,p10:30.00,p14:null,p20:null,matRate:12.00,labRate:18.00,verified:true},
-  {code:"FC",name:"Fire Caulking (Intumescent)",unit:"LF",p8:null,p10:6.00,p14:null,p20:null,matRate:2.50,labRate:3.50,verified:true},
-  {code:"BLK",name:"Blocking Allowance",unit:"SF",p8:null,p10:4.30,p14:null,p20:null,matRate:1.50,labRate:2.80,verified:true},
-  {code:"DF",name:"Door Frame (Metal Stud Header + Jambs)",unit:"EA",p8:null,p10:185.00,p14:null,p20:null,matRate:65.00,labRate:120.00,verified:true},
-  {code:"SL",name:"Sidelight Framing",unit:"EA",p8:null,p10:145.00,p14:null,p20:null,matRate:45.00,labRate:100.00,verified:true},
+  {code:"CB",cat:"Profit Add-Ons",name:"Corner Bead (Paper-Faced)",unit:"LF",p8:null,p10:2.05,p14:null,p20:null,matRate:0.85,labRate:1.20,verified:true},
+  {code:"CJ",cat:"Profit Add-Ons",name:"Control Joint (Zinc)",unit:"EA",p8:null,p10:30.00,p14:null,p20:null,matRate:12.00,labRate:18.00,verified:true},
+  {code:"FC",cat:"Profit Add-Ons",name:"Fire Caulking (Intumescent)",unit:"LF",p8:null,p10:6.00,p14:null,p20:null,matRate:2.50,labRate:3.50,verified:true},
+  {code:"BLK",cat:"Profit Add-Ons",name:"Blocking Allowance",unit:"SF",p8:null,p10:4.30,p14:null,p20:null,matRate:1.50,labRate:2.80,verified:true},
+  {code:"DF",cat:"Counts",name:"Door Frame (Metal Stud Header + Jambs)",unit:"EA",p8:null,p10:185.00,p14:null,p20:null,matRate:65.00,labRate:120.00,verified:true},
+  {code:"SL",cat:"Counts",name:"Sidelight Framing",unit:"EA",p8:null,p10:145.00,p14:null,p20:null,matRate:45.00,labRate:100.00,verified:true},
 ];
 
 // ── AUTO-PROFIT SUGGESTIONS (commonly forgotten add-ons) ──
