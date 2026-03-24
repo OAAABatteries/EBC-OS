@@ -1579,7 +1579,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     }
   }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond, hiddenFolders, selectedMeasIds, selectedMeasId, typicalGroups, measurements, pageKey, placingTypicalId, coPageMeasurements, coMode, shiftHeld, draggingHandle, backoutMode, showCondNames, hoveredMeasId, assemblies, bidAreas]);
 
-  useEffect(() => { requestAnimationFrame(drawOverlay); }, [drawOverlay]);
+  useEffect(() => { drawOverlay(); }, [drawOverlay]);
   // Reset setup panels when switching conditions
   useEffect(() => { setShowAttachSetup(false); setShowLinkSetup(false); }, [activeCondId]);
 
