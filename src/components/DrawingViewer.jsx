@@ -47,7 +47,14 @@ async function loadPdfFromIDB(key) {
 }
 
 // ── Modes ──
-const MODE = { PAN: "pan", CALIBRATE: "calibrate", LINEAR: "linear", AREA: "area", COUNT: "count", MEASURE: "measure" };
+const MODE = { PAN: "pan", CALIBRATE: "calibrate", LINEAR: "linear", AREA: "area", COUNT: "count", MEASURE: "measure",
+  TEXT: "text", ARROW: "arrow", CALLOUT: "callout", LINE_ANN: "line_ann",
+  HIGHLIGHTER: "highlighter", RECT: "rect", OVAL: "oval", POLYGON_ANN: "polygon_ann", CLOUD: "cloud", INK: "ink",
+  HOTLINK: "hotlink" };
+const ANN_MODES = new Set([MODE.TEXT, MODE.ARROW, MODE.CALLOUT, MODE.LINE_ANN,
+  MODE.HIGHLIGHTER, MODE.RECT, MODE.OVAL, MODE.POLYGON_ANN, MODE.CLOUD, MODE.INK, MODE.HOTLINK]);
+// Modes that use mouse-drag (mousedown→move→up) instead of click-click
+const ANN_DRAG_MODES = new Set([MODE.HIGHLIGHTER, MODE.RECT, MODE.OVAL, MODE.INK]);
 
 // ── Condition colors — auto-assigned ──
 const COND_COLORS = [
@@ -291,6 +298,24 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   const [measureVertices, setMeasureVertices] = useState([]);  // temp vertices for current measurement
   const [measureResults, setMeasureResults] = useState([]);     // persisted ruler lines per page: { id, pageKey, vertices, totalFt }
 
+  // ── Annotations (markup only — no takeoff impact) ──
+  const [annotations, setAnnotations] = useState(_init.annotations || {}); // { [pageKey]: [ann, ...] }
+  const [selectedAnnId, setSelectedAnnId] = useState(null);
+  const [annStyle, setAnnStyle] = useState({ strokeColor: "#ef4444", fillColor: null, lineWidth: 2, opacity: 1.0, fontSize: 14 });
+  const [annStartPt, setAnnStartPt] = useState(null); // for arrow/line/callout: first click point
+  const [showAnnTextInput, setShowAnnTextInput] = useState(null); // { position: {x,y}, type: "text"|"callout", anchorPt?: {x,y} }
+  const [annTextValue, setAnnTextValue] = useState("");
+  const annTextRef = useRef(null);
+  const [annDragging, setAnnDragging] = useState(null); // { type, startPt, points } for drag-based (highlighter/ink/rect/oval)
+  const [annPolyVerts, setAnnPolyVerts] = useState([]); // vertices for polygon_ann/cloud
+  const pageAnnotations = annotations[pageKey] || [];
+
+  // ── Named Views + Hot Links ──
+  const [namedViews, setNamedViews] = useState(_init.namedViews || []); // [{ id, name, pageKey, pdfIdx, zoom, scrollX, scrollY }]
+  const [showSaveView, setShowSaveView] = useState(false);
+  const [saveViewName, setSaveViewName] = useState("");
+  const [hotlinkTargetId, setHotlinkTargetId] = useState(null); // named view ID to link when placing a hotlink
+
   // ── AI Plan Analysis ──
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
@@ -326,6 +351,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
   // ── Modifier key tracking (Shift for angle snap, Space for temp pan) ──
   const [shiftHeld, setShiftHeld] = useState(false);
+  const [snapEnabled, setSnapEnabled] = useState(true); // Angle snap on by default; Shift inverts
   useEffect(() => {
     const down = (e) => {
       if (e.key === "Shift") setShiftHeld(true);
@@ -369,11 +395,13 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         typicalGroups,
         coMeasurements,
         completedPages,
+        annotations,
+        namedViews,
       });
       setLastSaved(Date.now());
     }, 800); // 800ms debounce
     return () => clearTimeout(saveTimerRef.current);
-  }, [measurements, conditions, condLinks, sheetNames, calibrations, bidAreas, hiddenFolders, activeCondId, activeBidAreaId, typicalGroups, coMeasurements, pdfFiles.length, completedPages]);
+  }, [measurements, conditions, condLinks, sheetNames, calibrations, bidAreas, hiddenFolders, activeCondId, activeBidAreaId, typicalGroups, coMeasurements, pdfFiles.length, completedPages, annotations, namedViews]);
 
   // Refs
   const pdfCanvasRef = useRef(null);
@@ -1455,7 +1483,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
       // Default = snap preview line to angle; Shift = free trace
       let cursorTarget = mousePos;
-      if (mousePos && !shiftHeld && activeVertices.length > 0) {
+      if (mousePos && (snapEnabled !== shiftHeld) && activeVertices.length > 0) {
         const lastScaled = { x: activeVertices[activeVertices.length - 1].x * scale, y: activeVertices[activeVertices.length - 1].y * scale };
         cursorTarget = snapToAngle(lastScaled, mousePos);
       }
@@ -1468,7 +1496,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       });
 
       // Show angle indicator when snapping (default mode, not holding Shift)
-      if (cursorTarget && !shiftHeld && activeVertices.length > 0) {
+      if (cursorTarget && (snapEnabled !== shiftHeld) && activeVertices.length > 0) {
         const lastScaled = { x: activeVertices[activeVertices.length - 1].x * scale, y: activeVertices[activeVertices.length - 1].y * scale };
         const dx = cursorTarget.x - lastScaled.x;
         const dy = cursorTarget.y - lastScaled.y;
@@ -1665,6 +1693,251 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       ctx.restore();
     });
 
+    // ── Annotations (markup layer — drawn on top of measurements) ──
+    pageAnnotations.forEach(ann => {
+      ctx.save();
+      ctx.globalAlpha = ann.opacity || 1.0;
+      const sc = ann.strokeColor || "#ef4444";
+      const lw = ann.lineWidth || 2;
+      const isSel = ann.id === selectedAnnId;
+
+      if (ann.type === "text") {
+        const px = ann.position.x * scale;
+        const py = ann.position.y * scale;
+        const fs = (ann.fontSize || 14) * Math.min(Math.max(zoom, 0.5), 2);
+        ctx.font = `bold ${fs}px sans-serif`;
+        const tw = ctx.measureText(ann.text).width;
+        const pad = 4;
+        // Background
+        ctx.fillStyle = isSel ? "rgba(239,68,68,0.15)" : "rgba(0,0,0,0.7)";
+        ctx.fillRect(px - pad, py - fs + 2, tw + pad * 2, fs + pad);
+        if (isSel) { ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]); ctx.strokeRect(px - pad, py - fs + 2, tw + pad * 2, fs + pad); ctx.setLineDash([]); }
+        // Text
+        ctx.fillStyle = sc;
+        ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+        ctx.fillText(ann.text, px, py);
+      }
+
+      if (ann.type === "arrow" || ann.type === "line") {
+        const sx = ann.start.x * scale, sy = ann.start.y * scale;
+        const ex = ann.end.x * scale, ey = ann.end.y * scale;
+        ctx.strokeStyle = sc; ctx.lineWidth = lw;
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+        // Arrowhead for arrow type
+        if (ann.type === "arrow") {
+          const angle = Math.atan2(ey - sy, ex - sx);
+          const headLen = 12 + lw * 2;
+          ctx.fillStyle = sc;
+          ctx.beginPath();
+          ctx.moveTo(ex, ey);
+          ctx.lineTo(ex - headLen * Math.cos(angle - 0.4), ey - headLen * Math.sin(angle - 0.4));
+          ctx.lineTo(ex - headLen * Math.cos(angle + 0.4), ey - headLen * Math.sin(angle + 0.4));
+          ctx.closePath(); ctx.fill();
+        }
+        // Selection highlight
+        if (isSel) { ctx.strokeStyle = "rgba(239,68,68,0.6)"; ctx.lineWidth = lw + 4; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke(); ctx.setLineDash([]); }
+        // Endpoint dots
+        [{ x: sx, y: sy }, { x: ex, y: ey }].forEach(p => { ctx.fillStyle = sc; ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill(); });
+      }
+
+      if (ann.type === "callout") {
+        const px = ann.position.x * scale, py = ann.position.y * scale;
+        const ax = ann.anchorPt.x * scale, ay = ann.anchorPt.y * scale;
+        const fs = (ann.fontSize || 14) * Math.min(Math.max(zoom, 0.5), 2);
+        ctx.font = `bold ${fs}px sans-serif`;
+        const tw = ctx.measureText(ann.text).width;
+        const pad = 6;
+        const boxW = tw + pad * 2;
+        const boxH = fs + pad * 2;
+        ctx.strokeStyle = sc; ctx.lineWidth = lw;
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(px, py); ctx.stroke();
+        const angle = Math.atan2(ay - py, ax - px);
+        const headLen = 10 + lw;
+        ctx.fillStyle = sc; ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(ax - headLen * Math.cos(angle - 0.4), ay - headLen * Math.sin(angle - 0.4));
+        ctx.lineTo(ax - headLen * Math.cos(angle + 0.4), ay - headLen * Math.sin(angle + 0.4));
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = isSel ? "rgba(239,68,68,0.15)" : "rgba(0,0,0,0.8)";
+        ctx.fillRect(px - pad, py - fs - pad + 4, boxW, boxH);
+        ctx.strokeStyle = sc; ctx.lineWidth = 1;
+        ctx.strokeRect(px - pad, py - fs - pad + 4, boxW, boxH);
+        if (isSel) { ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]); ctx.strokeRect(px - pad - 2, py - fs - pad + 2, boxW + 4, boxH + 4); ctx.setLineDash([]); }
+        ctx.fillStyle = sc; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+        ctx.fillText(ann.text, px, py);
+      }
+
+      // ── Highlighter / Ink (freehand path) ──
+      if (ann.type === "highlighter" || ann.type === "ink") {
+        if (ann.vertices && ann.vertices.length >= 2) {
+          const pts = ann.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+          ctx.strokeStyle = sc; ctx.lineWidth = lw; ctx.lineCap = "round"; ctx.lineJoin = "round";
+          ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+          ctx.stroke();
+          if (isSel) { ctx.strokeStyle = "rgba(239,68,68,0.4)"; ctx.lineWidth = lw + 6; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y); ctx.stroke(); ctx.setLineDash([]); }
+        }
+      }
+
+      // ── Rectangle ──
+      if (ann.type === "rect") {
+        const x1 = Math.min(ann.start.x, ann.end.x) * scale;
+        const y1 = Math.min(ann.start.y, ann.end.y) * scale;
+        const w = Math.abs(ann.end.x - ann.start.x) * scale;
+        const h = Math.abs(ann.end.y - ann.start.y) * scale;
+        if (ann.fillColor) { ctx.fillStyle = ann.fillColor; ctx.fillRect(x1, y1, w, h); }
+        ctx.strokeStyle = sc; ctx.lineWidth = lw; ctx.strokeRect(x1, y1, w, h);
+        if (isSel) { ctx.strokeStyle = "rgba(239,68,68,0.6)"; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]); ctx.strokeRect(x1 - 2, y1 - 2, w + 4, h + 4); ctx.setLineDash([]); }
+      }
+
+      // ── Oval ──
+      if (ann.type === "oval") {
+        const cx = (ann.start.x + ann.end.x) / 2 * scale;
+        const cy = (ann.start.y + ann.end.y) / 2 * scale;
+        const rx = Math.abs(ann.end.x - ann.start.x) / 2 * scale;
+        const ry = Math.abs(ann.end.y - ann.start.y) / 2 * scale;
+        ctx.beginPath(); ctx.ellipse(cx, cy, Math.max(rx, 1), Math.max(ry, 1), 0, 0, Math.PI * 2);
+        if (ann.fillColor) { ctx.fillStyle = ann.fillColor; ctx.fill(); }
+        ctx.strokeStyle = sc; ctx.lineWidth = lw; ctx.stroke();
+        if (isSel) { ctx.strokeStyle = "rgba(239,68,68,0.6)"; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.ellipse(cx, cy, Math.max(rx + 3, 1), Math.max(ry + 3, 1), 0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
+      }
+
+      // ── Polygon (closed outline) ──
+      if (ann.type === "polygon") {
+        if (ann.vertices && ann.vertices.length >= 3) {
+          const pts = ann.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+          ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+          ctx.closePath();
+          if (ann.fillColor) { ctx.fillStyle = ann.fillColor; ctx.fill(); }
+          ctx.strokeStyle = sc; ctx.lineWidth = lw; ctx.stroke();
+          if (isSel) { ctx.strokeStyle = "rgba(239,68,68,0.6)"; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]); }
+        }
+      }
+
+      // ── Cloud (revision cloud — scalloped outline) ──
+      if (ann.type === "cloud") {
+        if (ann.vertices && ann.vertices.length >= 3) {
+          const pts = ann.vertices.map(v => ({ x: v.x * scale, y: v.y * scale }));
+          // Draw scalloped arcs along each edge
+          if (ann.fillColor) {
+            ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+            ctx.closePath(); ctx.fillStyle = ann.fillColor; ctx.fill();
+          }
+          ctx.strokeStyle = sc; ctx.lineWidth = lw;
+          for (let i = 0; i < pts.length; i++) {
+            const a = pts[i], b = pts[(i + 1) % pts.length];
+            const edgeLen = dist(a, b);
+            const bumpSize = Math.min(18, edgeLen / 3);
+            const numBumps = Math.max(2, Math.round(edgeLen / bumpSize));
+            for (let j = 0; j < numBumps; j++) {
+              const t0 = j / numBumps, t1 = (j + 1) / numBumps;
+              const x0 = a.x + (b.x - a.x) * t0, y0 = a.y + (b.y - a.y) * t0;
+              const x1 = a.x + (b.x - a.x) * t1, y1 = a.y + (b.y - a.y) * t1;
+              const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+              // Normal direction (outward)
+              const dx = x1 - x0, dy = y1 - y0;
+              const len = Math.sqrt(dx * dx + dy * dy) || 1;
+              const nx = -dy / len * bumpSize * 0.5, ny = dx / len * bumpSize * 0.5;
+              ctx.beginPath(); ctx.moveTo(x0, y0);
+              ctx.quadraticCurveTo(mx + nx, my + ny, x1, y1);
+              ctx.stroke();
+            }
+          }
+          if (isSel) { ctx.strokeStyle = "rgba(239,68,68,0.5)"; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]); }
+        }
+      }
+
+      // ── Hot Link (clickable navigation marker) ──
+      if (ann.type === "hotlink") {
+        const px = ann.position.x * scale, py = ann.position.y * scale;
+        const label = ann.label || "🔗";
+        const fs = 11 * Math.min(Math.max(zoom, 0.5), 2);
+        ctx.font = `bold ${fs}px sans-serif`;
+        const tw = ctx.measureText("🔗 " + label).width;
+        const pad = 5;
+        const boxW = tw + pad * 2;
+        const boxH = fs + pad * 2;
+        // Background pill
+        ctx.fillStyle = isSel ? "rgba(59,130,246,0.3)" : "rgba(59,130,246,0.15)";
+        const r = boxH / 2;
+        ctx.beginPath(); ctx.moveTo(px - pad + r, py - fs - pad + 4); ctx.arcTo(px - pad + boxW, py - fs - pad + 4, px - pad + boxW, py - fs - pad + 4 + boxH, r); ctx.arcTo(px - pad + boxW, py - fs - pad + 4 + boxH, px - pad, py - fs - pad + 4 + boxH, r); ctx.arcTo(px - pad, py - fs - pad + 4 + boxH, px - pad, py - fs - pad + 4, r); ctx.arcTo(px - pad, py - fs - pad + 4, px - pad + boxW, py - fs - pad + 4, r); ctx.closePath(); ctx.fill();
+        // Border
+        ctx.strokeStyle = "#3b82f6"; ctx.lineWidth = isSel ? 2 : 1;
+        ctx.stroke();
+        if (isSel) { ctx.setLineDash([4, 3]); ctx.strokeStyle = "#fff"; ctx.stroke(); ctx.setLineDash([]); }
+        // Text
+        ctx.fillStyle = "#93c5fd"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+        ctx.fillText("🔗 " + label, px, py);
+      }
+
+      ctx.restore();
+    });
+
+    // Live preview: arrow/line/callout first-click → mouse
+    if ((mode === MODE.ARROW || mode === MODE.LINE_ANN || mode === MODE.CALLOUT) && annStartPt && mousePos) {
+      ctx.save();
+      const sx = annStartPt.x * scale, sy = annStartPt.y * scale;
+      ctx.strokeStyle = annStyle.strokeColor; ctx.lineWidth = annStyle.lineWidth;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(mousePos.x, mousePos.y); ctx.stroke();
+      ctx.setLineDash([]);
+      // Arrow preview head
+      if (mode === MODE.ARROW) {
+        const angle = Math.atan2(mousePos.y - sy, mousePos.x - sx);
+        const headLen = 12;
+        ctx.fillStyle = annStyle.strokeColor; ctx.beginPath();
+        ctx.moveTo(mousePos.x, mousePos.y);
+        ctx.lineTo(mousePos.x - headLen * Math.cos(angle - 0.4), mousePos.y - headLen * Math.sin(angle - 0.4));
+        ctx.lineTo(mousePos.x - headLen * Math.cos(angle + 0.4), mousePos.y - headLen * Math.sin(angle + 0.4));
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // Live preview: polygon/cloud vertices
+    if ((mode === MODE.POLYGON_ANN || mode === MODE.CLOUD) && annPolyVerts.length > 0) {
+      ctx.save();
+      const pts = annPolyVerts.map(v => ({ x: v.x * scale, y: v.y * scale }));
+      ctx.strokeStyle = annStyle.strokeColor; ctx.lineWidth = annStyle.lineWidth;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      if (mousePos) ctx.lineTo(mousePos.x, mousePos.y);
+      ctx.stroke(); ctx.setLineDash([]);
+      pts.forEach(p => { ctx.fillStyle = annStyle.strokeColor; ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill(); });
+      ctx.restore();
+    }
+
+    // Live preview: drag-based annotations
+    if (annDragging) {
+      ctx.save();
+      ctx.globalAlpha = annDragging.type === "highlighter" ? 0.3 : (annStyle.opacity || 1.0);
+      ctx.strokeStyle = annStyle.strokeColor; ctx.lineWidth = annDragging.type === "highlighter" ? Math.max(annStyle.lineWidth * 6, 12) : annStyle.lineWidth;
+      if (annDragging.type === "highlighter" || annDragging.type === "ink") {
+        const pts = annDragging.points.map(v => ({ x: v.x * scale, y: v.y * scale }));
+        if (pts.length >= 2) {
+          ctx.lineCap = "round"; ctx.lineJoin = "round";
+          ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+          ctx.stroke();
+        }
+      }
+      if ((annDragging.type === "rect" || annDragging.type === "oval") && annDragging.endPt) {
+        const x1 = Math.min(annDragging.startPt.x, annDragging.endPt.x) * scale;
+        const y1 = Math.min(annDragging.startPt.y, annDragging.endPt.y) * scale;
+        const w = Math.abs(annDragging.endPt.x - annDragging.startPt.x) * scale;
+        const h = Math.abs(annDragging.endPt.y - annDragging.startPt.y) * scale;
+        ctx.setLineDash([6, 4]);
+        if (annStyle.fillColor) { ctx.fillStyle = annStyle.fillColor; if (annDragging.type === "oval") { ctx.beginPath(); ctx.ellipse(x1 + w / 2, y1 + h / 2, w / 2 || 1, h / 2 || 1, 0, 0, Math.PI * 2); ctx.fill(); } else ctx.fillRect(x1, y1, w, h); }
+        if (annDragging.type === "oval") { ctx.beginPath(); ctx.ellipse(x1 + w / 2, y1 + h / 2, w / 2 || 1, h / 2 || 1, 0, 0, Math.PI * 2); ctx.stroke(); }
+        else ctx.strokeRect(x1, y1, w, h);
+        ctx.setLineDash([]);
+      }
+      ctx.restore();
+    }
+
     // Backout mode indicator
     if (backoutMode) {
       const ch = canvas.height / dpr;
@@ -1683,7 +1956,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       ctx.fillStyle = "#4ade80"; ctx.font = "10px sans-serif"; ctx.textAlign = "left";
       ctx.fillText(`Scale set (${(1 / ppf).toFixed(4)}'/px)`, 14, ch - 14);
     }
-  }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond, hiddenFolders, selectedMeasIds, selectedMeasId, typicalGroups, measurements, pageKey, placingTypicalId, coPageMeasurements, coMode, shiftHeld, draggingHandle, backoutMode, showCondNames, hoveredMeasId, assemblies, bidAreas, measureVertices, measureResults]);
+  }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond, hiddenFolders, selectedMeasIds, selectedMeasId, typicalGroups, measurements, pageKey, placingTypicalId, coPageMeasurements, coMode, shiftHeld, draggingHandle, backoutMode, showCondNames, hoveredMeasId, assemblies, bidAreas, measureVertices, measureResults, pageAnnotations, selectedAnnId, annStartPt, annStyle, annPolyVerts, annDragging]);
 
   useEffect(() => { requestAnimationFrame(drawOverlay); }, [drawOverlay]);
   // Reset setup panels when switching conditions
@@ -1720,13 +1993,72 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       return;
     }
     if (mode === MODE.PAN) {
-      // Click-to-select measurement in PAN mode
+      // Click-to-select: check annotations first (drawn on top), then measurements
       const clickPt = getCanvasCoords(e);
       const scale = fitScaleRef.current * zoom;
+
+      // Check annotations (reverse order = topmost first)
+      let closestAnn = null, closestAnnDist = 20;
+      [...pageAnnotations].reverse().forEach(ann => {
+        if (ann.type === "text") {
+          const px = ann.position.x * scale, py = ann.position.y * scale;
+          const d = dist(clickPt, { x: px, y: py });
+          if (d < 30 && d < closestAnnDist) { closestAnnDist = d; closestAnn = ann.id; }
+        } else if (ann.type === "arrow" || ann.type === "line") {
+          const sa = { x: ann.start.x * scale, y: ann.start.y * scale };
+          const ea = { x: ann.end.x * scale, y: ann.end.y * scale };
+          const d = distToSegment(clickPt, sa, ea);
+          if (d < closestAnnDist) { closestAnnDist = d; closestAnn = ann.id; }
+        } else if (ann.type === "callout") {
+          const px = ann.position.x * scale, py = ann.position.y * scale;
+          const ax = ann.anchorPt.x * scale, ay = ann.anchorPt.y * scale;
+          const dText = dist(clickPt, { x: px, y: py });
+          const dLine = distToSegment(clickPt, { x: px, y: py }, { x: ax, y: ay });
+          const d = Math.min(dText, dLine);
+          if (d < 25 && d < closestAnnDist) { closestAnnDist = d; closestAnn = ann.id; }
+        } else if (ann.type === "highlighter" || ann.type === "ink") {
+          if (ann.vertices) {
+            for (let i = 0; i < ann.vertices.length - 1; i++) {
+              const d = distToSegment(clickPt, { x: ann.vertices[i].x * scale, y: ann.vertices[i].y * scale }, { x: ann.vertices[i + 1].x * scale, y: ann.vertices[i + 1].y * scale });
+              if (d < (ann.type === "highlighter" ? 15 : closestAnnDist)) { closestAnnDist = d; closestAnn = ann.id; break; }
+            }
+          }
+        } else if (ann.type === "rect" || ann.type === "oval") {
+          const cx = (ann.start.x + ann.end.x) / 2 * scale;
+          const cy = (ann.start.y + ann.end.y) / 2 * scale;
+          const hw = Math.abs(ann.end.x - ann.start.x) / 2 * scale;
+          const hh = Math.abs(ann.end.y - ann.start.y) / 2 * scale;
+          // Simple bounding box hit test
+          if (Math.abs(clickPt.x - cx) < hw + 10 && Math.abs(clickPt.y - cy) < hh + 10) {
+            const d = dist(clickPt, { x: cx, y: cy });
+            if (d < closestAnnDist) { closestAnnDist = d; closestAnn = ann.id; }
+          }
+        } else if (ann.type === "polygon" || ann.type === "cloud") {
+          if (ann.vertices) {
+            for (let i = 0; i < ann.vertices.length; i++) {
+              const a = { x: ann.vertices[i].x * scale, y: ann.vertices[i].y * scale };
+              const b = { x: ann.vertices[(i + 1) % ann.vertices.length].x * scale, y: ann.vertices[(i + 1) % ann.vertices.length].y * scale };
+              const d = distToSegment(clickPt, a, b);
+              if (d < closestAnnDist) { closestAnnDist = d; closestAnn = ann.id; break; }
+            }
+          }
+        } else if (ann.type === "hotlink") {
+          const px = ann.position.x * scale, py = ann.position.y * scale;
+          const d = dist(clickPt, { x: px, y: py });
+          if (d < 35 && d < closestAnnDist) { closestAnnDist = d; closestAnn = ann.id; }
+        }
+      });
+
+      if (closestAnn) {
+        setSelectedAnnId(closestAnn);
+        setSelectedMeasId(null);
+        return;
+      }
+
+      // Check measurements
       let closest = null, closestDist = 20;
       pageMeasurements.forEach(m => {
         if (m.vertices) {
-          // Check proximity to edges, not just vertices
           for (let i = 0; i < m.vertices.length - (m.type === "area" ? 0 : 1); i++) {
             const a = { x: m.vertices[i].x * scale, y: m.vertices[i].y * scale };
             const b = { x: m.vertices[(i + 1) % m.vertices.length].x * scale, y: m.vertices[(i + 1) % m.vertices.length].y * scale };
@@ -1742,7 +2074,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           if (d < closestDist) { closestDist = d; closest = m.id; }
         }
       });
-      setSelectedMeasId(closest); // null clears selection
+      setSelectedMeasId(closest);
+      setSelectedAnnId(null); // clear annotation selection when selecting measurement
       return;
     }
     if (mode === MODE.CALIBRATE) {
@@ -1754,7 +2087,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     if (mode === MODE.MEASURE) {
       if (!ppf) return;
       let pt = getNormCoords(e);
-      if (!e.shiftKey && measureVertices.length > 0) {
+      if ((snapEnabled ? !e.shiftKey : e.shiftKey) && measureVertices.length > 0) {
         pt = snapToAngle(measureVertices[measureVertices.length - 1], pt);
       }
       if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
@@ -1766,6 +2099,68 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       }, 200);
       return;
     }
+    // ── Annotation tools (no condition required) ──
+    if (mode === MODE.TEXT) {
+      const pt = getNormCoords(e);
+      setShowAnnTextInput({ position: pt, type: "text" });
+      setAnnTextValue("");
+      setTimeout(() => annTextRef.current?.focus(), 50);
+      return;
+    }
+    if (mode === MODE.ARROW || mode === MODE.LINE_ANN) {
+      const pt = getNormCoords(e);
+      if (!annStartPt) {
+        setAnnStartPt(pt);
+      } else {
+        addAnnotation({
+          id: "ann_" + Date.now(), type: mode === MODE.ARROW ? "arrow" : "line",
+          pageKey, start: annStartPt, end: pt,
+          strokeColor: annStyle.strokeColor, lineWidth: annStyle.lineWidth,
+        });
+        setAnnStartPt(null);
+        if (!continuousMode) setMode(MODE.PAN);
+      }
+      return;
+    }
+    if (mode === MODE.CALLOUT) {
+      const pt = getNormCoords(e);
+      if (!annStartPt) {
+        setAnnStartPt(pt);
+      } else {
+        setShowAnnTextInput({ position: pt, type: "callout", anchorPt: annStartPt });
+        setAnnTextValue("");
+        setAnnStartPt(null);
+        setTimeout(() => annTextRef.current?.focus(), 50);
+      }
+      return;
+    }
+    // Polygon / Cloud: click to add vertex (debounced like linear)
+    if (mode === MODE.POLYGON_ANN || mode === MODE.CLOUD) {
+      const pt = getNormCoords(e);
+      if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+      pendingClickRef.current = pt;
+      clickTimerRef.current = setTimeout(() => {
+        const ptToAdd = pendingClickRef.current;
+        pendingClickRef.current = null;
+        if (ptToAdd) setAnnPolyVerts(prev => [...prev, ptToAdd]);
+      }, 200);
+      return;
+    }
+    // Hot link: place a clickable navigation marker
+    if (mode === MODE.HOTLINK && hotlinkTargetId) {
+      const pt = getNormCoords(e);
+      const targetView = namedViews.find(v => v.id === hotlinkTargetId);
+      addAnnotation({
+        id: "ann_" + Date.now(), type: "hotlink", pageKey,
+        position: pt, targetViewId: hotlinkTargetId,
+        label: targetView ? targetView.name : "View",
+        strokeColor: "#3b82f6", lineWidth: 2,
+      });
+      if (!continuousMode) { setMode(MODE.PAN); setHotlinkTargetId(null); }
+      return;
+    }
+    // Drag-based modes (highlighter, ink, rect, oval) — handled via mousedown on overlay
+    if (ANN_DRAG_MODES.has(mode)) return;
     if (!activeCond) return;
     if (mode === MODE.COUNT) {
       const pt = getNormCoords(e);
@@ -1782,7 +2177,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       // Debounce: delay vertex placement so dblclick can cancel it
       let pt = getNormCoords(e);
       // Default = snap to nearest 15° angle; Shift = free trace (no snap)
-      if (!e.shiftKey && activeVertices.length > 0) {
+      if ((snapEnabled ? !e.shiftKey : e.shiftKey) && activeVertices.length > 0) {
         pt = snapToAngle(activeVertices[activeVertices.length - 1], pt);
       }
       if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
@@ -1802,6 +2197,34 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     // Cancel the pending single-click vertex
     if (clickTimerRef.current) { clearTimeout(clickTimerRef.current); clickTimerRef.current = null; }
     pendingClickRef.current = null;
+    // Double-click on hotlink in PAN mode → navigate to target view
+    if (mode === MODE.PAN) {
+      const clickPt = getCanvasCoords(e);
+      const sc = fitScaleRef.current * zoom;
+      for (let i = pageAnnotations.length - 1; i >= 0; i--) {
+        const ann = pageAnnotations[i];
+        if (ann.type === "hotlink" && ann.position) {
+          const d = dist(clickPt, { x: ann.position.x * sc, y: ann.position.y * sc });
+          if (d < 35) {
+            const targetView = namedViews.find(v => v.id === ann.targetViewId);
+            if (targetView) navigateToView(targetView);
+            return;
+          }
+        }
+      }
+    }
+    // Finish polygon/cloud annotation on dblclick
+    if ((mode === MODE.POLYGON_ANN || mode === MODE.CLOUD) && annPolyVerts.length >= 3) {
+      addAnnotation({
+        id: "ann_" + Date.now(), type: mode === MODE.CLOUD ? "cloud" : "polygon",
+        pageKey, vertices: annPolyVerts,
+        strokeColor: annStyle.strokeColor, fillColor: annStyle.fillColor,
+        lineWidth: annStyle.lineWidth, opacity: annStyle.opacity,
+      });
+      setAnnPolyVerts([]);
+      if (!continuousMode) setMode(MODE.PAN);
+      return;
+    }
     // Finish measure ruler on dblclick
     if (mode === MODE.MEASURE && measureVertices.length >= 2 && ppf) {
       let totalPx = 0;
@@ -1864,7 +2287,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   };
 
   const handleCanvasMove = (e) => {
-    if (mode === MODE.LINEAR || mode === MODE.AREA || mode === MODE.COUNT || mode === MODE.MEASURE) setMousePos(getCanvasCoords(e));
+    if (mode === MODE.LINEAR || mode === MODE.AREA || mode === MODE.COUNT || mode === MODE.MEASURE || ANN_MODES.has(mode)) setMousePos(getCanvasCoords(e));
     // Hover detection for tooltips
     const pt = getNormCoords(e);
     const scale = fitScaleRef.current * zoom;
@@ -2037,7 +2460,65 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     // Exit backout mode if we deleted the parent
     if (backoutMode === id) setBackoutMode(null);
   };
-  const cancelActive = () => { setActiveVertices([]); setMousePos(null); setCalPoints([]); setShowCalPrompt(false); };
+  const cancelActive = () => { setActiveVertices([]); setMousePos(null); setCalPoints([]); setShowCalPrompt(false); setAnnStartPt(null); setShowAnnTextInput(null); setAnnPolyVerts([]); setAnnDragging(null); };
+
+  // ── Annotation helpers ──
+  const addAnnotation = (ann) => {
+    setAnnotations(prev => ({ ...prev, [pageKey]: [...(prev[pageKey] || []), ann] }));
+    setUndoStack(prev => [...prev, { action: "ann_add", pageKey, annotationId: ann.id }]);
+    setRedoStack([]);
+  };
+  const deleteAnnotation = (id, pk) => {
+    const targetKey = pk || pageKey;
+    const ann = (annotations[targetKey] || []).find(a => a.id === id);
+    if (ann) setUndoStack(prev => [...prev, { action: "ann_delete", pageKey: targetKey, annotationId: id, annotationData: ann }]);
+    setAnnotations(prev => ({ ...prev, [targetKey]: (prev[targetKey] || []).filter(a => a.id !== id) }));
+  };
+
+  // ── Named Views ──
+  const saveNamedView = (name) => {
+    const container = containerRef.current;
+    const nv = {
+      id: "nv_" + Date.now(),
+      name: name || `View ${namedViews.length + 1}`,
+      pageKey, pdfIdx: activePdfIdx, page,
+      zoom,
+      scrollX: container ? container.scrollLeft : 0,
+      scrollY: container ? container.scrollTop : 0,
+    };
+    setNamedViews(prev => [...prev, nv]);
+    return nv;
+  };
+
+  const navigateToView = (nv) => {
+    if (!nv) return;
+    // Switch PDF if needed
+    if (nv.pdfIdx !== undefined && nv.pdfIdx !== activePdfIdx) setActivePdfIdx(nv.pdfIdx);
+    // Switch page
+    if (nv.page) setPage(nv.page);
+    // Set zoom
+    if (nv.zoom) setZoom(nv.zoom);
+    // Restore scroll position after a tick (page needs to render)
+    setTimeout(() => {
+      const container = containerRef.current;
+      if (container) {
+        if (nv.scrollX !== undefined) container.scrollLeft = nv.scrollX;
+        if (nv.scrollY !== undefined) container.scrollTop = nv.scrollY;
+      }
+    }, 100);
+  };
+
+  const deleteNamedView = (id) => {
+    setNamedViews(prev => prev.filter(v => v.id !== id));
+    // Also remove hotlink annotations that point to this view
+    setAnnotations(prev => {
+      const next = {};
+      Object.entries(prev).forEach(([pk, anns]) => {
+        next[pk] = anns.filter(a => !(a.type === "hotlink" && a.targetViewId === id));
+      });
+      return next;
+    });
+  };
 
   // ── Flush pending save before closing (prevent losing last <800ms of changes) ──
   const handleClose = useCallback(() => {
@@ -2079,6 +2560,13 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       // Restore original conditionId
       setRedoStack(prev => [...prev, last]);
       setMeasurements(prev => ({ ...prev, [pk]: (prev[pk] || []).map(m => m.id === last.measurementId ? { ...m, conditionId: last.oldConditionId } : m) }));
+    } else if (last.action === "ann_add") {
+      const ann = (annotations[pk] || []).find(a => a.id === last.annotationId);
+      setRedoStack(prev => [...prev, { ...last, annotationData: ann }]);
+      setAnnotations(prev => ({ ...prev, [pk]: (prev[pk] || []).filter(a => a.id !== last.annotationId) }));
+    } else if (last.action === "ann_delete" && last.annotationData) {
+      setRedoStack(prev => [...prev, last]);
+      setAnnotations(prev => ({ ...prev, [pk]: [...(prev[pk] || []), last.annotationData] }));
     }
     setUndoStack(prev => prev.slice(0, -1));
   };
@@ -2100,6 +2588,13 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     } else if (last.action === "reassign") {
       setUndoStack(prev => [...prev, { ...last, oldConditionId: last.oldConditionId, newConditionId: last.newConditionId }]);
       setMeasurements(prev => ({ ...prev, [pk]: (prev[pk] || []).map(m => m.id === last.measurementId ? { ...m, conditionId: last.newConditionId } : m) }));
+    } else if (last.action === "ann_add" && last.annotationData) {
+      setAnnotations(prev => ({ ...prev, [pk]: [...(prev[pk] || []), last.annotationData] }));
+      setUndoStack(prev => [...prev, { action: "ann_add", pageKey: pk, annotationId: last.annotationId }]);
+    } else if (last.action === "ann_delete") {
+      const ann = (annotations[pk] || []).find(a => a.id === last.annotationId);
+      setUndoStack(prev => [...prev, { ...last, annotationData: ann }]);
+      setAnnotations(prev => ({ ...prev, [pk]: (prev[pk] || []).filter(a => a.id !== last.annotationId) }));
     }
     setRedoStack(prev => prev.slice(0, -1));
   };
@@ -2109,7 +2604,20 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   const nextPage = () => { setPage(p => Math.min(numPages, p + 1)); setActiveVertices([]); setBackoutMode(null); };
   const zoomIn = () => setZoom(s => Math.min(6, s + 0.25));
   const zoomOut = () => setZoom(s => Math.max(0.25, s - 0.25));
-  const resetZoom = () => setZoom(1);
+  const resetZoom = () => setZoom(1); // fit to width (default: fitScaleRef already fits width at zoom=1)
+  const fitToPage = () => {
+    // Fit entire page (both width and height) into viewport
+    const container = containerRef.current;
+    if (!container || !pdfCanvasRef.current) { setZoom(1); return; }
+    const cw = container.clientWidth - 32;
+    const ch = container.clientHeight - 16;
+    const canvasW = pdfCanvasRef.current.clientWidth / zoom; // width at zoom=1
+    const canvasH = pdfCanvasRef.current.clientHeight / zoom; // height at zoom=1
+    if (canvasW > 0 && canvasH > 0) {
+      const fitZ = Math.min(cw / canvasW, ch / canvasH, 1);
+      setZoom(Math.max(0.15, fitZ));
+    } else setZoom(1);
+  };
 
   // Scroll wheel zoom centered on cursor position
   const handleWheel = useCallback((e) => {
@@ -2267,6 +2775,10 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     const handler = (e) => {
       // Escape always works — even when focused on an input (e.g. calibration prompt)
       if (e.key === "Escape") {
+        if (showAnnTextInput) { setShowAnnTextInput(null); setAnnTextValue(""); return; }
+        if (annStartPt) { setAnnStartPt(null); return; }
+        if (annPolyVerts.length > 0) { setAnnPolyVerts([]); return; }
+        if (annDragging) { setAnnDragging(null); return; }
         if (backoutMode) { setBackoutMode(null); return; }
         if (measureVertices.length > 0) { setMeasureVertices([]); return; }
         if (showCalPrompt || calPoints.length > 0 || activeVertices.length > 0) { cancelActive(); e.target.blur?.(); }
@@ -2276,6 +2788,17 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       // Don't intercept other keys when typing in inputs
       if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
       if (e.key === "Enter") {
+        if ((mode === MODE.POLYGON_ANN || mode === MODE.CLOUD) && annPolyVerts.length >= 3) {
+          addAnnotation({
+            id: "ann_" + Date.now(), type: mode === MODE.CLOUD ? "cloud" : "polygon",
+            pageKey, vertices: annPolyVerts,
+            strokeColor: annStyle.strokeColor, fillColor: annStyle.fillColor,
+            lineWidth: annStyle.lineWidth, opacity: annStyle.opacity,
+          });
+          setAnnPolyVerts([]);
+          if (!continuousMode) setMode(MODE.PAN);
+          return;
+        }
         if (mode === MODE.MEASURE && measureVertices.length >= 2 && ppf) {
           let totalPx = 0;
           for (let i = 1; i < measureVertices.length; i++) totalPx += dist(measureVertices[i - 1], measureVertices[i]);
@@ -2292,7 +2815,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       if (e.key === "PageUp") { e.preventDefault(); prevPage(); return; }
       if (e.key === "PageDown") { e.preventDefault(); nextPage(); return; }
       if (e.key === "Delete" || e.key === "Backspace") {
-        if (selectedMeasId) { deleteMeasurement(selectedMeasId); setSelectedMeasId(null); }
+        if (selectedAnnId) { deleteAnnotation(selectedAnnId); setSelectedAnnId(null); }
+        else if (selectedMeasId) { deleteMeasurement(selectedMeasId); setSelectedMeasId(null); }
         return;
       }
       if (e.key === "l" || e.key === "L") { if (backoutMode) return; if (ppf) { setMode(MODE.LINEAR); cancelActive(); } return; }
@@ -2300,6 +2824,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       if (e.key === "c" || e.key === "C") { if (backoutMode) return; setMode(MODE.COUNT); cancelActive(); return; }
       if (e.key === "s" || e.key === "S") { if (backoutMode) return; setMode(MODE.CALIBRATE); cancelActive(); return; }
       if (e.key === "m" || e.key === "M") { if (ppf) { setMode(MODE.MEASURE); cancelActive(); setMeasureVertices([]); } return; }
+      if (e.key === "t" || e.key === "T") { setMode(MODE.TEXT); cancelActive(); return; }
+      if (e.key === "h" || e.key === "H") { setMode(MODE.HIGHLIGHTER); cancelActive(); return; }
       if (e.key === "n" || e.key === "N") { setShowCondNames(v => !v); return; }
       if (e.key === "Insert") { setShowCondProps(true); setEditingCondId(null); return; }
       if (e.key === "f" || e.key === "F") { resetZoom(); return; }
@@ -2318,7 +2844,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [activeVertices, calPoints, showCalPrompt, activeCond, ppf, folders, selectedMeasId, measureVertices, mode, pageKey]);
+  }, [activeVertices, calPoints, showCalPrompt, activeCond, ppf, folders, selectedMeasId, selectedAnnId, measureVertices, mode, pageKey, annStartPt, showAnnTextInput, annPolyVerts, annDragging, annStyle, continuousMode]);
 
   // Add new condition
   const addCondition = (asmCode) => {
@@ -2384,6 +2910,9 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
             <button onClick={() => setShowCondNames(v => !v)}
               style={showCondNames ? { ...btn, padding: "4px 10px", fontSize: 12, background: "rgba(139,92,246,0.2)", borderColor: "rgba(139,92,246,0.5)", color: "#a78bfa" } : { ...btn, padding: "4px 10px", fontSize: 12 }}
               title="Toggle condition name labels (N)">Names</button>
+            <button onClick={() => setSnapEnabled(v => !v)}
+              style={snapEnabled ? { ...btn, padding: "4px 10px", fontSize: 12, background: "rgba(245,158,11,0.2)", borderColor: "rgba(245,158,11,0.5)", color: "#f59e0b" } : { ...btn, padding: "4px 10px", fontSize: 12 }}
+              title="Angle snap (15°). Shift inverts temporarily.">⊾ Snap</button>
           </div>
         </div>
         {/* Row 2: Page Navigation + Zoom — prominent */}
@@ -2409,7 +2938,22 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           <button onClick={zoomOut} style={{ ...btn, padding: "4px 8px", fontSize: 13 }}>−</button>
           <span style={{ color: "#ccc", fontSize: 12, minWidth: 36, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
           <button onClick={zoomIn} style={{ ...btn, padding: "4px 8px", fontSize: 13 }}>+</button>
-          <button onClick={resetZoom} style={{ ...btn, padding: "4px 8px", fontSize: 12 }} title="F">Fit</button>
+          <button onClick={resetZoom} style={{ ...btn, padding: "4px 6px", fontSize: 10 }} title="F — Fit width">W Fit</button>
+          <button onClick={fitToPage} style={{ ...btn, padding: "4px 6px", fontSize: 10 }} title="Fit entire page">P Fit</button>
+          <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
+          {/* Named Views */}
+          <button onClick={() => { setShowSaveView(true); setSaveViewName(""); }}
+            style={{ ...btn, padding: "4px 8px", fontSize: 10, background: "rgba(59,130,246,0.1)", borderColor: "rgba(59,130,246,0.25)", color: "#93c5fd" }}
+            title="Save current view (page + zoom + scroll position)">📌 Save View</button>
+          {namedViews.length > 0 && (
+            <select value="" onChange={e => { const nv = namedViews.find(v => v.id === e.target.value); if (nv) navigateToView(nv); }}
+              style={{ padding: "3px 6px", borderRadius: 4, border: "1px solid rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.08)", color: "#93c5fd", fontSize: 10, maxWidth: 130 }}>
+              <option value="" disabled>Views ({namedViews.length})</option>
+              {namedViews.map(nv => (
+                <option key={nv.id} value={nv.id}>{nv.name} — {sheetNames[nv.pageKey] || `P${nv.page}`}</option>
+              ))}
+            </select>
+          )}
           <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
           <button onClick={() => setViewMode(v => v === "drawing" ? "summary" : "drawing")}
             style={viewMode === "summary" ? { ...btnActive, padding: "4px 10px", fontSize: 12 } : { ...btn, padding: "4px 10px", fontSize: 12 }} title="Toggle summary view">
@@ -2442,6 +2986,74 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               </button>
             )}
           </div>
+        </div>
+        {/* Row 4: Annotation Tools + Style */}
+        <div style={{ display: "flex", alignItems: "center", padding: "3px 10px 4px", gap: 4, borderTop: "1px solid rgba(255,255,255,0.05)", flexWrap: "wrap" }}>
+          <span style={{ fontSize: 9, color: "#666", letterSpacing: 0.5 }}>MARKUP</span>
+          <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.08)" }} />
+          {[
+            { m: MODE.TEXT, label: "T Text", key: "T" },
+            { m: MODE.ARROW, label: "↗ Arrow", key: null },
+            { m: MODE.CALLOUT, label: "💬 Callout", key: null },
+            { m: MODE.LINE_ANN, label: "— Line", key: null },
+            { m: MODE.HIGHLIGHTER, label: "H Highlight", key: "H" },
+            { m: MODE.RECT, label: "▭ Rect", key: null },
+            { m: MODE.OVAL, label: "○ Oval", key: null },
+            { m: MODE.POLYGON_ANN, label: "⬠ Polygon", key: null },
+            { m: MODE.CLOUD, label: "☁ Cloud", key: null },
+            { m: MODE.INK, label: "✎ Ink", key: null },
+            { m: MODE.HOTLINK, label: "🔗 Link", key: null },
+          ].map(t => (
+            <button key={t.m} onClick={() => { if (t.m === MODE.HOTLINK && namedViews.length === 0) { alert("Save a Named View first (📌 Save View button)."); return; } setMode(t.m); cancelActive(); }}
+              style={mode === t.m
+                ? { ...btn, padding: "3px 6px", fontSize: 10, background: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.5)", color: "#f87171" }
+                : { ...btn, padding: "3px 6px", fontSize: 10 }}
+              title={t.key ? `${t.key} — ${t.label}` : t.label}>{t.label}</button>
+          ))}
+          <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.08)" }} />
+          {/* Stroke color */}
+          <span style={{ fontSize: 8, color: "#666" }}>Stroke</span>
+          {["#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7", "#fff"].map(c => (
+            <div key={"s" + c} onClick={() => setAnnStyle(s => ({ ...s, strokeColor: c }))}
+              style={{ width: 14, height: 14, borderRadius: 2, background: c, cursor: "pointer",
+                border: annStyle.strokeColor === c ? "2px solid #fff" : "1px solid rgba(255,255,255,0.2)",
+                boxShadow: annStyle.strokeColor === c ? "0 0 3px " + c : "none" }} />
+          ))}
+          <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.08)" }} />
+          {/* Fill color (for shapes) */}
+          <span style={{ fontSize: 8, color: "#666" }}>Fill</span>
+          <div onClick={() => setAnnStyle(s => ({ ...s, fillColor: null }))}
+            style={{ width: 14, height: 14, borderRadius: 2, background: "transparent", cursor: "pointer",
+              border: !annStyle.fillColor ? "2px solid #fff" : "1px solid rgba(255,255,255,0.2)",
+              position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: 0, left: "50%", width: 1, height: "100%", background: "#ef4444", transform: "rotate(45deg)", transformOrigin: "top" }} />
+          </div>
+          {["#ef444466", "#f59e0b66", "#22c55e66", "#3b82f666", "#a855f766"].map(c => (
+            <div key={"f" + c} onClick={() => setAnnStyle(s => ({ ...s, fillColor: c }))}
+              style={{ width: 14, height: 14, borderRadius: 2, background: c, cursor: "pointer",
+                border: annStyle.fillColor === c ? "2px solid #fff" : "1px solid rgba(255,255,255,0.2)" }} />
+          ))}
+          <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.08)" }} />
+          {/* Line width */}
+          <span style={{ fontSize: 8, color: "#666" }}>Wt</span>
+          {[1, 2, 3, 5].map(w => (
+            <button key={w} onClick={() => setAnnStyle(s => ({ ...s, lineWidth: w }))}
+              style={annStyle.lineWidth === w
+                ? { ...btn, padding: "1px 5px", fontSize: 9, background: "rgba(239,68,68,0.15)", borderColor: "rgba(239,68,68,0.4)", color: "#f87171" }
+                : { ...btn, padding: "1px 5px", fontSize: 9 }}>{w}</button>
+          ))}
+          {/* Opacity */}
+          <span style={{ fontSize: 8, color: "#666" }}>Op</span>
+          {[0.3, 0.5, 0.7, 1.0].map(o => (
+            <button key={o} onClick={() => setAnnStyle(s => ({ ...s, opacity: o }))}
+              style={annStyle.opacity === o
+                ? { ...btn, padding: "1px 5px", fontSize: 9, background: "rgba(239,68,68,0.15)", borderColor: "rgba(239,68,68,0.4)", color: "#f87171" }
+                : { ...btn, padding: "1px 5px", fontSize: 9 }}>{Math.round(o * 100)}%</button>
+          ))}
+          {/* Annotation count */}
+          {pageAnnotations.length > 0 && (
+            <span style={{ fontSize: 9, color: "#555", marginLeft: 4 }}>{pageAnnotations.length} markup{pageAnnotations.length !== 1 ? "s" : ""}</span>
+          )}
         </div>
       </div>
 
@@ -2602,7 +3214,61 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               <canvas ref={overlayCanvasRef}
                 style={{ position: "absolute", top: 0, left: 0, pointerEvents: mode === MODE.PAN ? "none" : "auto" }}
                 onClick={(e) => { setContextMenu(null); handleCanvasClick(e); }}
-                onDoubleClick={handleCanvasDoubleClick} onMouseMove={handleCanvasMove}
+                onDoubleClick={handleCanvasDoubleClick} onMouseMove={(e) => {
+                  handleCanvasMove(e);
+                  // Drag-based annotation: accumulate points while dragging
+                  if (annDragging && (annDragging.type === "highlighter" || annDragging.type === "ink")) {
+                    const pt = getNormCoords(e);
+                    // Simplify: only add point if moved > 3px from last
+                    const last = annDragging.points[annDragging.points.length - 1];
+                    const sc = fitScaleRef.current * zoom;
+                    if (!last || dist({ x: last.x * sc, y: last.y * sc }, { x: pt.x * sc, y: pt.y * sc }) > 3) {
+                      setAnnDragging(prev => prev ? { ...prev, points: [...prev.points, pt] } : null);
+                    }
+                  }
+                  if (annDragging && (annDragging.type === "rect" || annDragging.type === "oval")) {
+                    const pt = getNormCoords(e);
+                    setAnnDragging(prev => prev ? { ...prev, endPt: pt } : null);
+                  }
+                }}
+                onMouseDown={(e) => {
+                  if (e.button !== 0) return;
+                  if (ANN_DRAG_MODES.has(mode)) {
+                    const pt = getNormCoords(e);
+                    if (mode === MODE.HIGHLIGHTER || mode === MODE.INK) {
+                      setAnnDragging({ type: mode === MODE.HIGHLIGHTER ? "highlighter" : "ink", startPt: pt, points: [pt] });
+                    } else if (mode === MODE.RECT || mode === MODE.OVAL) {
+                      setAnnDragging({ type: mode === MODE.RECT ? "rect" : "oval", startPt: pt, endPt: pt });
+                    }
+                  }
+                }}
+                onMouseUp={() => {
+                  if (annDragging) {
+                    if ((annDragging.type === "highlighter" || annDragging.type === "ink") && annDragging.points.length >= 2) {
+                      addAnnotation({
+                        id: "ann_" + Date.now(), type: annDragging.type, pageKey,
+                        vertices: annDragging.points,
+                        strokeColor: annStyle.strokeColor, lineWidth: annDragging.type === "highlighter" ? Math.max(annStyle.lineWidth * 6, 12) : annStyle.lineWidth,
+                        opacity: annDragging.type === "highlighter" ? 0.3 : annStyle.opacity,
+                      });
+                    }
+                    if ((annDragging.type === "rect" || annDragging.type === "oval") && annDragging.endPt) {
+                      const dx = Math.abs(annDragging.endPt.x - annDragging.startPt.x);
+                      const dy = Math.abs(annDragging.endPt.y - annDragging.startPt.y);
+                      const sc = fitScaleRef.current * zoom;
+                      if (dx * sc > 5 || dy * sc > 5) {
+                        addAnnotation({
+                          id: "ann_" + Date.now(), type: annDragging.type, pageKey,
+                          start: annDragging.startPt, end: annDragging.endPt,
+                          strokeColor: annStyle.strokeColor, fillColor: annStyle.fillColor,
+                          lineWidth: annStyle.lineWidth, opacity: annStyle.opacity,
+                        });
+                      }
+                    }
+                    setAnnDragging(null);
+                    if (!continuousMode) setMode(MODE.PAN);
+                  }
+                }}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   // Right-click while drawing = finish measurement (standard CAD behavior)
@@ -3433,6 +4099,126 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
             <div style={{ color: "#aaa", fontSize: 11 }}>Verify by measuring a known dimension (door = ~3', window = ~4'). If it's off, re-calibrate.</div>
           </div>
           <button onClick={() => setShowVerify(false)} style={{ ...btn, fontSize: 10, padding: "3px 10px", flexShrink: 0 }}>OK</button>
+        </div>
+      )}
+
+      {/* Save Named View dialog */}
+      {showSaveView && (
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+          background: "rgba(0,0,0,0.95)", border: "1px solid rgba(59,130,246,0.5)", borderRadius: 8,
+          padding: 18, zIndex: 10001, minWidth: 300, textAlign: "center" }}>
+          <div style={{ color: "#93c5fd", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>📌 Save Named View</div>
+          <div style={{ color: "#888", fontSize: 11, marginBottom: 10 }}>Saves current page, zoom level, and scroll position.</div>
+          <input autoFocus value={saveViewName} onChange={e => setSaveViewName(e.target.value)}
+            placeholder={`View ${namedViews.length + 1}`}
+            onKeyDown={e => {
+              if (e.key === "Enter") { saveNamedView(saveViewName || `View ${namedViews.length + 1}`); setShowSaveView(false); }
+              if (e.key === "Escape") setShowSaveView(false);
+            }}
+            style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid rgba(59,130,246,0.4)",
+              background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 14, outline: "none" }} />
+          {/* Existing views list with delete */}
+          {namedViews.length > 0 && (
+            <div style={{ marginTop: 10, maxHeight: 140, overflow: "auto", textAlign: "left" }}>
+              <div style={{ fontSize: 9, color: "#666", marginBottom: 4 }}>Existing views:</div>
+              {namedViews.map(nv => (
+                <div key={nv.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 0", fontSize: 11 }}>
+                  <span style={{ color: "#93c5fd", flex: 1 }}>{nv.name}</span>
+                  <span style={{ color: "#555", fontSize: 9 }}>{sheetNames[nv.pageKey] || `P${nv.page}`}</span>
+                  <button onClick={() => { navigateToView(nv); setShowSaveView(false); }}
+                    style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, border: "1px solid rgba(59,130,246,0.3)", background: "transparent", color: "#60a5fa", cursor: "pointer" }}>Go</button>
+                  <button onClick={() => deleteNamedView(nv.id)}
+                    style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, border: "1px solid rgba(239,68,68,0.3)", background: "transparent", color: "#ef4444", cursor: "pointer" }}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "center" }}>
+            <button onClick={() => setShowSaveView(false)}
+              style={{ ...btn, padding: "4px 12px", fontSize: 11, borderColor: "rgba(59,130,246,0.3)" }}>Close</button>
+            <button onClick={() => { saveNamedView(saveViewName || `View ${namedViews.length + 1}`); setShowSaveView(false); }}
+              style={{ ...btn, padding: "4px 14px", fontSize: 11, background: "rgba(59,130,246,0.3)", borderColor: "rgba(59,130,246,0.5)", color: "#fff", fontWeight: 600 }}>
+              Save View
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Hot Link target selector (shown when HOTLINK mode active) */}
+      {mode === MODE.HOTLINK && (
+        <div style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)",
+          background: "rgba(0,0,0,0.9)", border: "1px solid rgba(59,130,246,0.5)", borderRadius: 8,
+          padding: "8px 14px", zIndex: 10000, display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ color: "#93c5fd", fontSize: 11, fontWeight: 600 }}>🔗 Place Hot Link to:</span>
+          <select value={hotlinkTargetId || ""} onChange={e => setHotlinkTargetId(e.target.value)}
+            style={{ padding: "3px 8px", borderRadius: 4, border: "1px solid rgba(59,130,246,0.4)", background: "rgba(59,130,246,0.08)", color: "#fff", fontSize: 11 }}>
+            <option value="" disabled>Select a view...</option>
+            {namedViews.map(nv => <option key={nv.id} value={nv.id}>{nv.name} — {sheetNames[nv.pageKey] || `P${nv.page}`}</option>)}
+          </select>
+          <span style={{ color: "#666", fontSize: 9 }}>Click on plan to place</span>
+          <button onClick={() => { setMode(MODE.PAN); setHotlinkTargetId(null); }}
+            style={{ ...btn, padding: "2px 8px", fontSize: 9 }}>Cancel</button>
+        </div>
+      )}
+
+      {/* Annotation text input overlay */}
+      {showAnnTextInput && (
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+          background: "rgba(0,0,0,0.95)", border: "1px solid rgba(239,68,68,0.5)", borderRadius: 8,
+          padding: 18, zIndex: 10001, minWidth: 280, textAlign: "center" }}>
+          <div style={{ color: "#f87171", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
+            {showAnnTextInput.type === "callout" ? "Callout Text" : "Text Annotation"}
+          </div>
+          <input ref={annTextRef} value={annTextValue} onChange={e => setAnnTextValue(e.target.value)}
+            placeholder="Enter text..."
+            onKeyDown={e => {
+              if (e.key === "Enter" && annTextValue.trim()) {
+                const base = {
+                  id: "ann_" + Date.now(), pageKey,
+                  position: showAnnTextInput.position,
+                  text: annTextValue.trim(),
+                  strokeColor: annStyle.strokeColor,
+                  lineWidth: annStyle.lineWidth,
+                  fontSize: annStyle.fontSize,
+                };
+                if (showAnnTextInput.type === "callout") {
+                  addAnnotation({ ...base, type: "callout", anchorPt: showAnnTextInput.anchorPt });
+                } else {
+                  addAnnotation({ ...base, type: "text" });
+                }
+                setShowAnnTextInput(null);
+                setAnnTextValue("");
+                if (!continuousMode) setMode(MODE.PAN);
+              }
+              if (e.key === "Escape") { setShowAnnTextInput(null); setAnnTextValue(""); }
+            }}
+            style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.4)",
+              background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 14, outline: "none" }} />
+          <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "center" }}>
+            <button onClick={() => { setShowAnnTextInput(null); setAnnTextValue(""); }}
+              style={{ ...btn, padding: "4px 12px", fontSize: 11, borderColor: "rgba(239,68,68,0.3)" }}>Cancel</button>
+            <button onClick={() => {
+              if (!annTextValue.trim()) return;
+              const base = {
+                id: "ann_" + Date.now(), pageKey,
+                position: showAnnTextInput.position,
+                text: annTextValue.trim(),
+                strokeColor: annStyle.strokeColor,
+                lineWidth: annStyle.lineWidth,
+                fontSize: annStyle.fontSize,
+              };
+              if (showAnnTextInput.type === "callout") {
+                addAnnotation({ ...base, type: "callout", anchorPt: showAnnTextInput.anchorPt });
+              } else {
+                addAnnotation({ ...base, type: "text" });
+              }
+              setShowAnnTextInput(null);
+              setAnnTextValue("");
+              if (!continuousMode) setMode(MODE.PAN);
+            }} style={{ ...btn, padding: "4px 14px", fontSize: 11, background: "rgba(239,68,68,0.3)", borderColor: "rgba(239,68,68,0.5)", color: "#fff", fontWeight: 600 }}>
+              Place
+            </button>
+          </div>
         </div>
       )}
 

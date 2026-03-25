@@ -31,6 +31,8 @@ export function ConditionPropsDialog({ assemblies, conditions, editingCond, onSa
   const [name, setName] = useState(editingCond?.name || "");
   const [height, setHeight] = useState(editingCond?.height || 10);
   const [color, setColor] = useState(editingCond?.color || COND_COLORS[conditions.length % COND_COLORS.length]);
+  const [roundQty, setRoundQty] = useState(editingCond?.roundQty || false);
+  const [roundMode, setRoundMode] = useState(editingCond?.roundMode || "up"); // "up" | "nearest"
   const [treeOpen, setTreeOpen] = useState({});
 
   const isEdit = !!editingCond;
@@ -96,6 +98,8 @@ export function ConditionPropsDialog({ assemblies, conditions, editingCond, onSa
       folder: condFolder,
       color,
       height: condType === "linear" ? (height || 10) : 0,
+      roundQty,
+      roundMode,
     };
     // Track favorite
     if (selectedCode) {
@@ -270,6 +274,27 @@ export function ConditionPropsDialog({ assemblies, conditions, editingCond, onSa
               <span>Type: <span style={{ color: "#aaa" }}>{condType === "linear" ? "Linear" : condType === "area" ? "Area" : "Count"}</span></span>
               <span>UOM: <span style={{ color: "#aaa" }}>{selectedAsm?.unit || "—"}</span></span>
               <span>Folder: <span style={{ color: "#aaa" }}>{condFolder}</span></span>
+            </div>
+
+            {/* Round Quantity toggle */}
+            <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, color: roundQty ? "#f59e0b" : "#888" }}>
+                  <input type="checkbox" checked={roundQty} onChange={e => setRoundQty(e.target.checked)}
+                    style={{ width: 14, height: 14, accentColor: "#f59e0b" }} />
+                  Round Quantity
+                </label>
+                {roundQty && (
+                  <select value={roundMode} onChange={e => setRoundMode(e.target.value)}
+                    style={{ padding: "3px 8px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 11, outline: "none" }}>
+                    <option value="up">Round Up (ceil)</option>
+                    <option value="nearest">Round Nearest</option>
+                  </select>
+                )}
+              </div>
+              <div style={{ fontSize: 9, color: "#555", marginTop: 3 }}>
+                {roundQty ? `Quantities will be rounded ${roundMode === "up" ? "up" : "to nearest whole number"} in summary + exports` : "Show exact fractional quantities"}
+              </div>
             </div>
           </div>
         </div>
