@@ -47,7 +47,7 @@ async function loadPdfFromIDB(key) {
 }
 
 // ── Modes ──
-const MODE = { PAN: "pan", CALIBRATE: "calibrate", LINEAR: "linear", AREA: "area", COUNT: "count" };
+const MODE = { PAN: "pan", CALIBRATE: "calibrate", LINEAR: "linear", AREA: "area", COUNT: "count", MEASURE: "measure" };
 
 // ── Condition colors — auto-assigned ──
 const COND_COLORS = [
@@ -57,6 +57,12 @@ const COND_COLORS = [
 ];
 
 function dist(a, b) { return Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2); }
+
+// ── Round quantity helper — applies per-condition rounding at presentation layer ──
+function applyRoundQty(qty, cond) {
+  if (!cond || !cond.roundQty) return qty;
+  return cond.roundMode === "nearest" ? Math.round(qty) : Math.ceil(qty);
+}
 function polyArea(pts) {
   let a = 0;
   for (let i = 0; i < pts.length; i++) { const j = (i + 1) % pts.length; a += pts[i].x * pts[j].y - pts[j].x * pts[i].y; }
@@ -169,7 +175,8 @@ function createCondition(template, index) {
     qty: 0, // running total
     cost: 0, // running cost
     attachTo: null, // parent conditionId for deduction (count conditions only)
-    deductWidth: 0, // feet per count to deduct from parent (e.g., 3' door)
+    deductWidth: 0, // feet per count to deduct from parent linear (e.g., 3' door) OR width dimension for area deduction
+    deductHeight: 0, // height dimension for area deduction (deductWidth × deductHeight = SF per count)
   };
 }
 
@@ -279,6 +286,10 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   const [typicalName, setTypicalName] = useState("");
   const [placingTypicalId, setPlacingTypicalId] = useState(null); // ID of typical being placed
   const [showTypicalPanel, setShowTypicalPanel] = useState(false);
+
+  // ── Measure (ruler) tool — quick dimension check, no condition required ──
+  const [measureVertices, setMeasureVertices] = useState([]);  // temp vertices for current measurement
+  const [measureResults, setMeasureResults] = useState([]);     // persisted ruler lines per page: { id, pageKey, vertices, totalFt }
 
   // ── AI Plan Analysis ──
   const [analyzing, setAnalyzing] = useState(false);
@@ -439,16 +450,25 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     });
     // Store gross qty before deductions
     conditions.forEach(c => { if (totals[c.id]) totals[c.id].grossQty = totals[c.id].qty; });
-    // ── Attachment deductions: count conditions subtract from parent linear ──
+    // ── Attachment deductions: count conditions subtract from parent linear OR area ──
     conditions.forEach(countCond => {
       if (!countCond.attachTo || !countCond.deductWidth) return;
       if (!totals[countCond.attachTo]) return;
-      const totalCount = totals[countCond.id]?.qty || 0;
-      const deductLF = totalCount * countCond.deductWidth;
-      totals[countCond.attachTo].qty = Math.max(0, totals[countCond.attachTo].qty - deductLF);
-      totals[countCond.attachTo].deductions += deductLF;
-      // Recalculate parent cost based on net qty
       const parentCond = conditions.find(c => c.id === countCond.attachTo);
+      if (!parentCond) return;
+      const totalCount = totals[countCond.id]?.qty || 0;
+      let deductAmt;
+      if (parentCond.type === "area") {
+        // Area attachment: deduct width × height (SF) per count
+        const h = countCond.deductHeight || 0;
+        deductAmt = totalCount * countCond.deductWidth * (h > 0 ? h : 1);
+      } else {
+        // Linear attachment: deduct width (LF) per count
+        deductAmt = totalCount * countCond.deductWidth;
+      }
+      totals[countCond.attachTo].qty = Math.max(0, totals[countCond.attachTo].qty - deductAmt);
+      totals[countCond.attachTo].deductions += deductAmt;
+      // Recalculate parent cost based on net qty
       const parentAsm = parentCond ? (assemblies || []).find(a => a.code === parentCond.asmCode) : null;
       if (parentAsm) totals[countCond.attachTo].cost = totals[countCond.attachTo].qty * ((parentAsm.matRate || 0) + (parentAsm.labRate || 0));
     });
@@ -468,6 +488,18 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           const pAsm = pCond ? (assemblies || []).find(a => a.code === pCond.asmCode) : null;
           if (pAsm) totals[parentMeas.conditionId].cost = totals[parentMeas.conditionId].qty * ((pAsm.matRate || 0) + (pAsm.labRate || 0));
         }
+      }
+    });
+    // ── Apply per-condition rounding (presentation layer) ──
+    conditions.forEach(c => {
+      if (c.roundQty && totals[c.id]) {
+        const t = totals[c.id];
+        t.rawQty = t.qty; // preserve exact qty for audit
+        t.qty = applyRoundQty(t.qty, c);
+        // Recalculate cost with rounded qty
+        const asm = (assemblies || []).find(a => a.code === c.asmCode);
+        if (asm) t.cost = t.qty * ((asm.matRate || 0) + (asm.labRate || 0));
+        if (t.grossQty > 0) t.grossQty = applyRoundQty(t.grossQty, c);
       }
     });
     return totals;
@@ -636,7 +668,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         conditions.forEach(c => {
           const meas = baMeas.filter(m => m.conditionId === c.id);
           if (meas.length === 0) return;
-          const qty = meas.reduce((s, m) => s + (m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0)), 0);
+          let qty = meas.reduce((s, m) => s + (m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0)), 0);
+          qty = applyRoundQty(qty, c);
           const unit = c.type === "count" ? "EA" : c.type === "area" ? "SF" : "LF";
           const asm = (assemblies || []).find(a => a.code === c.asmCode);
           const cost = asm ? qty * ((asm.matRate || 0) + (asm.labRate || 0)) : 0;
@@ -663,7 +696,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       conditions.forEach(c => {
         const cMeas = meas.filter(m => m.conditionId === c.id);
         if (cMeas.length === 0) return;
-        const qty = cMeas.reduce((s, m) => s + (m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0)), 0);
+        let qty = cMeas.reduce((s, m) => s + (m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0)), 0);
+        qty = applyRoundQty(qty, c);
         const unit = c.type === "count" ? "EA" : c.type === "area" ? "SF" : "LF";
         const asm = (assemblies || []).find(a => a.code === c.asmCode);
         const cost = asm ? qty * ((asm.matRate || 0) + (asm.labRate || 0)) : 0;
@@ -1251,7 +1285,11 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         // Attachment deduction label (red badge below count)
         const countCond = conditions.find(c => c.id === m.conditionId);
         if (countCond?.attachTo && countCond.deductWidth > 0) {
-          const dlabel = `-${countCond.deductWidth}'`;
+          const pCond = conditions.find(c => c.id === countCond.attachTo);
+          const isAreaP = pCond?.type === "area";
+          const dlabel = isAreaP
+            ? `-${Math.round(countCond.deductWidth * (countCond.deductHeight || 1))} SF`
+            : `-${countCond.deductWidth}'`;
           ctx.font = `bold ${smallLabel - 1}px sans-serif`;
           const tw = ctx.measureText(dlabel).width + 6;
           ctx.fillStyle = "rgba(239,68,68,0.85)";
@@ -1559,6 +1597,74 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       ctx.fillText(coLabel, 14, ch - 37);
     }
 
+    // ── Measure (ruler) tool: draw persisted rulers + active ruler ──
+    const pageRulers = measureResults.filter(r => r.pageKey === pageKey);
+    [...pageRulers, ...(measureVertices.length > 0 ? [{ vertices: measureVertices, totalFt: null, active: true }] : [])].forEach(ruler => {
+      const verts = ruler.vertices;
+      if (verts.length < 1) return;
+      const pts = verts.map(v => ({ x: v.x * scale, y: v.y * scale }));
+      // Draw dashed orange line
+      ctx.save();
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      // Active ruler: also draw to mouse
+      if (ruler.active && mousePos) {
+        ctx.lineTo(mousePos.x, mousePos.y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Vertex dots
+      pts.forEach(p => { ctx.fillStyle = "#f59e0b"; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill(); });
+      // Per-segment labels
+      for (let i = 1; i < pts.length; i++) {
+        const segPx = dist(verts[i - 1], verts[i]);
+        const segFt = ppf ? segPx / ppf : 0;
+        const mx = (pts[i - 1].x + pts[i].x) / 2;
+        const my = (pts[i - 1].y + pts[i].y) / 2;
+        const lbl = `${segFt.toFixed(1)}'`;
+        ctx.font = "bold 11px sans-serif";
+        const tw = ctx.measureText(lbl).width;
+        ctx.fillStyle = "rgba(0,0,0,0.75)"; ctx.fillRect(mx - tw / 2 - 4, my - 8, tw + 8, 16);
+        ctx.fillStyle = "#f59e0b"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(lbl, mx, my);
+      }
+      // Active: show live segment to mouse
+      if (ruler.active && mousePos && pts.length > 0 && ppf) {
+        const last = verts[verts.length - 1];
+        const mNorm = { x: mousePos.x / scale, y: mousePos.y / scale };
+        const livePx = dist(last, mNorm);
+        const liveFt = livePx / ppf;
+        const mx = (pts[pts.length - 1].x + mousePos.x) / 2;
+        const my = (pts[pts.length - 1].y + mousePos.y) / 2;
+        const lbl = `${liveFt.toFixed(1)}'`;
+        ctx.font = "bold 11px sans-serif";
+        const tw = ctx.measureText(lbl).width;
+        ctx.fillStyle = "rgba(0,0,0,0.75)"; ctx.fillRect(mx - tw / 2 - 4, my - 8, tw + 8, 16);
+        ctx.fillStyle = "#f59e0b"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(lbl, mx, my);
+      }
+      // Total badge for completed rulers
+      if (!ruler.active && ruler.totalFt != null && pts.length >= 2) {
+        let totalPx = 0;
+        for (let i = 1; i < verts.length; i++) totalPx += dist(verts[i - 1], verts[i]);
+        const totalFt = ppf ? totalPx / ppf : ruler.totalFt;
+        const midIdx = Math.floor(pts.length / 2);
+        const bx = pts[midIdx].x;
+        const by = pts[midIdx].y - 14;
+        const tLbl = `📏 ${totalFt.toFixed(1)}' total`;
+        ctx.font = "bold 12px sans-serif";
+        const tw = ctx.measureText(tLbl).width;
+        ctx.fillStyle = "rgba(245,158,11,0.9)"; ctx.fillRect(bx - tw / 2 - 6, by - 9, tw + 12, 20);
+        ctx.fillStyle = "#000"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(tLbl, bx, by + 1);
+      }
+      ctx.restore();
+    });
+
     // Backout mode indicator
     if (backoutMode) {
       const ch = canvas.height / dpr;
@@ -1577,7 +1683,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       ctx.fillStyle = "#4ade80"; ctx.font = "10px sans-serif"; ctx.textAlign = "left";
       ctx.fillText(`Scale set (${(1 / ppf).toFixed(4)}'/px)`, 14, ch - 14);
     }
-  }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond, hiddenFolders, selectedMeasIds, selectedMeasId, typicalGroups, measurements, pageKey, placingTypicalId, coPageMeasurements, coMode, shiftHeld, draggingHandle, backoutMode, showCondNames, hoveredMeasId, assemblies, bidAreas]);
+  }, [pageMeasurements, calPoints, activeVertices, mousePos, mode, ppf, zoom, conditions, activeCond, hiddenFolders, selectedMeasIds, selectedMeasId, typicalGroups, measurements, pageKey, placingTypicalId, coPageMeasurements, coMode, shiftHeld, draggingHandle, backoutMode, showCondNames, hoveredMeasId, assemblies, bidAreas, measureVertices, measureResults]);
 
   useEffect(() => { requestAnimationFrame(drawOverlay); }, [drawOverlay]);
   // Reset setup panels when switching conditions
@@ -1644,6 +1750,22 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       if (calPoints.length < 2) { const next = [...calPoints, pt]; setCalPoints(next); if (next.length === 2) setShowCalPrompt(true); }
       return;
     }
+    // ── Measure (ruler) tool — works without a condition ──
+    if (mode === MODE.MEASURE) {
+      if (!ppf) return;
+      let pt = getNormCoords(e);
+      if (!e.shiftKey && measureVertices.length > 0) {
+        pt = snapToAngle(measureVertices[measureVertices.length - 1], pt);
+      }
+      if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+      pendingClickRef.current = pt;
+      clickTimerRef.current = setTimeout(() => {
+        const ptToAdd = pendingClickRef.current;
+        pendingClickRef.current = null;
+        if (ptToAdd) setMeasureVertices(prev => [...prev, ptToAdd]);
+      }, 200);
+      return;
+    }
     if (!activeCond) return;
     if (mode === MODE.COUNT) {
       const pt = getNormCoords(e);
@@ -1680,6 +1802,15 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     // Cancel the pending single-click vertex
     if (clickTimerRef.current) { clearTimeout(clickTimerRef.current); clickTimerRef.current = null; }
     pendingClickRef.current = null;
+    // Finish measure ruler on dblclick
+    if (mode === MODE.MEASURE && measureVertices.length >= 2 && ppf) {
+      let totalPx = 0;
+      for (let i = 1; i < measureVertices.length; i++) totalPx += dist(measureVertices[i - 1], measureVertices[i]);
+      const totalFt = totalPx / ppf;
+      setMeasureResults(prev => [...prev, { id: "ruler_" + Date.now(), pageKey, vertices: measureVertices, totalFt }]);
+      setMeasureVertices([]);
+      return;
+    }
     if ((mode === MODE.LINEAR || mode === MODE.AREA) && activeVertices.length >= 2 && ppf && activeCond) finishMeasurement();
   };
 
@@ -1733,7 +1864,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   };
 
   const handleCanvasMove = (e) => {
-    if (mode === MODE.LINEAR || mode === MODE.AREA || mode === MODE.COUNT) setMousePos(getCanvasCoords(e));
+    if (mode === MODE.LINEAR || mode === MODE.AREA || mode === MODE.COUNT || mode === MODE.MEASURE) setMousePos(getCanvasCoords(e));
     // Hover detection for tooltips
     const pt = getNormCoords(e);
     const scale = fitScaleRef.current * zoom;
@@ -2137,13 +2268,24 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       // Escape always works — even when focused on an input (e.g. calibration prompt)
       if (e.key === "Escape") {
         if (backoutMode) { setBackoutMode(null); return; }
+        if (measureVertices.length > 0) { setMeasureVertices([]); return; }
         if (showCalPrompt || calPoints.length > 0 || activeVertices.length > 0) { cancelActive(); e.target.blur?.(); }
         else handleClose();
         return;
       }
       // Don't intercept other keys when typing in inputs
       if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
-      if (e.key === "Enter") { if (activeVertices.length >= 2 && ppf && activeCond) { finishMeasurement(); } return; }
+      if (e.key === "Enter") {
+        if (mode === MODE.MEASURE && measureVertices.length >= 2 && ppf) {
+          let totalPx = 0;
+          for (let i = 1; i < measureVertices.length; i++) totalPx += dist(measureVertices[i - 1], measureVertices[i]);
+          setMeasureResults(prev => [...prev, { id: "ruler_" + Date.now(), pageKey, vertices: measureVertices, totalFt: totalPx / ppf }]);
+          setMeasureVertices([]);
+          return;
+        }
+        if (activeVertices.length >= 2 && ppf && activeCond) { finishMeasurement(); }
+        return;
+      }
       if (e.ctrlKey && e.key === "z") { e.preventDefault(); undo(); return; }
       if (e.ctrlKey && e.key === "y") { e.preventDefault(); redo(); return; }
       if (e.key === " ") return; // handled by modifier key tracking (hold-to-pan)
@@ -2157,6 +2299,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       if (e.key === "a" || e.key === "A") { if (ppf) { setMode(MODE.AREA); cancelActive(); } return; }
       if (e.key === "c" || e.key === "C") { if (backoutMode) return; setMode(MODE.COUNT); cancelActive(); return; }
       if (e.key === "s" || e.key === "S") { if (backoutMode) return; setMode(MODE.CALIBRATE); cancelActive(); return; }
+      if (e.key === "m" || e.key === "M") { if (ppf) { setMode(MODE.MEASURE); cancelActive(); setMeasureVertices([]); } return; }
       if (e.key === "n" || e.key === "N") { setShowCondNames(v => !v); return; }
       if (e.key === "Insert") { setShowCondProps(true); setEditingCondId(null); return; }
       if (e.key === "f" || e.key === "F") { resetZoom(); return; }
@@ -2175,7 +2318,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [activeVertices, calPoints, showCalPrompt, activeCond, ppf, folders, selectedMeasId]);
+  }, [activeVertices, calPoints, showCalPrompt, activeCond, ppf, folders, selectedMeasId, measureVertices, mode, pageKey]);
 
   // Add new condition
   const addCondition = (asmCode) => {
@@ -2227,6 +2370,10 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
             <button onClick={() => { if (ppf) { setMode(MODE.LINEAR); cancelActive(); }}} style={!ppf ? { ...btnDis, padding: "4px 10px", fontSize: 12 } : mode === MODE.LINEAR ? { ...btnActive, padding: "4px 10px", fontSize: 12 } : { ...btn, padding: "4px 10px", fontSize: 12 }} disabled={!ppf} title="L">Linear</button>
             <button onClick={() => { if (ppf) { setMode(MODE.AREA); cancelActive(); }}} style={!ppf ? { ...btnDis, padding: "4px 10px", fontSize: 12 } : mode === MODE.AREA ? { ...btnActive, padding: "4px 10px", fontSize: 12 } : { ...btn, padding: "4px 10px", fontSize: 12 }} disabled={!ppf} title="A">Area</button>
             <button onClick={() => { setMode(MODE.COUNT); cancelActive(); }} style={mode === MODE.COUNT ? { ...btnActive, padding: "4px 10px", fontSize: 12 } : { ...btn, padding: "4px 10px", fontSize: 12 }} title="C">Count</button>
+            <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)" }} />
+            <button onClick={() => { if (ppf) { setMode(MODE.MEASURE); cancelActive(); setMeasureVertices([]); }}}
+              style={!ppf ? { ...btnDis, padding: "4px 10px", fontSize: 12 } : mode === MODE.MEASURE ? { ...btnActive, padding: "4px 10px", fontSize: 12, background: "#f59e0b", color: "#000", borderColor: "#f59e0b" } : { ...btn, padding: "4px 10px", fontSize: 12 }}
+              disabled={!ppf} title="M — Quick ruler (no condition)">📏 Measure</button>
             <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)" }} />
             <button onClick={undo} style={{ ...btn, padding: "4px 10px", fontSize: 12 }} title="Ctrl+Z">Undo</button>
             <button onClick={redo} style={redoStack.length ? { ...btn, padding: "4px 10px", fontSize: 12 } : { ...btnDis, padding: "4px 10px", fontSize: 12 }} disabled={!redoStack.length} title="Ctrl+Y">Redo</button>
@@ -2982,22 +3129,32 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                     })}
                   </div>
                 )}
-                {/* Attachment Setup (count conditions → deduct from linear parent) */}
-                {showAttachSetup && activeCond.type === "count" && (
+                {/* Attachment Setup (count conditions → deduct from linear or area parent) */}
+                {showAttachSetup && activeCond.type === "count" && (() => {
+                  const parentCond = activeCond.attachTo ? conditions.find(c => c.id === activeCond.attachTo) : null;
+                  const isAreaParent = parentCond?.type === "area";
+                  return (
                   <div style={{ marginTop: 6, padding: "6px", borderRadius: 4, background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.15)" }}>
-                    <div style={{ fontSize: 9, color: "#f87171", marginBottom: 4 }}>Deduct from parent wall:</div>
+                    <div style={{ fontSize: 9, color: "#f87171", marginBottom: 4 }}>Deduct from parent:</div>
                     <select value={activeCond.attachTo || ""}
                       onChange={e => {
                         const val = e.target.value || null;
-                        setConditions(prev => prev.map(c => c.id === activeCond.id ? { ...c, attachTo: val } : c));
+                        setConditions(prev => prev.map(c => c.id === activeCond.id ? { ...c, attachTo: val, deductHeight: 0 } : c));
                       }}
                       style={{ width: "100%", fontSize: 9, padding: "3px 4px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#ccc", marginBottom: 4 }}>
                       <option value="">None (no deduction)</option>
-                      {conditions.filter(c => c.type === "linear" && c.id !== activeCond.id).map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
+                      <optgroup label="Linear (LF)">
+                        {conditions.filter(c => c.type === "linear" && c.id !== activeCond.id).map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Area (SF)">
+                        {conditions.filter(c => c.type === "area" && c.id !== activeCond.id).map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </optgroup>
                     </select>
-                    {activeCond.attachTo && (
+                    {activeCond.attachTo && !isAreaParent && (
                       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         <span style={{ fontSize: 9, color: "#aaa" }}>Width per count:</span>
                         <input type="number" value={activeCond.deductWidth || 0} min={0} step={0.5}
@@ -3009,13 +3166,38 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                         <span style={{ fontSize: 9, color: "#aaa" }}>ft</span>
                       </div>
                     )}
-                    {activeCond.attachTo && activeCond.deductWidth > 0 && (
+                    {activeCond.attachTo && isAreaParent && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 9, color: "#aaa" }}>Size per count:</span>
+                        <input type="number" value={activeCond.deductWidth || 0} min={0} step={0.5}
+                          onChange={e => {
+                            const w = Math.max(0, parseFloat(e.target.value) || 0);
+                            setConditions(prev => prev.map(c => c.id === activeCond.id ? { ...c, deductWidth: w } : c));
+                          }}
+                          style={{ width: 36, fontSize: 9, padding: "2px 4px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#fff", textAlign: "center" }} />
+                        <span style={{ fontSize: 9, color: "#aaa" }}>×</span>
+                        <input type="number" value={activeCond.deductHeight || 0} min={0} step={0.5}
+                          onChange={e => {
+                            const h = Math.max(0, parseFloat(e.target.value) || 0);
+                            setConditions(prev => prev.map(c => c.id === activeCond.id ? { ...c, deductHeight: h } : c));
+                          }}
+                          style={{ width: 36, fontSize: 9, padding: "2px 4px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#fff", textAlign: "center" }} />
+                        <span style={{ fontSize: 9, color: "#aaa" }}>ft</span>
+                      </div>
+                    )}
+                    {activeCond.attachTo && activeCond.deductWidth > 0 && !isAreaParent && (
                       <div style={{ fontSize: 8, color: "#888", marginTop: 3 }}>
-                        Each count deducts {activeCond.deductWidth}' LF from {conditions.find(c => c.id === activeCond.attachTo)?.name || "parent"}
+                        Each count deducts {activeCond.deductWidth}' LF from {parentCond?.name || "parent"}
+                      </div>
+                    )}
+                    {activeCond.attachTo && activeCond.deductWidth > 0 && isAreaParent && (
+                      <div style={{ fontSize: 8, color: "#888", marginTop: 3 }}>
+                        Each count deducts {activeCond.deductWidth}' × {activeCond.deductHeight || 1}' = {Math.round(activeCond.deductWidth * (activeCond.deductHeight || 1) * 100) / 100} SF from {parentCond?.name || "parent"}
                       </div>
                     )}
                   </div>
-                )}
+                  );
+                })()}
               </div>
             )}
             {onAddToTakeoff && Object.values(measurements).some(pm => pm.length > 0) && (
@@ -3056,6 +3238,23 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
             Delete {contextMenu.isCo ? "CO " : ""}Measurement
           </div>
           {!contextMenu.isCo && <>
+          <div onClick={() => {
+              const src = pageMeasurements.find(mm => mm.id === contextMenu.measurementId);
+              if (!src) { setContextMenu(null); return; }
+              const OFFSET = 20;
+              const clone = { ...src, id: "m_" + Date.now() + "_copy" };
+              if (clone.vertices) clone.vertices = clone.vertices.map(v => ({ x: v.x + OFFSET, y: v.y + OFFSET }));
+              if (clone.point) clone.point = { x: clone.point.x + OFFSET, y: clone.point.y + OFFSET };
+              setMeasurements(prev => ({ ...prev, [pageKey]: [...(prev[pageKey] || []), clone] }));
+              setUndoStack(prev => [...prev, { action: "add", pageKey, measurementId: clone.id }]);
+              setRedoStack([]);
+              setContextMenu(null);
+            }}
+            style={{ padding: "6px 12px", fontSize: 11, color: "#60a5fa", cursor: "pointer", borderRadius: 4 }}
+            onMouseEnter={e => e.target.style.background = "rgba(96,165,250,0.1)"}
+            onMouseLeave={e => e.target.style.background = "transparent"}>
+            Copy Measurement
+          </div>
           <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "2px 0" }} />
           {conditions.filter(c => {
             const m = pageMeasurements.find(mm => mm.id === contextMenu.measurementId);
