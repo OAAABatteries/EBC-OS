@@ -707,7 +707,8 @@ function App({ auth, onLogout }) {
   const filteredProjects = useMemo(() => {
     let list = projects;
     // PM sees only projects assigned to them; admin/owner sees all
-    if (userRole === "pm" && auth?.name) {
+    // Note: use effectiveRole (declared earlier) not userRole (declared later)
+    if (effectiveRole === "pm" && auth?.name) {
       list = list.filter(p => p.pm === auth.name);
     }
     if (search) {
@@ -725,7 +726,7 @@ function App({ auth, onLogout }) {
       const db = b.start ? new Date(b.start) : new Date(0);
       return db - da;
     });
-  }, [projects, search, userRole, auth]);
+  }, [projects, search, effectiveRole, auth]);
 
   // ── filtered scope ──
   const filteredScope = useMemo(() => {
