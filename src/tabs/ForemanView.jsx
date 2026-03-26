@@ -313,9 +313,10 @@ export function ForemanView({ app }) {
       // Upload to Supabase Storage
       const fileName = `clockin_${activeForeman.id}_${Date.now()}.jpg`;
       try {
-        const { uploadFile, getFileUrl } = await import("../lib/supabase");
+        const { uploadFile, getSignedFileUrl } = await import("../lib/supabase");
         await uploadFile(`clock-in-photos/${fileName}`, blob, "clock-in-photos");
-        const url = getFileUrl(`clock-in-photos/${fileName}`, "clock-in-photos");
+        // Use signed URL for private bucket (1 hour expiry — photo is evidence, not display)
+        const url = await getSignedFileUrl(`clock-in-photos/${fileName}`, "clock-in-photos", 86400) || `clock-in-photos/${fileName}`;
         completeClockIn(url, "ok");
       } catch {
         // Storage failed — store as data URL fallback

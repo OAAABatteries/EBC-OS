@@ -363,6 +363,14 @@ export function getFileUrl(path, bucket = DEFAULT_BUCKET) {
   return data?.publicUrl || null;
 }
 
+// Signed URL for private buckets (expires in 1 hour by default)
+export async function getSignedFileUrl(path, bucket = DEFAULT_BUCKET, expiresIn = 3600) {
+  if (!supabase) return null;
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresIn);
+  if (error) { console.warn("[Storage] Signed URL failed:", error.message); return null; }
+  return data?.signedUrl || null;
+}
+
 export async function deleteFile(path, bucket = DEFAULT_BUCKET) {
   if (!supabase) throw new Error("Supabase not configured");
   const { error } = await supabase.storage.from(bucket).remove([path]);
