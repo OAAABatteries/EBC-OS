@@ -1,260 +1,319 @@
 # Phase 2 — PM & Field Workflows
 
-> Created: 2026-03-25 · Three focused workflows, no feature creep.
+> Created: 2026-03-25 · Updated: 2026-03-25 (merged team input)
+> Goal: Shift EBC-OS from estimating-first to execution-first.
 
 ---
 
-## Scope (Only These Three)
+## 0. Why Phase 2 Exists
 
-1. **Material Request Lifecycle** — field → warehouse → delivery → confirmation
-2. **Project Stage Ownership Rules** — who owns what at each construction phase
-3. **Field → PM → Office Data Flow** — how information moves up the chain
+Phase 2 serves PMs and field teams as primary users. This aligns with how
+construction operations protect margin: materials, labor, and schedule control.
+
+**Success Metrics:**
+- Reduced "waiting on materials" downtime (fewer stalled crews)
+- Reduced emergency purchases / rush deliveries
+- Faster PM decision cycle on material requests
+- Fewer wrong-material incidents (structured capture vs. texts/calls)
+- Clear audit trail: who requested, approved, routed, received
 
 ---
 
-## 1. Material Request Lifecycle
+## 1. Scope
 
-### Current State
-- `materialRequests` stored in Supabase (`material_requests` table), synced via realtime
-- Statuses exist in CSS: `requested`, `approved`, `in-transit`, `delivered`
-- EmployeeView: crew can create requests (material name, qty, unit, project)
-- ForemanView: foremen see requests, can update status
-- MaterialsTab: warehouse view shows inventory, request list
-- DriverView: sees delivery queue, route optimization
-- **Gap:** No approval workflow. No cost tracking. No PO linkage. No warehouse deduction.
+### In Scope
+1. Material Request → PM Approval → Supplier vs Driver routing
+2. Project Stage ownership (foreman-controlled, PM-visible)
+3. Field → PM → Office data flow (PM Action Queue)
+4. Clock-in photo verification (hardhat) — Phase 2C
+5. Global project search by name + address — Phase 2D
 
-### Target Lifecycle
+### Out of Scope
+- Estimating enhancements (unless blocking PM/Field)
+- Full procurement automation / EDI
+- Full accounting integrations beyond exports
+- Multi-tenant SaaS
+
+---
+
+## 2. Roles & Permissions
+
+| Role | Create Request | Approve/Reject | Choose Route | Deliver | Confirm Receipt | Advance Stage |
+|------|---------------|----------------|-------------|---------|----------------|--------------|
+| Employee | ✅ (own project) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Foreman | ✅ (own crew) | ❌ | ❌ | ❌ | ✅ | ✅ (field stages) |
+| Driver | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| PM | ✅ (any project) | ✅ | ✅ | ❌ | ✅ | ✅ (any stage) |
+| Owner/Admin | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+---
+
+## 3. Core Workflow A: Material Request Approval
+
+### 3.1 Problem Statement
+
+Material requests originate on site as texts/calls/notes. Details get lost, PMs
+miss messages, purchasing clarifies specs — causing hours of delay and crews
+working out of sequence.
+
+### 3.2 Design Principles
+
+- **Field-first capture:** Structured input, not free-text only
+- **PM as gatekeeper:** PM approves and chooses fulfillment route
+- **Two fulfillment paths:** Supplier order (external) or in-house driver (internal)
+- **Auditability:** Every decision timestamped with actor
+- **Status visibility:** Foreman sees exactly where the request is
+
+### 3.3 State Machine
 
 ```
-┌─────────┐    ┌──────────┐    ┌───────────┐    ┌───────────┐    ┌───────────┐
-│ DRAFTED │───→│ REQUESTED│───→│ APPROVED  │───→│ IN-TRANSIT│───→│ DELIVERED │
-│ (field) │    │ (field)  │    │ (PM/whse) │    │ (driver)  │    │ (field)   │
-└─────────┘    └──────────┘    └───────────┘    └───────────┘    └───────────┘
-                    │                │                                  │
-                    ▼                ▼                                  ▼
-               ┌─────────┐    ┌──────────┐                      ┌──────────┐
-               │ REJECTED│    │ ON-ORDER │                      │ CONFIRMED│
-               │ (PM)    │    │ (whse)   │                      │ (foreman)│
-               └─────────┘    └──────────┘                      └──────────┘
+DRAFT → SUBMITTED → PM_REVIEW → APPROVED → FULFILLMENT → DELIVERED → CLOSED
+                        │
+                        ▼
+                    REJECTED → CLOSED
+
+FULFILLMENT branches:
+  Supplier route:  ORDERED → CONFIRMED → DELIVERED → CLOSED
+  Driver route:    ASSIGNED → PICKED_UP → DELIVERED → CLOSED
+
+Support states:
+  PARTIAL_DELIVERY (keeps request open for remaining items)
+  BACKORDER (supplier can't fill, PM decides)
+  CANCELLED (PM/admin only)
 ```
 
-### Data Model Changes
+### 3.4 Data Model
 
 ```javascript
-// material_requests table — ADD these fields to existing schema
+// material_requests table — extend existing schema (all new fields nullable)
 {
-  // Existing fields (keep as-is)
+  // ── Existing fields (keep as-is) ──
   id, material, qty, unit, projectId, requestedBy, status, created_at,
 
-  // NEW fields
-  urgency: "normal" | "urgent" | "emergency",     // default "normal"
-  neededBy: "2026-03-28",                          // date string, optional
-  approvedBy: null | employeeId,                   // who approved
+  // ── NEW: Request details ──
+  urgency: "normal" | "urgent" | "emergency",   // default "normal"
+  neededBy: null | "2026-03-28",                 // date string
+  deliveryLocation: null | string,               // jobsite area / address
+  notes: "",                                     // free text
+  attachments: [],                               // photo URLs (spec sheets, etc.)
+
+  // ── NEW: Multi-item support ──
+  items: [                                       // array of line items
+    {
+      description: "3-5/8\" 25ga Stud 10'",
+      quantity: 200,
+      unit: "EA",
+      spec: "ClarkDietrich, 25ga only",          // constraints
+      substituteAllowed: true,
+      costCode: null,                            // optional phase code
+    }
+  ],
+
+  // ── NEW: Approval ──
+  approvedBy: null | employeeId,
   approvedAt: null | timestamp,
-  rejectedReason: null | string,                   // why rejected
+  rejectedReason: null | string,
+  fulfillmentType: null | "supplier" | "in_house_driver",
+  decisionNotes: null | string,
+
+  // ── NEW: Supplier fulfillment ──
+  vendorId: null | string,
+  poNumber: null | string,
+  promisedDeliveryWindow: null | string,
+
+  // ── NEW: Driver fulfillment ──
+  driverUserId: null | employeeId,
+  scheduledPickupTime: null | timestamp,
+  scheduledDropoffTime: null | timestamp,
+
+  // ── NEW: Delivery ──
   deliveredAt: null | timestamp,
-  confirmedBy: null | employeeId,                  // foreman sign-off
+  confirmedBy: null | employeeId,                // foreman sign-off
   confirmedAt: null | timestamp,
-  estimatedCost: null | number,                    // from warehouse lookup
-  notes: "",                                       // free text
+  exceptions: null | string,                     // "partial" | "wrong_item" | "damaged"
+  estimatedCost: null | number,
+
+  // ── NEW: Audit trail ──
+  auditTrail: [],                                // [{ action, actor, timestamp, notes }]
 }
 ```
 
-### Who Does What
+### 3.5 Screens (Minimum Viable)
 
-| Role | Can Create | Can Approve | Can Reject | Can Deliver | Can Confirm |
-|------|-----------|-------------|------------|-------------|-------------|
-| Employee | ✅ (own project) | ❌ | ❌ | ❌ | ❌ |
-| Foreman | ✅ (own crew) | ❌ | ❌ | ❌ | ✅ (delivery receipt) |
-| Driver | ❌ | ❌ | ❌ | ✅ (mark in-transit/delivered) | ❌ |
-| PM | ✅ (any project) | ✅ | ✅ | ❌ | ✅ |
-| Owner/Admin | ✅ | ✅ | ✅ | ✅ | ✅ |
+**Foreman (mobile-first):**
+1. **Create Request** — project selector, needed-by, items list (quick add), photo attach, submit
+2. **My Requests** — statuses + last update timestamp
+3. **Confirm Receipt** — confirm delivered / partial / issue
 
-### Notifications
+**PM (desktop + mobile):**
+1. **Approval Inbox** — filters: project, urgency, overdue
+2. **Request Detail** — approve/reject, choose route (supplier vs driver), set priority
+3. **Material Pipeline** — all requests for project with status + bottlenecks
+
+**Driver:**
+1. **Assigned Deliveries** — pickup/dropoff instructions
+2. **Mark Delivered** — photo proof optional
+
+### 3.6 Notifications
 
 | Event | Who Gets Notified |
 |-------|-------------------|
-| New request (urgent) | PM + warehouse |
-| Request approved | Requester + driver |
-| Request rejected | Requester + foreman |
-| Marked in-transit | Requester + foreman |
+| New request submitted | PM |
+| New urgent request | PM + Owner |
+| Request approved | Requester + Foreman + Driver (if driver route) |
+| Request rejected | Requester + Foreman |
+| Out for delivery (in-transit) | Requester + Foreman |
 | Delivered | Foreman (for confirmation) |
-| Delivery confirmed | PM (audit trail) |
+| Delivery confirmed | PM (audit trail complete) |
+| Overdue request (no PM action in 4hrs) | PM + Owner (escalation) |
 
-### Implementation Notes
-- Backward compatible: old requests without new fields default to `null`
-- No Supabase migration needed if using JSONB or nullable columns
-- Warehouse inventory auto-deducts on "approved" (if item exists in warehouse)
-- Cost estimate pulled from material library pricing
+### 3.7 Edge Cases
+
+| Scenario | Handling |
+|----------|---------|
+| PM is OOO | Escalate to backup PM/Owner after 4hr threshold |
+| Partial delivery | Keep request open, track remaining items |
+| Wrong/damaged material | Create exception + re-request path |
+| "Need it now" (emergency) | Urgent flag, PM gets push notification, supports temp override |
+| Substitute material | `substituteAllowed` flag per item, PM decides |
+| Request cancelled mid-flight | PM/admin only, audit trail records reason |
 
 ---
 
-## 2. Project Stage Ownership Rules
+## 4. Core Workflow B: Project Stage Ownership
 
-### Current State
-- Projects have `phase` (Medical, Commercial, Retail, etc.) — this is sector, NOT stage
-- No formal construction stage tracking
-- No ownership assignment per stage
-- ForemanView shows projects but no phase-gate handoffs
+### Purpose
 
-### Target: Construction Stages with Ownership
+Foreman is closest to the work. They set a controlled "current stage" for the
+project. This becomes operational truth for PM planning.
+
+### Construction Stages
 
 ```
-BID WON → PRE-CON → MOBILIZE → DEMO → FRAMING → BOARD → TAPE/FINISH → PUNCH → CLOSEOUT
+PRE-CON → MOBILIZE → DEMO → FRAMING → BOARD → TAPE/FINISH → PUNCH → CLOSEOUT
 ```
-
-### Stage Definitions
 
 | Stage | Owner | Key Deliverables | Exits When |
 |-------|-------|-----------------|------------|
-| **Pre-Con** | PM | Submittals sent, schedule received, scope review, kick-off | GC issues NTP |
-| **Mobilize** | PM + Foreman | Materials ordered, crew assigned, site access confirmed | First crew on site |
-| **Demo** | Foreman | Demo complete, debris hauled, field verification done | PM signs off demo scope |
-| **Framing** | Foreman | All walls framed, inspections passed, rough-in complete | Inspection approved |
-| **Board** | Foreman | Drywall hung, fire tape complete, insulation installed | All board hung |
-| **Tape & Finish** | Foreman | Tape, bed, texture, prime/paint if in scope | PM walk-through |
-| **Punch** | PM + Foreman | Punch list items resolved, touch-ups complete | GC punch sign-off |
-| **Closeout** | PM | Final invoice, lien waiver, warranty letter, as-builts | Payment received |
+| Pre-Con | PM | Submittals, schedule, scope review, kick-off | GC issues NTP |
+| Mobilize | PM + Foreman | Materials ordered, crew assigned, site access | First crew on site |
+| Demo | Foreman | Demo complete, debris hauled, field verify | PM signs off |
+| Framing | Foreman | Walls framed, inspections passed, rough-in | Inspection approved |
+| Board | Foreman | Drywall hung, fire tape, insulation | All board hung |
+| Tape/Finish | Foreman | Tape, bed, texture, paint if in scope | PM walk-through |
+| Punch | PM + Foreman | Punch items resolved, touch-ups | GC punch sign-off |
+| Closeout | PM | Final invoice, lien waiver, warranty, as-builts | Payment received |
 
-### Data Model Changes
+### Data Model
 
 ```javascript
-// ADD to project object (not a new table — extend existing projects)
+// Extend existing project object (not a new table)
 {
-  // Existing fields (keep)
-  id, name, gc, value, status, ...
-
-  // NEW fields
   constructionStage: "pre-con" | "mobilize" | "demo" | "framing" | "board" | "tape" | "punch" | "closeout",
-  stageOwner: employeeId,          // current stage owner
-  stageStarted: timestamp,         // when current stage began
-  stageHistory: [                  // audit trail
+  stageOwner: null | employeeId,
+  stageStarted: null | timestamp,
+  stageHistory: [
     { stage: "pre-con", owner: "emp_123", started: "...", completed: "..." },
-    { stage: "mobilize", owner: "emp_456", started: "...", completed: "..." },
   ],
 }
 ```
 
-### Stage Transition Rules
+### Transition Rules
 
-```
-Only these roles can advance a stage:
-  PM         → can advance any stage
-  Foreman    → can advance demo, framing, board, tape (field stages only)
-  Owner      → can advance any stage
+- **Foreman** can advance: demo, framing, board, tape (field stages only)
+- **PM** can advance any stage
+- **Owner** can advance any stage
+- Stages **cannot skip** — must go in order
+- Stages **can go backward** — PM or owner only (rework)
+- System records who changed + when in `stageHistory`
 
-Stage cannot skip: must go in order (pre-con → mobilize → demo → ...)
-Stage can go backward: PM or owner only (rework scenario)
-```
-
-### UI Changes
-- **Projects list:** Show stage badge (color-coded) next to each project
-- **Project detail:** Stage progress bar with current position highlighted
-- **Foreman view:** "Advance Stage" button on their active projects
-- **Dashboard:** "Projects by Stage" summary widget
+### UI
+- Projects list: stage badge (color-coded)
+- Project detail: stage progress bar
+- Foreman view: "Advance Stage" button
+- Dashboard: "Projects by Stage" count widget
 
 ---
 
-## 3. Field → PM → Office Data Flow
+## 5. Core Workflow C: Field → PM → Office Data Flow
 
-### Current State
-- ForemanView creates: time entries, JSAs, daily reports, problems, material requests
-- EmployeeView creates: time entries, material requests, problems
-- PM sees everything in Dashboard, Projects, MoreTabs
-- **Gap:** No formal review/approval pipeline. Data flows but nobody "signs off."
+### PM Action Queue
 
-### Target: Three-Tier Data Flow
-
-```
-FIELD (Employee/Foreman)          PM                         OFFICE (Owner/Admin)
-─────────────────────────    ──────────────────           ──────────────────────
-Clock in/out ──────────────→ Review time entries ───────→ Payroll export
-Material request ──────────→ Approve/reject ────────────→ Cost tracking
-Daily report ──────────────→ Review & flag issues ──────→ Archive
-Problem report ────────────→ Assign resolution ─────────→ Track to close
-JSA sign-off ──────────────→ Verify compliance ─────────→ Safety audit trail
-Stage advance ─────────────→ Confirm / override ────────→ Schedule update
-```
-
-### Approval Queue (PM Inbox)
-
-The PM needs a single view of everything awaiting their action:
+Single widget showing everything awaiting PM action:
 
 ```javascript
-// Computed from existing data — no new table needed
 const pmQueue = {
+  materialRequests: materialRequests.filter(m => m.status === "submitted"),
   timeEntries: timeEntries.filter(t => t.status === "pending_review"),
-  materialRequests: materialRequests.filter(m => m.status === "requested"),
   dailyReports: dailyReports.filter(r => !r.reviewedBy),
   problems: problems.filter(p => p.status === "open" && !p.assignedTo),
   stageAdvances: projects.filter(p => p.pendingStageAdvance),
 };
 ```
 
-### Implementation: "PM Action Queue" Widget
+**Where:** Dashboard, new section above "Today's Sites"
 
-**Where:** Dashboard tab, new section above "Today's Sites"
-
-**Layout:**
-```
-┌─────────────────────────────────────────────────┐
-│ ⚡ ACTION QUEUE                          12 items│
-├─────────────────────────────────────────────────┤
-│ 🕐 Time Entries (3)     │ Review  │ Approve All │
-│ 📦 Material Requests (2) │ Review  │             │
-│ 📋 Daily Reports (4)    │ Review  │ Mark Read   │
-│ ⚠️ Problems (2)         │ Assign  │             │
-│ 🔄 Stage Advances (1)   │ Confirm │             │
-└─────────────────────────────────────────────────┘
-```
-
-### Data Model Changes
+### Data Model Additions (all nullable)
 
 ```javascript
-// ADD to existing objects (nullable, backward compatible)
-
-// time_entries
+// time_entries — add review fields
 { reviewedBy: null | employeeId, reviewedAt: null | timestamp }
 
-// daily_reports
+// daily_reports — add review fields
 { reviewedBy: null | employeeId, reviewedAt: null | timestamp, flagged: false }
 
-// problems
+// problems — add assignment fields
 { assignedTo: null | employeeId, resolvedAt: null | timestamp, resolution: null | string }
 ```
 
-### Notification Flow
+---
 
-| Source | Event | Notifies |
-|--------|-------|----------|
-| Employee | Clocks out | Foreman (if overtime) |
-| Foreman | Submits daily report | PM |
-| Foreman | Reports problem (urgent) | PM + Owner |
-| Foreman | Advances stage | PM |
-| PM | Approves material request | Requester + Driver |
-| PM | Assigns problem | Assigned person |
-| PM | Approves time entries | Payroll queue |
+## 6. Phase 2C: Clock-In Photo Verification
+
+- On clock-in: capture photo showing hardhat
+- Store photo URL with time entry
+- Exception flow: photo failure → supervisor override
+- Manual review now; automation later
 
 ---
 
-## Implementation Priority
+## 7. Phase 2D: Global Project Search
 
-| # | Workflow | Effort | Dependencies |
-|---|----------|--------|-------------|
-| 1 | Material Request Lifecycle | Medium | Extend existing request UI + add approval |
-| 2 | PM Action Queue | Small | Computed from existing data, new Dashboard widget |
-| 3 | Project Stage Ownership | Medium | New fields on project, stage bar UI |
-
-### Slice Order
-1. **Material Request statuses + approval** (most impactful — field uses daily)
-2. **PM Action Queue** (makes PM life easier, uses existing data)
-3. **Project Stages** (structure, less urgent than daily ops)
+- Search by project name or address
+- Quick-open from any screen
+- Reduces friction for everyone
 
 ---
 
-## Rules
+## 8. Delivery Plan
 
-- All new fields are **nullable** — old saved data works unchanged
+| Phase | Feature | ROI | Effort |
+|-------|---------|-----|--------|
+| **2A** | Material Request Approval + Routing | Highest (controls money + schedule) | Medium |
+| **2B** | Project Stage Ownership + Pipeline | High (operational truth) | Medium |
+| **2C** | Clock-In Photo Verification | Medium (compliance + payroll trust) | Small |
+| **2D** | Global Project Search | Low (time saver) | Small |
+
+---
+
+## 9. Definition of Done (Phase 2A)
+
+- [ ] Foreman can submit request with items + needed-by + urgency
+- [ ] PM can approve/reject and choose route (supplier vs driver)
+- [ ] If supplier route: status tracks ordered → confirmed → delivered
+- [ ] If driver route: driver receives assignment, marks delivered
+- [ ] Foreman confirms receipt (with exception option)
+- [ ] Full audit trail visible for PM/admin
+- [ ] Notifications working for key events
+- [ ] Old requests without new fields still work (backward compat)
+- [ ] `npm run build` passes
+
+---
+
+## 10. Rules
+
+- All new fields are **nullable** — old data works unchanged
 - No new Supabase tables — extend existing ones
 - No UI redesigns — add to existing views
-- Test each slice independently before moving to next
+- Test each slice independently
+- **Do NOT add estimating features** unless they block PM/Field work
