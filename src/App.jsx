@@ -1031,6 +1031,78 @@ function App({ auth, onLogout }) {
         );
       })()}
 
+      {/* ── PM Action Queue (Phase 2A') — single decision inbox ── */}
+      {dashCfg.showKPIs && (() => {
+        const pendingMat = (materialRequests || []).filter(r => r.status === "requested");
+        const urgentMat = pendingMat.filter(r => r.urgency === "urgent" || r.urgency === "emergency");
+        const awaitingConfirm = (materialRequests || []).filter(r => r.status === "delivered" && !r.confirmedBy);
+        const pendingReviews = (dailyReports || []).filter(r => !r.reviewedBy);
+        const openProblems = (problems || []).filter(p => p.status === "open" && !p.assignedTo);
+        const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length;
+        if (queueTotal === 0) return null;
+        return (
+          <div className="card" style={{ padding: "14px 16px", marginBottom: 16, borderLeft: "3px solid var(--amber)", background: "var(--bg2)" }}>
+            <div className="flex-between mb-8">
+              <div className="text-sm font-semi" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span>⚡</span> PM Action Queue
+                <span className="badge badge-amber" style={{ fontSize: 11, padding: "1px 8px" }}>{queueTotal}</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {pendingMat.length > 0 && (
+                <div className="flex-between" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span>📦</span>
+                    <span className="text-sm">Material Requests</span>
+                    {urgentMat.length > 0 && <span className="badge badge-red" style={{ fontSize: 9, padding: "0 5px" }}>{urgentMat.length} urgent</span>}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className="text-sm font-semi" style={{ color: "var(--amber)" }}>{pendingMat.length}</span>
+                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => handleTabClick("materials")}>Review</button>
+                  </div>
+                </div>
+              )}
+              {awaitingConfirm.length > 0 && (
+                <div className="flex-between" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span>✓</span>
+                    <span className="text-sm">Deliveries Awaiting Confirmation</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className="text-sm font-semi" style={{ color: "var(--green)" }}>{awaitingConfirm.length}</span>
+                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => handleTabClick("materials")}>View</button>
+                  </div>
+                </div>
+              )}
+              {pendingReviews.length > 0 && (
+                <div className="flex-between" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span>📋</span>
+                    <span className="text-sm">Daily Reports</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className="text-sm font-semi">{pendingReviews.length}</span>
+                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => handleTabClick("reports")}>Review</button>
+                  </div>
+                </div>
+              )}
+              {openProblems.length > 0 && (
+                <div className="flex-between" style={{ padding: "6px 0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span>⚠️</span>
+                    <span className="text-sm">Unassigned Problems</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className="text-sm font-semi" style={{ color: "var(--red)" }}>{openProblems.length}</span>
+                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => handleTabClick("reports")}>Assign</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Section 1: Action Items — what needs attention NOW ── */}
       {dashCfg.showKPIs && (dashActions.bidsDueSoon.length > 0 || dashActions.cosPending.length > 0 || dashActions.rfisOpen.length > 0 || dashActions.subsDueSoon.length > 0 || dashActions.overdueInv.length > 0 || dashActions.tmPending.length > 0 || dashActions.profitAlerts.length > 0) && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 16 }}>
