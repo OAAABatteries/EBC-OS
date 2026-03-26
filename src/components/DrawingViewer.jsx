@@ -56,6 +56,35 @@ const ANN_MODES = new Set([MODE.TEXT, MODE.ARROW, MODE.CALLOUT, MODE.LINE_ANN,
 // Modes that use mouse-drag (mousedown→move→up) instead of click-click
 const ANN_DRAG_MODES = new Set([MODE.HIGHLIGHTER, MODE.RECT, MODE.OVAL, MODE.INK]);
 
+// ── Scale presets (OST-style dropdown) ──
+// ratio = real inches per 1 paper inch. ppf = 72 * 12 / ratio (PDF = 72 units/inch)
+const SCALE_PRESETS = [
+  { label: '1/32" = 1\'0"', ratio: 384 },
+  { label: '1/16" = 1\'0"', ratio: 192 },
+  { label: '3/32" = 1\'0"', ratio: 128 },
+  { label: '1/8" = 1\'0"',  ratio: 96 },
+  { label: '3/16" = 1\'0"', ratio: 64 },
+  { label: '1/4" = 1\'0"',  ratio: 48 },
+  { label: '3/8" = 1\'0"',  ratio: 32 },
+  { label: '1/2" = 1\'0"',  ratio: 24 },
+  { label: '3/4" = 1\'0"',  ratio: 16 },
+  { label: '1" = 1\'0"',    ratio: 12 },
+  { label: '1-1/2" = 1\'0"', ratio: 8 },
+  { label: '3" = 1\'0"',    ratio: 4 },
+];
+function ppfFromRatio(ratio) { return (72 * 12) / ratio; }
+function ratioFromPpf(ppf) { return ppf ? (72 * 12) / ppf : null; }
+function closestPresetLabel(ppf) {
+  if (!ppf) return null;
+  const r = ratioFromPpf(ppf);
+  let best = null, bestDiff = Infinity;
+  for (const sc of SCALE_PRESETS) {
+    const diff = Math.abs(sc.ratio - r);
+    if (diff < bestDiff) { bestDiff = diff; best = sc; }
+  }
+  return best && bestDiff / best.ratio < 0.02 ? best.label : null;
+}
+
 // ── Condition colors — auto-assigned ──
 const COND_COLORS = [
   "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6",
@@ -2891,7 +2920,36 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <button onClick={() => { setMode(MODE.PAN); cancelActive(); }} style={mode === MODE.PAN ? { ...btnActive, padding: "4px 10px", fontSize: 12 } : { ...btn, padding: "4px 10px", fontSize: 12 }} title="Space">Pan</button>
-            <button onClick={() => { setMode(MODE.CALIBRATE); cancelActive(); }} style={mode === MODE.CALIBRATE ? { ...btnActive, padding: "4px 10px", fontSize: 12 } : { ...btn, padding: "4px 10px", fontSize: 12 }} title="S">{ppf ? "✓ Scale" : "Set Scale"}</button>
+            <select value={ppf ? (closestPresetLabel(ppf) || "__custom") : ""}
+              onChange={e => {
+                const val = e.target.value;
+                if (val === "__calc") { setMode(MODE.CALIBRATE); cancelActive(); return; }
+                if (val === "__clear") { setCalibrations(prev => { const n = { ...prev }; delete n[pageKey]; return n; }); return; }
+                if (val === "") return;
+                const preset = SCALE_PRESETS.find(s => s.label === val);
+                if (preset) {
+                  setCalibrations(prev => ({ ...prev, [pageKey]: ppfFromRatio(preset.ratio) }));
+                  setShowVerify(true);
+                  if (mode === MODE.CALIBRATE) setMode(MODE.PAN);
+                }
+              }}
+              style={{
+                padding: "4px 6px", borderRadius: 5, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                border: ppf ? "1px solid rgba(74,222,128,0.5)" : "1px solid rgba(239,68,68,0.5)",
+                background: ppf ? "rgba(74,222,128,0.12)" : "rgba(239,68,68,0.12)",
+                color: ppf ? "#4ade80" : "#f87171",
+                minWidth: 120, maxWidth: 160,
+              }}
+              title="Scale — select preset or Calculate Scale (S)">
+              {!ppf && <option value="">⚠ Set Scale</option>}
+              {ppf && !closestPresetLabel(ppf) && <option value="__custom">✓ Custom ({(1 / ppf * 12).toFixed(2)}&quot;/ft)</option>}
+              {SCALE_PRESETS.map(sc => (
+                <option key={sc.ratio} value={sc.label}>{ppf && closestPresetLabel(ppf) === sc.label ? "✓ " : ""}{sc.label}</option>
+              ))}
+              <option disabled>──────────</option>
+              <option value="__calc">Calculate Scale…</option>
+              {ppf && <option value="__clear">Clear Scale</option>}
+            </select>
             <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)" }} />
             <button onClick={() => { if (ppf) { setMode(MODE.LINEAR); cancelActive(); }}} style={!ppf ? { ...btnDis, padding: "4px 10px", fontSize: 12 } : mode === MODE.LINEAR ? { ...btnActive, padding: "4px 10px", fontSize: 12 } : { ...btn, padding: "4px 10px", fontSize: 12 }} disabled={!ppf} title="L">Linear</button>
             <button onClick={() => { if (ppf) { setMode(MODE.AREA); cancelActive(); }}} style={!ppf ? { ...btnDis, padding: "4px 10px", fontSize: 12 } : mode === MODE.AREA ? { ...btnActive, padding: "4px 10px", fontSize: 12 } : { ...btn, padding: "4px 10px", fontSize: 12 }} disabled={!ppf} title="A">Area</button>
