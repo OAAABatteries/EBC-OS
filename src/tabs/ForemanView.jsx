@@ -279,17 +279,73 @@ export function ForemanView({ app }) {
       );
     });
 
+  // Phase 2C: photo capture state
+  const [showPhotoCapture, setShowPhotoCapture] = useState(false);
+  const [photoStream, setPhotoStream] = useState(null);
+  const photoVideoRef = useRef(null);
+  const photoCanvasRef = useRef(null);
+
   const handleClockIn = async () => {
+    // Phase 2C: prompt for photo before clock-in
+    setShowPhotoCapture(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: 480, height: 480 } });
+      setPhotoStream(stream);
+    } catch {
+      // Camera failed — allow clock-in with flag
+      completeClockIn(null, "camera_failed");
+    }
+  };
+
+  const captureAndClockIn = () => {
+    const video = photoVideoRef.current;
+    const canvas = photoCanvasRef.current;
+    if (!video || !canvas) { completeClockIn(null, "capture_failed"); return; }
+    canvas.width = 480; canvas.height = 480;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, 480, 480);
+    canvas.toBlob(async (blob) => {
+      // Stop camera
+      if (photoStream) photoStream.getTracks().forEach(t => t.stop());
+      setPhotoStream(null);
+      setShowPhotoCapture(false);
+      if (!blob) { completeClockIn(null, "capture_failed"); return; }
+      // Upload to Supabase Storage
+      const fileName = `clockin_${activeForeman.id}_${Date.now()}.jpg`;
+      try {
+        const { uploadFile, getFileUrl } = await import("../lib/supabase");
+        await uploadFile(`clock-in-photos/${fileName}`, blob, "clock-in-photos");
+        const url = getFileUrl(`clock-in-photos/${fileName}`, "clock-in-photos");
+        completeClockIn(url, "ok");
+      } catch {
+        // Storage failed — store as data URL fallback
+        const reader = new FileReader();
+        reader.onload = () => completeClockIn(reader.result?.slice(0, 500) + "...[truncated]", "upload_failed");
+        reader.readAsDataURL(blob);
+      }
+    }, "image/jpeg", 0.7);
+  };
+
+  const skipPhoto = (reason) => {
+    if (photoStream) photoStream.getTracks().forEach(t => t.stop());
+    setPhotoStream(null);
+    setShowPhotoCapture(false);
+    completeClockIn(null, reason || "skipped");
+  };
+
+  const completeClockIn = async (photoUrl, captureStatus) => {
     const loc = await getLocation();
     const entry = {
       clockIn: new Date().toISOString(),
       lat: loc?.lat || null,
       lng: loc?.lng || null,
       projectId: selectedProjectId,
+      photoUrl: photoUrl || null,
+      captureStatus: captureStatus || "ok",
     };
     setClockEntry(entry);
     localStorage.setItem(CLOCK_KEY, JSON.stringify(entry));
-    show?.(`${t("Clocked in")} ✓`);
+    show?.(`${t("Clocked in")} ${captureStatus === "ok" ? "📸" : "⚠️"} ✓`);
   };
 
   const handleClockOut = async () => {
@@ -314,6 +370,9 @@ export function ForemanView({ app }) {
       clockOutLng: loc?.lng || null,
       totalHours,
       geofenceStatus: "inside",
+      // Phase 2C: photo verification
+      photoUrl: clockEntry.photoUrl || null,
+      captureStatus: clockEntry.captureStatus || null,
     };
     if (setTimeEntries) {
       setTimeEntries(prev => [...prev, newEntry]);
@@ -3575,6 +3634,39 @@ export function ForemanView({ app }) {
               >
                 <Send size={15} />
                 {t("Submit RFI")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Phase 2C: Photo Capture Modal */}
+      {showPhotoCapture && (
+        <div className="modal-overlay" style={{ zIndex: 10000 }} onClick={e => { if (e.target === e.currentTarget) skipPhoto("dismissed"); }}>
+          <div style={{ background: "var(--bg2, #1a1a2e)", borderRadius: 12, padding: 20, maxWidth: 400, width: "90%", textAlign: "center" }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 12 }}>📸 {t("Clock-In Photo")}</div>
+            <div style={{ fontSize: 12, color: "#aaa", marginBottom: 16 }}>{t("Take a photo to verify clock-in")}</div>
+            <div style={{ background: "#000", borderRadius: 8, overflow: "hidden", marginBottom: 16, position: "relative", width: "100%", paddingBottom: "100%" }}>
+              <video ref={photoVideoRef} autoPlay playsInline muted
+                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                onLoadedMetadata={() => { if (photoVideoRef.current) photoVideoRef.current.play(); }}
+              />
+              {photoStream && (() => {
+                const video = photoVideoRef.current;
+                if (video && photoStream) {
+                  video.srcObject = photoStream;
+                }
+                return null;
+              })()}
+            </div>
+            <canvas ref={photoCanvasRef} style={{ display: "none" }} />
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <button className="btn btn-ghost" onClick={() => skipPhoto("skipped")} style={{ color: "var(--amber)" }}>
+                {t("Skip")}
+              </button>
+              <button className="btn btn-primary" onClick={captureAndClockIn}
+                style={{ padding: "10px 24px", fontSize: 14, background: "var(--green)", boxShadow: "0 2px 8px rgba(34,197,94,0.3)" }}>
+                📸 {t("Capture & Clock In")}
               </button>
             </div>
           </div>

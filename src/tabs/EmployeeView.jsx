@@ -476,6 +476,9 @@ export function EmployeeView({ app }) {
       overrideReason: reason || null,
       totalHours: null,
       notes: "",
+      // Phase 2C: photo verification (captured in ForemanView; nullable for employees)
+      photoUrl: null,
+      captureStatus: null,
     };
     setTimeEntries((prev) => [entry, ...prev]);
     setShowOverride(false);
