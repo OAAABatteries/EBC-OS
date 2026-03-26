@@ -10,11 +10,83 @@
 ```
 Migration ran:           ☐ Yes  ☐ No
 Migration result:        _______________
-Verification query ran:  ☐ Yes  ☐ No  (column count for material_requests: ___)
 Bucket created:          ☐ Yes  ☐ No
 Bucket name:             clock-in-photos
 Bucket access:           ☐ Private (RECOMMENDED — contains employee faces/identity)
 ```
+
+### Post-Migration Verification Queries
+
+**Run these in Supabase SQL Editor AFTER migration. Screenshot results.**
+
+**Query 1 — All Phase 2 columns exist (single shot):**
+```sql
+SELECT table_name, column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE
+  (table_name='material_requests' AND column_name IN (
+    'urgency','needed_by','fulfillment_type','decision_notes',
+    'rejected_reason','confirmed_by','confirmed_at','audit_trail'
+  ))
+  OR
+  (table_name='projects' AND column_name IN (
+    'construction_stage','stage_history','stage_updated_at',
+    'stage_updated_by','assigned_foreman','labor_cost','material_cost'
+  ))
+  OR
+  (table_name='time_entries' AND column_name IN (
+    'photo_url','capture_status','reviewed_by','reviewed_at'
+  ))
+ORDER BY table_name, column_name;
+```
+**Expected:** 19 rows returned. If fewer, specific columns are missing.
+
+```
+Column verification result:  ___ of 19 columns found
+Missing columns (if any):    _______________
+```
+
+**Query 2 — RLS policies allow writes:**
+```sql
+SELECT schemaname, tablename, policyname, permissive, roles, cmd
+FROM pg_policies
+WHERE tablename IN ('material_requests','projects','time_entries')
+ORDER BY tablename, policyname;
+```
+**Expected:** Each table has at least one policy allowing INSERT/UPDATE for `authenticated` role.
+
+```
+RLS / POLICY CHECK
+- material_requests update allowed for authenticated role? ☐ Yes  ☐ No
+- projects update allowed for authenticated role?          ☐ Yes  ☐ No
+- time_entries update allowed for authenticated role?      ☐ Yes  ☐ No
+- Evidence: _______________
+```
+
+**Query 3 — Storage bucket exists:**
+```sql
+SELECT id, name, public, created_at
+FROM storage.buckets
+WHERE name = 'clock-in-photos';
+```
+**Expected:** 1 row. `public` = false (private bucket).
+
+```
+Bucket verification: ☐ Found  ☐ Not found
+Bucket public flag:  ☐ false (correct)  ☐ true (reconsider)
+```
+
+### Column Name Mapping Verification
+
+The app writes camelCase. `useSyncedState` converts to snake_case automatically:
+- `neededBy` → `needed_by` ✅
+- `constructionStage` → `construction_stage` ✅
+- `captureStatus` → `capture_status` ✅
+- `auditTrail` → `audit_trail` ✅
+- `fulfillmentType` → `fulfillment_type` ✅
+
+This mapping is handled by `toSnake()` in `src/hooks/useSyncedState.js` line 29.
+If any field silently drops, the mismatch is in this function.
 
 ### Storage Bucket — Security Decision
 
