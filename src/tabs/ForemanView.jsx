@@ -567,10 +567,11 @@ export function ForemanView({ app }) {
   const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
 
   // ── material request form ──
-  const [matForm, setMatForm] = useState({ material: "", qty: "", unit: "EA", notes: "" });
+  const [matForm, setMatForm] = useState({ material: "", qty: "", unit: "EA", notes: "", urgency: "normal", neededBy: "" });
   const handleMatSubmit = () => {
     if (!selectedProjectId || !matForm.material || !matForm.qty) return;
     const proj = projects.find(p => String(p.id) === String(selectedProjectId));
+    const now = new Date().toISOString();
     const newReq = {
       id: crypto.randomUUID(),
       employeeId: activeForeman.id,
@@ -581,12 +582,28 @@ export function ForemanView({ app }) {
       qty: Number(matForm.qty),
       unit: matForm.unit,
       notes: matForm.notes,
+      urgency: matForm.urgency || "normal",
+      neededBy: matForm.neededBy || null,
       status: "requested",
-      requestedAt: new Date().toISOString(),
+      requestedAt: now,
+      approvedBy: null, approvedAt: null, rejectedReason: null,
+      fulfillmentType: null, driverId: null, deliveredAt: null,
+      confirmedBy: null, confirmedAt: null,
+      auditTrail: [{ action: "submitted", actor: activeForeman.name, actorId: activeForeman.id, timestamp: now }],
     };
     setMaterialRequests(prev => [newReq, ...prev]);
-    setMatForm({ material: "", qty: "", unit: "EA", notes: "" });
+    setMatForm({ material: "", qty: "", unit: "EA", notes: "", urgency: "normal", neededBy: "" });
     show(t("Request Material"), "ok");
+  };
+  // Phase 2A: foreman confirms receipt
+  const handleForemanConfirm = (reqId, exceptions) => {
+    const now = new Date().toISOString();
+    setMaterialRequests(prev => prev.map(r => {
+      if (r.id !== reqId) return r;
+      const trail = [...(r.auditTrail || []), { action: "confirmed", actor: activeForeman?.name, actorId: activeForeman?.id, timestamp: now, notes: exceptions || "" }];
+      return { ...r, status: "confirmed", confirmedBy: activeForeman?.id, confirmedAt: now, auditTrail: trail };
+    }));
+    show(t("Receipt confirmed") + " ✓", "ok");
   };
 
   // ── notification toggle helper ──
@@ -1620,6 +1637,20 @@ export function ForemanView({ app }) {
                       <textarea className="login-input" rows={2} style={{ resize: "vertical", minHeight: 60 }}
                         value={matForm.notes} onChange={e => setMatForm(f => ({ ...f, notes: e.target.value }))} />
                     </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <label className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Priority")}</label>
+                        <select className="settings-select" value={matForm.urgency} onChange={e => setMatForm(f => ({ ...f, urgency: e.target.value }))}>
+                          <option value="normal">{t("Normal")}</option>
+                          <option value="urgent">⚡ {t("Urgent")}</option>
+                          <option value="emergency">🚨 {t("Emergency")}</option>
+                        </select>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Needed By")}</label>
+                        <input type="date" className="login-input" value={matForm.neededBy} onChange={e => setMatForm(f => ({ ...f, neededBy: e.target.value }))} />
+                      </div>
+                    </div>
                     <button className="btn btn-primary btn-sm" onClick={handleMatSubmit}>{t("Submit Request")}</button>
                   </div>
                 </div>
@@ -1635,20 +1666,36 @@ export function ForemanView({ app }) {
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {projectMatRequests.map(req => (
-                      <div key={req.id} className="mat-request-card">
+                      <div key={req.id} className="mat-request-card" style={{ borderLeft: req.urgency === "emergency" ? "3px solid var(--red)" : req.urgency === "urgent" ? "3px solid var(--amber)" : undefined }}>
                         <div className="flex-between mb-4">
-                          <span className="text-sm font-semi">{req.material}</span>
-                          <span className={`badge mat-status-${req.status}`}>{t(req.status.charAt(0).toUpperCase() + req.status.slice(1))}</span>
+                          <span className="text-sm font-semi">
+                            {req.urgency === "emergency" ? "🚨 " : req.urgency === "urgent" ? "⚡ " : ""}{req.material}
+                          </span>
+                          <span className={`badge mat-status-${req.status}`}>
+                            {req.status === "on_order" ? t("On Order") : req.status === "supplier_confirmed" ? t("Supplier OK") :
+                             req.status === "assigned" ? t("Assigned") : req.status === "picked_up" ? t("Picked Up") :
+                             req.status === "confirmed" ? t("Confirmed") :
+                             t(req.status.charAt(0).toUpperCase() + req.status.slice(1))}
+                          </span>
                         </div>
                         <div className="text-xs text-muted mb-4">
                           {req.qty} {req.unit} · {t("Requester")}: {req.employeeName}
+                          {req.neededBy && <span> · {t("Need by")} {req.neededBy}</span>}
+                          {req.fulfillmentType && <span> · {req.fulfillmentType === "supplier" ? "📦" : "🚛"}</span>}
                         </div>
                         {req.notes && <div className="text-xs text-dim mb-4">{req.notes}</div>}
-                        {req.status === "requested" && (
-                          <button className="btn btn-primary btn-sm" style={{ background: "var(--green)", boxShadow: "0 2px 8px var(--green-dim)" }}
-                            onClick={() => handleApprove(req.id)}>
-                            {t("Approve")}
-                          </button>
+                        {/* Confirm receipt when delivered */}
+                        {req.status === "delivered" && !req.confirmedBy && (
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button className="btn btn-primary btn-sm" style={{ background: "var(--green)", boxShadow: "0 2px 8px var(--green-dim)" }}
+                              onClick={() => handleForemanConfirm(req.id, "")}>
+                              ✓ {t("Confirm Receipt")}
+                            </button>
+                            <button className="btn btn-ghost btn-sm" style={{ color: "var(--amber)" }}
+                              onClick={() => { const exc = prompt(t("Describe issue") + ":"); if (exc) handleForemanConfirm(req.id, exc); }}>
+                              ⚠ {t("Issue")}
+                            </button>
+                          </div>
                         )}
                       </div>
                     ))}

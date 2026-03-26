@@ -48,7 +48,18 @@ const INIT_WAREHOUSE = [
   { id: "wh25", name: 'Fiberglass Mesh Tape',              manufacturer: "USG",           qty: 12, unit: "ROLL", location: "Warehouse", category: "Finishing", updated: "2026-03-15" },
 ];
 const UNITS = ["EA", "LF", "SF", "BDL", "BOX", "BKT", "BAG", "GAL", "SHT", "PCS", "ROLL"];
-const REQ_STATUS_BADGE = { requested: "badge-amber", approved: "badge-blue", "in-transit": "badge-amber", delivered: "badge-green", denied: "badge-red" };
+const REQ_STATUS_BADGE = {
+  requested: "badge-amber", approved: "badge-blue", denied: "badge-red",
+  on_order: "badge-blue", supplier_confirmed: "badge-blue",
+  assigned: "badge-amber", picked_up: "badge-amber",
+  "in-transit": "badge-amber", delivered: "badge-green", confirmed: "badge-green",
+};
+const REQ_STATUS_LABEL = {
+  requested: "Requested", approved: "Approved", denied: "Denied",
+  on_order: "On Order", supplier_confirmed: "Supplier Confirmed",
+  assigned: "Assigned to Driver", picked_up: "Picked Up",
+  "in-transit": "In Transit", delivered: "Delivered", confirmed: "Confirmed",
+};
 
 export function MaterialsTab({ app }) {
   const { materials, setMaterials, customAssemblies, setCustomAssemblies, show, fmt, submittals } = app;
@@ -101,7 +112,8 @@ export function MaterialsTab({ app }) {
   const [editAsm, setEditAsm] = useState(null);
 
   // ── Material Request state ──
-  const [reqForm, setReqForm] = useState({ projectId: "", material: "", qty: "", unit: "EA", notes: "" });
+  const [reqForm, setReqForm] = useState({ projectId: "", material: "", qty: "", unit: "EA", notes: "", urgency: "normal", neededBy: "" });
+  const [approvalDetail, setApprovalDetail] = useState(null); // req ID for approval modal
   const myRequests = useMemo(() =>
     (app.materialRequests || []).filter(r => r.employeeId === app.auth?.id),
     [app.materialRequests, app.auth]
@@ -115,6 +127,7 @@ export function MaterialsTab({ app }) {
       return;
     }
     const proj = (app.projects || []).find(p => p.id === reqForm.projectId || p.id === Number(reqForm.projectId));
+    const now = new Date().toISOString();
     const newReq = {
       id: crypto.randomUUID(),
       employeeId: app.auth?.id,
@@ -125,33 +138,78 @@ export function MaterialsTab({ app }) {
       qty: Number(reqForm.qty),
       unit: reqForm.unit,
       notes: reqForm.notes,
+      urgency: reqForm.urgency || "normal",
+      neededBy: reqForm.neededBy || null,
       status: "requested",
-      requestedAt: new Date().toISOString(),
+      requestedAt: now,
+      // Phase 2A fields (nullable)
+      approvedBy: null, approvedAt: null, rejectedReason: null,
+      fulfillmentType: null, decisionNotes: null,
+      driverId: null, deliveredAt: null,
+      confirmedBy: null, confirmedAt: null,
+      auditTrail: [{ action: "submitted", actor: app.auth?.name || "Unknown", actorId: app.auth?.id, timestamp: now }],
     };
     app.setMaterialRequests(prev => [newReq, ...prev]);
-    setReqForm({ projectId: "", material: "", qty: "", unit: "EA", notes: "" });
+    setReqForm({ projectId: "", material: "", qty: "", unit: "EA", notes: "", urgency: "normal", neededBy: "" });
     show("Material request submitted", "ok");
   };
 
-  const handleApproveRequest = (reqId) => {
+  // Phase 2A: Approve with fulfillment routing
+  const handleApproveWithRoute = (reqId, fulfillmentType, decisionNotes) => {
+    const now = new Date().toISOString();
+    const nextStatus = fulfillmentType === "supplier" ? "on_order" : "assigned";
+    app.setMaterialRequests(prev => prev.map(r => {
+      if (r.id !== reqId) return r;
+      const trail = [...(r.auditTrail || []),
+        { action: "approved", actor: app.auth?.name, actorId: app.auth?.id, timestamp: now, notes: `Route: ${fulfillmentType}${decisionNotes ? " — " + decisionNotes : ""}` },
+      ];
+      return { ...r,
+        status: nextStatus, approvedBy: app.auth?.id, approvedAt: now,
+        fulfillmentType, decisionNotes: decisionNotes || null,
+        auditTrail: trail,
+      };
+    }));
+    setApprovalDetail(null);
+    show(`Approved → ${fulfillmentType === "supplier" ? "Supplier order" : "Driver delivery"}`, "ok");
     const req = (app.materialRequests || []).find(r => r.id === reqId);
-    app.setMaterialRequests(prev => prev.map(r =>
-      r.id === reqId ? { ...r, status: "approved" } : r
-    ));
-    show("Request approved", "ok");
     if (req) {
       const prefs = getNotificationPrefs(app.auth?.id);
-      if (prefs.materialUpdates) {
-        notifyMaterialStatus({ material: req.material || req.item, status: "approved", projectName: req.projectName, requestId: reqId });
-      }
+      if (prefs.materialUpdates) notifyMaterialStatus({ material: req.material, status: "approved", projectName: req.projectName, requestId: reqId });
     }
   };
 
-  const handleDenyRequest = (reqId) => {
-    app.setMaterialRequests(prev => prev.map(r =>
-      r.id === reqId ? { ...r, status: "denied" } : r
-    ));
+  // Phase 2A: Supplier status updates (PM only)
+  const handleSupplierUpdate = (reqId, newStatus) => {
+    const now = new Date().toISOString();
+    app.setMaterialRequests(prev => prev.map(r => {
+      if (r.id !== reqId) return r;
+      const trail = [...(r.auditTrail || []), { action: newStatus, actor: app.auth?.name, actorId: app.auth?.id, timestamp: now }];
+      const extra = newStatus === "delivered" ? { deliveredAt: now } : {};
+      return { ...r, status: newStatus, auditTrail: trail, ...extra };
+    }));
+    show(`Status → ${REQ_STATUS_LABEL[newStatus] || newStatus}`, "ok");
+  };
+
+  const handleDenyRequest = (reqId, reason) => {
+    const now = new Date().toISOString();
+    app.setMaterialRequests(prev => prev.map(r => {
+      if (r.id !== reqId) return r;
+      const trail = [...(r.auditTrail || []), { action: "denied", actor: app.auth?.name, actorId: app.auth?.id, timestamp: now, notes: reason || "" }];
+      return { ...r, status: "denied", rejectedReason: reason || null, auditTrail: trail };
+    }));
+    setApprovalDetail(null);
     show("Request denied", "ok");
+  };
+
+  // Phase 2A: Foreman confirms receipt
+  const handleConfirmReceipt = (reqId, exceptions) => {
+    const now = new Date().toISOString();
+    app.setMaterialRequests(prev => prev.map(r => {
+      if (r.id !== reqId) return r;
+      const trail = [...(r.auditTrail || []), { action: "confirmed", actor: app.auth?.name, actorId: app.auth?.id, timestamp: now, notes: exceptions || "" }];
+      return { ...r, status: "confirmed", confirmedBy: app.auth?.id, confirmedAt: now, auditTrail: trail };
+    }));
+    show("Receipt confirmed ✓", "ok");
   };
 
   // ── Filtered Materials ──
@@ -1027,6 +1085,12 @@ export function MaterialsTab({ app }) {
                 value={reqForm.notes}
                 onChange={e => setReqForm(f => ({ ...f, notes: e.target.value }))}
               />
+              <select className="input" value={reqForm.urgency} onChange={e => setReqForm(f => ({ ...f, urgency: e.target.value }))}>
+                <option value="normal">Normal priority</option>
+                <option value="urgent">⚡ Urgent</option>
+                <option value="emergency">🚨 Emergency</option>
+              </select>
+              <input className="input" type="date" placeholder="Needed by" value={reqForm.neededBy} onChange={e => setReqForm(f => ({ ...f, neededBy: e.target.value }))} />
             </div>
             <button
               className="btn btn-primary btn-sm mt-12"
@@ -1046,24 +1110,62 @@ export function MaterialsTab({ app }) {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {visibleRequests.map(req => (
-                <div key={req.id} className="card" style={{ padding: 14 }}>
+                <div key={req.id} className="card" style={{ padding: 14, borderLeft: req.urgency === "emergency" ? "3px solid var(--red)" : req.urgency === "urgent" ? "3px solid var(--amber)" : "3px solid transparent" }}>
                   <div className="flex-between mb-4">
-                    <span className="text-sm font-semi">{req.material}</span>
-                    <span className={`badge ${REQ_STATUS_BADGE[req.status] || "badge-amber"}`}>{req.status}</span>
+                    <span className="text-sm font-semi">
+                      {req.urgency === "emergency" ? "🚨 " : req.urgency === "urgent" ? "⚡ " : ""}{req.material}
+                    </span>
+                    <span className={`badge ${REQ_STATUS_BADGE[req.status] || "badge-amber"}`}>
+                      {REQ_STATUS_LABEL[req.status] || req.status}
+                    </span>
                   </div>
                   <div className="text-xs text-muted mb-4">
                     {req.projectName} — {req.qty} {req.unit}
+                    {req.neededBy && <span> · Need by {req.neededBy}</span>}
+                    {req.fulfillmentType && <span> · {req.fulfillmentType === "supplier" ? "📦 Supplier" : "🚛 Driver"}</span>}
                   </div>
                   <div className="text-xs text-dim mb-4">
                     {req.employeeName} · {req.requestedAt ? new Date(req.requestedAt).toLocaleDateString() : ""}
                   </div>
                   {req.notes && <div className="text-xs text-dim mb-4">{req.notes}</div>}
-                  {/* PM+ can approve/deny pending requests */}
+
+                  {/* PM+ approval: open routing modal */}
                   {!isFieldRole && req.status === "requested" && (
                     <div className="flex gap-8 mt-8">
-                      <button className="btn btn-primary btn-sm" onClick={() => handleApproveRequest(req.id)}>Approve</button>
-                      <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }} onClick={() => handleDenyRequest(req.id)}>Deny</button>
+                      <button className="btn btn-primary btn-sm" onClick={() => setApprovalDetail(req.id)}>Review & Approve</button>
+                      <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }} onClick={() => handleDenyRequest(req.id, "")}>Deny</button>
                     </div>
+                  )}
+
+                  {/* PM supplier status progression */}
+                  {!isFieldRole && req.fulfillmentType === "supplier" && req.status === "on_order" && (
+                    <button className="btn btn-sm mt-8" style={{ background: "var(--blue-dim)", color: "var(--blue)" }} onClick={() => handleSupplierUpdate(req.id, "supplier_confirmed")}>Mark Supplier Confirmed</button>
+                  )}
+                  {!isFieldRole && req.fulfillmentType === "supplier" && req.status === "supplier_confirmed" && (
+                    <button className="btn btn-sm mt-8" style={{ background: "var(--green-dim)", color: "var(--green)" }} onClick={() => handleSupplierUpdate(req.id, "delivered")}>Mark Delivered</button>
+                  )}
+
+                  {/* Foreman/PM confirm receipt */}
+                  {req.status === "delivered" && (isFieldRole || !isFieldRole) && !req.confirmedBy && (
+                    <div className="flex gap-8 mt-8">
+                      <button className="btn btn-sm" style={{ background: "var(--green-dim)", color: "var(--green)" }} onClick={() => handleConfirmReceipt(req.id, "")}>✓ Confirm Receipt</button>
+                      <button className="btn btn-ghost btn-sm" style={{ color: "var(--amber)" }} onClick={() => {
+                        const exc = prompt("Describe the issue (partial, wrong item, damaged):");
+                        if (exc) handleConfirmReceipt(req.id, exc);
+                      }}>⚠ Issue</button>
+                    </div>
+                  )}
+
+                  {/* Audit trail (PM only, collapsed) */}
+                  {!isFieldRole && req.auditTrail?.length > 0 && (
+                    <details style={{ marginTop: 8 }}>
+                      <summary className="text-xs text-dim" style={{ cursor: "pointer" }}>Audit trail ({req.auditTrail.length})</summary>
+                      <div style={{ marginTop: 4 }}>
+                        {req.auditTrail.map((e, i) => (
+                          <div key={i} className="text-xs text-dim">{new Date(e.timestamp).toLocaleString()} · {e.actor} · {e.action}{e.notes ? ` — ${e.notes}` : ""}</div>
+                        ))}
+                      </div>
+                    </details>
                   )}
                 </div>
               ))}
@@ -1071,6 +1173,43 @@ export function MaterialsTab({ app }) {
           )}
         </div>
       )}
+
+      {/* ═══ APPROVAL ROUTING MODAL (Phase 2A) ═══ */}
+      {approvalDetail && (() => {
+        const req = (app.materialRequests || []).find(r => r.id === approvalDetail);
+        if (!req) return null;
+        return (
+          <div className="modal-overlay" onClick={() => setApprovalDetail(null)}>
+            <div className="modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <div className="modal-title">Review Material Request</div>
+                <button className="btn btn-ghost btn-sm" onClick={() => setApprovalDetail(null)}>✕</button>
+              </div>
+              <div style={{ padding: 16 }}>
+                <div className="text-sm font-semi mb-8">{req.urgency === "emergency" ? "🚨 " : req.urgency === "urgent" ? "⚡ " : ""}{req.material}</div>
+                <div className="text-xs text-muted mb-4">{req.projectName} · {req.qty} {req.unit}</div>
+                <div className="text-xs text-muted mb-4">Requested by {req.employeeName} · {req.requestedAt ? new Date(req.requestedAt).toLocaleDateString() : ""}</div>
+                {req.neededBy && <div className="text-xs mb-4" style={{ color: "var(--amber)" }}>Needed by: {req.neededBy}</div>}
+                {req.notes && <div className="text-xs text-dim mb-12">{req.notes}</div>}
+
+                <div className="text-sm font-semi mb-8">Choose Fulfillment Route:</div>
+                <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+                  <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => handleApproveWithRoute(req.id, "supplier", "")}>
+                    📦 Supplier Order
+                  </button>
+                  <button className="btn btn-primary" style={{ flex: 1, background: "var(--green)", boxShadow: "0 2px 8px var(--green-dim)" }} onClick={() => handleApproveWithRoute(req.id, "in_house_driver", "")}>
+                    🚛 In-House Driver
+                  </button>
+                </div>
+                <button className="btn btn-ghost" style={{ width: "100%", color: "var(--red)" }} onClick={() => {
+                  const reason = prompt("Reason for denial:");
+                  handleDenyRequest(req.id, reason || "");
+                }}>Deny Request</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {renderMatModal()}
 

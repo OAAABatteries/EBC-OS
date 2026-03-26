@@ -759,8 +759,14 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
   background:var(--bg2);margin-bottom:8px}
 .mat-status-requested{background:var(--amber-dim);color:var(--amber)}
 .mat-status-approved{background:var(--blue-dim);color:var(--blue)}
+.mat-status-on_order{background:var(--blue-dim);color:var(--blue)}
+.mat-status-supplier_confirmed{background:var(--blue-dim);color:var(--blue)}
+.mat-status-assigned{background:var(--amber-dim);color:var(--amber)}
+.mat-status-picked_up{background:var(--amber-dim);color:var(--amber)}
 .mat-status-in-transit{background:var(--amber-dim);color:var(--amber)}
 .mat-status-delivered{background:var(--green-dim);color:var(--green)}
+.mat-status-confirmed{background:var(--green-dim);color:var(--green)}
+.mat-status-denied{background:var(--red-dim,rgba(239,68,68,0.1));color:var(--red)}
 
 /* ── DRIVER VIEW ── */
 .driver-queue-card{padding:16px;border-radius:var(--radius);border:1px solid var(--border);

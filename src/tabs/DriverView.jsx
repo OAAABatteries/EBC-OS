@@ -122,9 +122,13 @@ export function DriverView({ app }) {
     if (app.onLogout) app.onLogout();
   };
 
-  // ── delivery lists ──
-  const queueItems = useMemo(() => materialRequests.filter(r => r.status === "approved"), [materialRequests]);
-  const inTransitItems = useMemo(() => materialRequests.filter(r => r.status === "in-transit" && r.driverId === activeDriver?.id), [materialRequests, activeDriver]);
+  // ── delivery lists (Phase 2A: driver route = "assigned" status instead of "approved") ──
+  const queueItems = useMemo(() => materialRequests.filter(r =>
+    r.status === "approved" || r.status === "assigned"  // backward compat: old "approved" + new "assigned"
+  ), [materialRequests]);
+  const inTransitItems = useMemo(() => materialRequests.filter(r =>
+    (r.status === "in-transit" || r.status === "picked_up") && r.driverId === activeDriver?.id
+  ), [materialRequests, activeDriver]);
   const todayDelivered = useMemo(() => {
     const today = new Date().toDateString();
     return materialRequests.filter(r => r.status === "delivered" && r.driverId === activeDriver?.id && r.deliveredAt && new Date(r.deliveredAt).toDateString() === today);
@@ -173,19 +177,25 @@ export function DriverView({ app }) {
     setDragIdx(null);
   };
 
-  // ── actions ──
+  // ── actions (Phase 2A: audit trail on status changes) ──
   const handleStartDelivery = (reqId) => {
-    setMaterialRequests(prev => prev.map(r =>
-      r.id === reqId ? { ...r, status: "in-transit", driverId: activeDriver.id } : r
-    ));
+    const now = new Date().toISOString();
+    setMaterialRequests(prev => prev.map(r => {
+      if (r.id !== reqId) return r;
+      const trail = [...(r.auditTrail || []), { action: "picked_up", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, timestamp: now }];
+      return { ...r, status: "picked_up", driverId: activeDriver.id, auditTrail: trail };
+    }));
     show(t("Delivery started") + " ✓", "ok");
   };
 
   const handleMarkDelivered = (reqId) => {
-    setMaterialRequests(prev => prev.map(r =>
-      r.id === reqId ? { ...r, status: "delivered", deliveredAt: new Date().toISOString() } : r
-    ));
-    setManualOrder(null); // recalculate route
+    const now = new Date().toISOString();
+    setMaterialRequests(prev => prev.map(r => {
+      if (r.id !== reqId) return r;
+      const trail = [...(r.auditTrail || []), { action: "delivered", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, timestamp: now }];
+      return { ...r, status: "delivered", deliveredAt: now, auditTrail: trail };
+    }));
+    setManualOrder(null);
     show(t("Delivered") + " ✓", "ok");
   };
 
