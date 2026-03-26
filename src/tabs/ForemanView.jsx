@@ -1337,6 +1337,51 @@ export function ForemanView({ app }) {
                     {selectedProject.gc} · {selectedProject.phase} · {selectedProject.address}
                   </div>
 
+                  {/* Phase 2B: Construction Stage with advance */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <span className="text-xs text-muted">{t("Stage")}:</span>
+                    {(() => {
+                      const STAGES = [
+                        { key: "pre-con", label: "Pre-Con", color: "#8b5cf6" },
+                        { key: "mobilize", label: "Mobilize", color: "#3b82f6" },
+                        { key: "demo", label: "Demo", color: "#ef4444" },
+                        { key: "framing", label: "Framing", color: "#f59e0b" },
+                        { key: "board", label: "Board", color: "#f97316" },
+                        { key: "tape", label: "Tape/Finish", color: "#10b981" },
+                        { key: "punch", label: "Punch", color: "#06b6d4" },
+                        { key: "closeout", label: "Closeout", color: "#6366f1" },
+                      ];
+                      const currentIdx = STAGES.findIndex(s => s.key === selectedProject.constructionStage);
+                      const current = currentIdx >= 0 ? STAGES[currentIdx] : null;
+                      const next = currentIdx >= 0 && currentIdx < STAGES.length - 1 ? STAGES[currentIdx + 1] : null;
+                      return (
+                        <>
+                          {STAGES.map((s, i) => (
+                            <div key={s.key} style={{
+                              width: 24, height: 6, borderRadius: 3,
+                              background: i <= currentIdx ? s.color : "rgba(255,255,255,0.1)"
+                            }} title={s.label} />
+                          ))}
+                          <span style={{ fontWeight: 700, color: current?.color || "#888", marginLeft: 4 }}>
+                            {current?.label || t("Not Set")}
+                          </span>
+                          {next && (
+                            <button className="btn btn-sm" style={{ marginLeft: "auto", fontSize: 10, padding: "2px 10px", background: next.color + "22", color: next.color, border: `1px solid ${next.color}44` }}
+                              onClick={() => {
+                                const now = new Date().toISOString();
+                                const entry = { from: selectedProject.constructionStage || null, to: next.key, changedBy: activeForeman.name, changedById: activeForeman.id, changedAt: now };
+                                const history = [...(selectedProject.stageHistory || []), entry];
+                                setProjects(prev => prev.map(p => String(p.id) === String(selectedProjectId) ? { ...p, constructionStage: next.key, stageHistory: history, stageUpdatedAt: now, stageUpdatedBy: activeForeman.name } : p));
+                                show(`${t("Stage")} → ${next.label}`, "ok");
+                              }}>
+                              → {next.label}
+                            </button>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+
                   <div className="foreman-kpi-grid">
                     <div className="foreman-kpi-card">
                       <div className="foreman-kpi-label">{t("Allocated Hours")}</div>

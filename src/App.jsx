@@ -52,6 +52,19 @@ import { FeatureGuide, resetAllGuides } from "./components/FeatureGuide";
 //  Eagles Brothers Constructors · Houston, TX
 // ═══════════════════════════════════════════════════════════════
 
+// ── Construction Stages (Phase 2B) ──
+const CONSTRUCTION_STAGES = [
+  { key: "pre-con", label: "Pre-Con", color: "#8b5cf6", owner: "pm" },
+  { key: "mobilize", label: "Mobilize", color: "#3b82f6", owner: "pm" },
+  { key: "demo", label: "Demo", color: "#ef4444", owner: "foreman" },
+  { key: "framing", label: "Framing", color: "#f59e0b", owner: "foreman" },
+  { key: "board", label: "Board", color: "#f97316", owner: "foreman" },
+  { key: "tape", label: "Tape/Finish", color: "#10b981", owner: "foreman" },
+  { key: "punch", label: "Punch", color: "#06b6d4", owner: "pm" },
+  { key: "closeout", label: "Closeout", color: "#6366f1", owner: "pm" },
+];
+const STAGE_MAP = Object.fromEntries(CONSTRUCTION_STAGES.map(s => [s.key, s]));
+
 const PRIMARY_TABS = [
   { key: "dashboard", label: "Dashboard" },
   { key: "bids", label: "Bids" },
@@ -1099,6 +1112,24 @@ function App({ auth, onLogout }) {
                 </div>
               )}
             </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Projects by Stage (Phase 2B) ── */}
+      {dashCfg.showKPIs && (() => {
+        const staged = (projects || []).filter(p => p.constructionStage && (p.progress || 0) < 100);
+        if (staged.length === 0) return null;
+        const counts = {};
+        staged.forEach(p => { counts[p.constructionStage] = (counts[p.constructionStage] || 0) + 1; });
+        return (
+          <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+            {CONSTRUCTION_STAGES.map(s => counts[s.key] ? (
+              <div key={s.key} style={{ padding: "4px 10px", borderRadius: 6, background: s.color + "18", border: `1px solid ${s.color}33`, fontSize: 11, color: s.color, fontWeight: 600, cursor: "pointer" }}
+                onClick={() => handleTabClick("projects")}>
+                {s.label} <span style={{ fontWeight: 800 }}>{counts[s.key]}</span>
+              </div>
+            ) : null)}
           </div>
         );
       })()}
@@ -2470,7 +2501,12 @@ function App({ auth, onLogout }) {
               {/* Top: phase + PM + foreman + health dot */}
               <div className="flex-between mb-4">
                 <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  <span className="badge badge-blue" style={{ fontSize: 10 }}>{p.phase || "No Phase"}</span>
+                  {p.constructionStage && STAGE_MAP[p.constructionStage] && (
+                    <span className="badge" style={{ fontSize: 10, background: STAGE_MAP[p.constructionStage].color + "22", color: STAGE_MAP[p.constructionStage].color, border: `1px solid ${STAGE_MAP[p.constructionStage].color}44` }}>
+                      {STAGE_MAP[p.constructionStage].label}
+                    </span>
+                  )}
+                  <span className="badge badge-blue" style={{ fontSize: 10 }}>{p.phase || "—"}</span>
                   {scheduleRisk && <span className="badge badge-red" style={{ fontSize: 9 }}>{scheduleRisk === "overdue" ? "OVERDUE" : "BEHIND"}</span>}
                 </span>
                 <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -6034,8 +6070,35 @@ const ModalHub = ({ type, data, app }) => {
               <input className="form-input" type="number" min="0" max="100" value={draft.progress} onChange={e => upd("progress", Number(e.target.value))} />
             </div>
             <div className="form-group">
-              <label className="form-label">Phase</label>
-              <input className="form-input" value={draft.phase} onChange={e => upd("phase", e.target.value)} placeholder="e.g. Framing, Board Hang" />
+              <label className="form-label">Sector</label>
+              <input className="form-input" value={draft.phase} onChange={e => upd("phase", e.target.value)} placeholder="e.g. Medical, Commercial" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Construction Stage</label>
+              <select className="form-select" value={draft.constructionStage || ""} onChange={e => {
+                const newStage = e.target.value;
+                const oldStage = draft.constructionStage || null;
+                const now = new Date().toISOString();
+                const entry = { from: oldStage, to: newStage, changedBy: app.auth?.name || "Unknown", changedById: app.auth?.id, changedAt: now };
+                const history = [...(draft.stageHistory || []), entry];
+                upd("constructionStage", newStage);
+                upd("stageHistory", history);
+                upd("stageUpdatedAt", now);
+                upd("stageUpdatedBy", app.auth?.name || "Unknown");
+              }}>
+                <option value="">— No Stage —</option>
+                {CONSTRUCTION_STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+              </select>
+              {draft.stageHistory?.length > 0 && (
+                <details style={{ marginTop: 6 }}>
+                  <summary className="text-xs text-dim" style={{ cursor: "pointer" }}>Stage history ({draft.stageHistory.length})</summary>
+                  {draft.stageHistory.map((h, i) => (
+                    <div key={i} className="text-xs text-dim" style={{ padding: "2px 0" }}>
+                      {h.changedAt ? new Date(h.changedAt).toLocaleDateString() : ""} · {h.changedBy} · {STAGE_MAP[h.from]?.label || h.from || "—"} → {STAGE_MAP[h.to]?.label || h.to || "—"}
+                    </div>
+                  ))}
+                </details>
+              )}
             </div>
             <div className="form-group">
               <label className="form-label">Start Date</label>
