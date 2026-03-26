@@ -703,15 +703,20 @@ function App({ auth, onLogout }) {
     );
   }, [contacts, contactSearch]);
 
-  // ── filtered projects ──
+  // ── filtered projects (role-scoped: PM sees own, admin/owner sees all) ──
   const filteredProjects = useMemo(() => {
     let list = projects;
+    // PM sees only projects assigned to them; admin/owner sees all
+    if (userRole === "pm" && auth?.name) {
+      list = list.filter(p => p.pm === auth.name);
+    }
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(p =>
         (p.name || "").toLowerCase().includes(q) ||
         (p.gc || "").toLowerCase().includes(q) ||
-        (p.phase || "").toLowerCase().includes(q)
+        (p.phase || "").toLowerCase().includes(q) ||
+        (p.address || "").toLowerCase().includes(q)
       );
     }
     // Sort by start date (newest first)
@@ -720,7 +725,7 @@ function App({ auth, onLogout }) {
       const db = b.start ? new Date(b.start) : new Date(0);
       return db - da;
     });
-  }, [projects, search]);
+  }, [projects, search, userRole, auth]);
 
   // ── filtered scope ──
   const filteredScope = useMemo(() => {
