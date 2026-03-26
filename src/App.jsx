@@ -52,16 +52,16 @@ import { FeatureGuide, resetAllGuides } from "./components/FeatureGuide";
 //  Eagles Brothers Constructors · Houston, TX
 // ═══════════════════════════════════════════════════════════════
 
-// ── Construction Stages (Phase 2B) ──
+// ── Construction Stages (Phase 2B) — progress % auto-syncs with stage ──
 const CONSTRUCTION_STAGES = [
-  { key: "pre-con", label: "Pre-Con", color: "#8b5cf6", owner: "pm" },
-  { key: "mobilize", label: "Mobilize", color: "#3b82f6", owner: "pm" },
-  { key: "demo", label: "Demo", color: "#ef4444", owner: "foreman" },
-  { key: "framing", label: "Framing", color: "#f59e0b", owner: "foreman" },
-  { key: "board", label: "Board", color: "#f97316", owner: "foreman" },
-  { key: "tape", label: "Tape/Finish", color: "#10b981", owner: "foreman" },
-  { key: "punch", label: "Punch", color: "#06b6d4", owner: "pm" },
-  { key: "closeout", label: "Closeout", color: "#6366f1", owner: "pm" },
+  { key: "pre-con", label: "Pre-Con", color: "#8b5cf6", owner: "pm", progress: 5 },
+  { key: "mobilize", label: "Mobilize", color: "#3b82f6", owner: "pm", progress: 10 },
+  { key: "demo", label: "Demo", color: "#ef4444", owner: "foreman", progress: 20 },
+  { key: "framing", label: "Framing", color: "#f59e0b", owner: "foreman", progress: 40 },
+  { key: "board", label: "Board", color: "#f97316", owner: "foreman", progress: 60 },
+  { key: "tape", label: "Tape/Finish", color: "#10b981", owner: "foreman", progress: 80 },
+  { key: "punch", label: "Punch", color: "#06b6d4", owner: "pm", progress: 90 },
+  { key: "closeout", label: "Closeout", color: "#6366f1", owner: "pm", progress: 100 },
 ];
 const STAGE_MAP = Object.fromEntries(CONSTRUCTION_STAGES.map(s => [s.key, s]));
 
@@ -6085,6 +6085,9 @@ const ModalHub = ({ type, data, app }) => {
                 upd("stageHistory", history);
                 upd("stageUpdatedAt", now);
                 upd("stageUpdatedBy", app.auth?.name || "Unknown");
+                // Auto-sync progress with stage
+                const stageDef = CONSTRUCTION_STAGES.find(s => s.key === newStage);
+                if (stageDef) upd("progress", stageDef.progress);
               }}>
                 <option value="">— No Stage —</option>
                 {CONSTRUCTION_STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}

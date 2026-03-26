@@ -1342,14 +1342,14 @@ export function ForemanView({ app }) {
                     <span className="text-xs text-muted">{t("Stage")}:</span>
                     {(() => {
                       const STAGES = [
-                        { key: "pre-con", label: "Pre-Con", color: "#8b5cf6" },
-                        { key: "mobilize", label: "Mobilize", color: "#3b82f6" },
-                        { key: "demo", label: "Demo", color: "#ef4444" },
-                        { key: "framing", label: "Framing", color: "#f59e0b" },
-                        { key: "board", label: "Board", color: "#f97316" },
-                        { key: "tape", label: "Tape/Finish", color: "#10b981" },
-                        { key: "punch", label: "Punch", color: "#06b6d4" },
-                        { key: "closeout", label: "Closeout", color: "#6366f1" },
+                        { key: "pre-con", label: "Pre-Con", color: "#8b5cf6", progress: 5 },
+                        { key: "mobilize", label: "Mobilize", color: "#3b82f6", progress: 10 },
+                        { key: "demo", label: "Demo", color: "#ef4444", progress: 20 },
+                        { key: "framing", label: "Framing", color: "#f59e0b", progress: 40 },
+                        { key: "board", label: "Board", color: "#f97316", progress: 60 },
+                        { key: "tape", label: "Tape/Finish", color: "#10b981", progress: 80 },
+                        { key: "punch", label: "Punch", color: "#06b6d4", progress: 90 },
+                        { key: "closeout", label: "Closeout", color: "#6366f1", progress: 100 },
                       ];
                       const currentIdx = STAGES.findIndex(s => s.key === selectedProject.constructionStage);
                       const current = currentIdx >= 0 ? STAGES[currentIdx] : null;
@@ -1371,7 +1371,7 @@ export function ForemanView({ app }) {
                                 const now = new Date().toISOString();
                                 const entry = { from: selectedProject.constructionStage || null, to: next.key, changedBy: activeForeman.name, changedById: activeForeman.id, changedAt: now };
                                 const history = [...(selectedProject.stageHistory || []), entry];
-                                setProjects(prev => prev.map(p => String(p.id) === String(selectedProjectId) ? { ...p, constructionStage: next.key, stageHistory: history, stageUpdatedAt: now, stageUpdatedBy: activeForeman.name } : p));
+                                setProjects(prev => prev.map(p => String(p.id) === String(selectedProjectId) ? { ...p, constructionStage: next.key, stageHistory: history, stageUpdatedAt: now, stageUpdatedBy: activeForeman.name, progress: next.progress || p.progress } : p));
                                 show(`${t("Stage")} → ${next.label}`, "ok");
                               }}>
                               → {next.label}
