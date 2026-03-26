@@ -377,6 +377,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   // ── Click debounce for double-click finish (prevent extra vertices) ──
   const clickTimerRef = useRef(null);
   const pendingClickRef = useRef(null);
+  // Cleanup timers on unmount to prevent React memory leak warnings
+  useEffect(() => () => { if (clickTimerRef.current) clearTimeout(clickTimerRef.current); if (saveTimerRef.current) clearTimeout(saveTimerRef.current); }, []);
 
   // ── Modifier key tracking (Shift for angle snap, Space for temp pan) ──
   const [shiftHeld, setShiftHeld] = useState(false);
@@ -1105,7 +1107,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         }
         // Auto-name pages
         autoNamePages(doc, newIdx);
-      });
+      }).catch(err => { console.error("[PDF load failed]", err); alert("Failed to load PDF: " + (err?.message || err)); });
     };
     reader.readAsArrayBuffer(file);
   };
@@ -1124,7 +1126,9 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       fitScaleRef.current = fs;
       const vp = p.getViewport({ scale: fs * zoom });
       const canvas = pdfCanvasRef.current;
+      if (!canvas) { setRendering(false); return; }
       const ctx = canvas.getContext("2d");
+      if (!ctx) { setRendering(false); return; }
       const dpr = window.devicePixelRatio || 1;
       canvas.width = vp.width * dpr;
       canvas.height = vp.height * dpr;
@@ -1168,9 +1172,10 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       revCanvas.style.width = `${vp.width}px`;
       revCanvas.style.height = `${vp.height}px`;
       const ctx = revCanvas.getContext("2d");
+      if (!ctx) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, vp.width, vp.height);
-      p.render({ canvasContext: ctx, viewport: vp }).promise;
+      p.render({ canvasContext: ctx, viewport: vp }).promise.catch(err => console.warn("[Revision render]", err));
     });
     return () => { cancelled = true; };
   }, [revisionDocs, pageKey, showRevision, zoom]);
@@ -1186,7 +1191,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           ...prev,
           [pageKey]: { doc, revPage: 1, name: file.name, numPages: doc.numPages },
         }));
-      });
+      }).catch(err => console.error("[Revision PDF load]", err));
     };
     reader.readAsArrayBuffer(file);
   };
@@ -1205,13 +1210,14 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     const canvas = overlayCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
     const scale = fitScaleRef.current * zoom;
 
     // Adaptive label size — scales with zoom so labels stay readable
-    const labelSize = Math.max(9, Math.min(14, 11 / Math.sqrt(zoom)));
+    const labelSize = Math.max(9, Math.min(14, 11 / Math.sqrt(zoom || 1)));
     const smallLabel = Math.max(8, labelSize - 2);
 
     // Draw completed measurements — color by condition (skip hidden layers)
@@ -1724,6 +1730,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
     // ── Annotations (markup layer — drawn on top of measurements) ──
     pageAnnotations.forEach(ann => {
+      if (!ann || !ann.type) return;
       ctx.save();
       ctx.globalAlpha = ann.opacity || 1.0;
       const sc = ann.strokeColor || "#ef4444";
@@ -1731,6 +1738,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       const isSel = ann.id === selectedAnnId;
 
       if (ann.type === "text") {
+        if (!ann.position) { ctx.restore(); return; }
         const px = ann.position.x * scale;
         const py = ann.position.y * scale;
         const fs = (ann.fontSize || 14) * Math.min(Math.max(zoom, 0.5), 2);
@@ -1748,6 +1756,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       }
 
       if (ann.type === "arrow" || ann.type === "line") {
+        if (!ann.start || !ann.end) { ctx.restore(); return; }
         const sx = ann.start.x * scale, sy = ann.start.y * scale;
         const ex = ann.end.x * scale, ey = ann.end.y * scale;
         ctx.strokeStyle = sc; ctx.lineWidth = lw;
@@ -1770,6 +1779,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       }
 
       if (ann.type === "callout") {
+        if (!ann.position || !ann.anchorPt) { ctx.restore(); return; }
         const px = ann.position.x * scale, py = ann.position.y * scale;
         const ax = ann.anchorPt.x * scale, ay = ann.anchorPt.y * scale;
         const fs = (ann.fontSize || 14) * Math.min(Math.max(zoom, 0.5), 2);
@@ -2198,7 +2208,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         addCoMeasurement({ ...m, coType: coMode });
       } else {
         setMeasurements(prev => ({ ...prev, [pageKey]: [...(prev[pageKey] || []), m] }));
-        setUndoStack(prev => [...prev, { action: "add", pageKey, measurementId: m.id }]);
+        setUndoStack(prev => [...prev.slice(-199), { action: "add", pageKey, measurementId: m.id }]);
       }
       return;
     }
@@ -2306,7 +2316,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       newMeasurements.forEach(m => addCoMeasurement({ ...m, coType: coMode }));
     } else {
       setMeasurements(prev => ({ ...prev, [pageKey]: [...(prev[pageKey] || []), ...newMeasurements] }));
-      newMeasurements.forEach(m => setUndoStack(prev => [...prev, { action: "add", pageKey, measurementId: m.id }]));
+      newMeasurements.forEach(m => setUndoStack(prev => [...prev.slice(-199), { action: "add", pageKey, measurementId: m.id }]));
       setRedoStack([]); // new measurement clears redo history
     }
     setActiveVertices([]);
@@ -2475,7 +2485,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   const deleteMeasurement = (id, pk) => {
     const targetKey = pk || pageKey;
     const meas = (measurements[targetKey] || []).find(m => m.id === id);
-    if (meas) setUndoStack(prev => [...prev, { action: "delete", pageKey: targetKey, measurementId: id, measurementData: meas }]);
+    if (meas) setUndoStack(prev => [...prev.slice(-199), { action: "delete", pageKey: targetKey, measurementId: id, measurementData: meas }]);
     setMeasurements(prev => {
       const next = { ...prev, [targetKey]: (prev[targetKey] || []).filter(m => m.id !== id) };
       // Clear orphaned backouts when parent area is deleted
@@ -2494,13 +2504,13 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   // ── Annotation helpers ──
   const addAnnotation = (ann) => {
     setAnnotations(prev => ({ ...prev, [pageKey]: [...(prev[pageKey] || []), ann] }));
-    setUndoStack(prev => [...prev, { action: "ann_add", pageKey, annotationId: ann.id }]);
+    setUndoStack(prev => [...prev.slice(-199), { action: "ann_add", pageKey, annotationId: ann.id }]);
     setRedoStack([]);
   };
   const deleteAnnotation = (id, pk) => {
     const targetKey = pk || pageKey;
     const ann = (annotations[targetKey] || []).find(a => a.id === id);
-    if (ann) setUndoStack(prev => [...prev, { action: "ann_delete", pageKey: targetKey, annotationId: id, annotationData: ann }]);
+    if (ann) setUndoStack(prev => [...prev.slice(-199), { action: "ann_delete", pageKey: targetKey, annotationId: id, annotationData: ann }]);
     setAnnotations(prev => ({ ...prev, [targetKey]: (prev[targetKey] || []).filter(a => a.id !== id) }));
   };
 
@@ -2606,23 +2616,23 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
     const pk = last.pageKey;
     if (last.action === "add" && last.measurementData) {
       setMeasurements(prev => ({ ...prev, [pk]: [...(prev[pk] || []), last.measurementData] }));
-      setUndoStack(prev => [...prev, { action: "add", pageKey: pk, measurementId: last.measurementId }]);
+      setUndoStack(prev => [...prev.slice(-199), { action: "add", pageKey: pk, measurementId: last.measurementId }]);
     } else if (last.action === "delete") {
       const meas = (measurements[pk] || []).find(m => m.id === last.measurementId);
-      setUndoStack(prev => [...prev, { ...last, measurementData: meas }]);
+      setUndoStack(prev => [...prev.slice(-199), { ...last, measurementData: meas }]);
       setMeasurements(prev => ({ ...prev, [pk]: (prev[pk] || []).filter(m => m.id !== last.measurementId) }));
     } else if (last.action === "drag" && last.redoData) {
-      setUndoStack(prev => [...prev, { action: "drag", pageKey: pk, measurementId: last.measurementId, measurementData: (measurements[pk] || []).find(m => m.id === last.measurementId) }]);
+      setUndoStack(prev => [...prev.slice(-199), { action: "drag", pageKey: pk, measurementId: last.measurementId, measurementData: (measurements[pk] || []).find(m => m.id === last.measurementId) }]);
       setMeasurements(prev => ({ ...prev, [pk]: (prev[pk] || []).map(m => m.id === last.measurementId ? last.redoData : m) }));
     } else if (last.action === "reassign") {
-      setUndoStack(prev => [...prev, { ...last, oldConditionId: last.oldConditionId, newConditionId: last.newConditionId }]);
+      setUndoStack(prev => [...prev.slice(-199), { ...last, oldConditionId: last.oldConditionId, newConditionId: last.newConditionId }]);
       setMeasurements(prev => ({ ...prev, [pk]: (prev[pk] || []).map(m => m.id === last.measurementId ? { ...m, conditionId: last.newConditionId } : m) }));
     } else if (last.action === "ann_add" && last.annotationData) {
       setAnnotations(prev => ({ ...prev, [pk]: [...(prev[pk] || []), last.annotationData] }));
-      setUndoStack(prev => [...prev, { action: "ann_add", pageKey: pk, annotationId: last.annotationId }]);
+      setUndoStack(prev => [...prev.slice(-199), { action: "ann_add", pageKey: pk, annotationId: last.annotationId }]);
     } else if (last.action === "ann_delete") {
       const ann = (annotations[pk] || []).find(a => a.id === last.annotationId);
-      setUndoStack(prev => [...prev, { ...last, annotationData: ann }]);
+      setUndoStack(prev => [...prev.slice(-199), { ...last, annotationData: ann }]);
       setAnnotations(prev => ({ ...prev, [pk]: (prev[pk] || []).filter(a => a.id !== last.annotationId) }));
     }
     setRedoStack(prev => prev.slice(0, -1));
@@ -2772,7 +2782,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       });
       // Push drag to undo stack
       if (preDragMeasRef.current) {
-        setUndoStack(prev => [...prev, { action: "drag", pageKey: pk, measurementId: draggingHandle.measurementId, measurementData: preDragMeasRef.current }]);
+        setUndoStack(prev => [...prev.slice(-199), { action: "drag", pageKey: pk, measurementId: draggingHandle.measurementId, measurementData: preDragMeasRef.current }]);
         setRedoStack([]);
         preDragMeasRef.current = null;
       }
@@ -3244,7 +3254,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                         setActivePdfIdx(0);
                         if (takeoffId) savePdfToIDB(`${takeoffId}_0`, data).catch(() => {});
                         autoNamePages(doc, 0);
-                      });
+                      }).catch(err => { console.error("[PDF load]", err); alert("Failed to load PDF: " + (err?.message || err)); });
                     };
                     reader.readAsArrayBuffer(file);
                   }} />
@@ -3970,7 +3980,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               if (clone.vertices) clone.vertices = clone.vertices.map(v => ({ x: v.x + OFFSET, y: v.y + OFFSET }));
               if (clone.point) clone.point = { x: clone.point.x + OFFSET, y: clone.point.y + OFFSET };
               setMeasurements(prev => ({ ...prev, [pageKey]: [...(prev[pageKey] || []), clone] }));
-              setUndoStack(prev => [...prev, { action: "add", pageKey, measurementId: clone.id }]);
+              setUndoStack(prev => [...prev.slice(-199), { action: "add", pageKey, measurementId: clone.id }]);
               setRedoStack([]);
               setContextMenu(null);
             }}
@@ -3987,7 +3997,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
             <div key={c.id} onClick={() => {
               const meas = pageMeasurements.find(mm => mm.id === contextMenu.measurementId);
               const oldCondId = meas?.conditionId;
-              setUndoStack(prev => [...prev, { action: "reassign", pageKey, measurementId: contextMenu.measurementId, oldConditionId: oldCondId, newConditionId: c.id }]);
+              setUndoStack(prev => [...prev.slice(-199), { action: "reassign", pageKey, measurementId: contextMenu.measurementId, oldConditionId: oldCondId, newConditionId: c.id }]);
               setRedoStack([]);
               setMeasurements(prev => ({
                 ...prev,
