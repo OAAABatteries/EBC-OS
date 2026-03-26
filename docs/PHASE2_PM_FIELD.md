@@ -67,19 +67,24 @@ working out of sequence.
 ### 3.3 State Machine
 
 ```
-DRAFT → SUBMITTED → PM_REVIEW → APPROVED → FULFILLMENT → DELIVERED → CLOSED
+DRAFT → SUBMITTED → PM_REVIEW → APPROVED → FULFILLMENT → DELIVERED → CONFIRMED → CLOSED
                         │
                         ▼
                     REJECTED → CLOSED
 
-FULFILLMENT branches:
-  Supplier route:  ORDERED → CONFIRMED → DELIVERED → CLOSED
-  Driver route:    ASSIGNED → PICKED_UP → DELIVERED → CLOSED
+APPROVED branches (PM chooses route):
+  Supplier route:  ON_ORDER → SUPPLIER_CONFIRMED → DELIVERED → CONFIRMED → CLOSED
+  Driver route:    ASSIGNED → PICKED_UP → DELIVERED → CONFIRMED → CLOSED
 
 Support states:
   PARTIAL_DELIVERY (keeps request open for remaining items)
-  BACKORDER (supplier can't fill, PM decides)
-  CANCELLED (PM/admin only)
+  BACKORDER (supplier can't fill, PM decides next step)
+  CANCELLED (PM/admin only, audit trail records reason)
+
+⚠️  INVENTORY NOTE: Warehouse inventory is deducted ONLY on CONFIRMED
+    (foreman receipt sign-off), NOT on approval. Approval ≠ physical movement.
+    This prevents phantom deductions from partial deliveries, substitutions,
+    or cancelled orders.
 ```
 
 ### 3.4 Data Model
@@ -218,14 +223,19 @@ PRE-CON → MOBILIZE → DEMO → FRAMING → BOARD → TAPE/FINISH → PUNCH �
 }
 ```
 
-### Transition Rules
+### Transition Rules (Advisory — No Hard Enforcement in Phase 2)
 
 - **Foreman** can advance: demo, framing, board, tape (field stages only)
 - **PM** can advance any stage
 - **Owner** can advance any stage
-- Stages **cannot skip** — must go in order
+- Stages **should** go in order but **can skip** (PM/owner override)
 - Stages **can go backward** — PM or owner only (rework)
 - System records who changed + when in `stageHistory`
+
+> ⚠️ Phase 2: Stages are advisory and auditable. No blocking gates.
+> Hard enforcement (exit gates requiring sign-off) is deferred to Phase 3+
+> once trust and usage patterns are established. Blocking the field early
+> will generate exceptions constantly and slow adoption.
 
 ### UI
 - Projects list: stage badge (color-coded)
@@ -290,7 +300,8 @@ const pmQueue = {
 | Phase | Feature | ROI | Effort |
 |-------|---------|-----|--------|
 | **2A** | Material Request Approval + Routing | Highest (controls money + schedule) | Medium |
-| **2B** | Project Stage Ownership + Pipeline | High (operational truth) | Medium |
+| **2A'** | PM Action Queue (ship immediately after 2A) | High (PM feels the value) | Small |
+| **2B** | Project Stage Ownership (advisory, no gates) | High (operational truth) | Medium |
 | **2C** | Clock-In Photo Verification | Medium (compliance + payroll trust) | Small |
 | **2D** | Global Project Search | Low (time saver) | Small |
 
