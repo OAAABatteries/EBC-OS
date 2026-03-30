@@ -31,9 +31,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Focus rings appear on all interactive elements using the `--focus-ring` token — no inline focus styles anywhere
   4. Semantic color aliases (`--phase-*`, `--status-*`) resolve correctly in all 5 themes without breaking existing theme switching
   5. Shadow classes (sm/md/lg) and transition timing classes exist and render visibly different from each other
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 Plans:
-- [ ] 01-01-PLAN.md — Create universal tokens (tokens.css) and wire into main.jsx
+- [x] 01-01-PLAN.md — Create universal tokens (tokens.css) and wire into main.jsx
 - [ ] 01-02-PLAN.md — Add per-theme shadow scale and semantic color aliases to THEMES
 - [ ] 01-03-PLAN.md — Add utility classes to styles.js and update text utilities to consume tokens
 
@@ -107,7 +107,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Token Foundation | 0/3 | Not started | - |
+| 1. Token Foundation | 1/3 | In Progress|  |
 | 2. Shared Field Components | 0/TBD | Not started | - |
 | 3. DriverView Refactor | 0/TBD | Not started | - |
 | 4. EmployeeView Refactor | 0/TBD | Not started | - |

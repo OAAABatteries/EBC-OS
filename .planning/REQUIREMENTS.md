@@ -9,11 +9,11 @@ Requirements for milestone v1.0: Field Portal Perfection. Each maps to roadmap p
 
 ### Design Tokens
 
-- [ ] **TOKN-01**: App uses a spacing scale (4/8/12/16/20/24/32/40/48px) via CSS custom properties
-- [ ] **TOKN-02**: App uses a typography scale (xs/sm/base/lg/xl/2xl/3xl) via CSS custom properties
-- [ ] **TOKN-03**: All interactive elements enforce 44px minimum touch target via `--touch-min` token
-- [ ] **TOKN-04**: Focus rings are visible on all interactive elements via `--focus-ring` token
-- [ ] **TOKN-05**: Transitions use consistent timing (150ms micro, 300ms state) via tokens
+- [x] **TOKN-01**: App uses a spacing scale (4/8/12/16/20/24/32/40/48px) via CSS custom properties
+- [x] **TOKN-02**: App uses a typography scale (xs/sm/base/lg/xl/2xl/3xl) via CSS custom properties
+- [x] **TOKN-03**: All interactive elements enforce 44px minimum touch target via `--touch-min` token
+- [x] **TOKN-04**: Focus rings are visible on all interactive elements via `--focus-ring` token
+- [x] **TOKN-05**: Transitions use consistent timing (150ms micro, 300ms state) via tokens
 - [ ] **TOKN-06**: Shadow system (sm/md/lg) defined as CSS custom properties
 - [ ] **TOKN-07**: Semantic color aliases (`--phase-*`, `--status-*`) reference existing theme primitives
 
@@ -99,11 +99,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TOKN-01 | Phase 1 | Pending |
-| TOKN-02 | Phase 1 | Pending |
-| TOKN-03 | Phase 1 | Pending |
-| TOKN-04 | Phase 1 | Pending |
-| TOKN-05 | Phase 1 | Pending |
+| TOKN-01 | Phase 1 | Complete |
+| TOKN-02 | Phase 1 | Complete |
+| TOKN-03 | Phase 1 | Complete |
+| TOKN-04 | Phase 1 | Complete |
+| TOKN-05 | Phase 1 | Complete |
 | TOKN-06 | Phase 1 | Pending |
 | TOKN-07 | Phase 1 | Pending |
 | COMP-01 | Phase 2 | Pending |
