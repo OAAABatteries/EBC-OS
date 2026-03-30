@@ -1,0 +1,47 @@
+/* ── SPACING SCALE ──────────────────────────────────────────── */
+:root {
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ── TYPOGRAPHY SCALE ────────────────────────────────────── */
+  --text-sm:      11px;  /* badge text, kpi-label */
+  --text-base:    13px;  /* primary body: table cells, btn, toast, form-input */
+  --text-lg:      18px;  /* modal-title, logo */
+  --text-display: 28px;  /* kpi-value display figures */
+
+  /* Font weights */
+  --weight-normal: 400;
+  --weight-bold:   700;
+
+  /* Line heights */
+  --leading-tight:   1.2;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.75;
+
+  /* Letter spacing */
+  --tracking-tight:  -0.01em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.05em;
+  --tracking-wider:   0.08em;
+
+  /* ── TOUCH & INTERACTION ─────────────────────────────────── */
+  --touch-min: 44px;
+
+  /* ── FOCUS RING ──────────────────────────────────────────── */
+  /* Uses --amber (theme primitive) — resolves lazily at paint time */
+  --focus-ring: 0 0 0 2px var(--amber);
+
+  /* ── TRANSITIONS ─────────────────────────────────────────── */
+  --duration-micro:  150ms;
+  --duration-state:  300ms;
+  --ease-standard:   cubic-bezier(.4, 0, .2, 1);
+  --transition-micro: var(--duration-micro) var(--ease-standard);
+  --transition-state: var(--duration-state) var(--ease-standard);
+}

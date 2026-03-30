@@ -1,6 +1,7 @@
 import { StrictMode, Component, useState, useEffect, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import './tokens.css'
 import App from './App.jsx'
 
 const GCPortal       = lazy(() => import('./components/GCPortal.jsx'));
