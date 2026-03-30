@@ -14,8 +14,8 @@ Requirements for milestone v1.0: Field Portal Perfection. Each maps to roadmap p
 - [x] **TOKN-03**: All interactive elements enforce 44px minimum touch target via `--touch-min` token
 - [x] **TOKN-04**: Focus rings are visible on all interactive elements via `--focus-ring` token
 - [x] **TOKN-05**: Transitions use consistent timing (150ms micro, 300ms state) via tokens
-- [ ] **TOKN-06**: Shadow system (sm/md/lg) defined as CSS custom properties
-- [ ] **TOKN-07**: Semantic color aliases (`--phase-*`, `--status-*`) reference existing theme primitives
+- [x] **TOKN-06**: Shadow system (sm/md/lg) defined as CSS custom properties
+- [x] **TOKN-07**: Semantic color aliases (`--phase-*`, `--status-*`) reference existing theme primitives
 
 ### Shared Components
 
@@ -104,8 +104,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TOKN-03 | Phase 1 | Complete |
 | TOKN-04 | Phase 1 | Complete |
 | TOKN-05 | Phase 1 | Complete |
-| TOKN-06 | Phase 1 | Pending |
-| TOKN-07 | Phase 1 | Pending |
+| TOKN-06 | Phase 1 | Complete |
+| TOKN-07 | Phase 1 | Complete |
 | COMP-01 | Phase 2 | Pending |
 | COMP-02 | Phase 2 | Pending |
 | COMP-03 | Phase 2 | Pending |

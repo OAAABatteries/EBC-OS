@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-03-30T19:37:01.976Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-03-30T19:38:39.007Z"
 last_activity: 2026-03-30
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 01 (token-foundation) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-03-30
 
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01-token-foundation P01 | 43s | 2 tasks | 2 files |
+| Phase 01 P02 | 8m | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,8 @@ Recent decisions affecting current work:
 - Every portal treated as atomic unit — complete all tabs before merging to main
 - [Phase 01-token-foundation]: Universal tokens live in standalone src/tokens.css (not THEMES) — theme-independent values defined once, not duplicated 8 times
 - [Phase 01-token-foundation]: px units over rem for all tokens — codebase is 100% px-based; rem introduces inheritance risk in Capacitor WebViews
+- [Phase 01]: Per-theme shadow scale: neon themes use accent-colored glows, dark themes use black-opacity, Matrix shadow-sm=none for flat scanline aesthetic
+- [Phase 01]: Semantic color aliases use var() references not hex — CSS cascade resolves at runtime per active theme, identical alias lines work across all 8 themes
 
 ### Pending Todos
 
@@ -81,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30T19:37:01.973Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-03-30T19:38:39.004Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
