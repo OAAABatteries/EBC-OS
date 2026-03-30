@@ -67,6 +67,7 @@ All values in `px`. The codebase is 100% px-based — rem would create compoundi
 Exceptions:
 - Touch target minimum: `--touch-min: 44px` — this is NOT a spacing token but an interaction token. It does not map to a space-N step intentionally (WCAG 2.5.5 requirement).
 - PWA safe area: `env(safe-area-inset-*)` — these remain in `index.css` as platform values, not tokenized.
+- **12px (space-3), 20px (space-5), and 40px (space-10) are intentional extensions** beyond the strict 8-point grid. These values are required by REQUIREMENTS.md TOKN-01 (which explicitly lists the 4/8/12/16/20/24/32/40/48 scale) and confirmed by the codebase spacing audit showing 12px and 20px as dominant values in styles.js. They are NOT rounding errors — they are load-bearing steps that existing components depend on.
 
 ---
 
@@ -80,27 +81,29 @@ All sizes in `px`. Token names use semantic scale names matching REQUIREMENTS.md
 
 ### Size and Role Map
 
-| Role | CSS Variable | Size | Codebase Origin |
-|------|-------------|------|----------------|
-| xs | `--text-xs` | 10px | table headers, form labels, gantt header |
-| sm | `--text-sm` | 11px | badge text, kpi-label, logo-sub, gantt bar labels |
-| base | `--text-base` | 13px | primary body: table cells, buttons, toast, form-input |
-| md | `--text-md` | 14px | secondary body: gantt-label, room-header, btn-icon |
-| lg | `--text-lg` | 15px | card-title |
-| xl | `--text-xl` | 18px | modal-title, logo |
-| 2xl | `--text-2xl` | 20px | section-title |
-| 3xl | `--text-3xl` | 28px | kpi-value display figures |
+The codebase audit found 8 distinct font sizes (10, 11, 12, 13, 14, 15, 18, 20, 28px). These are collapsed to 4 tokens by merging closest pairs. Sizes 12px and 15px are absorbed into their nearest neighbor — the visual difference is 1-2px and imperceptible at field worker viewing distances.
 
-**Note on 12.5px nav values:** `nav-item` and `nav-more-btn` use `12.5px` in styles.js. These round up to `--text-base` (13px) — the 0.5px difference is imperceptible and eliminates a non-standard value.
+| Token | CSS Variable | Size | Absorbed Sizes | Codebase Usage |
+|-------|-------------|------|---------------|----------------|
+| sm | `--text-sm` | 11px | absorbs 10px (table headers, form labels, gantt header) | badge text, kpi-label, logo-sub, gantt bar labels, table headers |
+| base | `--text-base` | 13px | absorbs 12px (kpi-sub, data-table, gantt-label) and 12.5px (nav-item, nav-more-btn) | primary body: table cells, buttons, toast, form-input, nav labels |
+| lg | `--text-lg` | 18px | absorbs 14px (room-header, btn-icon) and 15px (card-title) | modal-title, logo, card-title, section headers |
+| display | `--text-display` | 28px | absorbs 20px (section-title) | kpi-value display figures |
+
+**Consolidation rationale:**
+- `11px` absorbs `10px`: Both are sub-body annotation sizes. The 1px difference is below the threshold of visual discrimination at mobile screen densities.
+- `13px` absorbs `12px` and `12.5px`: 12px was already a secondary body size in styles.js; 12.5px is a non-standard nav value. All map cleanly to the primary body step.
+- `18px` absorbs `14px` and `15px`: 14px was a "secondary body" size used in room-header and btn-icon; 15px was card-title. Merging these into one elevated step removes a micro-tier that added hierarchy noise without clear semantic distinction.
+- `28px` absorbs `20px` (section-title): Section titles stepping up to display scale is defensible — section titles should read as display-weight headings, not body-plus-a-little.
 
 ### Weight, Line Height, Letter Spacing
 
+**Exactly 2 font weights declared.** Weight 400 handles all body text and labels. Weight 700 handles KPI values, strong headings, and any element requiring bold emphasis. The intermediate weights (500, 600) are removed — they added subtle hierarchy at the cost of weight complexity.
+
 | Token | CSS Variable | Value | Usage |
 |-------|-------------|-------|-------|
-| weight-normal | `--weight-normal` | 400 | body text, table cells |
-| weight-medium | `--weight-medium` | 500 | nav labels, subtle emphasis |
-| weight-semi | `--weight-semi` | 600 | card titles, modal titles, button labels |
-| weight-bold | `--weight-bold` | 700 | kpi values, strong headings |
+| weight-normal | `--weight-normal` | 400 | body text, table cells, nav labels, card titles, modal titles, button labels |
+| weight-bold | `--weight-bold` | 700 | kpi values, strong headings, badge emphasis |
 | leading-tight | `--leading-tight` | 1.2 | headings, kpi display values |
 | leading-normal | `--leading-normal` | 1.5 | body text, table cells, labels |
 | leading-relaxed | `--leading-relaxed` | 1.75 | long-form reading (reports) |
@@ -114,13 +117,21 @@ All sizes in `px`. Token names use semantic scale names matching REQUIREMENTS.md
 When adding typography tokens to `tokens.css`, simultaneously update `styles.js` text utility classes to consume them:
 
 ```css
-.text-xs  { font-size: var(--text-xs);  }
-.text-sm  { font-size: var(--text-sm);  }
-.text-md  { font-size: var(--text-md);  }
-.text-lg  { font-size: var(--text-lg);  }
-.text-xl  { font-size: var(--text-xl);  }
-.text-2xl { font-size: var(--text-2xl); }
-.text-3xl { font-size: var(--text-3xl); }
+.text-sm      { font-size: var(--text-sm);      }
+.text-base    { font-size: var(--text-base);     }
+.text-lg      { font-size: var(--text-lg);       }
+.text-display { font-size: var(--text-display);  }
+```
+
+Legacy class aliases to maintain backward compatibility in existing JSX:
+
+```css
+/* Aliases for existing classes that map to consolidated tokens */
+.text-xs  { font-size: var(--text-sm);      }  /* was 11px → 11px (no change) */
+.text-md  { font-size: var(--text-base);    }  /* was 14px → 13px */
+.text-xl  { font-size: var(--text-lg);      }  /* was 18px → 18px (no change) */
+.text-2xl { font-size: var(--text-lg);      }  /* was 20px → 18px */
+.text-3xl { font-size: var(--text-display); }  /* was 28px → 28px (no change) */
 ```
 
 This is Phase 1 scope because it is vocabulary wiring, not portal refactoring.
@@ -302,7 +313,7 @@ No automated test runner exists in this codebase. Phase 1 validation is manual b
 | Requirement | Validation Step |
 |-------------|----------------|
 | TOKN-01 Spacing | `getComputedStyle(document.documentElement).getPropertyValue('--space-4')` in DevTools — should return `" 16px"` |
-| TOKN-02 Typography | DevTools computed styles: verify `--text-base` returns `13px`, `--text-3xl` returns `28px` |
+| TOKN-02 Typography | DevTools computed styles: verify `--text-base` returns `13px`, `--text-display` returns `28px` |
 | TOKN-03 Touch | Inspect `.touch-target` element — computed min-height should show `44px` |
 | TOKN-04 Focus | Tab through interactive elements in each theme — amber ring should appear on focus |
 | TOKN-05 Transitions | Hover a button — micro-interaction should feel snappy (150ms); open a modal — state change at 300ms |
