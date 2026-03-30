@@ -30,6 +30,8 @@ export const THEMES = {
       "--radius":"10px","--radius-sm":"6px",
       "--shadow":"0 2px 12px rgba(0,0,0,0.3)","--card-shadow":"0 1px 8px rgba(0,0,0,0.2)",
       "--shadow-sm":"0 1px 4px rgba(0,0,0,0.12)","--shadow-md":"0 2px 12px rgba(0,0,0,0.28)","--shadow-lg":"0 4px 32px rgba(0,0,0,0.45)",
+      "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
+      "--phase-active":"var(--green)","--phase-estimating":"var(--amber)","--phase-pre-construction":"var(--blue)","--phase-completed":"var(--text3)","--phase-warranty":"var(--yellow)","--phase-in-progress":"var(--green)",
     }
   },
   blueprint: {
@@ -51,6 +53,8 @@ export const THEMES = {
       "--radius":"6px","--radius-sm":"3px",
       "--shadow":"0 0 0 1px rgba(0,191,239,0.06)","--card-shadow":"0 0 12px rgba(0,191,239,0.04)",
       "--shadow-sm":"0 0 0 1px rgba(0,191,239,0.06)","--shadow-md":"0 0 12px rgba(0,191,239,0.08)","--shadow-lg":"0 0 24px rgba(0,191,239,0.12)",
+      "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
+      "--phase-active":"var(--green)","--phase-estimating":"var(--amber)","--phase-pre-construction":"var(--blue)","--phase-completed":"var(--text3)","--phase-warranty":"var(--yellow)","--phase-in-progress":"var(--green)",
     }
   },
   daylight: {
@@ -72,6 +76,8 @@ export const THEMES = {
       "--radius":"10px","--radius-sm":"6px",
       "--shadow":"0 1px 4px rgba(0,0,0,0.06)","--card-shadow":"0 1px 6px rgba(0,0,0,0.05)",
       "--shadow-sm":"0 1px 4px rgba(0,0,0,0.06)","--shadow-md":"0 2px 8px rgba(0,0,0,0.12)","--shadow-lg":"0 4px 20px rgba(0,0,0,0.18)",
+      "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
+      "--phase-active":"var(--green)","--phase-estimating":"var(--amber)","--phase-pre-construction":"var(--blue)","--phase-completed":"var(--text3)","--phase-warranty":"var(--yellow)","--phase-in-progress":"var(--green)",
     }
   },
   matrix: {
@@ -93,6 +99,8 @@ export const THEMES = {
       "--radius":"2px","--radius-sm":"1px",
       "--shadow":"none","--card-shadow":"0 0 10px rgba(0,255,65,0.04)",
       "--shadow-sm":"none","--shadow-md":"0 0 10px rgba(0,255,65,0.04)","--shadow-lg":"0 0 20px rgba(0,255,65,0.08)",
+      "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
+      "--phase-active":"var(--green)","--phase-estimating":"var(--amber)","--phase-pre-construction":"var(--blue)","--phase-completed":"var(--text3)","--phase-warranty":"var(--yellow)","--phase-in-progress":"var(--green)",
     }
   },
   anime: {
@@ -114,6 +122,8 @@ export const THEMES = {
       "--radius":"14px","--radius-sm":"8px",
       "--shadow":"0 0 20px rgba(255,45,160,0.08)","--card-shadow":"0 0 16px rgba(255,45,160,0.06)",
       "--shadow-sm":"0 0 8px rgba(255,45,160,0.06)","--shadow-md":"0 0 16px rgba(255,45,160,0.10)","--shadow-lg":"0 0 28px rgba(255,45,160,0.16)",
+      "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
+      "--phase-active":"var(--green)","--phase-estimating":"var(--amber)","--phase-pre-construction":"var(--blue)","--phase-completed":"var(--text3)","--phase-warranty":"var(--yellow)","--phase-in-progress":"var(--green)",
     }
   },
   ebc: {
@@ -135,6 +145,8 @@ export const THEMES = {
       "--radius":"10px","--radius-sm":"6px",
       "--shadow":"0 2px 12px rgba(0,0,0,0.3)","--card-shadow":"0 2px 10px rgba(0,0,0,0.2)",
       "--shadow-sm":"0 1px 4px rgba(0,0,0,0.14)","--shadow-md":"0 2px 12px rgba(0,0,0,0.30)","--shadow-lg":"0 4px 32px rgba(0,0,0,0.45)",
+      "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
+      "--phase-active":"var(--green)","--phase-estimating":"var(--amber)","--phase-pre-construction":"var(--blue)","--phase-completed":"var(--text3)","--phase-warranty":"var(--yellow)","--phase-in-progress":"var(--green)",
     }
   },
   midnight: {
@@ -156,6 +168,8 @@ export const THEMES = {
       "--radius":"12px","--radius-sm":"8px",
       "--shadow":"0 2px 10px rgba(0,0,0,0.4)","--card-shadow":"0 1px 8px rgba(0,0,0,0.3)",
       "--shadow-sm":"0 1px 4px rgba(0,0,0,0.20)","--shadow-md":"0 2px 10px rgba(0,0,0,0.35)","--shadow-lg":"0 4px 24px rgba(0,0,0,0.50)",
+      "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
+      "--phase-active":"var(--green)","--phase-estimating":"var(--amber)","--phase-pre-construction":"var(--blue)","--phase-completed":"var(--text3)","--phase-warranty":"var(--yellow)","--phase-in-progress":"var(--green)",
     }
   },
   cyberpunk: {
@@ -177,6 +191,8 @@ export const THEMES = {
       "--radius":"4px","--radius-sm":"2px",
       "--shadow":"0 0 20px rgba(0,240,255,0.06)","--card-shadow":"0 0 12px rgba(0,240,255,0.05)",
       "--shadow-sm":"0 0 6px rgba(0,240,255,0.05)","--shadow-md":"0 0 14px rgba(0,240,255,0.08)","--shadow-lg":"0 0 24px rgba(0,240,255,0.14)",
+      "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
+      "--phase-active":"var(--green)","--phase-estimating":"var(--amber)","--phase-pre-construction":"var(--blue)","--phase-completed":"var(--text3)","--phase-warranty":"var(--yellow)","--phase-in-progress":"var(--green)",
     }
   },
 };
