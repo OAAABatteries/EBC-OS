@@ -99,50 +99,50 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TOKN-01 | — | Pending |
-| TOKN-02 | — | Pending |
-| TOKN-03 | — | Pending |
-| TOKN-04 | — | Pending |
-| TOKN-05 | — | Pending |
-| TOKN-06 | — | Pending |
-| TOKN-07 | — | Pending |
-| COMP-01 | — | Pending |
-| COMP-02 | — | Pending |
-| COMP-03 | — | Pending |
-| COMP-04 | — | Pending |
-| COMP-05 | — | Pending |
-| COMP-06 | — | Pending |
-| COMP-07 | — | Pending |
-| COMP-08 | — | Pending |
-| COMP-09 | — | Pending |
-| COMP-10 | — | Pending |
-| COMP-11 | — | Pending |
-| DRVR-01 | — | Pending |
-| DRVR-02 | — | Pending |
-| DRVR-03 | — | Pending |
-| DRVR-04 | — | Pending |
-| EMPL-01 | — | Pending |
-| EMPL-02 | — | Pending |
-| EMPL-03 | — | Pending |
-| EMPL-04 | — | Pending |
-| EMPL-05 | — | Pending |
-| FRMN-01 | — | Pending |
-| FRMN-02 | — | Pending |
-| FRMN-03 | — | Pending |
-| FRMN-04 | — | Pending |
-| FRMN-05 | — | Pending |
-| FRMN-06 | — | Pending |
-| PLSH-01 | — | Pending |
-| PLSH-02 | — | Pending |
-| PLSH-03 | — | Pending |
-| PLSH-04 | — | Pending |
-| PLSH-05 | — | Pending |
+| TOKN-01 | Phase 1 | Pending |
+| TOKN-02 | Phase 1 | Pending |
+| TOKN-03 | Phase 1 | Pending |
+| TOKN-04 | Phase 1 | Pending |
+| TOKN-05 | Phase 1 | Pending |
+| TOKN-06 | Phase 1 | Pending |
+| TOKN-07 | Phase 1 | Pending |
+| COMP-01 | Phase 2 | Pending |
+| COMP-02 | Phase 2 | Pending |
+| COMP-03 | Phase 2 | Pending |
+| COMP-04 | Phase 2 | Pending |
+| COMP-05 | Phase 2 | Pending |
+| COMP-06 | Phase 2 | Pending |
+| COMP-07 | Phase 2 | Pending |
+| COMP-08 | Phase 2 | Pending |
+| COMP-09 | Phase 2 | Pending |
+| COMP-10 | Phase 2 | Pending |
+| COMP-11 | Phase 2 | Pending |
+| DRVR-01 | Phase 3 | Pending |
+| DRVR-02 | Phase 3 | Pending |
+| DRVR-03 | Phase 3 | Pending |
+| DRVR-04 | Phase 3 | Pending |
+| EMPL-01 | Phase 4 | Pending |
+| EMPL-02 | Phase 4 | Pending |
+| EMPL-03 | Phase 4 | Pending |
+| EMPL-04 | Phase 4 | Pending |
+| EMPL-05 | Phase 4 | Pending |
+| FRMN-01 | Phase 5 | Pending |
+| FRMN-02 | Phase 5 | Pending |
+| FRMN-03 | Phase 5 | Pending |
+| FRMN-04 | Phase 5 | Pending |
+| FRMN-05 | Phase 5 | Pending |
+| FRMN-06 | Phase 5 | Pending |
+| PLSH-01 | Phase 6 | Pending |
+| PLSH-02 | Phase 6 | Pending |
+| PLSH-03 | Phase 6 | Pending |
+| PLSH-04 | Phase 6 | Pending |
+| PLSH-05 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 38 total
-- Mapped to phases: 0
-- Unmapped: 38
+- Mapped to phases: 38
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-30*
-*Last updated: 2026-03-30 after initial definition*
+*Last updated: 2026-03-30 after roadmap creation — all 38 requirements mapped*
