@@ -29,6 +29,7 @@ export const THEMES = {
       "--font-mono":"'IBM Plex Mono', monospace",
       "--radius":"10px","--radius-sm":"6px",
       "--shadow":"0 2px 12px rgba(0,0,0,0.3)","--card-shadow":"0 1px 8px rgba(0,0,0,0.2)",
+      "--shadow-sm":"0 1px 4px rgba(0,0,0,0.12)","--shadow-md":"0 2px 12px rgba(0,0,0,0.28)","--shadow-lg":"0 4px 32px rgba(0,0,0,0.45)",
     }
   },
   blueprint: {
@@ -49,6 +50,7 @@ export const THEMES = {
       "--font-mono":"'IBM Plex Mono', monospace",
       "--radius":"6px","--radius-sm":"3px",
       "--shadow":"0 0 0 1px rgba(0,191,239,0.06)","--card-shadow":"0 0 12px rgba(0,191,239,0.04)",
+      "--shadow-sm":"0 0 0 1px rgba(0,191,239,0.06)","--shadow-md":"0 0 12px rgba(0,191,239,0.08)","--shadow-lg":"0 0 24px rgba(0,191,239,0.12)",
     }
   },
   daylight: {
@@ -69,6 +71,7 @@ export const THEMES = {
       "--font-mono":"'IBM Plex Mono', monospace",
       "--radius":"10px","--radius-sm":"6px",
       "--shadow":"0 1px 4px rgba(0,0,0,0.06)","--card-shadow":"0 1px 6px rgba(0,0,0,0.05)",
+      "--shadow-sm":"0 1px 4px rgba(0,0,0,0.06)","--shadow-md":"0 2px 8px rgba(0,0,0,0.12)","--shadow-lg":"0 4px 20px rgba(0,0,0,0.18)",
     }
   },
   matrix: {
@@ -89,6 +92,7 @@ export const THEMES = {
       "--font-mono":"'IBM Plex Mono', monospace",
       "--radius":"2px","--radius-sm":"1px",
       "--shadow":"none","--card-shadow":"0 0 10px rgba(0,255,65,0.04)",
+      "--shadow-sm":"none","--shadow-md":"0 0 10px rgba(0,255,65,0.04)","--shadow-lg":"0 0 20px rgba(0,255,65,0.08)",
     }
   },
   anime: {
@@ -109,6 +113,7 @@ export const THEMES = {
       "--font-mono":"'IBM Plex Mono', monospace",
       "--radius":"14px","--radius-sm":"8px",
       "--shadow":"0 0 20px rgba(255,45,160,0.08)","--card-shadow":"0 0 16px rgba(255,45,160,0.06)",
+      "--shadow-sm":"0 0 8px rgba(255,45,160,0.06)","--shadow-md":"0 0 16px rgba(255,45,160,0.10)","--shadow-lg":"0 0 28px rgba(255,45,160,0.16)",
     }
   },
   ebc: {
@@ -129,6 +134,7 @@ export const THEMES = {
       "--font-mono":"'SF Mono', 'IBM Plex Mono', monospace",
       "--radius":"10px","--radius-sm":"6px",
       "--shadow":"0 2px 12px rgba(0,0,0,0.3)","--card-shadow":"0 2px 10px rgba(0,0,0,0.2)",
+      "--shadow-sm":"0 1px 4px rgba(0,0,0,0.14)","--shadow-md":"0 2px 12px rgba(0,0,0,0.30)","--shadow-lg":"0 4px 32px rgba(0,0,0,0.45)",
     }
   },
   midnight: {
@@ -149,6 +155,7 @@ export const THEMES = {
       "--font-mono":"'SF Mono', 'Menlo', monospace",
       "--radius":"12px","--radius-sm":"8px",
       "--shadow":"0 2px 10px rgba(0,0,0,0.4)","--card-shadow":"0 1px 8px rgba(0,0,0,0.3)",
+      "--shadow-sm":"0 1px 4px rgba(0,0,0,0.20)","--shadow-md":"0 2px 10px rgba(0,0,0,0.35)","--shadow-lg":"0 4px 24px rgba(0,0,0,0.50)",
     }
   },
   cyberpunk: {
@@ -169,6 +176,7 @@ export const THEMES = {
       "--font-mono":"'IBM Plex Mono', monospace",
       "--radius":"4px","--radius-sm":"2px",
       "--shadow":"0 0 20px rgba(0,240,255,0.06)","--card-shadow":"0 0 12px rgba(0,240,255,0.05)",
+      "--shadow-sm":"0 0 6px rgba(0,240,255,0.05)","--shadow-md":"0 0 14px rgba(0,240,255,0.08)","--shadow-lg":"0 0 24px rgba(0,240,255,0.14)",
     }
   },
 };
