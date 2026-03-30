@@ -3,111 +3,224 @@ import { jsPDF } from "jspdf";
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · Change Order PDF Generator
 //  Eagles Brothers Constructors · Houston, TX
+//  GC-ready, signable document with full cost summary
 // ═══════════════════════════════════════════════════════════════
 
 const C = {
-  navy: [30, 45, 59],
-  amber: [224, 148, 34],
+  navy:     [30, 45, 59],
+  amber:    [224, 148, 34],
   darkGray: [60, 60, 60],
-  medGray: [120, 120, 120],
-  ltGray: [200, 200, 200],
-  white: [255, 255, 255],
-  bg: [248, 248, 248],
-  green: [16, 185, 129],
-  red: [239, 68, 68],
+  medGray:  [120, 120, 120],
+  ltGray:   [200, 200, 200],
+  white:    [255, 255, 255],
+  bg:       [248, 248, 248],
+  green:    [16, 185, 129],
+  red:      [239, 68, 68],
 };
 
-const PW = 215.9;
-const PH = 279.4;
+const PW = 215.9;          // letter width mm
+const PH = 279.4;          // letter height mm
 const ML = 20;
 const MR = 20;
-const CW = PW - ML - MR;
+const CW = PW - ML - MR;   // content width
 
+// ── Text sanitizer (Helvetica doesn't support special chars) ──
 function safe(str) {
   return String(str || "")
-    .replace(/[\u2018\u2019]/g, "'")
-    .replace(/[\u201C\u201D]/g, '"')
-    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/\u2014/g, "--")
+    .replace(/\u2013/g, "-")
+    .replace(/\u215B/g, "1/8")
+    .replace(/\u00BC/g, "1/4")
+    .replace(/\u00BD/g, "1/2")
+    .replace(/\u00BE/g, "3/4")
+    .replace(/\u215D/g, "5/8")
+    .replace(/\u2019/g, "'")
+    .replace(/\u2018/g, "'")
+    .replace(/\u201C/g, '"')
+    .replace(/\u201D/g, '"')
+    .replace(/\u2026/g, "...")
+    .replace(/\u00B2/g, "2")
     .replace(/[^\x00-\x7F]/g, (c) => c.charCodeAt(0) > 255 ? "" : c);
 }
 
 function fmt(n) {
-  return "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return "$" + Number(n || 0).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+// ── Load logo (white-on-navy) ──
+async function loadLogo() {
+  try {
+    const resp = await fetch("/logo-ebc-white.png");
+    if (!resp.ok) return null;
+    const blob = await resp.blob();
+    return await new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        resolve({ data: canvas.toDataURL("image/png"), w: img.width, h: img.height });
+      };
+      img.onerror = () => resolve(null);
+      img.src = URL.createObjectURL(blob);
+    });
+  } catch {
+    return null;
+  }
 }
 
 /**
- * Generate a professional Change Order PDF.
- * @param {Object} project - The project object
- * @param {Object} co - The change order object
- * @param {Object} company - Company info { name, address, city, phone, email, license }
+ * Generate a professional, GC-ready Change Order PDF.
+ *
+ * @param {Object}   project    - The project object (name, address, gc, contract)
+ * @param {Object}   co         - The change order object
+ * @param {Object}   company    - Company info { name, address, phone, email, license }
+ * @param {Object[]} projectCOs - All change orders for this project (for "Previous Approved COs")
  */
-export function generateChangeOrderPdf(project, co, company = {}) {
+export async function generateChangeOrderPdf(project, co, company = {}, projectCOs = []) {
   const doc = new jsPDF({ unit: "mm", format: "letter" });
   let y = 0;
 
-  const companyName = company.name || "Eagles Brothers Constructors";
-  const companyAddr = company.address || "Houston, TX";
-  const companyPhone = company.phone || "";
-  const companyEmail = company.email || "";
+  const companyName  = company.name    || "Eagles Brothers Constructors";
+  const companyAddr  = company.address || "7801 N Shepherd Dr, Suite 107, Houston, TX 77088";
+  const companyPhone = company.phone   || "(346) 970-7093";
+  const companyEmail = company.email   || "abner@ebconstructors.com";
   const companyLicense = company.license || "";
 
-  // ── Header band ──
-  doc.setFillColor(...C.navy);
-  doc.rect(0, 0, PW, 32, "F");
-  doc.setTextColor(...C.white);
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.text(safe(companyName), ML, 13);
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  const headerInfo = [companyAddr, companyPhone, companyEmail].filter(Boolean).join("  |  ");
-  doc.text(safe(headerInfo), ML, 20);
-  if (companyLicense) {
-    doc.text(safe("License: " + companyLicense), ML, 26);
+  const coNum  = co.number || `CO-${String(co.id || 1).padStart(3, "0")}`;
+  const coType = co.type   || "add";
+  const coDateRaw = co.date || co.submitted || new Date().toISOString().slice(0, 10);
+  // Format as MM/DD/YY
+  const coDate = (() => {
+    const d = new Date(coDateRaw + "T00:00:00");
+    if (isNaN(d)) return coDateRaw;
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const yy = String(d.getFullYear()).slice(-2);
+    return `${mm}/${dd}/${yy}`;
+  })();
+
+  const logo = await loadLogo();
+
+  // ── Page management ──
+  function checkPage(needed = 20) {
+    if (y + needed > PH - 25) {
+      addFooter();
+      doc.addPage();
+      // Thin amber bar on continuation pages
+      doc.setFillColor(...C.amber);
+      doc.rect(0, 0, PW, 2, "F");
+      y = 10;
+    }
   }
 
-  // ── "CHANGE ORDER" title ──
-  y = 42;
+  function addFooter() {
+    doc.setFontSize(7);
+    doc.setTextColor(...C.medGray);
+    doc.text(
+      safe(`${companyName}  |  ${coNum}  |  Generated ${new Date().toLocaleDateString()}`),
+      PW / 2, PH - 8, { align: "center" }
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  HEADER — Navy band with logo + company info
+  // ═══════════════════════════════════════════════════════════
+  const headerH = 28;
+  doc.setFillColor(...C.navy);
+  doc.rect(0, 0, PW, headerH, "F");
+
+  if (logo) {
+    try {
+      const aspect = logo.w / logo.h;
+      const logoH = headerH - 6;
+      const logoW = logoH * aspect;
+      doc.addImage(logo.data, "PNG", ML, 3, logoW, logoH);
+    } catch { /* fallback to text */ }
+  }
+
+  // Company info — right side of header
+  doc.setTextColor(...C.white);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.text(safe(companyAddr), PW - MR, 10, { align: "right" });
+  doc.text(safe(companyPhone + "  |  " + companyEmail), PW - MR, 16, { align: "right" });
+  if (companyLicense) {
+    doc.text(safe("License: " + companyLicense), PW - MR, 22, { align: "right" });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  CHANGE ORDER TITLE BAR
+  // ═══════════════════════════════════════════════════════════
+  y = headerH + 4;
   doc.setFillColor(...C.amber);
   doc.rect(ML, y, CW, 10, "F");
   doc.setTextColor(...C.white);
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
   doc.text("CHANGE ORDER", ML + 4, y + 7.5);
-
-  const coNum = co.number || `CO-${String(co.id).padStart(3, "0")}`;
-  doc.setFontSize(14);
-  doc.text(safe(coNum), PW - MR - 4 - doc.getTextWidth(safe(coNum)), y + 7.5);
+  doc.text(safe(coNum), PW - MR - 4, y + 7.5, { align: "right" });
   y += 16;
 
-  // ── Project & CO Info Table ──
+  // ═══════════════════════════════════════════════════════════
+  //  PROJECT & CO INFO GRID
+  // ═══════════════════════════════════════════════════════════
   doc.setTextColor(...C.darkGray);
   doc.setFontSize(9);
-  const labelX = ML;
-  const valueX = ML + 35;
+
+  const leftLabelX  = ML;
+  const leftValueX  = ML + 32;
   const rightLabelX = ML + CW / 2 + 5;
-  const rightValueX = ML + CW / 2 + 40;
+  const rightValueX = ML + CW / 2 + 32;
 
   const infoRows = [
-    ["Project:", safe(project.name || ""), "Date:", safe(co.date || "")],
-    ["GC:", safe(project.gc || ""), "Status:", safe((co.status || "draft").toUpperCase())],
-    ["Address:", safe(project.address || ""), "Type:", safe((co.type || "add").toUpperCase())],
-    ["Contract:", fmt(project.contract || 0), "CO Amount:", fmt(co.amount || 0)],
+    ["Project:",  safe(project.name || ""),           "Date:",      safe(coDate)],
+    ["Address:",  safe(project.address || ""),         "CO #:",      safe(coNum)],
+    ["GC:",       safe(co.gc_company || project.gc || ""), "Reference:", safe(co.reference || "")],
   ];
 
   infoRows.forEach(([lbl1, val1, lbl2, val2]) => {
     doc.setFont("helvetica", "bold");
-    doc.text(lbl1, labelX, y);
+    doc.text(lbl1, leftLabelX, y);
     doc.text(lbl2, rightLabelX, y);
     doc.setFont("helvetica", "normal");
-    doc.text(val1, valueX, y);
-    doc.text(val2, rightValueX, y);
+    // Wrap long values
+    const leftLines = doc.splitTextToSize(val1, CW / 2 - 38);
+    const rightLines = doc.splitTextToSize(val2, CW / 2 - 38);
+    doc.text(leftLines[0] || "", leftValueX, y);
+    doc.text(rightLines[0] || "", rightValueX, y);
+    const extra = Math.max(leftLines.length, rightLines.length) - 1;
+    for (let i = 1; i <= extra; i++) {
+      y += 5;
+      if (leftLines[i]) doc.text(leftLines[i], leftValueX, y);
+      if (rightLines[i]) doc.text(rightLines[i], rightValueX, y);
+    }
     y += 6;
   });
 
-  y += 6;
+  // Type badge
+  doc.setFont("helvetica", "bold");
+  doc.text("Type:", leftLabelX, y);
+  const typeLabel = coType === "deduct" ? "DEDUCT" : coType === "no_cost" ? "NO COST" : "ADD";
+  const typeBg = coType === "deduct" ? C.red : coType === "no_cost" ? C.medGray : C.green;
+  const tw = doc.getTextWidth(typeLabel) + 6;
+  doc.setFillColor(...typeBg);
+  doc.roundedRect(leftValueX - 1, y - 4, tw, 6, 1, 1, "F");
+  doc.setTextColor(...C.white);
+  doc.setFontSize(8);
+  doc.text(typeLabel, leftValueX + 2, y);
+  doc.setTextColor(...C.darkGray);
+  doc.setFontSize(9);
+  y += 10;
 
-  // ── Description Section ──
+  // ═══════════════════════════════════════════════════════════
+  //  DESCRIPTION OF CHANGE
+  // ═══════════════════════════════════════════════════════════
   doc.setFillColor(...C.navy);
   doc.rect(ML, y, CW, 7, "F");
   doc.setTextColor(...C.white);
@@ -119,16 +232,45 @@ export function generateChangeOrderPdf(project, co, company = {}) {
   doc.setTextColor(...C.darkGray);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  const descText = safe(co.description || "No description provided.");
-  const descLines = doc.splitTextToSize(descText, CW - 6);
-  descLines.forEach(line => {
-    doc.text(line, ML + 3, y + 4);
-    y += 5;
-  });
-  y += 4;
 
-  // ── Notes Section (if any) ──
+  // General description
+  const descText = safe(co.description || co.desc || "");
+  if (descText) {
+    const descLines = doc.splitTextToSize(descText, CW - 8);
+    descLines.forEach((line) => {
+      checkPage(6);
+      doc.text(line, ML + 4, y + 4);
+      y += 5;
+    });
+    y += 3;
+  }
+
+  // Scope items (bullet points)
+  const scopeItems = co.scope_items || [];
+  if (scopeItems.length > 0) {
+    scopeItems.forEach((item) => {
+      checkPage(8);
+      const text = typeof item === "string" ? item : (item.description || "");
+      const lines = doc.splitTextToSize(safe(text), CW - 18);
+      // Bullet (filled circle — safe for Helvetica)
+      doc.setFontSize(9);
+      doc.setFillColor(...C.darkGray);
+      doc.circle(ML + 7, y + 2.5, 0.8, "F");
+      lines.forEach((line, i) => {
+        doc.text(line, ML + 12, y + 4);
+        if (i < lines.length - 1) y += 5;
+      });
+      y += 6;
+    });
+  }
+
+  y += 2;
+
+  // ═══════════════════════════════════════════════════════════
+  //  NOTES (if any)
+  // ═══════════════════════════════════════════════════════════
   if (co.notes) {
+    checkPage(20);
     doc.setFillColor(...C.navy);
     doc.rect(ML, y, CW, 7, "F");
     doc.setTextColor(...C.white);
@@ -140,51 +282,101 @@ export function generateChangeOrderPdf(project, co, company = {}) {
     doc.setTextColor(...C.darkGray);
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    const notesLines = doc.splitTextToSize(safe(co.notes), CW - 6);
-    notesLines.forEach(line => {
-      doc.text(line, ML + 3, y + 4);
+    const notesLines = doc.splitTextToSize(safe(co.notes), CW - 8);
+    notesLines.forEach((line) => {
+      checkPage(6);
+      doc.text(line, ML + 4, y + 4);
       y += 5;
     });
     y += 4;
   }
 
-  // ── Cost Summary Box ──
-  y += 6;
-  doc.setFillColor(...C.bg);
-  doc.rect(ML, y, CW, 28, "F");
-  doc.setDrawColor(...C.ltGray);
-  doc.rect(ML, y, CW, 28, "S");
+  // ═══════════════════════════════════════════════════════════
+  //  COST SUMMARY BOX
+  // ═══════════════════════════════════════════════════════════
+  checkPage(42);
+  y += 4;
 
-  const summaryY = y + 6;
-  doc.setFontSize(9);
+  doc.setFillColor(...C.navy);
+  doc.rect(ML, y, CW, 7, "F");
+  doc.setTextColor(...C.white);
+  doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
+  doc.text("Cost Summary", ML + 3, y + 5);
+  y += 10;
+
+  // Calculate previous approved COs (exclude current CO, only status=approved)
+  const prevApprovedCOs = projectCOs.filter(
+    (c) => c.id !== co.id && c.status === "approved"
+  );
+  const prevCOTotal = prevApprovedCOs.reduce((sum, c) => {
+    const t = c.type || "add";
+    const amt = Math.abs(Number(c.amount || 0));
+    return sum + (t === "deduct" ? -amt : t === "no_cost" ? 0 : amt);
+  }, 0);
+
+  const originalContract = Number(project.contract || 0);
+  const thisCOAmount = coType === "no_cost" ? 0 : (coType === "deduct" ? -Math.abs(Number(co.amount || 0)) : Number(co.amount || 0));
+  const newContractTotal = originalContract + prevCOTotal + thisCOAmount;
+
+  const boxH = 32;
+  doc.setFillColor(...C.bg);
+  doc.rect(ML, y, CW, boxH, "F");
+  doc.setDrawColor(...C.ltGray);
+  doc.rect(ML, y, CW, boxH, "S");
+
+  const labelCol = ML + 8;
+  const valueCol = ML + CW - 8;
+  let sy = y + 7;
+
+  doc.setFontSize(9);
   doc.setTextColor(...C.darkGray);
 
-  doc.text("Original Contract Value:", ML + 6, summaryY);
+  // Original Contract
   doc.setFont("helvetica", "normal");
-  doc.text(fmt(project.contract || 0), ML + 75, summaryY);
+  doc.text("Original Contract Value:", labelCol, sy);
+  doc.text(fmt(originalContract), valueCol, sy, { align: "right" });
+  sy += 7;
 
+  // Previous Approved COs
+  doc.text("Previous Approved COs:", labelCol, sy);
+  doc.text(prevCOTotal === 0 ? "$0.00" : fmt(prevCOTotal), valueCol, sy, { align: "right" });
+  sy += 7;
+
+  // This CO
   doc.setFont("helvetica", "bold");
-  const typeLabel = co.type === "deduct" ? "Deduction This CO:" : co.type === "no cost" ? "No Cost Change:" : "Addition This CO:";
-  doc.text(typeLabel, ML + 6, summaryY + 7);
-  doc.setFont("helvetica", "normal");
-  const coAmt = co.type === "deduct" ? `-${fmt(Math.abs(co.amount || 0))}` : co.type === "no cost" ? "$0.00" : fmt(co.amount || 0);
-  doc.text(coAmt, ML + 75, summaryY + 7);
+  const thisLabel = coType === "deduct" ? "This Change Order (Deduct):" : coType === "no_cost" ? "This Change Order (No Cost):" : "This Change Order (Add):";
+  doc.text(thisLabel, labelCol, sy);
+  const thisFmt = coType === "no_cost" ? "$0.00" : coType === "deduct" ? `(${fmt(Math.abs(thisCOAmount))})` : fmt(thisCOAmount);
+  doc.text(thisFmt, valueCol, sy, { align: "right" });
+  sy += 3;
 
+  // Divider line
   doc.setDrawColor(...C.navy);
-  doc.line(ML + 6, summaryY + 11, ML + CW - 6, summaryY + 11);
+  doc.setLineWidth(0.5);
+  doc.line(labelCol, sy, valueCol, sy);
+  sy += 6;
 
-  doc.setFont("helvetica", "bold");
+  // New Contract Total
   doc.setFontSize(10);
-  doc.text("Adjusted Contract Value:", ML + 6, summaryY + 18);
-  const adjustedVal = (project.contract || 0) + (co.type === "no cost" ? 0 : (co.amount || 0));
-  doc.text(fmt(adjustedVal), ML + 75, summaryY + 18);
+  doc.setFont("helvetica", "bold");
+  doc.text("New Contract Total:", labelCol, sy);
+  doc.text(fmt(newContractTotal), valueCol, sy, { align: "right" });
 
-  y += 36;
+  if (coType === "no_cost") {
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(...C.medGray);
+    doc.text("No change to contract value", labelCol, sy + 5);
+    doc.setTextColor(...C.darkGray);
+  }
 
-  // ── Signature Lines ──
-  y = Math.max(y, 200); // Push signatures toward bottom
-  if (y > 230) y = 230;
+  y += boxH + 8;
+
+  // ═══════════════════════════════════════════════════════════
+  //  AUTHORIZATION / APPROVAL BLOCK
+  // ═══════════════════════════════════════════════════════════
+  checkPage(55);
 
   doc.setFillColor(...C.navy);
   doc.rect(ML, y, CW, 7, "F");
@@ -192,34 +384,80 @@ export function generateChangeOrderPdf(project, co, company = {}) {
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.text("Authorization", ML + 3, y + 5);
-  y += 14;
+  y += 12;
 
   doc.setTextColor(...C.darkGray);
+  const sigW = (CW - 20) / 2;
+
+  // ── Subcontractor (EBC) side ──
   doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.text("Subcontractor:", ML, y);
   doc.setFont("helvetica", "normal");
+  doc.text(safe(companyName), ML, y + 5);
 
-  const sigW = (CW - 15) / 2;
-
-  // Contractor signature
+  // Signature line
   doc.setDrawColor(...C.darkGray);
-  doc.line(ML, y + 12, ML + sigW, y + 12);
-  doc.text("Contractor Signature", ML, y + 17);
-  doc.text("Date: _______________", ML, y + 23);
-
-  // Owner/GC signature
-  doc.line(ML + sigW + 15, y + 12, ML + sigW + 15 + sigW, y + 12);
-  doc.text("Owner / GC Signature", ML + sigW + 15, y + 17);
-  doc.text("Date: _______________", ML + sigW + 15, y + 23);
-
-  // ── Footer ──
+  doc.setLineWidth(0.3);
+  doc.line(ML, y + 18, ML + sigW, y + 18);
   doc.setFontSize(7);
+  doc.text("Authorized Signature", ML, y + 22);
+  doc.text("Date: _______________", ML, y + 27);
+
+  // ── General Contractor side ──
+  const gcX = ML + sigW + 20;
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.text("General Contractor:", gcX, y);
+  doc.setFont("helvetica", "normal");
+  const gcLabel = safe(co.gc_name || co.gc_company || project.gc || "");
+  if (gcLabel) doc.text(gcLabel, gcX, y + 5);
+
+  // Signature line
+  doc.line(gcX, y + 18, gcX + sigW, y + 18);
+  doc.setFontSize(7);
+  doc.text("Authorized Signature", gcX, y + 22);
+  doc.text("Date: _______________", gcX, y + 27);
+
+  y += 34;
+
+  // ── Approval clause ──
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "italic");
   doc.setTextColor(...C.medGray);
   doc.text(
-    safe(`${companyName} | ${coNum} | Generated ${new Date().toLocaleDateString()}`),
-    PW / 2, PH - 10, { align: "center" }
+    "This Change Order is not valid or billable until approved in writing by both parties.",
+    PW / 2, y, { align: "center" }
   );
+  y += 6;
 
-  // ── Save ──
+  // ═══════════════════════════════════════════════════════════
+  //  CONTACT FOOTER
+  // ═══════════════════════════════════════════════════════════
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...C.medGray);
+  const contactLine = `*If you have any questions, please contact ${safe(companyPhone)} or ${safe(companyEmail)}. Thank you.`;
+  doc.text(contactLine, PW / 2, PH - 16, { align: "center" });
+
+  // ═══════════════════════════════════════════════════════════
+  //  PAGE FOOTER (all pages)
+  // ═══════════════════════════════════════════════════════════
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7);
+    doc.setTextColor(...C.medGray);
+    doc.text(
+      safe(`${companyName}  |  ${safe(project.name || "Project")}  |  ${coNum}`),
+      ML, PH - 8
+    );
+    doc.text(`Page ${i} of ${pageCount}`, PW - MR, PH - 8, { align: "right" });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  SAVE
+  // ═══════════════════════════════════════════════════════════
   const filename = `${safe(project.name || "Project").replace(/\s+/g, "_")}_${coNum}.pdf`;
   doc.save(filename);
 }

@@ -4197,7 +4197,8 @@ const ModalHub = ({ type, data, app }) => {
     const deleteCo = (coId) => { if (confirm("Delete this change order?")) app.setChangeOrders(prev => prev.filter(c => c.id !== coId)); };
     const exportCoPdf = async (co) => {
       const { generateChangeOrderPdf } = await import("./utils/changeOrderPdf.js");
-      generateChangeOrderPdf(draft, { ...co, description: co.description || co.desc }, app.company);
+      const projectCOs = app.changeOrders.filter(c => c.projectId === co.projectId);
+      await generateChangeOrderPdf(draft, { ...co, description: co.description || co.desc }, app.company || {}, projectCOs);
     };
 
     const generateSubPackage = async () => {

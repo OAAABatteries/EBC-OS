@@ -630,6 +630,9 @@ CREATE TABLE IF NOT EXISTS project_drawings (
   uploaded_by   UUID REFERENCES users(id) ON DELETE SET NULL,
   mime_type     TEXT DEFAULT 'application/pdf',
   notes         TEXT DEFAULT '',
+  revision_label TEXT DEFAULT '',
+  discipline    TEXT DEFAULT 'general',
+  uploaded_by_name TEXT DEFAULT '',
   created_at    TIMESTAMPTZ DEFAULT NOW(),
   updated_at    TIMESTAMPTZ DEFAULT NOW()
 );

@@ -309,7 +309,8 @@ function InvoicesTab({ app }) {
 /* ── Change Orders ───────────────────────────────────────────── */
 function ChangeOrdersTab({ app }) {
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ projectId: "", number: "", desc: "", amount: "", status: "pending", submitted: "", approved: "" });
+  const [form, setForm] = useState({ projectId: "", number: "", desc: "", amount: "", status: "pending", submitted: "", approved: "", type: "add", reference: "", notes: "", scope_items: [], gc_name: "", gc_company: "" });
+  const [scopeInput, setScopeInput] = useState("");
   const [impactId, setImpactId] = useState(null);
   const [impactResult, setImpactResult] = useState(null);
   const [impactLoading, setImpactLoading] = useState(false);
@@ -353,11 +354,18 @@ function ChangeOrdersTab({ app }) {
       status: form.status,
       submitted: form.submitted,
       approved: form.approved || null,
+      type: form.type || "add",
+      reference: form.reference || "",
+      notes: form.notes || "",
+      scope_items: form.scope_items || [],
+      gc_name: form.gc_name || "",
+      gc_company: form.gc_company || "",
     };
     app.setChangeOrders(prev => [...prev, newItem]);
     app.show("Change order added", "ok");
     setAdding(false);
-    setForm({ projectId: "", number: "", desc: "", amount: "", status: "pending", submitted: "", approved: "" });
+    setScopeInput("");
+    setForm({ projectId: "", number: "", desc: "", amount: "", status: "pending", submitted: "", approved: "", type: "add", reference: "", notes: "", scope_items: [], gc_name: "", gc_company: "" });
   };
 
   return (
@@ -382,7 +390,10 @@ function ChangeOrdersTab({ app }) {
           <div className="form-grid">
             <div className="form-group">
               <label className="form-label">Project</label>
-              <select className="form-select" value={form.projectId} onChange={e => setForm({ ...form, projectId: e.target.value })}>
+              <select className="form-select" value={form.projectId} onChange={e => {
+                const proj = app.projects.find(p => String(p.id) === e.target.value);
+                setForm({ ...form, projectId: e.target.value, gc_company: proj?.gc || form.gc_company });
+              }}>
                 <option value="">Select...</option>
                 {app.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
@@ -392,8 +403,20 @@ function ChangeOrdersTab({ app }) {
               <input className="form-input" value={form.number} onChange={e => setForm({ ...form, number: e.target.value })} />
             </div>
             <div className="form-group">
-              <label className="form-label">Amount</label>
+              <label className="form-label">Type</label>
+              <select className="form-select" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
+                <option value="add">Add</option>
+                <option value="deduct">Deduct</option>
+                <option value="no_cost">No Cost</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Amount ($)</label>
               <input className="form-input" type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Reference</label>
+              <input className="form-input" placeholder="Bulletin #01, RFI #3..." value={form.reference} onChange={e => setForm({ ...form, reference: e.target.value })} />
             </div>
             <div className="form-group">
               <label className="form-label">Status</label>
@@ -412,13 +435,64 @@ function ChangeOrdersTab({ app }) {
               <input className="form-input" type="date" value={form.approved} onChange={e => setForm({ ...form, approved: e.target.value })} />
             </div>
           </div>
-          <div className="form-group">
+
+          {/* Description */}
+          <div className="form-group mt-8">
             <label className="form-label">Description</label>
-            <input className="form-input" value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} />
+            <textarea className="form-input" rows={2} placeholder="Changes associated with Bulletin #01..." value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} />
           </div>
+
+          {/* Scope Items */}
+          <div className="form-group mt-8">
+            <label className="form-label">Scope Items</label>
+            {form.scope_items.map((item, i) => (
+              <div key={i} className="flex gap-8 mb-4" style={{ alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{i + 1}.</span>
+                <input className="form-input" style={{ flex: 1 }} value={typeof item === "string" ? item : item.description} onChange={e => {
+                  const updated = [...form.scope_items];
+                  updated[i] = { description: e.target.value, amount: null };
+                  setForm({ ...form, scope_items: updated });
+                }} />
+                <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)", padding: "2px 6px", fontSize: 11 }} onClick={() => setForm({ ...form, scope_items: form.scope_items.filter((_, j) => j !== i) })}>X</button>
+              </div>
+            ))}
+            <div className="flex gap-8">
+              <input className="form-input" style={{ flex: 1 }} placeholder="Add scope item (e.g. Wall Demo)..." value={scopeInput} onChange={e => setScopeInput(e.target.value)} onKeyDown={e => {
+                if (e.key === "Enter" && scopeInput.trim()) {
+                  setForm({ ...form, scope_items: [...form.scope_items, { description: scopeInput.trim(), amount: null }] });
+                  setScopeInput("");
+                }
+              }} />
+              <button className="btn btn-ghost btn-sm" onClick={() => {
+                if (scopeInput.trim()) {
+                  setForm({ ...form, scope_items: [...form.scope_items, { description: scopeInput.trim(), amount: null }] });
+                  setScopeInput("");
+                }
+              }}>+ Add</button>
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div className="form-group mt-8">
+            <label className="form-label">Notes</label>
+            <textarea className="form-input" rows={2} placeholder="Additional notes..." value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
+          </div>
+
+          {/* GC Info */}
+          <div className="form-grid mt-8">
+            <div className="form-group">
+              <label className="form-label">GC Company</label>
+              <input className="form-input" placeholder="Auto-filled from project" value={form.gc_company} onChange={e => setForm({ ...form, gc_company: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">GC Contact Name</label>
+              <input className="form-input" placeholder="PM or superintendent..." value={form.gc_name} onChange={e => setForm({ ...form, gc_name: e.target.value })} />
+            </div>
+          </div>
+
           <div className="flex gap-8 mt-16">
             <button className="btn btn-primary btn-sm" onClick={save}>Save</button>
-            <button className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setScopeInput(""); }}>Cancel</button>
           </div>
         </div>
       )}
@@ -448,6 +522,14 @@ function ChangeOrdersTab({ app }) {
                   <td>{co.approved || "—"}</td>
                   <td>
                     <div className="flex gap-4">
+                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }}
+                      onClick={async () => {
+                        const { generateChangeOrderPdf } = await import("../utils/changeOrderPdf.js");
+                        const project = app.projects.find(p => p.id === co.projectId) || { name: "Unknown" };
+                        const projectCOs = app.changeOrders.filter(c => c.projectId === co.projectId);
+                        await generateChangeOrderPdf(project, { ...co, description: co.description || co.desc }, app.company || {}, projectCOs);
+                        app.show("CO PDF exported", "ok");
+                      }}>PDF</button>
                     <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }}
                       onClick={() => impactId === co.id && impactResult ? setImpactId(null) : runImpact(co)}
                       disabled={impactLoading && impactId === co.id}>

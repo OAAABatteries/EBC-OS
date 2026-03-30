@@ -5,7 +5,7 @@ import { ReportProblemModal } from "../components/ReportProblemModal";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
 import { PhaseTracker, getDefaultPhases } from "../components/PhaseTracker";
-import { listFiles, getFileUrl, downloadFile } from "../lib/supabase";
+import { listFiles, getFileUrl, downloadFile, getDrawingsByProject } from "../lib/supabase";
 
 const PdfViewer = lazy(() => import("../components/PdfViewer").then(m => ({ default: m.PdfViewer })));
 import {
@@ -87,6 +87,7 @@ export function ForemanView({ app }) {
     employees, projects, setProjects, teamSchedule, timeEntries, setTimeEntries,
     materialRequests, setMaterialRequests,
     changeOrders, rfis, setRfis, submittals,
+    calendarEvents,
     jsas, setJsas,
     dailyReports, setDailyReports,
     problems, setProblems,
@@ -440,6 +441,38 @@ export function ForemanView({ app }) {
     if (!selectedProjectId) return;
     setDrawingsLoading(true);
     try {
+      // ── Primary: load from project_drawings table (has revision metadata) ──
+      const dbDrawings = await getDrawingsByProject(selectedProjectId);
+      if (dbDrawings && dbDrawings.length > 0) {
+        const drawings = dbDrawings.map(d => {
+          const path = d.storagePath || `drawings/project-${selectedProjectId}/${d.fileName}`;
+          const cachedMeta = downloadedDrawings[path];
+          const cachedAt = cachedMeta?.cachedAt ? new Date(cachedMeta.cachedAt) : null;
+          const updatedAt = d.updatedAt ? new Date(d.updatedAt) : null;
+          const isStale = cachedAt && updatedAt && updatedAt > cachedAt;
+          return {
+            id: d.id,
+            name: (d.fileName || "").replace(".pdf", "").replace(/_/g, " "),
+            fileName: d.fileName,
+            path,
+            size: d.fileSize || 0,
+            uploadedAt: d.createdAt || "",
+            updatedAt: d.updatedAt || "",
+            cached: !!cachedMeta,
+            isStale,
+            // ── Revision metadata (P0 field safety) ──
+            revision: d.revision || 1,
+            revisionLabel: d.revisionLabel || "",
+            isCurrent: d.isCurrent !== false,
+            discipline: d.discipline || "general",
+            notes: d.notes || "",
+          };
+        });
+        setCloudDrawings(drawings);
+        setDrawingsLoading(false);
+        return;
+      }
+      // ── Fallback: raw storage listing (no metadata table rows yet) ──
       const folder = `drawings/project-${selectedProjectId}`;
       const files = await listFiles(folder);
       const drawings = (files || []).filter(f => f.name?.endsWith(".pdf")).map(f => ({
@@ -450,10 +483,16 @@ export function ForemanView({ app }) {
         size: f.metadata?.size || 0,
         uploadedAt: f.created_at || f.updated_at || "",
         cached: !!downloadedDrawings[`${folder}/${f.name}`],
+        // No revision metadata available from storage listing
+        revision: null,
+        revisionLabel: "",
+        isCurrent: true,
+        discipline: "general",
+        isStale: false,
+        notes: "",
       }));
       setCloudDrawings(drawings);
     } catch {
-      // Supabase not configured or no files — use fallback
       setCloudDrawings([]);
     }
     setDrawingsLoading(false);
@@ -465,10 +504,15 @@ export function ForemanView({ app }) {
 
   const handleViewDrawing = async (drawing) => {
     try {
-      // Check cache first
+      // Check cache first — but skip if stale (newer revision exists)
       const { useDrawingCache } = await import("../hooks/useDrawingCache");
-      const { getCachedDrawing, cacheDrawing } = useDrawingCache();
-      const cached = await getCachedDrawing(drawing.path);
+      const { getCachedDrawing, cacheDrawing, removeCachedDrawing } = useDrawingCache();
+      if (drawing.isStale) {
+        // Stale cache: remove old version, force re-download
+        await removeCachedDrawing(drawing.path);
+        show?.(t("Downloading latest revision..."));
+      }
+      const cached = !drawing.isStale ? await getCachedDrawing(drawing.path) : null;
       if (cached) {
         setActiveDrawingData(cached);
         setActiveDrawingName(drawing.name);
@@ -595,6 +639,36 @@ export function ForemanView({ app }) {
     if (!selectedProjectId) return [];
     return (rfis || []).filter(r => String(r.projectId) === String(selectedProjectId));
   }, [rfis, selectedProjectId]);
+
+  // ── computed: RFIs needing field attention (open or recently answered) ──
+  const rfiAlerts = useMemo(() => {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+    return projectRFIs.filter(r => {
+      if (r.status === "open" || r.status === "submitted") return true;
+      // Show recently answered RFIs so foreman sees the resolution
+      if ((r.status === "answered" || r.status === "closed") && r.responseDate && r.responseDate >= sevenDaysAgo) return true;
+      if ((r.status === "answered" || r.status === "closed") && r.response_date && r.response_date >= sevenDaysAgo) return true;
+      return false;
+    });
+  }, [projectRFIs]);
+
+  // ── computed: 14-day look-ahead (calendar events for this project) ──
+  const lookAheadEvents = useMemo(() => {
+    if (!selectedProjectId) return [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().slice(0, 10);
+    const endDate = new Date(today);
+    endDate.setDate(endDate.getDate() + 14);
+    const endStr = endDate.toISOString().slice(0, 10);
+    return (calendarEvents || [])
+      .filter(e => {
+        const matchProject = String(e.projectId || e.project_id) === String(selectedProjectId) || !e.projectId;
+        const inRange = e.date >= todayStr && e.date <= endStr;
+        return matchProject && inRange;
+      })
+      .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  }, [calendarEvents, selectedProjectId]);
 
   // weekly burn rate in hours: sum of scheduled hours per team member this week
   const weeklyBurnHours = useMemo(() => {
@@ -779,10 +853,11 @@ export function ForemanView({ app }) {
     { key: "jsa", label: t("JSA"), count: activeJsaCount },
     { key: "materials", label: t("Materials"), count: projectMatRequests.filter(r => r.status === "requested" || r.status === "pending").length },
     { key: "drawings", label: t("Drawings") },
+    { key: "lookahead", label: t("Look-Ahead"), count: lookAheadEvents.length },
     { key: "reports", label: t("Daily Report"), count: (dailyReports || []).filter(r => r.projectId === selectedProjectId && r.date === new Date().toISOString().slice(0, 10)).length },
     { key: "site", label: t("Site"), count: criticalUnchecked.length },
     { key: "notes", label: t("Notes"), count: projNotesCount },
-    { key: "documents", label: t("Documents") },
+    { key: "documents", label: t("Documents"), count: rfiAlerts.length },
     { key: "settings", label: t("Settings") },
   ];
 
@@ -1515,6 +1590,54 @@ export function ForemanView({ app }) {
                       foremanName={activeForeman?.name || ""}
                     />
                   </div>
+
+                  {/* ── RFI Alerts (read-only, field visibility) ── */}
+                  {rfiAlerts.length > 0 && (
+                    <div className="foreman-kpi-card" style={{ marginTop: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                        <FileQuestion size={16} style={{ color: "var(--amber, #f59e0b)" }} />
+                        <div className="foreman-kpi-label" style={{ margin: 0 }}>
+                          {t("RFIs Needing Attention")} ({rfiAlerts.length})
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {rfiAlerts.slice(0, 5).map(r => (
+                          <div key={r.id} style={{
+                            padding: "8px 12px", borderRadius: 8,
+                            background: r.status === "answered" || r.status === "closed"
+                              ? "rgba(34,197,94,0.08)" : "rgba(245,158,11,0.08)",
+                            border: `1px solid ${r.status === "answered" || r.status === "closed"
+                              ? "rgba(34,197,94,0.2)" : "rgba(245,158,11,0.2)"}`,
+                          }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                              <div className="text-sm font-semi" style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {r.number ? `${r.number}: ` : ""}{r.subject || r.title || r.question}
+                              </div>
+                              <span className={`badge ${r.status === "answered" || r.status === "closed" ? "badge-green" : "badge-amber"}`} style={{ fontSize: 9, flexShrink: 0 }}>
+                                {r.status === "answered" || r.status === "closed" ? t("ANSWERED") : t("OPEN")}
+                              </span>
+                            </div>
+                            {(r.status === "answered" || r.status === "closed") && r.response && (
+                              <div className="text-xs" style={{ marginTop: 4, color: "var(--green, #22c55e)", fontWeight: 500 }}>
+                                {t("Response")}: {r.response.length > 120 ? r.response.slice(0, 120) + "..." : r.response}
+                              </div>
+                            )}
+                            {r.drawingRef && (
+                              <div className="text-xs text-muted" style={{ marginTop: 2 }}>
+                                {t("Drawing ref")}: {r.drawingRef}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {rfiAlerts.length > 5 && (
+                          <button className="cal-nav-btn" style={{ fontSize: 11, alignSelf: "center" }}
+                            onClick={() => setForemanTab("documents")}>
+                            {t("View all")} {rfiAlerts.length} {t("RFIs")} →
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -2705,29 +2828,98 @@ export function ForemanView({ app }) {
                   </button>
                 </div>
 
-                {/* Cloud drawings from Supabase Storage */}
+                {/* Cloud drawings with revision metadata */}
                 {cloudDrawings.length > 0 ? (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10, marginBottom: 16 }}>
                     {cloudDrawings.map(d => (
-                      <div key={d.id} className="card" style={{ padding: 14 }}>
+                      <div key={d.id} className="card" style={{
+                        padding: 14,
+                        borderLeft: d.isStale ? "3px solid var(--orange, #f59e0b)" : d.isCurrent === false ? "3px solid var(--text3)" : "3px solid var(--green, #22c55e)",
+                      }}>
+                        {/* ── Revision badge row ── */}
+                        <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8, flexWrap: "wrap" }}>
+                          {d.revisionLabel ? (
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
+                              background: d.isCurrent ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.08)",
+                              color: d.isCurrent ? "var(--green, #22c55e)" : "var(--text3)",
+                              textTransform: "uppercase", letterSpacing: 0.5,
+                            }}>
+                              {d.revisionLabel}
+                            </span>
+                          ) : d.revision ? (
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
+                              background: "rgba(34,197,94,0.15)", color: "var(--green, #22c55e)",
+                              textTransform: "uppercase", letterSpacing: 0.5,
+                            }}>
+                              Rev {d.revision}
+                            </span>
+                          ) : null}
+                          {d.isCurrent && (
+                            <span style={{
+                              fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 3,
+                              background: "rgba(34,197,94,0.2)", color: "var(--green, #22c55e)",
+                            }}>
+                              {t("CURRENT")}
+                            </span>
+                          )}
+                          {d.isCurrent === false && (
+                            <span style={{
+                              fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 3,
+                              background: "rgba(255,255,255,0.06)", color: "var(--text3)",
+                              textDecoration: "line-through",
+                            }}>
+                              {t("SUPERSEDED")}
+                            </span>
+                          )}
+                          {d.isStale && (
+                            <span style={{
+                              fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 3,
+                              background: "rgba(245,158,11,0.2)", color: "var(--orange, #f59e0b)",
+                            }}>
+                              {t("UPDATE AVAILABLE")}
+                            </span>
+                          )}
+                          {d.discipline && d.discipline !== "general" && (
+                            <span style={{
+                              fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 3,
+                              background: "rgba(255,255,255,0.06)", color: "var(--text3)",
+                              textTransform: "capitalize",
+                            }}>
+                              {t(d.discipline)}
+                            </span>
+                          )}
+                        </div>
+                        {/* ── Drawing info + actions ── */}
                         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                          <FileText size={28} style={{ color: "var(--text2)", flexShrink: 0 }} />
+                          <FileText size={28} style={{ color: d.isStale ? "var(--orange, #f59e0b)" : "var(--text2)", flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div className="text-sm font-semi" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
                             <div className="text-xs text-muted">
                               {d.size > 0 ? `${(d.size / 1048576).toFixed(1)} MB` : ""}{d.uploadedAt ? ` · ${d.uploadedAt.slice(0, 10)}` : ""}
                             </div>
-                            {d.cached && <div className="text-xs" style={{ color: "var(--green)" }}>{t("Saved offline")}</div>}
+                            {d.cached && !d.isStale && <div className="text-xs" style={{ color: "var(--green)" }}>{t("Saved offline")}</div>}
+                            {d.cached && d.isStale && (
+                              <div className="text-xs" style={{ color: "var(--orange, #f59e0b)", fontWeight: 600 }}>
+                                {t("Cached copy is outdated — re-download")}
+                              </div>
+                            )}
                           </div>
-                          <div style={{ display: "flex", gap: 4 }}>
+                          <div style={{ display: "flex", gap: 4, flexDirection: "column" }}>
                             <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: "6px 10px" }}
                               onClick={() => handleViewDrawing(d)}>
                               {t("View")}
                             </button>
-                            {!d.cached && (
-                              <button className="btn btn-sm" style={{ fontSize: 11, padding: "6px 10px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}
+                            {(!d.cached || d.isStale) && (
+                              <button className="btn btn-sm" style={{
+                                fontSize: 11, padding: "6px 10px",
+                                background: d.isStale ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.08)",
+                                border: d.isStale ? "1px solid rgba(245,158,11,0.3)" : "1px solid rgba(255,255,255,0.15)",
+                                color: d.isStale ? "var(--orange, #f59e0b)" : undefined,
+                              }}
                                 onClick={() => handleDownloadDrawing(d)}>
-                                {t("Save")}
+                                {d.isStale ? t("Re-download") : t("Save")}
                               </button>
                             )}
                           </div>
@@ -2805,6 +2997,89 @@ export function ForemanView({ app }) {
                   <div className="text-sm text-muted">{t("Drawings are stored in the cloud")}</div>
                   <div className="text-xs text-dim" style={{ marginTop: 4 }}>{t("Download files for offline use on the jobsite. Ask the PM to upload new drawing sets.")}</div>
                 </div>
+              </div>
+            )}
+
+            {/* ═══ LOOK-AHEAD TAB (Read-Only 14-Day View) ═══ */}
+            {foremanTab === "lookahead" && (
+              <div className="emp-content">
+                <div className="section-header">
+                  <div className="section-title" style={{ fontSize: 16 }}>{t("14-Day Look-Ahead")}</div>
+                </div>
+                <div className="text-xs text-muted" style={{ marginBottom: 12 }}>
+                  {t("Upcoming milestones, inspections, and deadlines for this project. Read-only — contact PM for changes.")}
+                </div>
+
+                {lookAheadEvents.length === 0 ? (
+                  <div className="empty-state" style={{ padding: "30px 20px" }}>
+                    <div className="empty-text">{t("No events in the next 14 days")}</div>
+                    <div className="text-xs text-muted" style={{ marginTop: 6 }}>{t("The PM will add milestones, inspections, and deadlines here.")}</div>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {(() => {
+                      // Group events by date
+                      const groups = {};
+                      lookAheadEvents.forEach(e => {
+                        const d = e.date || "unknown";
+                        if (!groups[d]) groups[d] = [];
+                        groups[d].push(e);
+                      });
+                      const todayStr = new Date().toISOString().slice(0, 10);
+                      const tomorrowStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+                      return Object.entries(groups).map(([date, events]) => {
+                        const isToday = date === todayStr;
+                        const isTomorrow = date === tomorrowStr;
+                        const dayLabel = isToday ? t("Today") : isTomorrow ? t("Tomorrow") : new Date(date + "T12:00:00").toLocaleDateString(lang === "es" ? "es-US" : "en-US", { weekday: "short", month: "short", day: "numeric" });
+                        return (
+                          <div key={date}>
+                            <div style={{
+                              fontSize: 12, fontWeight: 700, padding: "6px 0", marginTop: 8,
+                              color: isToday ? "var(--amber, #f59e0b)" : isTomorrow ? "var(--accent)" : "var(--text2)",
+                              borderBottom: "1px solid rgba(255,255,255,0.06)",
+                            }}>
+                              {dayLabel}
+                            </div>
+                            {events.map(ev => {
+                              const typeColors = {
+                                inspection: "var(--red)", milestone: "var(--green, #22c55e)",
+                                delivery: "var(--accent)", meeting: "var(--purple, #8b5cf6)",
+                                task: "var(--text2)", deadline: "var(--red)",
+                              };
+                              const color = typeColors[ev.type] || "var(--text2)";
+                              return (
+                                <div key={ev.id} className="card" style={{ padding: "10px 14px", marginTop: 4 }}>
+                                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                    <div style={{
+                                      width: 4, height: 32, borderRadius: 2, background: color, flexShrink: 0,
+                                    }} />
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div className="text-sm font-semi" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                        {ev.title}
+                                      </div>
+                                      <div className="text-xs text-muted">
+                                        {ev.type && <span style={{ textTransform: "capitalize" }}>{t(ev.type)}</span>}
+                                        {ev.startTime ? ` · ${ev.startTime}` : ""}
+                                        {ev.start_time ? ` · ${ev.start_time}` : ""}
+                                        {ev.location ? ` · ${ev.location}` : ""}
+                                      </div>
+                                      {ev.notes && <div className="text-xs text-dim" style={{ marginTop: 2 }}>{ev.notes.length > 80 ? ev.notes.slice(0, 80) + "..." : ev.notes}</div>}
+                                    </div>
+                                    {ev.status && ev.status !== "scheduled" && (
+                                      <span className={`badge ${ev.status === "completed" ? "badge-green" : "badge-amber"}`} style={{ fontSize: 9 }}>
+                                        {t(ev.status)}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                )}
               </div>
             )}
 
