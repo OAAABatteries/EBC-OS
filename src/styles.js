@@ -265,7 +265,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .mt-4{margin-top:4px}.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}.mt-24{margin-top:24px}
 .mb-4{margin-bottom:4px}.mb-8{margin-bottom:8px}.mb-12{margin-bottom:12px}.mb-16{margin-bottom:16px}
 .ml-auto{margin-left:auto}
-.text-xs{font-size:11px}.text-sm{font-size:12px}.text-md{font-size:14px}.text-lg{font-size:18px}.text-xl{font-size:24px}
+/* Typography utilities — consume tokens from tokens.css */
+.text-sm{font-size:var(--text-sm)}.text-base{font-size:var(--text-base)}.text-lg{font-size:var(--text-lg)}.text-display{font-size:var(--text-display)}
+/* Legacy aliases for backward compatibility with existing JSX */
+.text-xs{font-size:var(--text-sm)}.text-md{font-size:var(--text-base)}.text-xl{font-size:var(--text-lg)}.text-2xl{font-size:var(--text-lg)}.text-3xl{font-size:var(--text-display)}
 .text-muted{color:var(--text2)}.text-dim{color:var(--text3)}.text-amber{color:var(--amber)}
 .text-green{color:var(--green)}.text-red{color:var(--red)}.text-blue{color:var(--blue)}
 .font-head{font-family:var(--font-head)}.font-mono{font-family:var(--font-mono)}
@@ -274,6 +277,12 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .w-full{width:100%}.text-right{text-align:right}.text-center{text-align:center}
 .cursor-pointer{cursor:pointer}.border-b{border-bottom:1px solid var(--border)}
 .opacity-50{opacity:0.5}.hidden{display:none}
+
+/* ══ TOKEN UTILITIES ══ */
+.touch-target{min-height:var(--touch-min);min-width:var(--touch-min)}
+.shadow-sm{box-shadow:var(--shadow-sm)}.shadow-md{box-shadow:var(--shadow-md)}.shadow-lg{box-shadow:var(--shadow-lg)}
+.transition-micro{transition:all var(--transition-micro)}.transition-state{transition:all var(--transition-state)}
+.focus-visible:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 
 /* ══ PHASE TRACKER ══ */
 .phase-timeline{display:flex;align-items:flex-start;overflow-x:auto;padding:6px 2px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
