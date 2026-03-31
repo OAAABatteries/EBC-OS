@@ -11,3 +11,5 @@ export { EmptyState } from './EmptyState';
 export { AsyncState } from './AsyncState';
 export { PortalHeader } from './PortalHeader';
 export { PortalTabBar } from './PortalTabBar';
+export { FieldSignaturePad } from './FieldSignaturePad';
+export { MaterialRequestCard } from './MaterialRequestCard';

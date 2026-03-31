@@ -354,6 +354,15 @@ export const T = {
   "Week": { es: "Semana" },
   "Day": { es: "Día" },
 
+  // ── Shared Field Components (Phase 02) ──
+  "Nothing here yet": { es: "Nada aqui todavia" },
+  "Check back later or contact your foreman.": { es: "Vuelve mas tarde o contacta a tu capataz." },
+  "Something went wrong.": { es: "Algo salio mal." },
+  "Pull down to refresh, or contact support if this keeps happening.": { es: "Desliza hacia abajo para actualizar, o contacta soporte si esto sigue pasando." },
+  "Save Signature": { es: "Guardar Firma" },
+  "Loading": { es: "Cargando" },
+  "Loading, please wait": { es: "Cargando, por favor espera" },
+
   // ── Language ──
   "Language": { es: "Idioma" },
 
