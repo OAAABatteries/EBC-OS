@@ -47,10 +47,10 @@ Plans:
   3. `PortalHeader` and `PortalTabBar` render correctly in all 5 themes with no hard-coded colors
   4. `FieldSignaturePad` draws and saves signatures using theme-aware colors — no hard-coded hex values present in its source
   5. `MaterialRequestCard` displays a material request identically whether rendered in DriverView, EmployeeView, or ForemanView
-**Plans:** 2/6 plans executed
+**Plans:** 3/6 plans executed
 Plans:
 - [x] 02-01-PLAN.md — Test infrastructure (Vitest), field component CSS classes, barrel index.js
-- [ ] 02-02-PLAN.md — Leaf components: StatusBadge, LoadingSpinner/Skeleton, FieldButton
+- [x] 02-02-PLAN.md — Leaf components: StatusBadge, LoadingSpinner/Skeleton, FieldButton
 - [x] 02-03-PLAN.md — Leaf components: FieldCard, FieldInput/FieldSelect
 - [ ] 02-04-PLAN.md — Composite components: EmptyState, AsyncState
 - [ ] 02-05-PLAN.md — Layout components: PortalHeader, PortalTabBar
@@ -115,7 +115,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Token Foundation | 3/3 | Complete   | 2026-03-30 |
-| 2. Shared Field Components | 2/6 | In Progress|  |
+| 2. Shared Field Components | 3/6 | In Progress|  |
 | 3. DriverView Refactor | 0/TBD | Not started | - |
 | 4. EmployeeView Refactor | 0/TBD | Not started | - |
 | 5. ForemanView Refactor | 0/TBD | Not started | - |
