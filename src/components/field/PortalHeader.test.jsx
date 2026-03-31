@@ -56,18 +56,14 @@ describe('PortalHeader', () => {
     const selector = <select data-testid="project-sel"><option>Job A</option></select>;
     const { container } = render(<PortalHeader projectSelector={selector} />);
     expect(screen.getByTestId('project-sel')).toBeTruthy();
-    // The sub-strip exists as a div sibling after the header
-    const wrapper = container.firstChild;
-    const children = Array.from(wrapper.childNodes);
-    expect(children.length).toBeGreaterThan(1);
+    // Fragment renders: header + sub-strip div — container has 2 children
+    expect(container.childNodes.length).toBe(2);
   });
 
   it('without projectSelector does NOT render the sub-strip', () => {
     const { container } = render(<PortalHeader />);
-    // Wrapping fragment — only one child (the header)
-    const wrapper = container.firstChild;
-    const children = Array.from(wrapper.childNodes);
-    expect(children.length).toBe(1);
+    // Fragment renders only the header — container has 1 child
+    expect(container.childNodes.length).toBe(1);
   });
 
   it('uses t() for logo text if t prop provided', () => {
