@@ -53,7 +53,7 @@ Plans:
 - [x] 02-02-PLAN.md — Leaf components: StatusBadge, LoadingSpinner/Skeleton, FieldButton
 - [x] 02-03-PLAN.md — Leaf components: FieldCard, FieldInput/FieldSelect
 - [x] 02-04-PLAN.md — Composite components: EmptyState, AsyncState
-- [ ] 02-05-PLAN.md — Layout components: PortalHeader, PortalTabBar
+- [x] 02-05-PLAN.md — Layout components: PortalHeader, PortalTabBar
 - [ ] 02-06-PLAN.md — Complex extractors: FieldSignaturePad, MaterialRequestCard + translations
 **UI hint**: yes
 

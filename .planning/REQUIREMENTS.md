@@ -22,7 +22,7 @@ Requirements for milestone v1.0: Field Portal Perfection. Each maps to roadmap p
 - [x] **COMP-01**: `FieldButton` component with 44px touch target, loading state, variant support (primary/ghost/danger)
 - [x] **COMP-02**: `FieldCard` component with consistent padding, border radius, theme-aware styling
 - [x] **COMP-03**: `FieldInput` / `FieldSelect` with focus rings, error states, proper `inputmode`
-- [ ] **COMP-04**: `PortalHeader` with user info, logout, language toggle, project selector
+- [x] **COMP-04**: `PortalHeader` with user info, logout, language toggle, project selector
 - [x] **COMP-05**: `PortalTabBar` — bottom navigation bar with icon + label, badge counts, 5-tab max
 - [x] **COMP-06**: `StatusBadge` with semantic color mapping (approved=green, pending=amber, etc.)
 - [x] **COMP-07**: `EmptyState` with icon, message, and optional action button
@@ -109,7 +109,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMP-01 | Phase 2 | Complete |
 | COMP-02 | Phase 2 | Complete |
 | COMP-03 | Phase 2 | Complete |
-| COMP-04 | Phase 2 | Pending |
+| COMP-04 | Phase 2 | Complete |
 | COMP-05 | Phase 2 | Complete |
 | COMP-06 | Phase 2 | Complete |
 | COMP-07 | Phase 2 | Complete |
