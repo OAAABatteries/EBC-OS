@@ -3,3 +3,4 @@
 
 export { StatusBadge } from './StatusBadge';
 export { LoadingSpinner, Skeleton } from './LoadingSpinner';
+export { FieldButton } from './FieldButton';
