@@ -19,17 +19,17 @@ Requirements for milestone v1.0: Field Portal Perfection. Each maps to roadmap p
 
 ### Shared Components
 
-- [ ] **COMP-01**: `FieldButton` component with 44px touch target, loading state, variant support (primary/ghost/danger)
-- [ ] **COMP-02**: `FieldCard` component with consistent padding, border radius, theme-aware styling
-- [ ] **COMP-03**: `FieldInput` / `FieldSelect` with focus rings, error states, proper `inputmode`
+- [x] **COMP-01**: `FieldButton` component with 44px touch target, loading state, variant support (primary/ghost/danger)
+- [x] **COMP-02**: `FieldCard` component with consistent padding, border radius, theme-aware styling
+- [x] **COMP-03**: `FieldInput` / `FieldSelect` with focus rings, error states, proper `inputmode`
 - [ ] **COMP-04**: `PortalHeader` with user info, logout, language toggle, project selector
-- [ ] **COMP-05**: `PortalTabBar` — bottom navigation bar with icon + label, badge counts, 5-tab max
-- [ ] **COMP-06**: `StatusBadge` with semantic color mapping (approved=green, pending=amber, etc.)
-- [ ] **COMP-07**: `EmptyState` with icon, message, and optional action button
-- [ ] **COMP-08**: `LoadingSpinner` and skeleton screen components
-- [ ] **COMP-09**: `AsyncState` wrapper (loading/empty/error/success states in one component)
+- [x] **COMP-05**: `PortalTabBar` — bottom navigation bar with icon + label, badge counts, 5-tab max
+- [x] **COMP-06**: `StatusBadge` with semantic color mapping (approved=green, pending=amber, etc.)
+- [x] **COMP-07**: `EmptyState` with icon, message, and optional action button
+- [x] **COMP-08**: `LoadingSpinner` and skeleton screen components
+- [x] **COMP-09**: `AsyncState` wrapper (loading/empty/error/success states in one component)
 - [ ] **COMP-10**: `FieldSignaturePad` extracted with theme-aware colors (no hard-coded hex)
-- [ ] **COMP-11**: `MaterialRequestCard` shared across Foreman/Employee/Driver portals
+- [x] **COMP-11**: `MaterialRequestCard` shared across Foreman/Employee/Driver portals
 
 ### Driver Portal
 
@@ -106,17 +106,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TOKN-05 | Phase 1 | Complete |
 | TOKN-06 | Phase 1 | Complete |
 | TOKN-07 | Phase 1 | Complete |
-| COMP-01 | Phase 2 | Pending |
-| COMP-02 | Phase 2 | Pending |
-| COMP-03 | Phase 2 | Pending |
+| COMP-01 | Phase 2 | Complete |
+| COMP-02 | Phase 2 | Complete |
+| COMP-03 | Phase 2 | Complete |
 | COMP-04 | Phase 2 | Pending |
-| COMP-05 | Phase 2 | Pending |
-| COMP-06 | Phase 2 | Pending |
-| COMP-07 | Phase 2 | Pending |
-| COMP-08 | Phase 2 | Pending |
-| COMP-09 | Phase 2 | Pending |
+| COMP-05 | Phase 2 | Complete |
+| COMP-06 | Phase 2 | Complete |
+| COMP-07 | Phase 2 | Complete |
+| COMP-08 | Phase 2 | Complete |
+| COMP-09 | Phase 2 | Complete |
 | COMP-10 | Phase 2 | Pending |
-| COMP-11 | Phase 2 | Pending |
+| COMP-11 | Phase 2 | Complete |
 | DRVR-01 | Phase 3 | Pending |
 | DRVR-02 | Phase 3 | Pending |
 | DRVR-03 | Phase 3 | Pending |
