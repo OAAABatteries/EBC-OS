@@ -54,7 +54,7 @@ Plans:
 - [x] 02-03-PLAN.md — Leaf components: FieldCard, FieldInput/FieldSelect
 - [x] 02-04-PLAN.md — Composite components: EmptyState, AsyncState
 - [x] 02-05-PLAN.md — Layout components: PortalHeader, PortalTabBar
-- [ ] 02-06-PLAN.md — Complex extractors: FieldSignaturePad, MaterialRequestCard + translations
+- [x] 02-06-PLAN.md — Complex extractors: FieldSignaturePad, MaterialRequestCard + translations
 **UI hint**: yes
 
 ### Phase 3: DriverView Refactor

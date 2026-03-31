@@ -28,7 +28,7 @@ Requirements for milestone v1.0: Field Portal Perfection. Each maps to roadmap p
 - [x] **COMP-07**: `EmptyState` with icon, message, and optional action button
 - [x] **COMP-08**: `LoadingSpinner` and skeleton screen components
 - [x] **COMP-09**: `AsyncState` wrapper (loading/empty/error/success states in one component)
-- [ ] **COMP-10**: `FieldSignaturePad` extracted with theme-aware colors (no hard-coded hex)
+- [x] **COMP-10**: `FieldSignaturePad` extracted with theme-aware colors (no hard-coded hex)
 - [x] **COMP-11**: `MaterialRequestCard` shared across Foreman/Employee/Driver portals
 
 ### Driver Portal
@@ -115,7 +115,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMP-07 | Phase 2 | Complete |
 | COMP-08 | Phase 2 | Complete |
 | COMP-09 | Phase 2 | Complete |
-| COMP-10 | Phase 2 | Pending |
+| COMP-10 | Phase 2 | Complete |
 | COMP-11 | Phase 2 | Complete |
 | DRVR-01 | Phase 3 | Pending |
 | DRVR-02 | Phase 3 | Pending |
