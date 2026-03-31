@@ -8,3 +8,4 @@ export { FieldCard } from './FieldCard';
 export { FieldInput } from './FieldInput';
 export { FieldSelect } from './FieldSelect';
 export { PortalHeader } from './PortalHeader';
+export { PortalTabBar } from './PortalTabBar';
