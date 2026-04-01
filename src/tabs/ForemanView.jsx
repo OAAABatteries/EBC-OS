@@ -719,13 +719,13 @@ export function ForemanView({ app }) {
     return (
       <div className="employee-app">
         <header className="employee-header">
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
+          <div className="employee-logo"><img src="/ebc-eagle-white.png" alt="EBC" className="portal-header-logo" onError={(e) => e.target.style.display = "none"} /></div>
           <span className="text-sm text-muted">{t("Foreman Portal")}</span>
         </header>
         <div className="employee-body">
           <div className="login-wrap">
             <div className="login-title">{t("Sign In")}</div>
-            <div className="text-sm text-muted" style={{ textAlign: "center", marginTop: -12 }}>{t("Foreman Portal")}</div>
+            <div className="text-sm text-muted frm-section-sub">{t("Foreman Portal")}</div>
             <div className="login-form">
               <input
                 type="email"
@@ -886,12 +886,12 @@ export function ForemanView({ app }) {
         {foremanTab === "settings" && (
           <div className="settings-wrap">
             {/* Back button */}
-            <button className="btn btn-ghost btn-sm" style={{ marginBottom: 12 }} onClick={() => setForemanTab("clock")}>&#9664; {t("Back")}</button>
+            <FieldButton variant="ghost" onClick={() => setForemanTab("dashboard")} t={t}>&#9664; {t("Back")}</FieldButton>
             {/* Profile */}
             <div className="settings-section">
               <div className="settings-section-title">{t("Profile")}</div>
               <div className="settings-avatar">{getInitials(activeForeman.name)}</div>
-              <div style={{ textAlign: "center", marginBottom: 12 }}>
+              <div className="frm-settings-section">
                 <div className="text-md font-semi">{activeForeman.name}</div>
                 <div className="text-xs text-muted">{activeForeman.role} · {activeForeman.phone}</div>
                 <div className="text-xs text-dim">{activeForeman.email}</div>
@@ -910,7 +910,7 @@ export function ForemanView({ app }) {
                   </div>
                 ))}
               </div>
-              <div className="settings-row" style={{ marginTop: 12 }}>
+              <div className="settings-row">
                 <span className="settings-label">{t("Language")}</span>
                 <div className="lang-toggle">
                   <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>EN</button>
@@ -944,7 +944,7 @@ export function ForemanView({ app }) {
               <div className="settings-section-title">{t("Preferences")}</div>
               <div className="settings-row">
                 <span className="settings-label">{t("Default Project")}</span>
-                <select className="settings-select" style={{ width: "auto", maxWidth: 180 }}
+                <select className="settings-select"
                   value={activeForeman.defaultProjectId || ""}
                   onChange={e => setActiveForeman({ ...activeForeman, defaultProjectId: e.target.value ? Number(e.target.value) : null })}>
                   <option value="">{t("None")}</option>
@@ -968,30 +968,29 @@ export function ForemanView({ app }) {
             {/* ═══ CLOCK TAB ═══ */}
             {foremanTab === "clock" && (
               <div className="emp-content">
-                <div style={{ textAlign: "center", padding: "30px 20px" }}>
+                <div className="frm-clock-status">
                   {/* Big clock display */}
-                  <div style={{ fontSize: 42, fontWeight: 700, marginBottom: 6, fontFamily: "monospace" }}>
+                  <div className="frm-clock-time">
                     {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </div>
-                  <div className="text-sm text-muted" style={{ marginBottom: 24 }}>
+                  <div className="text-sm text-muted">
                     {new Date().toLocaleDateString(lang === "es" ? "es-US" : "en-US", { weekday: "long", month: "long", day: "numeric" })}
                   </div>
 
-                  {gpsStatus && <div className="text-xs text-muted" style={{ marginBottom: 10 }}>{gpsStatus}</div>}
+                  {gpsStatus && <div className="text-xs text-muted">{gpsStatus}</div>}
 
                   {/* ── Project Lookup for Clock-In ── */}
                   {!isClockedIn && (
-                    <div style={{ marginBottom: 20, textAlign: "left", maxWidth: 400, margin: "0 auto 20px" }}>
-                      <label className="form-label" style={{ textAlign: "center", display: "block", marginBottom: 8 }}>{t("Select Project")}</label>
-                      <input
-                        className="form-input"
+                    <div className="frm-clock-project-search">
+                      <label className="form-label">{t("Select Project")}</label>
+                      <FieldInput
                         type="text"
                         placeholder={t("Search project name or address...")}
                         value={clockProjectSearch}
                         onChange={(e) => setClockProjectSearch(e.target.value)}
-                        style={{ marginBottom: 6, textAlign: "center" }}
+                        t={t}
                       />
-                      <div style={{ maxHeight: 200, overflowY: "auto", borderRadius: 8, background: "var(--glass-bg)" }}>
+                      <div className="frm-clock-project-list">
                         {(myProjects || projects)
                           .filter(p => {
                             if (!clockProjectSearch.trim()) return true;
@@ -1004,27 +1003,19 @@ export function ForemanView({ app }) {
                           .map(p => (
                             <div
                               key={p.id}
+                              className={`frm-clock-project-item${selectedProjectId === p.id ? " selected" : ""}`}
                               onClick={() => { setSelectedProjectId(p.id); setClockProjectSearch(""); }}
-                              style={{
-                                padding: "10px 14px",
-                                cursor: "pointer",
-                                borderBottom: "1px solid var(--glass-border)",
-                                background: selectedProjectId === p.id ? "var(--accent-dim)" : "transparent",
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                              }}
                             >
                               <div>
                                 <div className="text-sm font-semi">{p.name}</div>
                                 <div className="text-xs text-muted">{p.address || p.gc || ""}</div>
                               </div>
-                              {selectedProjectId === p.id && <span style={{ color: "var(--green)", fontSize: 18 }}>✓</span>}
+                              {selectedProjectId === p.id && <span className="frm-amber">✓</span>}
                             </div>
                           ))}
                       </div>
                       {selectedProject && (
-                        <div className="text-sm font-semi" style={{ textAlign: "center", marginTop: 10, color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                        <div className="text-sm font-semi frm-amber frm-flex-gap">
                           <MapPin size={14} />{selectedProject.name}
                         </div>
                       )}
@@ -1032,23 +1023,23 @@ export function ForemanView({ app }) {
                   )}
 
                   {!isClockedIn ? (
-                    <button
-                      className="btn btn-primary"
-                      style={{ width: 200, height: 200, borderRadius: "50%", fontSize: 22, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "0 auto" }}
+                    <FieldButton
+                      variant="primary"
                       onClick={handleClockIn}
                       disabled={!selectedProjectId}
+                      t={t}
                     >
                       <Clock size={40} />
                       {t("CLOCK IN")}
-                    </button>
+                    </FieldButton>
                   ) : (
                     <>
-                      <div style={{ marginBottom: 16 }}>
+                      <div className="frm-section-sub">
                         <div className="text-xs text-muted">{t("Clocked in at")}</div>
-                        <div style={{ fontSize: 20, fontWeight: 600, color: "var(--green)" }}>
+                        <div className="frm-hours-value">
                           {new Date(clockEntry.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </div>
-                        <div className="text-xs text-muted" style={{ marginTop: 4 }}>
+                        <div className="text-xs text-muted">
                           {(() => {
                             const elapsed = Date.now() - new Date(clockEntry.clockIn).getTime();
                             const hrs = Math.floor(elapsed / 3600000);
@@ -1057,23 +1048,23 @@ export function ForemanView({ app }) {
                           })()}
                         </div>
                       </div>
-                      <button
-                        className="btn"
-                        style={{ width: 200, height: 200, borderRadius: "50%", fontSize: 22, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "0 auto", background: "var(--red)", color: "#fff" }}
+                      <FieldButton
+                        variant="danger"
                         onClick={handleClockOut}
+                        t={t}
                       >
                         <StopCircle size={40} />
                         {t("CLOCK OUT")}
-                      </button>
+                      </FieldButton>
                     </>
                   )}
 
                   {/* Today's entries */}
                   {myTodayEntries.length > 0 && (
-                    <div style={{ marginTop: 30, textAlign: "left" }}>
-                      <div className="section-title" style={{ fontSize: 14, marginBottom: 8 }}>{t("Today's Time Log")}</div>
+                    <div className="frm-hours-grid">
+                      <div className="frm-section-title">{t("Today's Time Log")}</div>
                       {myTodayEntries.map((te, i) => (
-                        <div key={i} className="foreman-team-row" style={{ padding: "8px 12px", marginBottom: 4 }}>
+                        <div key={i} className="foreman-team-row">
                           <div>
                             <div className="text-sm font-semi">
                               {new Date(te.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} → {new Date(te.clockOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -1082,73 +1073,54 @@ export function ForemanView({ app }) {
                               {projects.find(p => p.id === te.projectId)?.name || t("General")}
                             </div>
                           </div>
-                          <div style={{ fontWeight: 600, color: "var(--accent)" }}>{te.totalHours}h</div>
+                          <div className="frm-hours-value frm-amber">{te.totalHours}h</div>
                         </div>
                       ))}
-                      <div className="text-sm font-semi" style={{ textAlign: "right", marginTop: 8, color: "var(--accent)" }}>
+                      <div className="text-sm font-semi frm-amber">
                         {t("Total")}: {myTodayHours.toFixed(1)}h
                       </div>
                     </div>
                   )}
 
                   {/* Report Problem button */}
-                  <div style={{ marginTop: 32 }}>
-                    <button
-                      onClick={() => setShowReportProblem(true)}
-                      style={{
-                        width: "100%",
-                        maxWidth: 320,
-                        padding: "16px 20px",
-                        borderRadius: 12,
-                        background: "rgba(245,158,11,0.10)",
-                        border: "2px solid rgba(245,158,11,0.35)",
-                        color: "var(--amber, #f59e0b)",
-                        fontWeight: 700,
-                        fontSize: 16,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 10,
-                      }}
-                    >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                      </svg>
-                      {t("Report a Problem")}
-                    </button>
-                  </div>
+                  <FieldButton
+                    variant="ghost"
+                    onClick={() => setShowReportProblem(true)}
+                    t={t}
+                  >
+                    <AlertTriangle size={22} />
+                    {t("Report a Problem")}
+                  </FieldButton>
                 </div>
               </div>
             )}
 
-            {/* ═══ DASHBOARD TAB ═══ */}
+            {/* ═══ DASHBOARD TAB — Clock-in + Crew section ═══ */}
             {foremanTab === "dashboard" && (
               <div className="emp-content">
-                <div style={{ textAlign: "center", padding: "30px 20px" }}>
+                <div className="frm-clock-status">
                   {/* Big clock display */}
-                  <div style={{ fontSize: 42, fontWeight: 700, marginBottom: 6, fontFamily: "monospace" }}>
+                  <div className="frm-clock-time">
                     {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </div>
-                  <div className="text-sm text-muted" style={{ marginBottom: 24 }}>
+                  <div className="text-sm text-muted">
                     {new Date().toLocaleDateString(lang === "es" ? "es-US" : "en-US", { weekday: "long", month: "long", day: "numeric" })}
                   </div>
 
-                  {gpsStatus && <div className="text-xs text-muted" style={{ marginBottom: 10 }}>{gpsStatus}</div>}
+                  {gpsStatus && <div className="text-xs text-muted">{gpsStatus}</div>}
 
                   {/* ── Project Lookup for Clock-In ── */}
                   {!isClockedIn && (
-                    <div style={{ marginBottom: 20, textAlign: "left", maxWidth: 400, margin: "0 auto 20px" }}>
-                      <label className="form-label" style={{ textAlign: "center", display: "block", marginBottom: 8 }}>{t("Select Project")}</label>
-                      <input
-                        className="form-input"
+                    <div className="frm-clock-project-search">
+                      <label className="form-label">{t("Select Project")}</label>
+                      <FieldInput
                         type="text"
                         placeholder={t("Search project name or address...")}
                         value={clockProjectSearch}
                         onChange={(e) => setClockProjectSearch(e.target.value)}
-                        style={{ marginBottom: 6, textAlign: "center" }}
+                        t={t}
                       />
-                      <div style={{ maxHeight: 200, overflowY: "auto", borderRadius: 8, background: "var(--glass-bg)" }}>
+                      <div className="frm-clock-project-list">
                         {(myProjects || projects)
                           .filter(p => {
                             if (!clockProjectSearch.trim()) return true;
@@ -1161,27 +1133,19 @@ export function ForemanView({ app }) {
                           .map(p => (
                             <div
                               key={p.id}
+                              className={`frm-clock-project-item${selectedProjectId === p.id ? " selected" : ""}`}
                               onClick={() => { setSelectedProjectId(p.id); setClockProjectSearch(""); }}
-                              style={{
-                                padding: "10px 14px",
-                                cursor: "pointer",
-                                borderBottom: "1px solid var(--glass-border)",
-                                background: selectedProjectId === p.id ? "var(--accent-dim)" : "transparent",
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                              }}
                             >
                               <div>
                                 <div className="text-sm font-semi">{p.name}</div>
                                 <div className="text-xs text-muted">{p.address || p.gc || ""}</div>
                               </div>
-                              {selectedProjectId === p.id && <span style={{ color: "var(--green)", fontSize: 18 }}>✓</span>}
+                              {selectedProjectId === p.id && <span className="frm-amber">✓</span>}
                             </div>
                           ))}
                       </div>
                       {selectedProject && (
-                        <div className="text-sm font-semi" style={{ textAlign: "center", marginTop: 10, color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                        <div className="text-sm font-semi frm-amber frm-flex-gap">
                           <MapPin size={14} />{selectedProject.name}
                         </div>
                       )}
@@ -1189,23 +1153,23 @@ export function ForemanView({ app }) {
                   )}
 
                   {!isClockedIn ? (
-                    <button
-                      className="btn btn-primary"
-                      style={{ width: 200, height: 200, borderRadius: "50%", fontSize: 22, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "0 auto" }}
+                    <FieldButton
+                      variant="primary"
                       onClick={handleClockIn}
                       disabled={!selectedProjectId}
+                      t={t}
                     >
                       <Clock size={40} />
                       {t("CLOCK IN")}
-                    </button>
+                    </FieldButton>
                   ) : (
                     <>
-                      <div style={{ marginBottom: 16 }}>
+                      <div className="frm-section-sub">
                         <div className="text-xs text-muted">{t("Clocked in at")}</div>
-                        <div style={{ fontSize: 20, fontWeight: 600, color: "var(--green)" }}>
+                        <div className="frm-hours-value">
                           {new Date(clockEntry.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </div>
-                        <div className="text-xs text-muted" style={{ marginTop: 4 }}>
+                        <div className="text-xs text-muted">
                           {(() => {
                             const elapsed = Date.now() - new Date(clockEntry.clockIn).getTime();
                             const hrs = Math.floor(elapsed / 3600000);
@@ -1214,23 +1178,23 @@ export function ForemanView({ app }) {
                           })()}
                         </div>
                       </div>
-                      <button
-                        className="btn"
-                        style={{ width: 200, height: 200, borderRadius: "50%", fontSize: 22, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "0 auto", background: "var(--red)", color: "#fff" }}
+                      <FieldButton
+                        variant="danger"
                         onClick={handleClockOut}
+                        t={t}
                       >
                         <StopCircle size={40} />
                         {t("CLOCK OUT")}
-                      </button>
+                      </FieldButton>
                     </>
                   )}
 
                   {/* Today's entries */}
                   {myTodayEntries.length > 0 && (
-                    <div style={{ marginTop: 30, textAlign: "left" }}>
-                      <div className="section-title" style={{ fontSize: 14, marginBottom: 8 }}>{t("Today's Time Log")}</div>
+                    <div className="frm-hours-grid">
+                      <div className="frm-section-title">{t("Today's Time Log")}</div>
                       {myTodayEntries.map((te, i) => (
-                        <div key={i} className="foreman-team-row" style={{ padding: "8px 12px", marginBottom: 4 }}>
+                        <div key={i} className="foreman-team-row">
                           <div>
                             <div className="text-sm font-semi">
                               {new Date(te.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} → {new Date(te.clockOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -1239,79 +1203,72 @@ export function ForemanView({ app }) {
                               {projects.find(p => String(p.id) === String(te.projectId))?.name || t("General")}
                             </div>
                           </div>
-                          <div style={{ fontWeight: 600, color: "var(--accent)" }}>{te.totalHours}h</div>
+                          <div className="frm-hours-value frm-amber">{te.totalHours}h</div>
                         </div>
                       ))}
-                      <div className="text-sm font-semi" style={{ textAlign: "right", marginTop: 8, color: "var(--accent)" }}>
+                      <div className="text-sm font-semi frm-amber">
                         {t("Total")}: {myTodayHours.toFixed(1)}h
                       </div>
                     </div>
                   )}
 
                   {/* ── Crew Clock-In/Out ── */}
-                  <div style={{ marginTop: 30, textAlign: "left" }}>
-                    <div className="section-title" style={{ fontSize: 14, marginBottom: 12 }}>{t("Crew Time Clock")}</div>
+                  <div className="frm-team-section">
+                    <div className="frm-team-header">{t("Crew Time Clock")}</div>
 
                     {/* Add team member — searchable dropdown */}
-                    <div style={{ position: "relative", marginBottom: 16 }}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <div style={{ flex: 1, position: "relative" }}>
-                          <input
-                            type="text"
-                            placeholder={t("Search or select team member...")}
-                            value={teamSearch || ""}
-                            onChange={e => setCrewSearch(e.target.value)}
-                            onFocus={() => setCrewSearch(teamSearch || "")}
-                            style={{ width: "100%", padding: "10px 14px", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 8, color: "var(--text)", fontSize: 14 }}
-                          />
-                          {/* Dropdown list */}
-                          {teamSearch !== null && teamSearch !== undefined && (() => {
-                            const q = (teamSearch || "").toLowerCase().trim();
-                            const allEmp = employees.filter(e => e.id !== activeForeman?.id);
-                            const filtered = q.length > 0
-                              ? allEmp.filter(e => e.name.toLowerCase().includes(q))
-                              : allEmp;
-                            if (filtered.length === 0 && q.length > 0) return (
-                              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "0 0 8px 8px", padding: "10px 14px" }}>
-                                <span className="text-sm text-muted">{t("No employees found")}</span>
-                              </div>
-                            );
-                            if (q.length === 0 && !document.activeElement?.matches?.('input[placeholder*="Search"]')) return null;
-                            return (
-                              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "0 0 8px 8px", maxHeight: 260, overflowY: "auto" }}>
-                                {filtered.slice(0, 15).map(c => {
-                                  const isIn = !!teamClocks[c.id];
-                                  const isAssigned = teamForProject.some(cp => cp.id === c.id);
-                                  return (
-                                    <div key={c.id}
-                                      style={{ padding: "8px 14px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid var(--border)", cursor: "pointer" }}
-                                      onMouseDown={e => e.preventDefault()}
-                                      onClick={() => {
-                                        if (!isIn) { handleCrewClockIn(c.id); }
-                                        else { handleCrewClockOut(c.id); }
-                                        setCrewSearch(null);
-                                      }}
-                                    >
-                                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: isIn ? "var(--green)" : "var(--bg4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: isIn ? "#fff" : "var(--text3)", flexShrink: 0 }}>
-                                        {c.name.split(" ").map(n => n[0]).join("")}
-                                      </div>
-                                      <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div className="text-sm font-semi">{c.name}</div>
-                                        <div className="text-xs text-muted">
-                                          {c.role || c.title || ""}
-                                          {isAssigned && <span style={{ color: "var(--amber)", marginLeft: 4 }}>· {t("Assigned")}</span>}
-                                        </div>
-                                      </div>
-                                      <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 6, background: isIn ? "var(--red)" : "var(--amber)", color: isIn ? "#fff" : "#000", whiteSpace: "nowrap" }}>
-                                        {isIn ? t("Clock Out") : t("Clock In")}
-                                      </span>
+                    <div className="frm-search-bar">
+                      <div className="frm-flex-gap" style={/* dynamic: relative positioning for dropdown */ { flex: 1, position: "relative" }}>
+                        <FieldInput
+                          type="text"
+                          placeholder={t("Search or select team member...")}
+                          value={teamSearch || ""}
+                          onChange={e => setCrewSearch(e.target.value)}
+                          onFocus={() => setCrewSearch(teamSearch || "")}
+                          t={t}
+                        />
+                        {/* Dropdown list */}
+                        {teamSearch !== null && teamSearch !== undefined && (() => {
+                          const q = (teamSearch || "").toLowerCase().trim();
+                          const allEmp = employees.filter(e => e.id !== activeForeman?.id);
+                          const filtered = q.length > 0
+                            ? allEmp.filter(e => e.name.toLowerCase().includes(q))
+                            : allEmp;
+                          if (filtered.length === 0 && q.length > 0) return (
+                            <div className="frm-section-sub" style={/* dynamic: absolute dropdown */ { position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50 }}>
+                              <span className="text-sm text-muted">{t("No employees found")}</span>
+                            </div>
+                          );
+                          if (q.length === 0 && !document.activeElement?.matches?.('input[placeholder*="Search"]')) return null;
+                          return (
+                            <div className="frm-clock-project-list" style={/* dynamic: absolute dropdown */ { position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, maxHeight: 260, overflowY: "auto" }}>
+                              {filtered.slice(0, 15).map(c => {
+                                const isIn = !!teamClocks[c.id];
+                                const isAssigned = teamForProject.some(cp => cp.id === c.id);
+                                return (
+                                  <div key={c.id}
+                                    className="frm-clock-project-item"
+                                    onMouseDown={e => e.preventDefault()}
+                                    onClick={() => {
+                                      if (!isIn) { handleCrewClockIn(c.id); }
+                                      else { handleCrewClockOut(c.id); }
+                                      setCrewSearch(null);
+                                    }}
+                                  >
+                                    <div className="foreman-team-name">{c.name}</div>
+                                    <div className="text-xs text-muted">
+                                      {c.role || c.title || ""}
+                                      {isAssigned && <span className="frm-amber"> · {t("Assigned")}</span>}
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            );
-                          })()}
-                        </div>
+                                    <span className={`frm-team-status ${isIn ? "frm-phase-active" : "frm-muted"}`}>
+                                      {isIn ? t("Clock Out") : t("Clock In")}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
 
@@ -1321,40 +1278,34 @@ export function ForemanView({ app }) {
                       const clockedIn = clockedInIds.map(id => employees.find(e => e.id === id)).filter(Boolean);
                       if (clockedIn.length === 0) return null;
                       return (
-                        <div style={{ marginBottom: 16 }}>
-                          <div className="text-xs text-muted" style={{ marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{t("Clocked In")} ({clockedIn.length})</div>
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>
-                            {clockedIn.map(c => {
-                              const clockData = teamClocks[c.id];
-                              const isAssigned = teamForProject.some(cp => cp.id === c.id);
-                              const todayEntries = timeEntries.filter(te => te.employeeId === c.id && new Date(te.clockIn).toDateString() === todayStr && te.totalHours);
-                              const todayTotal = todayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
-                              return (
-                                <div key={c.id} className="foreman-team-row" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, borderLeft: "3px solid var(--green)" }}>
-                                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-                                    {c.name.split(" ").map(n => n[0]).join("")}
+                        <div className="frm-team-section">
+                          <div className="frm-muted text-xs font-semi">{t("Clocked In")} ({clockedIn.length})</div>
+                          {clockedIn.map(c => {
+                            const clockData = teamClocks[c.id];
+                            const isAssigned = teamForProject.some(cp => cp.id === c.id);
+                            const todayEntries = timeEntries.filter(te => te.employeeId === c.id && new Date(te.clockIn).toDateString() === todayStr && te.totalHours);
+                            const todayTotal = todayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
+                            return (
+                              <div key={c.id} className="foreman-team-row">
+                                <div className="frm-flex-gap">
+                                  <div className="foreman-team-name">{c.name}</div>
+                                  <div className="text-xs text-muted">
+                                    {c.role || c.title || ""}{!isAssigned && <span className="frm-amber"> · {t("Other team")}</span>}
+                                    {todayTotal > 0 ? ` · ${todayTotal.toFixed(1)}h ${t("today")}` : ""}
                                   </div>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div className="text-sm font-semi">{c.name}</div>
-                                    <div className="text-xs text-muted">
-                                      {c.role || c.title || ""}{!isAssigned && <span style={{ color: "var(--amber)" }}> · {t("Other team")}</span>}
-                                      {todayTotal > 0 ? ` · ${todayTotal.toFixed(1)}h ${t("today")}` : ""}
+                                  {clockData && (
+                                    <div className="text-xs frm-phase-active">
+                                      {t("In since")} {new Date(clockData.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                      {" · "}{(() => { const m = Math.floor((Date.now() - new Date(clockData.clockIn).getTime()) / 60000); return `${Math.floor(m/60)}h ${m%60}m`; })()}
                                     </div>
-                                    {clockData && (
-                                      <div className="text-xs" style={{ color: "var(--green)", marginTop: 2 }}>
-                                        {t("In since")} {new Date(clockData.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                                        {" · "}{(() => { const m = Math.floor((Date.now() - new Date(clockData.clockIn).getTime()) / 60000); return `${Math.floor(m/60)}h ${m%60}m`; })()}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <button className="btn btn-sm" style={{ minWidth: 80, fontSize: 12, padding: "8px 12px", background: "var(--red)", color: "#fff" }}
-                                    onClick={() => handleCrewClockOut(c.id)}>
-                                    {t("Clock Out")}
-                                  </button>
+                                  )}
                                 </div>
-                              );
-                            })}
-                          </div>
+                                <FieldButton variant="danger" onClick={() => handleCrewClockOut(c.id)} t={t}>
+                                  {t("Clock Out")}
+                                </FieldButton>
+                              </div>
+                            );
+                          })}
                         </div>
                       );
                     })()}
@@ -1364,29 +1315,23 @@ export function ForemanView({ app }) {
                       const notIn = teamForProject.filter(c => c.id !== activeForeman?.id && !teamClocks[c.id]);
                       if (notIn.length === 0) return null;
                       return (
-                        <div>
-                          <div className="text-xs text-muted" style={{ marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{t("Not Clocked In")} ({notIn.length})</div>
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>
-                            {notIn.map(c => {
-                              const todayEntries = timeEntries.filter(te => te.employeeId === c.id && new Date(te.clockIn).toDateString() === todayStr && te.totalHours);
-                              const todayTotal = todayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
-                              return (
-                                <div key={c.id} className="foreman-team-row" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, opacity: 0.7 }}>
-                                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--glass-bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "var(--text3)", flexShrink: 0 }}>
-                                    {c.name.split(" ").map(n => n[0]).join("")}
-                                  </div>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div className="text-sm font-semi">{c.name}</div>
-                                    <div className="text-xs text-muted">{t(c.role)}{todayTotal > 0 ? ` · ${todayTotal.toFixed(1)}h ${t("today")}` : ""}</div>
-                                  </div>
-                                  <button className="btn btn-primary btn-sm" style={{ minWidth: 80, fontSize: 12, padding: "8px 12px" }}
-                                    onClick={() => handleCrewClockIn(c.id)}>
-                                    {t("Clock In")}
-                                  </button>
+                        <div className="frm-team-section">
+                          <div className="frm-muted text-xs font-semi">{t("Not Clocked In")} ({notIn.length})</div>
+                          {notIn.map(c => {
+                            const todayEntries = timeEntries.filter(te => te.employeeId === c.id && new Date(te.clockIn).toDateString() === todayStr && te.totalHours);
+                            const todayTotal = todayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
+                            return (
+                              <div key={c.id} className="foreman-team-row">
+                                <div>
+                                  <div className="foreman-team-name">{c.name}</div>
+                                  <div className="text-xs text-muted">{t(c.role)}{todayTotal > 0 ? ` · ${todayTotal.toFixed(1)}h ${t("today")}` : ""}</div>
                                 </div>
-                              );
-                            })}
-                          </div>
+                                <FieldButton variant="primary" onClick={() => handleCrewClockIn(c.id)} t={t}>
+                                  {t("Clock In")}
+                                </FieldButton>
+                              </div>
+                            );
+                          })}
                         </div>
                       );
                     })()}
@@ -1406,26 +1351,26 @@ export function ForemanView({ app }) {
               const completedCount = projPhases.filter(ph => ph.status === "completed").length;
               return (
                 <div className="emp-content">
-                  <div className="section-header">
-                    <div className="section-title" style={{ fontSize: 16 }}>{selectedProject.name}</div>
+                  <div className="frm-flex-between">
+                    <div className="frm-section-title">{selectedProject.name}</div>
                   </div>
-                  <div className="text-xs text-muted mb-8">
+                  <div className="text-xs text-muted frm-section-sub">
                     {selectedProject.gc} · {selectedProject.phase} · {selectedProject.address}
                   </div>
 
                   {/* Phase 2B: Construction Stage with advance */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <div className="frm-flex-gap foreman-kpi-card">
                     <span className="text-xs text-muted">{t("Stage")}:</span>
                     {(() => {
                       const STAGES = [
-                        { key: "pre-con", label: "Pre-Con", color: "#8b5cf6", progress: 5 },
-                        { key: "mobilize", label: "Mobilize", color: "#3b82f6", progress: 10 },
-                        { key: "demo", label: "Demo", color: "#ef4444", progress: 20 },
-                        { key: "framing", label: "Framing", color: "#f59e0b", progress: 40 },
-                        { key: "board", label: "Board", color: "#f97316", progress: 60 },
-                        { key: "tape", label: "Tape/Finish", color: "#10b981", progress: 80 },
-                        { key: "punch", label: "Punch", color: "#06b6d4", progress: 90 },
-                        { key: "closeout", label: "Closeout", color: "#6366f1", progress: 100 },
+                        { key: "pre-con", label: "Pre-Con", color: "var(--phase-pre-construction)", progress: 5 },
+                        { key: "mobilize", label: "Mobilize", color: "var(--phase-estimating)", progress: 10 },
+                        { key: "demo", label: "Demo", color: "var(--red)", progress: 20 },
+                        { key: "framing", label: "Framing", color: "var(--amber)", progress: 40 },
+                        { key: "board", label: "Board", color: "var(--phase-in-progress)", progress: 60 },
+                        { key: "tape", label: "Tape/Finish", color: "var(--phase-active)", progress: 80 },
+                        { key: "punch", label: "Punch", color: "var(--blue)", progress: 90 },
+                        { key: "closeout", label: "Closeout", color: "var(--phase-completed)", progress: 100 },
                       ];
                       const currentIdx = STAGES.findIndex(s => s.key === selectedProject.constructionStage);
                       const current = currentIdx >= 0 ? STAGES[currentIdx] : null;
@@ -1433,25 +1378,23 @@ export function ForemanView({ app }) {
                       return (
                         <>
                           {STAGES.map((s, i) => (
-                            <div key={s.key} style={{
-                              width: 24, height: 6, borderRadius: 3,
-                              background: i <= currentIdx ? s.color : "rgba(255,255,255,0.1)"
-                            }} title={s.label} />
+                            <div key={s.key} className="frm-phase-dot"
+                              style={/* dynamic: stage progress computed at runtime */ {
+                                width: 24, height: 6, borderRadius: 3,
+                                background: i <= currentIdx ? s.color : "rgba(255,255,255,0.1)"
+                              }} title={s.label} />
                           ))}
-                          <span style={{ fontWeight: 700, color: current?.color || "#888", marginLeft: 4 }}>
-                            {current?.label || t("Not Set")}
-                          </span>
+                          <span className="frm-amber font-semi">{current?.label || t("Not Set")}</span>
                           {next && (
-                            <button className="btn btn-sm" style={{ marginLeft: "auto", fontSize: 10, padding: "2px 10px", background: next.color + "22", color: next.color, border: `1px solid ${next.color}44` }}
-                              onClick={() => {
-                                const now = new Date().toISOString();
-                                const entry = { from: selectedProject.constructionStage || null, to: next.key, changedBy: activeForeman.name, changedById: activeForeman.id, changedAt: now };
-                                const history = [...(selectedProject.stageHistory || []), entry];
-                                setProjects(prev => prev.map(p => String(p.id) === String(selectedProjectId) ? { ...p, constructionStage: next.key, stageHistory: history, stageUpdatedAt: now, stageUpdatedBy: activeForeman.name, progress: next.progress || p.progress } : p));
-                                show(`${t("Stage")} → ${next.label}`, "ok");
-                              }}>
+                            <FieldButton variant="ghost" onClick={() => {
+                              const now = new Date().toISOString();
+                              const entry = { from: selectedProject.constructionStage || null, to: next.key, changedBy: activeForeman.name, changedById: activeForeman.id, changedAt: now };
+                              const history = [...(selectedProject.stageHistory || []), entry];
+                              setProjects(prev => prev.map(p => String(p.id) === String(selectedProjectId) ? { ...p, constructionStage: next.key, stageHistory: history, stageUpdatedAt: now, stageUpdatedBy: activeForeman.name, progress: next.progress || p.progress } : p));
+                              show(`${t("Stage")} → ${next.label}`, "ok");
+                            }} t={t}>
                               → {next.label}
-                            </button>
+                            </FieldButton>
                           )}
                         </>
                       );
@@ -1466,12 +1409,16 @@ export function ForemanView({ app }) {
                     </div>
                     <div className="foreman-kpi-card">
                       <div className="foreman-kpi-label">{t("Hours Used")}</div>
-                      <div className="foreman-kpi-value" style={{ color: budgetColor }}>{hoursUsed.toFixed(1)}</div>
+                      <div className="foreman-kpi-value"
+                        style={/* dynamic: budget color computed at runtime */ { color: budgetColor }}>
+                        {hoursUsed.toFixed(1)}
+                      </div>
                       <div className="foreman-kpi-sub">{t("hrs")}</div>
                     </div>
                     <div className="foreman-kpi-card">
                       <div className="foreman-kpi-label">{t("Hours Remaining")}</div>
-                      <div className="foreman-kpi-value" style={{ color: hoursRemaining < 0 ? "var(--red)" : "var(--green)" }}>
+                      <div className="foreman-kpi-value"
+                        style={/* dynamic: threshold-based color */ { color: hoursRemaining < 0 ? "var(--red)" : "var(--green)" }}>
                         {hoursRemaining.toFixed(1)}
                       </div>
                       <div className="foreman-kpi-sub">{t("hrs")}</div>
@@ -1481,46 +1428,46 @@ export function ForemanView({ app }) {
                       <div className="foreman-kpi-value">{pctUsed}%</div>
                       <div className="foreman-budget-bar">
                         <div className="foreman-budget-fill"
-                          style={{ width: `${Math.min(pctUsed, 100)}%`, background: budgetColor }} />
+                          style={/* dynamic: budget % computed at runtime */ { width: `${Math.min(pctUsed, 100)}%`, background: budgetColor }} />
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-                    <div className="foreman-kpi-card" style={{ flex: 1 }}>
+                  <div className="foreman-kpi-grid">
+                    <div className="foreman-kpi-card">
                       <div className="foreman-kpi-label">{t("Crew Members")}</div>
-                      <div className="foreman-kpi-value" style={{ fontSize: 18 }}>{teamForProject.length}</div>
+                      <div className="foreman-kpi-value">{teamForProject.length}</div>
                     </div>
-                    <div className="foreman-kpi-card" style={{ flex: 1 }}>
+                    <div className="foreman-kpi-card">
                       <div className="foreman-kpi-label">{t("Materials")}</div>
-                      <div className="foreman-kpi-value" style={{ fontSize: 18 }}>{projectMatRequests.length}</div>
+                      <div className="foreman-kpi-value">{projectMatRequests.length}</div>
                     </div>
-                    <div className="foreman-kpi-card" style={{ flex: 1 }}>
+                    <div className="foreman-kpi-card">
                       <div className="foreman-kpi-label">{t("Progress")}</div>
-                      <div className="foreman-kpi-value" style={{ fontSize: 18 }}>{selectedProject.progress}%</div>
+                      <div className="foreman-kpi-value">{selectedProject.progress}%</div>
                     </div>
                   </div>
 
-                  <div className="foreman-kpi-card" style={{ marginBottom: 12 }}>
+                  <div className="foreman-kpi-card">
                     <div className="foreman-kpi-label">{t("Progress")}</div>
-                    <div className="project-progress-bar" style={{ marginTop: 8 }}>
+                    <div className="project-progress-bar">
                       <div className="project-progress-fill"
-                        style={{ width: `${selectedProject.progress}%` }} />
+                        style={/* dynamic: progress % computed at runtime */ { width: `${selectedProject.progress}%` }} />
                     </div>
                   </div>
 
                   {/* ── Phase Tracker ── */}
                   <div className="foreman-kpi-card">
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                    <div className="frm-flex-between">
                       <div>
                         <div className="foreman-kpi-label">{t("Construction Phases")}</div>
-                        <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 2 }}>
+                        <div className="text-xs frm-muted">
                           {completedCount}/{projPhases.length} {t("complete")}
                           {activePhase ? ` · ${activePhase.name}` : ""}
                         </div>
                       </div>
                       {activePhase && (
-                        <span className="badge badge-amber" style={{ fontSize: 10 }}>{activePhase.name}</span>
+                        <span className="badge badge-amber">{activePhase.name}</span>
                       )}
                     </div>
                     <PhaseTracker
@@ -1534,47 +1481,41 @@ export function ForemanView({ app }) {
 
                   {/* ── RFI Alerts (read-only, field visibility) ── */}
                   {rfiAlerts.length > 0 && (
-                    <div className="foreman-kpi-card" style={{ marginTop: 12 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                        <FileQuestion size={16} style={{ color: "var(--amber, #f59e0b)" }} />
-                        <div className="foreman-kpi-label" style={{ margin: 0 }}>
+                    <div className="foreman-kpi-card">
+                      <div className="frm-flex-gap">
+                        <FileQuestion size={16} className="frm-amber" />
+                        <div className="foreman-kpi-label">
                           {t("RFIs Needing Attention")} ({rfiAlerts.length})
                         </div>
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div className="frm-doc-list">
                         {rfiAlerts.slice(0, 5).map(r => (
-                          <div key={r.id} style={{
-                            padding: "8px 12px", borderRadius: 8,
-                            background: r.status === "answered" || r.status === "closed"
-                              ? "rgba(34,197,94,0.08)" : "rgba(245,158,11,0.08)",
-                            border: `1px solid ${r.status === "answered" || r.status === "closed"
-                              ? "rgba(34,197,94,0.2)" : "rgba(245,158,11,0.2)"}`,
-                          }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                              <div className="text-sm font-semi" style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <div key={r.id} className="frm-doc-item">
+                            <div className="frm-flex-between" style={/* dynamic: status-based color */ { flex: 1 }}>
+                              <div className="text-sm font-semi frm-doc-name">
                                 {r.number ? `${r.number}: ` : ""}{r.subject || r.title || r.question}
                               </div>
-                              <span className={`badge ${r.status === "answered" || r.status === "closed" ? "badge-green" : "badge-amber"}`} style={{ fontSize: 9, flexShrink: 0 }}>
-                                {r.status === "answered" || r.status === "closed" ? t("ANSWERED") : t("OPEN")}
-                              </span>
+                              <StatusBadge
+                                status={r.status === "answered" || r.status === "closed" ? "answered" : "open"}
+                                t={t}
+                              />
                             </div>
                             {(r.status === "answered" || r.status === "closed") && r.response && (
-                              <div className="text-xs" style={{ marginTop: 4, color: "var(--green, #22c55e)", fontWeight: 500 }}>
+                              <div className="text-xs frm-phase-active">
                                 {t("Response")}: {r.response.length > 120 ? r.response.slice(0, 120) + "..." : r.response}
                               </div>
                             )}
                             {r.drawingRef && (
-                              <div className="text-xs text-muted" style={{ marginTop: 2 }}>
+                              <div className="text-xs text-muted">
                                 {t("Drawing ref")}: {r.drawingRef}
                               </div>
                             )}
                           </div>
                         ))}
                         {rfiAlerts.length > 5 && (
-                          <button className="cal-nav-btn" style={{ fontSize: 11, alignSelf: "center" }}
-                            onClick={() => setForemanTab("documents")}>
+                          <FieldButton variant="ghost" onClick={() => setForemanTab("documents")} t={t}>
                             {t("View all")} {rfiAlerts.length} {t("RFIs")} →
-                          </button>
+                          </FieldButton>
                         )}
                       </div>
                     </div>
@@ -1601,57 +1542,52 @@ export function ForemanView({ app }) {
 
               return (
                 <div className="emp-content">
-                  <div className="section-header" style={{ alignItems: "center" }}>
-                    <div className="section-title" style={{ fontSize: 16 }}>{t("Crew Members")}</div>
-                    <button
-                      className="btn btn-sm"
-                      style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, background: "var(--accent)", color: "#fff", padding: "8px 14px", borderRadius: 8 }}
+                  <div className="frm-flex-between">
+                    <div className="frm-section-title">{t("Crew Members")}</div>
+                    <FieldButton
+                      variant="primary"
                       onClick={() => { setShowCrewAdd(v => !v); setCrewAddSearch(""); }}
+                      t={t}
                     >
                       <UserPlus size={15} />
                       {t("Add Crew")}
-                    </button>
+                    </FieldButton>
                   </div>
 
                   {/* Add team member dropdown */}
                   {showCrewAdd && (
-                    <div style={{ marginBottom: 14, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: "1px solid var(--border)" }}>
-                        <Search size={14} style={{ color: "var(--text3)", flexShrink: 0 }} />
-                        <input
+                    <div className="foreman-kpi-card">
+                      <div className="frm-flex-gap">
+                        <Search size={14} className="frm-muted" />
+                        <FieldInput
                           ref={teamAddRef}
                           autoFocus
                           type="text"
                           placeholder={t("Search employees...")}
                           value={teamAddSearch}
                           onChange={e => setCrewAddSearch(e.target.value)}
-                          style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--text)", fontSize: 14 }}
+                          t={t}
                         />
-                        <button onClick={() => setShowCrewAdd(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 2 }}>
+                        <FieldButton variant="ghost" onClick={() => setShowCrewAdd(false)} t={t}>
                           <X size={14} />
-                        </button>
+                        </FieldButton>
                       </div>
                       {teamAddFiltered.length === 0 ? (
-                        <div style={{ padding: "12px 14px", fontSize: 13, color: "var(--text3)" }}>{t("No employees found")}</div>
+                        <div className="text-sm frm-muted">{t("No employees found")}</div>
                       ) : (
                         teamAddFiltered.map(emp => (
                           <div
                             key={emp.id}
-                            style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+                            className="frm-team-row frm-clock-project-item"
                             onMouseDown={e => e.preventDefault()}
                             onClick={() => {
                               setExtraCrewIds(prev => [...prev, emp.id]);
                               setCrewAddSearch("");
                             }}
                           >
-                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
-                              {emp.name.split(" ").map(n => n[0]).join("")}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>{emp.name}</div>
-                              <div style={{ fontSize: 11, color: "var(--text3)" }}>{emp.role || ""}</div>
-                            </div>
-                            <UserPlus size={14} style={{ color: "var(--accent)" }} />
+                            <div className="foreman-team-name">{emp.name}</div>
+                            <div className="text-xs frm-muted">{emp.role || ""}</div>
+                            <UserPlus size={14} className="frm-amber" />
                           </div>
                         ))
                       )}
@@ -1659,44 +1595,46 @@ export function ForemanView({ app }) {
                   )}
 
                   {allDisplayCrew.length === 0 ? (
-                    <div className="empty-state" style={{ padding: "30px 20px" }}>
-                      <div style={{ fontSize: 36, marginBottom: 8, opacity: 0.5 }}><UserPlus size={36} /></div>
-                      <div className="empty-text">{t("No team assigned")}</div>
-                      <div className="text-xs text-muted" style={{ marginTop: 6 }}>{t("Tap Add Crew to add members")}</div>
-                    </div>
+                    <EmptyState
+                      icon={UserPlus}
+                      heading={t("No Crew Clocked In")}
+                      message={t("No crew members are clocked in on this project.")}
+                      t={t}
+                    />
                   ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div className="frm-hours-grid">
                       {teamForProject.map(c => (
                         <div key={c.id} className="foreman-team-row">
                           <div>
                             <div className="foreman-team-name">{c.name}</div>
                             <div className="foreman-team-role">{t(c.role)}</div>
-                            <div className="text-xs text-muted" style={{ marginTop: 2 }}>
+                            <div className="text-xs text-muted">
                               {DAY_KEYS.filter(d => c.days?.[d]).map(d => t(d.charAt(0).toUpperCase() + d.slice(1))).join(", ")}
                             </div>
                           </div>
-                          <div style={{ textAlign: "right" }}>
+                          <div>
                             <div className="foreman-team-hours">{fmtHours(c.todayHours)}</div>
                             <div className="text-xs text-muted">{t("Hours Today")}</div>
-                            <div className="text-xs text-dim" style={{ marginTop: 2 }}>
+                            <div className="text-xs text-dim">
                               {fmtHours(c.weekHours)} {t("This Week").toLowerCase()}
                             </div>
                           </div>
                         </div>
                       ))}
                       {extraCrew.map(c => (
-                        <div key={c.id} className="foreman-team-row" style={{ borderLeft: "3px solid var(--amber)" }}>
+                        <div key={c.id} className="foreman-team-row frm-notes-pinned">
                           <div>
                             <div className="foreman-team-name">{c.name}</div>
                             <div className="foreman-team-role">{t(c.role)}</div>
-                            <div className="text-xs" style={{ color: "var(--amber)", marginTop: 2 }}>+ {t("Added today")}</div>
+                            <div className="text-xs frm-amber">+ {t("Added today")}</div>
                           </div>
-                          <button
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 6 }}
+                          <FieldButton
+                            variant="ghost"
                             onClick={() => setExtraCrewIds(prev => prev.filter(id => String(id) !== String(c.id)))}
+                            t={t}
                           >
                             <X size={16} />
-                          </button>
+                          </FieldButton>
                         </div>
                       ))}
                     </div>
@@ -1708,63 +1646,60 @@ export function ForemanView({ app }) {
             {/* ═══ HOURS TAB (was Budget) ═══ */}
             {foremanTab === "hours" && (
               <div className="emp-content">
-                <div className="section-header">
-                  <div className="section-title" style={{ fontSize: 16 }}>{t("Hours")}</div>
-                </div>
+                <div className="frm-section-title">{t("Hours")}</div>
 
                 {/* Summary card */}
-                <div className="foreman-kpi-card" style={{ marginBottom: 16 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                <div className="foreman-kpi-card">
+                  <div className="frm-flex-between">
                     <div>
                       <div className="foreman-kpi-label">{t("Allocated Hours")}</div>
-                      <div className="foreman-kpi-value" style={{ fontSize: 20 }}>{allocatedHours.toLocaleString()} {t("hrs")}</div>
+                      <div className="foreman-kpi-value">{allocatedHours.toLocaleString()} {t("hrs")}</div>
                     </div>
-                    <div style={{ textAlign: "right" }}>
+                    <div>
                       <div className="foreman-kpi-label">{t("Hours Used")}</div>
-                      <div className="foreman-kpi-value" style={{ fontSize: 20, color: budgetColor }}>{hoursUsed.toFixed(1)} {t("hrs")}</div>
+                      <div className="foreman-kpi-value"
+                        style={/* dynamic: budget color computed at runtime */ { color: budgetColor }}>
+                        {hoursUsed.toFixed(1)} {t("hrs")}
+                      </div>
                     </div>
                   </div>
                   <div className="foreman-budget-bar">
                     <div className="foreman-budget-fill"
-                      style={{ width: `${Math.min(pctUsed, 100)}%`, background: budgetColor }} />
+                      style={/* dynamic: budget % computed at runtime */ { width: `${Math.min(pctUsed, 100)}%`, background: budgetColor }} />
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span className="text-xs text-muted">{t("Hours Remaining")}: <b style={{ color: hoursRemaining < 0 ? "var(--red)" : "var(--green)" }}>{hoursRemaining.toFixed(1)} {t("hrs")}</b></span>
-                    <span className="text-xs text-muted">{t("Burn Rate")}: <b style={{ color: "var(--amber)" }}>{weeklyBurnHours.toFixed(1)} {t("hrs")}</b> {t("per week")}</span>
+                  <div className="frm-flex-between">
+                    <span className="text-xs text-muted">{t("Hours Remaining")}: <b style={/* dynamic: threshold-based color */ { color: hoursRemaining < 0 ? "var(--red)" : "var(--green)" }}>{hoursRemaining.toFixed(1)} {t("hrs")}</b></span>
+                    <span className="text-xs text-muted">{t("Burn Rate")}: <b className="frm-amber">{weeklyBurnHours.toFixed(1)} {t("hrs")}</b> {t("per week")}</span>
                   </div>
                 </div>
 
                 {/* Per-employee hours breakdown */}
-                <div className="section-header" style={{ marginBottom: 8 }}>
-                  <div className="section-title" style={{ fontSize: 14 }}>{t("Crew Members")}</div>
-                </div>
+                <div className="frm-section-title">{t("Crew Members")}</div>
                 {teamForProject.length === 0 ? (
                   <div className="text-sm text-muted">{t("No team assigned")}</div>
                 ) : (
                   <div className="foreman-kpi-card">
-                    <div className="foreman-cost-row" style={{ fontWeight: 600, fontSize: 10, textTransform: "uppercase", color: "var(--text3)" }}>
-                      <span style={{ flex: 2 }}>{t("Crew")}</span>
-                      <span style={{ flex: 1, textAlign: "right" }}>{t("Role")}</span>
-                      <span style={{ flex: 1, textAlign: "right" }}>{t("Hours Today")}</span>
-                      <span style={{ flex: 1, textAlign: "right" }}>{t("Hours This Week")}</span>
+                    <div className="foreman-cost-row frm-muted">
+                      <span className="frm-hours-name">{t("Crew")}</span>
+                      <span className="frm-hours-day">{t("Role")}</span>
+                      <span className="frm-hours-day">{t("Hours Today")}</span>
+                      <span className="frm-hours-day">{t("Hours This Week")}</span>
                     </div>
                     {teamForProject.map(c => (
                       <div key={c.id} className="foreman-cost-row">
-                        <span style={{ flex: 2 }}>
-                          <span style={{ color: "var(--text)", fontWeight: 500 }}>{c.name}</span>
-                        </span>
-                        <span style={{ flex: 1, textAlign: "right", color: "var(--text2)", fontSize: 12 }}>{t(c.role)}</span>
-                        <span style={{ flex: 1, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--text2)" }}>{fmtHours(c.todayHours)}</span>
-                        <span style={{ flex: 1, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--amber)" }}>{fmtHours(c.weekHours)}</span>
+                        <span className="frm-hours-name">{c.name}</span>
+                        <span className="frm-hours-day frm-muted">{t(c.role)}</span>
+                        <span className="frm-hours-day frm-mono frm-muted">{fmtHours(c.todayHours)}</span>
+                        <span className="frm-hours-day frm-mono frm-amber">{fmtHours(c.weekHours)}</span>
                       </div>
                     ))}
-                    <div className="foreman-cost-row" style={{ fontWeight: 600, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
-                      <span style={{ flex: 2, color: "var(--text)" }}>Total</span>
-                      <span style={{ flex: 1 }}></span>
-                      <span style={{ flex: 1, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--text2)" }}>
+                    <div className="foreman-cost-row frm-divider">
+                      <span className="frm-hours-name">{t("Total")}</span>
+                      <span className="frm-hours-day"></span>
+                      <span className="frm-hours-day frm-mono frm-muted">
                         {fmtHours(teamForProject.reduce((s, c) => s + c.todayHours, 0))}
                       </span>
-                      <span style={{ flex: 1, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--amber)" }}>
+                      <span className="frm-hours-day frm-mono frm-amber">
                         {fmtHours(teamForProject.reduce((s, c) => s + c.weekHours, 0))}
                       </span>
                     </div>
