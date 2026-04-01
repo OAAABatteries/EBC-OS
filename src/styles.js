@@ -721,6 +721,130 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .emp-tab.active{color:var(--amber);border-bottom:2px solid var(--amber);background:var(--amber-dim)}
 .emp-content{width:100%;max-width:420px}
 
+/* ── CLOCK TAB LAYOUT ── */
+.emp-clock-card-left{text-align:left}
+.emp-project-progress-bar{margin-top:var(--space-2)}
+.emp-emergency-box{margin-top:var(--space-3);padding:10px 12px;background:var(--red-dim);border-radius:var(--radius-sm)}
+.emp-emergency-link{text-decoration:none}
+.emp-info-section{margin-top:var(--space-3)}
+.emp-info-card{text-align:left;margin-bottom:var(--space-2)}
+.emp-list-col{display:flex;flex-direction:column;gap:6px;margin-top:var(--space-2)}
+.emp-list-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)}
+.emp-search-btn{width:100%;opacity:0.7}
+.emp-search-results{max-height:180px;overflow-y:auto;border-radius:var(--radius-sm);background:var(--glass-bg)}
+.emp-search-item{width:100%;display:flex;justify-content:space-between;padding:10px 12px;border:none;background:none;cursor:pointer;text-align:left;border-bottom:1px solid var(--border);color:var(--text)}
+.emp-search-item:hover{background:var(--bg3)}
+.emp-accent-label{text-align:center;margin-bottom:var(--space-3);color:var(--accent);display:flex;align-items:center;justify-content:center;gap:4px}
+.emp-override-card{border-color:var(--amber);margin-top:var(--space-3)}
+.emp-override-actions{justify-content:flex-end}
+.emp-clock-map-card{margin-top:var(--space-3);padding:0;overflow:hidden;position:relative}
+.emp-clock-map{width:100%;border-radius:var(--radius);transition:height 0.3s}
+
+/* ── MAP TILE SWITCHER ── */
+.emp-map-tile-bar{position:absolute;top:var(--space-2);right:var(--space-2);z-index:1000;display:flex;gap:2px;background:rgba(0,0,0,0.7);border-radius:var(--radius-sm);padding:2px}
+.emp-map-tile-btn{padding:var(--space-2) var(--space-3);min-height:var(--touch-min);font-size:var(--text-xs);border:none;border-radius:4px;cursor:pointer;background:transparent;color:#fff;font-weight:500}
+.emp-map-tile-btn.active{background:var(--amber);color:#000}
+.emp-perimeter-bar{position:absolute;bottom:var(--space-2);left:var(--space-2);right:var(--space-2);z-index:1000;display:flex;gap:6px;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3)}
+.emp-perimeter-label{font-size:var(--text-xs);color:var(--amber);font-weight:600}
+.emp-perimeter-btn{padding:4px 10px;font-size:var(--text-xs);border:1px solid var(--border);border-radius:4px;cursor:pointer;background:transparent;color:var(--text-muted)}
+.emp-perimeter-btn--save{border:none;background:var(--green);color:#fff;font-weight:600}
+.emp-perimeter-btn--save.disabled{background:var(--bg3);cursor:not-allowed}
+.emp-perimeter-btn--cancel{border:none;background:var(--red);color:#fff}
+
+/* ── PROJECT LIST ── */
+.emp-project-list-header{text-transform:uppercase;letter-spacing:0.6px}
+.emp-project-row{display:flex;align-items:center;gap:var(--space-2);font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)}
+.emp-project-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.emp-project-name-col{flex:1;min-width:0}
+.emp-project-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.emp-project-meta{font-size:10px;color:var(--text-muted);margin-top:2px}
+.emp-project-actions{display:flex;gap:4px;flex-shrink:0}
+.emp-project-action-btn{padding:3px 8px;font-size:10px;border-radius:4px;cursor:pointer;font-weight:600}
+.emp-project-action-btn--delete{border:1px solid var(--red);background:transparent;color:var(--red)}
+.emp-project-action-btn--draw{border:none}
+
+/* ── SCHEDULE TAB ── */
+.emp-schedule-empty{padding:30px 20px}
+.emp-section-title{font-size:16px}
+
+/* ── TIME LOG ── */
+.emp-log-list{display:flex;flex-direction:column;gap:var(--space-2)}
+.emp-log-entry{padding:14px}
+
+/* ── JSA TAB ── */
+.emp-jsa-back-btn{margin-bottom:var(--space-3)}
+.emp-jsa-badges{display:flex;gap:6px;align-items:center;margin-bottom:var(--space-2);flex-wrap:wrap}
+.emp-jsa-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.emp-jsa-meta{font-size:12px;color:var(--text3);margin-bottom:var(--space-3)}
+.emp-jsa-sign-section{margin-bottom:var(--space-4)}
+.emp-jsa-sign-banner{background:var(--amber-dim);border:1px solid var(--amber);border-radius:var(--radius-sm);padding:var(--space-3);margin-bottom:var(--space-3);text-align:center}
+.emp-jsa-sign-banner-title{font-size:14px;font-weight:700;color:var(--amber);display:flex;align-items:center;justify-content:center;gap:6px}
+.emp-jsa-sign-banner-sub{font-size:12px;color:var(--text2);margin-top:4px}
+.emp-jsa-sign-label{font-size:12px;color:var(--text3);font-weight:600;margin-bottom:4px}
+.emp-jsa-canvas{width:100%;height:120px;background:var(--bg3);border:2px solid var(--border);border-radius:var(--radius-sm);cursor:crosshair;touch-action:none}
+.emp-jsa-submit-btn{width:100%;padding:14px;font-size:16px;font-weight:700}
+.emp-jsa-signed-notice{background:var(--green-dim);color:var(--green);padding:var(--space-3);border-radius:var(--radius-sm);text-align:center;font-weight:600;margin-bottom:var(--space-4);font-size:14px}
+.emp-jsa-ppe-section{margin-bottom:var(--space-4)}
+.emp-jsa-ppe-label{font-size:12px;font-weight:600;color:var(--amber);margin-bottom:6px}
+.emp-jsa-ppe-grid{display:flex;gap:var(--space-2);flex-wrap:wrap}
+.emp-jsa-ppe-item{text-align:center;font-size:var(--text-xs)}
+.emp-jsa-ppe-icon{font-size:22px}
+.emp-jsa-ppe-name{color:var(--text3)}
+.emp-jsa-steps-section{margin-bottom:var(--space-4)}
+.emp-jsa-step-card{padding:10px;margin-bottom:6px}
+.emp-jsa-step-header{display:flex;gap:var(--space-2);align-items:center;margin-bottom:4px}
+.emp-jsa-step-number{width:22px;height:22px;border-radius:50%;background:var(--amber);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:var(--text-xs);font-weight:700;flex-shrink:0}
+.emp-jsa-step-name{font-size:13px;font-weight:600}
+.emp-jsa-hazard-row{margin-left:30px;padding:6px 0;border-top:1px solid var(--border)}
+.emp-jsa-hazard-header{display:flex;gap:6px;align-items:center;margin-bottom:2px}
+.emp-jsa-hazard-score{color:#fff;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:700}
+.emp-jsa-hazard-name{font-size:12px;font-weight:500}
+.emp-jsa-hazard-es{font-size:var(--text-xs);color:var(--text3);font-style:italic;margin-bottom:2px}
+.emp-jsa-hazard-control{font-size:var(--text-xs);color:var(--text3)}
+.emp-jsa-crew-section{margin-bottom:var(--space-4)}
+.emp-jsa-crew-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)}
+.emp-jsa-crew-name{font-size:13px}
+.emp-jsa-crew-name--self{font-weight:700}
+.emp-jsa-crew-time{font-size:var(--text-xs);color:var(--green)}
+.emp-jsa-unsigned-banner{background:rgba(245,158,11,0.12);border:2px solid var(--amber);border-radius:var(--radius);padding:14px;margin-bottom:var(--space-4);cursor:pointer}
+.emp-jsa-unsigned-row{display:flex;gap:var(--space-2);align-items:center}
+.emp-jsa-unsigned-title{font-size:14px;font-weight:700;color:var(--amber)}
+.emp-jsa-unsigned-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.emp-jsa-list-card{padding:var(--space-3);margin-bottom:var(--space-2);cursor:pointer}
+.emp-jsa-list-card--signed{border-left:3px solid var(--green)}
+.emp-jsa-list-card--unsigned{border-left:3px solid var(--amber)}
+.emp-jsa-list-badges{display:flex;gap:6px;align-items:center}
+.emp-jsa-list-date{font-size:var(--text-xs);color:var(--text3)}
+.emp-jsa-list-title{font-size:14px;font-weight:600}
+.emp-jsa-list-meta{font-size:var(--text-xs);color:var(--text3)}
+.emp-jsa-list-ppe{display:flex;gap:4px;margin-top:6px}
+.emp-jsa-list-ppe-icon{font-size:14px}
+
+/* ── MATERIALS TAB ── */
+.emp-mat-form-row{display:flex;gap:var(--space-2)}
+.emp-mat-form-col{flex:1}
+.emp-mat-section-title{font-size:14px}
+.emp-mat-list{display:flex;flex-direction:column;gap:var(--space-2)}
+.emp-mat-empty{padding:30px 20px}
+
+/* ── COS/RFI TAB ── */
+.emp-cos-list{display:flex;flex-direction:column;gap:var(--space-2)}
+.emp-cos-entry{padding:14px}
+.emp-rfi-list{display:flex;flex-direction:column;gap:var(--space-2)}
+.emp-rfi-entry{padding:14px}
+
+/* ── SETTINGS TAB ── */
+.emp-settings-back-btn{margin-bottom:var(--space-3)}
+.emp-settings-center{text-align:center;margin-bottom:var(--space-3)}
+.emp-settings-row-mt{margin-top:var(--space-3)}
+.emp-settings-select-auto{width:auto;max-width:180px}
+
+/* ── CONTENT PADDING ── */
+.emp-content-pad{padding-bottom:max(72px, env(safe-area-inset-bottom))}
+
+/* ── FONT MONO OVERRIDE ── */
+.emp-font-mono{font-family:var(--font-mono)}
+
 /* ── TABLET LAYOUT (768px+) ── */
 @media(min-width:768px){
   .emp-tabs{max-width:none;gap:2px;justify-content:center}
