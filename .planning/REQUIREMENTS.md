@@ -52,7 +52,7 @@ Requirements for milestone v1.0: Field Portal Perfection. Each maps to roadmap p
 - [x] **FRMN-02**: 11 horizontal tabs restructured into bottom nav (4-5 primary) + More menu
 - [x] **FRMN-03**: All buttons/inputs meet 44px touch target minimum
 - [x] **FRMN-04**: KPI cards use consistent font sizes from typography scale
-- [ ] **FRMN-05**: Daily reports, JSA, and crew sections use shared field components
+- [x] **FRMN-05**: Daily reports, JSA, and crew sections use shared field components
 - [ ] **FRMN-06**: Phase colors use `--phase-*` semantic tokens instead of hard-coded hex
 
 ### Polish
@@ -130,7 +130,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FRMN-02 | Phase 5 | Complete |
 | FRMN-03 | Phase 5 | Complete |
 | FRMN-04 | Phase 5 | Complete |
-| FRMN-05 | Phase 5 | Pending |
+| FRMN-05 | Phase 5 | Complete |
 | FRMN-06 | Phase 5 | Pending |
 | PLSH-01 | Phase 6 | Pending |
 | PLSH-02 | Phase 6 | Pending |
