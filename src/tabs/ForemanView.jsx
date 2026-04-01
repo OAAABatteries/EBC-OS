@@ -2723,118 +2723,78 @@ export function ForemanView({ app }) {
             {/* ═══ DRAWINGS TAB ═══ */}
             {foremanTab === "drawings" && (
               <div className="emp-content">
-                <div className="flex-between" style={{ marginBottom: 12 }}>
-                  <div className="section-title" style={{ fontSize: 16 }}>{t("Project Drawings")}</div>
-                  <button className="cal-nav-btn" style={{ fontSize: 11 }} onClick={loadCloudDrawings}>
+                <div className="frm-flex-between frm-section">
+                  <div className="frm-section-title">{t("Project Drawings")}</div>
+                  <FieldButton variant="ghost" size="sm" onClick={loadCloudDrawings} t={t}>
                     {drawingsLoading ? "..." : t("Refresh")}
-                  </button>
+                  </FieldButton>
                 </div>
 
                 {/* Cloud drawings with revision metadata */}
                 {cloudDrawings.length > 0 ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10, marginBottom: 16 }}>
+                  <div className="frm-draw-grid">
                     {cloudDrawings.map(d => (
-                      <div key={d.id} className="card" style={{
-                        padding: 14,
-                        borderLeft: d.isStale ? "3px solid var(--orange, #f59e0b)" : d.isCurrent === false ? "3px solid var(--text3)" : "3px solid var(--green, #22c55e)",
-                      }}>
+                      <FieldCard key={d.id} className={`frm-draw-item frm-draw-card ${d.isStale ? "stale" : d.isCurrent === false ? "superseded" : "current"}`}>
                         {/* ── Revision badge row ── */}
-                        <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8, flexWrap: "wrap" }}>
+                        <div className="frm-draw-badge-row">
                           {d.revisionLabel ? (
-                            <span style={{
-                              fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
-                              background: d.isCurrent ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.08)",
-                              color: d.isCurrent ? "var(--green, #22c55e)" : "var(--text3)",
-                              textTransform: "uppercase", letterSpacing: 0.5,
-                            }}>
+                            <span className={`frm-draw-badge revision ${d.isCurrent ? "current" : "superseded"}`}>
                               {d.revisionLabel}
                             </span>
                           ) : d.revision ? (
-                            <span style={{
-                              fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
-                              background: "rgba(34,197,94,0.15)", color: "var(--green, #22c55e)",
-                              textTransform: "uppercase", letterSpacing: 0.5,
-                            }}>
-                              Rev {d.revision}
-                            </span>
+                            <span className="frm-draw-badge revision">Rev {d.revision}</span>
                           ) : null}
                           {d.isCurrent && (
-                            <span style={{
-                              fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 3,
-                              background: "rgba(34,197,94,0.2)", color: "var(--green, #22c55e)",
-                            }}>
-                              {t("CURRENT")}
-                            </span>
+                            <span className="frm-draw-badge current">{t("CURRENT")}</span>
                           )}
                           {d.isCurrent === false && (
-                            <span style={{
-                              fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 3,
-                              background: "rgba(255,255,255,0.06)", color: "var(--text3)",
-                              textDecoration: "line-through",
-                            }}>
-                              {t("SUPERSEDED")}
-                            </span>
+                            <span className="frm-draw-badge superseded">{t("SUPERSEDED")}</span>
                           )}
                           {d.isStale && (
-                            <span style={{
-                              fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 3,
-                              background: "rgba(245,158,11,0.2)", color: "var(--orange, #f59e0b)",
-                            }}>
-                              {t("UPDATE AVAILABLE")}
-                            </span>
+                            <span className="frm-draw-badge stale">{t("UPDATE AVAILABLE")}</span>
                           )}
                           {d.discipline && d.discipline !== "general" && (
-                            <span style={{
-                              fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 3,
-                              background: "rgba(255,255,255,0.06)", color: "var(--text3)",
-                              textTransform: "capitalize",
-                            }}>
-                              {t(d.discipline)}
-                            </span>
+                            <span className="frm-draw-badge discipline">{t(d.discipline)}</span>
                           )}
                         </div>
                         {/* ── Drawing info + actions ── */}
-                        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                          <FileText size={28} style={{ color: d.isStale ? "var(--orange, #f59e0b)" : "var(--text2)", flexShrink: 0 }} />
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div className="text-sm font-semi" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
-                            <div className="text-xs text-muted">
+                        <div className="frm-draw-info">
+                          <FileText size={28} className={`frm-draw-icon ${d.isStale ? "stale" : ""}`} />
+                          <div className="frm-draw-text">
+                            <div className="text-sm font-semi frm-draw-title">{d.name}</div>
+                            <div className="text-xs text-muted frm-draw-meta">
                               {d.size > 0 ? `${(d.size / 1048576).toFixed(1)} MB` : ""}{d.uploadedAt ? ` · ${d.uploadedAt.slice(0, 10)}` : ""}
                             </div>
-                            {d.cached && !d.isStale && <div className="text-xs" style={{ color: "var(--green)" }}>{t("Saved offline")}</div>}
+                            {d.cached && !d.isStale && <div className="text-xs frm-draw-cached">{t("Saved offline")}</div>}
                             {d.cached && d.isStale && (
-                              <div className="text-xs" style={{ color: "var(--orange, #f59e0b)", fontWeight: 600 }}>
+                              <div className="text-xs frm-draw-cached-stale">
                                 {t("Cached copy is outdated — re-download")}
                               </div>
                             )}
                           </div>
-                          <div style={{ display: "flex", gap: 4, flexDirection: "column" }}>
-                            <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: "6px 10px" }}
-                              onClick={() => handleViewDrawing(d)}>
+                          <div className="frm-draw-actions">
+                            <FieldButton variant="primary" size="sm" onClick={() => handleViewDrawing(d)} t={t}>
                               {t("View")}
-                            </button>
+                            </FieldButton>
                             {(!d.cached || d.isStale) && (
-                              <button className="btn btn-sm" style={{
-                                fontSize: 11, padding: "6px 10px",
-                                background: d.isStale ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.08)",
-                                border: d.isStale ? "1px solid rgba(245,158,11,0.3)" : "1px solid rgba(255,255,255,0.15)",
-                                color: d.isStale ? "var(--orange, #f59e0b)" : undefined,
-                              }}
-                                onClick={() => handleDownloadDrawing(d)}>
+                              <FieldButton
+                                variant={d.isStale ? "warning" : "ghost"}
+                                size="sm"
+                                onClick={() => handleDownloadDrawing(d)}
+                                t={t}
+                              >
                                 {d.isStale ? t("Re-download") : t("Save")}
-                              </button>
+                              </FieldButton>
                             )}
                           </div>
                         </div>
-                      </div>
+                      </FieldCard>
                     ))}
                   </div>
                 ) : (
                   <>
                     {drawingsLoading ? (
-                      <div className="empty-state" style={{ padding: "30px 20px" }}>
-                        <div className="empty-text">{t("Loading drawings...")}</div>
-                      </div>
+                      <LoadingSpinner />
                     ) : (
                       <>
                         {/* Default drawing sets (placeholder when cloud is empty) */}
@@ -2847,22 +2807,23 @@ export function ForemanView({ app }) {
                             { id: "d5", name: t("Door & Hardware Schedule"), Icon: ClipboardList, desc: t("Door types, hardware sets") },
                           ];
                           return (
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
+                            <div className="frm-draw-default-grid">
                               {defaultSets.map(d => (
-                                <div key={d.id} className="card" style={{ padding: 14, opacity: 0.6 }}>
-                                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                                    <d.Icon size={28} style={{ color: "var(--text2)", flexShrink: 0 }} />
-                                    <div style={{ flex: 1 }}>
+                                <FieldCard key={d.id} className="frm-draw-default-card">
+                                  <div className="frm-draw-default-body">
+                                    <d.Icon size={28} className="frm-draw-default-icon" />
+                                    <div className="frm-draw-default-info">
                                       <div className="text-sm font-semi">{d.name}</div>
                                       <div className="text-xs text-muted">{d.desc}</div>
                                     </div>
                                     <span className="text-xs text-dim">{t("Not uploaded")}</span>
                                   </div>
-                                </div>
+                                </FieldCard>
                               ))}
                             </div>
                           );
                         })()}
+                        <EmptyState icon={Building2} heading={t("No Drawings")} message={t("No drawings uploaded for this project.")} t={t} />
                       </>
                     )}
                   </>
@@ -2870,16 +2831,16 @@ export function ForemanView({ app }) {
 
                 {/* Downloaded files cache info */}
                 {Object.keys(downloadedDrawings).length > 0 && (
-                  <div style={{ marginTop: 16 }}>
-                    <div className="section-title" style={{ fontSize: 13, marginBottom: 8 }}>{t("Downloaded for Offline")}</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div className="frm-draw-cache-section">
+                    <div className="frm-section-title text-sm">{t("Downloaded for Offline")}</div>
+                    <div className="frm-draw-list">
                       {Object.entries(downloadedDrawings).map(([path, info]) => (
-                        <div key={path} className="foreman-team-row" style={{ padding: "8px 12px" }}>
+                        <div key={path} className="foreman-team-row">
                           <div>
                             <div className="text-sm font-semi">{path.split("/").pop().replace(".pdf", "").replace(/_/g, " ")}</div>
                             <div className="text-xs text-muted">{t("Cached")} {new Date(info.cachedAt).toLocaleDateString()}{info.size ? ` · ${(info.size / 1048576).toFixed(1)} MB` : ""}</div>
                           </div>
-                          <button className="cal-nav-btn" style={{ fontSize: 10, color: "var(--red)" }}
+                          <FieldButton variant="danger" size="sm" t={t}
                             onClick={() => {
                               const updated = { ...downloadedDrawings };
                               delete updated[path];
@@ -2888,16 +2849,16 @@ export function ForemanView({ app }) {
                               show?.(t("Cache cleared"));
                             }}>
                             {t("Remove")}
-                          </button>
+                          </FieldButton>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                <div style={{ marginTop: 16, padding: 16, background: "var(--glass-bg)", borderRadius: 10, textAlign: "center" }}>
+                <div className="frm-draw-cache-hint">
                   <div className="text-sm text-muted">{t("Drawings are stored in the cloud")}</div>
-                  <div className="text-xs text-dim" style={{ marginTop: 4 }}>{t("Download files for offline use on the jobsite. Ask the PM to upload new drawing sets.")}</div>
+                  <div className="text-xs text-dim frm-draw-cache-hint-sub">{t("Download files for offline use on the jobsite. Ask the PM to upload new drawing sets.")}</div>
                 </div>
               </div>
             )}
@@ -2906,19 +2867,16 @@ export function ForemanView({ app }) {
             {foremanTab === "lookahead" && (
               <div className="emp-content">
                 <div className="section-header">
-                  <div className="section-title" style={{ fontSize: 16 }}>{t("14-Day Look-Ahead")}</div>
+                  <div className="frm-section-title">{t("14-Day Look-Ahead")}</div>
                 </div>
-                <div className="text-xs text-muted" style={{ marginBottom: 12 }}>
+                <div className="text-xs text-muted frm-section-sub">
                   {t("Upcoming milestones, inspections, and deadlines for this project. Read-only — contact PM for changes.")}
                 </div>
 
                 {lookAheadEvents.length === 0 ? (
-                  <div className="empty-state" style={{ padding: "30px 20px" }}>
-                    <div className="empty-text">{t("No events in the next 14 days")}</div>
-                    <div className="text-xs text-muted" style={{ marginTop: 6 }}>{t("The PM will add milestones, inspections, and deadlines here.")}</div>
-                  </div>
+                  <EmptyState icon={ClipboardList} heading={t("No Schedule")} message={t("No lookahead schedule created yet.")} t={t} />
                 ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div className="frm-look-grid">
                     {(() => {
                       // Group events by date
                       const groups = {};
@@ -2935,45 +2893,39 @@ export function ForemanView({ app }) {
                         const dayLabel = isToday ? t("Today") : isTomorrow ? t("Tomorrow") : new Date(date + "T12:00:00").toLocaleDateString(lang === "es" ? "es-US" : "en-US", { weekday: "short", month: "short", day: "numeric" });
                         return (
                           <div key={date}>
-                            <div style={{
-                              fontSize: 12, fontWeight: 700, padding: "6px 0", marginTop: 8,
-                              color: isToday ? "var(--amber, #f59e0b)" : isTomorrow ? "var(--accent)" : "var(--text2)",
-                              borderBottom: "1px solid rgba(255,255,255,0.06)",
-                            }}>
+                            <div className={`frm-look-date-header ${isToday ? "today" : isTomorrow ? "tomorrow" : "future"}`}>
                               {dayLabel}
                             </div>
                             {events.map(ev => {
                               const typeColors = {
-                                inspection: "var(--red)", milestone: "var(--green, #22c55e)",
-                                delivery: "var(--accent)", meeting: "var(--purple, #8b5cf6)",
+                                inspection: "var(--red)", milestone: "var(--green)",
+                                delivery: "var(--amber)", meeting: "var(--phase-pre-construction)",
                                 task: "var(--text2)", deadline: "var(--red)",
                               };
-                              const color = typeColors[ev.type] || "var(--text2)";
+                              const barColor = typeColors[ev.type] || "var(--text2)";
                               return (
-                                <div key={ev.id} className="card" style={{ padding: "10px 14px", marginTop: 4 }}>
-                                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                                    <div style={{
-                                      width: 4, height: 32, borderRadius: 2, background: color, flexShrink: 0,
-                                    }} />
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                      <div className="text-sm font-semi" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                <FieldCard key={ev.id} className="frm-look-event">
+                                  <div className="frm-look-event-body">
+                                    <div className="frm-look-event-bar" style={{ background: barColor }} />{/* dynamic: event type color from map */}
+                                    <div className="frm-look-event-text">
+                                      <div className="text-sm font-semi frm-look-event-title">
                                         {ev.title}
                                       </div>
-                                      <div className="text-xs text-muted">
-                                        {ev.type && <span style={{ textTransform: "capitalize" }}>{t(ev.type)}</span>}
+                                      <div className="text-xs text-muted frm-look-event-meta">
+                                        {ev.type && <span className="frm-look-event-type">{t(ev.type)}</span>}
                                         {ev.startTime ? ` · ${ev.startTime}` : ""}
                                         {ev.start_time ? ` · ${ev.start_time}` : ""}
                                         {ev.location ? ` · ${ev.location}` : ""}
                                       </div>
-                                      {ev.notes && <div className="text-xs text-dim" style={{ marginTop: 2 }}>{ev.notes.length > 80 ? ev.notes.slice(0, 80) + "..." : ev.notes}</div>}
+                                      {ev.notes && <div className="text-xs text-dim frm-look-event-notes">{ev.notes.length > 80 ? ev.notes.slice(0, 80) + "..." : ev.notes}</div>}
                                     </div>
                                     {ev.status && ev.status !== "scheduled" && (
-                                      <span className={`badge ${ev.status === "completed" ? "badge-green" : "badge-amber"}`} style={{ fontSize: 9 }}>
+                                      <span className={`badge ${ev.status === "completed" ? "badge-green" : "badge-amber"}`}>
                                         {t(ev.status)}
                                       </span>
                                     )}
                                   </div>
-                                </div>
+                                </FieldCard>
                               );
                             })}
                           </div>
@@ -3457,80 +3409,84 @@ export function ForemanView({ app }) {
             {foremanTab === "documents" && (
               <div className="emp-content">
                 <div className="section-header">
-                  <div className="section-title" style={{ fontSize: 16 }}>{t("Documents")}</div>
+                  <div className="frm-section-title">{t("Documents")}</div>
                 </div>
 
                 {/* Submittals */}
-                <div className="project-section">
+                <div className="frm-doc-section">
                   <div className="project-section-header" onClick={() => toggleSection("submittals")}>
                     <span>{t("Submittals")} ({projectSubmittals.length})</span>
                     <span>{openSections.submittals ? "▾" : "▸"}</span>
                   </div>
                   {openSections.submittals && (
                     projectSubmittals.length === 0
-                      ? <div className="text-xs text-muted" style={{ padding: "8px 0" }}>{t("No submittals")}</div>
-                      : projectSubmittals.map(s => (
-                        <div key={s.id} className="card" style={{ padding: 10, marginTop: 6 }}>
-                          <div className="flex-between">
-                            <span className="text-sm font-semi">{s.name || s.title}</span>
-                            <span className={`badge ${s.status === "approved" ? "badge-green" : "badge-amber"}`}>{s.status}</span>
-                          </div>
-                          {s.description && <div className="text-xs text-muted mt-4">{s.description}</div>}
+                      ? <div className="text-xs text-muted">{t("No submittals")}</div>
+                      : <div className="frm-doc-list">
+                          {projectSubmittals.map(s => (
+                            <FieldCard key={s.id} className="frm-doc-card">
+                              <div className="frm-flex-between">
+                                <span className="text-sm font-semi frm-doc-name">{s.name || s.title}</span>
+                                <StatusBadge status={s.status} t={t} />
+                              </div>
+                              {s.description && <div className="text-xs text-muted frm-doc-meta mt-4">{s.description}</div>}
+                            </FieldCard>
+                          ))}
                         </div>
-                      ))
                   )}
                 </div>
 
                 {/* Change Orders */}
-                <div className="project-section">
+                <div className="frm-doc-section">
                   <div className="project-section-header" onClick={() => toggleSection("cos")}>
                     <span>{t("Change Orders")} ({projectCOs.length})</span>
                     <span>{openSections.cos ? "▾" : "▸"}</span>
                   </div>
                   {openSections.cos && (
                     projectCOs.length === 0
-                      ? <div className="text-xs text-muted" style={{ padding: "8px 0" }}>{t("No change orders")}</div>
-                      : projectCOs.map(c => (
-                        <div key={c.id} className="card" style={{ padding: 10, marginTop: 6 }}>
-                          <div className="flex-between">
-                            <span className="text-sm font-semi">{c.title || c.description}</span>
-                            <span className="text-sm font-mono" style={{ color: "var(--amber)" }}>{fmt(c.amount)}</span>
-                          </div>
-                          <div className="text-xs text-muted mt-4">{c.status}</div>
+                      ? <div className="text-xs text-muted">{t("No change orders")}</div>
+                      : <div className="frm-doc-list">
+                          {projectCOs.map(c => (
+                            <FieldCard key={c.id} className="frm-doc-card">
+                              <div className="frm-flex-between">
+                                <span className="text-sm font-semi frm-doc-name">{c.title || c.description}</span>
+                                <span className="text-sm font-mono frm-amber">{fmt(c.amount)}</span>
+                              </div>
+                              <div className="text-xs text-muted frm-doc-meta mt-4">{c.status}</div>
+                            </FieldCard>
+                          ))}
                         </div>
-                      ))
                   )}
                 </div>
 
                 {/* RFIs */}
-                <div className="project-section">
-                  <div className="project-section-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flex: 1 }} onClick={() => toggleSection("rfis")}>
+                <div className="frm-doc-section">
+                  <div className="frm-doc-rfi-header project-section-header">
+                    <div className="frm-flex-gap" style={{ flex: 1, cursor: "pointer" }} onClick={() => toggleSection("rfis")}>
                       <span>{t("RFIs")} ({projectRFIs.length})</span>
                       <span>{openSections.rfis ? "▾" : "▸"}</span>
                     </div>
-                    <button
-                      className="btn btn-sm"
-                      style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, background: "var(--accent)", color: "#fff", padding: "6px 12px", borderRadius: 7 }}
+                    <FieldButton variant="primary" size="sm" t={t}
                       onClick={() => { setShowRfiModal(true); setRfiFormData({ subject: "", description: "", drawingRef: "" }); }}
                     >
                       <FileQuestion size={13} />
                       {t("Submit RFI")}
-                    </button>
+                    </FieldButton>
                   </div>
                   {openSections.rfis && (
                     projectRFIs.length === 0
-                      ? <div className="text-xs text-muted" style={{ padding: "8px 0" }}>{t("No RFIs")}</div>
-                      : projectRFIs.map(r => (
-                        <div key={r.id} className="card" style={{ padding: 10, marginTop: 6 }}>
-                          <div className="flex-between">
-                            <span className="text-sm font-semi">{r.subject || r.title || r.question}</span>
-                            <span className={`badge ${r.status === "answered" ? "badge-green" : r.status === "submitted" ? "badge-blue" : "badge-amber"}`}>{r.status}</span>
-                          </div>
-                          {r.drawingRef && <div className="text-xs text-muted mt-4">Ref: {r.drawingRef}</div>}
-                          {r.response && <div className="text-xs text-muted mt-4">{t("Response")}: {r.response}</div>}
+                      ? <EmptyState icon={FileText} heading={t("No Documents")} message={t("No documents uploaded for this project.")} t={t} />
+                      : <div className="frm-doc-list">
+                          {projectRFIs.map(r => (
+                            <FieldCard key={r.id} className="frm-doc-card">
+                              <div className="frm-flex-between">
+                                <span className="text-sm font-semi frm-doc-name">{r.subject || r.title || r.question}</span>
+                                <StatusBadge status={r.status} t={t} />
+                              </div>
+                              {r.drawingRef && <div className="text-xs text-muted frm-doc-meta mt-4">Ref: {r.drawingRef}</div>}
+                              {r.response && <div className="text-xs text-muted frm-doc-meta mt-4">{t("Response")}: {r.response}</div>}
+                            </FieldCard>
+                          ))}
                         </div>
-                      ))
                   )}
                 </div>
               </div>
