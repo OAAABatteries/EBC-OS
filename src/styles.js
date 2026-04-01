@@ -818,6 +818,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .mat-status-denied{background:var(--red-dim,rgba(239,68,68,0.1));color:var(--red)}
 
 /* ── DRIVER VIEW ── */
+/* Legacy classes — kept for backward compat during transition */
 .driver-queue-card{padding:16px;border-radius:var(--radius);border:1px solid var(--border);
   background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);margin-bottom:10px}
 .driver-nav-link{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;
@@ -827,6 +828,76 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .driver-badge{display:inline-flex;align-items:center;justify-content:center;
   min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;
   font-size:10px;font-weight:700;margin-left:6px;padding:0 5px}
+
+/* KPI Summary Bar */
+.driver-kpi-grid{display:flex;gap:var(--space-3);flex-wrap:wrap;align-items:center;margin-bottom:var(--space-3)}
+.driver-kpi-tile{flex:1;min-width:80px;padding:var(--space-3) var(--space-3);border-radius:var(--radius);border:1px solid var(--glass-border);background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.driver-kpi-label{font-size:9px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:var(--space-1)}
+.driver-kpi-value{font-size:var(--text-display);font-weight:var(--weight-bold);color:var(--amber);font-family:var(--font-mono)}
+.driver-kpi-value--amber{color:var(--amber)}
+.driver-kpi-value--green{color:var(--green)}
+
+/* Route Card */
+.driver-route-card{padding:var(--space-4);border-radius:var(--radius);border:1px solid var(--border);background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-left:4px solid var(--accent);cursor:grab;transition:opacity var(--transition-micro);-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.driver-route-card--in-transit{border-left-color:var(--amber)}
+.driver-route-card--dragging{opacity:0.5}
+.driver-route-card--drag-over{background:var(--bg3)}
+.driver-route-card--held{transform:scale(1.02);box-shadow:var(--shadow-lg);z-index:10;will-change:transform;transition:transform var(--transition-micro),box-shadow var(--transition-micro)}
+.driver-route-card--placeholder{opacity:0.3;border:2px dashed var(--border)}
+
+/* Stop Number Badge */
+.driver-stop-badge{width:32px;height:32px;border-radius:50%;background:var(--accent);color:var(--text-on-accent,#fff);display:flex;align-items:center;justify-content:center;font-size:var(--text-sm);font-weight:var(--weight-bold);flex-shrink:0}
+.driver-stop-badge--in-transit{background:var(--amber)}
+
+/* Card Header / Body */
+.driver-card-header{display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-2)}
+.driver-card-body{margin-left:42px}
+
+/* Project Name */
+.driver-project-name{color:var(--amber);font-weight:var(--weight-bold)}
+
+/* Drag Handle */
+.driver-drag-handle{font-size:var(--text-lg);color:var(--text3);cursor:grab;padding:0 var(--space-1);user-select:none}
+
+/* Schedule Row */
+.driver-schedule-row{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2)}
+.driver-schedule-label{font-size:var(--text-sm);color:var(--text2);min-width:48px}
+.driver-schedule-input{flex:1;font-size:var(--text-sm);padding:var(--space-1) var(--space-2);height:auto;min-height:var(--touch-min)}
+.driver-schedule-clear{font-size:var(--text-sm);color:var(--text3);background:none;border:none;cursor:pointer;min-height:var(--touch-min);min-width:var(--touch-min);display:flex;align-items:center;justify-content:center}
+
+/* Action Buttons */
+.driver-action-row{display:flex;gap:var(--space-2)}
+.driver-action-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:var(--space-1)}
+.driver-delivered-btn{background:var(--green);color:#fff}
+.driver-delivered-btn:hover{filter:brightness(1.1)}
+
+/* Navigate Full Route CTA */
+.driver-nav-cta{display:block;text-align:center;padding:var(--space-4) var(--space-5);font-size:var(--text-base);font-weight:var(--weight-bold);text-decoration:none}
+.driver-nav-cta-hint{text-align:center;margin-top:var(--space-2)}
+
+/* Route List */
+.driver-route-list{display:flex;flex-direction:column;gap:var(--space-2)}
+
+/* Completed Card */
+.driver-completed-card{padding:var(--space-4)}
+
+/* Section Title Override */
+.driver-section-title{font-size:var(--text-base)}
+
+/* Settings / Profile */
+.driver-settings-back{margin-bottom:var(--space-3)}
+.driver-profile-center{text-align:center;margin-bottom:var(--space-3)}
+
+/* Login Logo Row */
+.driver-logo-row{display:flex;align-items:center;gap:var(--space-2)}
+.driver-logo-img{height:28px;width:auto;object-fit:contain}
+.driver-login-subtitle{text-align:center;margin-top:calc(-1 * var(--space-3))}
+
+/* Re-optimize Button */
+.driver-reoptimize-btn{margin-top:var(--space-3);width:100%;display:flex;align-items:center;justify-content:center;gap:var(--space-2)}
+
+/* Content Bottom Padding (notched phone safety) */
+.driver-content-pad{padding-bottom:max(72px,env(safe-area-inset-bottom))}
 
 /* ── THEME TOGGLE ── */
 .theme-toggle{display:flex;gap:2px;margin-right:4px}
