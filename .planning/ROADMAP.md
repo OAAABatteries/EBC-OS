@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Token Foundation** - Define the design vocabulary (spacing, typography, touch, shadows, semantic colors) as CSS custom properties (completed 2026-03-30)
 - [ ] **Phase 2: Shared Field Components** - Build and verify the shared component toolkit that all portal refactors will consume
 - [x] **Phase 3: DriverView Refactor** - Migrate the smallest portal as the process pilot — zero inline styles, shared components wired (gap closure in progress) (completed 2026-04-01)
-- [ ] **Phase 4: EmployeeView Refactor** - Migrate the mid-size portal using the proven process — forms, clock-in, and map controls fully polished
+- [x] **Phase 4: EmployeeView Refactor** - Migrate the mid-size portal using the proven process — forms, clock-in, and map controls fully polished (completed 2026-04-01)
 - [ ] **Phase 5: ForemanView Refactor** - Migrate the largest portal — 11-tab nav collapsed to bottom bar, phase colors tokenized, all tabs complete
 - [ ] **Phase 6: Polish and Theme Audit** - Cross-portal polish, 5-theme gauntlet, outdoor contrast verification, global touch/scroll optimizations
 
@@ -82,11 +82,11 @@ Plans:
   2. The clock-in flow uses `PortalHeader`, `FieldButton`, and `AsyncState` — no custom header or spinner markup in EmployeeView
   3. The material request form fields use `FieldInput`/`FieldSelect` with appropriate `inputmode` attributes (numeric fields open the numeric keyboard on mobile)
   4. Map tile switcher buttons are tappable without mis-tap — all meet 44px minimum touch target
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 Plans:
 - [x] 04-01-PLAN.md — Add employee-specific CSS classes to styles.js
 - [x] 04-02-PLAN.md — Wire PortalHeader/PortalTabBar, refactor login + clock + schedule + log + settings tabs
-- [ ] 04-03-PLAN.md — Refactor JSA + materials (FieldInput/FieldSelect with inputmode) + COS + RFIs tabs
+- [x] 04-03-PLAN.md — Refactor JSA + materials (FieldInput/FieldSelect with inputmode) + COS + RFIs tabs
 **UI hint**: yes
 
 ### Phase 5: ForemanView Refactor
@@ -125,6 +125,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 1. Token Foundation | 3/3 | Complete   | 2026-03-30 |
 | 2. Shared Field Components | 4/6 | In Progress|  |
 | 3. DriverView Refactor | 3/3 | Complete   | 2026-04-01 |
-| 4. EmployeeView Refactor | 2/3 | In Progress|  |
+| 4. EmployeeView Refactor | 3/3 | Complete   | 2026-04-01 |
 | 5. ForemanView Refactor | 0/TBD | Not started | - |
 | 6. Polish and Theme Audit | 0/TBD | Not started | - |
