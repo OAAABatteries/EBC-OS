@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Calendar, Settings, Navigation, Package, Truck, CheckCircle, MapPin, RefreshCw } from "lucide-react";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
-import { PortalHeader, PortalTabBar, FieldCard, FieldButton, EmptyState, StatusBadge } from "../components/field";
+import { PortalHeader, PortalTabBar, FieldCard, FieldButton, EmptyState, StatusBadge, Skeleton } from "../components/field";
 
 // ═══════════════════════════════════════════════════════════════
 //  Driver View — Delivery Route Map + Queue Management
@@ -70,6 +70,7 @@ export function DriverView({ app }) {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [driverTab, setDriverTab] = useState("route");
+  const [initialLoading, setInitialLoading] = useState(true);
   const [driverLat, setDriverLat] = useState(null);
   const [driverLng, setDriverLng] = useState(null);
   const [dragIdx, setDragIdx] = useState(null);
@@ -102,6 +103,12 @@ export function DriverView({ app }) {
       () => {},
       { enableHighAccuracy: true }
     );
+  }, []);
+
+  // ── initial load skeleton ──
+  useEffect(() => {
+    const timer = setTimeout(() => setInitialLoading(false), 600);
+    return () => clearTimeout(timer);
   }, []);
 
   // ── login ──
@@ -308,6 +315,37 @@ export function DriverView({ app }) {
   };
   const getInitials = (name) => name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
 
+  // ── skeleton placeholders ──
+  const routeCardSkeleton = (
+    <div className="driver-route-list">
+      {[1, 2, 3].map(i => (
+        <FieldCard key={i} className="driver-route-card">
+          <div className="flex-between mb-4">
+            <Skeleton width="60%" height="var(--text-sm)" />
+            <Skeleton width="48px" height="var(--text-sm)" />
+          </div>
+          <Skeleton width="80%" height="var(--text-xs)" className="mb-4" />
+          <Skeleton width="40%" height="var(--text-xs)" />
+        </FieldCard>
+      ))}
+    </div>
+  );
+
+  const completedCardSkeleton = (
+    <div className="driver-route-list">
+      {[1, 2].map(i => (
+        <FieldCard key={i} className="driver-completed-card">
+          <div className="flex-between mb-4">
+            <Skeleton width="50%" height="var(--text-sm)" />
+            <Skeleton width="64px" height="20px" />
+          </div>
+          <Skeleton width="70%" height="var(--text-xs)" className="mb-4" />
+          <Skeleton width="35%" height="var(--text-xs)" />
+        </FieldCard>
+      ))}
+    </div>
+  );
+
   // ── Tab definitions (D-05) ──
   const driverTabDefs = [
     { id: "route", label: "Route", icon: Navigation, badge: optimizedStops.length > 0 },
@@ -390,14 +428,15 @@ export function DriverView({ app }) {
             )}
 
             {/* Stop list — draggable (DRVR-03, D-03) */}
-            {optimizedStops.length === 0 ? (
-              <EmptyState
-                icon={Package}
-                heading={t("No deliveries in queue")}
-                message={t("Approved material requests will appear here")}
-                t={t}
-              />
-            ) : (
+            {initialLoading ? routeCardSkeleton : (
+              optimizedStops.length === 0 ? (
+                <EmptyState
+                  icon={Package}
+                  heading={t("No deliveries in queue")}
+                  message={t("Approved material requests will appear here")}
+                  t={t}
+                />
+              ) : (
               <div className="driver-route-list">
                 {optimizedStops.map((stop, idx) => (
                   <FieldCard
@@ -494,7 +533,7 @@ export function DriverView({ app }) {
                   </FieldCard>
                 ))}
               </div>
-            )}
+            ))}
 
             {/* Re-optimize button */}
             {manualOrder && optimizedStops.length > 1 && (
@@ -516,25 +555,27 @@ export function DriverView({ app }) {
             <div className="section-header">
               <div className="section-title driver-section-title">{t("Today's Deliveries")}</div>
             </div>
-            {todayDelivered.length === 0 ? (
-              <EmptyState
-                icon={CheckCircle}
-                heading={t("No deliveries completed today")}
-                t={t}
-              />
-            ) : (
-              <div className="driver-route-list">
-                {todayDelivered.map(req => (
-                  <FieldCard key={req.id} className="driver-completed-card">
-                    <div className="flex-between mb-4">
-                      <span className="text-sm font-semi">{req.material}</span>
-                      <StatusBadge status="completed" t={t} />
-                    </div>
-                    <div className="text-xs text-muted mb-4">{req.projectName} — {req.qty} {req.unit}</div>
-                    <div className="text-xs text-dim">{t("Delivered")} {fmtTime(req.deliveredAt)}</div>
-                  </FieldCard>
-                ))}
-              </div>
+            {initialLoading ? completedCardSkeleton : (
+              todayDelivered.length === 0 ? (
+                <EmptyState
+                  icon={CheckCircle}
+                  heading={t("No deliveries completed today")}
+                  t={t}
+                />
+              ) : (
+                <div className="driver-route-list">
+                  {todayDelivered.map(req => (
+                    <FieldCard key={req.id} className="driver-completed-card">
+                      <div className="flex-between mb-4">
+                        <span className="text-sm font-semi">{req.material}</span>
+                        <StatusBadge status="completed" t={t} />
+                      </div>
+                      <div className="text-xs text-muted mb-4">{req.projectName} — {req.qty} {req.unit}</div>
+                      <div className="text-xs text-dim">{t("Delivered")} {fmtTime(req.deliveredAt)}</div>
+                    </FieldCard>
+                  ))}
+                </div>
+              )
             )}
           </div>
         )}
