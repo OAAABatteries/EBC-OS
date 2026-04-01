@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Token Foundation** - Define the design vocabulary (spacing, typography, touch, shadows, semantic colors) as CSS custom properties (completed 2026-03-30)
 - [ ] **Phase 2: Shared Field Components** - Build and verify the shared component toolkit that all portal refactors will consume
-- [ ] **Phase 3: DriverView Refactor** - Migrate the smallest portal as the process pilot — zero inline styles, shared components wired (gap closure in progress)
+- [x] **Phase 3: DriverView Refactor** - Migrate the smallest portal as the process pilot — zero inline styles, shared components wired (gap closure in progress) (completed 2026-04-01)
 - [ ] **Phase 4: EmployeeView Refactor** - Migrate the mid-size portal using the proven process — forms, clock-in, and map controls fully polished
 - [ ] **Phase 5: ForemanView Refactor** - Migrate the largest portal — 11-tab nav collapsed to bottom bar, phase colors tokenized, all tabs complete
 - [ ] **Phase 6: Polish and Theme Audit** - Cross-portal polish, 5-theme gauntlet, outdoor contrast verification, global touch/scroll optimizations
@@ -66,11 +66,11 @@ Plans:
   2. Every button and input in DriverView is tappable without mis-tap at 375px viewport — touch targets visibly meet 44px minimum
   3. Route cards display using `FieldCard` and `StatusBadge` — no custom card markup in DriverView
   4. The route queue and completed deliveries list show skeleton screens while loading and an `EmptyState` component when no data exists
-**Plans:** 3 plans (2 complete + 1 gap closure)
+**Plans:** 3/3 plans complete
 Plans:
 - [x] 03-01-PLAN.md — Add driver-specific CSS classes to styles.js
 - [x] 03-02-PLAN.md — Rewrite DriverView.jsx with shared components and touch DnD
-- [ ] 03-03-PLAN.md — Gap closure: add skeleton/loading states for route queue and completed deliveries (DRVR-04)
+- [x] 03-03-PLAN.md — Gap closure: add skeleton/loading states for route queue and completed deliveries (DRVR-04)
 **UI hint**: yes
 
 ### Phase 4: EmployeeView Refactor
@@ -120,7 +120,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Token Foundation | 3/3 | Complete   | 2026-03-30 |
 | 2. Shared Field Components | 4/6 | In Progress|  |
-| 3. DriverView Refactor | 2/3 | Gap Closure | - |
+| 3. DriverView Refactor | 3/3 | Complete   | 2026-04-01 |
 | 4. EmployeeView Refactor | 0/TBD | Not started | - |
 | 5. ForemanView Refactor | 0/TBD | Not started | - |
 | 6. Polish and Theme Audit | 0/TBD | Not started | - |
