@@ -10,11 +10,12 @@ describe('PortalHeader', () => {
     expect(header.className).toContain('header');
   });
 
-  it('renders logo text "EBC-OS" with className "logo"', () => {
+  it('renders eagle logo image with className "portal-header-logo"', () => {
     const { container } = render(<PortalHeader />);
-    const logo = container.querySelector('.logo');
+    const logo = container.querySelector('.portal-header-logo');
     expect(logo).toBeTruthy();
-    expect(logo.textContent).toBe('EBC-OS');
+    expect(logo.tagName).toBe('IMG');
+    expect(logo.getAttribute('src')).toBe('/ebc-eagle-white.png');
   });
 
   it('variant="foreman" renders title prop in center slot', () => {
@@ -66,10 +67,12 @@ describe('PortalHeader', () => {
     expect(container.childNodes.length).toBe(1);
   });
 
-  it('uses t() for logo text if t prop provided', () => {
+  it('renders eagle logo image regardless of t prop', () => {
     const t = (key) => `TRANSLATED:${key}`;
-    render(<PortalHeader t={t} />);
-    expect(screen.getByText('TRANSLATED:EBC-OS')).toBeTruthy();
+    const { container } = render(<PortalHeader t={t} />);
+    const logo = container.querySelector('.portal-header-logo');
+    expect(logo).toBeTruthy();
+    expect(logo.getAttribute('alt')).toBe('EBC');
   });
 
   it('variant="foreman" does NOT render languageToggle', () => {

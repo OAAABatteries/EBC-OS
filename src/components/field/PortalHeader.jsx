@@ -14,12 +14,15 @@ export function PortalHeader({
   className,
   t,
 }) {
-  const logoText = t ? t('EBC-OS') : 'EBC-OS';
-
   return (
     <>
       <header className={`header ${className || ''}`.trim()}>
-        <span className="logo">{logoText}</span>
+        <img
+          src="/ebc-eagle-white.png"
+          alt="EBC"
+          className="portal-header-logo"
+          onError={(e) => { e.target.style.display = 'none'; }}
+        />
 
         {/* Center slot — foreman variant only */}
         {variant === 'foreman' && title && (

@@ -16,6 +16,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .logo{font-family:var(--font-head);font-size:18px;font-weight:700;color:var(--amber);letter-spacing:1px;white-space:nowrap;
   text-shadow:0 0 20px var(--amber-glow)}
 .logo-sub{font-size:10px;color:var(--text3);font-weight:400;letter-spacing:0.5px;display:block;margin-top:-2px}
+.portal-header-logo{height:28px;width:auto;object-fit:contain}
 .main-content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:24px 28px 40px;padding-bottom:calc(40px + env(safe-area-inset-bottom));animation:fadeIn 0.25s ease;position:relative;z-index:1}
 
 /* ══ NAV ══ */
@@ -897,8 +898,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 /* Re-optimize Button */
 .driver-reoptimize-btn{margin-top:var(--space-3);width:100%;display:flex;align-items:center;justify-content:center;gap:var(--space-2)}
 
-/* Content Bottom Padding (notched phone safety) */
-.driver-content-pad{padding-bottom:max(72px,env(safe-area-inset-bottom))}
+/* Content Bottom Padding (tab bar = 56px + breathing room + notch safety) */
+.driver-content-pad{padding-bottom:max(96px,calc(72px + env(safe-area-inset-bottom)))}
 
 /* ── THEME TOGGLE ── */
 .theme-toggle{display:flex;gap:2px;margin-right:4px}

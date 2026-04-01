@@ -344,11 +344,6 @@ export function DriverView({ app }) {
       <PortalHeader
         variant="driver"
         userName={`${activeDriver.name} \u00B7 ${t("Deliveries")}`}
-        logoutAction={
-          <FieldButton variant="ghost" className="btn-sm" onClick={handleLogout} t={t}>
-            {t("Logout")}
-          </FieldButton>
-        }
         t={t}
       />
 
