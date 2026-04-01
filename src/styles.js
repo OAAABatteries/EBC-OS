@@ -727,7 +727,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
   .emp-content{max-width:none}
   .employee-body{padding:20px 24px}
   .foreman-kpi-grid{grid-template-columns:repeat(4,1fr)}
-  .foreman-project-select{max-width:500px;margin:0 auto 16px;display:block;font-size:14px;padding:10px 14px}
+  .foreman-project-select{max-width:500px;margin:0 auto 16px;display:block;font-size:var(--text-base);padding:var(--space-3) var(--space-3)}
 }
 
 /* ══ MAP VIEW ══ */
@@ -836,24 +836,24 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .theme-btn.active{opacity:1;background:var(--amber-dim)}
 
 /* ── FOREMAN VIEW ── */
-.foreman-kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.foreman-kpi-card{padding:14px;border-radius:var(--radius);border:1px solid var(--glass-border);
+.foreman-kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-bottom:var(--space-4)}
+.foreman-kpi-card{padding:var(--space-3);border-radius:var(--radius);border:1px solid var(--glass-border);
   background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-.foreman-kpi-label{font-size:9px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px}
-.foreman-kpi-value{font-size:22px;font-weight:700;color:var(--amber);font-family:var(--font-mono)}
-.foreman-kpi-sub{font-size:11px;color:var(--text2);margin-top:2px}
-.foreman-team-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;
+.foreman-kpi-label{font-size:var(--text-sm);text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:var(--space-1)}
+.foreman-kpi-value{font-size:var(--text-display);line-height:var(--leading-tight);font-weight:var(--weight-bold);color:var(--amber);font-family:var(--font-mono)}
+.foreman-kpi-sub{font-size:var(--text-sm);color:var(--text2);margin-top:var(--space-1)}
+.foreman-team-row{display:flex;align-items:center;justify-content:space-between;padding:var(--space-2) var(--space-3);min-height:var(--touch-min);
   border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg2);margin-bottom:6px}
-.foreman-team-name{font-size:13px;font-weight:600;color:var(--text)}
-.foreman-team-role{font-size:11px;color:var(--text2)}
-.foreman-team-hours{font-size:13px;font-family:var(--font-mono);color:var(--amber)}
-.foreman-budget-bar{height:10px;border-radius:5px;background:var(--bg4);overflow:hidden;margin:8px 0}
+.foreman-team-name{font-size:var(--text-base);font-weight:var(--weight-bold);color:var(--text)}
+.foreman-team-role{font-size:var(--text-sm);color:var(--text2)}
+.foreman-team-hours{font-size:var(--text-base);font-family:var(--font-mono);color:var(--amber)}
+.foreman-budget-bar{height:10px;border-radius:5px;background:var(--bg4);overflow:hidden;margin:var(--space-2) 0}
 .foreman-budget-fill{height:100%;border-radius:5px;transition:width 0.4s ease}
-.foreman-project-select{width:100%;padding:8px 12px;border-radius:var(--radius-sm);
+.foreman-project-select{width:100%;padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);
   border:1px solid var(--border);background:var(--bg2);color:var(--text);
-  font-family:var(--font-body);font-size:13px;margin-bottom:12px}
-.foreman-cost-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;
-  border-bottom:1px solid var(--border);font-size:12px}
+  font-family:var(--font-body);font-size:var(--text-base);margin-bottom:12px}
+.foreman-cost-row{display:flex;align-items:center;justify-content:space-between;padding:var(--space-2) 0;
+  border-bottom:1px solid var(--border);font-size:var(--text-sm)}
 .foreman-cost-row:last-child{border-bottom:none}
 
 /* ── LOGIN FORM ── */
