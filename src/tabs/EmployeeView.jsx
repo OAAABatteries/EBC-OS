@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Search, MapPin, Calendar, Clock, AlertTriangle, Shield, Package, ClipboardList, FileText, PenLine, Settings } from "lucide-react";
-import { PortalHeader, PortalTabBar, FieldButton, FieldInput, EmptyState } from "../components/field";
+import { PortalHeader, PortalTabBar, FieldButton, FieldInput, FieldSelect, EmptyState, StatusBadge } from "../components/field";
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { useNotifications } from "../hooks/useNotifications";
@@ -1261,15 +1261,15 @@ export function EmployeeView({ app }) {
 
             return (
               <div className="emp-content">
-                <button className="cal-nav-btn" style={{ marginBottom: 12 }} onClick={() => setActiveJsaId(null)}>{t("← Back")}</button>
+                <button className="cal-nav-btn emp-jsa-back-btn" onClick={() => setActiveJsaId(null)}>{t("← Back")}</button>
 
-                <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8, flexWrap: "wrap" }}>
-                  <span className="jsa-status-badge" style={{ background: (jsa.status === "active" ? "#10b981" : "#f59e0b") + "22", color: jsa.status === "active" ? "#10b981" : "#f59e0b" }}>{jsa.status.toUpperCase()}</span>
+                <div className="emp-jsa-badges">
+                  <StatusBadge status={jsa.status === "active" ? "approved" : "pending"} t={() => jsa.status.toUpperCase()} />
                   <span className="jsa-risk-badge" style={{ background: rc.bg + "22", color: rc.bg }}>{rc.label} Risk</span>
                 </div>
 
-                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{jsa.title}</h3>
-                <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 12 }}>
+                <h3 className="emp-jsa-title">{jsa.title}</h3>
+                <div className="emp-jsa-meta">
                   {proj?.name} · {jsa.date} · {jsa.supervisor}
                 </div>
 
@@ -1279,20 +1279,20 @@ export function EmployeeView({ app }) {
                   let sigDrawing = false;
                   let sigHasStrokes = false;
                   return (
-                    <div style={{ marginBottom: 16 }}>
+                    <div className="emp-jsa-sign-section">
                       {/* Hazard acknowledgment header */}
-                      <div style={{ background: "var(--amber-dim)", border: "1px solid var(--amber)", borderRadius: 8, padding: 12, marginBottom: 12, textAlign: "center" }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--amber)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><AlertTriangle size={16} />{t("Review & Sign")}</div>
-                        <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 4 }}>
+                      <div className="emp-jsa-sign-banner">
+                        <div className="emp-jsa-sign-banner-title"><AlertTriangle size={16} />{t("Review & Sign")}</div>
+                        <div className="emp-jsa-sign-banner-sub">
                           {lang === "es" ? "Revise los peligros abajo y firme para reconocer" : "Review hazards below and sign to acknowledge"}
                         </div>
                       </div>
 
                       {/* Signature pad */}
-                      <div style={{ marginBottom: 8 }}>
-                        <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 600, marginBottom: 4 }}>{t("Sign below")}</div>
+                      <div className="mb-8">
+                        <div className="emp-jsa-sign-label">{t("Sign below")}</div>
                         <canvas ref={sigCanvasRef}
-                          style={{ width: "100%", height: 120, background: "var(--bg3)", border: "2px solid var(--border)", borderRadius: 8, cursor: "crosshair", touchAction: "none" }}
+                          className="emp-jsa-canvas"
                           onMouseDown={(e) => { e.preventDefault(); const ctx = sigCanvasRef.current.getContext("2d"); const rect = sigCanvasRef.current.getBoundingClientRect(); ctx.beginPath(); ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top); sigDrawing = true; }}
                           onMouseMove={(e) => { if (!sigDrawing) return; e.preventDefault(); const ctx = sigCanvasRef.current.getContext("2d"); const rect = sigCanvasRef.current.getBoundingClientRect(); ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top); ctx.stroke(); sigHasStrokes = true; }}
                           onMouseUp={(e) => { if (e) e.preventDefault(); sigDrawing = false; }}
@@ -1317,7 +1317,7 @@ export function EmployeeView({ app }) {
                         />
                       </div>
 
-                      <button className="btn btn-primary" style={{ width: "100%", padding: "14px", fontSize: 16, fontWeight: 700 }}
+                      <FieldButton variant="primary" className="emp-jsa-submit-btn"
                         onClick={() => {
                           const canvas = sigCanvasRef.current;
                           if (!canvas) return;
@@ -1327,27 +1327,27 @@ export function EmployeeView({ app }) {
                           } : j));
                           show(t("You have signed the JSA"), "ok");
                         }}>
-                        <PenLine size={16} style={{ display: "inline", marginRight: 6, verticalAlign: "middle" }} />{t("I Acknowledge & Sign")}
-                      </button>
+                        <PenLine size={16} />{t("I Acknowledge & Sign")}
+                      </FieldButton>
                     </div>
                   );
                 })()}
                 {alreadySigned && (
-                  <div style={{ background: "#10b98122", color: "#10b981", padding: 12, borderRadius: 8, textAlign: "center", fontWeight: 600, marginBottom: 16, fontSize: 14 }}>
+                  <div className="emp-jsa-signed-notice">
                     ✓ {t("You have signed this JSA")}
                   </div>
                 )}
 
                 {/* PPE */}
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Required PPE")}</div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div className="emp-jsa-ppe-section">
+                  <div className="emp-jsa-ppe-label">{t("Required PPE")}</div>
+                  <div className="emp-jsa-ppe-grid">
                     {(jsa.ppe || []).map(k => {
                       const item = PPE_ITEMS.find(p => p.key === k);
                       return item ? (
-                        <div key={k} style={{ textAlign: "center", fontSize: 11 }}>
-                          <div style={{ fontSize: 22 }}>{item.icon}</div>
-                          <div style={{ color: "var(--text3)" }}>{lang === "es" ? item.labelEs : item.label}</div>
+                        <div key={k} className="emp-jsa-ppe-item">
+                          <div className="emp-jsa-ppe-icon">{item.icon}</div>
+                          <div className="emp-jsa-ppe-name">{lang === "es" ? item.labelEs : item.label}</div>
                         </div>
                       ) : null;
                     })}
@@ -1355,25 +1355,25 @@ export function EmployeeView({ app }) {
                 </div>
 
                 {/* Steps & Hazards */}
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Job Steps & Hazards")}</div>
+                <div className="emp-jsa-steps-section">
+                  <div className="emp-jsa-ppe-label">{t("Job Steps & Hazards")}</div>
                   {(jsa.steps || []).map((step, idx) => (
-                    <div key={step.id} className="card" style={{ padding: 10, marginBottom: 6 }}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
-                        <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--amber)", color: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{idx + 1}</span>
-                        <span style={{ fontSize: 13, fontWeight: 600 }}>{step.step}</span>
+                    <div key={step.id} className="card emp-jsa-step-card">
+                      <div className="emp-jsa-step-header">
+                        <span className="emp-jsa-step-number">{idx + 1}</span>
+                        <span className="emp-jsa-step-name">{step.step}</span>
                       </div>
                       {(step.hazards || []).map((h, hi) => {
                         const score = (h.likelihood || 1) * (h.severity || 1);
                         const hrc = riskColor(score);
                         return (
-                          <div key={hi} style={{ marginLeft: 30, padding: "6px 0", borderTop: "1px solid var(--border)" }}>
-                            <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 2 }}>
-                              <span style={{ background: hrc.bg, color: "#fff", fontSize: 10, padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>{score}</span>
-                              <span style={{ fontSize: 12, fontWeight: 500 }}>{h.hazard}</span>
+                          <div key={hi} className="emp-jsa-hazard-row">
+                            <div className="emp-jsa-hazard-header">
+                              <span className="emp-jsa-hazard-score" style={{ background: hrc.bg }}>{score}</span>
+                              <span className="emp-jsa-hazard-name">{h.hazard}</span>
                             </div>
-                            {h.hazardEs && <div style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic", marginBottom: 2 }}>{h.hazardEs}</div>}
-                            <div style={{ fontSize: 11, color: "var(--text3)" }}>
+                            {h.hazardEs && <div className="emp-jsa-hazard-es">{h.hazardEs}</div>}
+                            <div className="emp-jsa-hazard-control">
                               {(h.controls || []).map((c, ci) => <span key={ci}>✓ {c}{ci < h.controls.length - 1 ? " · " : ""}</span>)}
                             </div>
                           </div>
@@ -1384,14 +1384,14 @@ export function EmployeeView({ app }) {
                 </div>
 
                 {/* Crew who signed */}
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Crew Signed")} ({(jsa.teamSignOn || []).length})</div>
+                <div className="emp-jsa-crew-section">
+                  <div className="emp-jsa-ppe-label">{t("Crew Signed")} ({(jsa.teamSignOn || []).length})</div>
                   {(jsa.teamSignOn || []).map((c, i) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
-                      <span style={{ fontSize: 13, fontWeight: c.employeeId === activeEmp.id ? 700 : 400 }}>
+                    <div key={i} className="emp-jsa-crew-row">
+                      <span className={c.employeeId === activeEmp.id ? "emp-jsa-crew-name emp-jsa-crew-name--self" : "emp-jsa-crew-name"}>
                         {c.name} {c.employeeId === activeEmp.id ? "(You)" : ""}
                       </span>
-                      <span style={{ fontSize: 11, color: "#10b981" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                      <span className="emp-jsa-crew-time">✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                     </div>
                   ))}
                 </div>
@@ -1403,51 +1403,47 @@ export function EmployeeView({ app }) {
           const unsignedJsas = myJsaList.filter(j => j.status === "active" && !(j.teamSignOn || []).some(c => c.employeeId === activeEmp.id));
           return (
             <div className="emp-content">
-              <div className="section-title" style={{ fontSize: 16, marginBottom: 12 }}>{t("Job Safety Analysis")}</div>
+              <div className="section-title emp-section-title">{t("Job Safety Analysis")}</div>
 
               {/* Unsigned JSA notification */}
               {unsignedJsas.length > 0 && (
-                <div style={{ background: "rgba(245,158,11,0.12)", border: "2px solid var(--amber)", borderRadius: 10, padding: 14, marginBottom: 16, cursor: "pointer", animation: "fadeIn 0.3s" }}
-                  onClick={() => setActiveJsaId(unsignedJsas[0].id)}>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <AlertTriangle size={24} style={{ color: "var(--amber)", flexShrink: 0 }} />
+                <div className="emp-jsa-unsigned-banner" onClick={() => setActiveJsaId(unsignedJsas[0].id)}>
+                  <div className="emp-jsa-unsigned-row">
+                    <AlertTriangle size={24} className="text-amber" />
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--amber)" }}>{t("You have an unsigned safety briefing")}</div>
-                      <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>{unsignedJsas[0].title} — {t("Tap to review & sign")}</div>
+                      <div className="emp-jsa-unsigned-title">{t("You have an unsigned safety briefing")}</div>
+                      <div className="emp-jsa-unsigned-sub">{unsignedJsas[0].title} — {t("Tap to review & sign")}</div>
                     </div>
                   </div>
                 </div>
               )}
 
               {myJsaList.length === 0 ? (
-                <div className="empty-state" style={{ padding: "30px 20px" }}>
-                  <div className="empty-icon"><Shield size={32} /></div>
-                  <div className="empty-text">{t("No active JSAs for your projects")}</div>
-                </div>
+                <EmptyState icon={Shield} heading={t("No active JSAs for your projects")} t={t} />
               ) : myJsaList.map(j => {
                 const maxRisk = Math.max(0, ...j.steps.flatMap(s => (s.hazards || []).map(h => (h.likelihood || 1) * (h.severity || 1))));
                 const rc = riskColor(maxRisk);
                 const signed = (j.teamSignOn || []).some(c => c.employeeId === activeEmp.id);
                 const proj = projects.find(p => p.id === j.projectId);
                 return (
-                  <div key={j.id} className="card" style={{ padding: 12, marginBottom: 8, cursor: "pointer", borderLeft: signed ? "3px solid #10b981" : "3px solid var(--amber)" }}
+                  <div key={j.id} className={signed ? "card emp-jsa-list-card emp-jsa-list-card--signed" : "card emp-jsa-list-card emp-jsa-list-card--unsigned"}
                     onClick={() => setActiveJsaId(j.id)}>
-                    <div className="flex-between" style={{ marginBottom: 4 }}>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                        <span className="jsa-risk-badge" style={{ background: rc.bg + "22", color: rc.bg, fontSize: 10 }}>{rc.label}</span>
+                    <div className="flex-between mb-4">
+                      <div className="emp-jsa-list-badges">
+                        <span className="jsa-risk-badge" style={{ background: rc.bg + "22", color: rc.bg }}>{rc.label}</span>
                         {signed
-                          ? <span style={{ fontSize: 10, color: "#10b981", fontWeight: 600 }}>✓ {t("Signed")}</span>
-                          : <span style={{ fontSize: 10, color: "var(--amber)", fontWeight: 600 }}>⚠ {t("Not Signed")}</span>
+                          ? <span className="emp-jsa-crew-time">✓ {t("Signed")}</span>
+                          : <span className="text-amber text-xs font-semi">⚠ {t("Not Signed")}</span>
                         }
                       </div>
-                      <span style={{ fontSize: 11, color: "var(--text3)" }}>{j.date}</span>
+                      <span className="emp-jsa-list-date">{j.date}</span>
                     </div>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>{j.title}</div>
-                    <div style={{ fontSize: 11, color: "var(--text3)" }}>{proj?.name} · {j.supervisor}</div>
-                    <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
+                    <div className="emp-jsa-list-title">{j.title}</div>
+                    <div className="emp-jsa-list-meta">{proj?.name} · {j.supervisor}</div>
+                    <div className="emp-jsa-list-ppe">
                       {(j.ppe || []).slice(0, 6).map(k => {
                         const item = PPE_ITEMS.find(p => p.key === k);
-                        return item ? <span key={k} style={{ fontSize: 14 }}>{item.icon}</span> : null;
+                        return item ? <span key={k} className="emp-jsa-list-ppe-icon">{item.icon}</span> : null;
                       })}
                     </div>
                   </div>
