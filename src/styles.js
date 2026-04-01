@@ -764,6 +764,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .emp-project-action-btn--draw{border:none}
 
 /* ── SCHEDULE TAB ── */
+.emp-schedule-card{padding:0;overflow:hidden}
 .emp-schedule-empty{padding:30px 20px}
 .emp-section-title{font-size:16px}
 
@@ -841,6 +842,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 
 /* ── CONTENT PADDING ── */
 .emp-content-pad{padding-bottom:max(72px, env(safe-area-inset-bottom))}
+.emp-report-problem-btn{width:100%;margin-top:var(--space-4);padding:16px 20px;border-radius:12px;background:rgba(245,158,11,0.10);border:2px solid rgba(245,158,11,0.35);color:var(--amber);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:10px}
+.emp-search-item.active{background:var(--accent-dim)}
 
 /* ── FONT MONO OVERRIDE ── */
 .emp-font-mono{font-family:var(--font-mono)}

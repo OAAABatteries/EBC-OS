@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Search, MapPin, Calendar, Clock, AlertTriangle, Shield, Package, ClipboardList, FileText, PenLine } from "lucide-react";
+import { Search, MapPin, Calendar, Clock, AlertTriangle, Shield, Package, ClipboardList, FileText, PenLine, Settings } from "lucide-react";
+import { PortalHeader, PortalTabBar, FieldButton, FieldInput, EmptyState } from "../components/field";
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { useNotifications } from "../hooks/useNotifications";
@@ -595,6 +596,18 @@ export function EmployeeView({ app }) {
     return base;
   }, [activeEmp, lang, isClockedIn]);
 
+  // ── portal tab bar definition ──
+  const portalTabs = [
+    { id: "clock", label: "Clock", icon: Clock, badge: isClockedIn },
+    { id: "schedule", label: "Schedule", icon: Calendar, badge: false },
+    { id: "materials", label: "Materials", icon: Package, badge: myMatRequests?.some(r => r.status === "requested") },
+    { id: "settings", label: "Settings", icon: Settings },
+    { id: "log", label: "Time Log", icon: ClipboardList },
+    { id: "jsa", label: "JSA", icon: Shield },
+    { id: "cos", label: "Change Orders", icon: FileText },
+    { id: "rfis", label: "RFIs", icon: FileText },
+  ];
+
   // ── material request submit ──
   const handleMatSubmit = () => {
     if (!matProjectId || !matForm.material.trim() || !matForm.qty) return;
@@ -651,14 +664,11 @@ export function EmployeeView({ app }) {
   if (!activeEmp) {
     return (
       <div className="employee-app">
-        <header className="employee-header">
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
-          <span className="text-sm text-muted">{t("Employee Portal")}</span>
-        </header>
+        <PortalHeader variant="employee" languageToggle={{ lang, setLang }} t={t} />
         <div className="employee-body">
           <div className="login-wrap">
             <div className="login-title">{t("Sign In")}</div>
-            <div className="text-sm text-muted" style={{ textAlign: "center", marginTop: -12 }}>{t("Employee Portal")}</div>
+            <div className="text-sm text-muted emp-settings-center">{t("Employee Portal")}</div>
             <div className="login-form">
               <input
                 type="email"
@@ -698,21 +708,19 @@ export function EmployeeView({ app }) {
 
     return (
       <div className="employee-app">
-        <header className="employee-header">
-          <div>
-            <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
-            <span className="text-xs text-muted">{activeEmp.name} · {activeEmp.role}</span>
-          </div>
-          <button className="settings-gear" onClick={() => { setSelectedInfoProject(null); setEmpTab("settings"); }} title={t("Settings")}>
-            &#9881;
-          </button>
-        </header>
-        <div className="employee-body">
+        <PortalHeader
+          variant="employee"
+          userName={activeEmp.name}
+          languageToggle={{ lang, setLang }}
+          settingsAction={() => { setSelectedInfoProject(null); setEmpTab("settings"); }}
+          t={t}
+        />
+        <div className="employee-body emp-content-pad">
           <div className="project-info">
             <button className="project-info-back" onClick={() => setSelectedInfoProject(null)}>
               ← {t("Back to Schedule")}
             </button>
-            <div className="clock-card" style={{ textAlign: "left" }}>
+            <div className="clock-card emp-clock-card-left">
               <div className="text-lg font-bold text-amber mb-8">{proj.name}</div>
 
               <div className="project-info-field">
@@ -736,7 +744,7 @@ export function EmployeeView({ app }) {
                 <span className="project-info-value">{proj.phase}</span>
               </div>
 
-              <div style={{ marginTop: 8 }}>
+              <div className="emp-project-progress-bar">
                 <div className="flex-between mb-4">
                   <span className="text-xs text-dim">{t("Progress")}</span>
                   <span className="text-xs font-mono text-amber">{proj.progress}%</span>
@@ -747,10 +755,10 @@ export function EmployeeView({ app }) {
               </div>
 
               {proj.emergencyContact && (
-                <div style={{ marginTop: 12, padding: "10px 12px", background: "var(--red-dim)", borderRadius: "var(--radius-sm)" }}>
+                <div className="emp-emergency-box">
                   <div className="text-xs font-semi text-red mb-4">{t("Emergency Contact")}</div>
                   <div className="text-sm">{proj.emergencyContact.name} — {proj.emergencyContact.role}</div>
-                  <a href={`tel:${proj.emergencyContact.phone}`} className="text-sm text-amber" style={{ textDecoration: "none" }}>
+                  <a href={`tel:${proj.emergencyContact.phone}`} className="text-sm text-amber emp-emergency-link">
                     {proj.emergencyContact.phone}
                   </a>
                 </div>
@@ -759,9 +767,9 @@ export function EmployeeView({ app }) {
 
             {/* ── Foreman-only document sections ── */}
             {isForeman && (
-              <div style={{ marginTop: 12 }}>
+              <div className="emp-info-section">
                 {/* Submittals */}
-                <div className="clock-card" style={{ textAlign: "left", marginBottom: 8 }}>
+                <div className="clock-card emp-info-card emp-clock-card-left">
                   <div className="project-section-header" onClick={() => toggleSection("subs")}>
                     <span>{t("Submittals")} ({projSubs.length})</span>
                     <span>{openSections.subs ? "▾" : "▸"}</span>
@@ -770,9 +778,9 @@ export function EmployeeView({ app }) {
                     projSubs.length === 0 ? (
                       <div className="text-xs text-muted mt-8">{t("No submittals")}</div>
                     ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                      <div className="emp-list-col">
                         {projSubs.map(s => (
-                          <div key={s.id} className="flex-between" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                          <div key={s.id} className="flex-between emp-list-row">
                             <div>
                               <div className="text-sm font-semi">{s.number}</div>
                               <div className="text-xs text-muted">{s.desc}</div>
@@ -788,7 +796,7 @@ export function EmployeeView({ app }) {
                 </div>
 
                 {/* Change Orders */}
-                <div className="clock-card" style={{ textAlign: "left", marginBottom: 8 }}>
+                <div className="clock-card emp-info-card emp-clock-card-left">
                   <div className="project-section-header" onClick={() => toggleSection("cos")}>
                     <span>{t("Change Orders")} ({projCOs.length})</span>
                     <span>{openSections.cos ? "▾" : "▸"}</span>
@@ -797,9 +805,9 @@ export function EmployeeView({ app }) {
                     projCOs.length === 0 ? (
                       <div className="text-xs text-muted mt-8">{t("No change orders")}</div>
                     ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                      <div className="emp-list-col">
                         {projCOs.map(co => (
-                          <div key={co.id} className="flex-between" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                          <div key={co.id} className="flex-between emp-list-row">
                             <div>
                               <div className="text-sm font-semi">{co.number}</div>
                               <div className="text-xs text-muted">{co.desc}</div>
@@ -813,7 +821,7 @@ export function EmployeeView({ app }) {
                 </div>
 
                 {/* RFIs */}
-                <div className="clock-card" style={{ textAlign: "left" }}>
+                <div className="clock-card emp-clock-card-left">
                   <div className="project-section-header" onClick={() => toggleSection("rfis")}>
                     <span>{t("RFIs")} ({projRFIs.length})</span>
                     <span>{openSections.rfis ? "▾" : "▸"}</span>
@@ -822,9 +830,9 @@ export function EmployeeView({ app }) {
                     projRFIs.length === 0 ? (
                       <div className="text-xs text-muted mt-8">{t("No RFIs")}</div>
                     ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                      <div className="emp-list-col">
                         {projRFIs.map(rfi => (
-                          <div key={rfi.id} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                          <div key={rfi.id} className="emp-list-row">
                             <div className="flex-between mb-4">
                               <span className="text-sm font-semi">{rfi.number}</span>
                               <span className={`badge ${rfi.status === "answered" ? "badge-green" : "badge-amber"}`}>
@@ -870,29 +878,15 @@ export function EmployeeView({ app }) {
         />
       )}
 
-      <header className="employee-header">
-        <div>
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
-          <span className="text-xs text-muted">{activeEmp.name} · {activeEmp.role}</span>
-        </div>
-        <button className="settings-gear" onClick={() => setEmpTab("settings")} title={t("Settings")}>
-          &#9881;
-        </button>
-      </header>
+      <PortalHeader
+        variant="employee"
+        userName={activeEmp.name}
+        languageToggle={{ lang, setLang }}
+        settingsAction={() => setEmpTab("settings")}
+        t={t}
+      />
 
-      <div className="employee-body">
-        {/* ── Sub-tabs ── */}
-        <div className="emp-tabs">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              className={`emp-tab${empTab === tab.key ? " active" : ""}`}
-              onClick={() => setEmpTab(tab.key)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      <div className="employee-body emp-content-pad">
 
         {/* ═══ CLOCK TAB ═══ */}
         {empTab === "clock" && (
@@ -907,7 +901,7 @@ export function EmployeeView({ app }) {
               {isClockedIn && (
                 <>
                   <div className="clock-project">{activeEntry.projectName}</div>
-                  <div className="text-sm text-amber mb-16" style={{ fontFamily: "var(--font-mono)" }}>
+                  <div className="text-sm text-amber mb-16 emp-font-mono">
                     {elapsed}
                   </div>
                 </>
@@ -922,7 +916,7 @@ export function EmployeeView({ app }) {
                 </div>
               )}
               {geoLoading && (
-                <div className="geo-status inside" style={{ opacity: 0.6 }}>
+                <div className="geo-status inside">
                   <span className="geo-dot" /> {t("Getting location...")}
                 </div>
               )}
@@ -958,26 +952,25 @@ export function EmployeeView({ app }) {
               {!isClockedIn && (
                 <div className="form-group mb-16">
                   {!showProjectSearch ? (
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      style={{ width: "100%", opacity: 0.7 }}
+                    <FieldButton
+                      variant="ghost"
+                      className="emp-search-btn"
                       onClick={() => setShowProjectSearch(true)}
                     >
-                      <Search size={14} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />{t("Search project manually")}
-                    </button>
+                      <Search size={14} />{t("Search project manually")}
+                    </FieldButton>
                   ) : (
                     <>
                       <label className="form-label">{t("Search Project")}</label>
                       <input
-                        className="form-input"
+                        className="form-input mb-8"
                         type="text"
                         placeholder={t("Type project name or address...")}
                         value={projectSearch}
                         onChange={(e) => setProjectSearch(e.target.value)}
                         autoFocus
-                        style={{ marginBottom: 8 }}
                       />
-                      <div style={{ maxHeight: 180, overflowY: "auto", borderRadius: 8, background: "var(--glass-bg)" }}>
+                      <div className="emp-search-results">
                         {projects
                           .filter(p => {
                             if (!projectSearch.trim()) return true;
@@ -988,32 +981,27 @@ export function EmployeeView({ app }) {
                           })
                           .slice(0, 8)
                           .map(p => (
-                            <div
+                            <button
                               key={p.id}
+                              className={`emp-search-item${selectedProject?.id === p.id ? " active" : ""}`}
                               onClick={() => {
                                 setSelectedProject({ id: p.id, name: p.name, withinGeofence: true });
                                 setShowProjectSearch(false);
                                 setProjectSearch("");
                               }}
-                              style={{
-                                padding: "10px 14px",
-                                cursor: "pointer",
-                                borderBottom: "1px solid var(--glass-border)",
-                                background: selectedProject?.id === p.id ? "var(--accent-dim)" : "transparent",
-                              }}
                             >
                               <div className="text-sm font-semi">{p.name}</div>
                               <div className="text-xs text-muted">{p.address || p.gc || ""}</div>
-                            </div>
+                            </button>
                           ))}
                       </div>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        style={{ marginTop: 6, width: "100%" }}
+                      <FieldButton
+                        variant="ghost"
+                        className="emp-search-btn mt-8"
                         onClick={() => { setShowProjectSearch(false); setProjectSearch(""); }}
                       >
                         {t("Cancel")}
-                      </button>
+                      </FieldButton>
                     </>
                   )}
                 </div>
@@ -1021,32 +1009,32 @@ export function EmployeeView({ app }) {
 
               {/* Show selected project */}
               {!isClockedIn && selectedProject && (
-                <div className="text-sm font-semi" style={{ textAlign: "center", marginBottom: 12, color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                <div className="text-sm font-semi emp-accent-label">
                   <MapPin size={14} />{selectedProject.name}
                 </div>
               )}
 
               {isClockedIn ? (
-                <button className="clock-btn clock-out" onClick={handleClockOut}>
+                <FieldButton className="clock-btn clock-out" onClick={handleClockOut}>
                   {t("Clock Out")}
-                </button>
+                </FieldButton>
               ) : geoLoading ? (
-                <button className="clock-btn clock-in" disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>
+                <FieldButton className="clock-btn clock-in" disabled>
                   {t("Getting location...")}
-                </button>
+                </FieldButton>
               ) : !geoStatus ? (
-                <button className="clock-btn clock-in" disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>
+                <FieldButton className="clock-btn clock-in" disabled>
                   {t("Getting location...")}
-                </button>
+                </FieldButton>
               ) : (
-                <button className="clock-btn clock-in" onClick={handleClockIn}>
+                <FieldButton className="clock-btn clock-in" onClick={handleClockIn}>
                   {t("Clock In")}
-                </button>
+                </FieldButton>
               )}
             </div>
 
             {showOverride && (
-              <div className="clock-card" style={{ borderColor: "var(--amber)", marginTop: 12 }}>
+              <div className="clock-card emp-override-card">
                 <div className="text-sm text-amber font-semi mb-8">
                   {t("You are outside the geofence. Enter a reason to override:")}
                 </div>
@@ -1057,49 +1045,49 @@ export function EmployeeView({ app }) {
                   onChange={(e) => setOverrideReason(e.target.value)}
                   rows={2}
                 />
-                <div className="btn-group" style={{ justifyContent: "flex-end" }}>
-                  <button className="btn btn-ghost btn-sm" onClick={() => { setShowOverride(false); setOverrideReason(""); }}>
+                <div className="btn-group emp-override-actions">
+                  <FieldButton variant="ghost" onClick={() => { setShowOverride(false); setOverrideReason(""); }}>
                     {t("Cancel")}
-                  </button>
-                  <button
-                    className="btn btn-primary btn-sm"
+                  </FieldButton>
+                  <FieldButton
+                    variant="primary"
                     onClick={handleOverrideClockIn}
                     disabled={!overrideReason.trim()}
                   >
                     {t("Override & Clock In")}
-                  </button>
+                  </FieldButton>
                 </div>
               </div>
             )}
 
             {/* ── Map ── */}
-            <div className="clock-card" style={{ marginTop: 12, padding: 0, overflow: "hidden", position: "relative" }}>
-              <div ref={clockMapRef} style={{ width: "100%", height: drawingPerimeter ? 380 : 280, borderRadius: "var(--radius)", transition: "height 0.3s", cursor: drawingPerimeter ? "crosshair" : "" }} />
+            <div className="clock-card emp-clock-map-card">
+              <div ref={clockMapRef} className="emp-clock-map" style={{ height: drawingPerimeter ? 380 : 280, cursor: drawingPerimeter ? "crosshair" : "" }} />
               {/* Tile switcher */}
-              <div style={{ position: "absolute", top: 8, right: 8, zIndex: 1000, display: "flex", gap: 2, background: "rgba(0,0,0,0.7)", borderRadius: 6, padding: 2 }}>
-                {[["dark", "Dark"], ["satellite", "Sat"], ["street", "Street"]].map(([key, label]) => (
-                  <button key={key} onClick={() => setMapStyle(key)}
-                    style={{ padding: "4px 8px", fontSize: 11, border: "none", borderRadius: 4, cursor: "pointer", background: mapStyle === key ? "var(--amber)" : "transparent", color: mapStyle === key ? "#000" : "#fff" }}>
-                    {label}
+              <div className="emp-map-tile-bar">
+                {Object.keys(TILE_SETS).map(key => (
+                  <button
+                    key={key}
+                    className={`emp-map-tile-btn${mapStyle === key ? " active" : ""}`}
+                    onClick={() => setMapStyle(key)}
+                  >
+                    {key}
                   </button>
                 ))}
               </div>
               {/* Drawing mode controls */}
               {drawingPerimeter && (
-                <div style={{ position: "absolute", bottom: 8, left: 8, right: 8, zIndex: 1000, display: "flex", gap: 6, alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.85)", borderRadius: 8, padding: "8px 12px" }}>
-                  <span style={{ fontSize: 11, color: "#f59e0b", fontWeight: 600 }}>
+                <div className="emp-perimeter-bar">
+                  <span className="emp-perimeter-label">
                     {perimeterPoints.length} {perimeterPoints.length === 1 ? "point" : "points"}
                   </span>
-                  <button onClick={undoLastPoint} disabled={perimeterPoints.length === 0}
-                    style={{ padding: "4px 10px", fontSize: 11, border: "1px solid #555", borderRadius: 4, cursor: "pointer", background: "transparent", color: "#ccc" }}>
+                  <button className="emp-perimeter-btn" onClick={undoLastPoint} disabled={perimeterPoints.length === 0}>
                     Undo
                   </button>
-                  <button onClick={finishPerimeter} disabled={perimeterPoints.length < 3}
-                    style={{ padding: "4px 10px", fontSize: 11, border: "none", borderRadius: 4, cursor: perimeterPoints.length < 3 ? "not-allowed" : "pointer", background: perimeterPoints.length >= 3 ? "#10b981" : "#333", color: "#fff", fontWeight: 600 }}>
+                  <button className={`emp-perimeter-btn emp-perimeter-btn--save${perimeterPoints.length < 3 ? " disabled" : ""}`} onClick={finishPerimeter} disabled={perimeterPoints.length < 3}>
                     Finish
                   </button>
-                  <button onClick={cancelPerimeter}
-                    style={{ padding: "4px 10px", fontSize: 11, border: "none", borderRadius: 4, cursor: "pointer", background: "#ef4444", color: "#fff" }}>
+                  <button className="emp-perimeter-btn emp-perimeter-btn--cancel" onClick={cancelPerimeter}>
                     Cancel
                   </button>
                 </div>
@@ -1108,11 +1096,11 @@ export function EmployeeView({ app }) {
 
             {/* ── Perimeter controls per project ── */}
             {!drawingPerimeter && (
-              <div className="clock-card" style={{ marginTop: 12 }}>
-                <div className="text-xs text-dim mb-8" style={{ textTransform: "uppercase", letterSpacing: "0.6px" }}>
+              <div className="clock-card emp-info-section emp-log-entry">
+                <div className="text-xs text-dim mb-8 emp-project-list-header">
                   Project Perimeters
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div className="emp-log-list">
                   {projects.filter(p => p.lat && p.lng).slice(0, 8).map((p, idx) => {
                     const hasPerimeter = p.perimeter && p.perimeter.length >= 3;
                     const color = PERIMETER_COLORS[idx % PERIMETER_COLORS.length];
@@ -1122,12 +1110,12 @@ export function EmployeeView({ app }) {
                       : `${Math.round(areaSqFt).toLocaleString()} sq ft`;
                     const isInside = hasPerimeter && position ? pointInPolygon(position.lat, position.lng, p.perimeter) : false;
                     return (
-                      <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, padding: "4px 0", borderBottom: "1px solid var(--border)" }}>
-                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "var(--text)" }}>{p.name}</div>
+                      <div key={p.id} className="emp-project-row">
+                        <div className="emp-project-dot" style={{ background: color }} />
+                        <div className="emp-project-name-col">
+                          <div className="emp-project-name">{p.name}</div>
                           {hasPerimeter && (
-                            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>
+                            <div className="emp-project-meta">
                               {areaLabel} &middot; {p.perimeter.length} pts
                               {position && (
                                 <span style={{ marginLeft: 6, color: isInside ? "#10b981" : "#ef4444" }}>
@@ -1137,15 +1125,13 @@ export function EmployeeView({ app }) {
                             </div>
                           )}
                         </div>
-                        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                        <div className="emp-project-actions">
                           {hasPerimeter ? (
-                            <button onClick={() => clearPerimeter(p.id)}
-                              style={{ padding: "3px 8px", fontSize: 10, border: "1px solid #ef4444", borderRadius: 4, cursor: "pointer", background: "transparent", color: "#ef4444" }}>
+                            <button className="emp-project-action-btn emp-project-action-btn--delete" onClick={() => clearPerimeter(p.id)}>
                               Clear
                             </button>
                           ) : null}
-                          <button onClick={() => startDrawPerimeter(p.id)}
-                            style={{ padding: "3px 8px", fontSize: 10, border: "none", borderRadius: 4, cursor: "pointer", background: hasPerimeter ? "var(--surface-alt)" : color, color: hasPerimeter ? "var(--text-muted)" : "#fff", fontWeight: 600 }}>
+                          <button className="emp-project-action-btn emp-project-action-btn--draw" onClick={() => startDrawPerimeter(p.id)} style={{ background: hasPerimeter ? "var(--surface-alt)" : color, color: hasPerimeter ? "var(--text-muted)" : "#fff" }}>
                             {hasPerimeter ? "Redraw" : "Draw Perimeter"}
                           </button>
                         </div>
@@ -1156,8 +1142,8 @@ export function EmployeeView({ app }) {
               </div>
             )}
 
-            <div className="clock-card" style={{ marginTop: 12 }}>
-              <div className="text-xs text-dim mb-8" style={{ textTransform: "uppercase", letterSpacing: "0.6px" }}>
+            <div className="clock-card emp-info-section">
+              <div className="text-xs text-dim mb-8 emp-project-list-header">
                 {t("This Week")}
               </div>
               <div className="flex-between">
@@ -1167,30 +1153,14 @@ export function EmployeeView({ app }) {
             </div>
 
             {/* Report Problem button */}
-            <button
+            <FieldButton
+              variant="ghost"
+              className="emp-report-problem-btn"
               onClick={() => setShowReportProblem(true)}
-              style={{
-                width: "100%",
-                marginTop: 16,
-                padding: "16px 20px",
-                borderRadius: 12,
-                background: "rgba(245,158,11,0.10)",
-                border: "2px solid rgba(245,158,11,0.35)",
-                color: "var(--amber, #f59e0b)",
-                fontWeight: 700,
-                fontSize: 16,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-              }}
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
+              <AlertTriangle size={22} />
               {t("Report a Problem")}
-            </button>
+            </FieldButton>
           </div>
         )}
 
@@ -1199,11 +1169,11 @@ export function EmployeeView({ app }) {
           <div className="emp-content">
             <div className="section-header">
               <div>
-                <div className="section-title" style={{ fontSize: 16 }}>{t("My Schedule")}</div>
+                <div className="section-title emp-section-title">{t("My Schedule")}</div>
                 <div className="section-sub">{t("Week of")} {getWeekStart(new Date()).toLocaleDateString(lang === "es" ? "es" : "en", { month: "short", day: "numeric" })}</div>
               </div>
             </div>
-            <div className="clock-card" style={{ textAlign: "left", padding: 0, overflow: "hidden" }}>
+            <div className="clock-card emp-clock-card-left emp-schedule-card">
               {DAY_KEYS.map((dayKey, i) => {
                 const assignment = mySchedule.find(s => s.days?.[dayKey] && s.projectId);
                 const proj = assignment ? projects.find(p => p.id === assignment.projectId) : null;
@@ -1227,10 +1197,7 @@ export function EmployeeView({ app }) {
               })}
             </div>
             {mySchedule.length === 0 && (
-              <div className="empty-state" style={{ padding: "30px 20px" }}>
-                <div className="empty-icon"><Calendar size={32} /></div>
-                <div className="empty-text">{t("No schedule this week")}</div>
-              </div>
+              <EmptyState icon={Calendar} heading={t("No schedule this week")} t={t} />
             )}
           </div>
         )}
@@ -1240,19 +1207,16 @@ export function EmployeeView({ app }) {
           <div className="emp-content">
             <div className="section-header">
               <div>
-                <div className="section-title" style={{ fontSize: 16 }}>{t("Time Log")}</div>
+                <div className="section-title emp-section-title">{t("Time Log")}</div>
                 <div className="section-sub">{t("This Week")} — {weekTotal.toFixed(1)}h</div>
               </div>
             </div>
             {weekEntries.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon"><Clock size={32} /></div>
-                <div className="empty-text">{t("No entries this week")}</div>
-              </div>
+              <EmptyState icon={Clock} heading={t("No entries this week")} t={t} />
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="emp-log-list">
                 {weekEntries.map((entry) => (
-                  <div key={entry.id} className="card" style={{ padding: 14 }}>
+                  <div key={entry.id} className="card emp-log-entry">
                     <div className="flex-between mb-4">
                       <span className="text-sm font-semi">{fmtDate(entry.clockIn)}</span>
                       <span className={`badge ${entry.geofenceStatus === "inside" ? "badge-green" : entry.geofenceStatus === "override" ? "badge-amber" : "badge-red"}`}>
@@ -1663,12 +1627,12 @@ export function EmployeeView({ app }) {
         {empTab === "settings" && (
           <div className="settings-wrap">
             {/* Back button */}
-            <button className="btn btn-ghost btn-sm" style={{ marginBottom: 12 }} onClick={() => setEmpTab("clock")}>&#9664; {t("Back")}</button>
+            <FieldButton variant="ghost" className="emp-settings-back-btn" onClick={() => setEmpTab("clock")}>&#9664; {t("Back")}</FieldButton>
             {/* Profile */}
             <div className="settings-section">
               <div className="settings-section-title">{t("Profile")}</div>
               <div className="settings-avatar">{getInitials(activeEmp.name)}</div>
-              <div style={{ textAlign: "center", marginBottom: 12 }}>
+              <div className="emp-settings-center">
                 <div className="text-md font-semi">{activeEmp.name}</div>
                 <div className="text-xs text-muted">{activeEmp.role} · {activeEmp.phone}</div>
                 <div className="text-xs text-dim">{activeEmp.email}</div>
@@ -1687,7 +1651,7 @@ export function EmployeeView({ app }) {
                   </div>
                 ))}
               </div>
-              <div className="settings-row" style={{ marginTop: 12 }}>
+              <div className="settings-row emp-settings-row-mt">
                 <span className="settings-label">{t("Language")}</span>
                 <div className="lang-toggle">
                   <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>EN</button>
@@ -1721,7 +1685,7 @@ export function EmployeeView({ app }) {
               <div className="settings-section-title">{t("Preferences")}</div>
               <div className="settings-row">
                 <span className="settings-label">{t("Default Project")}</span>
-                <select className="settings-select" style={{ width: "auto", maxWidth: 180 }}
+                <select className="settings-select emp-settings-select-auto"
                   value={activeEmp.defaultProjectId || ""}
                   onChange={e => setActiveEmp({ ...activeEmp, defaultProjectId: e.target.value ? Number(e.target.value) : null })}>
                   <option value="">{t("None")}</option>
@@ -1740,6 +1704,14 @@ export function EmployeeView({ app }) {
           </div>
         )}
       </div>
+
+      <PortalTabBar
+        tabs={portalTabs}
+        activeTab={empTab}
+        onTabChange={setEmpTab}
+        maxPrimary={4}
+        t={t}
+      />
     </div>
   );
 }
