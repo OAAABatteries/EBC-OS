@@ -1,11 +1,16 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
-import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, FileText, Ruler, Building2, ClipboardList, HardHat, MessageSquare, Pin, PinOff } from "lucide-react";
+import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, FileText, Ruler, Building2, ClipboardList, HardHat, MessageSquare, Pin, PinOff, LayoutDashboard, Settings } from "lucide-react";
 import { FeatureGuide } from "../components/FeatureGuide";
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
 import { PhaseTracker, getDefaultPhases } from "../components/PhaseTracker";
 import { listFiles, getFileUrl, downloadFile, getDrawingsByProject } from "../lib/supabase";
+import {
+  PortalHeader, PortalTabBar, FieldButton, FieldInput, FieldSelect,
+  FieldCard, StatusBadge, EmptyState, AsyncState, LoadingSpinner,
+  Skeleton, FieldSignaturePad, MaterialRequestCard
+} from "../components/field";
 
 const PdfViewer = lazy(() => import("../components/PdfViewer").then(m => ({ default: m.PdfViewer })));
 import {
@@ -14,56 +19,6 @@ import {
   HAZARD_LIBRARY, TRADE_LABELS, JSA_TEMPLATES, WEATHER_HAZARD_MAP,
   TRADE_CARDS, WEATHER_QUICK,
 } from "../data/jsaConstants";
-// ═══════════════════════════════════════════════════════════════
-//  Signature Pad — Touch-to-Sign canvas (field-optimized)
-// ═══════════════════════════════════════════════════════════════
-function FieldSignaturePad({ onSave, onClear, label, t }) {
-  const canvasRef = useRef(null);
-  const [drawing, setDrawing] = useState(false);
-  const [hasStrokes, setHasStrokes] = useState(false);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * (window.devicePixelRatio || 1);
-    canvas.height = rect.height * (window.devicePixelRatio || 1);
-    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
-    ctx.strokeStyle = "#1e2d3b";
-    ctx.lineWidth = 3;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-  }, []);
-
-  const getPos = (e) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const touch = e.touches ? e.touches[0] : e;
-    return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
-  };
-  const startDraw = (e) => { e.preventDefault(); const ctx = canvasRef.current.getContext("2d"); const pos = getPos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); setDrawing(true); };
-  const draw = (e) => { if (!drawing) return; e.preventDefault(); const ctx = canvasRef.current.getContext("2d"); const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); setHasStrokes(true); };
-  const endDraw = (e) => { if (e) e.preventDefault(); setDrawing(false); };
-  const handleClear = () => { const canvas = canvasRef.current; const ctx = canvas.getContext("2d"); ctx.clearRect(0, 0, canvas.width, canvas.height); setHasStrokes(false); if (onClear) onClear(); };
-  const handleSave = () => { if (!hasStrokes) return null; return canvasRef.current.toDataURL("image/png"); };
-
-  // Expose save via ref-like callback
-  useEffect(() => { if (onSave) onSave({ getSig: handleSave, clear: handleClear }); }, [hasStrokes]);
-
-  return (
-    <div>
-      {label && <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 600, marginBottom: 4 }}>{label}</div>}
-      <canvas ref={canvasRef}
-        style={{ width: "100%", height: 120, background: "#f8f9fb", border: "2px solid var(--border)", borderRadius: 8, cursor: "crosshair", touchAction: "none" }}
-        onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
-        onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw} />
-      <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-        <button className="cal-nav-btn" style={{ fontSize: 12 }} onClick={handleClear}>{t ? t("Clear") : "Clear"}</button>
-      </div>
-    </div>
-  );
-}
 
 // ═══════════════════════════════════════════════════════════════
 //  Foreman View — Hours Budget, Crew & Project Management Portal
@@ -116,7 +71,7 @@ export function ForemanView({ app }) {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
-  const [foremanTab, setForemanTab] = useState("clock");
+  const [foremanTab, setForemanTab] = useState("dashboard");
   const [showReportProblem, setShowReportProblem] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [clockEntry, setClockEntry] = useState(null); // { clockIn, lat, lng, projectId }
@@ -845,20 +800,22 @@ export function ForemanView({ app }) {
 
   const projNotesCount = (projectNotes || []).filter(n => String(n.projectId) === String(selectedProjectId)).length;
 
-  const tabDefs = [
-    { key: "clock", label: t("Clock") },
-    { key: "dashboard", label: t("Dashboard") },
-    { key: "team", label: t("Crew"), count: teamForProject.length },
-    { key: "hours", label: t("Hours") },
-    { key: "jsa", label: t("JSA"), count: activeJsaCount },
-    { key: "materials", label: t("Materials"), count: projectMatRequests.filter(r => r.status === "requested" || r.status === "pending").length },
-    { key: "drawings", label: t("Drawings") },
-    { key: "lookahead", label: t("Look-Ahead"), count: lookAheadEvents.length },
-    { key: "reports", label: t("Daily Report"), count: (dailyReports || []).filter(r => r.projectId === selectedProjectId && r.date === new Date().toISOString().slice(0, 10)).length },
-    { key: "site", label: t("Site"), count: criticalUnchecked.length },
-    { key: "notes", label: t("Notes"), count: projNotesCount },
-    { key: "documents", label: t("Documents"), count: rfiAlerts.length },
-    { key: "settings", label: t("Settings") },
+  const projectJsas = useMemo(() => (jsas || []).filter(j => String(j.projectId) === String(selectedProjectId)), [jsas, selectedProjectId]);
+
+  const FOREMAN_TABS = [
+    { id: "dashboard", label: t("Dashboard"), icon: LayoutDashboard, badge: false },
+    { id: "materials", label: t("Materials"), icon: Package, badge: (projectMatRequests || []).filter(r => r.status === "pending").length > 0 },
+    { id: "jsa",       label: t("JSA"),       icon: Shield, badge: (projectJsas || []).length === 0 },
+    { id: "reports",   label: t("Reports"),   icon: FileText, badge: false },
+    { id: "settings",  label: t("Settings"),  icon: Settings, badge: false },
+    { id: "clock",     label: t("Clock"),     icon: Clock, badge: false },
+    { id: "team",      label: t("Team"),      icon: HardHat, badge: false },
+    { id: "hours",     label: t("Hours"),     icon: Ruler, badge: false },
+    { id: "drawings",  label: t("Drawings"),  icon: Building2, badge: false },
+    { id: "lookahead", label: t("Lookahead"), icon: ClipboardList, badge: false },
+    { id: "documents", label: t("Documents"), icon: FileText, badge: false },
+    { id: "site",      label: t("Site"),      icon: MapPin, badge: false },
+    { id: "notes",     label: t("Notes"),     icon: MessageSquare, badge: false },
   ];
 
   return (
@@ -890,56 +847,40 @@ export function ForemanView({ app }) {
           />
         </Suspense>
       )}
-      <header className="employee-header">
-        <div>
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
-          <span className="text-xs text-muted">{activeForeman.name} · {t("Foreman Portal")}</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <FeatureGuide guideKey="foreman" />
-          <button className="settings-gear" onClick={() => setForemanTab("settings")} title={t("Settings")}>
-            &#9881;
-          </button>
-        </div>
-      </header>
+      <PortalHeader
+        variant="foreman"
+        title={selectedProject?.name || t("Foreman Portal")}
+        userName={activeForeman.name}
+        languageToggle={
+          <div className="lang-toggle">
+            <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>EN</button>
+            <button className={lang === "es" ? "active" : ""} onClick={() => setLang("es")}>ES</button>
+          </div>
+        }
+        logoutAction={<FieldButton variant="ghost" onClick={handleLogout} t={t}>{t("Logout")}</FieldButton>}
+        projectSelector={myProjects.length > 1 ? (
+          <select className="foreman-project-select" value={selectedProjectId || ""} onChange={e => {
+            const val = e.target.value;
+            setSelectedProjectId(isNaN(val) ? val : Number(val));
+          }}>
+            {myProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        ) : null}
+        t={t}
+      />
 
       <div className="employee-body">
-        {/* ── Project selector ── */}
-        {myProjects.length > 1 && (
-          <select
-            className="foreman-project-select"
-            value={selectedProjectId || ""}
-            onChange={e => {
-              const val = e.target.value;
-              setSelectedProjectId(isNaN(val) ? val : Number(val));
-            }}
-          >
-            {myProjects.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-        )}
 
         {myProjects.length === 0 && foremanTab !== "settings" && (
-          <div className="empty-state" style={{ padding: "40px 20px" }}>
-            <div className="empty-icon"><ClipboardList size={32} /></div>
-            <div className="empty-text">{t("No projects assigned")}</div>
-          </div>
+          <EmptyState
+            icon={ClipboardList}
+            heading={t("No Active Project")}
+            message={t("Select a project to view dashboard data.")}
+            t={t}
+          />
         )}
 
-        {/* Tab bar */}
-        <div className="emp-tabs">
-          {tabDefs.map((tab) => (
-            <button
-              key={tab.key}
-              className={`emp-tab${foremanTab === tab.key ? " active" : ""}`}
-              onClick={() => setForemanTab(tab.key)}
-            >
-              {tab.label}
-              {tab.count > 0 && <span className="driver-badge">{tab.count}</span>}
-            </button>
-          ))}
-        </div>
+        <div className="frm-content-pad">
 
         {/* ═══ SETTINGS TAB ═══ */}
         {foremanTab === "settings" && (
@@ -3807,6 +3748,15 @@ export function ForemanView({ app }) {
             )}
           </>
         )}
+        </div>{/* close frm-content-pad */}
+
+        <PortalTabBar
+          tabs={FOREMAN_TABS}
+          activeTab={foremanTab}
+          onTabChange={setForemanTab}
+          maxPrimary={5}
+          t={t}
+        />
       </div>
 
       {/* ═══ SUBMIT RFI MODAL ═══ */}

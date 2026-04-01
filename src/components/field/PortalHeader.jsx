@@ -59,7 +59,12 @@ export function PortalHeader({
               {userName}
             </span>
           )}
-          {variant === 'foreman' && settingsAction}
+          {variant === 'foreman' && (
+            <>
+              {languageToggle}
+              {settingsAction}
+            </>
+          )}
           {logoutAction}
         </div>
       </header>
