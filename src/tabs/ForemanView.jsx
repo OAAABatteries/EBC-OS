@@ -1710,101 +1710,116 @@ export function ForemanView({ app }) {
 
             {/* ═══ MATERIALS TAB ═══ */}
             {foremanTab === "materials" && (
-              <div className="emp-content">
+              <div className="emp-content frm-content-pad">
                 <div className="section-header">
-                  <div className="section-title" style={{ fontSize: 16 }}>{t("Request Material")}</div>
+                  <div className="frm-section-title">{t("Request Material")}</div>
                 </div>
-                <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div>
-                      <label className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Material")}</label>
-                      <input type="text" className="login-input" placeholder='e.g., 5/8" Type X GWB'
-                        value={matForm.material} onChange={e => setMatForm(f => ({ ...f, material: e.target.value }))} />
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <div style={{ flex: 1 }}>
-                        <label className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Quantity")}</label>
-                        <input type="number" className="login-input" min="1"
-                          value={matForm.qty} onChange={e => setMatForm(f => ({ ...f, qty: e.target.value }))} />
+                <FieldCard className="mb-4">
+                  <div className="frm-mat-form">
+                    <FieldInput
+                      label={t("Material")}
+                      value={matForm.material}
+                      onChange={e => setMatForm(f => ({ ...f, material: e.target.value }))}
+                      placeholder='e.g., 5/8" Type X GWB'
+                      t={t}
+                    />
+                    <div className="frm-mat-qty-row">
+                      <div className="frm-mat-qty-field">
+                        <FieldInput
+                          label={t("Quantity")}
+                          value={matForm.qty}
+                          onChange={e => setMatForm(f => ({ ...f, qty: e.target.value }))}
+                          inputMode="numeric"
+                          t={t}
+                        />
                       </div>
-                      <div>
-                        <label className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Unit")}</label>
-                        <select className="settings-select" value={matForm.unit} onChange={e => setMatForm(f => ({ ...f, unit: e.target.value }))}>
-                          {["EA", "LF", "SF", "BDL", "BOX", "BKT", "BAG", "GAL", "SHT"].map(u => (
-                            <option key={u} value={u}>{u}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Notes")}</label>
-                      <textarea className="login-input" rows={2} style={{ resize: "vertical", minHeight: 60 }}
-                        value={matForm.notes} onChange={e => setMatForm(f => ({ ...f, notes: e.target.value }))} />
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <div style={{ flex: 1 }}>
-                        <label className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Priority")}</label>
-                        <select className="settings-select" value={matForm.urgency} onChange={e => setMatForm(f => ({ ...f, urgency: e.target.value }))}>
-                          <option value="normal">{t("Normal")}</option>
-                          <option value="urgent">⚡ {t("Urgent")}</option>
-                          <option value="emergency">🚨 {t("Emergency")}</option>
-                        </select>
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <label className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Needed By")}</label>
-                        <input type="date" className="login-input" value={matForm.neededBy} onChange={e => setMatForm(f => ({ ...f, neededBy: e.target.value }))} />
+                      <div className="frm-mat-unit-field">
+                        <FieldSelect
+                          label={t("Unit")}
+                          value={matForm.unit}
+                          onChange={e => setMatForm(f => ({ ...f, unit: e.target.value }))}
+                          options={["EA", "LF", "SF", "BDL", "BOX", "BKT", "BAG", "GAL", "SHT"].map(u => ({ value: u, label: u }))}
+                          t={t}
+                        />
                       </div>
                     </div>
-                    <button className="btn btn-primary btn-sm" onClick={handleMatSubmit}>{t("Submit Request")}</button>
+                    <FieldInput
+                      label={t("Notes")}
+                      value={matForm.notes}
+                      onChange={e => setMatForm(f => ({ ...f, notes: e.target.value }))}
+                      t={t}
+                    />
+                    <div className="frm-mat-priority-row">
+                      <div className="frm-mat-priority-field">
+                        <FieldSelect
+                          label={t("Priority")}
+                          value={matForm.urgency}
+                          onChange={e => setMatForm(f => ({ ...f, urgency: e.target.value }))}
+                          options={[
+                            { value: "normal", label: t("Normal") },
+                            { value: "urgent", label: "⚡ " + t("Urgent") },
+                            { value: "emergency", label: "🚨 " + t("Emergency") },
+                          ]}
+                          t={t}
+                        />
+                      </div>
+                      <div className="frm-mat-date-field">
+                        <FieldInput
+                          label={t("Needed By")}
+                          value={matForm.neededBy}
+                          onChange={e => setMatForm(f => ({ ...f, neededBy: e.target.value }))}
+                          t={t}
+                        />
+                      </div>
+                    </div>
+                    <FieldButton variant="primary" onClick={handleMatSubmit} t={t}>{t("Submit Request")}</FieldButton>
                   </div>
-                </div>
+                </FieldCard>
 
                 <div className="section-header">
-                  <div className="section-title" style={{ fontSize: 14 }}>{t("Material Requests")}</div>
+                  <div className="frm-section-title">{t("Material Requests")}</div>
                 </div>
-                {projectMatRequests.length === 0 ? (
-                  <div className="empty-state" style={{ padding: "20px" }}>
-                    <div className="empty-icon"><Package size={32} /></div>
-                    <div className="empty-text">{t("No material requests yet")}</div>
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <AsyncState
+                  loading={false}
+                  empty={projectMatRequests.length === 0}
+                  emptyIcon={Package}
+                  emptyMessage={t("No material requests for this project.")}
+                  t={t}
+                >
+                  <div className="frm-mat-list">
                     {projectMatRequests.map(req => (
-                      <div key={req.id} className="mat-request-card" style={{ borderLeft: req.urgency === "emergency" ? "3px solid var(--red)" : req.urgency === "urgent" ? "3px solid var(--amber)" : undefined }}>
-                        <div className="flex-between mb-4">
-                          <span className="text-sm font-semi">
-                            {req.urgency === "emergency" ? "🚨 " : req.urgency === "urgent" ? "⚡ " : ""}{req.material}
-                          </span>
-                          <span className={`badge mat-status-${req.status}`}>
-                            {req.status === "on_order" ? t("On Order") : req.status === "supplier_confirmed" ? t("Supplier OK") :
-                             req.status === "assigned" ? t("Assigned") : req.status === "picked_up" ? t("Picked Up") :
-                             req.status === "confirmed" ? t("Confirmed") :
-                             t(req.status.charAt(0).toUpperCase() + req.status.slice(1))}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted mb-4">
-                          {req.qty} {req.unit} · {t("Requester")}: {req.employeeName}
-                          {req.neededBy && <span> · {t("Need by")} {req.neededBy}</span>}
-                          {req.fulfillmentType && <span> · {req.fulfillmentType === "supplier" ? "📦" : "🚛"}</span>}
-                        </div>
-                        {req.notes && <div className="text-xs text-dim mb-4">{req.notes}</div>}
-                        {/* Confirm receipt when delivered */}
-                        {req.status === "delivered" && !req.confirmedBy && (
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <button className="btn btn-primary btn-sm" style={{ background: "var(--green)", boxShadow: "0 2px 8px var(--green-dim)" }}
-                              onClick={() => handleForemanConfirm(req.id, "")}>
-                              ✓ {t("Confirm Receipt")}
-                            </button>
-                            <button className="btn btn-ghost btn-sm" style={{ color: "var(--amber)" }}
-                              onClick={() => { const exc = prompt(t("Describe issue") + ":"); if (exc) handleForemanConfirm(req.id, exc); }}>
-                              ⚠ {t("Issue")}
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      <MaterialRequestCard
+                        key={req.id}
+                        title={
+                          (req.urgency === "emergency" ? "🚨 " : req.urgency === "urgent" ? "⚡ " : "") +
+                          (req.material || "")
+                        }
+                        status={
+                          req.status === "on_order" ? "on_order" :
+                          req.status === "supplier_confirmed" ? "supplier_confirmed" :
+                          req.status === "assigned" ? "assigned" :
+                          req.status === "picked_up" ? "picked_up" :
+                          req.status === "confirmed" ? "confirmed" :
+                          req.status
+                        }
+                        materialName={req.notes || ""}
+                        quantity={req.qty}
+                        unit={req.unit}
+                        submittedBy={t("Requester") + ": " + req.employeeName + (req.neededBy ? " · " + t("Need by") + " " + req.neededBy : "")}
+                        timestamp={req.fulfillmentType ? (req.fulfillmentType === "supplier" ? "📦" : "🚛") : undefined}
+                        actions={
+                          req.status === "delivered" && !req.confirmedBy
+                            ? [
+                                { label: t("Confirm Receipt"), variant: "primary", onClick: () => handleForemanConfirm(req.id, "") },
+                                { label: t("Issue"), variant: "ghost", onClick: () => { const exc = prompt(t("Describe issue") + ":"); if (exc) handleForemanConfirm(req.id, exc); } },
+                              ]
+                            : undefined
+                        }
+                        t={t}
+                      />
                     ))}
                   </div>
-                )}
+                </AsyncState>
               </div>
             )}
 

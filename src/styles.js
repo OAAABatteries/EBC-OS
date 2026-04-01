@@ -1091,6 +1091,14 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 /* ── FRM MATERIALS ── */
 .frm-mat-actions{display:flex;gap:var(--space-2);margin-top:var(--space-2)}
 .frm-mat-filter{display:flex;gap:var(--space-2);margin-bottom:var(--space-3);flex-wrap:wrap}
+.frm-mat-form{display:flex;flex-direction:column;gap:var(--space-3)}
+.frm-mat-qty-row{display:flex;gap:var(--space-2)}
+.frm-mat-qty-field{flex:1}
+.frm-mat-unit-field{width:90px}
+.frm-mat-priority-row{display:flex;gap:var(--space-2)}
+.frm-mat-priority-field{flex:1}
+.frm-mat-date-field{flex:1}
+.frm-mat-list{display:flex;flex-direction:column;gap:var(--space-2)}
 
 /* ── FRM JSA ── */
 .frm-jsa-matrix{display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:var(--space-1);font-size:var(--text-sm)}
