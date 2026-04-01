@@ -1825,56 +1825,58 @@ export function ForemanView({ app }) {
 
             {/* ═══ JSA TAB ═══ */}
             {foremanTab === "jsa" && (
-              <div className="emp-content">
+              <div className="emp-content frm-content-pad">
                 {/* ── JSA LIST VIEW ── */}
                 {jsaView === "list" && (
                   <div>
-                    <div className="flex-between" style={{ marginBottom: 12 }}>
-                      <div className="section-title" style={{ fontSize: 16 }}>{t("Job Safety Analysis")}</div>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button className="btn btn-primary btn-sm" onClick={() => {
+                    <div className="frm-flex-between frm-jsa-section">
+                      <div className="frm-section-title">{t("Job Safety Analysis")}</div>
+                      <div className="frm-flex-gap">
+                        <FieldButton variant="primary" size="sm" onClick={() => {
                           setJsaView("rollcall");
                           setRcStep("pick");
                           setRcWeather("clear");
                           setRcJsaId(null);
-                        }}>{t("Pre-Task Safety")}</button>
-                        <button className="cal-nav-btn" style={{ fontSize: 11 }} onClick={() => {
+                        }} t={t}>{t("Pre-Task Safety")}</FieldButton>
+                        <FieldButton variant="ghost" size="sm" onClick={() => {
                           setJsaForm(f => ({ ...f, projectId: String(selectedProjectId || ""), supervisor: activeForeman.name, competentPerson: activeForeman.name }));
                           setJsaView("create");
-                        }}>+</button>
+                        }} t={t}>+</FieldButton>
                       </div>
                     </div>
 
-                    {myJsas.length === 0 ? (
-                      <div className="empty-state" style={{ padding: "30px 20px" }}>
-                        <div className="empty-icon"><Shield size={32} /></div>
-                        <div className="empty-text">{t("No JSAs yet. Create one for today's work.")}</div>
-                      </div>
-                    ) : myJsas.sort((a, b) => b.date.localeCompare(a.date)).map(j => {
-                      const maxRisk = Math.max(0, ...j.steps.flatMap(s => (s.hazards || []).map(h => (h.likelihood || 1) * (h.severity || 1))));
-                      const rc = riskColor(maxRisk);
-                      const statusClr = j.status === "active" ? "#10b981" : j.status === "draft" ? "#f59e0b" : "var(--text3)";
-                      const proj = projects.find(p => String(p.id) === String(j.projectId));
-                      return (
-                        <div key={j.id} className="card" style={{ padding: 12, marginBottom: 8, cursor: "pointer" }} onClick={() => { setActiveJsaId(j.id); setJsaView("detail"); }}>
-                          <div className="flex-between" style={{ marginBottom: 4 }}>
-                            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                              <span className="jsa-status-badge" style={{ background: statusClr + "22", color: statusClr, fontSize: 10 }}>{j.status.toUpperCase()}</span>
-                              <span className="jsa-risk-badge" style={{ background: rc.bg + "22", color: rc.bg, fontSize: 10 }}>{rc.label}</span>
+                    <AsyncState
+                      loading={false}
+                      empty={myJsas.length === 0}
+                      emptyIcon={Shield}
+                      emptyMessage={t("No Job Safety Analysis on file. Tap New JSA to begin.")}
+                      t={t}
+                    >
+                      {myJsas.sort((a, b) => b.date.localeCompare(a.date)).map(j => {
+                        const maxRisk = Math.max(0, ...j.steps.flatMap(s => (s.hazards || []).map(h => (h.likelihood || 1) * (h.severity || 1))));
+                        const rc = riskColor(maxRisk);
+                        const proj = projects.find(p => String(p.id) === String(j.projectId));
+                        return (
+                          <FieldCard key={j.id} className="frm-jsa-list-item" onClick={() => { setActiveJsaId(j.id); setJsaView("detail"); }}>
+                            <div className="frm-flex-between frm-jsa-list-header">
+                              <div className="frm-flex-gap frm-jsa-badges">
+                                <span className="jsa-status-badge frm-jsa-status-badge" data-status={j.status}>{j.status.toUpperCase()}</span>
+                                <span className="jsa-risk-badge frm-jsa-risk-badge" style={{ background: rc.bg + "22", color: rc.bg }}>{rc.label}</span>{/* dynamic: risk score color computed at runtime */}
+                              </div>
+                              <span className="frm-muted text-sm">{(j.teamSignOn || []).length} {t("signed")}</span>
                             </div>
-                            <span style={{ fontSize: 11, color: "var(--text3)" }}>{(j.teamSignOn || []).length} {t("signed")}</span>
-                          </div>
-                          <div style={{ fontSize: 14, fontWeight: 600 }}>{j.title}</div>
-                          <div style={{ fontSize: 11, color: "var(--text3)" }}>{proj?.name} · {j.date}</div>
-                          <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
-                            {(j.ppe || []).slice(0, 6).map(k => {
-                              const item = PPE_ITEMS.find(p => p.key === k);
-                              return item ? <span key={k} style={{ fontSize: 14 }}>{item.icon}</span> : null;
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
+                            <div className="frm-jsa-list-title">{j.title}</div>
+                            <div className="frm-muted text-sm">{proj?.name} · {j.date}</div>
+                            <div className="frm-jsa-ppe-icons">
+                              {(j.ppe || []).slice(0, 6).map(k => {
+                                const item = PPE_ITEMS.find(p => p.key === k);
+                                return item ? <span key={k} className="frm-jsa-ppe-icon">{item.icon}</span> : null;
+                              })}
+                            </div>
+                          </FieldCard>
+                        );
+                      })}
+                    </AsyncState>
                   </div>
                 )}
 
@@ -1888,46 +1890,41 @@ export function ForemanView({ app }) {
                   if (rcStep === "pick") {
                     return (
                       <div>
-                        <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
-                          <button className="cal-nav-btn" onClick={() => setJsaView("list")}>{t("← Back")}</button>
-                          <span style={{ fontSize: 16, fontWeight: 700 }}>{t("Pre-Task Safety")}</span>
+                        <div className="frm-flex-gap frm-jsa-step-header">
+                          <FieldButton variant="ghost" onClick={() => setJsaView("list")} t={t}>{t("← Back")}</FieldButton>
+                          <span className="frm-section-title">{t("Pre-Task Safety")}</span>
                         </div>
 
                         {!selectedProjectId && (
-                          <div className="card" style={{ padding: 16, textAlign: "center", color: "var(--amber)" }}>
-                            {t("Select a project first")}
-                          </div>
+                          <FieldCard className="frm-jsa-warning-card">
+                            <span className="frm-amber">{t("Select a project first")}</span>
+                          </FieldCard>
                         )}
 
                         {selectedProjectId && (
                           <>
-                            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 4 }}>{proj?.name || "Project"}</div>
-                            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 16 }}>{t("Pick today's task")}</div>
+                            <div className="frm-muted text-sm frm-jsa-step-proj">{proj?.name || "Project"}</div>
+                            <div className="frm-jsa-step-subtitle">{t("Pick today's task")}</div>
 
                             {/* Indoor / Outdoor toggle */}
-                            <div style={{ marginBottom: 16 }}>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text2)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Work Environment")}</div>
-                              <div style={{ display: "flex", gap: 8 }}>
+                            <div className="frm-jsa-toggle-wrap">
+                              <div className="frm-section-sub frm-jsa-env-label">{t("Work Environment")}</div>
+                              <div className="frm-jsa-toggle">
                                 {[{ key: "indoor", label: t("Indoor"), labelEs: "Interior" }, { key: "outdoor", label: t("Outdoor"), labelEs: "Exterior" }].map(opt => (
-                                  <button
+                                  <FieldButton
                                     key={opt.key}
+                                    variant={rcIndoorOutdoor === opt.key ? "primary" : "ghost"}
                                     onClick={() => setRcIndoorOutdoor(opt.key)}
-                                    style={{
-                                      flex: 1, padding: "10px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "2px solid",
-                                      borderColor: rcIndoorOutdoor === opt.key ? "var(--accent)" : "var(--border)",
-                                      background: rcIndoorOutdoor === opt.key ? "var(--accent)" : "var(--bg2)",
-                                      color: rcIndoorOutdoor === opt.key ? "#fff" : "var(--text2)",
-                                      transition: "all 0.15s",
-                                    }}
+                                    t={t}
                                   >
                                     {lang === "es" ? opt.labelEs : opt.label}
-                                  </button>
+                                  </FieldButton>
                                 ))}
                               </div>
                             </div>
 
                             {/* Trade cards - 2 column grid */}
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+                            <div className="frm-jsa-trade-grid">
                               {TRADE_CARDS.map(card => {
                                 const tmpl = JSA_TEMPLATES.find(t => t.id === card.templateId);
                                 if (!tmpl) return null;
@@ -1935,39 +1932,33 @@ export function ForemanView({ app }) {
                                   ? (TRADE_LABELS[card.trade]?.labelEs || card.trade) + (card.suffixEs ? " — " + card.suffixEs : "")
                                   : (TRADE_LABELS[card.trade]?.label || card.trade) + (card.suffix ? " — " + card.suffix : "");
                                 return (
-                                  <div key={card.templateId} className="card" style={{
-                                    padding: 16, cursor: "pointer", borderLeft: `4px solid ${card.color}`,
-                                    display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                                    textAlign: "center", transition: "transform 0.15s",
-                                  }} onClick={() => {
-                                    // Go to hazard selection step first
+                                  <FieldCard key={card.templateId} className="frm-jsa-trade-card" style={{ borderLeft: `4px solid ${card.color}` }} onClick={() => {
+                                    // dynamic: trade card accent color from card data
                                     const trade = tmpl.trade;
                                     const lib = HAZARD_LIBRARY[trade] || [];
-                                    // Pre-select all hazards by default
                                     const sel = {};
                                     lib.forEach((_, idx) => { sel[idx] = true; });
                                     setRcSelectedHazardIdxs(sel);
                                     setRcPendingCard(card);
                                     setRcStep("hazards");
                                   }}>
-                                    <span style={{ fontSize: 28 }}>{card.icon}</span>
-                                    <span style={{ fontSize: 13, fontWeight: 600, color: card.color }}>{tradeLabel}</span>
-                                  </div>
+                                    <span className="frm-jsa-trade-icon">{card.icon}</span>
+                                    <span className="frm-jsa-trade-label" style={{ color: card.color }}>{tradeLabel}</span>{/* dynamic: trade color from card data */}
+                                  </FieldCard>
                                 );
                               })}
                             </div>
 
                             {/* Weather quick-select — only for outdoor jobs */}
                             {rcIndoorOutdoor === "outdoor" && (
-                              <div style={{ marginBottom: 8 }}>
-                                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text2)", marginBottom: 6 }}>{t("Weather")}</div>
-                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                              <div className="frm-jsa-weather-section">
+                                <div className="frm-section-sub">{t("Weather")}</div>
+                                <div className="frm-mat-filter">
                                   {WEATHER_QUICK.map(w => (
-                                    <button key={w.key} className={rcWeather === w.key ? "btn btn-primary btn-sm" : "cal-nav-btn"}
-                                      style={{ fontSize: 12, padding: "6px 10px" }}
-                                      onClick={() => setRcWeather(w.key)}>
+                                    <FieldButton key={w.key} variant={rcWeather === w.key ? "primary" : "ghost"} size="sm"
+                                      onClick={() => setRcWeather(w.key)} t={t}>
                                       {w.icon} {lang === "es" ? w.labelEs : w.label}
-                                    </button>
+                                    </FieldButton>
                                   ))}
                                 </div>
                               </div>
@@ -1986,17 +1977,17 @@ export function ForemanView({ app }) {
                     const selectedCount = Object.values(rcSelectedHazardIdxs).filter(Boolean).length;
                     return (
                       <div>
-                        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
-                          <button className="cal-nav-btn" onClick={() => { setRcStep("pick"); setRcPendingCard(null); }}>{t("← Back")}</button>
-                          <span style={{ fontSize: 16, fontWeight: 700 }}>{t("Select Hazards")}</span>
+                        <div className="frm-flex-gap frm-jsa-step-header">
+                          <FieldButton variant="ghost" onClick={() => { setRcStep("pick"); setRcPendingCard(null); }} t={t}>{t("← Back")}</FieldButton>
+                          <span className="frm-section-title">{t("Select Hazards")}</span>
                         </div>
 
-                        <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 4 }}>{proj?.name}</div>
-                        <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 16 }}>
+                        <div className="frm-muted text-sm frm-jsa-step-proj">{proj?.name}</div>
+                        <div className="frm-muted text-sm frm-jsa-step-subtitle">
                           {t("Pick as many as apply")} · {TRADE_LABELS[trade]?.label || trade}
                         </div>
 
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+                        <div className="frm-jsa-hazard-list">
                           {lib.map((h, idx) => {
                             const isChecked = !!rcSelectedHazardIdxs[idx];
                             const catInfo = HAZARD_CATEGORIES.find(c => c.key === h.category);
@@ -2004,29 +1995,26 @@ export function ForemanView({ app }) {
                               <div
                                 key={idx}
                                 onClick={() => setRcSelectedHazardIdxs(prev => ({ ...prev, [idx]: !prev[idx] }))}
-                                style={{
-                                  display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px",
-                                  background: isChecked ? "var(--bg2)" : "var(--bg3)",
-                                  border: `1.5px solid ${isChecked ? (catInfo?.color || "var(--accent)") : "var(--border)"}`,
-                                  borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
-                                }}
+                                className={`frm-jsa-hazard-item${isChecked ? " checked" : ""}`}
+                                style={{ borderColor: isChecked ? (catInfo?.color || "var(--amber)") : "var(--border)" }}
                               >
-                                <div style={{ flexShrink: 0, marginTop: 1, color: isChecked ? (catInfo?.color || "var(--accent)") : "var(--text3)" }}>
+                                {/* dynamic: category/check color from hazard data */}
+                                <div className={`frm-jsa-hazard-check${isChecked ? " checked" : ""}`} style={{ color: isChecked ? (catInfo?.color || "var(--amber)") : "var(--text3)" }}>
                                   {isChecked ? <CheckSquare size={18} /> : <Square size={18} />}
                                 </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: isChecked ? "var(--text)" : "var(--text3)" }}>{h.hazard}</div>
-                                  {h.hazardEs && <div style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic" }}>{h.hazardEs}</div>}
+                                <div className="frm-jsa-hazard-body">
+                                  <div className={`frm-jsa-hazard-name${isChecked ? " checked" : ""}`}>{h.hazard}</div>
+                                  {h.hazardEs && <div className="frm-jsa-hazard-es">{h.hazardEs}</div>}
                                   {isChecked && (
-                                    <div style={{ marginTop: 4 }}>
+                                    <div className="frm-jsa-hazard-controls">
                                       {h.controls.slice(0, 2).map((c, ci) => (
-                                        <div key={ci} style={{ fontSize: 11, color: "var(--text2)" }}>✓ {c}</div>
+                                        <div key={ci} className="frm-jsa-control-item">✓ {c}</div>
                                       ))}
                                     </div>
                                   )}
                                 </div>
                                 {catInfo && (
-                                  <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: catInfo.color + "22", color: catInfo.color, fontWeight: 700, flexShrink: 0 }}>
+                                  <span className="frm-jsa-cat-badge" style={{ background: catInfo.color + "22", color: catInfo.color }}>
                                     {catInfo.label}
                                   </span>
                                 )}
@@ -2041,21 +2029,18 @@ export function ForemanView({ app }) {
                             return (
                               <div
                                 onClick={() => setRcSelectedHazardIdxs(prev => ({ ...prev, weather: !prev["weather"] }))}
-                                style={{
-                                  display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px",
-                                  background: isChecked ? "var(--bg2)" : "var(--bg3)",
-                                  border: `1.5px solid ${isChecked ? "#eab308" : "var(--border)"}`,
-                                  borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
-                                }}
+                                className={`frm-jsa-hazard-item${isChecked ? " checked" : ""}`}
+                                style={{ borderColor: isChecked ? "var(--amber)" : "var(--border)" }}
                               >
-                                <div style={{ flexShrink: 0, marginTop: 1, color: isChecked ? "#eab308" : "var(--text3)" }}>
+                                {/* dynamic: checked boolean state colors */}
+                                <div className="frm-jsa-hazard-check" style={{ color: isChecked ? "var(--amber)" : "var(--text3)" }}>
                                   {isChecked ? <CheckSquare size={18} /> : <Square size={18} />}
                                 </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: isChecked ? "var(--text)" : "var(--text3)" }}>{wh.hazard}</div>
-                                  {wh.hazardEs && <div style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic" }}>{wh.hazardEs}</div>}
+                                <div className="frm-jsa-hazard-body">
+                                  <div className={`frm-jsa-hazard-name${isChecked ? " checked" : ""}`}>{wh.hazard}</div>
+                                  {wh.hazardEs && <div className="frm-jsa-hazard-es">{wh.hazardEs}</div>}
                                 </div>
-                                <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "#eab30822", color: "#eab308", fontWeight: 700, flexShrink: 0 }}>
+                                <span className="frm-jsa-cat-badge frm-amber" style={{ background: "var(--amber-dim)" }}>
                                   Weather
                                 </span>
                               </div>
@@ -2063,9 +2048,9 @@ export function ForemanView({ app }) {
                           })()}
                         </div>
 
-                        <button
-                          className="btn btn-primary"
-                          style={{ width: "100%", padding: "14px", fontSize: 16 }}
+                        <FieldButton
+                          variant="primary"
+                          className="frm-jsa-proceed-btn"
                           disabled={selectedCount === 0}
                           onClick={() => {
                             if (!tmpl) return;
@@ -2116,7 +2101,7 @@ export function ForemanView({ app }) {
                           }}
                         >
                           {t("Proceed")} ({selectedCount} {t("hazards selected")})
-                        </button>
+                        </FieldButton>
                       </div>
                     );
                   }
@@ -2128,38 +2113,37 @@ export function ForemanView({ app }) {
                     const teamIds = new Set(allTeam.map(c => c.id));
                     return (
                       <div>
-                        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
-                          <button className="cal-nav-btn" onClick={() => { setRcStep("pick"); }}>{t("← Back")}</button>
-                          <span style={{ fontSize: 16, fontWeight: 700 }}>{t("Crew Roll Call")}</span>
+                        <div className="frm-flex-gap frm-jsa-step-header">
+                          <FieldButton variant="ghost" onClick={() => { setRcStep("pick"); }} t={t}>{t("← Back")}</FieldButton>
+                          <span className="frm-section-title">{t("Crew Roll Call")}</span>
                         </div>
 
-                        <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 4 }}>{proj?.name} · {rcJsa?.title}</div>
-                        <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 16 }}>
+                        <div className="frm-muted text-sm frm-jsa-step-proj">{proj?.name} · {rcJsa?.title}</div>
+                        <div className="frm-muted text-sm frm-jsa-step-date">
                           {new Date().toLocaleDateString(lang === "es" ? "es" : "en-US", { weekday: "long", month: "long", day: "numeric" })}
                         </div>
 
                         {/* Crew list */}
                         {allTeam.length === 0 ? (
-                          <div className="card" style={{ padding: 16, textAlign: "center", color: "var(--text3)" }}>
-                            {t("No team scheduled. Add team members below.")}
-                          </div>
+                          <FieldCard className="frm-jsa-warning-card">
+                            <span className="frm-muted">{t("No team scheduled. Add team members below.")}</span>
+                          </FieldCard>
                         ) : allTeam.map(c => (
-                          <div key={c.id} className="card" style={{
-                            padding: 12, marginBottom: 6, display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
-                            borderLeft: rcSelected[c.id] ? "4px solid #10b981" : "4px solid var(--border)",
-                            opacity: rcSelected[c.id] ? 1 : 0.5,
-                          }} onClick={() => setRcSelected(prev => ({ ...prev, [c.id]: !prev[c.id] }))}>
-                            <span style={{ width: 28, display: "flex", justifyContent: "center" }}>{rcSelected[c.id] ? <CheckCircle size={20} style={{ color: "#10b981" }} /> : <Square size={20} style={{ color: "var(--text3)" }} />}</span>
+                          <div key={c.id} className={`frm-jsa-rollcall-row${rcSelected[c.id] ? " selected" : ""}`}
+                            style={{ borderLeft: rcSelected[c.id] ? "4px solid var(--phase-active)" : "4px solid var(--border)", opacity: rcSelected[c.id] ? 1 : 0.5 }}
+                            onClick={() => setRcSelected(prev => ({ ...prev, [c.id]: !prev[c.id] }))}>
+                            {/* dynamic: selected state border and opacity */}
+                            <span className="frm-jsa-rollcall-check">{rcSelected[c.id] ? <CheckCircle size={20} className="frm-phase-active" /> : <Square size={20} className="frm-muted" />}</span>
                             <div>
-                              <div style={{ fontSize: 14, fontWeight: 600 }}>{c.name}</div>
-                              <div style={{ fontSize: 11, color: "var(--text3)" }}>{c.role || "Crew"}</div>
+                              <div className="frm-jsa-crew-name">{c.name}</div>
+                              <div className="frm-muted text-sm">{c.role || "Crew"}</div>
                             </div>
                           </div>
                         ))}
 
                         {/* Add team */}
                         {rcAddingCrew ? (
-                          <select className="form-select" style={{ fontSize: 12, marginTop: 8 }} autoFocus
+                          <select className="form-select frm-jsa-add-crew-select" autoFocus
                             onChange={e => {
                               if (!e.target.value) return;
                               const emp = employees.find(em => em.id === Number(e.target.value));
@@ -2172,22 +2156,26 @@ export function ForemanView({ app }) {
                             {(employees || []).filter(e => !teamIds.has(e.id) && e.active !== false).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                           </select>
                         ) : (
-                          <button className="cal-nav-btn" style={{ marginTop: 8, fontSize: 12 }} onClick={() => setRcAddingCrew(true)}>
+                          <FieldButton variant="ghost" className="frm-jsa-add-crew-btn" onClick={() => setRcAddingCrew(true)} t={t}>
                             + {t("Add Crew")}
-                          </button>
+                          </FieldButton>
                         )}
 
                         {/* Start Sign-On */}
-                        <button className="btn btn-primary" style={{ width: "100%", marginTop: 20, padding: "14px", fontSize: 16 }}
+                        <FieldButton
+                          variant="primary"
+                          className="frm-jsa-proceed-btn"
                           disabled={Object.values(rcSelected).filter(Boolean).length === 0}
                           onClick={() => {
                             const queue = teamForProject.filter(c => rcSelected[c.id]).map(c => ({ employeeId: c.id, name: c.name }));
                             setRcQueue(queue);
                             setRcSignIdx(0);
                             setRcStep("sign");
-                          }}>
+                          }}
+                          t={t}
+                        >
                           {t("Start Sign-On")} ({Object.values(rcSelected).filter(Boolean).length})
-                        </button>
+                        </FieldButton>
                       </div>
                     );
                   }
@@ -2201,55 +2189,56 @@ export function ForemanView({ app }) {
                     return (
                       <div>
                         {/* Progress */}
-                        <div style={{ marginBottom: 12 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--text3)", marginBottom: 4 }}>
+                        <div className="frm-jsa-section">
+                          <div className="frm-flex-between frm-muted text-sm frm-jsa-progress-label">
                             <span>{progress} {t("of")} {total}</span>
                             <span>{t("Pass device to next person")}</span>
                           </div>
-                          <div style={{ height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${(progress / total) * 100}%`, background: "#10b981", borderRadius: 2, transition: "width 0.3s" }} />
+                          <div className="frm-jsa-progress-bar">
+                            <div className="frm-jsa-progress-fill" style={{ width: `${(progress / total) * 100}%` }} />{/* dynamic: progress % computed at runtime */}
                           </div>
                         </div>
 
                         {/* Name banner */}
-                        <div style={{ textAlign: "center", padding: "16px 0", marginBottom: 12 }}>
-                          <div style={{ fontSize: 28, fontWeight: 700 }}>{current.name}</div>
-                          <div style={{ fontSize: 13, color: "var(--text3)" }}>{proj?.name}</div>
+                        <div className="frm-jsa-name-banner">
+                          <div className="frm-jsa-signer-name">{current.name}</div>
+                          <div className="frm-muted text-sm">{proj?.name}</div>
                         </div>
 
                         {/* Hazard cards */}
-                        <div style={{ marginBottom: 16 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--amber)", marginBottom: 8 }}>{t("Hazards")}</div>
+                        <div className="frm-jsa-section">
+                          <div className="frm-amber frm-jsa-subsection-title">{t("Hazards")}</div>
                           {allHazards.map((h, i) => {
                             const score = (h.likelihood || 1) * (h.severity || 1);
                             const hrc = riskColor(score);
                             const catInfo = HAZARD_CATEGORIES[h.category];
                             return (
-                              <div key={i} className="card" style={{ padding: 10, marginBottom: 6, borderLeft: `3px solid ${catInfo?.color || "var(--amber)"}` }}>
-                                <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4 }}>
-                                  <span style={{ background: hrc.bg, color: "#fff", fontSize: 10, padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>{score}</span>
-                                  <span style={{ fontSize: 12, fontWeight: 600 }}>{h.hazard}</span>
+                              <FieldCard key={i} className="frm-jsa-hazard-card" style={{ borderLeft: `3px solid ${catInfo?.color || "var(--amber)"}` }}>
+                                {/* dynamic: category color from hazard data; risk color computed at runtime */}
+                                <div className="frm-flex-gap frm-jsa-hazard-header">
+                                  <span className="frm-jsa-risk-score-badge" style={{ background: hrc.bg, color: "#fff" }}>{score}</span>
+                                  <span className="frm-jsa-hazard-title">{h.hazard}</span>
                                 </div>
-                                {h.hazardEs && <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 4, fontStyle: "italic" }}>{h.hazardEs}</div>}
-                                <div style={{ fontSize: 11, color: "var(--text2)" }}>
+                                {h.hazardEs && <div className="frm-jsa-hazard-es">{h.hazardEs}</div>}
+                                <div className="frm-jsa-control-list frm-muted text-sm">
                                   {(h.controls || []).map((c, ci) => <div key={ci}>✓ {c}</div>)}
                                 </div>
-                              </div>
+                              </FieldCard>
                             );
                           })}
                         </div>
 
                         {/* PPE */}
-                        <div style={{ marginBottom: 16 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Required PPE")}</div>
-                          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        <div className="frm-jsa-section">
+                          <div className="frm-amber frm-jsa-subsection-title">{t("Required PPE")}</div>
+                          <div className="frm-jsa-ppe-display">
                             {(rcJsa?.ppe || []).map(k => {
                               const item = PPE_ITEMS.find(p => p.key === k);
                               return item ? (
-                                <div key={k} style={{ textAlign: "center" }}>
-                                  <div style={{ fontSize: 22 }}>{item.icon}</div>
-                                  <div style={{ fontSize: 10, color: "var(--text2)" }}>{item.label}</div>
-                                  <div style={{ fontSize: 9, color: "var(--text3)" }}>{item.labelEs}</div>
+                                <div key={k} className="frm-jsa-ppe-display-item">
+                                  <div className="frm-jsa-ppe-emoji">{item.icon}</div>
+                                  <div className="frm-muted text-sm">{item.label}</div>
+                                  <div className="frm-muted text-sm">{item.labelEs}</div>
                                 </div>
                               ) : null;
                             })}
@@ -2257,7 +2246,7 @@ export function ForemanView({ app }) {
                         </div>
 
                         {/* Signature pad */}
-                        <div style={{ marginBottom: 12 }}>
+                        <div className="frm-jsa-section">
                           <FieldSignaturePad
                             key={rcSignIdx}
                             label={t("Sign below")}
@@ -2267,11 +2256,12 @@ export function ForemanView({ app }) {
                         </div>
 
                         {/* Sign & Next button */}
-                        <button className="btn btn-primary" style={{ width: "100%", padding: "14px", fontSize: 16 }}
+                        <FieldButton
+                          variant="primary"
+                          className="frm-jsa-proceed-btn"
                           onClick={() => {
                             const sigData = sigRef.current?.getSig?.();
                             if (!sigData) { show(t("Please sign first"), "err"); return; }
-                            // Add signature to JSA
                             updateRcJsa({
                               teamSignOn: [...(rcJsa?.teamSignOn || []), {
                                 employeeId: current.employeeId,
@@ -2284,13 +2274,14 @@ export function ForemanView({ app }) {
                               setRcSignIdx(rcSignIdx + 1);
                               sigRef.current = null;
                             } else {
-                              // All team signed — move to supervisor sign-off
                               setRcStep("supervisor");
                               sigRef.current = null;
                             }
-                          }}>
+                          }}
+                          t={t}
+                        >
                           {rcSignIdx < rcQueue.length - 1 ? t("Sign & Next") : t("Sign & Finish")}
-                        </button>
+                        </FieldButton>
                       </div>
                     );
                   }
@@ -2299,10 +2290,10 @@ export function ForemanView({ app }) {
                   if (rcStep === "supervisor") {
                     return (
                       <div>
-                        <div style={{ textAlign: "center", padding: "24px 0", marginBottom: 16 }}>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: "var(--amber)" }}>{t("Supervisor Sign-Off")}</div>
-                          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>{activeForeman.name}</div>
-                          <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 4 }}>
+                        <div className="frm-jsa-supervisor-banner">
+                          <div className="frm-amber frm-jsa-supervisor-label">{t("Supervisor Sign-Off")}</div>
+                          <div className="frm-jsa-supervisor-name">{activeForeman.name}</div>
+                          <div className="frm-muted text-sm">
                             {(rcJsa?.teamSignOn || []).length} {t("team members signed")}
                           </div>
                         </div>
@@ -2314,16 +2305,20 @@ export function ForemanView({ app }) {
                           onSave={(ref) => { sigRef.current = ref; }}
                         />
 
-                        <button className="btn btn-primary" style={{ width: "100%", marginTop: 16, padding: "14px", fontSize: 16 }}
+                        <FieldButton
+                          variant="primary"
+                          className="frm-jsa-proceed-btn frm-jsa-activate-btn"
                           onClick={() => {
                             const sigData = sigRef.current?.getSig?.();
                             if (!sigData) { show(t("Please sign first"), "err"); return; }
                             updateRcJsa({ supervisorSignature: sigData, status: "active" });
                             setRcStep("done");
                             show(t("Pre-Task Safety Complete"), "ok");
-                          }}>
+                          }}
+                          t={t}
+                        >
                           {t("Activate JSA")}
-                        </button>
+                        </FieldButton>
                       </div>
                     );
                   }
@@ -2332,37 +2327,37 @@ export function ForemanView({ app }) {
                   if (rcStep === "done") {
                     const finalJsa = (jsas || []).find(j => j.id === rcJsaId);
                     return (
-                      <div style={{ textAlign: "center" }}>
-                        <div style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}><CheckCircle size={48} style={{ color: "#10b981" }} /></div>
-                        <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>{t("Pre-Task Safety Complete")}</div>
-                        <div style={{ fontSize: 14, color: "var(--text2)", marginBottom: 20 }}>
+                      <div className="frm-jsa-done-view">
+                        <div className="frm-jsa-done-icon"><CheckCircle size={48} className="frm-phase-active" /></div>
+                        <div className="frm-jsa-done-title">{t("Pre-Task Safety Complete")}</div>
+                        <div className="frm-muted frm-jsa-done-subtitle">
                           {(finalJsa?.teamSignOn || []).length} {t("team members signed")} · {finalJsa?.title}
                         </div>
 
                         {/* Signed team list */}
-                        <div style={{ textAlign: "left", marginBottom: 20 }}>
+                        <div className="frm-jsa-signed-list">
                           {(finalJsa?.teamSignOn || []).map((c, i) => (
-                            <div key={i} className="flex-between" style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                              <span style={{ fontSize: 13, fontWeight: 500 }}>{c.name}</span>
-                              <span style={{ fontSize: 11, color: "#10b981" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                            <div key={i} className="frm-flex-between frm-divider frm-jsa-signed-row">
+                              <span className="frm-jsa-crew-name">{c.name}</span>
+                              <span className="frm-phase-active text-sm">✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                             </div>
                           ))}
                         </div>
 
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button className="cal-nav-btn" style={{ flex: 1, padding: 12 }} onClick={async () => {
+                        <div className="frm-jsa-done-actions">
+                          <FieldButton variant="ghost" className="frm-jsa-done-btn" onClick={async () => {
                             try {
                               const { generateJsaPdf } = await import("../utils/jsaPdf");
                               const p = projects.find(pr => pr.id === finalJsa?.projectId);
                               await generateJsaPdf({ ...finalJsa, projectName: p?.name || "Project" });
                               show(t("PDF exported"), "ok");
                             } catch (e) { show("PDF error: " + e.message, "err"); }
-                          }}>{t("Export PDF")}</button>
-                          <button className="btn btn-primary" style={{ flex: 1, padding: 12 }} onClick={() => {
+                          }} t={t}>{t("Export PDF")}</FieldButton>
+                          <FieldButton variant="primary" className="frm-jsa-done-btn" onClick={() => {
                             setJsaView("list");
                             setRcJsaId(null);
                             setRcStep("pick");
-                          }}>{t("Done")}</button>
+                          }} t={t}>{t("Done")}</FieldButton>
                         </div>
                       </div>
                     );
@@ -2379,49 +2374,48 @@ export function ForemanView({ app }) {
                   const allHazards = jsa.steps.flatMap(s => s.hazards || []);
                   const maxRisk = Math.max(0, ...allHazards.map(h => (h.likelihood || 1) * (h.severity || 1)));
                   const rc = riskColor(maxRisk);
-                  const statusClr = jsa.status === "active" ? "#10b981" : jsa.status === "draft" ? "#f59e0b" : "var(--text3)";
                   return (
                     <div>
-                      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
-                        <button className="cal-nav-btn" onClick={() => setJsaView("list")}>{t("← Back")}</button>
-                        <span className="jsa-status-badge" style={{ background: statusClr + "22", color: statusClr }}>{jsa.status.toUpperCase()}</span>
-                        <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-                          {jsa.status === "draft" && <button className="btn btn-primary btn-sm" onClick={() => updateJsa({ status: "active" })}>{t("Activate")}</button>}
-                          {jsa.status === "active" && <button className="cal-nav-btn" onClick={() => updateJsa({ status: "closed" })}>{t("Close JSA")}</button>}
+                      <div className="frm-flex-gap frm-jsa-detail-header">
+                        <FieldButton variant="ghost" onClick={() => setJsaView("list")} t={t}>{t("← Back")}</FieldButton>
+                        <span className="jsa-status-badge frm-jsa-status-badge" data-status={jsa.status}>{jsa.status.toUpperCase()}</span>
+                        <div className="frm-flex-gap frm-jsa-detail-actions">
+                          {jsa.status === "draft" && <FieldButton variant="primary" size="sm" onClick={() => updateJsa({ status: "active" })} t={t}>{t("Activate")}</FieldButton>}
+                          {jsa.status === "active" && <FieldButton variant="ghost" size="sm" onClick={() => updateJsa({ status: "closed" })} t={t}>{t("Close JSA")}</FieldButton>}
                         </div>
                       </div>
 
-                      <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{jsa.title}</h3>
-                      <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 12 }}>
+                      <h3 className="frm-section-title">{jsa.title}</h3>
+                      <div className="frm-muted text-sm frm-jsa-detail-meta">
                         {jsa.date} · {jsa.location} · {lang === "es" ? TRADE_LABELS[jsa.trade]?.labelEs : TRADE_LABELS[jsa.trade]?.label}
                       </div>
 
                       {/* Risk summary */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
-                        <div className="card" style={{ padding: 10, textAlign: "center" }}>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: rc.bg }}>{maxRisk}</div>
-                          <div style={{ fontSize: 10, color: "var(--text3)" }}>{t("Highest Risk")}</div>
-                        </div>
-                        <div className="card" style={{ padding: 10, textAlign: "center" }}>
-                          <div style={{ fontSize: 20, fontWeight: 700 }}>{allHazards.length}</div>
-                          <div style={{ fontSize: 10, color: "var(--text3)" }}>{t("Hazards")}</div>
-                        </div>
-                        <div className="card" style={{ padding: 10, textAlign: "center" }}>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: "#10b981" }}>{(jsa.teamSignOn || []).length}</div>
-                          <div style={{ fontSize: 10, color: "var(--text3)" }}>{t("Crew Signed")}</div>
-                        </div>
+                      <div className="frm-jsa-kpi-grid frm-jsa-section">
+                        <FieldCard className="frm-jsa-kpi-card">
+                          <div className="frm-jsa-kpi-value" style={{ color: rc.bg }}>{/* dynamic: risk color computed at runtime */}{maxRisk}</div>
+                          <div className="frm-muted text-sm">{t("Highest Risk")}</div>
+                        </FieldCard>
+                        <FieldCard className="frm-jsa-kpi-card">
+                          <div className="frm-jsa-kpi-value">{allHazards.length}</div>
+                          <div className="frm-muted text-sm">{t("Hazards")}</div>
+                        </FieldCard>
+                        <FieldCard className="frm-jsa-kpi-card">
+                          <div className="frm-jsa-kpi-value frm-phase-active">{(jsa.teamSignOn || []).length}</div>
+                          <div className="frm-muted text-sm">{t("Crew Signed")}</div>
+                        </FieldCard>
                       </div>
 
                       {/* PPE */}
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Required PPE")}</div>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <div className="frm-jsa-section">
+                        <div className="frm-amber frm-jsa-subsection-title">{t("Required PPE")}</div>
+                        <div className="frm-jsa-ppe-display">
                           {(jsa.ppe || []).map(k => {
                             const item = PPE_ITEMS.find(p => p.key === k);
                             return item ? (
-                              <div key={k} style={{ textAlign: "center", fontSize: 11 }}>
-                                <div style={{ fontSize: 20 }}>{item.icon}</div>
-                                <div style={{ color: "var(--text3)" }}>{lang === "es" ? item.labelEs : item.label}</div>
+                              <div key={k} className="frm-jsa-ppe-display-item">
+                                <div className="frm-jsa-ppe-emoji">{item.icon}</div>
+                                <div className="frm-muted text-sm">{lang === "es" ? item.labelEs : item.label}</div>
                               </div>
                             ) : null;
                           })}
@@ -2429,44 +2423,44 @@ export function ForemanView({ app }) {
                       </div>
 
                       {/* Steps & Hazards */}
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Job Steps & Hazards")}</div>
+                      <div className="frm-jsa-section">
+                        <div className="frm-amber frm-jsa-subsection-title">{t("Job Steps & Hazards")}</div>
                         {(jsa.steps || []).map((step, idx) => (
-                          <div key={step.id} className="card" style={{ padding: 10, marginBottom: 6 }}>
-                            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
-                              <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--amber)", color: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{idx + 1}</span>
-                              <span style={{ fontSize: 13, fontWeight: 600 }}>{step.step}</span>
+                          <FieldCard key={step.id} className="frm-jsa-step">
+                            <div className="frm-flex-gap frm-jsa-step-row">
+                              <span className="frm-jsa-step-num">{idx + 1}</span>
+                              <span className="frm-jsa-step-text">{step.step}</span>
                             </div>
                             {(step.hazards || []).map((h, hi) => {
                               const score = (h.likelihood || 1) * (h.severity || 1);
                               const hrc = riskColor(score);
                               return (
-                                <div key={hi} style={{ marginLeft: 30, padding: "6px 0", borderTop: "1px solid var(--border)" }}>
-                                  <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 2 }}>
-                                    <span className="jsa-risk-score" style={{ background: hrc.bg, color: "#fff", fontSize: 10, padding: "1px 6px", borderRadius: 4 }}>{score}</span>
-                                    <span style={{ fontSize: 12, fontWeight: 500 }}>{h.hazard}</span>
+                                <div key={hi} className="frm-jsa-hazard-sub frm-divider">
+                                  <div className="frm-flex-gap">
+                                    <span className="frm-jsa-risk-score-badge" style={{ background: hrc.bg, color: "#fff" }}>{/* dynamic: risk color computed at runtime */}{score}</span>
+                                    <span className="frm-jsa-hazard-title">{h.hazard}</span>
                                   </div>
-                                  <div style={{ fontSize: 11, color: "var(--text3)" }}>
+                                  <div className="frm-muted text-sm frm-jsa-control-list">
                                     {(h.controls || []).map((c, ci) => <span key={ci}>✓ {c}{ci < h.controls.length - 1 ? " · " : ""}</span>)}
                                   </div>
                                 </div>
                               );
                             })}
-                          </div>
+                          </FieldCard>
                         ))}
                       </div>
 
                       {/* Crew Sign-On */}
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Crew Sign-On")} ({(jsa.teamSignOn || []).length})</div>
+                      <div className="frm-jsa-section">
+                        <div className="frm-amber frm-jsa-subsection-title">{t("Crew Sign-On")} ({(jsa.teamSignOn || []).length})</div>
                         {(jsa.teamSignOn || []).map((c, i) => (
-                          <div key={i} className="flex-between" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
-                            <span style={{ fontSize: 13, fontWeight: 500 }}>{c.name}</span>
-                            <span style={{ fontSize: 11, color: "#10b981" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                          <div key={i} className="frm-flex-between frm-divider frm-jsa-signed-row">
+                            <span className="frm-jsa-crew-name">{c.name}</span>
+                            <span className="frm-phase-active text-sm">✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                           </div>
                         ))}
                         {jsa.status === "active" && (
-                          <select className="form-select" style={{ fontSize: 12, marginTop: 8 }}
+                          <select className="form-select frm-jsa-add-crew-select"
                             onChange={e => {
                               if (!e.target.value) return;
                               const emp = (employees || []).find(em => em.id === Number(e.target.value));
@@ -2483,22 +2477,22 @@ export function ForemanView({ app }) {
                       </div>
 
                       {/* Near Misses */}
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Near Misses")}</div>
+                      <div className="frm-jsa-section">
+                        <div className="frm-amber frm-jsa-subsection-title">{t("Near Misses")}</div>
                         {(jsa.nearMisses || []).length === 0 ? (
-                          <div style={{ fontSize: 12, color: "var(--text3)" }}>{t("None reported")}</div>
+                          <div className="frm-muted text-sm">{t("None reported")}</div>
                         ) : (jsa.nearMisses || []).map((nm, i) => (
-                          <div key={i} className="card" style={{ padding: 8, marginBottom: 4, fontSize: 12 }}>
+                          <FieldCard key={i} className="frm-jsa-near-miss text-sm">
                             {nm.description} — {nm.reportedBy} ({nm.date})
-                          </div>
+                          </FieldCard>
                         ))}
                         {jsa.status === "active" && (
-                          <button className="cal-nav-btn" style={{ marginTop: 6, fontSize: 11 }} onClick={() => {
+                          <FieldButton variant="ghost" size="sm" className="frm-jsa-add-crew-btn" onClick={() => {
                             const desc = prompt(lang === "es" ? "Describe el casi-accidente:" : "Describe the near miss:");
                             if (!desc) return;
                             updateJsa({ nearMisses: [...(jsa.nearMisses || []), { description: desc, reportedBy: activeForeman.name, date: new Date().toISOString().slice(0, 10) }] });
                             show(t("Near miss recorded"));
-                          }}>{t("+ Report Near Miss")}</button>
+                          }} t={t}>{t("+ Report Near Miss")}</FieldButton>
                         )}
                       </div>
                     </div>
@@ -2551,76 +2545,89 @@ export function ForemanView({ app }) {
 
                   return (
                     <div>
-                      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
-                        <button className="cal-nav-btn" onClick={() => setJsaView("list")}>{t("← Back")}</button>
-                        <span style={{ fontSize: 16, fontWeight: 700 }}>{t("Create New JSA")}</span>
+                      <div className="frm-flex-gap frm-jsa-step-header">
+                        <FieldButton variant="ghost" onClick={() => setJsaView("list")} t={t}>{t("← Back")}</FieldButton>
+                        <span className="frm-section-title">{t("Create New JSA")}</span>
                       </div>
 
                       {/* Template */}
-                      <div className="form-group" style={{ marginBottom: 12 }}>
-                        <label className="form-label">{t("Start from Template")}</label>
-                        <select className="form-select" value={jsaForm.templateId} onChange={e => applyTemplate(e.target.value)}>
-                          <option value="">{t("— Blank JSA —")}</option>
-                          {JSA_TEMPLATES.map(tmpl => <option key={tmpl.id} value={tmpl.id}>{lang === "es" ? tmpl.titleEs : tmpl.title}</option>)}
-                        </select>
-                      </div>
+                      <FieldSelect
+                        label={t("Start from Template")}
+                        value={jsaForm.templateId}
+                        onChange={e => applyTemplate(e.target.value)}
+                        options={[
+                          { value: "", label: t("— Blank JSA —") },
+                          ...JSA_TEMPLATES.map(tmpl => ({ value: tmpl.id, label: lang === "es" ? tmpl.titleEs : tmpl.title })),
+                        ]}
+                        t={t}
+                      />
 
                       {/* Basic fields */}
-                      <div className="form-group" style={{ marginBottom: 8 }}>
-                        <label className="form-label">{t("Project")}</label>
-                        <select className="form-select" value={jsaForm.projectId} onChange={e => updJsaForm("projectId", e.target.value)}>
-                          <option value="">{t("Select...")}</option>
-                          {myProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                        </select>
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 8 }}>
-                        <label className="form-label">{t("Trade")}</label>
-                        <select className="form-select" value={jsaForm.trade} onChange={e => updJsaForm("trade", e.target.value)}>
-                          {Object.entries(TRADE_LABELS).map(([k, v]) => <option key={k} value={k}>{lang === "es" ? v.labelEs : v.label}</option>)}
-                        </select>
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 8 }}>
-                        <label className="form-label">{t("JSA Title")}</label>
-                        <input className="form-input" value={jsaForm.title} onChange={e => updJsaForm("title", e.target.value)} placeholder={t("e.g. Metal Stud Framing — Level 2")} />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 8 }}>
-                        <label className="form-label">{t("Location on Site")}</label>
-                        <input className="form-input" value={jsaForm.location} onChange={e => updJsaForm("location", e.target.value)} />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 8 }}>
-                        <label className="form-label">{t("Date")}</label>
-                        <input className="form-input" type="date" value={jsaForm.date} onChange={e => updJsaForm("date", e.target.value)} />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 8 }}>
-                        <label className="form-label">{t("Weather")}</label>
-                        <select className="form-select" value={jsaForm.weather} onChange={e => updJsaForm("weather", e.target.value)}>
-                          <option value="clear">{t("Clear")}</option>
-                          <option value="rain">{t("Rain")}</option>
-                          <option value="thunderstorm">{t("Thunderstorm")}</option>
-                          <option value="heat">{t("Heat Advisory")}</option>
-                          <option value="freeze">{t("Freeze/Cold")}</option>
-                          <option value="wind">{t("High Wind")}</option>
-                        </select>
-                      </div>
+                      <FieldSelect
+                        label={t("Project")}
+                        value={jsaForm.projectId}
+                        onChange={e => updJsaForm("projectId", e.target.value)}
+                        options={[{ value: "", label: t("Select...") }, ...myProjects.map(p => ({ value: String(p.id), label: p.name }))]}
+                        t={t}
+                      />
+                      <FieldSelect
+                        label={t("Trade")}
+                        value={jsaForm.trade}
+                        onChange={e => updJsaForm("trade", e.target.value)}
+                        options={Object.entries(TRADE_LABELS).map(([k, v]) => ({ value: k, label: lang === "es" ? v.labelEs : v.label }))}
+                        t={t}
+                      />
+                      <FieldInput
+                        label={t("JSA Title")}
+                        value={jsaForm.title}
+                        onChange={e => updJsaForm("title", e.target.value)}
+                        placeholder={t("e.g. Metal Stud Framing — Level 2")}
+                        t={t}
+                      />
+                      <FieldInput
+                        label={t("Location on Site")}
+                        value={jsaForm.location}
+                        onChange={e => updJsaForm("location", e.target.value)}
+                        t={t}
+                      />
+                      <FieldInput
+                        label={t("Date")}
+                        value={jsaForm.date}
+                        onChange={e => updJsaForm("date", e.target.value)}
+                        t={t}
+                      />
+                      <FieldSelect
+                        label={t("Weather")}
+                        value={jsaForm.weather}
+                        onChange={e => updJsaForm("weather", e.target.value)}
+                        options={[
+                          { value: "clear", label: t("Clear") },
+                          { value: "rain", label: t("Rain") },
+                          { value: "thunderstorm", label: t("Thunderstorm") },
+                          { value: "heat", label: t("Heat Advisory") },
+                          { value: "freeze", label: t("Freeze/Cold") },
+                          { value: "wind", label: t("High Wind") },
+                        ]}
+                        t={t}
+                      />
 
                       {weatherHazard && jsaForm.weather !== "clear" && (
-                        <div className="jsa-weather-warn" style={{ marginBottom: 12 }}>
-                          <AlertTriangle size={14} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />{lang === "es" ? weatherHazard.hazardEs : weatherHazard.hazard}
+                        <div className="jsa-weather-warn frm-jsa-section">
+                          <AlertTriangle size={14} />{lang === "es" ? weatherHazard.hazardEs : weatherHazard.hazard}
                         </div>
                       )}
 
                       {/* PPE */}
-                      <div style={{ marginBottom: 12 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Required PPE")}</div>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <div className="frm-jsa-section">
+                        <div className="frm-amber frm-jsa-subsection-title">{t("Required PPE")}</div>
+                        <div className="frm-jsa-ppe-grid">
                           {PPE_ITEMS.map(item => {
                             const active = jsaForm.ppe.includes(item.key);
                             return (
-                              <div key={item.key} className={`jsa-ppe-pick${active ? " active" : ""}`}
-                                onClick={() => updJsaForm("ppe", active ? jsaForm.ppe.filter(k => k !== item.key) : [...jsaForm.ppe, item.key])}
-                                style={{ padding: "4px 8px", textAlign: "center", cursor: "pointer" }}>
-                                <div style={{ fontSize: 18 }}>{item.icon}</div>
-                                <div style={{ fontSize: 9 }}>{lang === "es" ? item.labelEs : item.label}</div>
+                              <div key={item.key} className={`frm-jsa-ppe-item${active ? " active" : ""}`}
+                                onClick={() => updJsaForm("ppe", active ? jsaForm.ppe.filter(k => k !== item.key) : [...jsaForm.ppe, item.key])}>
+                                <span className="frm-jsa-ppe-emoji">{item.icon}</span>
+                                <span className="text-sm frm-muted">{lang === "es" ? item.labelEs : item.label}</span>
                               </div>
                             );
                           })}
@@ -2628,52 +2635,54 @@ export function ForemanView({ app }) {
                       </div>
 
                       {/* Permits */}
-                      <div style={{ marginBottom: 12 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Permits Required")}</div>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <div className="frm-jsa-section">
+                        <div className="frm-amber frm-jsa-subsection-title">{t("Permits Required")}</div>
+                        <div className="frm-mat-filter">
                           {PERMIT_TYPES.map(p => {
                             const active = jsaForm.permits.includes(p.key);
                             return (
-                              <button key={p.key} className={`cal-nav-btn${active ? " active" : ""}`}
-                                style={active ? { background: "var(--amber)", color: "var(--bg)", borderColor: "var(--amber)", fontSize: 11 } : { fontSize: 11 }}
-                                onClick={() => updJsaForm("permits", active ? jsaForm.permits.filter(k => k !== p.key) : [...jsaForm.permits, p.key])}>
+                              <FieldButton
+                                key={p.key}
+                                variant={active ? "primary" : "ghost"}
+                                size="sm"
+                                onClick={() => updJsaForm("permits", active ? jsaForm.permits.filter(k => k !== p.key) : [...jsaForm.permits, p.key])}
+                                t={t}
+                              >
                                 {lang === "es" ? p.labelEs : p.label}
-                              </button>
+                              </FieldButton>
                             );
                           })}
                         </div>
                       </div>
 
                       {/* Steps */}
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Job Steps & Hazards")}</div>
+                      <div className="frm-jsa-section">
+                        <div className="frm-amber frm-jsa-subsection-title">{t("Job Steps & Hazards")}</div>
                         {jsaForm.steps.map((step, idx) => (
-                          <div key={step.id} className="card" style={{ padding: 10, marginBottom: 6 }}>
-                            <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
-                              <span style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--amber)", color: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{idx + 1}</span>
-                              <input className="form-input" style={{ flex: 1, fontSize: 12 }} value={step.step}
+                          <FieldCard key={step.id} className="frm-jsa-step">
+                            <div className="frm-flex-gap frm-jsa-step-row">
+                              <span className="frm-jsa-step-num">{idx + 1}</span>
+                              <input className="form-input frm-jsa-step-input" value={step.step}
                                 onChange={e => updJsaForm("steps", jsaForm.steps.map((s, i) => i === idx ? { ...s, step: e.target.value } : s))}
                                 placeholder={t("Describe this step...")} />
-                              <button style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 14 }}
-                                onClick={() => updJsaForm("steps", jsaForm.steps.filter((_, i) => i !== idx))}>✕</button>
+                              <FieldButton variant="danger" size="sm" onClick={() => updJsaForm("steps", jsaForm.steps.filter((_, i) => i !== idx))} t={t}>✕</FieldButton>
                             </div>
                             {(step.hazards || []).map((h, hi) => {
                               const score = (h.likelihood || 1) * (h.severity || 1);
                               const hrc = riskColor(score);
                               return (
-                                <div key={hi} style={{ marginLeft: 26, padding: "4px 0", display: "flex", gap: 6, alignItems: "center", borderTop: "1px solid var(--border)" }}>
-                                  <span className="jsa-risk-score" style={{ background: hrc.bg, color: "#fff", fontSize: 10, padding: "1px 5px", borderRadius: 4 }}>{score}</span>
-                                  <span style={{ fontSize: 11, flex: 1 }}>{h.hazard}</span>
-                                  <button style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 12 }}
-                                    onClick={() => {
-                                      const steps = [...jsaForm.steps];
-                                      steps[idx] = { ...steps[idx], hazards: steps[idx].hazards.filter((_, i) => i !== hi) };
-                                      updJsaForm("steps", steps);
-                                    }}>✕</button>
+                                <div key={hi} className="frm-flex-gap frm-jsa-hazard-sub frm-divider">
+                                  <span className="frm-jsa-risk-score-badge" style={{ background: hrc.bg, color: "#fff" }}>{/* dynamic: risk color computed at runtime */}{score}</span>
+                                  <span className="text-sm frm-jsa-hazard-flex">{h.hazard}</span>
+                                  <FieldButton variant="danger" size="sm" onClick={() => {
+                                    const steps = [...jsaForm.steps];
+                                    steps[idx] = { ...steps[idx], hazards: steps[idx].hazards.filter((_, i) => i !== hi) };
+                                    updJsaForm("steps", steps);
+                                  }} t={t}>✕</FieldButton>
                                 </div>
                               );
                             })}
-                            <select className="form-select" style={{ fontSize: 11, marginTop: 4, marginLeft: 26 }}
+                            <select className="form-select frm-jsa-add-hazard-select"
                               onChange={e => {
                                 if (!e.target.value) return;
                                 const [trade, hIdx] = e.target.value.split("|");
@@ -2691,17 +2700,19 @@ export function ForemanView({ app }) {
                                 </optgroup>
                               ))}
                             </select>
-                          </div>
+                          </FieldCard>
                         ))}
-                        <button className="cal-nav-btn" style={{ fontSize: 12 }}
-                          onClick={() => updJsaForm("steps", [...jsaForm.steps, { id: "s_" + Date.now(), step: "", hazards: [] }])}>
+                        <FieldButton variant="ghost" size="sm"
+                          onClick={() => updJsaForm("steps", [...jsaForm.steps, { id: "s_" + Date.now(), step: "", hazards: [] }])}
+                          t={t}
+                        >
                           {t("+ Add Step")}
-                        </button>
+                        </FieldButton>
                       </div>
 
-                      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                        <button className="cal-nav-btn" onClick={() => setJsaView("list")}>{t("Cancel")}</button>
-                        <button className="btn btn-primary" onClick={saveJsa}>{t("Create JSA")}</button>
+                      <div className="frm-jsa-controls">
+                        <FieldButton variant="ghost" onClick={() => setJsaView("list")} t={t}>{t("Cancel")}</FieldButton>
+                        <FieldButton variant="primary" onClick={saveJsa} t={t}>{t("Create JSA")}</FieldButton>
                       </div>
                     </div>
                   );
