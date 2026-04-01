@@ -657,6 +657,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 }
 
 /* ══ EMPLOYEE VIEW ══ */
+.emp-lang-switch{display:inline-flex;border-radius:var(--radius);overflow:hidden;border:1px solid var(--glass-border);background:var(--bg2)}
+.emp-lang-option{padding:var(--space-1) var(--space-3);font-size:var(--text-xs);font-weight:var(--weight-bold);letter-spacing:0.05em;border:none;background:transparent;color:var(--text3);cursor:pointer;transition:background var(--transition-micro),color var(--transition-micro)}
+.emp-lang-option:hover{background:var(--bg3)}
+.emp-lang-active{background:var(--amber);color:#000}
 .employee-app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;background:var(--bg)}
 .employee-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;padding-top:calc(12px + env(safe-area-inset-top));
   background:var(--glass-bg);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);

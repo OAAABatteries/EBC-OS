@@ -587,10 +587,10 @@ export function EmployeeView({ app }) {
 
   // ── language toggle for PortalHeader ──
   const langToggle = (
-    <>
-      <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>EN</button>
-      <button className={lang === "es" ? "active" : ""} onClick={() => setLang("es")}>ES</button>
-    </>
+    <div className="emp-lang-switch">
+      <button className={`emp-lang-option${lang === "en" ? " emp-lang-active" : ""}`} onClick={() => setLang("en")}>EN</button>
+      <button className={`emp-lang-option${lang === "es" ? " emp-lang-active" : ""}`} onClick={() => setLang("es")}>ES</button>
+    </div>
   );
 
   // ── role-aware tabs ──
