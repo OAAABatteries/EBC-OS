@@ -99,7 +99,12 @@ Plans:
   3. KPI cards display dollar amounts, percentages, and crew counts using the typography scale — all values use the same font-size token, not ad-hoc sizes
   4. Phase status colors in the dashboard render correctly in all 5 themes — `--phase-*` tokens in use, no hex literals in JSX
   5. Daily reports, JSA, and crew sections use `FieldCard`, `FieldButton`, `AsyncState`, and `FieldSignaturePad` from the shared component library
-**Plans**: TBD
+**Plans:** 0/4 plans
+Plans:
+- [ ] 05-01-PLAN.md — Add/update foreman CSS classes in styles.js (tokenize existing + new frm-* classes)
+- [ ] 05-02-PLAN.md — Wire PortalHeader/PortalTabBar, refactor login + settings + clock + dashboard + team + hours tabs
+- [ ] 05-03-PLAN.md — Refactor materials + JSA tabs (MaterialRequestCard, FieldSignaturePad, hazard matrix)
+- [ ] 05-04-PLAN.md — Refactor drawings + lookahead + reports + documents + site + notes tabs (final sweep)
 **UI hint**: yes
 
 ### Phase 6: Polish and Theme Audit
@@ -126,5 +131,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 2. Shared Field Components | 4/6 | In Progress|  |
 | 3. DriverView Refactor | 3/3 | Complete   | 2026-04-01 |
 | 4. EmployeeView Refactor | 3/3 | Complete   | 2026-04-01 |
-| 5. ForemanView Refactor | 0/TBD | Not started | - |
+| 5. ForemanView Refactor | 0/4 | Not started | - |
 | 6. Polish and Theme Audit | 0/TBD | Not started | - |
