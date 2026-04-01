@@ -48,10 +48,10 @@ Requirements for milestone v1.0: Field Portal Perfection. Each maps to roadmap p
 
 ### Foreman Portal
 
-- [ ] **FRMN-01**: All inline styles replaced with CSS classes using design tokens
-- [ ] **FRMN-02**: 11 horizontal tabs restructured into bottom nav (4-5 primary) + More menu
-- [ ] **FRMN-03**: All buttons/inputs meet 44px touch target minimum
-- [ ] **FRMN-04**: KPI cards use consistent font sizes from typography scale
+- [x] **FRMN-01**: All inline styles replaced with CSS classes using design tokens
+- [x] **FRMN-02**: 11 horizontal tabs restructured into bottom nav (4-5 primary) + More menu
+- [x] **FRMN-03**: All buttons/inputs meet 44px touch target minimum
+- [x] **FRMN-04**: KPI cards use consistent font sizes from typography scale
 - [ ] **FRMN-05**: Daily reports, JSA, and crew sections use shared field components
 - [ ] **FRMN-06**: Phase colors use `--phase-*` semantic tokens instead of hard-coded hex
 
@@ -126,10 +126,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EMPL-03 | Phase 4 | Complete |
 | EMPL-04 | Phase 4 | Complete |
 | EMPL-05 | Phase 4 | Complete |
-| FRMN-01 | Phase 5 | Pending |
-| FRMN-02 | Phase 5 | Pending |
-| FRMN-03 | Phase 5 | Pending |
-| FRMN-04 | Phase 5 | Pending |
+| FRMN-01 | Phase 5 | Complete |
+| FRMN-02 | Phase 5 | Complete |
+| FRMN-03 | Phase 5 | Complete |
+| FRMN-04 | Phase 5 | Complete |
 | FRMN-05 | Phase 5 | Pending |
 | FRMN-06 | Phase 5 | Pending |
 | PLSH-01 | Phase 6 | Pending |

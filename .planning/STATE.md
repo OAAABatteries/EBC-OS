@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-04-01T19:48:24.277Z"
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-04-01T20:05:43.914Z"
 last_activity: 2026-03-31
 progress:
   total_phases: 6
-  completed_phases: 2
-  total_plans: 9
-  completed_plans: 10
+  completed_phases: 4
+  total_plans: 19
+  completed_plans: 17
   percent: 0
 ---
 
@@ -62,6 +62,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02-shared-field-components P05 | 9m | 2 tasks | 5 files |
 | Phase 02-shared-field-components PP06 | 7m | 2 tasks | 5 files |
 | Phase 05-foremanview-refactor P01 | 3m | 2 tasks | 1 files |
+| Phase 05 P02 | 25 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,10 @@ Recent decisions affecting current work:
 - [Phase 05-foremanview-refactor]: frm-team-clock-btn uses var(--amber) not var(--accent) — accent is undefined in all themes
 - [Phase 05-foremanview-refactor]: foreman-kpi-value updated from 22px to var(--text-display) per D-05, satisfying FRMN-04
 - [Phase 05-foremanview-refactor]: foreman-team-row gets min-height:var(--touch-min) to satisfy FRMN-03 touch target contract
+- [Phase 05]: PortalHeader languageToggle fix: renders both languageToggle and settingsAction for variant=foreman via Fragment
+- [Phase 05]: Default tab changed from clock to dashboard — Dashboard is foreman command center per UI-SPEC D-01
+- [Phase 05]: FOREMAN_TABS badge uses boolean — not count — to match PortalTabBar API spec
+- [Phase 05]: Phase stage colors mapped to var(--phase-*) tokens — hex literals eliminated from dashboard section
 
 ### Pending Todos
 
@@ -108,6 +113,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T19:48:24.274Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-04-01T20:05:43.912Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None
