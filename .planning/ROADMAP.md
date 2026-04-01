@@ -82,10 +82,10 @@ Plans:
   2. The clock-in flow uses `PortalHeader`, `FieldButton`, and `AsyncState` — no custom header or spinner markup in EmployeeView
   3. The material request form fields use `FieldInput`/`FieldSelect` with appropriate `inputmode` attributes (numeric fields open the numeric keyboard on mobile)
   4. Map tile switcher buttons are tappable without mis-tap — all meet 44px minimum touch target
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 Plans:
 - [x] 04-01-PLAN.md — Add employee-specific CSS classes to styles.js
-- [ ] 04-02-PLAN.md — Wire PortalHeader/PortalTabBar, refactor login + clock + schedule + log + settings tabs
+- [x] 04-02-PLAN.md — Wire PortalHeader/PortalTabBar, refactor login + clock + schedule + log + settings tabs
 - [ ] 04-03-PLAN.md — Refactor JSA + materials (FieldInput/FieldSelect with inputmode) + COS + RFIs tabs
 **UI hint**: yes
 
@@ -125,6 +125,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 1. Token Foundation | 3/3 | Complete   | 2026-03-30 |
 | 2. Shared Field Components | 4/6 | In Progress|  |
 | 3. DriverView Refactor | 3/3 | Complete   | 2026-04-01 |
-| 4. EmployeeView Refactor | 1/3 | In Progress|  |
+| 4. EmployeeView Refactor | 2/3 | In Progress|  |
 | 5. ForemanView Refactor | 0/TBD | Not started | - |
 | 6. Polish and Theme Audit | 0/TBD | Not started | - |

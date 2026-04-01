@@ -42,8 +42,8 @@ Requirements for milestone v1.0: Field Portal Perfection. Each maps to roadmap p
 
 - [x] **EMPL-01**: All inline styles replaced with CSS classes using design tokens
 - [x] **EMPL-02**: All buttons/inputs meet 44px touch target minimum
-- [ ] **EMPL-03**: Clock-in flow uses shared field components
-- [ ] **EMPL-04**: Material request form uses `FieldInput`/`FieldSelect` with proper `inputmode`
+- [x] **EMPL-03**: Clock-in flow uses shared field components
+- [x] **EMPL-04**: Material request form uses `FieldInput`/`FieldSelect` with proper `inputmode`
 - [x] **EMPL-05**: Map tile switcher buttons meet touch target requirements
 
 ### Foreman Portal
@@ -123,8 +123,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DRVR-04 | Phase 3 | Complete |
 | EMPL-01 | Phase 4 | Complete |
 | EMPL-02 | Phase 4 | Complete |
-| EMPL-03 | Phase 4 | Pending |
-| EMPL-04 | Phase 4 | Pending |
+| EMPL-03 | Phase 4 | Complete |
+| EMPL-04 | Phase 4 | Complete |
 | EMPL-05 | Phase 4 | Complete |
 | FRMN-01 | Phase 5 | Pending |
 | FRMN-02 | Phase 5 | Pending |
