@@ -886,6 +886,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 
 /* Settings / Profile */
 .driver-settings-back{margin-bottom:var(--space-3)}
+.driver-settings-lang-row{margin-top:var(--space-3)}
 .driver-profile-center{text-align:center;margin-bottom:var(--space-3)}
 
 /* Login Logo Row */

@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Calendar, Map, Settings, Navigation, Package, Truck, CheckCircle, MapPin, RefreshCw } from "lucide-react";
+import { Calendar, Settings, Navigation, Package, Truck, CheckCircle, MapPin, RefreshCw } from "lucide-react";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
+import { PortalHeader, PortalTabBar, FieldCard, FieldButton, EmptyState, StatusBadge } from "../components/field";
 
 // ═══════════════════════════════════════════════════════════════
 //  Driver View — Delivery Route Map + Queue Management
@@ -165,7 +166,7 @@ export function DriverView({ app }) {
     [optimizedStops]
   );
 
-  // ── drag and drop ──
+  // ── desktop drag and drop ──
   const handleDragStart = (idx) => setDragIdx(idx);
   const handleDragOver = (e, idx) => { e.preventDefault(); };
   const handleDrop = (idx) => {
@@ -176,6 +177,87 @@ export function DriverView({ app }) {
     setManualOrder(items);
     setDragIdx(null);
   };
+
+  // ── touch drag-and-drop (D-03) ──
+  const [heldIdx, setHeldIdx] = useState(null);
+  const holdTimerRef = useRef(null);
+  const touchStartY = useRef(null);
+  const touchCurrentIdx = useRef(null);
+  const rafRef = useRef(null);
+
+  const handleTouchStart = useCallback((e, idx) => {
+    touchStartY.current = e.touches[0].clientY;
+    touchCurrentIdx.current = idx;
+    holdTimerRef.current = setTimeout(() => {
+      setHeldIdx(idx);
+      setDragIdx(idx);
+      // Haptic feedback if available
+      if (navigator.vibrate) navigator.vibrate(50);
+    }, 400); // 400ms long-press threshold
+  }, []);
+
+  const handleTouchMove = useCallback((e) => {
+    if (heldIdx === null) {
+      // Not in drag mode — cancel hold if finger moved more than 10px
+      if (holdTimerRef.current && touchStartY.current !== null) {
+        const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+        if (dy > 10) {
+          clearTimeout(holdTimerRef.current);
+          holdTimerRef.current = null;
+        }
+      }
+      return;
+    }
+
+    // Only prevent scroll when dragging significantly vertically (>20px threshold per review feedback)
+    if (touchStartY.current !== null) {
+      const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+      if (dy > 20) {
+        e.preventDefault();
+      }
+    }
+
+    // Throttle to ~60fps via requestAnimationFrame (review feedback — prevents jank on low-end phones)
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+      const cardEl = elements.find(el => el.closest('[data-stop-idx]'));
+      if (cardEl) {
+        const targetIdx = parseInt(cardEl.closest('[data-stop-idx]').dataset.stopIdx, 10);
+        if (!isNaN(targetIdx) && targetIdx !== touchCurrentIdx.current) {
+          // Reorder in real-time
+          const items = [...optimizedStops];
+          const [moved] = items.splice(touchCurrentIdx.current, 1);
+          items.splice(targetIdx, 0, moved);
+          setManualOrder(items);
+          touchCurrentIdx.current = targetIdx;
+        }
+      }
+    });
+  }, [heldIdx, optimizedStops]);
+
+  const handleTouchEnd = useCallback(() => {
+    clearTimeout(holdTimerRef.current);
+    holdTimerRef.current = null;
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    setHeldIdx(null);
+    setDragIdx(null);
+    touchStartY.current = null;
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
   // ── actions (Phase 2A: audit trail on status changes) ──
   const handleStartDelivery = (reqId) => {
@@ -226,18 +308,22 @@ export function DriverView({ app }) {
   };
   const getInitials = (name) => name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
 
+  // ── Tab definitions (D-05) ──
+  const driverTabDefs = [
+    { id: "route", label: "Route", icon: Navigation, badge: optimizedStops.length > 0 },
+    { id: "completed", label: "Completed", icon: CheckCircle, badge: todayDelivered.length > 0 },
+    { id: "settings", label: "Settings", icon: Settings },
+  ];
+
   // ═══ LOGIN ═══
   if (!activeDriver) {
     return (
       <div className="employee-app">
-        <header className="employee-header">
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
-          <span className="text-sm text-muted">{t("Driver Portal")}</span>
-        </header>
+        <PortalHeader variant="driver" t={t} />
         <div className="employee-body">
           <div className="login-wrap">
             <div className="login-title">{t("Sign In")}</div>
-            <div className="text-sm text-muted" style={{ textAlign: "center", marginTop: -12 }}>{t("Driver Portal")}</div>
+            <div className="text-sm text-muted driver-login-subtitle">{t("Driver Portal")}</div>
             <div className="login-form">
               <input type="email" className="login-input" placeholder={t("Email")} value={email}
                 onChange={e => { setEmail(e.target.value); setLoginError(""); }} onKeyDown={e => e.key === "Enter" && handleLogin()} />
@@ -253,115 +339,98 @@ export function DriverView({ app }) {
   }
 
   // ═══ MAIN DRIVER VIEW ═══
-  const driverTabs = [
-    { key: "route", label: t("Route"), count: optimizedStops.length },
-    { key: "completed", label: t("Completed"), count: todayDelivered.length },
-    { key: "settings", label: t("Settings") },
-  ];
-
   return (
     <div className="employee-app">
-      <header className="employee-header">
-        <div>
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
-          <span className="text-xs text-muted">{activeDriver.name} · {t("Deliveries")}</span>
-        </div>
-        <button className="settings-gear" onClick={() => setDriverTab("settings")} title={t("Settings")}>&#9881;</button>
-      </header>
+      <PortalHeader
+        variant="driver"
+        userName={`${activeDriver.name} \u00B7 ${t("Deliveries")}`}
+        logoutAction={
+          <FieldButton variant="ghost" className="btn-sm" onClick={handleLogout} t={t}>
+            {t("Logout")}
+          </FieldButton>
+        }
+        t={t}
+      />
 
-      <div className="employee-body">
-        <div className="emp-tabs">
-          {driverTabs.map((tab) => (
-            <button key={tab.key} className={`emp-tab${driverTab === tab.key ? " active" : ""}`} onClick={() => setDriverTab(tab.key)}>
-              {tab.label}
-              {tab.count > 0 && <span className="driver-badge">{tab.count}</span>}
-            </button>
-          ))}
-        </div>
+      <div className="employee-body driver-content-pad">
 
         {/* ═══ ROUTE TAB — Map + Sorted Stops ═══ */}
         {driverTab === "route" && (
           <div className="emp-content">
-            {/* Route summary bar */}
-            <div style={{ display: "flex", gap: 10, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
-              <div className="foreman-kpi-card" style={{ flex: 1, minWidth: 80, padding: "10px 12px" }}>
-                <div className="foreman-kpi-label">{t("Stops")}</div>
-                <div className="foreman-kpi-value" style={{ fontSize: 22 }}>{optimizedStops.length}</div>
+            {/* KPI summary bar (D-06) */}
+            <div className="driver-kpi-grid">
+              <div className="driver-kpi-tile">
+                <div className="driver-kpi-label">{t("Stops")}</div>
+                <div className="driver-kpi-value">{optimizedStops.length}</div>
               </div>
-              <div className="foreman-kpi-card" style={{ flex: 1, minWidth: 80, padding: "10px 12px" }}>
-                <div className="foreman-kpi-label">{t("In Transit")}</div>
-                <div className="foreman-kpi-value" style={{ fontSize: 22, color: "var(--amber)" }}>{inTransitItems.length}</div>
+              <div className="driver-kpi-tile">
+                <div className="driver-kpi-label">{t("In Transit")}</div>
+                <div className="driver-kpi-value driver-kpi-value--amber">{inTransitItems.length}</div>
               </div>
-              <div className="foreman-kpi-card" style={{ flex: 1, minWidth: 80, padding: "10px 12px" }}>
-                <div className="foreman-kpi-label">{t("Done Today")}</div>
-                <div className="foreman-kpi-value" style={{ fontSize: 22, color: "var(--green)" }}>{todayDelivered.length}</div>
+              <div className="driver-kpi-tile">
+                <div className="driver-kpi-label">{t("Done Today")}</div>
+                <div className="driver-kpi-value driver-kpi-value--green">{todayDelivered.length}</div>
               </div>
               {totalDistance > 0 && (
-                <div className="foreman-kpi-card" style={{ flex: 1, minWidth: 80, padding: "10px 12px" }}>
-                  <div className="foreman-kpi-label">{t("Est. Miles")}</div>
-                  <div className="foreman-kpi-value" style={{ fontSize: 22 }}>{totalDistance.toFixed(1)}</div>
+                <div className="driver-kpi-tile">
+                  <div className="driver-kpi-label">{t("Est. Miles")}</div>
+                  <div className="driver-kpi-value">{totalDistance.toFixed(1)}</div>
                 </div>
               )}
             </div>
 
-            {/* Navigate All button */}
+            {/* Navigate All CTA */}
             {optimizedStops.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
+              <div className="mb-4">
                 {getMultiStopNavUrl() && (
                   <a href={getMultiStopNavUrl()} target="_blank" rel="noopener noreferrer"
-                    className="btn btn-primary" style={{ display: "block", textAlign: "center", padding: "14px 20px", fontSize: 16, fontWeight: 700, textDecoration: "none" }}>
-                    <Navigation size={16} style={{ display: "inline", marginRight: 6, verticalAlign: "middle" }} />{t("Navigate Full Route")}
+                    className="btn btn-primary driver-nav-cta touch-target">
+                    <Navigation size={16} aria-hidden="true" /> {t("Navigate Full Route")}
                   </a>
                 )}
-                <div className="text-xs text-muted" style={{ textAlign: "center", marginTop: 6 }}>
-                  {t("Drag stops to reorder")} · {t("Opens Google Maps with all stops")}
+                <div className="text-xs text-muted driver-nav-cta-hint">
+                  {t("Drag stops to reorder")} &middot; {t("Opens Google Maps with all stops")}
                 </div>
               </div>
             )}
 
-            {/* Stop list — draggable */}
+            {/* Stop list — draggable (DRVR-03, D-03) */}
             {optimizedStops.length === 0 ? (
-              <div className="empty-state" style={{ padding: "40px 20px" }}>
-                <div className="empty-icon"><Package size={32} /></div>
-                <div className="empty-text">{t("No deliveries in queue")}</div>
-                <div className="text-xs text-muted" style={{ marginTop: 8 }}>{t("Approved material requests will appear here")}</div>
-              </div>
+              <EmptyState
+                icon={Package}
+                heading={t("No deliveries in queue")}
+                message={t("Approved material requests will appear here")}
+                t={t}
+              />
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="driver-route-list">
                 {optimizedStops.map((stop, idx) => (
-                  <div
+                  <FieldCard
                     key={stop.id}
-                    draggable
+                    data-stop-idx={idx}
+                    className={`driver-route-card${stop.isInTransit ? " driver-route-card--in-transit" : ""}${dragIdx === idx ? " driver-route-card--dragging" : ""}${heldIdx === idx ? " driver-route-card--held" : ""}`}
+                    onTouchStart={(e) => handleTouchStart(e, idx)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
                     onDragStart={() => handleDragStart(idx)}
                     onDragOver={(e) => handleDragOver(e, idx)}
                     onDrop={() => handleDrop(idx)}
-                    className="driver-queue-card"
-                    style={{
-                      borderLeft: stop.isInTransit ? "4px solid var(--amber)" : "4px solid var(--accent)",
-                      cursor: "grab",
-                      opacity: dragIdx === idx ? 0.5 : 1,
-                      transition: "opacity 0.15s",
-                    }}
+                    draggable
                   >
-                    {/* Stop number + drag handle */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                      <div style={{
-                        width: 32, height: 32, borderRadius: "50%",
-                        background: stop.isInTransit ? "var(--amber)" : "var(--accent)",
-                        color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 14, fontWeight: 700, flexShrink: 0
-                      }}>
+                    {/* Stop number + project name + drag handle */}
+                    <div className="driver-card-header">
+                      <div className={`driver-stop-badge${stop.isInTransit ? " driver-stop-badge--in-transit" : ""}`}>
                         {idx + 1}
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <div className="text-sm font-bold" style={{ color: "var(--amber)" }}>{stop.projectName}</div>
+                      <div className="flex-1">
+                        <div className="text-sm driver-project-name">{stop.projectName}</div>
                         {stop.address && <div className="text-xs text-muted">{stop.address}</div>}
                       </div>
-                      <div style={{ fontSize: 18, color: "var(--text3)", cursor: "grab", padding: "0 4px" }}>⠿</div>
+                      <div className="driver-drag-handle">&#x2807;</div>
                     </div>
 
                     {/* Material info */}
-                    <div style={{ marginLeft: 42 }}>
+                    <div className="driver-card-body">
                       <div className="flex-between mb-4">
                         <span className="text-sm font-semi">{stop.material}</span>
                         <span className="text-sm font-mono">{stop.qty} {stop.unit}</span>
@@ -373,57 +442,75 @@ export function DriverView({ app }) {
                       {stop.notes && <div className="text-xs text-dim mb-8">{stop.notes}</div>}
 
                       {/* Delivery schedule */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                        <Calendar size={13} style={{ color: "var(--text3)", flexShrink: 0 }} />
-                        <label className="text-xs" style={{ color: "var(--text2)", minWidth: 48 }}>Scheduled:</label>
+                      <div className="driver-schedule-row">
+                        <Calendar size={13} className="driver-schedule-label" aria-hidden="true" />
+                        <span className="text-xs driver-schedule-label">{t("Scheduled")}:</span>
                         <input
                           type="date"
-                          className="form-input"
-                          style={{ flex: 1, fontSize: 12, padding: "3px 8px", height: "auto" }}
+                          className="form-input field-input driver-schedule-input focus-visible"
                           value={deliverySchedules[stop.id] || ""}
                           onChange={e => setScheduleDate(stop.id, e.target.value)}
                           onClick={e => e.stopPropagation()}
                         />
                         {deliverySchedules[stop.id] && (
                           <button
-                            className="btn-icon"
-                            style={{ fontSize: 11, color: "var(--text3)" }}
+                            className="driver-schedule-clear touch-target"
                             onClick={e => { e.stopPropagation(); setScheduleDate(stop.id, ""); }}
-                            title="Clear date"
-                          >✕</button>
+                            title={t("Clear date")}
+                          >
+                            &#x2715;
+                          </button>
                         )}
                       </div>
 
-                      {/* Action buttons */}
-                      <div className="flex gap-8">
+                      {/* Action buttons (DRVR-02 — 44px touch targets via FieldButton) */}
+                      <div className="driver-action-row">
                         {!stop.isInTransit ? (
-                          <button className="btn btn-primary btn-sm" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }} onClick={() => handleStartDelivery(stop.id)}>
-                            <Truck size={14} />{t("Start Delivery")}
-                          </button>
+                          <FieldButton
+                            variant="primary"
+                            className="btn-sm driver-action-btn"
+                            onClick={() => handleStartDelivery(stop.id)}
+                            t={t}
+                          >
+                            <Truck size={14} aria-hidden="true" /> {t("Start Delivery")}
+                          </FieldButton>
                         ) : (
-                          <button className="btn btn-sm" style={{ flex: 1, background: "var(--green)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }} onClick={() => handleMarkDelivered(stop.id)}>
-                            <CheckCircle size={14} />{t("Mark Delivered")}
-                          </button>
+                          <FieldButton
+                            variant="primary"
+                            className="btn-sm driver-action-btn driver-delivered-btn"
+                            onClick={() => handleMarkDelivered(stop.id)}
+                            t={t}
+                          >
+                            <CheckCircle size={14} aria-hidden="true" /> {t("Mark Delivered")}
+                          </FieldButton>
                         )}
                         {getNavLink(stop) && (
-                          <a href={getNavLink(stop)} target="_blank" rel="noopener noreferrer"
-                            className="btn btn-ghost btn-sm" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                            <MapPin size={14} />{t("Navigate")}
-                          </a>
+                          <FieldButton
+                            variant="ghost"
+                            className="btn-sm driver-action-btn"
+                            onClick={() => window.open(getNavLink(stop), "_blank")}
+                            t={t}
+                          >
+                            <MapPin size={14} aria-hidden="true" /> {t("Navigate")}
+                          </FieldButton>
                         )}
                       </div>
                     </div>
-                  </div>
+                  </FieldCard>
                 ))}
               </div>
             )}
 
-            {/* Optimize button */}
+            {/* Re-optimize button */}
             {manualOrder && optimizedStops.length > 1 && (
-              <button className="btn btn-ghost" style={{ marginTop: 12, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-                onClick={() => setManualOrder(null)}>
-                <RefreshCw size={14} />{t("Re-optimize Route")}
-              </button>
+              <FieldButton
+                variant="ghost"
+                className="driver-reoptimize-btn"
+                onClick={() => setManualOrder(null)}
+                t={t}
+              >
+                <RefreshCw size={14} aria-hidden="true" /> {t("Re-optimize Route")}
+              </FieldButton>
             )}
           </div>
         )}
@@ -432,24 +519,25 @@ export function DriverView({ app }) {
         {driverTab === "completed" && (
           <div className="emp-content">
             <div className="section-header">
-              <div className="section-title" style={{ fontSize: 16 }}>{t("Today's Deliveries")}</div>
+              <div className="section-title driver-section-title">{t("Today's Deliveries")}</div>
             </div>
             {todayDelivered.length === 0 ? (
-              <div className="empty-state" style={{ padding: "30px 20px" }}>
-                <div className="empty-icon"><CheckCircle size={32} /></div>
-                <div className="empty-text">{t("No deliveries completed today")}</div>
-              </div>
+              <EmptyState
+                icon={CheckCircle}
+                heading={t("No deliveries completed today")}
+                t={t}
+              />
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="driver-route-list">
                 {todayDelivered.map(req => (
-                  <div key={req.id} className="card" style={{ padding: 14 }}>
+                  <FieldCard key={req.id} className="driver-completed-card">
                     <div className="flex-between mb-4">
                       <span className="text-sm font-semi">{req.material}</span>
-                      <span className="badge badge-green">{t("Delivered")}</span>
+                      <StatusBadge status="completed" t={t} />
                     </div>
                     <div className="text-xs text-muted mb-4">{req.projectName} — {req.qty} {req.unit}</div>
                     <div className="text-xs text-dim">{t("Delivered")} {fmtTime(req.deliveredAt)}</div>
-                  </div>
+                  </FieldCard>
                 ))}
               </div>
             )}
@@ -459,12 +547,18 @@ export function DriverView({ app }) {
         {/* ═══ SETTINGS TAB ═══ */}
         {driverTab === "settings" && (
           <div className="settings-wrap">
-            {/* Back button */}
-            <button className="btn btn-ghost btn-sm" style={{ marginBottom: 12 }} onClick={() => setDriverTab("queue")}>&#9664; {t("Back")}</button>
+            <FieldButton
+              variant="ghost"
+              className="btn-sm driver-settings-back"
+              onClick={() => setDriverTab("route")}
+              t={t}
+            >
+              &#9664; {t("Back")}
+            </FieldButton>
             <div className="settings-section">
               <div className="settings-section-title">{t("Profile")}</div>
               <div className="settings-avatar">{getInitials(activeDriver.name)}</div>
-              <div style={{ textAlign: "center", marginBottom: 12 }}>
+              <div className="driver-profile-center">
                 <div className="text-md font-semi">{activeDriver.name}</div>
                 <div className="text-xs text-muted">{activeDriver.role}</div>
                 <div className="text-xs text-dim">{activeDriver.email}</div>
@@ -480,7 +574,7 @@ export function DriverView({ app }) {
                   </div>
                 ))}
               </div>
-              <div className="settings-row" style={{ marginTop: 12 }}>
+              <div className="settings-row driver-settings-lang-row">
                 <span className="settings-label">{t("Language")}</span>
                 <div className="lang-toggle">
                   <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>EN</button>
@@ -505,6 +599,15 @@ export function DriverView({ app }) {
           </div>
         )}
       </div>
+
+      {/* Bottom tab bar (D-05) — position:fixed via .field-tab-bar CSS */}
+      <PortalTabBar
+        tabs={driverTabDefs}
+        activeTab={driverTab}
+        onTabChange={setDriverTab}
+        maxPrimary={3}
+        t={t}
+      />
     </div>
   );
 }
