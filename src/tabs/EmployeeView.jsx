@@ -585,6 +585,14 @@ export function EmployeeView({ app }) {
     return new Date(iso).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
   };
 
+  // ── language toggle for PortalHeader ──
+  const langToggle = (
+    <>
+      <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>EN</button>
+      <button className={lang === "es" ? "active" : ""} onClick={() => setLang("es")}>ES</button>
+    </>
+  );
+
   // ── role-aware tabs ──
   const tabs = useMemo(() => {
     const base = [
@@ -664,7 +672,7 @@ export function EmployeeView({ app }) {
   if (!activeEmp) {
     return (
       <div className="employee-app">
-        <PortalHeader variant="employee" languageToggle={{ lang, setLang }} t={t} />
+        <PortalHeader variant="employee" languageToggle={langToggle} t={t} />
         <div className="employee-body">
           <div className="login-wrap">
             <div className="login-title">{t("Sign In")}</div>
@@ -711,7 +719,7 @@ export function EmployeeView({ app }) {
         <PortalHeader
           variant="employee"
           userName={activeEmp.name}
-          languageToggle={{ lang, setLang }}
+          languageToggle={langToggle}
           settingsAction={() => { setSelectedInfoProject(null); setEmpTab("settings"); }}
           t={t}
         />
@@ -881,7 +889,7 @@ export function EmployeeView({ app }) {
       <PortalHeader
         variant="employee"
         userName={activeEmp.name}
-        languageToggle={{ lang, setLang }}
+        languageToggle={langToggle}
         settingsAction={() => setEmpTab("settings")}
         t={t}
       />
