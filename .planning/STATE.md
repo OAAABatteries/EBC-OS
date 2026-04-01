@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 05-03-PLAN.md
-last_updated: "2026-04-01T20:22:11.608Z"
-last_activity: 2026-03-31
+stopped_at: Completed 05-04-PLAN.md
+last_updated: "2026-04-01T21:15:00.000Z"
+last_activity: 2026-04-01
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 19
-  completed_plans: 18
-  percent: 0
+  completed_plans: 19
+  percent: 100
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Field crews can manage their entire workday from one app that feels fast, reliable, and professional on a phone in the field.
-**Current focus:** Phase 02 — shared-field-components
+**Current focus:** Phase 05 complete — ForemanView refactor done
 
 ## Current Position
 
-Phase: 3
-Plan: Not started
+Phase: 05
+Plan: 04 (complete)
 Status: Phase complete — ready for verification
-Last activity: 2026-03-31
+Last activity: 2026-04-01
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -64,6 +64,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 05-foremanview-refactor P01 | 3m | 2 tasks | 1 files |
 | Phase 05 P02 | 25 | 2 tasks | 2 files |
 | Phase 05-foremanview-refactor P03 | 13m | 2 tasks | 2 files |
+| Phase 05-foremanview-refactor P04 | 45m | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,8 @@ Recent decisions affecting current work:
 - [Phase 05]: Phase stage colors mapped to var(--phase-*) tokens — hex literals eliminated from dashboard section
 - [Phase 05-foremanview-refactor]: frm-jsa-matrix class defined in CSS but ForemanView uses hazard list pattern — no matrix grid view exists in the original code
 - [Phase 05-foremanview-refactor]: MaterialRequestCard data mapping: urgency prefix to title, notes to materialName, fulfillmentType icon to timestamp, foreman confirm/issue to actions array
+- [Phase 05-foremanview-refactor P04]: frm-look-grid changed to flex column — actual lookahead code is date-grouped event list, not 5-column day planner grid as plan spec assumed
+- [Phase 05-foremanview-refactor P04]: 4 dynamic inline style exceptions in Plan 4 scope (event bar color, modal zIndex:10000, canvas display:none, disabled opacity:0.7) — all documented with JSX comments
 
 ### Pending Todos
 
@@ -110,12 +113,12 @@ None yet.
 ### Blockers/Concerns
 
 - **Font decision unresolved:** PROJECT.md names Fira Code/Fira Sans; existing themes use Barlow/IBM Plex Mono. Needs PM sign-off before self-hosted fonts are configured. Does not block Phase 1 token work.
-- **`--accent` variable undefined:** Used in EmployeeView and ForemanView JSX but not defined in THEMES object. Must be audited before Phase 4 begins.
-- **ForemanView tab grouping:** Which 4-5 tabs become primary bottom nav is a product decision. Validate with Emmanuel or a foreman before Phase 5 planning.
+- **`--accent` variable undefined in EmployeeView:** Still needs audit before EmployeeView refactor begins. ForemanView resolved (all replaced with var(--amber)).
+- **ForemanView tab grouping:** Resolved — FOREMAN_TABS defined with maxPrimary={5} and 13 tabs in PortalTabBar.
 - **`vite-plugin-webfont-dl` Vite 8 compat:** Confirm before committing the font plugin.
 
 ## Session Continuity
 
-Last session: 2026-04-01T20:22:11.605Z
-Stopped at: Completed 05-03-PLAN.md
+Last session: 2026-04-01T21:15:00.000Z
+Stopped at: Completed 05-04-PLAN.md
 Resume file: None
