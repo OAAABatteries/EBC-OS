@@ -33,10 +33,10 @@ Requirements for milestone v1.0: Field Portal Perfection. Each maps to roadmap p
 
 ### Driver Portal
 
-- [ ] **DRVR-01**: All inline styles replaced with CSS classes using design tokens
-- [ ] **DRVR-02**: All buttons/inputs meet 44px touch target minimum
-- [ ] **DRVR-03**: Route cards use `FieldCard` + `StatusBadge` components
-- [ ] **DRVR-04**: Loading/empty states for route queue and completed deliveries
+- [x] **DRVR-01**: All inline styles replaced with CSS classes using design tokens
+- [x] **DRVR-02**: All buttons/inputs meet 44px touch target minimum
+- [x] **DRVR-03**: Route cards use `FieldCard` + `StatusBadge` components
+- [x] **DRVR-04**: Loading/empty states for route queue and completed deliveries
 
 ### Employee Portal
 
@@ -117,10 +117,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMP-09 | Phase 2 | Complete |
 | COMP-10 | Phase 2 | Complete |
 | COMP-11 | Phase 2 | Complete |
-| DRVR-01 | Phase 3 | Pending |
-| DRVR-02 | Phase 3 | Pending |
-| DRVR-03 | Phase 3 | Pending |
-| DRVR-04 | Phase 3 | Pending |
+| DRVR-01 | Phase 3 | Complete |
+| DRVR-02 | Phase 3 | Complete |
+| DRVR-03 | Phase 3 | Complete |
+| DRVR-04 | Phase 3 | Complete |
 | EMPL-01 | Phase 4 | Pending |
 | EMPL-02 | Phase 4 | Pending |
 | EMPL-03 | Phase 4 | Pending |
