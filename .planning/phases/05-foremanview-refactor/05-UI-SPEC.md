@@ -47,7 +47,7 @@ All spacing in this phase MUST consume the token scale defined in `src/tokens.cs
 Exceptions:
 - Touch targets: minimum 44px height via `var(--touch-min)` — applies to ALL buttons, tab bar items, and interactive list rows (FRMN-03)
 - Bottom tab bar: fixed height 56px to accommodate icon + label + safe-area inset (matches Phase 4 pattern)
-- KPI grid gap: `var(--space-2)` (10px used in existing `.foreman-kpi-grid` — keep as-is, it already exists)
+- KPI grid gap: `var(--space-2)` (8px) — Plan 1 MUST update existing `.foreman-kpi-grid` gap from its current value to `gap: var(--space-2)`
 
 Source: `src/tokens.css` (Phase 1 output).
 
@@ -69,6 +69,12 @@ Decision D-05 locked: single token `var(--text-display)` for all KPI primary val
 Existing `.foreman-kpi-value` uses 22px — this class MUST be updated to `font-size: var(--text-display)` in Plan 1 (CSS). Existing `.foreman-kpi-label` uses 9px — update to `font-size: var(--text-sm)`.
 
 Numeric values (hours, budget figures, quantities) use `font-family: var(--font-mono)` — matches existing foreman pattern and Phase 3/4 precedent.
+
+---
+
+## Visuals
+
+Primary visual anchor on Dashboard: KPI grid — amber display-size values establish entry hierarchy.
 
 ---
 
@@ -181,8 +187,8 @@ All user-facing copy MUST go through `t()` translation function. No string liter
 | Primary CTA — confirm receipt | `t("Confirm Receipt")` | Materials tab — foreman confirms delivery |
 | Primary CTA — sign report | `t("Sign Report")` | Daily reports tab — FieldSignaturePad trigger |
 | Primary CTA — new report | `t("New Report")` | Reports tab — initiates report form |
-| Primary CTA — approve material | `t("Approve")` | Material request action |
-| Primary CTA — reject material | `t("Reject")` | Material request action (danger variant) |
+| Primary CTA — approve material | `t("Approve")` | Material request action. One-word label is acceptable: the surrounding MaterialRequestCard makes the noun ("Request") visually implicit via card title and context. |
+| Primary CTA — reject material | `t("Reject")` | Material request action (danger variant). Same rationale as Approve — card context supplies the noun. |
 | Empty state — dashboard | Heading: `t("No Active Project")` / Body: `t("Select a project to view dashboard data.")` | Dashboard tab with no project selected |
 | Empty state — materials | Heading: `t("No Requests")` / Body: `t("No material requests for this project.")` | Materials tab empty |
 | Empty state — reports | Heading: `t("No Reports")` / Body: `t("Tap + New Report to create the first daily report.")` | Reports tab empty |
@@ -246,7 +252,7 @@ New classes added to `src/styles.js` in Plan 1 follow `frm-{region}-{element}` p
 | `frm-budget-` | `frm-budget-bar`, `frm-budget-fill`, `frm-budget-row` |
 | `frm-content-` | `frm-content-pad` — bottom padding for notched phones (same as `driver-content-pad`) |
 
-Existing `.foreman-*` classes in styles.js (kpi-grid, kpi-card, kpi-label, kpi-value, kpi-sub, team-row, team-name, team-role, team-hours, budget-bar, budget-fill, project-select, cost-row) are present — Plan 1 MUST update these to consume `var(--text-*)` tokens rather than hard-coded sizes, not duplicate them.
+Existing `.foreman-*` classes in styles.js (kpi-grid, kpi-card, kpi-label, kpi-value, kpi-sub, team-row, team-name, team-role, budget-bar, budget-fill, project-select, cost-row) are present — Plan 1 MUST update these to consume `var(--text-*)` tokens rather than hard-coded sizes, not duplicate them.
 
 ---
 
