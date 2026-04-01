@@ -1457,53 +1457,55 @@ export function EmployeeView({ app }) {
         {empTab === "materials" && (
           <div className="emp-content">
             <div className="section-header">
-              <div className="section-title" style={{ fontSize: 16 }}>{t("Request Material")}</div>
+              <div className="section-title emp-section-title">{t("Request Material")}</div>
             </div>
 
             {/* Request form */}
-            <div className="clock-card" style={{ textAlign: "left", marginBottom: 16 }}>
-              <div className="form-group mb-12">
-                <label className="form-label">{t("Project")}</label>
-                <select
-                  className="form-select"
+            <div className="clock-card emp-clock-card-left mb-16">
+              <div className="mb-12">
+                <FieldSelect
+                  label={t("Project")}
                   value={matProjectId || ""}
                   onChange={(e) => setMatProjectId(Number(e.target.value) || null)}
+                  t={t}
                 >
                   <option value="">{t("Select project")}</option>
                   {projects.filter(p => myScheduledProjectIds.has(p.id) || myProjectIds.has(p.id)).map(p => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
-                </select>
+                </FieldSelect>
               </div>
-              <div className="form-group mb-12">
-                <label className="form-label">{t("Material")}</label>
-                <input
-                  className="form-input"
+              <div className="mb-12">
+                <FieldInput
+                  label={t("Material")}
+                  inputMode="text"
                   placeholder='e.g., 5/8" Type X GWB'
                   value={matForm.material}
                   onChange={(e) => setMatForm(f => ({ ...f, material: e.target.value }))}
+                  t={t}
                 />
               </div>
-              <div className="flex gap-8 mb-12">
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">{t("Quantity")}</label>
-                  <input
-                    className="form-input"
+              <div className="emp-mat-form-row mb-12">
+                <div className="emp-mat-form-col">
+                  <FieldInput
+                    label={t("Quantity")}
                     type="number"
+                    inputMode="numeric"
                     min="1"
                     value={matForm.qty}
                     onChange={(e) => setMatForm(f => ({ ...f, qty: e.target.value }))}
+                    t={t}
                   />
                 </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">{t("Unit")}</label>
-                  <select
-                    className="form-select"
+                <div className="emp-mat-form-col">
+                  <FieldSelect
+                    label={t("Unit")}
                     value={matForm.unit}
                     onChange={(e) => setMatForm(f => ({ ...f, unit: e.target.value }))}
+                    t={t}
                   >
                     {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                  </select>
+                  </FieldSelect>
                 </div>
               </div>
               <div className="form-group mb-12">
@@ -1515,26 +1517,24 @@ export function EmployeeView({ app }) {
                   onChange={(e) => setMatForm(f => ({ ...f, notes: e.target.value }))}
                 />
               </div>
-              <button
-                className="btn btn-primary w-full"
+              <FieldButton
+                variant="primary"
+                className="w-full"
                 onClick={handleMatSubmit}
                 disabled={!matProjectId || !matForm.material.trim() || !matForm.qty}
               >
                 {t("Submit Request")}
-              </button>
+              </FieldButton>
             </div>
 
             {/* My requests list */}
             <div className="section-header">
-              <div className="section-title" style={{ fontSize: 14 }}>{t("My Requests")}</div>
+              <div className="section-title emp-mat-section-title">{t("My Requests")}</div>
             </div>
             {myMatRequests.length === 0 ? (
-              <div className="empty-state" style={{ padding: "30px 20px" }}>
-                <div className="empty-icon"><Package size={32} /></div>
-                <div className="empty-text">{t("No material requests yet")}</div>
-              </div>
+              <EmptyState icon={Package} heading={t("No material requests yet")} t={t} />
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="emp-mat-list">
                 {myMatRequests.map(req => (
                   <div key={req.id} className="mat-request-card">
                     <div className="flex-between mb-4">
@@ -1559,17 +1559,14 @@ export function EmployeeView({ app }) {
         {empTab === "cos" && (
           <div className="emp-content">
             <div className="section-header">
-              <div className="section-title" style={{ fontSize: 16 }}>{t("Change Orders")}</div>
+              <div className="section-title emp-section-title">{t("Change Orders")}</div>
             </div>
             {myCOs.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon"><ClipboardList size={32} /></div>
-                <div className="empty-text">{t("No change orders for your projects")}</div>
-              </div>
+              <EmptyState icon={ClipboardList} heading={t("No change orders for your projects")} t={t} />
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="emp-cos-list">
                 {myCOs.map((co) => (
-                  <div key={co.id} className="card" style={{ padding: 14 }}>
+                  <div key={co.id} className="card emp-cos-entry">
                     <div className="flex-between mb-4">
                       <span className="text-sm font-semi">{co.number}</span>
                       <span className={`badge ${co.status === "approved" ? "badge-green" : "badge-amber"}`}>
@@ -1591,17 +1588,14 @@ export function EmployeeView({ app }) {
         {empTab === "rfis" && (
           <div className="emp-content">
             <div className="section-header">
-              <div className="section-title" style={{ fontSize: 16 }}>{t("RFIs")}</div>
+              <div className="section-title emp-section-title">{t("RFIs")}</div>
             </div>
             {myRFIs.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon"><FileText size={32} /></div>
-                <div className="empty-text">{t("No RFIs for your projects")}</div>
-              </div>
+              <EmptyState icon={FileText} heading={t("No RFIs for your projects")} t={t} />
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="emp-rfi-list">
                 {myRFIs.map((rfi) => (
-                  <div key={rfi.id} className="card" style={{ padding: 14 }}>
+                  <div key={rfi.id} className="card emp-rfi-entry">
                     <div className="flex-between mb-4">
                       <span className="text-sm font-semi">{rfi.number}</span>
                       <span className={`badge ${rfi.status === "answered" ? "badge-green" : "badge-amber"}`}>
