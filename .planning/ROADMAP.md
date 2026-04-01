@@ -66,7 +66,10 @@ Plans:
   2. Every button and input in DriverView is tappable without mis-tap at 375px viewport â€” touch targets visibly meet 44px minimum
   3. Route cards display using `FieldCard` and `StatusBadge` â€” no custom card markup in DriverView
   4. The route queue and completed deliveries list show skeleton screens while loading and an `EmptyState` component when no data exists
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 03-01-PLAN.md — Add driver-specific CSS classes to styles.js
+- [ ] 03-02-PLAN.md — Rewrite DriverView.jsx with shared components and touch DnD
 **UI hint**: yes
 
 ### Phase 4: EmployeeView Refactor
