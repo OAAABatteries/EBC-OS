@@ -2940,64 +2940,54 @@ export function ForemanView({ app }) {
             {/* ═══ DAILY REPORT TAB ═══ */}
             {foremanTab === "reports" && (
               <div className="emp-content">
-                <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div className="section-title" style={{ fontSize: 16 }}>{t("Daily Reports")}</div>
-                  <button className="btn btn-primary btn-sm" onClick={() => { setShowReportForm(!showReportForm); setEditingReportId(null); if (!showReportForm) setReportForm({ ...EMPTY_REPORT_FORM, date: new Date().toISOString().slice(0, 10) }); }}>
+                <div className="frm-report-header">
+                  <div className="frm-section-title">{t("Daily Reports")}</div>
+                  <FieldButton variant="primary" size="sm" t={t}
+                    onClick={() => { setShowReportForm(!showReportForm); setEditingReportId(null); if (!showReportForm) setReportForm({ ...EMPTY_REPORT_FORM, date: new Date().toISOString().slice(0, 10) }); }}>
                     {showReportForm ? t("Cancel") : `+ ${t("New Report")}`}
-                  </button>
+                  </FieldButton>
                 </div>
 
                 {/* ── Report Creation / Edit Form ── */}
                 {showReportForm && (
-                  <div className="card" style={{ padding: 16, marginTop: 12, background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 10 }}>
+                  <FieldCard className="frm-report-form">
 
                     {/* Quick-fill from yesterday */}
                     {!editingReportId && (
-                      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                        <button className="btn btn-sm" style={{ fontSize: 11, background: "var(--surface2)", color: "var(--text2)", border: "1px solid var(--border)" }}
-                          onClick={fillFromYesterday}>
+                      <div className="frm-report-quickfill">
+                        <FieldButton variant="ghost" size="sm" onClick={fillFromYesterday} t={t}>
                           {t("Quick-fill from yesterday")}
-                        </button>
+                        </FieldButton>
                       </div>
                     )}
 
                     {/* Date + Project */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      <div>
-                        <label className="form-label">{t("Date")}</label>
-                        <input type="date" className="form-input" value={reportForm.date}
-                          onChange={e => setReportForm(f => ({ ...f, date: e.target.value }))} />
-                      </div>
-                      <div>
-                        <label className="form-label">{t("Project")}</label>
-                        <input type="text" className="form-input" value={selectedProject?.name || ""} disabled style={{ opacity: 0.7 }} />
-                      </div>
+                    <div className="frm-report-2col">
+                      <FieldInput label={t("Date")} type="date" value={reportForm.date}
+                        onChange={e => setReportForm(f => ({ ...f, date: e.target.value }))} t={t} />
+                      <FieldInput label={t("Project")} value={selectedProject?.name || ""} disabled
+                        style={{ opacity: 0.7 }} t={t} />
                     </div>
 
                     {/* Weather: Temperature + Conditions */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-                      <div>
-                        <label className="form-label">{t("Temperature")} (°F)</label>
-                        <input type="number" className="form-input" placeholder="e.g. 85" value={reportForm.temperature}
-                          onChange={e => setReportForm(f => ({ ...f, temperature: e.target.value }))} />
-                      </div>
-                      <div>
-                        <label className="form-label">{t("Conditions")}</label>
-                        <select className="form-input" value={reportForm.weatherCondition}
-                          onChange={e => setReportForm(f => ({ ...f, weatherCondition: e.target.value }))}>
-                          {WEATHER_CONDITIONS.map(w => (
-                            <option key={w} value={w}>{t(w)}</option>
-                          ))}
-                        </select>
-                      </div>
+                    <div className="frm-report-2col">
+                      <FieldInput label={`${t("Temperature")} (°F)`} type="number" inputMode="numeric"
+                        placeholder="e.g. 85" value={reportForm.temperature}
+                        onChange={e => setReportForm(f => ({ ...f, temperature: e.target.value }))} t={t} />
+                      <FieldSelect label={t("Conditions")} value={reportForm.weatherCondition}
+                        onChange={e => setReportForm(f => ({ ...f, weatherCondition: e.target.value }))} t={t}>
+                        {WEATHER_CONDITIONS.map(w => (
+                          <option key={w} value={w}>{t(w)}</option>
+                        ))}
+                      </FieldSelect>
                     </div>
 
                     {/* Crew on Site — checkboxes */}
-                    <div style={{ marginTop: 12 }}>
+                    <div className="frm-report-section">
                       <label className="form-label">{t("Crew on Site")} ({(reportForm.teamPresent || []).length})</label>
-                      <div style={{ maxHeight: 140, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 8, padding: 8, background: "var(--surface1)" }}>
+                      <div className="frm-report-crew-list">
                         {teamForProject.length > 0 ? teamForProject.map(c => (
-                          <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", fontSize: 13, cursor: "pointer" }}>
+                          <label key={c.id} className="frm-report-crew-label">
                             <input type="checkbox"
                               checked={(reportForm.teamPresent || []).some(cp => (typeof cp === "string" ? cp : cp.id) === c.id)}
                               onChange={e => {
@@ -3014,30 +3004,24 @@ export function ForemanView({ app }) {
                             {c.todayHours > 0 && <span className="text-xs text-muted">({c.todayHours.toFixed(1)}h)</span>}
                           </label>
                         )) : (
-                          <div className="text-xs text-muted" style={{ padding: 8 }}>{t("No team assigned to this project this week")}</div>
+                          <div className="text-xs text-muted">{t("No team assigned to this project this week")}</div>
                         )}
                       </div>
                     </div>
 
                     {/* Work Performed — quick-add tasks + textarea */}
-                    <div style={{ marginTop: 12 }}>
+                    <div className="frm-report-section">
                       <label className="form-label">{t("Work Performed Today")} *</label>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                      <div className="frm-report-quick-tasks">
                         {QUICK_TASKS.map(task => {
                           const isActive = (reportForm.quickTasks || []).includes(task);
                           return (
-                            <button key={task} className="btn btn-sm"
-                              style={{
-                                fontSize: 11, padding: "3px 10px", borderRadius: 14,
-                                background: isActive ? "var(--accent)" : "var(--surface2)",
-                                color: isActive ? "#fff" : "var(--text2)",
-                                border: isActive ? "1px solid var(--accent)" : "1px solid var(--border)",
-                              }}
+                            <button key={task}
+                              className={`frm-report-task-chip ${isActive ? "active" : "inactive"}`}
                               onClick={() => {
                                 setReportForm(f => {
                                   const tasks = f.quickTasks || [];
                                   const newTasks = isActive ? tasks.filter(t2 => t2 !== task) : [...tasks, task];
-                                  // Auto-append to textarea
                                   const taskStr = newTasks.join(", ");
                                   const existing = f.workPerformed.replace(/^Tasks: [^\n]*\n?/, "");
                                   return { ...f, quickTasks: newTasks, workPerformed: newTasks.length > 0 ? `Tasks: ${taskStr}\n${existing}` : existing };
@@ -3048,73 +3032,60 @@ export function ForemanView({ app }) {
                           );
                         })}
                       </div>
-                      <textarea className="form-input" rows={4} placeholder={t("Describe work completed...")}
+                      <textarea className="form-input frm-resize-vertical" rows={4} placeholder={t("Describe work completed...")}
                         value={reportForm.workPerformed}
-                        onChange={e => setReportForm(f => ({ ...f, workPerformed: e.target.value }))}
-                        style={{ resize: "vertical" }} />
+                        onChange={e => setReportForm(f => ({ ...f, workPerformed: e.target.value }))} />
                     </div>
 
                     {/* Materials Received */}
-                    <div style={{ marginTop: 10 }}>
+                    <div className="frm-report-section">
                       <label className="form-label">{t("Materials Received")}</label>
-                      <textarea className="form-input" rows={2} placeholder={t("Materials delivered/received today...")}
+                      <textarea className="form-input frm-resize-vertical" rows={2} placeholder={t("Materials delivered/received today...")}
                         value={reportForm.materialsReceived}
-                        onChange={e => setReportForm(f => ({ ...f, materialsReceived: e.target.value }))}
-                        style={{ resize: "vertical" }} />
+                        onChange={e => setReportForm(f => ({ ...f, materialsReceived: e.target.value }))} />
                     </div>
 
                     {/* Equipment on Site */}
-                    <div style={{ marginTop: 10 }}>
+                    <div className="frm-report-section">
                       <label className="form-label">{t("Equipment on Site")}</label>
-                      <textarea className="form-input" rows={2} placeholder={t("Lifts, scaffolding, tools...")}
+                      <textarea className="form-input frm-resize-vertical" rows={2} placeholder={t("Lifts, scaffolding, tools...")}
                         value={reportForm.equipmentOnSite}
-                        onChange={e => setReportForm(f => ({ ...f, equipmentOnSite: e.target.value }))}
-                        style={{ resize: "vertical" }} />
+                        onChange={e => setReportForm(f => ({ ...f, equipmentOnSite: e.target.value }))} />
                     </div>
 
                     {/* Visitors / Inspections */}
-                    <div style={{ marginTop: 10 }}>
+                    <div className="frm-report-section">
                       <label className="form-label">{t("Visitors / Inspections")}</label>
-                      <textarea className="form-input" rows={2} placeholder={t("GC walkthroughs, inspector visits...")}
+                      <textarea className="form-input frm-resize-vertical" rows={2} placeholder={t("GC walkthroughs, inspector visits...")}
                         value={reportForm.visitors}
-                        onChange={e => setReportForm(f => ({ ...f, visitors: e.target.value }))}
-                        style={{ resize: "vertical" }} />
+                        onChange={e => setReportForm(f => ({ ...f, visitors: e.target.value }))} />
                     </div>
 
                     {/* Safety Incidents */}
-                    <div style={{ marginTop: 10, padding: 12, background: reportForm.safetyIncident ? "rgba(239,68,68,0.08)" : "var(--surface1)", borderRadius: 8, border: reportForm.safetyIncident ? "1px solid var(--red)" : "1px solid var(--border)" }}>
-                      <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                    <div className={`frm-report-safety-toggle ${reportForm.safetyIncident ? "on" : "off"}`}>
+                      <label className="frm-report-safety-label">
                         <span>{t("Safety Incident")}</span>
                         <button
-                          style={{
-                            width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
-                            background: reportForm.safetyIncident ? "var(--red)" : "var(--border)",
-                            position: "relative", transition: "background 0.2s",
-                          }}
+                          className={`frm-report-toggle-btn ${reportForm.safetyIncident ? "on" : "off"}`}
                           onClick={() => setReportForm(f => ({ ...f, safetyIncident: !f.safetyIncident }))}>
-                          <span style={{
-                            position: "absolute", top: 2, left: reportForm.safetyIncident ? 22 : 2,
-                            width: 20, height: 20, borderRadius: 10, background: "#fff",
-                            transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-                          }} />
+                          <span className={`frm-report-toggle-thumb ${reportForm.safetyIncident ? "on" : "off"}`} />
                         </button>
-                        <span style={{ fontSize: 12, color: reportForm.safetyIncident ? "var(--red)" : "var(--text3)" }}>
+                        <span className={`frm-report-toggle-status ${reportForm.safetyIncident ? "on" : "off"}`}>
                           {reportForm.safetyIncident ? t("YES") : t("No")}
                         </span>
                       </label>
                       {reportForm.safetyIncident && (
-                        <textarea className="form-input" rows={3} placeholder={t("Describe the safety incident...")}
+                        <textarea className="form-input frm-resize-vertical frm-report-safety-desc" rows={3} placeholder={t("Describe the safety incident...")}
                           value={reportForm.safetyDescription}
-                          onChange={e => setReportForm(f => ({ ...f, safetyDescription: e.target.value }))}
-                          style={{ resize: "vertical", marginTop: 8 }} />
+                          onChange={e => setReportForm(f => ({ ...f, safetyDescription: e.target.value }))} />
                       )}
                     </div>
 
                     {/* Photos */}
-                    <div style={{ marginTop: 10 }}>
+                    <div className="frm-report-section">
                       <label className="form-label">{t("Photos")} ({(reportForm.photos || []).length})</label>
                       <input type="file" accept="image/*" multiple
-                        style={{ fontSize: 12 }}
+                        className="frm-report-file-input"
                         onChange={e => {
                           const files = Array.from(e.target.files || []);
                           files.forEach(file => {
@@ -3130,11 +3101,11 @@ export function ForemanView({ app }) {
                           e.target.value = "";
                         }} />
                       {(reportForm.photos || []).length > 0 && (
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                        <div className="frm-report-photo-grid">
                           {reportForm.photos.map((p, i) => (
-                            <div key={i} style={{ position: "relative", width: 64, height: 64 }}>
-                              <img src={p.data} alt={p.name} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 6, border: "1px solid var(--border)" }} />
-                              <button style={{ position: "absolute", top: -4, right: -4, width: 18, height: 18, borderRadius: 9, background: "var(--red)", color: "#fff", border: "none", fontSize: 10, cursor: "pointer", lineHeight: "18px", textAlign: "center" }}
+                            <div key={i} className="frm-report-photo-thumb">
+                              <img src={p.data} alt={p.name} className="frm-report-photo-img" />
+                              <button className="frm-report-photo-del"
                                 onClick={() => setReportForm(f => ({ ...f, photos: f.photos.filter((_, j) => j !== i) }))}>
                                 x
                               </button>
@@ -3145,31 +3116,34 @@ export function ForemanView({ app }) {
                     </div>
 
                     {/* Issues / Delays */}
-                    <div style={{ marginTop: 10 }}>
+                    <div className="frm-report-section">
                       <label className="form-label">{t("Issues / Delays")}</label>
-                      <textarea className="form-input" rows={2} placeholder={t("Any issues or delays...")}
+                      <textarea className="form-input frm-resize-vertical" rows={2} placeholder={t("Any issues or delays...")}
                         value={reportForm.issues}
-                        onChange={e => setReportForm(f => ({ ...f, issues: e.target.value }))}
-                        style={{ resize: "vertical" }} />
+                        onChange={e => setReportForm(f => ({ ...f, issues: e.target.value }))} />
                     </div>
 
                     {/* Tomorrow's Plan */}
-                    <div style={{ marginTop: 10 }}>
+                    <div className="frm-report-section">
                       <label className="form-label">{t("Tomorrow's Plan")}</label>
-                      <textarea className="form-input" rows={2} placeholder={t("Planned work for tomorrow...")}
+                      <textarea className="form-input frm-resize-vertical" rows={2} placeholder={t("Planned work for tomorrow...")}
                         value={reportForm.tomorrowPlan}
-                        onChange={e => setReportForm(f => ({ ...f, tomorrowPlan: e.target.value }))}
-                        style={{ resize: "vertical" }} />
+                        onChange={e => setReportForm(f => ({ ...f, tomorrowPlan: e.target.value }))} />
                     </div>
 
                     {/* Hours Worked (auto-calculated) */}
-                    <div style={{ marginTop: 10, padding: 10, background: "var(--surface1)", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span className="form-label" style={{ margin: 0 }}>{t("Hours Worked (from time entries)")}</span>
-                      <span style={{ fontWeight: 700, fontSize: 16, color: "var(--accent)" }}>{todayHoursForProject.toFixed(1)} hrs</span>
+                    <div className="frm-report-hours-row">
+                      <span className="form-label">{t("Hours Worked (from time entries)")}</span>
+                      <span className="frm-report-hours-value">{todayHoursForProject.toFixed(1)} hrs</span>
+                    </div>
+
+                    {/* Foreman Signature */}
+                    <div className="frm-report-sig">
+                      <FieldSignaturePad onSave={sig => setReportForm(f => ({ ...f, foremanSignature: sig }))} label={t("Foreman Signature")} t={t} />
                     </div>
 
                     {/* Submit / Update */}
-                    <button className="btn btn-primary" style={{ width: "100%", marginTop: 14 }}
+                    <FieldButton variant="primary" fullWidth t={t}
                       onClick={() => {
                         if (!reportForm.workPerformed.trim()) { show(t("Describe work performed"), "warn"); return; }
                         const report = {
@@ -3211,12 +3185,12 @@ export function ForemanView({ app }) {
                         show(editingReportId ? t("Report updated") : t("Daily report submitted"));
                       }}>
                       {editingReportId ? t("Update Report") : t("Submit Report")}
-                    </button>
-                  </div>
+                    </FieldButton>
+                  </FieldCard>
                 )}
 
                 {/* ── Report List ── */}
-                <div style={{ marginTop: 16 }}>
+                <div className="frm-report-list-wrap">
                   {(dailyReports || [])
                     .filter(r => myProjectIds.has(r.projectId))
                     .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || ""))
@@ -3225,37 +3199,37 @@ export function ForemanView({ app }) {
                       const weatherIcon = { Clear: "Clear", Cloudy: "Cloudy", Rain: "Rain", Storm: "Storm", Wind: "Windy", Snow: "Snow", Hot: "Hot", Cold: "Cold" }[r.weatherCondition || r.weather] || (r.weatherCondition || r.weather || "");
                       const teamN = (r.teamPresent || []).length || r.teamSize || 0;
                       return (
-                        <div key={r.id} className="card" style={{ padding: "12px 14px", marginBottom: 8, cursor: "pointer", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 10 }}
+                        <FieldCard key={r.id} className="frm-report-card frm-report-list-item"
                           onClick={() => setExpandedReportId(isExpanded ? null : r.id)}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div className="frm-report-card-top">
                             <div>
                               <div className="text-sm font-semi">{r.date} {weatherIcon} {r.temperature ? `${r.temperature}°F` : ""}</div>
                               <div className="text-xs text-muted">{r.projectName || t("Project")} · {teamN} {t("team")} · {r.foremanName || ""}</div>
                               {r.hoursWorked && <div className="text-xs text-muted">{r.hoursWorked} hrs logged</div>}
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                              {r.safetyIncident && <span style={{ fontSize: 10, background: "var(--red)", color: "#fff", padding: "1px 6px", borderRadius: 8 }}>Safety</span>}
+                            <div className="frm-report-card-chips">
+                              {r.safetyIncident && <span className="frm-report-safety-badge">Safety</span>}
                               {r.photos && r.photos.length > 0 && <span className="text-xs text-muted">{r.photos.length} pic</span>}
-                              <span style={{ fontSize: 12, color: "var(--text3)" }}>{isExpanded ? "\u25BE" : "\u25B8"}</span>
+                              <span className="text-xs text-muted">{isExpanded ? "\u25BE" : "\u25B8"}</span>
                             </div>
                           </div>
                           {!isExpanded && (
-                            <div className="text-xs text-muted" style={{ marginTop: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                              {(r.quickTasks || []).length > 0 && <span style={{ color: "var(--accent)", marginRight: 4 }}>{r.quickTasks.join(", ")}</span>}
+                            <div className="text-xs text-muted frm-report-preview">
+                              {(r.quickTasks || []).length > 0 && <span className="frm-report-preview-tasks">{r.quickTasks.join(", ")}</span>}
                               {r.workPerformed?.replace(/^Tasks: [^\n]*\n?/, "").slice(0, 80)}
                             </div>
                           )}
                           {isExpanded && (
-                            <div style={{ marginTop: 10, borderTop: "1px solid var(--glass-border)", paddingTop: 10 }}
+                            <div className="frm-report-expanded"
                               onClick={e => e.stopPropagation()}>
 
                               {/* Crew Present */}
                               {(r.teamPresent || []).length > 0 && (
-                                <div style={{ marginBottom: 8 }}>
-                                  <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 2 }}>{t("Crew on Site")}</div>
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                <div className="frm-report-field">
+                                  <div className="text-xs font-semi frm-report-field-label">{t("Crew on Site")}</div>
+                                  <div className="flex-wrap gap-4">
                                     {r.teamPresent.map((c, i) => (
-                                      <span key={i} className="badge badge-blue" style={{ fontSize: 10 }}>{typeof c === "string" ? c : c.name}</span>
+                                      <span key={i} className="badge badge-blue">{typeof c === "string" ? c : c.name}</span>
                                     ))}
                                   </div>
                                 </div>
@@ -3263,85 +3237,85 @@ export function ForemanView({ app }) {
 
                               {/* Quick Tasks */}
                               {(r.quickTasks || []).length > 0 && (
-                                <div style={{ marginBottom: 8 }}>
-                                  <div className="text-xs font-semi" style={{ color: "var(--accent)", marginBottom: 2 }}>{t("Tasks")}</div>
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                <div className="frm-report-field">
+                                  <div className="text-xs font-semi frm-report-field-label amber">{t("Tasks")}</div>
+                                  <div className="flex-wrap gap-4">
                                     {r.quickTasks.map((tk, i) => (
-                                      <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "var(--accent)", color: "#fff" }}>{tk}</span>
+                                      <span key={i} className="badge badge-amber">{tk}</span>
                                     ))}
                                   </div>
                                 </div>
                               )}
 
-                              <div style={{ marginBottom: 8 }}>
-                                <div className="text-xs font-semi" style={{ color: "var(--accent)", marginBottom: 2 }}>{t("Work Performed")}</div>
-                                <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.workPerformed}</div>
+                              <div className="frm-report-field">
+                                <div className="text-xs font-semi frm-report-field-label amber">{t("Work Performed")}</div>
+                                <div className="text-sm" className="frm-pre-wrap">{r.workPerformed}</div>
                               </div>
 
                               {r.materialsReceived && (
-                                <div style={{ marginBottom: 8 }}>
-                                  <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 2 }}>{t("Materials Received")}</div>
-                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.materialsReceived}</div>
+                                <div className="frm-report-field">
+                                  <div className="text-xs font-semi frm-report-field-label">{t("Materials Received")}</div>
+                                  <div className="text-sm" className="frm-pre-wrap">{r.materialsReceived}</div>
                                 </div>
                               )}
                               {r.equipmentOnSite && (
-                                <div style={{ marginBottom: 8 }}>
-                                  <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 2 }}>{t("Equipment on Site")}</div>
-                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.equipmentOnSite}</div>
+                                <div className="frm-report-field">
+                                  <div className="text-xs font-semi frm-report-field-label">{t("Equipment on Site")}</div>
+                                  <div className="text-sm" className="frm-pre-wrap">{r.equipmentOnSite}</div>
                                 </div>
                               )}
                               {r.visitors && (
-                                <div style={{ marginBottom: 8 }}>
-                                  <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 2 }}>{t("Visitors / Inspections")}</div>
-                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.visitors}</div>
+                                <div className="frm-report-field">
+                                  <div className="text-xs font-semi frm-report-field-label">{t("Visitors / Inspections")}</div>
+                                  <div className="text-sm" className="frm-pre-wrap">{r.visitors}</div>
                                 </div>
                               )}
 
                               {/* Safety */}
-                              <div style={{ marginBottom: 8, padding: 8, borderRadius: 6, background: r.safetyIncident ? "rgba(239,68,68,0.06)" : "rgba(16,185,129,0.06)" }}>
-                                <div className="text-xs font-semi" style={{ color: r.safetyIncident ? "var(--red)" : "var(--green)", marginBottom: 2 }}>
+                              <div className={`frm-report-safety-block frm-report-field ${r.safetyIncident ? "incident" : "ok"}`}>
+                                <div className={`text-xs font-semi ${r.safetyIncident ? "text-red" : "text-green"}`}>
                                   {r.safetyIncident ? t("SAFETY INCIDENT") : t("No Safety Incidents")}
                                 </div>
                                 {r.safetyIncident && r.safetyDescription && (
-                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.safetyDescription}</div>
+                                  <div className="text-sm" className="frm-pre-wrap">{r.safetyDescription}</div>
                                 )}
                               </div>
 
                               {r.issues && (
-                                <div style={{ marginBottom: 8 }}>
-                                  <div className="text-xs font-semi" style={{ color: "var(--amber)", marginBottom: 2 }}>{t("Issues / Delays")}</div>
-                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.issues}</div>
+                                <div className="frm-report-field">
+                                  <div className="text-xs font-semi frm-amber">{t("Issues / Delays")}</div>
+                                  <div className="text-sm" className="frm-pre-wrap">{r.issues}</div>
                                 </div>
                               )}
                               {r.tomorrowPlan && (
-                                <div style={{ marginBottom: 8 }}>
-                                  <div className="text-xs font-semi" style={{ color: "var(--accent)", marginBottom: 2 }}>{t("Tomorrow's Plan")}</div>
-                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.tomorrowPlan}</div>
+                                <div className="frm-report-field">
+                                  <div className="text-xs font-semi frm-report-field-label amber">{t("Tomorrow's Plan")}</div>
+                                  <div className="text-sm" className="frm-pre-wrap">{r.tomorrowPlan}</div>
                                 </div>
                               )}
 
                               {/* Photos */}
                               {r.photos && r.photos.length > 0 && (
-                                <div style={{ marginBottom: 8 }}>
-                                  <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 4 }}>{t("Photos")} ({r.photos.length})</div>
-                                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                <div className="frm-report-field">
+                                  <div className="text-xs font-semi frm-report-field-label">{t("Photos")} ({r.photos.length})</div>
+                                  <div className="frm-report-photos">
                                     {r.photos.map((p, i) => (
                                       <img key={i} src={p.data || p} alt={`Photo ${i + 1}`}
-                                        style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer" }}
+                                        className="frm-report-photo"
                                         onClick={() => window.open(p.data || p, "_blank")} />
                                     ))}
                                   </div>
                                 </div>
                               )}
 
-                              <div className="text-xs text-muted" style={{ marginTop: 6 }}>
+                              <div className="text-xs text-muted frm-report-date">
                                 {t("Submitted")}: {new Date(r.createdAt).toLocaleString()}
                                 {r.updatedAt && r.updatedAt !== r.createdAt && ` · ${t("Updated")}: ${new Date(r.updatedAt).toLocaleString()}`}
                               </div>
 
                               {/* Action Buttons */}
-                              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                                <button className="btn btn-sm" style={{ fontSize: 11 }}
+                              <div className="frm-report-actions">
+                                <FieldButton variant="ghost" size="sm" t={t}
                                   onClick={() => {
                                     setEditingReportId(r.id);
                                     setReportForm({
@@ -3364,8 +3338,8 @@ export function ForemanView({ app }) {
                                     setExpandedReportId(null);
                                   }}>
                                   {t("Edit")}
-                                </button>
-                                <button className="btn btn-sm" style={{ fontSize: 11 }}
+                                </FieldButton>
+                                <FieldButton variant="ghost" size="sm" t={t}
                                   onClick={async () => {
                                     try {
                                       const { generateDailyReportPdf } = await import("../utils/dailyReportPdf.js");
@@ -3377,8 +3351,8 @@ export function ForemanView({ app }) {
                                     }
                                   }}>
                                   {t("Export PDF")}
-                                </button>
-                                <button className="btn btn-sm" style={{ fontSize: 11, color: "var(--red)" }}
+                                </FieldButton>
+                                <FieldButton variant="danger" size="sm" t={t}
                                   onClick={() => {
                                     if (confirm(t("Delete this daily report?"))) {
                                       setDailyReports(prev => prev.filter(rp => rp.id !== r.id));
@@ -3387,19 +3361,15 @@ export function ForemanView({ app }) {
                                     }
                                   }}>
                                   {t("Delete")}
-                                </button>
+                                </FieldButton>
                               </div>
                             </div>
                           )}
-                        </div>
+                        </FieldCard>
                       );
                     })}
                   {(dailyReports || []).filter(r => myProjectIds.has(r.projectId)).length === 0 && !showReportForm && (
-                    <div className="empty-state" style={{ padding: "30px 20px" }}>
-                      <div className="empty-icon"><ClipboardList size={32} /></div>
-                      <div className="empty-text">{t("No daily reports yet")}</div>
-                      <div className="text-xs text-muted">{t("Tap + New Report to get started")}</div>
-                    </div>
+                    <EmptyState icon={ClipboardList} heading={t("No Reports")} message={t("Tap + New Report to create the first daily report.")} t={t} />
                   )}
                 </div>
               </div>
@@ -3461,7 +3431,7 @@ export function ForemanView({ app }) {
                 {/* RFIs */}
                 <div className="frm-doc-section">
                   <div className="frm-doc-rfi-header project-section-header">
-                    <div className="frm-flex-gap" style={{ flex: 1, cursor: "pointer" }} onClick={() => toggleSection("rfis")}>
+                    <div className="frm-flex-gap frm-doc-rfi-expand" onClick={() => toggleSection("rfis")}>
                       <span>{t("RFIs")} ({projectRFIs.length})</span>
                       <span>{openSections.rfis ? "▾" : "▸"}</span>
                     </div>
@@ -3495,36 +3465,37 @@ export function ForemanView({ app }) {
             {/* ═══ SITE LOGISTICS TAB ═══ */}
             {foremanTab === "site" && (
               <div className="emp-content">
-                <div className="section-header" style={{ marginBottom: 12 }}>
-                  <div className="flex gap-8" style={{ alignItems: "center" }}>
-                    <HardHat size={18} style={{ color: "var(--amber)" }} />
-                    <div>
-                      <div className="section-title" style={{ fontSize: 16 }}>{t("Site Logistics")}</div>
+                <div className="frm-site-header frm-flex-between">
+                  <div className="frm-site-header-inner">
+                    <HardHat size={18} className="frm-amber" />
+                    <div className="frm-site-header-text">
+                      <div className="frm-section-title">{t("Site Logistics")}</div>
                       <div className="text-xs text-muted">{t("Daily checklist")} · {today}</div>
                     </div>
                   </div>
-                  <span className={`badge ${logCheckedCount === LOGISTICS_ITEMS.length ? "badge-green" : logCheckedCount > 0 ? "badge-amber" : "badge-red"}`} style={{ fontSize: 11 }}>
+                  <span className={`badge frm-site-count-badge ${logCheckedCount === LOGISTICS_ITEMS.length ? "badge-green" : logCheckedCount > 0 ? "badge-amber" : "badge-red"}`}>
                     {logCheckedCount}/{LOGISTICS_ITEMS.length}
                   </span>
                 </div>
 
                 {criticalUnchecked.length > 0 && (
-                  <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid var(--red)", borderRadius: 10, padding: "10px 12px", marginBottom: 12 }}>
-                    <div className="flex gap-8 mb-4" style={{ alignItems: "center" }}>
-                      <AlertTriangle size={14} style={{ color: "var(--red)" }} />
-                      <span className="text-sm font-semi" style={{ color: "var(--red)" }}>{t("Critical items need attention — PM notified")}</span>
+                  <div className="frm-site-critical-alert">
+                    <div className="frm-site-critical-title">
+                      <AlertTriangle size={14} className="text-red" />
+                      <span className="text-sm font-semi text-red">{t("Critical items need attention — PM notified")}</span>
                     </div>
                     {criticalUnchecked.map(i => (
-                      <div key={i.id} className="text-xs text-muted" style={{ marginLeft: 22 }}>• {i.label}</div>
+                      <div key={i.id} className="text-xs text-muted frm-site-critical-item">• {i.label}</div>
                     ))}
                   </div>
                 )}
 
-                <div className="flex-col gap-6">
+                <div className="frm-site-section">
                   {LOGISTICS_ITEMS.map(item => {
                     const checked = !!todayLog[item.id];
                     return (
-                      <div key={item.id} style={{ background: checked ? "rgba(16,185,129,0.07)" : item.critical && !checked ? "rgba(239,68,68,0.04)" : "var(--card)", border: `1px solid ${checked ? "var(--green)" : item.critical && !checked ? "var(--red)" : "var(--border)"}`, borderRadius: 10, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+                      <div key={item.id}
+                        className={`frm-site-item ${checked ? "checked" : item.critical && !checked ? "critical-unchecked" : "normal"}`}
                         onClick={() => {
                           const updated = {
                             ...siteLogistics,
@@ -3538,15 +3509,15 @@ export function ForemanView({ app }) {
                           }
                         }}
                       >
-                        {checked ? <CheckSquare size={20} style={{ color: "var(--green)", flexShrink: 0 }} /> : <Square size={20} style={{ color: "var(--text3)", flexShrink: 0 }} />}
-                        <span style={{ fontSize: 20 }}>{item.icon}</span>
-                        <div style={{ flex: 1 }}>
-                          <span className="text-sm" style={{ textDecoration: checked ? "line-through" : "none", opacity: checked ? 0.7 : 1 }}>{item.label}</span>
+                        {checked ? <CheckSquare size={20} className="text-green" /> : <Square size={20} className="text-muted" />}
+                        <span className="frm-site-item-icon">{item.icon}</span>
+                        <div className="frm-site-item-body">
+                          <span className={`text-sm frm-site-item-label ${checked ? "checked" : ""}`}>{item.label}</span>
                           {item.critical && !checked && (
-                            <span className="badge badge-red" style={{ fontSize: 9, marginLeft: 8 }}>Critical</span>
+                            <span className="badge badge-red ml-2">Critical</span>
                           )}
                         </div>
-                        <span className={`badge ${checked ? "badge-green" : item.critical ? "badge-red" : "badge-muted"}`} style={{ fontSize: 10 }}>
+                        <span className={`badge ${checked ? "badge-green" : item.critical ? "badge-red" : "badge-muted"}`}>
                           {checked ? "OK" : item.critical ? "Needed" : "Pending"}
                         </span>
                       </div>
@@ -3559,57 +3530,59 @@ export function ForemanView({ app }) {
             {/* ═══ NOTES TAB ═══ */}
             {foremanTab === "notes" && (
               <div className="emp-content">
-                <div className="section-header" style={{ marginBottom: 12 }}>
-                  <div className="flex gap-8" style={{ alignItems: "center" }}>
-                    <MessageSquare size={18} style={{ color: "var(--accent)" }} />
+                <div className="frm-notes-header">
+                  <div className="frm-notes-header-inner">
+                    <MessageSquare size={18} className="frm-amber" />
                     <div>
-                      <div className="section-title" style={{ fontSize: 16 }}>{t("Team Notes")}</div>
+                      <div className="frm-section-title">{t("Team Notes")}</div>
                       <div className="text-xs text-muted">{t("Visible to all project team members")}</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Compose */}
-                <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, padding: 14, marginBottom: 12 }}>
+                <div className="frm-notes-compose">
                   <textarea
-                    style={{ width: "100%", minHeight: 80, padding: 10, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg3)", color: "var(--text)", fontSize: 14, resize: "vertical", marginBottom: 10 }}
+                    className="frm-notes-input frm-notes-input-mb"
                     placeholder={t("Post a field note to the project team...")}
                     value={foremanNoteText}
                     onChange={e => setForemanNoteText(e.target.value)}
                   />
-                  <div className="flex gap-8">
-                    <button className="btn btn-primary btn-sm" onClick={() => {
-                      if (!foremanNoteText.trim()) return;
-                      const newNote = {
-                        id: crypto.randomUUID(),
-                        projectId: String(selectedProjectId),
-                        text: foremanNoteText.trim(),
-                        author: activeForeman.name,
-                        role: "foreman",
-                        category: "field",
-                        pinned: false,
-                        timestamp: new Date().toISOString(),
-                      };
-                      saveProjectNotes([newNote, ...(projectNotes || [])]);
-                      setForemanNoteText("");
-                      show(t("Field note posted"), "ok");
-                    }} disabled={!foremanNoteText.trim()}>
+                  <div className="frm-notes-compose-actions">
+                    <FieldButton variant="primary" size="sm" t={t}
+                      disabled={!foremanNoteText.trim()}
+                      onClick={() => {
+                        if (!foremanNoteText.trim()) return;
+                        const newNote = {
+                          id: crypto.randomUUID(),
+                          projectId: String(selectedProjectId),
+                          text: foremanNoteText.trim(),
+                          author: activeForeman.name,
+                          role: "foreman",
+                          category: "field",
+                          pinned: false,
+                          timestamp: new Date().toISOString(),
+                        };
+                        saveProjectNotes([newNote, ...(projectNotes || [])]);
+                        setForemanNoteText("");
+                        show(t("Field note posted"), "ok");
+                      }}>
                       {t("Post Field Note")}
-                    </button>
+                    </FieldButton>
                   </div>
                 </div>
 
                 {/* Filter bar */}
-                <div className="flex gap-4 mb-12" style={{ overflowX: "auto" }}>
+                <div className="frm-notes-filter frm-notes-toolbar">
                   {["all", "pm", "field", "office"].map(f => {
                     const projNotes = (projectNotes || []).filter(n => String(n.projectId) === String(selectedProjectId));
                     const cnt = f === "all" ? projNotes.length : projNotes.filter(n => n.category === f).length;
                     const label = f === "all" ? "All" : f === "pm" ? "PM" : f === "field" ? "Field" : "Office";
                     return (
-                      <button key={f} className={`btn btn-sm ${foremanNotesFilter === f ? "btn-primary" : "btn-ghost"}`}
-                        onClick={() => setForemanNotesFilter(f)} style={{ whiteSpace: "nowrap" }}>
+                      <FieldButton key={f} variant={foremanNotesFilter === f ? "primary" : "ghost"} size="sm" t={t}
+                        onClick={() => setForemanNotesFilter(f)}>
                         {label} ({cnt})
-                      </button>
+                      </FieldButton>
                     );
                   })}
                 </div>
@@ -3623,10 +3596,7 @@ export function ForemanView({ app }) {
                   const visible = [...pinned, ...unpinned];
 
                   if (visible.length === 0) return (
-                    <div className="empty-state" style={{ padding: "32px 20px" }}>
-                      <div className="empty-icon"><MessageSquare size={28} /></div>
-                      <div className="empty-text">{t("No notes yet")}</div>
-                    </div>
+                    <EmptyState icon={MessageSquare} heading={t("No Notes")} message={t("No notes recorded for this project.")} t={t} />
                   );
 
                   const catBadge = (cat) => ({ pm: "badge-blue", field: "badge-amber", office: "badge-green" }[cat] || "badge-muted");
@@ -3634,28 +3604,28 @@ export function ForemanView({ app }) {
                   const fmtTime = (ts) => { try { const d = new Date(ts); return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); } catch { return ts; } };
 
                   return (
-                    <div className="flex-col gap-8">
+                    <div className="frm-notes-list">
                       {visible.map(note => (
-                        <div key={note.id} style={{ background: note.pinned ? "rgba(245,158,11,0.05)" : "var(--card)", border: `1px solid ${note.pinned ? "var(--amber)" : "var(--border)"}`, borderRadius: 10, padding: 14 }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                            <div className="flex gap-8" style={{ alignItems: "center" }}>
-                              {note.pinned && <Pin size={11} style={{ color: "var(--amber)" }} />}
+                        <div key={note.id} className={`frm-notes-item ${note.pinned ? "pinned" : ""}`}>
+                          <div className="frm-notes-item-header">
+                            <div className="frm-notes-item-meta">
+                              {note.pinned && <Pin size={11} className="frm-amber" />}
                               <span className="font-semi text-sm">{note.author}</span>
-                              <span className={`badge ${catBadge(note.category)}`} style={{ fontSize: 9 }}>{catLabel(note.category)}</span>
+                              <span className={`badge ${catBadge(note.category)}`}>{catLabel(note.category)}</span>
                             </div>
-                            <div className="flex gap-6" style={{ alignItems: "center" }}>
-                              <span className="text-xs text-muted">{fmtTime(note.timestamp)}</span>
-                              <button onClick={() => saveProjectNotes(projectNotes.map(n => n.id === note.id ? { ...n, pinned: !n.pinned } : n))}
-                                style={{ background: "none", border: "none", cursor: "pointer", color: note.pinned ? "var(--amber)" : "var(--text3)", padding: "2px 4px" }}>
+                            <div className="frm-notes-item-actions">
+                              <span className="text-xs text-muted frm-notes-date">{fmtTime(note.timestamp)}</span>
+                              <button className={`frm-notes-pin-btn ${note.pinned ? "pinned" : "unpinned"}`}
+                                onClick={() => saveProjectNotes(projectNotes.map(n => n.id === note.id ? { ...n, pinned: !n.pinned } : n))}>
                                 {note.pinned ? <PinOff size={12} /> : <Pin size={12} />}
                               </button>
                               {note.author === activeForeman.name && (
-                                <button onClick={() => saveProjectNotes(projectNotes.filter(n => n.id !== note.id))}
-                                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 12, padding: "2px 4px" }}>✕</button>
+                                <button className="frm-notes-del-btn"
+                                  onClick={() => saveProjectNotes(projectNotes.filter(n => n.id !== note.id))}>✕</button>
                               )}
                             </div>
                           </div>
-                          <div className="text-sm" style={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{note.text}</div>
+                          <div className="frm-notes-text">{note.text}</div>
                         </div>
                       ))}
                     </div>
@@ -3679,72 +3649,58 @@ export function ForemanView({ app }) {
       {/* ═══ SUBMIT RFI MODAL ═══ */}
       {showRfiModal && (
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowRfiModal(false); }}>
-          <div className="modal-content" style={{ maxWidth: 480, width: "100%", padding: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <FileQuestion size={20} style={{ color: "var(--accent)" }} />
-                <span style={{ fontSize: 17, fontWeight: 700 }}>{t("Submit RFI")}</span>
+          <div className="modal-content frm-rfi-modal">
+            <div className="frm-rfi-header">
+              <div className="frm-rfi-title-row">
+                <FileQuestion size={20} className="frm-amber" />
+                <span className="frm-rfi-title">{t("Submit RFI")}</span>
               </div>
-              <button onClick={() => setShowRfiModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 4 }}>
+              <button className="frm-rfi-close" onClick={() => setShowRfiModal(false)}>
                 <X size={18} />
               </button>
             </div>
 
-            <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 16 }}>
+            <div className="text-xs text-muted frm-rfi-project">
               {selectedProject?.name} · {t("Assigned to PM")}: {selectedProject?.pm || "PM"}
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div className="frm-rfi-form">
+              <FieldInput
+                label={`${t("Subject")} *`}
+                type="text"
+                placeholder={t("e.g., Clarification needed on wall type at Grid A")}
+                value={rfiFormData.subject}
+                onChange={e => setRfiFormData(f => ({ ...f, subject: e.target.value }))}
+                t={t}
+              />
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text2)", display: "block", marginBottom: 6 }}>
-                  {t("Subject")} *
-                </label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder={t("e.g., Clarification needed on wall type at Grid A")}
-                  value={rfiFormData.subject}
-                  onChange={e => setRfiFormData(f => ({ ...f, subject: e.target.value }))}
-                  style={{ width: "100%", fontSize: 14 }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text2)", display: "block", marginBottom: 6 }}>
-                  {t("Description")} *
-                </label>
+                <label className="form-label">{t("Description")} *</label>
                 <textarea
-                  className="form-input"
+                  className="form-input frm-resize-vertical"
                   placeholder={t("Describe the question or issue in detail...")}
                   value={rfiFormData.description}
                   onChange={e => setRfiFormData(f => ({ ...f, description: e.target.value }))}
                   rows={4}
-                  style={{ width: "100%", fontSize: 14, resize: "vertical", fontFamily: "inherit" }}
                 />
               </div>
-
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text2)", display: "block", marginBottom: 6 }}>
-                  {t("Drawing / Spec Reference")} ({t("optional")})
-                </label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder={t("e.g., A-201, Spec 09 21 16")}
-                  value={rfiFormData.drawingRef}
-                  onChange={e => setRfiFormData(f => ({ ...f, drawingRef: e.target.value }))}
-                  style={{ width: "100%", fontSize: 14 }}
-                />
-              </div>
+              <FieldInput
+                label={`${t("Drawing / Spec Reference")} (${t("optional")})`}
+                type="text"
+                placeholder={t("e.g., A-201, Spec 09 21 16")}
+                value={rfiFormData.drawingRef}
+                onChange={e => setRfiFormData(f => ({ ...f, drawingRef: e.target.value }))}
+                t={t}
+              />
             </div>
 
-            <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
-              <button className="btn" style={{ flex: 1, fontSize: 14 }} onClick={() => setShowRfiModal(false)}>
+            <div className="frm-rfi-actions">
+              <FieldButton variant="ghost" className="frm-rfi-cancel" t={t} onClick={() => setShowRfiModal(false)}>
                 {t("Cancel")}
-              </button>
-              <button
-                className="btn btn-primary"
-                style={{ flex: 2, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}
+              </FieldButton>
+              <FieldButton
+                variant="primary"
+                className="frm-rfi-submit"
+                t={t}
                 disabled={!rfiFormData.subject.trim() || !rfiFormData.description.trim()}
                 onClick={() => {
                   if (!rfiFormData.subject.trim() || !rfiFormData.description.trim()) return;
@@ -3777,7 +3733,7 @@ export function ForemanView({ app }) {
               >
                 <Send size={15} />
                 {t("Submit RFI")}
-              </button>
+              </FieldButton>
             </div>
           </div>
         </div>
@@ -3785,13 +3741,14 @@ export function ForemanView({ app }) {
 
       {/* Phase 2C: Photo Capture Modal */}
       {showPhotoCapture && (
-        <div className="modal-overlay" style={{ zIndex: 10000 }} onClick={e => { if (e.target === e.currentTarget) skipPhoto("dismissed"); }}>
-          <div style={{ background: "var(--bg2, #1a1a2e)", borderRadius: 12, padding: 20, maxWidth: 400, width: "90%", textAlign: "center" }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 12 }}>📸 {t("Clock-In Photo")}</div>
-            <div style={{ fontSize: 12, color: "#aaa", marginBottom: 16 }}>{t("Take a photo to verify clock-in")}</div>
-            <div style={{ background: "#000", borderRadius: 8, overflow: "hidden", marginBottom: 16, position: "relative", width: "100%", paddingBottom: "100%" }}>
+        <div className="modal-overlay" style={{ zIndex: 10000 }}
+          onClick={e => { if (e.target === e.currentTarget) skipPhoto("dismissed"); }}>
+          <div className="frm-photo-modal">
+            <div className="frm-photo-title">📸 {t("Clock-In Photo")}</div>
+            <div className="text-xs text-muted frm-photo-hint">{t("Take a photo to verify clock-in")}</div>
+            <div className="frm-photo-preview">
               <video ref={photoVideoRef} autoPlay playsInline muted
-                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                className="frm-photo-video"
                 onLoadedMetadata={() => { if (photoVideoRef.current) photoVideoRef.current.play(); }}
               />
               {photoStream && (() => {
@@ -3803,14 +3760,13 @@ export function ForemanView({ app }) {
               })()}
             </div>
             <canvas ref={photoCanvasRef} style={{ display: "none" }} />
-            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-              <button className="btn btn-ghost" onClick={() => skipPhoto("skipped")} style={{ color: "var(--amber)" }}>
+            <div className="frm-photo-actions">
+              <FieldButton variant="ghost" t={t} onClick={() => skipPhoto("skipped")}>
                 {t("Skip")}
-              </button>
-              <button className="btn btn-primary" onClick={captureAndClockIn}
-                style={{ padding: "10px 24px", fontSize: 14, background: "var(--green)", boxShadow: "0 2px 8px rgba(34,197,94,0.3)" }}>
+              </FieldButton>
+              <FieldButton variant="primary" t={t} onClick={captureAndClockIn}>
                 📸 {t("Capture & Clock In")}
-              </button>
+              </FieldButton>
             </div>
           </div>
         </div>
