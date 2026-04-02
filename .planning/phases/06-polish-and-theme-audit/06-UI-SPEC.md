@@ -40,14 +40,16 @@ This phase uses the token scale already defined in `src/tokens.css`. No new spac
 | `--space-4` | 16px | Network banner padding-x, default element spacing |
 | `--space-6` | 24px | Section padding |
 | `--space-8` | 32px | Layout gaps |
-| `--space-10` | 40px | — |
+| `--space-10` | 40px | Fixed-width numeric input (foreman hours row) |
 | `--space-12` | 48px | Major section breaks |
 
 Exceptions:
 - Touch targets enforce `--touch-min: 44px` on all interactive elements (inherited from Phase 1 — not a new exception).
 - Canvas elements (`field-signature-canvas`, `emp-jsa-canvas`) retain `touch-action: none` as an override to the new global `touch-action: manipulation` rule.
+- `--space-3: 12px` — compact content padding token; inherited from Phase 1 token system; 3 × base-4 unit, grid-safe; used as card inner padding, form row gap, list item padding, and inline element gap across all three portals (DriverView, EmployeeView, ForemanView).
+- `--space-10: 40px` — fixed-dimension token; inherited from Phase 1 token system; 10 × base-4 unit, grid-safe; used exclusively as the `width` of `.frm-hours-input` (the numeric time-entry input in foreman hours editing rows).
 
-**Source:** `src/tokens.css` (direct code read).
+**Source:** `src/tokens.css` (direct code read); `src/styles.js` usage scan (direct code read).
 
 ---
 
