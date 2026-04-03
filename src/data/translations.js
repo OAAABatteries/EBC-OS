@@ -10,6 +10,11 @@ export const T = {
   "Enter Your PIN": { es: "Ingrese su PIN" },
   "Invalid PIN": { es: "PIN Inválido" },
   "Logout": { es: "Salir" },
+  "Offline": { es: "Sin conexion" },
+  "actions pending": { es: "acciones pendientes" },
+  "Back online": { es: "De vuelta en linea" },
+  "syncing": { es: "sincronizando" },
+  "actions": { es: "acciones" },
 
   // ── Employee tabs ──
   "Clock": { es: "Reloj" },

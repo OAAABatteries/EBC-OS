@@ -3,6 +3,8 @@
 // Variants: foreman | employee | driver
 // Extends existing .header and .logo CSS classes from src/styles.js
 
+import { WifiOff } from "lucide-react";
+
 export function PortalHeader({
   variant = 'employee',
   title,
@@ -13,6 +15,7 @@ export function PortalHeader({
   projectSelector,
   className,
   t,
+  network,
 }) {
   return (
     <>
@@ -85,6 +88,19 @@ export function PortalHeader({
           }}
         >
           {projectSelector}
+        </div>
+      )}
+
+      {/* Network status banner — offline indicator */}
+      {network && !network.online && (
+        <div className="network-banner network-banner--offline">
+          <WifiOff size={16} />
+          {t ? t("Offline") : "Offline"} — {network.pendingCount} {t ? t("actions pending") : "actions pending"}
+        </div>
+      )}
+      {network && network.wasOffline && network.online && (
+        <div className="network-banner network-banner--reconnecting">
+          {t ? t("Back online") : "Back online"} — {t ? t("syncing") : "syncing"} {network.pendingCount} {t ? t("actions") : "actions"}
         </div>
       )}
     </>

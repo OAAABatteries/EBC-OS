@@ -61,7 +61,7 @@ Requirements for milestone v1.0: Field Portal Perfection. Each maps to roadmap p
 - [x] **PLSH-02**: `touch-action: manipulation` applied globally to eliminate 300ms tap delay
 - [x] **PLSH-03**: `overscroll-behavior: contain` prevents accidental pull-to-refresh
 - [ ] **PLSH-04**: Responsive at 375px, 768px, 1024px viewports
-- [ ] **PLSH-05**: Offline/sync status indicator extended to all portals
+- [x] **PLSH-05**: Offline/sync status indicator extended to all portals
 
 ## v2 Requirements
 
@@ -136,7 +136,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLSH-02 | Phase 6 | Complete |
 | PLSH-03 | Phase 6 | Complete |
 | PLSH-04 | Phase 6 | Pending |
-| PLSH-05 | Phase 6 | Pending |
+| PLSH-05 | Phase 6 | Complete |
 
 **Coverage:**
 - v1 requirements: 38 total
