@@ -9,6 +9,14 @@ body {
   height: 100%;
   overflow: hidden;
 }
+*, *::before, *::after {
+  touch-action: manipulation;
+  transition:
+    background-color var(--duration-micro) var(--ease-standard),
+    border-color var(--duration-micro) var(--ease-standard),
+    color var(--duration-micro) var(--ease-standard),
+    box-shadow var(--duration-micro) var(--ease-standard);
+}
 #root {
   height: 100vh;
   height: 100dvh;
