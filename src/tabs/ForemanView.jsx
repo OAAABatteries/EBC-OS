@@ -11,6 +11,7 @@ import {
   FieldCard, StatusBadge, EmptyState, AsyncState, LoadingSpinner,
   Skeleton, FieldSignaturePad, MaterialRequestCard
 } from "../components/field";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 
 const PdfViewer = lazy(() => import("../components/PdfViewer").then(m => ({ default: m.PdfViewer })));
 import {
@@ -53,6 +54,9 @@ export function ForemanView({ app }) {
   const [lang, setLang] = useState(() => localStorage.getItem("ebc_lang") || "en");
   useEffect(() => localStorage.setItem("ebc_lang", lang), [lang]);
   const t = (key) => lang === "es" && T[key]?.es ? T[key].es : key;
+
+  // ── network status ──
+  const network = useNetworkStatus();
 
   // ── session — use main auth if available ──
   const mainAuth = app.auth;
@@ -867,6 +871,7 @@ export function ForemanView({ app }) {
           </select>
         ) : null}
         t={t}
+        network={network}
       />
 
       <div className="employee-body">

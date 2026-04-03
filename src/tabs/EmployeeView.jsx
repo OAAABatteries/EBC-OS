@@ -4,6 +4,7 @@ import { PortalHeader, PortalTabBar, FieldButton, FieldInput, FieldSelect, Empty
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { useNotifications } from "../hooks/useNotifications";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { findNearestGeofence, getLocationsInRange, pointInPolygon, polygonAreaSqFt } from "../utils/geofence";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
@@ -64,6 +65,9 @@ export function EmployeeView({ app }) {
   const [lang, setLang] = useState(() => localStorage.getItem("ebc_lang") || "en");
   useEffect(() => localStorage.setItem("ebc_lang", lang), [lang]);
   const t = (key) => lang === "es" && T[key]?.es ? T[key].es : key;
+
+  // ── network status ──
+  const network = useNetworkStatus();
 
   // ── session — use main auth if available ──
   const mainAuth = app.auth;
@@ -722,6 +726,7 @@ export function EmployeeView({ app }) {
           languageToggle={langToggle}
           settingsAction={() => { setSelectedInfoProject(null); setEmpTab("settings"); }}
           t={t}
+          network={network}
         />
         <div className="employee-body emp-content-pad">
           <div className="project-info">
@@ -892,6 +897,7 @@ export function EmployeeView({ app }) {
         languageToggle={langToggle}
         settingsAction={() => setEmpTab("settings")}
         t={t}
+        network={network}
       />
 
       <div className="employee-body emp-content-pad">

@@ -3,6 +3,7 @@ import { Calendar, Settings, Navigation, Package, Truck, CheckCircle, MapPin, Re
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
 import { PortalHeader, PortalTabBar, FieldCard, FieldButton, EmptyState, StatusBadge, Skeleton } from "../components/field";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 
 // ═══════════════════════════════════════════════════════════════
 //  Driver View — Delivery Route Map + Queue Management
@@ -53,6 +54,9 @@ export function DriverView({ app }) {
   const [lang, setLang] = useState(() => localStorage.getItem("ebc_lang") || "en");
   useEffect(() => localStorage.setItem("ebc_lang", lang), [lang]);
   const t = (key) => lang === "es" && T[key]?.es ? T[key].es : key;
+
+  // ── network status ──
+  const network = useNetworkStatus();
 
   // ── session ──
   const mainAuth = app.auth;
@@ -383,6 +387,7 @@ export function DriverView({ app }) {
         variant="driver"
         userName={`${activeDriver.name} \u00B7 ${t("Deliveries")}`}
         t={t}
+        network={network}
       />
 
       <div className="employee-body driver-content-pad">
