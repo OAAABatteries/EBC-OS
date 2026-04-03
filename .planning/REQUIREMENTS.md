@@ -57,9 +57,9 @@ Requirements for milestone v1.0: Field Portal Perfection. Each maps to roadmap p
 
 ### Polish
 
-- [ ] **PLSH-01**: All 5 themes pass visual regression (no broken colors, missing vars)
-- [ ] **PLSH-02**: `touch-action: manipulation` applied globally to eliminate 300ms tap delay
-- [ ] **PLSH-03**: `overscroll-behavior: contain` prevents accidental pull-to-refresh
+- [x] **PLSH-01**: All 5 themes pass visual regression (no broken colors, missing vars)
+- [x] **PLSH-02**: `touch-action: manipulation` applied globally to eliminate 300ms tap delay
+- [x] **PLSH-03**: `overscroll-behavior: contain` prevents accidental pull-to-refresh
 - [ ] **PLSH-04**: Responsive at 375px, 768px, 1024px viewports
 - [ ] **PLSH-05**: Offline/sync status indicator extended to all portals
 
@@ -132,9 +132,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FRMN-04 | Phase 5 | Pending |
 | FRMN-05 | Phase 5 | Pending |
 | FRMN-06 | Phase 5 | Pending |
-| PLSH-01 | Phase 6 | Pending |
-| PLSH-02 | Phase 6 | Pending |
-| PLSH-03 | Phase 6 | Pending |
+| PLSH-01 | Phase 6 | Complete |
+| PLSH-02 | Phase 6 | Complete |
+| PLSH-03 | Phase 6 | Complete |
 | PLSH-04 | Phase 6 | Pending |
 | PLSH-05 | Phase 6 | Pending |
 
