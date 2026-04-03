@@ -14,10 +14,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Token Foundation** - Define the design vocabulary (spacing, typography, touch, shadows, semantic colors) as CSS custom properties (completed 2026-03-30)
 - [ ] **Phase 2: Shared Field Components** - Build and verify the shared component toolkit that all portal refactors will consume
-- [x] **Phase 3: DriverView Refactor** - Migrate the smallest portal as the process pilot — zero inline styles, shared components wired (gap closure in progress) (completed 2026-04-01)
-- [x] **Phase 4: EmployeeView Refactor** - Migrate the mid-size portal using the proven process — forms, clock-in, and map controls fully polished (completed 2026-04-01)
-- [x] **Phase 5: ForemanView Refactor** - Migrate the largest portal — 11-tab nav collapsed to bottom bar, phase colors tokenized, all tabs complete (completed 2026-04-01)
-- [ ] **Phase 6: Polish and Theme Audit** - Cross-portal polish, 5-theme gauntlet, outdoor contrast verification, global touch/scroll optimizations
+- [ ] **Phase 3: DriverView Refactor** - Migrate the smallest portal as the process pilot — zero inline styles, shared components wired
+- [ ] **Phase 4: EmployeeView Refactor** - Migrate the mid-size portal using the proven process — forms, clock-in, and map controls fully polished
+- [ ] **Phase 5: ForemanView Refactor** - Migrate the largest portal — 11-tab nav collapsed to bottom bar, phase colors tokenized, all tabs complete
+- [x] **Phase 6: Polish and Theme Audit** - Cross-portal polish, 5-theme gauntlet, outdoor contrast verification, global touch/scroll optimizations (completed 2026-04-03)
 
 ## Phase Details
 
@@ -66,11 +66,7 @@ Plans:
   2. Every button and input in DriverView is tappable without mis-tap at 375px viewport — touch targets visibly meet 44px minimum
   3. Route cards display using `FieldCard` and `StatusBadge` — no custom card markup in DriverView
   4. The route queue and completed deliveries list show skeleton screens while loading and an `EmptyState` component when no data exists
-**Plans:** 3/3 plans complete
-Plans:
-- [x] 03-01-PLAN.md — Add driver-specific CSS classes to styles.js
-- [x] 03-02-PLAN.md — Rewrite DriverView.jsx with shared components and touch DnD
-- [x] 03-03-PLAN.md — Gap closure: add skeleton/loading states for route queue and completed deliveries (DRVR-04)
+**Plans**: TBD
 **UI hint**: yes
 
 ### Phase 4: EmployeeView Refactor
@@ -82,11 +78,7 @@ Plans:
   2. The clock-in flow uses `PortalHeader`, `FieldButton`, and `AsyncState` — no custom header or spinner markup in EmployeeView
   3. The material request form fields use `FieldInput`/`FieldSelect` with appropriate `inputmode` attributes (numeric fields open the numeric keyboard on mobile)
   4. Map tile switcher buttons are tappable without mis-tap — all meet 44px minimum touch target
-**Plans:** 3/3 plans complete
-Plans:
-- [x] 04-01-PLAN.md — Add employee-specific CSS classes to styles.js
-- [x] 04-02-PLAN.md — Wire PortalHeader/PortalTabBar, refactor login + clock + schedule + log + settings tabs
-- [x] 04-03-PLAN.md — Refactor JSA + materials (FieldInput/FieldSelect with inputmode) + COS + RFIs tabs
+**Plans**: TBD
 **UI hint**: yes
 
 ### Phase 5: ForemanView Refactor
@@ -99,12 +91,7 @@ Plans:
   3. KPI cards display dollar amounts, percentages, and crew counts using the typography scale — all values use the same font-size token, not ad-hoc sizes
   4. Phase status colors in the dashboard render correctly in all 5 themes — `--phase-*` tokens in use, no hex literals in JSX
   5. Daily reports, JSA, and crew sections use `FieldCard`, `FieldButton`, `AsyncState`, and `FieldSignaturePad` from the shared component library
-**Plans:** 4/4 plans complete
-Plans:
-- [x] 05-01-PLAN.md — Add/update foreman CSS classes in styles.js (tokenize existing + new frm-* classes)
-- [x] 05-02-PLAN.md — Wire PortalHeader/PortalTabBar, refactor login + settings + clock + dashboard + team + hours tabs
-- [x] 05-03-PLAN.md — Refactor materials + JSA tabs (MaterialRequestCard, FieldSignaturePad, hazard matrix)
-- [x] 05-04-PLAN.md — Refactor drawings + lookahead + reports + documents + site + notes tabs (final sweep)
+**Plans**: TBD
 **UI hint**: yes
 
 ### Phase 6: Polish and Theme Audit
@@ -117,11 +104,7 @@ Plans:
   3. Scrolling a data list does not trigger browser pull-to-refresh — `overscroll-behavior: contain` is in effect
   4. Every portal layout is usable without horizontal scrolling at 375px, 768px, and 1024px viewports
   5. The offline/sync status indicator appears consistently in all three portals and shows a pending-changes count when actions are queued but not yet synced
-**Plans:** 3 plans
-Plans:
-- [ ] 06-01-PLAN.md — Global CSS foundations: touch-action, theme transitions, --accent fix, network banner CSS, hover audit
-- [ ] 06-02-PLAN.md — Offline banner wiring: PortalHeader network prop, translations, wire into all 3 portals
-- [ ] 06-03-PLAN.md — Responsive viewport audit at 375px/768px/1024px + 5-theme visual gauntlet checkpoint
+**Plans**: TBD
 **UI hint**: yes
 
 ## Progress
@@ -133,7 +116,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Token Foundation | 3/3 | Complete   | 2026-03-30 |
 | 2. Shared Field Components | 4/6 | In Progress|  |
-| 3. DriverView Refactor | 3/3 | Complete   | 2026-04-01 |
-| 4. EmployeeView Refactor | 3/3 | Complete   | 2026-04-01 |
-| 5. ForemanView Refactor | 4/4 | Complete   | 2026-04-01 |
-| 6. Polish and Theme Audit | 0/3 | Not started | - |
+| 3. DriverView Refactor | 0/TBD | Not started | - |
+| 4. EmployeeView Refactor | 0/TBD | Not started | - |
+| 5. ForemanView Refactor | 0/TBD | Not started | - |
+| 6. Polish and Theme Audit | 1/1 | Complete   | 2026-04-03 |

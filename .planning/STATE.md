@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 6 context gathered
-last_updated: "2026-04-01T21:16:18.874Z"
-last_activity: 2026-04-01
+status: executing
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-04-03T15:42:59.231Z"
+last_activity: 2026-03-31
 progress:
   total_phases: 6
-  completed_phases: 5
-  total_plans: 19
-  completed_plans: 19
+  completed_phases: 3
+  total_plans: 10
+  completed_plans: 10
   percent: 0
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Field crews can manage their entire workday from one app that feels fast, reliable, and professional on a phone in the field.
-**Current focus:** Phase 05 complete — ForemanView refactor done
+**Current focus:** Phase 06 — polish-and-theme-audit
 
 ## Current Position
 
 Phase: 6
-Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-04-01
+Plan: 1 of 3 complete
+Status: Executing phase 06
+Last activity: 2026-04-03
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -61,10 +61,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02-shared-field-components P04 | 8m | 2 tasks | 5 files |
 | Phase 02-shared-field-components P05 | 9m | 2 tasks | 5 files |
 | Phase 02-shared-field-components PP06 | 7m | 2 tasks | 5 files |
-| Phase 05-foremanview-refactor P01 | 3m | 2 tasks | 1 files |
-| Phase 05 P02 | 25 | 2 tasks | 2 files |
-| Phase 05-foremanview-refactor P03 | 13m | 2 tasks | 2 files |
-| Phase 05-foremanview-refactor P04 | 45m | 2 tasks | 2 files |
+| Phase 06-polish-and-theme-audit P01 | 3m | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -94,17 +91,8 @@ Recent decisions affecting current work:
 - [Phase 02-shared-field-components]: PortalTabBar sheet panel always in DOM (CSS transform toggle), overlay only rendered when open
 - [Phase 02-shared-field-components]: getComputedStyle(--text) read inside startDraw handler at draw time for mid-session theme switching support
 - [Phase 02-shared-field-components]: MaterialRequestCard body uses inline var() token refs per plan spec — tokens not hex, acceptable exception
-- [Phase 05-foremanview-refactor]: frm-team-clock-btn uses var(--amber) not var(--accent) — accent is undefined in all themes
-- [Phase 05-foremanview-refactor]: foreman-kpi-value updated from 22px to var(--text-display) per D-05, satisfying FRMN-04
-- [Phase 05-foremanview-refactor]: foreman-team-row gets min-height:var(--touch-min) to satisfy FRMN-03 touch target contract
-- [Phase 05]: PortalHeader languageToggle fix: renders both languageToggle and settingsAction for variant=foreman via Fragment
-- [Phase 05]: Default tab changed from clock to dashboard — Dashboard is foreman command center per UI-SPEC D-01
-- [Phase 05]: FOREMAN_TABS badge uses boolean — not count — to match PortalTabBar API spec
-- [Phase 05]: Phase stage colors mapped to var(--phase-*) tokens — hex literals eliminated from dashboard section
-- [Phase 05-foremanview-refactor]: frm-jsa-matrix class defined in CSS but ForemanView uses hazard list pattern — no matrix grid view exists in the original code
-- [Phase 05-foremanview-refactor]: MaterialRequestCard data mapping: urgency prefix to title, notes to materialName, fulfillmentType icon to timestamp, foreman confirm/issue to actions array
-- [Phase 05-foremanview-refactor P04]: frm-look-grid changed to flex column — actual lookahead code is date-grouped event list, not 5-column day planner grid as plan spec assumed
-- [Phase 05-foremanview-refactor P04]: 4 dynamic inline style exceptions in Plan 4 scope (event bar color, modal zIndex:10000, canvas display:none, disabled opacity:0.7) — all documented with JSX comments
+- [Phase 06-polish-and-theme-audit]: --accent aliases var(--amber) across all 7 non-ebc themes (plan specified 5, extended to midnight + cyberpunk for consistency)
+- [Phase 06-polish-and-theme-audit]: Global transition covers background-color, border-color, color, box-shadow only -- excludes transform/opacity to avoid animation conflicts
 
 ### Pending Todos
 
@@ -113,12 +101,12 @@ None yet.
 ### Blockers/Concerns
 
 - **Font decision unresolved:** PROJECT.md names Fira Code/Fira Sans; existing themes use Barlow/IBM Plex Mono. Needs PM sign-off before self-hosted fonts are configured. Does not block Phase 1 token work.
-- **`--accent` variable undefined in EmployeeView:** Still needs audit before EmployeeView refactor begins. ForemanView resolved (all replaced with var(--amber)).
-- **ForemanView tab grouping:** Resolved — FOREMAN_TABS defined with maxPrimary={5} and 13 tabs in PortalTabBar.
+- **`--accent` variable: RESOLVED** in Phase 06 Plan 01 -- defined as var(--amber) in all 7 non-ebc themes.
+- **ForemanView tab grouping:** Which 4-5 tabs become primary bottom nav is a product decision. Validate with Emmanuel or a foreman before Phase 5 planning.
 - **`vite-plugin-webfont-dl` Vite 8 compat:** Confirm before committing the font plugin.
 
 ## Session Continuity
 
-Last session: 2026-04-01T21:16:18.871Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-polish-and-theme-audit/06-CONTEXT.md
+Last session: 2026-04-03T15:42:08Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: None

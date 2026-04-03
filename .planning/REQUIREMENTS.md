@@ -33,33 +33,33 @@ Requirements for milestone v1.0: Field Portal Perfection. Each maps to roadmap p
 
 ### Driver Portal
 
-- [x] **DRVR-01**: All inline styles replaced with CSS classes using design tokens
-- [x] **DRVR-02**: All buttons/inputs meet 44px touch target minimum
-- [x] **DRVR-03**: Route cards use `FieldCard` + `StatusBadge` components
-- [x] **DRVR-04**: Loading/empty states for route queue and completed deliveries
+- [ ] **DRVR-01**: All inline styles replaced with CSS classes using design tokens
+- [ ] **DRVR-02**: All buttons/inputs meet 44px touch target minimum
+- [ ] **DRVR-03**: Route cards use `FieldCard` + `StatusBadge` components
+- [ ] **DRVR-04**: Loading/empty states for route queue and completed deliveries
 
 ### Employee Portal
 
-- [x] **EMPL-01**: All inline styles replaced with CSS classes using design tokens
-- [x] **EMPL-02**: All buttons/inputs meet 44px touch target minimum
-- [x] **EMPL-03**: Clock-in flow uses shared field components
-- [x] **EMPL-04**: Material request form uses `FieldInput`/`FieldSelect` with proper `inputmode`
-- [x] **EMPL-05**: Map tile switcher buttons meet touch target requirements
+- [ ] **EMPL-01**: All inline styles replaced with CSS classes using design tokens
+- [ ] **EMPL-02**: All buttons/inputs meet 44px touch target minimum
+- [ ] **EMPL-03**: Clock-in flow uses shared field components
+- [ ] **EMPL-04**: Material request form uses `FieldInput`/`FieldSelect` with proper `inputmode`
+- [ ] **EMPL-05**: Map tile switcher buttons meet touch target requirements
 
 ### Foreman Portal
 
-- [x] **FRMN-01**: All inline styles replaced with CSS classes using design tokens
-- [x] **FRMN-02**: 11 horizontal tabs restructured into bottom nav (4-5 primary) + More menu
-- [x] **FRMN-03**: All buttons/inputs meet 44px touch target minimum
-- [x] **FRMN-04**: KPI cards use consistent font sizes from typography scale
-- [x] **FRMN-05**: Daily reports, JSA, and crew sections use shared field components
-- [x] **FRMN-06**: Phase colors use `--phase-*` semantic tokens instead of hard-coded hex
+- [ ] **FRMN-01**: All inline styles replaced with CSS classes using design tokens
+- [ ] **FRMN-02**: 11 horizontal tabs restructured into bottom nav (4-5 primary) + More menu
+- [ ] **FRMN-03**: All buttons/inputs meet 44px touch target minimum
+- [ ] **FRMN-04**: KPI cards use consistent font sizes from typography scale
+- [ ] **FRMN-05**: Daily reports, JSA, and crew sections use shared field components
+- [ ] **FRMN-06**: Phase colors use `--phase-*` semantic tokens instead of hard-coded hex
 
 ### Polish
 
-- [ ] **PLSH-01**: All 5 themes pass visual regression (no broken colors, missing vars)
-- [ ] **PLSH-02**: `touch-action: manipulation` applied globally to eliminate 300ms tap delay
-- [ ] **PLSH-03**: `overscroll-behavior: contain` prevents accidental pull-to-refresh
+- [x] **PLSH-01**: All 5 themes pass visual regression (no broken colors, missing vars)
+- [x] **PLSH-02**: `touch-action: manipulation` applied globally to eliminate 300ms tap delay
+- [x] **PLSH-03**: `overscroll-behavior: contain` prevents accidental pull-to-refresh
 - [ ] **PLSH-04**: Responsive at 375px, 768px, 1024px viewports
 - [ ] **PLSH-05**: Offline/sync status indicator extended to all portals
 
@@ -117,24 +117,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMP-09 | Phase 2 | Complete |
 | COMP-10 | Phase 2 | Complete |
 | COMP-11 | Phase 2 | Complete |
-| DRVR-01 | Phase 3 | Complete |
-| DRVR-02 | Phase 3 | Complete |
-| DRVR-03 | Phase 3 | Complete |
-| DRVR-04 | Phase 3 | Complete |
-| EMPL-01 | Phase 4 | Complete |
-| EMPL-02 | Phase 4 | Complete |
-| EMPL-03 | Phase 4 | Complete |
-| EMPL-04 | Phase 4 | Complete |
-| EMPL-05 | Phase 4 | Complete |
-| FRMN-01 | Phase 5 | Complete |
-| FRMN-02 | Phase 5 | Complete |
-| FRMN-03 | Phase 5 | Complete |
-| FRMN-04 | Phase 5 | Complete |
-| FRMN-05 | Phase 5 | Complete |
-| FRMN-06 | Phase 5 | Complete |
-| PLSH-01 | Phase 6 | Pending |
-| PLSH-02 | Phase 6 | Pending |
-| PLSH-03 | Phase 6 | Pending |
+| DRVR-01 | Phase 3 | Pending |
+| DRVR-02 | Phase 3 | Pending |
+| DRVR-03 | Phase 3 | Pending |
+| DRVR-04 | Phase 3 | Pending |
+| EMPL-01 | Phase 4 | Pending |
+| EMPL-02 | Phase 4 | Pending |
+| EMPL-03 | Phase 4 | Pending |
+| EMPL-04 | Phase 4 | Pending |
+| EMPL-05 | Phase 4 | Pending |
+| FRMN-01 | Phase 5 | Pending |
+| FRMN-02 | Phase 5 | Pending |
+| FRMN-03 | Phase 5 | Pending |
+| FRMN-04 | Phase 5 | Pending |
+| FRMN-05 | Phase 5 | Pending |
+| FRMN-06 | Phase 5 | Pending |
+| PLSH-01 | Phase 6 | Complete |
+| PLSH-02 | Phase 6 | Complete |
+| PLSH-03 | Phase 6 | Complete |
 | PLSH-04 | Phase 6 | Pending |
 | PLSH-05 | Phase 6 | Pending |
 
