@@ -49,27 +49,28 @@ Exceptions:
 - Alert dot indicator: 6px circle (sub-scale, consistent with Alert Card spec)
 - PortalHeader height: 48px (pre-existing, locked — do not change)
 
+Non-canonical values note: --space-3 (12px), --space-5 (20px), and --space-10 (40px) are intentional deviations from the strict 8-point canonical set. These are established tokens from Phase 1 and are not new additions in Phase 7. They are retained as-is for backward compatibility.
+
 Source: tokens.css (direct read), design spec section 2.3, CONTEXT.md D-02
 
 ---
 
 ## Typography
 
-All sizes are px. No rem. Weights are mapped to existing `--weight-*` tokens where they exist; extended weights (800, 900) are specified as numeric values because tokens.css only defines 400 and 700.
+All sizes are px. No rem. Exactly 4 sizes and 2 weights are used in this phase.
 
 | Role | Token | Size | Weight | Line Height | Letter Spacing | Usage |
 |------|-------|------|--------|-------------|----------------|-------|
+| Label | --text-sm | 11px | 700 (--weight-bold) | 1.2 (--leading-tight) | 0.08em (--tracking-wider) | Uppercase category labels, badge text, stat tile labels, stat tile values |
 | Body | --text-base | 13px | 400 (--weight-normal) | 1.5 (--leading-normal) | 0 | Descriptions, project names body, form values |
-| Label | --text-sm | 11px | 600 | 1.2 (--leading-tight) | 0.08em (--tracking-wider) | Uppercase category labels, badge text, stat tile labels |
-| Section title | --text-lg | 18px | 800 | 1.2 (--leading-tight) | 0 | "Schedule", "ALERTS", section headings |
-| Display / Hero | --text-display | 28px | 900 | 1.2 (--leading-tight) | 0 | Clock time hero, KPI hero numbers |
+| Heading | --text-lg | 18px | 700 (--weight-bold) | 1.2 (--leading-tight) | 0 | "Schedule", "ALERTS", section headings, stat tile values (large) |
+| Display / Hero | --text-display | 28px | 700 (--weight-bold) | 1.2 (--leading-tight) | 0 | Clock time hero, KPI hero numbers |
 
-Additional numeric sizes used in this phase (no new tokens — inline size only per Claude's Discretion):
-- Stat tile value: 20px at weight 800 (--leading-tight)
-- Stat tile label: 9px at weight 600, uppercase (micro — below --text-sm)
-- Card title: 13px at weight 700 (--weight-bold) — same size as body but heavier
-
-Card title uses --text-base size + --weight-bold weight. No additional size token needed.
+Consolidation notes (checker-required fixes applied):
+- Stat tile label: was 9px — merged into 11px (--text-sm). Size difference is not perceptible at mobile scale and alignment with --text-sm improves system consistency.
+- Stat tile value: was 20px at weight 800 — merged into 18px (--text-lg). Values now use --text-lg at --weight-bold.
+- Card title: 13px (--text-base) at --weight-bold (700). No additional size token — uses same size as body with heavier weight.
+- Weights collapsed from 5 (400, 600, 700, 800, 900) to 2 (400, 700). All former 600/800/900 usages now use 700 (--weight-bold).
 
 Source: tokens.css (direct read), design spec sections 2.2 and 3.2, CONTEXT.md
 
@@ -111,6 +112,20 @@ Accent (--amber / --accent) reserved for:
 Second semantic usage pattern: Alert Card background uses `rgba(accent-color, 0.06)` and border `rgba(accent-color, 0.12)`. The accent-color here varies by alert type: --amber for warning, --red for error, --green for success, --blue for info.
 
 Source: design spec sections 2.1 and 3.2, constants.js EBC theme vars, CONTEXT.md D-02
+
+---
+
+## Focal Point
+
+Primary screen focal point: the Home tab hero area — specifically the clock status block (ON CLOCK / OFF CLOCK) at --text-display (28px, --weight-bold) centered in the Hero Card. This is the first element the employee reads on open. All other content (stat tiles, alerts, active project) is secondary and flows below the hero block.
+
+Design hierarchy on Home tab:
+1. Hero Card — clock status + time display (--text-display, --accent for active state)
+2. Stat tile row — Hours / Tasks / Pending (--text-lg at --weight-bold values, --text-sm labels)
+3. Alert feed — time-sensitive notifications
+4. Active project card — current assignment summary
+
+Source: design spec section 2.2, CONTEXT.md D-01
 
 ---
 
