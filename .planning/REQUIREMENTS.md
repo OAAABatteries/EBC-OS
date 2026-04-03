@@ -63,6 +63,79 @@ Requirements for milestone v1.0: Field Portal Perfection. Each maps to roadmap p
 - [ ] **PLSH-04**: Responsive at 375px, 768px, 1024px viewports
 - [x] **PLSH-05**: Offline/sync status indicator extended to all portals
 
+## v1.1 Requirements
+
+Requirements for milestone v1.1: Premium Construction UI Overhaul. Design spec: docs/superpowers/specs/2026-04-03-ui-overhaul-design.md
+
+### Visual Design
+
+- [ ] **VIS-01**: EBC Brand theme (#0f1a24 + #ff7f21) is the default theme for new users
+- [ ] **VIS-02**: Eagle logo (ebc-eagle-white.png) renders in PortalHeader across all 3 portals
+- [ ] **VIS-03**: FieldCard, FieldButton, PortalHeader, PortalTabBar, EmptyState updated to Premium Construction visual language
+- [ ] **VIS-04**: Three card variants (Hero, Info, Alert) defined in styles.js using design tokens
+- [ ] **VIS-05**: Empty states always include an actionable button (never "check back later")
+- [ ] **VIS-06**: All new UI strings have EN/ES translations (estimated 50+ keys per phase)
+
+### Employee Home
+
+- [ ] **HOME-01**: New Home tab is the default landing with clock status hero, stat tiles, and alerts feed
+- [ ] **HOME-02**: Stat tiles (Hours/Tasks/Pending) navigate to their respective detail views on tap
+- [ ] **HOME-03**: Active project card shows current assignment with trade tags, tappable to project detail
+- [ ] **HOME-04**: Alerts feed shows credential warnings, material approvals, schedule changes (newest first, max 3 + "View All")
+- [ ] **HOME-05**: Each alert navigates to its source tab (credentials, materials, schedule) on tap
+- [ ] **HOME-06**: Home tab auto-refreshes clock status and stats when returning from Clock tab
+
+### Schedule
+
+- [ ] **SCHED-01**: Week strip shows 7 days with today highlighted and shift dot indicators
+- [ ] **SCHED-02**: Shift cards display time range, project, location, and status badge (ACTIVE/SCHEDULED/COMPLETED)
+- [ ] **SCHED-03**: Available shifts section shows foreman-posted shifts with "Request" action button
+- [ ] **SCHED-04**: Shift pickup requires foreman approval (employee requests → status PENDING → foreman approves/denies)
+- [ ] **SCHED-05**: Time-off request flow: bottom sheet with date range, reason dropdown, notes, submit to foreman
+- [ ] **SCHED-06**: Schedule shows time-off status inline: "OFF — Requested" / "OFF — Approved" / "OFF — Denied"
+- [ ] **SCHED-07**: Schedule tab shows cached last-fetched data when offline with "Last updated" timestamp
+
+### Credentials
+
+- [ ] **CRED-01**: Credential wallet shows active/expiring/expired certs per employee
+- [ ] **CRED-02**: Add credential flow (type, issue date, expiry date, issuing org, optional photo)
+- [ ] **CRED-03**: Expiry alerts generated at 30/14/7 days, surface in Home alerts feed
+- [ ] **CRED-04**: Foreman credential dashboard in Team tab showing crew cert status overview with filter by status
+
+### Floor Plans
+
+- [ ] **PLAN-01**: Employee portal has Drawings tab in "More" overflow (read-only, filtered to assigned projects)
+- [ ] **PLAN-02**: Driver portal has Drawings tab (read-only, filtered to delivery projects)
+- [ ] **PLAN-03**: Shared DrawingsTab component extracted from ForemanView with readOnly and projectFilter props
+
+### Foreman Scheduling
+
+- [ ] **FSCH-01**: Post Available Shifts modal in Team tab (date, time, project, trade, overtime flag)
+- [ ] **FSCH-02**: Shift pickup request queue with approve/deny buttons in Team tab
+- [ ] **FSCH-03**: Time-off request queue with approve/deny + optional comments in Team tab
+- [ ] **FSCH-04**: Foreman notified in-app when employee requests shift or time-off
+
+### Notifications
+
+- [ ] **NOTIF-01**: Schedule change alerts push to affected employees (in-app + browser push)
+- [ ] **NOTIF-02**: Material request status changes push to requester (in-app + browser push)
+- [ ] **NOTIF-03**: Credential expiry warnings push at 30/14/7 day thresholds (in-app + browser push)
+- [ ] **NOTIF-04**: Shift posted by foreman notifies eligible employees
+- [ ] **NOTIF-05**: Time-off approval/denial notifies requesting employee
+- [ ] **NOTIF-06**: Browser push requires user permission prompt, graceful fallback to in-app only
+
+### Data Model
+
+- [ ] **DATA-01**: `available_shifts` Supabase table created (date, time, project_id, foreman_id, trade, overtime, status, claimed_by)
+- [ ] **DATA-02**: `certifications` table extended with issuing_org, photo_path, cert_category columns
+- [ ] **DATA-03**: `shift_requests` table for employee shift pickup requests (employee_id, shift_id, status, reviewed_by)
+
+### Driver Portal
+
+- [ ] **DRVR-05**: Driver portal visual refresh with Premium Construction design language
+- [ ] **DRVR-06**: Driver portal has alerts feed (schedule changes, delivery updates)
+- [ ] **DRVR-07**: Driver portal has Drawings tab for delivery project floor plans
+
 ## v2 Requirements
 
 Deferred to future milestones. Tracked but not in current roadmap.
@@ -87,10 +160,14 @@ Deferred to future milestones. Tracked but not in current roadmap.
 |---------|--------|
 | Tailwind CSS migration | Already have working CSS variable system, avoid migration overhead |
 | CSS Modules | Vite causes full page reloads, loses component state |
-| New backend/Supabase changes | Frontend presentation layer only |
+| Major Supabase schema changes | v1.1 adds 2 tables + column extensions only |
 | Takeoff engine improvements | Separate milestone, ~70% work remaining |
 | Phase 4 monetization features | Future milestone |
-| New business logic or features | Refactor only, no new capabilities |
+| Admin/PM desktop view changes | Field portals only |
+| New themes | Use existing 8 themes, change default only |
+| Offline-first scheduling | Schedule data online-only for consistency |
+| Multi-language beyond EN/ES | Future milestone |
+| Drag-and-drop schedule builder | Foreman feature, deferred — start with modal-based shift posting |
 | Font family change (Fira vs Barlow) | Deferred — needs brand decision before committing |
 
 ## Traceability
@@ -145,4 +222,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-30*
-*Last updated: 2026-03-30 after roadmap creation — all 38 requirements mapped*
+*Last updated: 2026-04-03 — v1.1 requirements added (37 new requirements for Premium Construction UI Overhaul)*
