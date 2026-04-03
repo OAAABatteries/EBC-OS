@@ -23,7 +23,7 @@ Requirements for milestone v1.0: Field Portal Perfection. Each maps to roadmap p
 - [x] **COMP-02**: `FieldCard` component with consistent padding, border radius, theme-aware styling
 - [x] **COMP-03**: `FieldInput` / `FieldSelect` with focus rings, error states, proper `inputmode`
 - [x] **COMP-04**: `PortalHeader` with user info, logout, language toggle, project selector
-- [x] **COMP-05**: `PortalTabBar` — bottom navigation bar with icon + label, badge counts, 5-tab max
+- [x] **COMP-05**: `PortalTabBar` -- bottom navigation bar with icon + label, badge counts, 5-tab max
 - [x] **COMP-06**: `StatusBadge` with semantic color mapping (approved=green, pending=amber, etc.)
 - [x] **COMP-07**: `EmptyState` with icon, message, and optional action button
 - [x] **COMP-08**: `LoadingSpinner` and skeleton screen components
@@ -90,9 +90,9 @@ Requirements for milestone v1.1: Premium Construction UI Overhaul. Design spec: 
 - [ ] **SCHED-01**: Week strip shows 7 days with today highlighted and shift dot indicators
 - [ ] **SCHED-02**: Shift cards display time range, project, location, and status badge (ACTIVE/SCHEDULED/COMPLETED)
 - [ ] **SCHED-03**: Available shifts section shows foreman-posted shifts with "Request" action button
-- [ ] **SCHED-04**: Shift pickup requires foreman approval (employee requests → status PENDING → foreman approves/denies)
+- [ ] **SCHED-04**: Shift pickup requires foreman approval (employee requests -> status PENDING -> foreman approves/denies)
 - [ ] **SCHED-05**: Time-off request flow: bottom sheet with date range, reason dropdown, notes, submit to foreman
-- [ ] **SCHED-06**: Schedule shows time-off status inline: "OFF — Requested" / "OFF — Approved" / "OFF — Denied"
+- [ ] **SCHED-06**: Schedule shows time-off status inline: "OFF -- Requested" / "OFF -- Approved" / "OFF -- Denied"
 - [ ] **SCHED-07**: Schedule tab shows cached last-fetched data when offline with "Last updated" timestamp
 
 ### Credentials
@@ -167,12 +167,14 @@ Deferred to future milestones. Tracked but not in current roadmap.
 | New themes | Use existing 8 themes, change default only |
 | Offline-first scheduling | Schedule data online-only for consistency |
 | Multi-language beyond EN/ES | Future milestone |
-| Drag-and-drop schedule builder | Foreman feature, deferred — start with modal-based shift posting |
-| Font family change (Fira vs Barlow) | Deferred — needs brand decision before committing |
+| Drag-and-drop schedule builder | Foreman feature, deferred -- start with modal-based shift posting |
+| Font family change (Fira vs Barlow) | Deferred -- needs brand decision before committing |
 
 ## Traceability
 
 Which phases cover which requirements. Updated during roadmap creation.
+
+### v1.0 (Phases 1-6)
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
@@ -215,11 +217,58 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLSH-04 | Phase 6 | Pending |
 | PLSH-05 | Phase 6 | Complete |
 
+### v1.1 (Phases 7-10)
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| DATA-01 | Phase 7 | Pending |
+| DATA-02 | Phase 7 | Pending |
+| DATA-03 | Phase 7 | Pending |
+| VIS-01 | Phase 7 | Pending |
+| VIS-02 | Phase 7 | Pending |
+| VIS-03 | Phase 7 | Pending |
+| VIS-04 | Phase 7 | Pending |
+| VIS-05 | Phase 7 | Pending |
+| VIS-06 | Phase 7 | Pending |
+| PLAN-03 | Phase 7 | Pending |
+| HOME-01 | Phase 8 | Pending |
+| HOME-02 | Phase 8 | Pending |
+| HOME-03 | Phase 8 | Pending |
+| HOME-04 | Phase 8 | Pending |
+| HOME-05 | Phase 8 | Pending |
+| HOME-06 | Phase 8 | Pending |
+| SCHED-01 | Phase 8 | Pending |
+| SCHED-02 | Phase 8 | Pending |
+| SCHED-03 | Phase 8 | Pending |
+| SCHED-04 | Phase 8 | Pending |
+| SCHED-05 | Phase 8 | Pending |
+| SCHED-06 | Phase 8 | Pending |
+| SCHED-07 | Phase 8 | Pending |
+| CRED-01 | Phase 8 | Pending |
+| CRED-02 | Phase 8 | Pending |
+| CRED-03 | Phase 8 | Pending |
+| PLAN-01 | Phase 8 | Pending |
+| DRVR-05 | Phase 9 | Pending |
+| DRVR-06 | Phase 9 | Pending |
+| DRVR-07 | Phase 9 | Pending |
+| PLAN-02 | Phase 9 | Pending |
+| FSCH-01 | Phase 9 | Pending |
+| FSCH-02 | Phase 9 | Pending |
+| FSCH-03 | Phase 9 | Pending |
+| FSCH-04 | Phase 9 | Pending |
+| CRED-04 | Phase 9 | Pending |
+| NOTIF-01 | Phase 10 | Pending |
+| NOTIF-02 | Phase 10 | Pending |
+| NOTIF-03 | Phase 10 | Pending |
+| NOTIF-04 | Phase 10 | Pending |
+| NOTIF-05 | Phase 10 | Pending |
+| NOTIF-06 | Phase 10 | Pending |
+
 **Coverage:**
-- v1 requirements: 38 total
-- Mapped to phases: 38
-- Unmapped: 0
+- v1.0 requirements: 38 total, 38 mapped, 0 unmapped
+- v1.1 requirements: 42 total, 42 mapped, 0 unmapped
+- Grand total: 80 requirements, 80 mapped
 
 ---
 *Requirements defined: 2026-03-30*
-*Last updated: 2026-04-03 — v1.1 requirements added (37 new requirements for Premium Construction UI Overhaul)*
+*Last updated: 2026-04-03 -- v1.1 traceability added (42 requirements mapped to Phases 7-10)*
