@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Shared Field Components** - Build and verify the shared component toolkit that all portal refactors will consume
 - [x] **Phase 3: DriverView Refactor** - Migrate the smallest portal as the process pilot — zero inline styles, shared components wired (gap closure in progress) (completed 2026-04-01)
 - [x] **Phase 4: EmployeeView Refactor** - Migrate the mid-size portal using the proven process — forms, clock-in, and map controls fully polished (completed 2026-04-01)
-- [x] **Phase 5: ForemanView Refactor** - Migrate the largest portal — 11-tab nav collapsed to bottom bar, phase colors tokenized, all tabs complete (completed 2026-04-01)
+- [x] **Phase 5: ForemanView Refactor** - Migrate the largest portal — 11-tab nav collapsed to bottom bar, phase colors tokenized, all tabs complete (completed 2026-04-01)
 - [ ] **Phase 6: Polish and Theme Audit** - Cross-portal polish, 5-theme gauntlet, outdoor contrast verification, global touch/scroll optimizations
 
 ## Phase Details
@@ -117,7 +117,11 @@ Plans:
   3. Scrolling a data list does not trigger browser pull-to-refresh — `overscroll-behavior: contain` is in effect
   4. Every portal layout is usable without horizontal scrolling at 375px, 768px, and 1024px viewports
   5. The offline/sync status indicator appears consistently in all three portals and shows a pending-changes count when actions are queued but not yet synced
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 06-01-PLAN.md — Global CSS foundations: touch-action, theme transitions, --accent fix, network banner CSS, hover audit
+- [ ] 06-02-PLAN.md — Offline banner wiring: PortalHeader network prop, translations, wire into all 3 portals
+- [ ] 06-03-PLAN.md — Responsive viewport audit at 375px/768px/1024px + 5-theme visual gauntlet checkpoint
 **UI hint**: yes
 
 ## Progress
@@ -132,4 +136,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 3. DriverView Refactor | 3/3 | Complete   | 2026-04-01 |
 | 4. EmployeeView Refactor | 3/3 | Complete   | 2026-04-01 |
 | 5. ForemanView Refactor | 4/4 | Complete   | 2026-04-01 |
-| 6. Polish and Theme Audit | 0/TBD | Not started | - |
+| 6. Polish and Theme Audit | 0/3 | Not started | - |
