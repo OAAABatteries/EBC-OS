@@ -224,10 +224,10 @@ Default landing tab: `dashboard` (replaces current `clock` default)
      - Employee name: --text-base, --weight-bold
      - Request type label: "SHIFT REQUEST" or "TIME OFF" — 11px uppercase, --accent for shift, --yellow for time-off
      - Date/time range: --text-base, --text2
-     - Approve button: FieldButton primary, 44px height, "Approve"
-     - Deny button: FieldButton danger, 44px height, "Deny"
-   - Tapping Approve → opens approval bottom sheet (optional comment field + confirm button)
-   - Tapping Deny → opens denial bottom sheet (optional comment field + confirm button)
+     - Approve button: FieldButton primary, 44px height, "Approve Request"
+     - Deny button: FieldButton danger, 44px height, "Deny Request"
+   - Tapping Approve Request → opens approval bottom sheet (optional comment field + confirm button)
+   - Tapping Deny Request → opens denial bottom sheet (optional comment field + confirm button)
    - Empty state: "No pending requests" + "Your crew is all set" body, no action button needed
 
 3. Crew Certifications section (CRED-04)
@@ -245,13 +245,13 @@ Default landing tab: `dashboard` (replaces current `clock` default)
 
 ### Bottom Sheet — Approval Comments (Approve / Deny actions)
 
-Reuses PortalTabBar sheet overlay pattern. Triggered by Approve or Deny button tap.
+Reuses PortalTabBar sheet overlay pattern. Triggered by Approve Request or Deny Request button tap.
 
-- Overlay: semi-transparent backdrop, tap to cancel
+- Overlay: semi-transparent backdrop, tap to dismiss
 - Sheet: slides up from bottom, max-height 50vh, background var(--bg3)
 - Content: request summary (read-only), optional comments FieldInput (inputmode="text", placeholder "Add comment (optional)"), confirm FieldButton (primary for Approve, danger for Deny)
 - Confirm button: 44px height, full width
-- Cancel: "Cancel" text button at top right, --text2 color, 44px tap target
+- Cancel: "Go Back" text button at top right, --text2 color, 44px tap target
 - Transition: var(--transition-state) (300ms) transform slide-up
 
 ### Navigation — every stat taps somewhere
@@ -326,14 +326,14 @@ All strings pass through `t()` and must have EN + ES entries in translations.js.
 | Pending Requests section label | PENDING REQUESTS | SOLICITUDES PENDIENTES |
 | Request type — shift | SHIFT REQUEST | SOLICITUD DE TURNO |
 | Request type — time off | TIME OFF | TIEMPO LIBRE |
-| Approve button | Approve | Aprobar |
-| Deny button | Deny | Denegar |
+| Approve button (request card) | Approve Request | Aprobar Solicitud |
+| Deny button (request card) | Deny Request | Denegar Solicitud |
 | Approval comment placeholder | Add comment (optional) | Agregar comentario (opcional) |
 | Approval bottom sheet title | Approve Request | Aprobar Solicitud |
 | Denial bottom sheet title | Deny Request | Denegar Solicitud |
 | Confirm approve button | Confirm Approval | Confirmar Aprobación |
 | Confirm deny button | Confirm Denial | Confirmar Denegación |
-| Cancel | Cancel | Cancelar |
+| Go Back (bottom sheet dismiss) | Go Back | Regresar |
 | Empty state — no pending requests heading | No pending requests | Sin solicitudes pendientes |
 | Empty state — no pending requests body | Your crew is all set | Tu equipo está al día |
 | Crew Certifications section label | CREW CERTIFICATIONS | CERTIFICACIONES DEL EQUIPO |
@@ -351,8 +351,8 @@ All strings pass through `t()` and must have EN + ES entries in translations.js.
 
 | Action | Trigger | Confirmation Approach |
 |--------|---------|----------------------|
-| Deny shift request | Deny button on request card | Bottom sheet with optional comment + "Confirm Denial" danger button. No separate dialog — sheet IS the confirmation. |
-| Deny time-off request | Deny button on request card | Same bottom sheet pattern as shift denial. |
+| Deny shift request | Deny Request button on request card | Bottom sheet with optional comment + "Confirm Denial" danger button. No separate dialog — sheet IS the confirmation. |
+| Deny time-off request | Deny Request button on request card | Same bottom sheet pattern as shift denial. |
 
 No delete actions exist in Phase 9. Deny actions are the only destructive flows. Approve actions are not destructive and do not need confirmation beyond the bottom sheet submit button.
 
@@ -391,8 +391,8 @@ This project uses a hand-rolled CSS variable component system. No registry compo
 |-------------|----------------|
 | DRVR-05 | Driver PremiumCard upgrade on route cards + PortalHeader/PortalTabBar wired |
 | DRVR-06 | Driver Home tab with alerts feed (AlertCard, max 3 + View All) |
-| FSCH-02 | Shift pickup request cards in Team tab with Approve/Deny + bottom sheet |
-| FSCH-03 | Time-off request cards in Team tab with Approve/Deny + optional comment bottom sheet |
+| FSCH-02 | Shift pickup request cards in Team tab with Approve Request/Deny Request + bottom sheet |
+| FSCH-03 | Time-off request cards in Team tab with Approve Request/Deny Request + optional comment bottom sheet |
 | FSCH-04 | Foreman Dashboard alerts feed includes in-app notification of new requests |
 | CRED-04 | Crew Certifications section in Team tab with filter chips, CredentialCard rows, view-only |
 
