@@ -87,13 +87,13 @@ Requirements for milestone v1.1: Premium Construction UI Overhaul. Design spec: 
 
 ### Schedule
 
-- [ ] **SCHED-01**: Week strip shows 7 days with today highlighted and shift dot indicators
-- [ ] **SCHED-02**: Shift cards display time range, project, location, and status badge (ACTIVE/SCHEDULED/COMPLETED)
-- [ ] **SCHED-03**: Available shifts section shows foreman-posted shifts with "Request" action button
-- [ ] **SCHED-04**: Shift pickup requires foreman approval (employee requests -> status PENDING -> foreman approves/denies)
-- [ ] **SCHED-05**: Time-off request flow: bottom sheet with date range, reason dropdown, notes, submit to foreman
-- [ ] **SCHED-06**: Schedule shows time-off status inline: "OFF -- Requested" / "OFF -- Approved" / "OFF -- Denied"
-- [ ] **SCHED-07**: Schedule tab shows cached last-fetched data when offline with "Last updated" timestamp
+- [x] **SCHED-01**: Week strip shows 7 days with today highlighted and shift dot indicators
+- [x] **SCHED-02**: Shift cards display time range, project, location, and status badge (ACTIVE/SCHEDULED/COMPLETED)
+- [x] **SCHED-03**: Available shifts section shows foreman-posted shifts with "Request" action button
+- [x] **SCHED-04**: Shift pickup requires foreman approval (employee requests -> status PENDING -> foreman approves/denies)
+- [x] **SCHED-05**: Time-off request flow: bottom sheet with date range, reason dropdown, notes, submit to foreman
+- [x] **SCHED-06**: Schedule shows time-off status inline: "OFF -- Requested" / "OFF -- Approved" / "OFF -- Denied"
+- [x] **SCHED-07**: Schedule tab shows cached last-fetched data when offline with "Last updated" timestamp
 
 ### Credentials
 
@@ -237,13 +237,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOME-04 | Phase 8 | Pending |
 | HOME-05 | Phase 8 | Pending |
 | HOME-06 | Phase 8 | Pending |
-| SCHED-01 | Phase 8 | Pending |
-| SCHED-02 | Phase 8 | Pending |
-| SCHED-03 | Phase 8 | Pending |
-| SCHED-04 | Phase 8 | Pending |
-| SCHED-05 | Phase 8 | Pending |
-| SCHED-06 | Phase 8 | Pending |
-| SCHED-07 | Phase 8 | Pending |
+| SCHED-01 | Phase 8 | Complete |
+| SCHED-02 | Phase 8 | Complete |
+| SCHED-03 | Phase 8 | Complete |
+| SCHED-04 | Phase 8 | Complete |
+| SCHED-05 | Phase 8 | Complete |
+| SCHED-06 | Phase 8 | Complete |
+| SCHED-07 | Phase 8 | Complete |
 | CRED-01 | Phase 8 | Complete |
 | CRED-02 | Phase 8 | Complete |
 | CRED-03 | Phase 8 | Complete |
