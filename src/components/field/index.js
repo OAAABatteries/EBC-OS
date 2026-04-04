@@ -1,6 +1,7 @@
 // src/components/field/index.js
 // Barrel exports — components added as they are built in plans 02-06
 
+export { DrawingsTab } from './DrawingsTab';
 export { StatusBadge } from './StatusBadge';
 export { LoadingSpinner, Skeleton } from './LoadingSpinner';
 export { FieldButton } from './FieldButton';
