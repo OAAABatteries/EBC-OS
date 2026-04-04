@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Calendar, Settings, Navigation, Package, Truck, CheckCircle, MapPin, RefreshCw } from "lucide-react";
+import { Calendar, Settings, Navigation, Package, Truck, CheckCircle, MapPin, RefreshCw, Home } from "lucide-react";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
-import { PortalHeader, PortalTabBar, FieldCard, FieldButton, EmptyState, StatusBadge, Skeleton } from "../components/field";
+import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, EmptyState, StatusBadge, Skeleton, StatTile, AlertCard } from "../components/field";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 
 // ═══════════════════════════════════════════════════════════════
@@ -73,7 +73,7 @@ export function DriverView({ app }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [driverTab, setDriverTab] = useState("route");
+  const [driverTab, setDriverTab] = useState("home");
   const [initialLoading, setInitialLoading] = useState(true);
   const [driverLat, setDriverLat] = useState(null);
   const [driverLng, setDriverLng] = useState(null);
@@ -130,7 +130,7 @@ export function DriverView({ app }) {
   };
 
   const handleLogout = () => {
-    setActiveDriver(null); setEmail(""); setPassword(""); setDriverTab("route");
+    setActiveDriver(null); setEmail(""); setPassword(""); setDriverTab("home");
     if (app.onLogout) app.onLogout();
   };
 
@@ -323,14 +323,14 @@ export function DriverView({ app }) {
   const routeCardSkeleton = (
     <div className="driver-route-list">
       {[1, 2, 3].map(i => (
-        <FieldCard key={i} className="driver-route-card">
+        <PremiumCard key={i} variant="info" className="driver-route-card">
           <div className="flex-between mb-4">
             <Skeleton width="60%" height="var(--text-sm)" />
             <Skeleton width="48px" height="var(--text-sm)" />
           </div>
           <Skeleton width="80%" height="var(--text-xs)" className="mb-4" />
           <Skeleton width="40%" height="var(--text-xs)" />
-        </FieldCard>
+        </PremiumCard>
       ))}
     </div>
   );
@@ -338,23 +338,48 @@ export function DriverView({ app }) {
   const completedCardSkeleton = (
     <div className="driver-route-list">
       {[1, 2].map(i => (
-        <FieldCard key={i} className="driver-completed-card">
+        <PremiumCard key={i} variant="info" className="driver-completed-card">
           <div className="flex-between mb-4">
             <Skeleton width="50%" height="var(--text-sm)" />
             <Skeleton width="64px" height="20px" />
           </div>
           <Skeleton width="70%" height="var(--text-xs)" className="mb-4" />
           <Skeleton width="35%" height="var(--text-xs)" />
-        </FieldCard>
+        </PremiumCard>
       ))}
     </div>
   );
 
-  // ── Tab definitions (D-05) ──
+  // ── Time-of-day greeting helper ──
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    return hour < 12
+      ? t("Good Morning, {name}").replace("{name}", activeDriver?.name?.split(" ")[0] || "")
+      : t("Good Afternoon, {name}").replace("{name}", activeDriver?.name?.split(" ")[0] || "");
+  };
+
+  // ── Driver alerts feed (max 3, newest first) ──
+  const driverAlerts = useMemo(() => {
+    const alerts = [];
+    if (optimizedStops.some(s => s.isInTransit)) {
+      alerts.push({ type: "info", message: t("Delivery in progress"), timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) });
+    }
+    if (optimizedStops.length > 0) {
+      alerts.push({ type: "warning", message: t("Route assigned — {n} stops").replace("{n}", optimizedStops.length), timestamp: t("Today") });
+    }
+    if (todayDelivered.length > 0) {
+      alerts.push({ type: "success", message: t("{n} deliveries completed").replace("{n}", todayDelivered.length), timestamp: t("Today") });
+    }
+    return alerts.slice(0, 3);
+  }, [optimizedStops, todayDelivered, lang]);
+
+  // ── Tab definitions (D-03, D-04) ──
   const driverTabDefs = [
+    { id: "home", label: "Home", icon: Home, badge: false },
     { id: "route", label: "Route", icon: Navigation, badge: optimizedStops.length > 0 },
     { id: "completed", label: "Completed", icon: CheckCircle, badge: todayDelivered.length > 0 },
-    { id: "settings", label: "Settings", icon: Settings },
+    // Settings goes to More overflow (maxPrimary={3} = 3 content tabs + auto-added More trigger = 4 visible buttons)
+    { id: "settings", label: "Settings", icon: Settings, badge: false },
   ];
 
   // ═══ LOGIN ═══
@@ -391,6 +416,79 @@ export function DriverView({ app }) {
       />
 
       <div className="employee-body driver-content-pad">
+
+        {/* ═══ HOME TAB — Dashboard hero + stat tiles + alerts ═══ */}
+        {driverTab === "home" && (
+          <div className="emp-content">
+            {/* Route count hero — PremiumCard hero variant */}
+            <PremiumCard
+              variant="hero"
+              className="driver-home-hero"
+              onClick={() => setDriverTab("route")}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="driver-home-greeting">{getGreeting()}</div>
+              <div className="driver-home-hero-value">{optimizedStops.length}</div>
+              <div className="driver-home-hero-label">{t("STOPS TODAY")}</div>
+            </PremiumCard>
+
+            {/* Stat tiles row — 3 tiles */}
+            <div className="driver-home-stats">
+              <StatTile
+                label="PENDING"
+                value={optimizedStops.filter(s => !s.isInTransit && !s.isDelivered).length}
+                color="var(--accent)"
+                onTap={() => setDriverTab("route")}
+                t={t}
+              />
+              <StatTile
+                label="DELIVERED"
+                value={todayDelivered.length}
+                color="var(--green)"
+                onTap={() => setDriverTab("completed")}
+                t={t}
+              />
+              <StatTile
+                label="MILES"
+                value={totalDistance > 0 ? totalDistance.toFixed(1) : "0"}
+                color="var(--text)"
+                t={t}
+              />
+            </div>
+
+            {/* Alerts feed */}
+            {driverAlerts.length > 0 && (
+              <div className="driver-home-alerts">
+                <div className="driver-home-section-label">{t("ALERTS")}</div>
+                <div className="driver-home-alerts-list">
+                  {driverAlerts.map((alert, i) => (
+                    <AlertCard
+                      key={i}
+                      type={alert.type}
+                      message={alert.message}
+                      timestamp={alert.timestamp}
+                      onTap={() => setDriverTab("route")}
+                      t={t}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Empty state when no stops — VIS-05: action button for refresh */}
+            {optimizedStops.length === 0 && todayDelivered.length === 0 && (
+              <EmptyState
+                icon={Package}
+                heading={t("No deliveries scheduled")}
+                message={t("Check back when your route is assigned")}
+                action="Refresh"
+                onAction={() => window.location.reload()}
+                t={t}
+              />
+            )}
+          </div>
+        )}
 
         {/* ═══ ROUTE TAB — Map + Sorted Stops ═══ */}
         {driverTab === "route" && (
@@ -444,7 +542,8 @@ export function DriverView({ app }) {
               ) : (
               <div className="driver-route-list">
                 {optimizedStops.map((stop, idx) => (
-                  <FieldCard
+                  <PremiumCard
+                    variant={stop.isInTransit ? "hero" : "info"}
                     key={stop.id}
                     data-stop-idx={idx}
                     className={`driver-route-card${stop.isInTransit ? " driver-route-card--in-transit" : ""}${dragIdx === idx ? " driver-route-card--dragging" : ""}${heldIdx === idx ? " driver-route-card--held" : ""}`}
@@ -535,7 +634,7 @@ export function DriverView({ app }) {
                         )}
                       </div>
                     </div>
-                  </FieldCard>
+                  </PremiumCard>
                 ))}
               </div>
             ))}
@@ -570,14 +669,14 @@ export function DriverView({ app }) {
               ) : (
                 <div className="driver-route-list">
                   {todayDelivered.map(req => (
-                    <FieldCard key={req.id} className="driver-completed-card">
+                    <PremiumCard key={req.id} variant="info" className="driver-completed-card">
                       <div className="flex-between mb-4">
                         <span className="text-sm font-semi">{req.material}</span>
                         <StatusBadge status="completed" t={t} />
                       </div>
                       <div className="text-xs text-muted mb-4">{req.projectName} — {req.qty} {req.unit}</div>
                       <div className="text-xs text-dim">{t("Delivered")} {fmtTime(req.deliveredAt)}</div>
-                    </FieldCard>
+                    </PremiumCard>
                   ))}
                 </div>
               )
