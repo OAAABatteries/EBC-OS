@@ -340,6 +340,33 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .premium-card-alert--error::before{background:var(--red)}
 .premium-card-alert--info{background:var(--blue-dim, rgba(59,130,246,0.08));border-color:rgba(59,130,246,0.12)}
 .premium-card-alert--info::before{background:var(--blue)}
+/* StatTile */
+.stat-tile{cursor:pointer;text-align:center;min-width:80px;flex:1}
+.stat-tile-value{font-size:var(--text-lg);font-weight:var(--weight-bold);color:var(--stat-color, var(--text));line-height:var(--leading-tight)}
+.stat-tile-label{font-size:var(--text-sm);font-weight:var(--weight-bold);color:var(--text3);text-transform:uppercase;letter-spacing:var(--tracking-wider);line-height:var(--leading-tight);margin-top:var(--space-1)}
+/* AlertCard */
+.alert-card{cursor:pointer;padding-left:calc(var(--space-3) + 14px)}
+.alert-card-content{display:flex;flex-direction:column;gap:var(--space-1)}
+.alert-card-message{font-size:var(--text-base);color:var(--text);line-height:var(--leading-normal)}
+.alert-card-time{font-size:var(--text-sm);color:var(--text3)}
+/* ShiftCard */
+.shift-card--active{border-left:3px solid var(--accent)}
+.shift-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2)}
+.shift-card-time{display:flex;align-items:center;gap:var(--space-1);font-size:var(--text-base);font-weight:var(--weight-bold);color:var(--text)}
+.shift-card-badges{display:flex;align-items:center;gap:var(--space-2)}
+.shift-card-overtime{font-size:var(--text-sm);font-weight:var(--weight-bold);color:var(--accent);text-transform:uppercase;letter-spacing:var(--tracking-wider)}
+.shift-card-body{display:flex;flex-direction:column;gap:var(--space-1)}
+.shift-card-project{font-size:var(--text-base);color:var(--text2)}
+.shift-card-location{display:flex;align-items:center;gap:var(--space-1);font-size:var(--text-sm);color:var(--text3)}
+.shift-card-action{margin-top:var(--space-3)}
+/* CredentialCard */
+.credential-card{cursor:pointer}
+.credential-card-header{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2)}
+.credential-card-icon{color:var(--accent);flex-shrink:0}
+.credential-card-title{font-size:var(--text-base);font-weight:var(--weight-bold);color:var(--text);flex:1}
+.credential-card-body{display:flex;flex-direction:column;gap:var(--space-1)}
+.credential-card-org{font-size:var(--text-sm);color:var(--text2)}
+.credential-card-dates{display:flex;gap:var(--space-4);font-size:var(--text-sm);color:var(--text3)}
 
 /* ══ PHASE TRACKER ══ */
 .phase-timeline{display:flex;align-items:flex-start;overflow-x:auto;padding:6px 2px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
