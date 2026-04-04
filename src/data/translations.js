@@ -634,6 +634,22 @@ export const T = {
   "Drawings": { es: "Planos" },
   "Refresh": { es: "Actualizar" },
 
+  // ── Phase 9: Driver Home ──
+  "Home": { es: "Inicio" },
+  "Good Morning, {name}": { es: "Buenos dias, {name}" },
+  "Good Afternoon, {name}": { es: "Buenas tardes, {name}" },
+  "STOPS TODAY": { es: "PARADAS HOY" },
+  "PENDING": { es: "PENDIENTES" },
+  "DELIVERED": { es: "ENTREGADOS" },
+  "MILES": { es: "MILLAS" },
+  "View All": { es: "Ver Todo" },
+  "No deliveries scheduled": { es: "Sin entregas programadas" },
+  "Check back when your route is assigned": { es: "Regresa cuando te asignen una ruta" },
+  "Could not load route — pull down to retry": { es: "Error al cargar la ruta — desliza para reintentar" },
+  "Delivery in progress": { es: "Entrega en progreso" },
+  "Route assigned — {n} stops": { es: "Ruta asignada — {n} paradas" },
+  "{n} deliveries completed": { es: "{n} entregas completadas" },
+
   // ── Phase 7: DrawingsTab gap closure ──
   "Project Drawings": { es: "Planos del Proyecto" },
   "CURRENT": { es: "VIGENTE" },

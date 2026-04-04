@@ -377,6 +377,15 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .alert-card-content{display:flex;flex-direction:column;gap:var(--space-1)}
 .alert-card-message{font-size:var(--text-base);color:var(--text);line-height:var(--leading-normal)}
 .alert-card-time{font-size:var(--text-sm);color:var(--text3)}
+/* ── DRIVER HOME ── */
+.driver-home-hero{cursor:pointer}
+.driver-home-greeting{font-size:var(--text-sm);font-weight:var(--weight-bold);color:var(--text3);text-transform:uppercase;letter-spacing:var(--tracking-wider)}
+.driver-home-hero-value{font-size:var(--text-display);font-weight:900;color:var(--text);line-height:var(--leading-tight)}
+.driver-home-hero-label{font-size:var(--text-sm);font-weight:var(--weight-bold);color:var(--text3);text-transform:uppercase}
+.driver-home-stats{display:flex;gap:var(--space-2);margin-top:var(--space-5)}
+.driver-home-alerts{margin-top:var(--space-5)}
+.driver-home-section-label{font-size:var(--text-sm);font-weight:var(--weight-bold);color:var(--text3);text-transform:uppercase;letter-spacing:var(--tracking-wider);margin-bottom:var(--space-3)}
+.driver-home-alerts-list{display:flex;flex-direction:column;gap:var(--space-2)}
 /* ShiftCard */
 .shift-card--active{border-left:3px solid var(--accent)}
 .shift-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2)}
