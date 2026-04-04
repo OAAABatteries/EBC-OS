@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, ClipboardList, HardHat, MessageSquare, Pin, PinOff } from "lucide-react";
+import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, ClipboardList, HardHat, MessageSquare, Pin, PinOff, LayoutDashboard, Users, Clock as ClockIcon, MoreHorizontal, FileText, Calendar, Settings } from "lucide-react";
+import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, EmptyState, StatusBadge, StatTile, AlertCard, FieldSignaturePad } from "../components/field";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { FeatureGuide } from "../components/FeatureGuide";
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { T } from "../data/translations";
@@ -12,56 +14,6 @@ import {
   HAZARD_LIBRARY, TRADE_LABELS, JSA_TEMPLATES, WEATHER_HAZARD_MAP,
   TRADE_CARDS, WEATHER_QUICK,
 } from "../data/jsaConstants";
-// ═══════════════════════════════════════════════════════════════
-//  Signature Pad — Touch-to-Sign canvas (field-optimized)
-// ═══════════════════════════════════════════════════════════════
-function FieldSignaturePad({ onSave, onClear, label, t }) {
-  const canvasRef = useRef(null);
-  const [drawing, setDrawing] = useState(false);
-  const [hasStrokes, setHasStrokes] = useState(false);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * (window.devicePixelRatio || 1);
-    canvas.height = rect.height * (window.devicePixelRatio || 1);
-    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
-    ctx.strokeStyle = "#1e2d3b";
-    ctx.lineWidth = 3;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-  }, []);
-
-  const getPos = (e) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const touch = e.touches ? e.touches[0] : e;
-    return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
-  };
-  const startDraw = (e) => { e.preventDefault(); const ctx = canvasRef.current.getContext("2d"); const pos = getPos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); setDrawing(true); };
-  const draw = (e) => { if (!drawing) return; e.preventDefault(); const ctx = canvasRef.current.getContext("2d"); const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); setHasStrokes(true); };
-  const endDraw = (e) => { if (e) e.preventDefault(); setDrawing(false); };
-  const handleClear = () => { const canvas = canvasRef.current; const ctx = canvas.getContext("2d"); ctx.clearRect(0, 0, canvas.width, canvas.height); setHasStrokes(false); if (onClear) onClear(); };
-  const handleSave = () => { if (!hasStrokes) return null; return canvasRef.current.toDataURL("image/png"); };
-
-  // Expose save via ref-like callback
-  useEffect(() => { if (onSave) onSave({ getSig: handleSave, clear: handleClear }); }, [hasStrokes]);
-
-  return (
-    <div>
-      {label && <div style={{ fontSize: 12, color: "var(--text3)", fontWeight: 600, marginBottom: 4 }}>{label}</div>}
-      <canvas ref={canvasRef}
-        style={{ width: "100%", height: 120, background: "#f8f9fb", border: "2px solid var(--border)", borderRadius: 8, cursor: "crosshair", touchAction: "none" }}
-        onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
-        onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw} />
-      <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-        <button className="cal-nav-btn" style={{ fontSize: 12 }} onClick={handleClear}>{t ? t("Clear") : "Clear"}</button>
-      </div>
-    </div>
-  );
-}
 
 // ═══════════════════════════════════════════════════════════════
 //  Foreman View — Hours Budget, Crew & Project Management Portal
@@ -114,7 +66,8 @@ export function ForemanView({ app }) {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
-  const [foremanTab, setForemanTab] = useState("clock");
+  const [foremanTab, setForemanTab] = useState("dashboard");
+  const network = useNetworkStatus();
   const [showReportProblem, setShowReportProblem] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [clockEntry, setClockEntry] = useState(null); // { clockIn, lat, lng, projectId }
@@ -631,7 +584,7 @@ export function ForemanView({ app }) {
   if (!activeForeman) {
     return (
       <div className="employee-app">
-        <header className="employee-header">
+        <header className="portal-login-header">
           <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
           <span className="text-sm text-muted">{t("Foreman Portal")}</span>
         </header>
@@ -713,21 +666,42 @@ export function ForemanView({ app }) {
 
   const projNotesCount = (projectNotes || []).filter(n => String(n.projectId) === String(selectedProjectId)).length;
 
-  const tabDefs = [
-    { key: "clock", label: t("Clock") },
-    { key: "dashboard", label: t("Dashboard") },
-    { key: "team", label: t("Crew"), count: teamForProject.length },
-    { key: "hours", label: t("Hours") },
-    { key: "jsa", label: t("JSA"), count: activeJsaCount },
-    { key: "materials", label: t("Materials"), count: projectMatRequests.filter(r => r.status === "requested" || r.status === "pending").length },
-    { key: "drawings", label: t("Drawings") },
-    { key: "lookahead", label: t("Look-Ahead"), count: lookAheadEvents.length },
-    { key: "reports", label: t("Daily Report"), count: (dailyReports || []).filter(r => r.projectId === selectedProjectId && r.date === new Date().toISOString().slice(0, 10)).length },
-    { key: "site", label: t("Site"), count: criticalUnchecked.length },
-    { key: "notes", label: t("Notes"), count: projNotesCount },
-    { key: "documents", label: t("Documents"), count: rfiAlerts.length },
-    { key: "settings", label: t("Settings") },
+  const pendingRequestCount = 0; // TODO: Wire to shift_requests + time_off_requests in Plan 03
+
+  const foremanTabDefs = [
+    // Primary (4 + More trigger)
+    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, badge: false },
+    { id: "team", label: "Team", icon: Users, badge: pendingRequestCount > 0 },
+    { id: "hours", label: "Hours", icon: ClockIcon, badge: false },
+    { id: "materials", label: "Materials", icon: Package, badge: projectMatRequests.filter(r => r.status === "requested" || r.status === "pending").length > 0 },
+    // More overflow (9 items)
+    { id: "clock", label: "Clock", icon: ClockIcon, badge: false },
+    { id: "jsa", label: "JSA", icon: Shield, badge: activeJsaCount > 0 },
+    { id: "drawings", label: "Drawings", icon: FileText, badge: false },
+    { id: "lookahead", label: "Look-Ahead", icon: Calendar, badge: lookAheadEvents.length > 0 },
+    { id: "reports", label: "Daily Report", icon: ClipboardList, badge: (dailyReports || []).filter(r => r.projectId === selectedProjectId && r.date === new Date().toISOString().slice(0,10)).length > 0 },
+    { id: "site", label: "Site", icon: MapPin, badge: criticalUnchecked.length > 0 },
+    { id: "notes", label: "Notes", icon: MessageSquare, badge: projNotesCount > 0 },
+    { id: "documents", label: "Documents", icon: FileQuestion, badge: rfiAlerts.length > 0 },
+    { id: "settings", label: "Settings", icon: Settings, badge: false },
   ];
+
+  // FSCH-04: Pull-based in-app alert. Foreman sees pending request alerts when opening Dashboard.
+  // Push notification deferred to Phase 10.
+  const foremanAlerts = useMemo(() => {
+    const alerts = [];
+    if (pendingRequestCount > 0) {
+      alerts.push({ type: "info", message: t("{n} pending requests").replace("{n}", pendingRequestCount), timestamp: t("Today"), navigateTo: "team" });
+    }
+    if (pctUsed > 90) {
+      alerts.push({ type: "error", message: t("Budget at {n}%").replace("{n}", pctUsed), timestamp: t("Today"), navigateTo: "hours" });
+    }
+    if (teamForProject.length > 0) {
+      const clockedInCount = teamForProject.filter(c => teamClocks[c.id]).length;
+      alerts.push({ type: "success", message: t("{n} crew on site").replace("{n}", clockedInCount), timestamp: t("Today"), navigateTo: "team" });
+    }
+    return alerts;
+  }, [pendingRequestCount, pctUsed, teamForProject, teamClocks, lang]);
 
   return (
     <div className="employee-app">
@@ -747,22 +721,21 @@ export function ForemanView({ app }) {
         />
       )}
 
-      <header className="employee-header">
-        <div>
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
-          <span className="text-xs text-muted">{activeForeman.name} · {t("Foreman Portal")}</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <FeatureGuide guideKey="foreman" />
-          <button className="settings-gear" onClick={() => setForemanTab("settings")} title={t("Settings")}>
-            &#9881;
+      <PortalHeader
+        variant="foreman"
+        userName={activeForeman.name}
+        t={t}
+        network={network}
+        theme={theme}
+        languageToggle={
+          <button className="lang-toggle" onClick={() => setLang(lang === "en" ? "es" : "en")}>
+            {lang === "en" ? "ES" : "EN"}
           </button>
-        </div>
-      </header>
-
-      <div className="employee-body">
-        {/* ── Project selector ── */}
-        {myProjects.length > 1 && (
+        }
+        logoutAction={
+          <button className="settings-logout-sm" onClick={handleLogout}>{t("Logout")}</button>
+        }
+        projectSelector={myProjects.length > 1 ? (
           <select
             className="foreman-project-select"
             value={selectedProjectId || ""}
@@ -775,7 +748,10 @@ export function ForemanView({ app }) {
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
-        )}
+        ) : undefined}
+      />
+
+      <div className="employee-body">
 
         {myProjects.length === 0 && foremanTab !== "settings" && (
           <div className="empty-state" style={{ padding: "40px 20px" }}>
@@ -784,25 +760,12 @@ export function ForemanView({ app }) {
           </div>
         )}
 
-        {/* Tab bar */}
-        <div className="emp-tabs">
-          {tabDefs.map((tab) => (
-            <button
-              key={tab.key}
-              className={`emp-tab${foremanTab === tab.key ? " active" : ""}`}
-              onClick={() => setForemanTab(tab.key)}
-            >
-              {tab.label}
-              {tab.count > 0 && <span className="driver-badge">{tab.count}</span>}
-            </button>
-          ))}
-        </div>
 
         {/* ═══ SETTINGS TAB ═══ */}
         {foremanTab === "settings" && (
           <div className="settings-wrap">
             {/* Back button */}
-            <button className="btn btn-ghost btn-sm" style={{ marginBottom: 12 }} onClick={() => setForemanTab("clock")}>&#9664; {t("Back")}</button>
+            <button className="btn btn-ghost btn-sm" style={{ marginBottom: 12 }} onClick={() => setForemanTab("dashboard")}>&#9664; {t("Back")}</button>
             {/* Profile */}
             <div className="settings-section">
               <div className="settings-section-title">{t("Profile")}</div>
@@ -1040,6 +1003,79 @@ export function ForemanView({ app }) {
 
             {/* ═══ DASHBOARD TAB ═══ */}
             {foremanTab === "dashboard" && (
+              <div className="emp-content">
+                {/* Clock status hero — PremiumCard hero variant per D-08 */}
+                <PremiumCard
+                  variant="hero"
+                  className={`foreman-dashboard-clock-hero${isClockedIn ? " foreman-dashboard-clock-hero--active" : ""}`}
+                  onClick={() => setForemanTab("clock")}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="foreman-dashboard-clock-status" style={{ color: isClockedIn ? "var(--green)" : "var(--text3)" }}>
+                    {isClockedIn ? t("ON CLOCK") : t("OFF CLOCK")}
+                  </div>
+                  <div className="foreman-dashboard-clock-value">
+                    {isClockedIn && clockEntry
+                      ? (() => { const ms = Date.now() - new Date(clockEntry.clockIn).getTime(); const h = Math.floor(ms / 3600000); const m = Math.floor((ms % 3600000) / 60000); return `${h}h ${m}m`; })()
+                      : "\u2014"}
+                  </div>
+                  <div className="foreman-dashboard-clock-hint">{t("TAP TO CLOCK IN/OUT")}</div>
+                </PremiumCard>
+
+                {/* KPI tiles row — 3 tiles per D-09 */}
+                <div className="foreman-dashboard-stats">
+                  <StatTile
+                    label="BUDGET"
+                    value={pctUsed != null ? `${pctUsed}%` : "\u2014"}
+                    color={pctUsed > 90 ? "var(--accent)" : "var(--green)"}
+                    onTap={() => setForemanTab("hours")}
+                    t={t}
+                  />
+                  <StatTile
+                    label="HOURS"
+                    value={hoursUsed != null ? hoursUsed.toFixed(1) : "\u2014"}
+                    color="var(--text)"
+                    onTap={() => setForemanTab("hours")}
+                    t={t}
+                  />
+                  <StatTile
+                    label="CREW"
+                    value={teamForProject.length}
+                    color="var(--green)"
+                    onTap={() => setForemanTab("team")}
+                    t={t}
+                  />
+                </div>
+
+                {/* Alerts feed per D-09 — actionable first (requests, budget), then informational (cert warnings) */}
+                {foremanAlerts.length > 0 && (
+                  <div className="foreman-dashboard-alerts">
+                    <div className="foreman-dashboard-section-label">{t("ALERTS")}</div>
+                    <div className="foreman-dashboard-alerts-list">
+                      {foremanAlerts.slice(0, 3).map((alert, i) => (
+                        <AlertCard
+                          key={i}
+                          type={alert.type}
+                          message={alert.message}
+                          timestamp={alert.timestamp}
+                          onTap={() => setForemanTab(alert.navigateTo || "team")}
+                          t={t}
+                        />
+                      ))}
+                    </div>
+                    {foremanAlerts.length > 3 && (
+                      <button className="foreman-dashboard-view-all" onClick={() => setForemanTab("team")}>
+                        {t("View All")}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ═══ DASHBOARD TAB (legacy project KPI view — preserved for reference, unreachable with new tab structure) ═══ */}
+            {foremanTab === "dashboard-kpi-legacy" && (
               <div className="emp-content">
                 <div style={{ textAlign: "center", padding: "30px 20px" }}>
                   {/* Big clock display */}
@@ -1311,8 +1347,8 @@ export function ForemanView({ app }) {
               </div>
             )}
 
-            {/* ═══ DASHBOARD TAB ═══ */}
-            {foremanTab === "dashboard" && (() => {
+            {/* ═══ PROJECT KPI TAB (legacy — content merged into Dashboard Premium view, keeping for reference) ═══ */}
+            {foremanTab === "project-kpi-legacy" && (() => {
               const liveProject = projects.find(p => String(p.id) === String(selectedProjectId)) || selectedProject;
               const projPhases = liveProject.phases || getDefaultPhases(liveProject);
               const updateForemanPhases = (newPhases) => {
@@ -3600,6 +3636,16 @@ export function ForemanView({ app }) {
             </div>
           </div>
         </div>
+      )}
+
+      {activeForeman && (
+        <PortalTabBar
+          tabs={foremanTabDefs}
+          activeTab={foremanTab}
+          onTabChange={setForemanTab}
+          maxPrimary={4}
+          t={t}
+        />
       )}
 
       {/* Phase 2C: Photo Capture Modal */}
