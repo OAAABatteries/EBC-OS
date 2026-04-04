@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Field Portal Perfection
 status: completed
-stopped_at: Completed 07-05-PLAN.md
-last_updated: "2026-04-04T04:49:26.214Z"
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-04-04T17:38:17.237Z"
 last_activity: 2026-04-04
 progress:
-  total_phases: 7
+  total_phases: 8
   completed_phases: 7
   total_plans: 27
-  completed_plans: 27
+  completed_plans: 28
   percent: 96
 ---
 
@@ -78,6 +78,7 @@ Progress: [██████████] 96%
 | Phase 07-premium-foundation P02 | 1 | 1 tasks | 1 files |
 | Phase 07-premium-foundation P03 | 8m | 2 tasks | 2 files |
 | Phase 07-premium-foundation P05 | 8m | 3 tasks | 4 files |
+| Phase 09-driver-foreman-portal-updates P01 | 8m | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -121,6 +122,8 @@ Recent decisions affecting current work:
 - [Phase 07-premium-foundation P01]: portal-header-accent-border overrides border-bottom-color only -- glass-border width/style remain from .header
 - [Phase 07-premium-foundation P05]: DrawingsTab uses static import for useDrawingCache -- dynamic import was in ForemanView but plan spec required static for correctness
 - [Phase 07-premium-foundation P05]: PdfViewer lazy-loaded inside DrawingsTab (not DrawingViewer which is the takeoff engine, not a field PDF viewer)
+- [Phase 09-driver-foreman-portal-updates]: FieldCard fully replaced by PremiumCard in DriverView — info for normal stops, hero for in-transit
+- [Phase 09-driver-foreman-portal-updates]: Driver Home tab default landing — driverTab initial state = home per D-01
 
 ### v1.1 Roadmap Decisions
 
@@ -145,6 +148,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T04:45:00.000Z
-Stopped at: Completed 07-05-PLAN.md
+Last session: 2026-04-04T17:38:17.234Z
+Stopped at: Completed 09-01-PLAN.md
 Resume file: None

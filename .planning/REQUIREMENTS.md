@@ -132,8 +132,8 @@ Requirements for milestone v1.1: Premium Construction UI Overhaul. Design spec: 
 
 ### Driver Portal
 
-- [ ] **DRVR-05**: Driver portal visual refresh with Premium Construction design language
-- [ ] **DRVR-06**: Driver portal has alerts feed (schedule changes, delivery updates)
+- [x] **DRVR-05**: Driver portal visual refresh with Premium Construction design language
+- [x] **DRVR-06**: Driver portal has alerts feed (schedule changes, delivery updates)
 - [ ] **DRVR-07**: Driver portal has Drawings tab for delivery project floor plans
 
 ## v2 Requirements
@@ -248,8 +248,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CRED-02 | Phase 8 | Pending |
 | CRED-03 | Phase 8 | Pending |
 | PLAN-01 | Phase 8 | Pending |
-| DRVR-05 | Phase 9 | Pending |
-| DRVR-06 | Phase 9 | Pending |
+| DRVR-05 | Phase 9 | Complete |
+| DRVR-06 | Phase 9 | Complete |
 | DRVR-07 | Phase 9 | Pending |
 | PLAN-02 | Phase 9 | Pending |
 | FSCH-01 | Phase 9 | Pending |
