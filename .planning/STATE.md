@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Field Portal Perfection
 status: executing
-stopped_at: Completed 08-02-PLAN.md
-last_updated: "2026-04-04T06:53:53.261Z"
+stopped_at: Paused at 08-05-PLAN.md Task 2 (human-verify checkpoint)
+last_updated: "2026-04-04T05:10:00.000Z"
 last_activity: 2026-04-04
 progress:
   total_phases: 8
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 ## Current Position
 
 Phase: 08 (employee-portal-overhaul) — EXECUTING
-Plan: 4 of 5
-Status: Ready to execute
+Plan: 5 of 5
+Status: Task 1 complete — awaiting human verification (Task 2 checkpoint)
 Last activity: 2026-04-04
 
 Progress: [██████████] 96%
@@ -81,6 +81,7 @@ Progress: [██████████] 96%
 | Phase 08-employee-portal-overhaul P01 | 4m | 2 tasks | 6 files |
 | Phase 08-employee-portal-overhaul P04 | 2m | 1 tasks | 1 files |
 | Phase 08-employee-portal-overhaul P02 | 2m | 1 tasks | 1 files |
+| Phase 08-employee-portal-overhaul P05 | 8m | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,8 @@ Recent decisions affecting current work:
 - [Phase 08-employee-portal-overhaul]: credStatus helper defined inline in CredentialsTab — simple 3-state pure function, no circular dependency risk
 - [Phase 08-employee-portal-overhaul]: Photo upload in CredentialsTab is non-fatal — if storage upload fails photo_path stays null and insert proceeds
 - [Phase 08-employee-portal-overhaul]: HomeTab auto-refresh via reactive props from EmployeeView shell — no explicit refetch needed
+- [Phase 08-employee-portal-overhaul P05]: "Request Time Off" ES kept as "Solicitar Tiempo Libre" (Phase 7 value) -- plan's "Solicitar Ausencia" would have caused duplicate key; established value takes precedence
+- [Phase 08-employee-portal-overhaul P05]: UPPERCASE status badge keys (ACTIVE, SCHEDULED, COMPLETED, etc.) added as distinct entries -- Title Case variants already existed from earlier phases
 
 ### v1.1 Roadmap Decisions
 
@@ -153,6 +156,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T06:53:53.258Z
-Stopped at: Completed 08-02-PLAN.md
+Last session: 2026-04-04T05:10:00.000Z
+Stopped at: 08-05 Task 1 complete — Task 2 human-verify checkpoint pending
 Resume file: None
