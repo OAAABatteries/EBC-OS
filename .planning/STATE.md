@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Field Portal Perfection
 status: executing
-stopped_at: Completed 07-04-PLAN.md
-last_updated: "2026-04-03T00:00:00.000Z"
-last_activity: 2026-04-03
+stopped_at: Completed 07-05-PLAN.md
+last_updated: "2026-04-04T04:45:00.000Z"
+last_activity: 2026-04-04
 progress:
   total_phases: 7
   completed_phases: 6
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 
 Phase: 07 (premium-foundation) — EXECUTING
 Plan: 5 of 5
-Status: Plan 04 complete — ready for plan 05
-Last activity: 2026-04-03
+Status: Plan 05 complete — Phase 07 complete
+Last activity: 2026-04-04
 
 Progress: [██████████] 96%
 
@@ -77,6 +77,7 @@ Progress: [██████████] 96%
 | Phase 07-premium-foundation P01 | 3m | 2 tasks | 6 files |
 | Phase 07-premium-foundation P02 | 1 | 1 tasks | 1 files |
 | Phase 07-premium-foundation P03 | 8m | 2 tasks | 2 files |
+| Phase 07-premium-foundation P05 | 8m | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -118,6 +119,8 @@ Recent decisions affecting current work:
 - [Phase 07-premium-foundation P01]: Default theme changed to ebc -- new users see EBC Brand; existing users keep saved theme
 - [Phase 07-premium-foundation P01]: PortalHeader theme prop defaults to null -- daylight CSS filter dormant until Phases 8-9 wire the prop
 - [Phase 07-premium-foundation P01]: portal-header-accent-border overrides border-bottom-color only -- glass-border width/style remain from .header
+- [Phase 07-premium-foundation P05]: DrawingsTab uses static import for useDrawingCache -- dynamic import was in ForemanView but plan spec required static for correctness
+- [Phase 07-premium-foundation P05]: PdfViewer lazy-loaded inside DrawingsTab (not DrawingViewer which is the takeoff engine, not a field PDF viewer)
 
 ### v1.1 Roadmap Decisions
 
@@ -142,6 +145,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T23:16:30.000Z
-Stopped at: Completed 07-01-PLAN.md
+Last session: 2026-04-04T04:45:00.000Z
+Stopped at: Completed 07-05-PLAN.md
 Resume file: None
