@@ -114,7 +114,7 @@ export function EmployeeView({ app }) {
   const [showProjectSearch, setShowProjectSearch] = useState(false);
 
   // ── material request state ──
-  const [matForm, setMatForm] = useState({ material: "", qty: "", unit: "EA", notes: "" });
+  const [matForm, setMatForm] = useState({ material: "", qty: "", unit: "EA", notes: "", photo: null });
   const [matProjectId, setMatProjectId] = useState(null);
 
   // ── clock map ──
@@ -259,7 +259,7 @@ export function EmployeeView({ app }) {
         attributionControl: false,
         zoomControl: true,
       });
-      tileLayerRef.current = L.tileLayer(TILE_SETS[mapStyle], { maxZoom: 19 }).addTo(map);
+      tileLayerRef.current = L.tileLayer(TILE_SETS[mapStyle], { maxZoom: 22 }).addTo(map);
       clockMapInstance.current = map;
       setTimeout(() => { map.invalidateSize(); setClockMapReady(true); }, 120);
     }, 50);
@@ -271,7 +271,7 @@ export function EmployeeView({ app }) {
     const map = clockMapInstance.current;
     if (!map || !tileLayerRef.current) return;
     map.removeLayer(tileLayerRef.current);
-    tileLayerRef.current = L.tileLayer(TILE_SETS[mapStyle], { maxZoom: 19 }).addTo(map);
+    tileLayerRef.current = L.tileLayer(TILE_SETS[mapStyle], { maxZoom: 22 }).addTo(map);
   }, [mapStyle]);
 
   useEffect(() => {
@@ -311,7 +311,7 @@ export function EmployeeView({ app }) {
       // fit bounds to show user + nearby projects
       const bounds = L.latLngBounds([[position.lat, position.lng]]);
       projects.forEach(p => { if (p.lat && p.lng) bounds.extend([p.lat, p.lng]); });
-      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 18 });
     }
   }, [clockMapReady, projects, position]);
 
@@ -622,14 +622,16 @@ export function EmployeeView({ app }) {
 
   // ── portal tab bar definition ──
   const portalTabs = [
+    // ── Primary (4 + More) ──
     { id: "home", label: t("Home"), icon: Home, badge: false },
     { id: "clock", label: t("Clock"), icon: Clock, badge: isClockedIn },
     { id: "schedule", label: t("Schedule"), icon: Calendar, badge: false },
+    { id: "drawings", label: t("Drawings"), icon: FileText, badge: false },
+    // ── More overflow (ranked by crew use frequency) ──
+    { id: "jsa", label: t("JSA"), icon: ShieldCheck, badge: false },
     { id: "materials", label: t("Materials"), icon: Package, badge: myMatRequests?.some(r => r.status === "requested") },
     { id: "credentials", label: t("Credentials"), icon: Shield, badge: credBadgeCount > 0 ? credBadgeCount : false },
-    { id: "drawings", label: t("Drawings"), icon: FileText, badge: false },
     { id: "log", label: t("Time Log"), icon: ClipboardList, badge: false },
-    { id: "jsa", label: t("JSA"), icon: ShieldCheck, badge: false },
     { id: "cos", label: t("Change Orders"), icon: FileText, badge: false },
     { id: "rfis", label: t("RFIs"), icon: FileText, badge: false },
     { id: "settings", label: t("Settings"), icon: Settings, badge: false },
@@ -639,6 +641,10 @@ export function EmployeeView({ app }) {
   const handleMatSubmit = () => {
     if (!matProjectId || !matForm.material.trim() || !matForm.qty) return;
     const proj = projects.find(p => String(p.id) === String(matProjectId));
+    let photoUrl = null;
+    if (matForm.photo) {
+      photoUrl = URL.createObjectURL(matForm.photo);
+    }
     const newReq = {
       id: crypto.randomUUID(),
       employeeId: activeEmp.id,
@@ -649,6 +655,7 @@ export function EmployeeView({ app }) {
       qty: Number(matForm.qty),
       unit: matForm.unit,
       notes: matForm.notes.trim(),
+      photoUrl,
       status: "requested",
       requestedAt: new Date().toISOString(),
       approvedAt: null,
@@ -656,7 +663,7 @@ export function EmployeeView({ app }) {
       driverId: null,
     };
     setMaterialRequests(prev => [newReq, ...prev]);
-    setMatForm({ material: "", qty: "", unit: "EA", notes: "" });
+    setMatForm({ material: "", qty: "", unit: "EA", notes: "", photo: null });
     show(t("Request Material") + " — " + newReq.material, "ok");
   };
 
@@ -1540,6 +1547,16 @@ export function EmployeeView({ app }) {
                   onChange={(e) => setMatForm(f => ({ ...f, notes: e.target.value }))}
                 />
               </div>
+              <div className="form-group mb-12">
+                <label className="form-label">{t("Photo (optional)")}</label>
+                <input type="file" accept="image/*" capture="environment"
+                  onChange={(e) => setMatForm(f => ({ ...f, photo: e.target.files?.[0] || null }))}
+                  style={{ color: 'var(--text)', fontSize: 'var(--text-base)' }} />
+                {matForm.photo && (
+                  <img src={URL.createObjectURL(matForm.photo)} alt="Preview"
+                    style={{ marginTop: 'var(--space-2)', maxHeight: '120px', borderRadius: 'var(--radius-sm)', objectFit: 'cover' }} />
+                )}
+              </div>
               <FieldButton
                 variant="primary"
                 className="w-full"
@@ -1740,7 +1757,7 @@ export function EmployeeView({ app }) {
         tabs={portalTabs}
         activeTab={empTab}
         onTabChange={setEmpTab}
-        maxPrimary={5}
+        maxPrimary={4}
         t={t}
       />
     </div>

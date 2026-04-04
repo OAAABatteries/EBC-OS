@@ -110,7 +110,7 @@ export function MapView({ app }) {
       attributionControl: false,
     });
 
-    tileLayerRef.current = L.tileLayer(DARK_TILES, { maxZoom: 19 }).addTo(map);
+    tileLayerRef.current = L.tileLayer(DARK_TILES, { maxZoom: 22 }).addTo(map);
     mapInstance.current = map;
 
     // Fix Leaflet sizing issue

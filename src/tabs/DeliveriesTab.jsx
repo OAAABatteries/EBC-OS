@@ -78,7 +78,7 @@ function DeliveryMap({ projects, materialRequests, companyLocations, auth, t }) 
       zoomControl: true,
       attributionControl: false,
     });
-    tileLayerRef.current = L.tileLayer(DARK_TILES, { maxZoom: 19 }).addTo(map);
+    tileLayerRef.current = L.tileLayer(DARK_TILES, { maxZoom: 22 }).addTo(map);
     mapInstance.current = map;
     setTimeout(() => map.invalidateSize(), 100);
     return () => { map.remove(); mapInstance.current = null; };
@@ -161,7 +161,7 @@ function DeliveryMap({ projects, materialRequests, companyLocations, auth, t }) 
 
     // Fit bounds
     if (allPoints.length > 0) {
-      mapInstance.current.fitBounds(allPoints, { padding: [40, 40], maxZoom: 13 });
+      mapInstance.current.fitBounds(allPoints, { padding: [40, 40], maxZoom: 18 });
     }
   }, [deliveryPoints, activeProjects, offices, showProjects, showOffice]);
 

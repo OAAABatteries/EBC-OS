@@ -16,7 +16,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .logo{font-family:var(--font-head);font-size:18px;font-weight:700;color:var(--amber);letter-spacing:1px;white-space:nowrap;
   text-shadow:0 0 20px var(--amber-glow)}
 .logo-sub{font-size:10px;color:var(--text3);font-weight:400;letter-spacing:0.5px;display:block;margin-top:-2px}
-.portal-header-logo{height:28px;width:auto;object-fit:contain}
+.portal-header-logo{height:34px;width:auto;object-fit:contain}
 .portal-header-logo--dark{filter:invert(1) brightness(0.3)}
 .portal-header-accent-border{border-bottom-color:rgba(255,127,33,0.15)}
 .main-content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:24px 28px 40px;padding-bottom:calc(40px + env(safe-area-inset-bottom));animation:fadeIn 0.25s ease;position:relative;z-index:1}
@@ -733,7 +733,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 
 /* ══ EMPLOYEE VIEW ══ */
 .emp-lang-switch{display:inline-flex;border-radius:var(--radius);overflow:hidden;border:1px solid var(--glass-border);background:var(--bg2)}
-.emp-lang-option{padding:var(--space-1) var(--space-3);font-size:var(--text-xs);font-weight:var(--weight-bold);letter-spacing:0.05em;border:none;background:transparent;color:var(--text3);cursor:pointer;transition:background var(--transition-micro),color var(--transition-micro)}
+.emp-lang-option{padding:var(--space-1) var(--space-2);font-size:var(--text-xs);font-weight:var(--weight-bold);letter-spacing:0.05em;border:none;background:transparent;color:var(--text3);cursor:pointer;transition:background var(--transition-micro),color var(--transition-micro);min-width:32px;text-align:center}
 .emp-lang-option:hover{background:var(--bg3)}
 .emp-lang-active{background:var(--amber);color:#000}
 .employee-app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;background:var(--bg)}
