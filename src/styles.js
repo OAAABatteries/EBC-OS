@@ -386,6 +386,17 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .driver-home-alerts{margin-top:var(--space-5)}
 .driver-home-section-label{font-size:var(--text-sm);font-weight:var(--weight-bold);color:var(--text3);text-transform:uppercase;letter-spacing:var(--tracking-wider);margin-bottom:var(--space-3)}
 .driver-home-alerts-list{display:flex;flex-direction:column;gap:var(--space-2)}
+/* ── FOREMAN DASHBOARD ── */
+.foreman-dashboard-clock-hero{cursor:pointer}
+.foreman-dashboard-clock-hero--active .premium-card-hero{border-left-color:var(--green)}
+.foreman-dashboard-clock-status{font-size:var(--text-sm);font-weight:var(--weight-bold);text-transform:uppercase;letter-spacing:var(--tracking-wider)}
+.foreman-dashboard-clock-value{font-size:var(--text-display);font-weight:900;color:var(--text);line-height:var(--leading-tight)}
+.foreman-dashboard-clock-hint{font-size:var(--text-sm);font-weight:var(--weight-bold);color:var(--text3);text-transform:uppercase}
+.foreman-dashboard-stats{display:flex;gap:var(--space-2);margin-top:var(--space-5)}
+.foreman-dashboard-alerts{margin-top:var(--space-5)}
+.foreman-dashboard-section-label{font-size:var(--text-sm);font-weight:var(--weight-bold);color:var(--text3);text-transform:uppercase;letter-spacing:var(--tracking-wider);margin-bottom:var(--space-3)}
+.foreman-dashboard-alerts-list{display:flex;flex-direction:column;gap:var(--space-2)}
+.foreman-dashboard-view-all{background:none;border:none;color:var(--accent);font-size:var(--text-base);font-weight:var(--weight-bold);cursor:pointer;padding:var(--space-2) 0;min-height:var(--touch-min)}
 /* ShiftCard */
 .shift-card--active{border-left:3px solid var(--accent)}
 .shift-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2)}

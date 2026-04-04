@@ -650,6 +650,15 @@ export const T = {
   "Route assigned — {n} stops": { es: "Ruta asignada — {n} paradas" },
   "{n} deliveries completed": { es: "{n} entregas completadas" },
 
+  // ── Phase 9: Foreman Dashboard + Tabs ──
+  "Team": { es: "Equipo" },
+  "TAP TO CLOCK IN/OUT": { es: "TOCA PARA FICHAR" },
+  "BUDGET": { es: "PRESUPUESTO" },
+  "CREW": { es: "EQUIPO" },
+  "{n} pending requests": { es: "{n} solicitudes pendientes" },
+  "Budget at {n}%": { es: "Presupuesto al {n}%" },
+  "{n} crew on site": { es: "{n} en sitio" },
+
   // ── Phase 7: DrawingsTab gap closure ──
   "Project Drawings": { es: "Planos del Proyecto" },
   "CURRENT": { es: "VIGENTE" },
