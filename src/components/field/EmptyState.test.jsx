@@ -10,12 +10,12 @@ describe('EmptyState', () => {
     expect(div).toBeTruthy();
   });
 
-  it('renders the provided icon as a Lucide component at 48px size with className "empty-state-icon"', () => {
+  it('renders the provided icon as a Lucide component at 40px size with className "empty-state-icon"', () => {
     const { container } = render(<EmptyState icon={Package} />);
     const iconEl = container.querySelector('.empty-state-icon');
     expect(iconEl).toBeTruthy();
-    expect(iconEl.getAttribute('width')).toBe('48');
-    expect(iconEl.getAttribute('height')).toBe('48');
+    expect(iconEl.getAttribute('width')).toBe('40');
+    expect(iconEl.getAttribute('height')).toBe('40');
   });
 
   it('renders heading text in a div with className "empty-state-heading"', () => {

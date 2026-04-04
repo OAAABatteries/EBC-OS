@@ -72,7 +72,7 @@ describe('PortalHeader', () => {
     const { container } = render(<PortalHeader t={t} />);
     const logo = container.querySelector('.portal-header-logo');
     expect(logo).toBeTruthy();
-    expect(logo.getAttribute('alt')).toBe('EBC');
+    expect(logo.getAttribute('alt')).toBe('EBC Eagle');
   });
 
   it('variant="foreman" does NOT render languageToggle', () => {

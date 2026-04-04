@@ -11,7 +11,7 @@ export function EmptyState({ icon: Icon = Inbox, heading, message, action, class
 
   return (
     <div className={`empty-state${className ? ` ${className}` : ''}`}>
-      {Icon && <Icon size={48} className="empty-state-icon" aria-hidden="true" />}
+      {Icon && <Icon size={40} className="empty-state-icon" aria-hidden="true" />}
       <div className="empty-state-heading">{heading || defaultHeading}</div>
       {(message || defaultMessage) && (
         <div className="empty-state-body">{message || defaultMessage}</div>

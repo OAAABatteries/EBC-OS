@@ -301,7 +301,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .field-input-error-msg{font-size:var(--text-sm);color:var(--red);margin-top:var(--space-1)}
 .field-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;padding-bottom:env(safe-area-inset-bottom);background:var(--glass-bg);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);border-top:1px solid var(--glass-border);display:flex;align-items:stretch;z-index:100}
 .field-tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-1);min-height:var(--touch-min);min-width:var(--touch-min);cursor:pointer;border:none;background:none;color:var(--text3);font-size:var(--text-sm);font-weight:var(--weight-normal);font-family:var(--font-body);transition:all var(--transition-micro);touch-action:manipulation;-webkit-tap-highlight-color:transparent;position:relative}
-.field-tab-item.active{color:var(--amber);font-weight:var(--weight-bold)}
+.field-tab-item.active{color:var(--accent);font-weight:var(--weight-bold);transform:scale(0.95)}
 .field-tab-item:active{transform:scale(0.92)}
 .field-tab-badge{position:absolute;top:6px;right:calc(50% - 14px);width:6px;height:6px;border-radius:50%;background:var(--red)}
 .field-tab-sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:150}
@@ -313,8 +313,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .field-tab-sheet-item.active{color:var(--amber);font-weight:var(--weight-bold)}
 .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--space-6) var(--space-4);text-align:center;gap:var(--space-3)}
 .empty-state-icon{color:var(--text3)}
-.empty-state-heading{font-size:var(--text-lg);font-weight:var(--weight-bold);color:var(--text);line-height:var(--leading-tight)}
-.empty-state-body{font-size:var(--text-base);font-weight:var(--weight-normal);color:var(--text2);line-height:var(--leading-normal)}
+.empty-state-heading{font-size:var(--text-base);font-weight:var(--weight-bold);color:var(--text);line-height:var(--leading-tight)}
+.empty-state-body{font-size:var(--text-sm);font-weight:var(--weight-normal);color:var(--text2);line-height:var(--leading-normal)}
 .async-error{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--space-6) var(--space-4);text-align:center;gap:var(--space-3)}
 .async-error-heading{font-size:var(--text-lg);font-weight:var(--weight-bold);color:var(--text)}
 .async-error-body{font-size:var(--text-base);color:var(--text2);line-height:var(--leading-normal)}
