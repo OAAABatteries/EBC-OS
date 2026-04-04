@@ -72,7 +72,7 @@ Requirements for milestone v1.1: Premium Construction UI Overhaul. Design spec: 
 - [ ] **VIS-01**: EBC Brand theme (#0f1a24 + #ff7f21) is the default theme for new users
 - [ ] **VIS-02**: Eagle logo (ebc-eagle-white.png) renders in PortalHeader across all 3 portals
 - [ ] **VIS-03**: FieldCard, FieldButton, PortalHeader, PortalTabBar, EmptyState updated to Premium Construction visual language
-- [ ] **VIS-04**: Three card variants (Hero, Info, Alert) defined in styles.js using design tokens
+- [x] **VIS-04**: Three card variants (Hero, Info, Alert) defined in styles.js using design tokens
 - [ ] **VIS-05**: Empty states always include an actionable button (never "check back later")
 - [ ] **VIS-06**: All new UI strings have EN/ES translations (estimated 50+ keys per phase)
 
@@ -227,7 +227,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VIS-01 | Phase 7 | Pending |
 | VIS-02 | Phase 7 | Pending |
 | VIS-03 | Phase 7 | Pending |
-| VIS-04 | Phase 7 | Pending |
+| VIS-04 | Phase 7 | Complete (07-03) |
 | VIS-05 | Phase 7 | Pending |
 | VIS-06 | Phase 7 | Pending |
 | PLAN-03 | Phase 7 | Pending |

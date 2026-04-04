@@ -132,7 +132,7 @@ Plans:
   3. EmptyState always includes an actionable button -- no instance renders with only passive text
   4. Supabase has `available_shifts` and `shift_requests` tables, and `certifications` table has issuing_org, photo_path, cert_category columns
   5. A shared DrawingsTab component exists in `src/components/field/` with readOnly and projectFilter props, extracting logic from ForemanView
-**Plans:** 1/5 plans executed
+**Plans:** 3/5 plans executed
 Plans:
 - [x] 07-01-PLAN.md -- Visual refresh (default theme, eagle logo, EmptyState, PortalTabBar, FieldButton audit)
 - [x] 07-02-PLAN.md -- Supabase schema (available_shifts, shift_requests tables, certifications extension, RLS)
