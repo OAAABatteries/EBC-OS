@@ -633,4 +633,22 @@ export const T = {
   "Expires": { es: "Vence" },
   "Drawings": { es: "Planos" },
   "Refresh": { es: "Actualizar" },
+
+  // ── Phase 7: DrawingsTab gap closure ──
+  "Project Drawings": { es: "Planos del Proyecto" },
+  "CURRENT": { es: "VIGENTE" },
+  "SUPERSEDED": { es: "REEMPLAZADO" },
+  "UPDATE AVAILABLE": { es: "ACTUALIZACION DISPONIBLE" },
+  "Saved offline": { es: "Guardado sin conexion" },
+  "Cached copy is outdated — re-download": { es: "Copia guardada desactualizada — volver a descargar" },
+  "View": { es: "Ver" },
+  "Re-download": { es: "Volver a Descargar" },
+  "Save": { es: "Guardar" },
+  "Downloaded for Offline": { es: "Descargado para Uso sin Conexion" },
+  "Cached": { es: "En Cache" },
+  "Remove": { es: "Eliminar" },
+  "Drawings are stored in the cloud": { es: "Los planos se almacenan en la nube" },
+  "Ask your PM to upload drawing sets.": { es: "Pida a su PM que suba los juegos de planos." },
+  "Download files for offline use on the jobsite. Ask the PM to upload new drawing sets.": { es: "Descargue archivos para uso sin conexion en la obra. Pida al PM que suba nuevos juegos de planos." },
+  "Close": { es: "Cerrar" },
 };
