@@ -153,7 +153,7 @@ Plans:
   5. Employee can view, add, and track credentials with expiry dates, and expiring certs surface as alerts in the Home feed
 **Plans:** 5 plans (3 waves -- HomeTab/ScheduleTab/CredentialsTab run in parallel)
 Plans:
-- [ ] 08-01-PLAN.md -- Foundation: migration SQL, CSS classes, tab skeleton, directory + stubs, Drawings wiring
+- [x] 08-01-PLAN.md -- Foundation: migration SQL, CSS classes, tab skeleton, directory + stubs, Drawings wiring
 - [ ] 08-02-PLAN.md -- HomeTab.jsx: clock hero, stat tiles, project card, alerts feed (parallel)
 - [ ] 08-03-PLAN.md -- ScheduleTab.jsx: week strip, shifts, available shifts, pickup, time-off (parallel)
 - [ ] 08-04-PLAN.md -- CredentialsTab.jsx: credential wallet, add-credential bottom sheet (parallel)

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Field Portal Perfection
-status: completed
-stopped_at: Phase 8 context gathered
-last_updated: "2026-04-04T05:24:12.247Z"
+status: executing
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-04-04T06:49:01.899Z"
 last_activity: 2026-04-04
 progress:
   total_phases: 8
   completed_phases: 7
-  total_plans: 27
-  completed_plans: 27
+  total_plans: 32
+  completed_plans: 28
   percent: 96
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Field crews can manage their entire workday from one app that feels fast, reliable, and professional on a phone in the field.
-**Current focus:** Phase 07 — premium-foundation
+**Current focus:** Phase 08 — employee-portal-overhaul
 
 ## Current Position
 
-Phase: 07
-Plan: Not started
-Status: Plan 05 complete — Phase 07 complete
+Phase: 08 (employee-portal-overhaul) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
 Last activity: 2026-04-04
 
 Progress: [██████████] 96%
@@ -78,6 +78,7 @@ Progress: [██████████] 96%
 | Phase 07-premium-foundation P02 | 1 | 1 tasks | 1 files |
 | Phase 07-premium-foundation P03 | 8m | 2 tasks | 2 files |
 | Phase 07-premium-foundation P05 | 8m | 3 tasks | 4 files |
+| Phase 08-employee-portal-overhaul P01 | 4m | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -121,6 +122,8 @@ Recent decisions affecting current work:
 - [Phase 07-premium-foundation P01]: portal-header-accent-border overrides border-bottom-color only -- glass-border width/style remain from .header
 - [Phase 07-premium-foundation P05]: DrawingsTab uses static import for useDrawingCache -- dynamic import was in ForemanView but plan spec required static for correctness
 - [Phase 07-premium-foundation P05]: PdfViewer lazy-loaded inside DrawingsTab (not DrawingViewer which is the takeoff engine, not a field PDF viewer)
+- [Phase 08-employee-portal-overhaul]: credBadgeCount state lives in EmployeeView shell — passed down to CredentialsTab via onBadgeUpdate callback
+- [Phase 08-employee-portal-overhaul]: assignedProject derived via useMemo from mySchedule — used for DrawingsTab projectFilter in employee portal
 
 ### v1.1 Roadmap Decisions
 
@@ -145,6 +148,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T05:24:12.245Z
-Stopped at: Phase 8 context gathered
-Resume file: .planning/phases/08-employee-portal-overhaul/08-CONTEXT.md
+Last session: 2026-04-04T06:49:01.896Z
+Stopped at: Completed 08-01-PLAN.md
+Resume file: None

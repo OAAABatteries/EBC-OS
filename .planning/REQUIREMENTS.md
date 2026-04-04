@@ -104,7 +104,7 @@ Requirements for milestone v1.1: Premium Construction UI Overhaul. Design spec: 
 
 ### Floor Plans
 
-- [ ] **PLAN-01**: Employee portal has Drawings tab in "More" overflow (read-only, filtered to assigned projects)
+- [x] **PLAN-01**: Employee portal has Drawings tab in "More" overflow (read-only, filtered to assigned projects)
 - [ ] **PLAN-02**: Driver portal has Drawings tab (read-only, filtered to delivery projects)
 - [x] **PLAN-03**: Shared DrawingsTab component extracted from ForemanView with readOnly and projectFilter props
 
@@ -247,7 +247,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CRED-01 | Phase 8 | Pending |
 | CRED-02 | Phase 8 | Pending |
 | CRED-03 | Phase 8 | Pending |
-| PLAN-01 | Phase 8 | Pending |
+| PLAN-01 | Phase 8 | Complete |
 | DRVR-05 | Phase 9 | Pending |
 | DRVR-06 | Phase 9 | Pending |
 | DRVR-07 | Phase 9 | Pending |
