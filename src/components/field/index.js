@@ -13,3 +13,8 @@ export { PortalHeader } from './PortalHeader';
 export { PortalTabBar } from './PortalTabBar';
 export { FieldSignaturePad } from './FieldSignaturePad';
 export { MaterialRequestCard } from './MaterialRequestCard';
+export { PremiumCard } from './PremiumCard';
+export { StatTile } from './StatTile';
+export { AlertCard } from './AlertCard';
+export { ShiftCard } from './ShiftCard';
+export { CredentialCard } from './CredentialCard';
