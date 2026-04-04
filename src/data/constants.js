@@ -137,6 +137,7 @@ export const THEMES = {
       "--bg":"#0f1a24","--bg2":"#152332","--bg3":"#1b2d3f","--bg4":"#1e2d3b",
       "--border":"#263d52","--border2":"#345068",
       "--amber":"#ff7f21","--amber2":"#ff9642","--amber-dim":"rgba(255,127,33,0.10)","--amber-glow":"rgba(255,127,33,0.22)",
+      "--accent":"var(--amber)",
       "--blue":"#3b82f6","--blue-dim":"rgba(59,130,246,0.10)",
       "--green":"#10b981","--green-dim":"rgba(16,185,129,0.10)",
       "--red":"#ef4444","--red-dim":"rgba(239,68,68,0.10)",
