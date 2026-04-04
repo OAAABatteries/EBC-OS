@@ -351,7 +351,7 @@ function AuthGate() {
 
 function App({ auth, onLogout }) {
   // ── UI preferences (localStorage only, no Supabase sync) ──
-  const [theme, setTheme] = useLocalStorage("theme", "daylight");
+  const [theme, setTheme] = useLocalStorage("theme", "ebc");
   const [lang, setLang] = useLocalStorage("ebc_lang", "en");
   const [apiKey, setApiKey] = useLocalStorage("apiKey", "");
 

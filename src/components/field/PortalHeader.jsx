@@ -16,14 +16,15 @@ export function PortalHeader({
   className,
   t,
   network,
+  theme = null,
 }) {
   return (
     <>
-      <header className={`header ${className || ''}`.trim()}>
+      <header className={`header portal-header-accent-border ${className || ''}`.trim()}>
         <img
           src="/ebc-eagle-white.png"
-          alt="EBC"
-          className="portal-header-logo"
+          alt="EBC Eagle"
+          className={`portal-header-logo${theme === 'daylight' ? ' portal-header-logo--dark' : ''}`}
           onError={(e) => { e.target.style.display = 'none'; }}
         />
 
