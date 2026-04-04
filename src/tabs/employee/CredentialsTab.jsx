@@ -144,16 +144,17 @@ export function CredentialsTab({ activeEmp, t, lang, show, onBadgeUpdate }) {
         <div className="sheet-form">
           <FieldSelect label={t('Credential Type')} value={credForm.certType}
             onChange={(e) => setCredForm(f => ({ ...f, certType: e.target.value }))}
-            options={[
-              { value: 'OSHA 10', label: 'OSHA 10' },
-              { value: 'OSHA 30', label: 'OSHA 30' },
-              { value: 'CPR/First Aid', label: 'CPR/First Aid' },
-              { value: 'Forklift', label: t('Forklift') },
-              { value: 'Scaffold', label: t('Scaffold') },
-              { value: 'Fall Protection', label: t('Fall Protection') },
-              { value: 'Confined Space', label: t('Confined Space') },
-              { value: 'Other', label: t('Other') },
-            ]} t={t} />
+            t={t}>
+              <option value="">{t('Select')}</option>
+              <option value="OSHA 10">OSHA 10</option>
+              <option value="OSHA 30">OSHA 30</option>
+              <option value="CPR/First Aid">CPR/First Aid</option>
+              <option value="Forklift">{t('Forklift')}</option>
+              <option value="Scaffold">{t('Scaffold')}</option>
+              <option value="Fall Protection">{t('Fall Protection')}</option>
+              <option value="Confined Space">{t('Confined Space')}</option>
+              <option value="Other">{t('Other')}</option>
+          </FieldSelect>
           <FieldInput type="date" label={t('Issue Date')} value={credForm.issueDate}
             onChange={(e) => setCredForm(f => ({ ...f, issueDate: e.target.value }))} t={t} />
           <FieldInput type="date" label={t('Expiry Date')} value={credForm.expiryDate}
