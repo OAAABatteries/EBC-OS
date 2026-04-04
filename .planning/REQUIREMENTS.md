@@ -97,9 +97,9 @@ Requirements for milestone v1.1: Premium Construction UI Overhaul. Design spec: 
 
 ### Credentials
 
-- [ ] **CRED-01**: Credential wallet shows active/expiring/expired certs per employee
-- [ ] **CRED-02**: Add credential flow (type, issue date, expiry date, issuing org, optional photo)
-- [ ] **CRED-03**: Expiry alerts generated at 30/14/7 days, surface in Home alerts feed
+- [x] **CRED-01**: Credential wallet shows active/expiring/expired certs per employee
+- [x] **CRED-02**: Add credential flow (type, issue date, expiry date, issuing org, optional photo)
+- [x] **CRED-03**: Expiry alerts generated at 30/14/7 days, surface in Home alerts feed
 - [ ] **CRED-04**: Foreman credential dashboard in Team tab showing crew cert status overview with filter by status
 
 ### Floor Plans
@@ -244,9 +244,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SCHED-05 | Phase 8 | Pending |
 | SCHED-06 | Phase 8 | Pending |
 | SCHED-07 | Phase 8 | Pending |
-| CRED-01 | Phase 8 | Pending |
-| CRED-02 | Phase 8 | Pending |
-| CRED-03 | Phase 8 | Pending |
+| CRED-01 | Phase 8 | Complete |
+| CRED-02 | Phase 8 | Complete |
+| CRED-03 | Phase 8 | Complete |
 | PLAN-01 | Phase 8 | Complete |
 | DRVR-05 | Phase 9 | Pending |
 | DRVR-06 | Phase 9 | Pending |

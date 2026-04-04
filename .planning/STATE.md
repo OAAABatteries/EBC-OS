@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Field Portal Perfection
 status: executing
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-04-04T06:49:01.899Z"
+stopped_at: Completed 08-04-PLAN.md
+last_updated: "2026-04-04T06:52:12.658Z"
 last_activity: 2026-04-04
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 32
-  completed_plans: 28
+  completed_plans: 29
   percent: 96
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 ## Current Position
 
 Phase: 08 (employee-portal-overhaul) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-04-04
 
@@ -79,6 +79,7 @@ Progress: [██████████] 96%
 | Phase 07-premium-foundation P03 | 8m | 2 tasks | 2 files |
 | Phase 07-premium-foundation P05 | 8m | 3 tasks | 4 files |
 | Phase 08-employee-portal-overhaul P01 | 4m | 2 tasks | 6 files |
+| Phase 08-employee-portal-overhaul P04 | 2m | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,8 @@ Recent decisions affecting current work:
 - [Phase 07-premium-foundation P05]: PdfViewer lazy-loaded inside DrawingsTab (not DrawingViewer which is the takeoff engine, not a field PDF viewer)
 - [Phase 08-employee-portal-overhaul]: credBadgeCount state lives in EmployeeView shell — passed down to CredentialsTab via onBadgeUpdate callback
 - [Phase 08-employee-portal-overhaul]: assignedProject derived via useMemo from mySchedule — used for DrawingsTab projectFilter in employee portal
+- [Phase 08-employee-portal-overhaul]: credStatus helper defined inline in CredentialsTab — simple 3-state pure function, no circular dependency risk
+- [Phase 08-employee-portal-overhaul]: Photo upload in CredentialsTab is non-fatal — if storage upload fails photo_path stays null and insert proceeds
 
 ### v1.1 Roadmap Decisions
 
@@ -148,6 +151,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T06:49:01.896Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-04-04T06:52:12.655Z
+Stopped at: Completed 08-04-PLAN.md
 Resume file: None
