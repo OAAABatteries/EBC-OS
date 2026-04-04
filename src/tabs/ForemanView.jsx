@@ -1,13 +1,11 @@
-import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
-import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, FileText, Ruler, Building2, ClipboardList, HardHat, MessageSquare, Pin, PinOff } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, ClipboardList, HardHat, MessageSquare, Pin, PinOff } from "lucide-react";
 import { FeatureGuide } from "../components/FeatureGuide";
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
 import { PhaseTracker, getDefaultPhases } from "../components/PhaseTracker";
-import { listFiles, getFileUrl, downloadFile, getDrawingsByProject } from "../lib/supabase";
-
-const PdfViewer = lazy(() => import("../components/PdfViewer").then(m => ({ default: m.PdfViewer })));
+import { DrawingsTab } from "../components/field/DrawingsTab";
 import {
   PPE_ITEMS, RISK_LIKELIHOOD, RISK_SEVERITY, riskColor,
   HAZARD_CATEGORIES, CONTROL_HIERARCHY, PERMIT_TYPES,
@@ -124,16 +122,6 @@ export function ForemanView({ app }) {
   const [clockProjectSearch, setClockProjectSearch] = useState("");
   const [teamClocks, setCrewClocks] = useState(() => {
     try { return JSON.parse(localStorage.getItem("ebc_teamClocks") || "{}"); } catch { return {}; }
-  });
-  const [drawingZoom, setDrawingZoom] = useState(1);
-  const [activeDrawingId, setActiveDrawingId] = useState(null);
-  const [activeDrawingPath, setActiveDrawingPath] = useState(null);
-  const [activeDrawingData, setActiveDrawingData] = useState(null);
-  const [activeDrawingName, setActiveDrawingName] = useState("");
-  const [cloudDrawings, setCloudDrawings] = useState([]);
-  const [drawingsLoading, setDrawingsLoading] = useState(false);
-  const [downloadedDrawings, setDownloadedDrawings] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("ebc_downloadedDrawings") || "{}"); } catch { return {}; }
   });
   const [jsaView, setJsaView] = useState("list"); // list | detail | create
   const [activeJsaId, setActiveJsaId] = useState(null);
@@ -435,126 +423,6 @@ export function ForemanView({ app }) {
     [timeEntries, activeForeman, todayStr]
   );
   const myTodayHours = myTodayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
-
-  // ── load cloud drawings for selected project ──
-  const loadCloudDrawings = useCallback(async () => {
-    if (!selectedProjectId) return;
-    setDrawingsLoading(true);
-    try {
-      // ── Primary: load from project_drawings table (has revision metadata) ──
-      const dbDrawings = await getDrawingsByProject(selectedProjectId);
-      if (dbDrawings && dbDrawings.length > 0) {
-        const drawings = dbDrawings.map(d => {
-          const path = d.storagePath || `drawings/project-${selectedProjectId}/${d.fileName}`;
-          const cachedMeta = downloadedDrawings[path];
-          const cachedAt = cachedMeta?.cachedAt ? new Date(cachedMeta.cachedAt) : null;
-          const updatedAt = d.updatedAt ? new Date(d.updatedAt) : null;
-          const isStale = cachedAt && updatedAt && updatedAt > cachedAt;
-          return {
-            id: d.id,
-            name: (d.fileName || "").replace(".pdf", "").replace(/_/g, " "),
-            fileName: d.fileName,
-            path,
-            size: d.fileSize || 0,
-            uploadedAt: d.createdAt || "",
-            updatedAt: d.updatedAt || "",
-            cached: !!cachedMeta,
-            isStale,
-            // ── Revision metadata (P0 field safety) ──
-            revision: d.revision || 1,
-            revisionLabel: d.revisionLabel || "",
-            isCurrent: d.isCurrent !== false,
-            discipline: d.discipline || "general",
-            notes: d.notes || "",
-          };
-        });
-        setCloudDrawings(drawings);
-        setDrawingsLoading(false);
-        return;
-      }
-      // ── Fallback: raw storage listing (no metadata table rows yet) ──
-      const folder = `drawings/project-${selectedProjectId}`;
-      const files = await listFiles(folder);
-      const drawings = (files || []).filter(f => f.name?.endsWith(".pdf")).map(f => ({
-        id: f.id || f.name,
-        name: f.name.replace(".pdf", "").replace(/_/g, " "),
-        fileName: f.name,
-        path: `${folder}/${f.name}`,
-        size: f.metadata?.size || 0,
-        uploadedAt: f.created_at || f.updated_at || "",
-        cached: !!downloadedDrawings[`${folder}/${f.name}`],
-        // No revision metadata available from storage listing
-        revision: null,
-        revisionLabel: "",
-        isCurrent: true,
-        discipline: "general",
-        isStale: false,
-        notes: "",
-      }));
-      setCloudDrawings(drawings);
-    } catch {
-      setCloudDrawings([]);
-    }
-    setDrawingsLoading(false);
-  }, [selectedProjectId, downloadedDrawings]);
-
-  useEffect(() => {
-    if (foremanTab === "drawings") loadCloudDrawings();
-  }, [foremanTab, selectedProjectId]);
-
-  const handleViewDrawing = async (drawing) => {
-    try {
-      // Check cache first — but skip if stale (newer revision exists)
-      const { useDrawingCache } = await import("../hooks/useDrawingCache");
-      const { getCachedDrawing, cacheDrawing, removeCachedDrawing } = useDrawingCache();
-      if (drawing.isStale) {
-        // Stale cache: remove old version, force re-download
-        await removeCachedDrawing(drawing.path);
-        show?.(t("Downloading latest revision..."));
-      }
-      const cached = !drawing.isStale ? await getCachedDrawing(drawing.path) : null;
-      if (cached) {
-        setActiveDrawingData(cached);
-        setActiveDrawingName(drawing.name);
-        setActiveDrawingId(drawing.id);
-        setActiveDrawingPath(drawing.path);
-        return;
-      }
-      // Download from Supabase
-      show?.(t("Loading drawing..."));
-      const blob = await downloadFile(drawing.path);
-      const arrayBuffer = await blob.arrayBuffer();
-      setActiveDrawingData(arrayBuffer);
-      setActiveDrawingName(drawing.name);
-      setActiveDrawingId(drawing.id);
-      setActiveDrawingPath(drawing.path);
-      // Auto-cache viewed drawing for offline access
-      cacheDrawing(drawing.path, blob).then(() => {
-        const updated = { ...downloadedDrawings, [drawing.path]: { cachedAt: new Date().toISOString(), size: blob.size } };
-        setDownloadedDrawings(updated);
-        localStorage.setItem("ebc_downloadedDrawings", JSON.stringify(updated));
-      }).catch(() => {});
-    } catch {
-      show?.(t("Failed to load drawing — check connection"), "err");
-    }
-  };
-
-  const handleDownloadDrawing = async (drawing) => {
-    try {
-      show?.(t("Downloading for offline..."));
-      const blob = await downloadFile(drawing.path);
-      // Cache in service worker Cache API
-      const { useDrawingCache } = await import("../hooks/useDrawingCache");
-      const { cacheDrawing } = useDrawingCache();
-      await cacheDrawing(drawing.path, blob);
-      const updated = { ...downloadedDrawings, [drawing.path]: { cachedAt: new Date().toISOString(), size: blob.size } };
-      setDownloadedDrawings(updated);
-      localStorage.setItem("ebc_downloadedDrawings", JSON.stringify(updated));
-      show?.(`${drawing.name} ${t("saved for offline")} ✓`);
-    } catch {
-      show?.(t("Download failed — check connection"), "err");
-    }
-  };
 
   // ── computed: my projects ──
   const weekStart = useMemo(() => getWeekStart(), []);
@@ -879,17 +747,6 @@ export function ForemanView({ app }) {
         />
       )}
 
-      {/* PDF Viewer overlay */}
-      {activeDrawingData && (
-        <Suspense fallback={null}>
-          <PdfViewer
-            pdfData={activeDrawingData}
-            fileName={activeDrawingName}
-            onClose={() => { setActiveDrawingData(null); setActiveDrawingId(null); setActiveDrawingPath(null); setActiveDrawingName(""); }}
-            isCachedOffline={!!activeDrawingPath && !!downloadedDrawings[activeDrawingPath]}
-          />
-        </Suspense>
-      )}
       <header className="employee-header">
         <div>
           <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
@@ -2821,182 +2678,11 @@ export function ForemanView({ app }) {
             {/* ═══ DRAWINGS TAB ═══ */}
             {foremanTab === "drawings" && (
               <div className="emp-content">
-                <div className="flex-between" style={{ marginBottom: 12 }}>
-                  <div className="section-title" style={{ fontSize: 16 }}>{t("Project Drawings")}</div>
-                  <button className="cal-nav-btn" style={{ fontSize: 11 }} onClick={loadCloudDrawings}>
-                    {drawingsLoading ? "..." : t("Refresh")}
-                  </button>
-                </div>
-
-                {/* Cloud drawings with revision metadata */}
-                {cloudDrawings.length > 0 ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10, marginBottom: 16 }}>
-                    {cloudDrawings.map(d => (
-                      <div key={d.id} className="card" style={{
-                        padding: 14,
-                        borderLeft: d.isStale ? "3px solid var(--orange, #f59e0b)" : d.isCurrent === false ? "3px solid var(--text3)" : "3px solid var(--green, #22c55e)",
-                      }}>
-                        {/* ── Revision badge row ── */}
-                        <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8, flexWrap: "wrap" }}>
-                          {d.revisionLabel ? (
-                            <span style={{
-                              fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
-                              background: d.isCurrent ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.08)",
-                              color: d.isCurrent ? "var(--green, #22c55e)" : "var(--text3)",
-                              textTransform: "uppercase", letterSpacing: 0.5,
-                            }}>
-                              {d.revisionLabel}
-                            </span>
-                          ) : d.revision ? (
-                            <span style={{
-                              fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
-                              background: "rgba(34,197,94,0.15)", color: "var(--green, #22c55e)",
-                              textTransform: "uppercase", letterSpacing: 0.5,
-                            }}>
-                              Rev {d.revision}
-                            </span>
-                          ) : null}
-                          {d.isCurrent && (
-                            <span style={{
-                              fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 3,
-                              background: "rgba(34,197,94,0.2)", color: "var(--green, #22c55e)",
-                            }}>
-                              {t("CURRENT")}
-                            </span>
-                          )}
-                          {d.isCurrent === false && (
-                            <span style={{
-                              fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 3,
-                              background: "rgba(255,255,255,0.06)", color: "var(--text3)",
-                              textDecoration: "line-through",
-                            }}>
-                              {t("SUPERSEDED")}
-                            </span>
-                          )}
-                          {d.isStale && (
-                            <span style={{
-                              fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 3,
-                              background: "rgba(245,158,11,0.2)", color: "var(--orange, #f59e0b)",
-                            }}>
-                              {t("UPDATE AVAILABLE")}
-                            </span>
-                          )}
-                          {d.discipline && d.discipline !== "general" && (
-                            <span style={{
-                              fontSize: 9, fontWeight: 600, padding: "2px 6px", borderRadius: 3,
-                              background: "rgba(255,255,255,0.06)", color: "var(--text3)",
-                              textTransform: "capitalize",
-                            }}>
-                              {t(d.discipline)}
-                            </span>
-                          )}
-                        </div>
-                        {/* ── Drawing info + actions ── */}
-                        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                          <FileText size={28} style={{ color: d.isStale ? "var(--orange, #f59e0b)" : "var(--text2)", flexShrink: 0 }} />
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div className="text-sm font-semi" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
-                            <div className="text-xs text-muted">
-                              {d.size > 0 ? `${(d.size / 1048576).toFixed(1)} MB` : ""}{d.uploadedAt ? ` · ${d.uploadedAt.slice(0, 10)}` : ""}
-                            </div>
-                            {d.cached && !d.isStale && <div className="text-xs" style={{ color: "var(--green)" }}>{t("Saved offline")}</div>}
-                            {d.cached && d.isStale && (
-                              <div className="text-xs" style={{ color: "var(--orange, #f59e0b)", fontWeight: 600 }}>
-                                {t("Cached copy is outdated — re-download")}
-                              </div>
-                            )}
-                          </div>
-                          <div style={{ display: "flex", gap: 4, flexDirection: "column" }}>
-                            <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: "6px 10px" }}
-                              onClick={() => handleViewDrawing(d)}>
-                              {t("View")}
-                            </button>
-                            {(!d.cached || d.isStale) && (
-                              <button className="btn btn-sm" style={{
-                                fontSize: 11, padding: "6px 10px",
-                                background: d.isStale ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.08)",
-                                border: d.isStale ? "1px solid rgba(245,158,11,0.3)" : "1px solid rgba(255,255,255,0.15)",
-                                color: d.isStale ? "var(--orange, #f59e0b)" : undefined,
-                              }}
-                                onClick={() => handleDownloadDrawing(d)}>
-                                {d.isStale ? t("Re-download") : t("Save")}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <>
-                    {drawingsLoading ? (
-                      <div className="empty-state" style={{ padding: "30px 20px" }}>
-                        <div className="empty-text">{t("Loading drawings...")}</div>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Default drawing sets (placeholder when cloud is empty) */}
-                        {(() => {
-                          const defaultSets = [
-                            { id: "d1", name: t("Architectural Plans"), Icon: Ruler, desc: t("Floor plans, elevations, sections") },
-                            { id: "d2", name: t("Structural Framing Plans"), Icon: Building2, desc: t("Framing layouts, details") },
-                            { id: "d3", name: t("Reflected Ceiling Plan"), Icon: Ruler, desc: t("Ceiling grid, fixtures") },
-                            { id: "d4", name: t("Wall Type Details"), Icon: Search, desc: t("Assembly details, fire ratings") },
-                            { id: "d5", name: t("Door & Hardware Schedule"), Icon: ClipboardList, desc: t("Door types, hardware sets") },
-                          ];
-                          return (
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
-                              {defaultSets.map(d => (
-                                <div key={d.id} className="card" style={{ padding: 14, opacity: 0.6 }}>
-                                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                                    <d.Icon size={28} style={{ color: "var(--text2)", flexShrink: 0 }} />
-                                    <div style={{ flex: 1 }}>
-                                      <div className="text-sm font-semi">{d.name}</div>
-                                      <div className="text-xs text-muted">{d.desc}</div>
-                                    </div>
-                                    <span className="text-xs text-dim">{t("Not uploaded")}</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          );
-                        })()}
-                      </>
-                    )}
-                  </>
-                )}
-
-                {/* Downloaded files cache info */}
-                {Object.keys(downloadedDrawings).length > 0 && (
-                  <div style={{ marginTop: 16 }}>
-                    <div className="section-title" style={{ fontSize: 13, marginBottom: 8 }}>{t("Downloaded for Offline")}</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {Object.entries(downloadedDrawings).map(([path, info]) => (
-                        <div key={path} className="foreman-team-row" style={{ padding: "8px 12px" }}>
-                          <div>
-                            <div className="text-sm font-semi">{path.split("/").pop().replace(".pdf", "").replace(/_/g, " ")}</div>
-                            <div className="text-xs text-muted">{t("Cached")} {new Date(info.cachedAt).toLocaleDateString()}{info.size ? ` · ${(info.size / 1048576).toFixed(1)} MB` : ""}</div>
-                          </div>
-                          <button className="cal-nav-btn" style={{ fontSize: 10, color: "var(--red)" }}
-                            onClick={() => {
-                              const updated = { ...downloadedDrawings };
-                              delete updated[path];
-                              setDownloadedDrawings(updated);
-                              localStorage.setItem("ebc_downloadedDrawings", JSON.stringify(updated));
-                              show?.(t("Cache cleared"));
-                            }}>
-                            {t("Remove")}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div style={{ marginTop: 16, padding: 16, background: "var(--glass-bg)", borderRadius: 10, textAlign: "center" }}>
-                  <div className="text-sm text-muted">{t("Drawings are stored in the cloud")}</div>
-                  <div className="text-xs text-dim" style={{ marginTop: 4 }}>{t("Download files for offline use on the jobsite. Ask the PM to upload new drawing sets.")}</div>
-                </div>
+                <DrawingsTab
+                  readOnly={false}
+                  projectFilter={selectedProjectId}
+                  t={t}
+                />
               </div>
             )}
 
