@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Search, MapPin, Calendar, Clock, AlertTriangle, Shield, Package, ClipboardList, FileText, PenLine, Settings } from "lucide-react";
-import { PortalHeader, PortalTabBar, FieldButton, FieldInput, FieldSelect, EmptyState, StatusBadge } from "../components/field";
+import { Search, MapPin, Calendar, Clock, AlertTriangle, Shield, Package, ClipboardList, FileText, PenLine, Settings, Home, ShieldCheck } from "lucide-react";
+import { PortalHeader, PortalTabBar, FieldButton, FieldInput, FieldSelect, EmptyState, StatusBadge, DrawingsTab } from "../components/field";
+import { HomeTab } from './employee/HomeTab';
+import { ScheduleTab } from './employee/ScheduleTab';
+import { CredentialsTab } from './employee/CredentialsTab';
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { useNotifications } from "../hooks/useNotifications";
@@ -86,7 +89,8 @@ export function EmployeeView({ app }) {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
-  const [empTab, setEmpTab] = useState("clock");
+  const [empTab, setEmpTab] = useState("home");
+  const [credBadgeCount, setCredBadgeCount] = useState(0);
   const [showReportProblem, setShowReportProblem] = useState(false);
   const [now, setNow] = useState(new Date());
   const [activeJsaId, setActiveJsaId] = useState(null);
@@ -203,7 +207,7 @@ export function EmployeeView({ app }) {
     setActiveEmp(null);
     setEmail("");
     setPassword("");
-    setEmpTab("clock");
+    setEmpTab("home");
     setGeoStatus(null);
     setSelectedProject(null);
     setSelectedInfoProject(null);
@@ -571,6 +575,14 @@ export function EmployeeView({ app }) {
     return ids;
   }, [mySchedule]);
 
+  // ── today's assigned project (for Drawings filter) ──
+  const assignedProject = useMemo(() => {
+    const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+    const todayAssignment = mySchedule.find(s => s.days?.[todayKey] && s.projectId);
+    if (!todayAssignment) return null;
+    return projects.find(p => p.id === todayAssignment.projectId) || null;
+  }, [mySchedule, projects]);
+
   // ── my material requests ──
   const myMatRequests = useMemo(() => {
     if (!activeEmp) return [];
@@ -610,14 +622,17 @@ export function EmployeeView({ app }) {
 
   // ── portal tab bar definition ──
   const portalTabs = [
-    { id: "clock", label: "Clock", icon: Clock, badge: isClockedIn },
-    { id: "schedule", label: "Schedule", icon: Calendar, badge: false },
-    { id: "materials", label: "Materials", icon: Package, badge: myMatRequests?.some(r => r.status === "requested") },
-    { id: "settings", label: "Settings", icon: Settings },
-    { id: "log", label: "Time Log", icon: ClipboardList },
-    { id: "jsa", label: "JSA", icon: Shield },
-    { id: "cos", label: "Change Orders", icon: FileText },
-    { id: "rfis", label: "RFIs", icon: FileText },
+    { id: "home", label: t("Home"), icon: Home, badge: false },
+    { id: "clock", label: t("Clock"), icon: Clock, badge: isClockedIn },
+    { id: "schedule", label: t("Schedule"), icon: Calendar, badge: false },
+    { id: "materials", label: t("Materials"), icon: Package, badge: myMatRequests?.some(r => r.status === "requested") },
+    { id: "credentials", label: t("Credentials"), icon: Shield, badge: credBadgeCount > 0 ? credBadgeCount : false },
+    { id: "drawings", label: t("Drawings"), icon: FileText, badge: false },
+    { id: "log", label: t("Time Log"), icon: ClipboardList, badge: false },
+    { id: "jsa", label: t("JSA"), icon: ShieldCheck, badge: false },
+    { id: "cos", label: t("Change Orders"), icon: FileText, badge: false },
+    { id: "rfis", label: t("RFIs"), icon: FileText, badge: false },
+    { id: "settings", label: t("Settings"), icon: Settings, badge: false },
   ];
 
   // ── material request submit ──
@@ -902,6 +917,24 @@ export function EmployeeView({ app }) {
 
       <div className="employee-body emp-content-pad">
 
+        {/* ═══ HOME TAB ═══ */}
+        {empTab === "home" && (
+          <HomeTab
+            activeEmp={activeEmp}
+            isClockedIn={isClockedIn}
+            activeEntry={activeEntry}
+            now={now}
+            weekTotal={weekTotal}
+            mySchedule={mySchedule}
+            myMatRequests={myMatRequests}
+            projects={projects}
+            setEmpTab={setEmpTab}
+            setSelectedInfoProject={setSelectedInfoProject}
+            t={t}
+            lang={lang}
+          />
+        )}
+
         {/* ═══ CLOCK TAB ═══ */}
         {empTab === "clock" && (
           <div className="emp-content">
@@ -1180,40 +1213,16 @@ export function EmployeeView({ app }) {
 
         {/* ═══ SCHEDULE TAB ═══ */}
         {empTab === "schedule" && (
-          <div className="emp-content">
-            <div className="section-header">
-              <div>
-                <div className="section-title emp-section-title">{t("My Schedule")}</div>
-                <div className="section-sub">{t("Week of")} {getWeekStart(new Date()).toLocaleDateString(lang === "es" ? "es" : "en", { month: "short", day: "numeric" })}</div>
-              </div>
-            </div>
-            <div className="clock-card emp-clock-card-left emp-schedule-card">
-              {DAY_KEYS.map((dayKey, i) => {
-                const assignment = mySchedule.find(s => s.days?.[dayKey] && s.projectId);
-                const proj = assignment ? projects.find(p => p.id === assignment.projectId) : null;
-                return (
-                  <div key={dayKey} className="schedule-day">
-                    <span className="schedule-day-name">{t(DAY_LABELS_EN[i])}</span>
-                    {proj ? (
-                      <>
-                        <span className="schedule-project" onClick={() => setSelectedInfoProject(proj.id)}>
-                          {proj.name}
-                        </span>
-                        <span className="schedule-time">
-                          {assignment.hours?.start || "06:30"} — {assignment.hours?.end || "15:00"}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="schedule-off">{t("Off")}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {mySchedule.length === 0 && (
-              <EmptyState icon={Calendar} heading={t("No schedule this week")} t={t} />
-            )}
-          </div>
+          <ScheduleTab
+            activeEmp={activeEmp}
+            mySchedule={mySchedule}
+            projects={projects}
+            setEmpTab={setEmpTab}
+            t={t}
+            lang={lang}
+            isOnline={network.isOnline}
+            show={show}
+          />
         )}
 
         {/* ═══ TIME LOG TAB ═══ */}
@@ -1569,6 +1578,24 @@ export function EmployeeView({ app }) {
           </div>
         )}
 
+        {/* ═══ CREDENTIALS TAB ═══ */}
+        {empTab === "credentials" && (
+          <CredentialsTab
+            activeEmp={activeEmp}
+            t={t}
+            lang={lang}
+            show={show}
+            onBadgeUpdate={setCredBadgeCount}
+          />
+        )}
+
+        {/* ═══ DRAWINGS TAB (PLAN-01) ═══ */}
+        {empTab === "drawings" && (
+          <div className="emp-content">
+            <DrawingsTab readOnly={true} projectFilter={assignedProject?.id || null} t={t} />
+          </div>
+        )}
+
         {/* ═══ CHANGE ORDERS TAB (Foreman only) ═══ */}
         {empTab === "cos" && (
           <div className="emp-content">
@@ -1631,7 +1658,7 @@ export function EmployeeView({ app }) {
         {empTab === "settings" && (
           <div className="settings-wrap">
             {/* Back button */}
-            <FieldButton variant="ghost" className="emp-settings-back-btn" onClick={() => setEmpTab("clock")}>&#9664; {t("Back")}</FieldButton>
+            <FieldButton variant="ghost" className="emp-settings-back-btn" onClick={() => setEmpTab("home")}>&#9664; {t("Back")}</FieldButton>
             {/* Profile */}
             <div className="settings-section">
               <div className="settings-section-title">{t("Profile")}</div>
@@ -1713,7 +1740,7 @@ export function EmployeeView({ app }) {
         tabs={portalTabs}
         activeTab={empTab}
         onTabChange={setEmpTab}
-        maxPrimary={4}
+        maxPrimary={5}
         t={t}
       />
     </div>
