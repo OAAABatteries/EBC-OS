@@ -100,7 +100,7 @@ Requirements for milestone v1.1: Premium Construction UI Overhaul. Design spec: 
 - [ ] **CRED-01**: Credential wallet shows active/expiring/expired certs per employee
 - [ ] **CRED-02**: Add credential flow (type, issue date, expiry date, issuing org, optional photo)
 - [ ] **CRED-03**: Expiry alerts generated at 30/14/7 days, surface in Home alerts feed
-- [ ] **CRED-04**: Foreman credential dashboard in Team tab showing crew cert status overview with filter by status
+- [x] **CRED-04**: Foreman credential dashboard in Team tab showing crew cert status overview with filter by status
 
 ### Floor Plans
 
@@ -111,8 +111,8 @@ Requirements for milestone v1.1: Premium Construction UI Overhaul. Design spec: 
 ### Foreman Scheduling
 
 - [ ] **FSCH-01**: Post Available Shifts modal in Team tab (date, time, project, trade, overtime flag)
-- [ ] **FSCH-02**: Shift pickup request queue with approve/deny buttons in Team tab
-- [ ] **FSCH-03**: Time-off request queue with approve/deny + optional comments in Team tab
+- [x] **FSCH-02**: Shift pickup request queue with approve/deny buttons in Team tab
+- [x] **FSCH-03**: Time-off request queue with approve/deny + optional comments in Team tab
 - [x] **FSCH-04**: Foreman notified in-app when employee requests shift or time-off
 
 ### Notifications
@@ -253,10 +253,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DRVR-07 | Phase 9 | Pending |
 | PLAN-02 | Phase 9 | Pending |
 | FSCH-01 | Phase 9 | Pending |
-| FSCH-02 | Phase 9 | Pending |
-| FSCH-03 | Phase 9 | Pending |
+| FSCH-02 | Phase 9 | Complete |
+| FSCH-03 | Phase 9 | Complete |
 | FSCH-04 | Phase 9 | Complete |
-| CRED-04 | Phase 9 | Pending |
+| CRED-04 | Phase 9 | Complete |
 | NOTIF-01 | Phase 10 | Pending |
 | NOTIF-02 | Phase 10 | Pending |
 | NOTIF-03 | Phase 10 | Pending |

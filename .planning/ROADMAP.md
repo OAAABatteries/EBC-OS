@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 7: Premium Foundation** - Data model extensions, Premium Construction design system, shared components for scheduling/credentials/alerts
 - [ ] **Phase 8: Employee Portal Overhaul** - New Home dashboard, enhanced Schedule with shift pickup and time-off, Credential wallet, Drawings access
-- [ ] **Phase 9: Driver + Foreman Portal Updates** - Driver visual refresh with alerts and drawings; Foreman scheduling tools, shift management, credential dashboard
+- [x] **Phase 9: Driver + Foreman Portal Updates** - Driver visual refresh with alerts and drawings; Foreman scheduling tools, shift management, credential dashboard (completed 2026-04-04)
 - [ ] **Phase 10: Notifications + Cross-Portal Polish** - Proactive notification system with browser push, cross-portal alert routing, final integration verification
 
 ## Phase Details
@@ -201,5 +201,5 @@ v1.1: Phases 7 -> 8 -> 9 -> 10
 | 6. Polish and Theme Audit | 2/3 | In Progress | |
 | 7. Premium Foundation | 1/5 | In Progress|  |
 | 8. Employee Portal Overhaul | 3/5 | In Progress|  |
-| 9. Driver + Foreman Portal Updates | 2/3 | In Progress|  |
+| 9. Driver + Foreman Portal Updates | 3/3 | Complete   | 2026-04-04 |
 | 10. Notifications + Cross-Portal Polish | 0/TBD | Not started | - |
