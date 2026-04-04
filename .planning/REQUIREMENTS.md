@@ -78,12 +78,12 @@ Requirements for milestone v1.1: Premium Construction UI Overhaul. Design spec: 
 
 ### Employee Home
 
-- [x] **HOME-01**: New Home tab is the default landing with clock status hero, stat tiles, and alerts feed
-- [x] **HOME-02**: Stat tiles (Hours/Tasks/Pending) navigate to their respective detail views on tap
-- [x] **HOME-03**: Active project card shows current assignment with trade tags, tappable to project detail
-- [x] **HOME-04**: Alerts feed shows credential warnings, material approvals, schedule changes (newest first, max 3 + "View All")
-- [x] **HOME-05**: Each alert navigates to its source tab (credentials, materials, schedule) on tap
-- [x] **HOME-06**: Home tab auto-refreshes clock status and stats when returning from Clock tab
+- [ ] **HOME-01**: New Home tab is the default landing with clock status hero, stat tiles, and alerts feed
+- [ ] **HOME-02**: Stat tiles (Hours/Tasks/Pending) navigate to their respective detail views on tap
+- [ ] **HOME-03**: Active project card shows current assignment with trade tags, tappable to project detail
+- [ ] **HOME-04**: Alerts feed shows credential warnings, material approvals, schedule changes (newest first, max 3 + "View All")
+- [ ] **HOME-05**: Each alert navigates to its source tab (credentials, materials, schedule) on tap
+- [ ] **HOME-06**: Home tab auto-refreshes clock status and stats when returning from Clock tab
 
 ### Schedule
 
@@ -97,14 +97,14 @@ Requirements for milestone v1.1: Premium Construction UI Overhaul. Design spec: 
 
 ### Credentials
 
-- [x] **CRED-01**: Credential wallet shows active/expiring/expired certs per employee
-- [x] **CRED-02**: Add credential flow (type, issue date, expiry date, issuing org, optional photo)
-- [x] **CRED-03**: Expiry alerts generated at 30/14/7 days, surface in Home alerts feed
+- [ ] **CRED-01**: Credential wallet shows active/expiring/expired certs per employee
+- [ ] **CRED-02**: Add credential flow (type, issue date, expiry date, issuing org, optional photo)
+- [ ] **CRED-03**: Expiry alerts generated at 30/14/7 days, surface in Home alerts feed
 - [ ] **CRED-04**: Foreman credential dashboard in Team tab showing crew cert status overview with filter by status
 
 ### Floor Plans
 
-- [x] **PLAN-01**: Employee portal has Drawings tab in "More" overflow (read-only, filtered to assigned projects)
+- [ ] **PLAN-01**: Employee portal has Drawings tab in "More" overflow (read-only, filtered to assigned projects)
 - [ ] **PLAN-02**: Driver portal has Drawings tab (read-only, filtered to delivery projects)
 - [x] **PLAN-03**: Shared DrawingsTab component extracted from ForemanView with readOnly and projectFilter props
 
@@ -132,8 +132,8 @@ Requirements for milestone v1.1: Premium Construction UI Overhaul. Design spec: 
 
 ### Driver Portal
 
-- [ ] **DRVR-05**: Driver portal visual refresh with Premium Construction design language
-- [ ] **DRVR-06**: Driver portal has alerts feed (schedule changes, delivery updates)
+- [x] **DRVR-05**: Driver portal visual refresh with Premium Construction design language
+- [x] **DRVR-06**: Driver portal has alerts feed (schedule changes, delivery updates)
 - [ ] **DRVR-07**: Driver portal has Drawings tab for delivery project floor plans
 
 ## v2 Requirements
@@ -231,25 +231,25 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VIS-05 | Phase 7 | Complete (07-01) |
 | VIS-06 | Phase 7 | Complete (07-04 + gap closure) |
 | PLAN-03 | Phase 7 | Complete (07-05) |
-| HOME-01 | Phase 8 | Complete |
-| HOME-02 | Phase 8 | Complete |
-| HOME-03 | Phase 8 | Complete |
-| HOME-04 | Phase 8 | Complete |
-| HOME-05 | Phase 8 | Complete |
-| HOME-06 | Phase 8 | Complete |
-| SCHED-01 | Phase 8 | Complete (08-03) |
-| SCHED-02 | Phase 8 | Complete (08-03) |
-| SCHED-03 | Phase 8 | Complete (08-03) |
-| SCHED-04 | Phase 8 | Complete (08-03) |
-| SCHED-05 | Phase 8 | Complete (08-03) |
-| SCHED-06 | Phase 8 | Complete (08-03) |
-| SCHED-07 | Phase 8 | Complete (08-03) |
-| CRED-01 | Phase 8 | Complete |
-| CRED-02 | Phase 8 | Complete |
-| CRED-03 | Phase 8 | Complete |
-| PLAN-01 | Phase 8 | Complete |
-| DRVR-05 | Phase 9 | Pending |
-| DRVR-06 | Phase 9 | Pending |
+| HOME-01 | Phase 8 | Pending |
+| HOME-02 | Phase 8 | Pending |
+| HOME-03 | Phase 8 | Pending |
+| HOME-04 | Phase 8 | Pending |
+| HOME-05 | Phase 8 | Pending |
+| HOME-06 | Phase 8 | Pending |
+| SCHED-01 | Phase 8 | Pending |
+| SCHED-02 | Phase 8 | Pending |
+| SCHED-03 | Phase 8 | Pending |
+| SCHED-04 | Phase 8 | Pending |
+| SCHED-05 | Phase 8 | Pending |
+| SCHED-06 | Phase 8 | Pending |
+| SCHED-07 | Phase 8 | Pending |
+| CRED-01 | Phase 8 | Pending |
+| CRED-02 | Phase 8 | Pending |
+| CRED-03 | Phase 8 | Pending |
+| PLAN-01 | Phase 8 | Pending |
+| DRVR-05 | Phase 9 | Complete |
+| DRVR-06 | Phase 9 | Complete |
 | DRVR-07 | Phase 9 | Pending |
 | PLAN-02 | Phase 9 | Pending |
 | FSCH-01 | Phase 9 | Pending |

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Field Portal Perfection
-status: verifying
-stopped_at: Phase 9 UI-SPEC approved
-last_updated: "2026-04-04T14:32:48.031Z"
+status: completed
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-04-04T17:38:17.237Z"
 last_activity: 2026-04-04
 progress:
-  total_phases: 9
-  completed_phases: 8
-  total_plans: 32
-  completed_plans: 32
+  total_phases: 8
+  completed_phases: 7
+  total_plans: 27
+  completed_plans: 28
   percent: 96
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Field crews can manage their entire workday from one app that feels fast, reliable, and professional on a phone in the field.
-**Current focus:** Phase 08 — employee-portal-overhaul
+**Current focus:** Phase 07 — premium-foundation
 
 ## Current Position
 
-Phase: 08
+Phase: 07
 Plan: Not started
-Status: Task 1 complete — awaiting human verification (Task 2 checkpoint)
+Status: Plan 05 complete — Phase 07 complete
 Last activity: 2026-04-04
 
 Progress: [██████████] 96%
@@ -78,10 +78,7 @@ Progress: [██████████] 96%
 | Phase 07-premium-foundation P02 | 1 | 1 tasks | 1 files |
 | Phase 07-premium-foundation P03 | 8m | 2 tasks | 2 files |
 | Phase 07-premium-foundation P05 | 8m | 3 tasks | 4 files |
-| Phase 08-employee-portal-overhaul P01 | 4m | 2 tasks | 6 files |
-| Phase 08-employee-portal-overhaul P04 | 2m | 1 tasks | 1 files |
-| Phase 08-employee-portal-overhaul P02 | 2m | 1 tasks | 1 files |
-| Phase 08-employee-portal-overhaul P05 | 8m | 1 tasks | 1 files |
+| Phase 09-driver-foreman-portal-updates P01 | 8m | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -125,13 +122,8 @@ Recent decisions affecting current work:
 - [Phase 07-premium-foundation P01]: portal-header-accent-border overrides border-bottom-color only -- glass-border width/style remain from .header
 - [Phase 07-premium-foundation P05]: DrawingsTab uses static import for useDrawingCache -- dynamic import was in ForemanView but plan spec required static for correctness
 - [Phase 07-premium-foundation P05]: PdfViewer lazy-loaded inside DrawingsTab (not DrawingViewer which is the takeoff engine, not a field PDF viewer)
-- [Phase 08-employee-portal-overhaul]: credBadgeCount state lives in EmployeeView shell — passed down to CredentialsTab via onBadgeUpdate callback
-- [Phase 08-employee-portal-overhaul]: assignedProject derived via useMemo from mySchedule — used for DrawingsTab projectFilter in employee portal
-- [Phase 08-employee-portal-overhaul]: credStatus helper defined inline in CredentialsTab — simple 3-state pure function, no circular dependency risk
-- [Phase 08-employee-portal-overhaul]: Photo upload in CredentialsTab is non-fatal — if storage upload fails photo_path stays null and insert proceeds
-- [Phase 08-employee-portal-overhaul]: HomeTab auto-refresh via reactive props from EmployeeView shell — no explicit refetch needed
-- [Phase 08-employee-portal-overhaul P05]: "Request Time Off" ES kept as "Solicitar Tiempo Libre" (Phase 7 value) -- plan's "Solicitar Ausencia" would have caused duplicate key; established value takes precedence
-- [Phase 08-employee-portal-overhaul P05]: UPPERCASE status badge keys (ACTIVE, SCHEDULED, COMPLETED, etc.) added as distinct entries -- Title Case variants already existed from earlier phases
+- [Phase 09-driver-foreman-portal-updates]: FieldCard fully replaced by PremiumCard in DriverView — info for normal stops, hero for in-transit
+- [Phase 09-driver-foreman-portal-updates]: Driver Home tab default landing — driverTab initial state = home per D-01
 
 ### v1.1 Roadmap Decisions
 
@@ -156,6 +148,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T14:32:48.028Z
-Stopped at: Phase 9 UI-SPEC approved
-Resume file: .planning/phases/09-driver-foreman-portal-updates/09-UI-SPEC.md
+Last session: 2026-04-04T17:38:17.234Z
+Stopped at: Completed 09-01-PLAN.md
+Resume file: None
