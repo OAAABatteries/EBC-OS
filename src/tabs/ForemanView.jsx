@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, ClipboardList, HardHat, MessageSquare, Pin, PinOff, LayoutDashboard, Users, Clock as ClockIcon, MoreHorizontal, FileText, Calendar, Settings } from "lucide-react";
-import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, EmptyState, StatusBadge, StatTile, AlertCard, FieldSignaturePad } from "../components/field";
+import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, FieldInput, EmptyState, StatusBadge, StatTile, AlertCard, FieldSignaturePad, CredentialCard } from "../components/field";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { FeatureGuide } from "../components/FeatureGuide";
 import { ReportProblemModal } from "../components/ReportProblemModal";
@@ -134,6 +134,14 @@ export function ForemanView({ app }) {
   const [teamSearch, setCrewSearch] = useState("");
   const [expandedReportId, setExpandedReportId] = useState(null);
   const [editingReportId, setEditingReportId] = useState(null);
+
+  // ── Team tab state (Plan 03: FSCH-02, FSCH-03, CRED-04) ──
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [crewCerts, setCrewCerts] = useState([]);
+  const [certFilter, setCertFilter] = useState("all"); // "all" | "expiring" | "expired"
+  const [approvalSheet, setApprovalSheet] = useState(null); // { request, action: 'approve'|'deny' }
+  const [approvalComment, setApprovalComment] = useState("");
+  const [approvalLoading, setApprovalLoading] = useState(false);
 
   const QUICK_TASKS = ["Framing", "Hanging board", "Taping", "Sanding", "ACT grid", "ACT tile", "Demo", "Cleanup"];
   const WEATHER_CONDITIONS = ["Clear", "Cloudy", "Rain", "Wind", "Snow"];
@@ -666,7 +674,97 @@ export function ForemanView({ app }) {
 
   const projNotesCount = (projectNotes || []).filter(n => String(n.projectId) === String(selectedProjectId)).length;
 
-  const pendingRequestCount = 0; // TODO: Wire to shift_requests + time_off_requests in Plan 03
+  // ── Fetch pending requests for Team tab (FSCH-02, FSCH-03) ──
+  useEffect(() => {
+    if (!activeForeman || !selectedProjectId) return;
+    const fetchPendingRequests = async () => {
+      try {
+        const { supabase } = await import("../lib/supabase");
+        const { data: shiftReqs } = await supabase
+          .from("shift_requests")
+          .select("*, available_shifts(*), employees:employee_id(name, role)")
+          .eq("status", "pending")
+          .order("created_at", { ascending: false });
+        setPendingRequests(shiftReqs || []);
+      } catch (err) {
+        console.error("Failed to fetch pending requests:", err);
+      }
+    };
+    fetchPendingRequests();
+  }, [activeForeman, selectedProjectId, foremanTab]);
+
+  // ── Fetch crew certifications (CRED-04) ──
+  useEffect(() => {
+    if (!activeForeman || foremanTab !== "team") return;
+    const fetchCrewCerts = async () => {
+      try {
+        const { supabase } = await import("../lib/supabase");
+        const crewIds = teamForProject.map(m => m.id);
+        if (crewIds.length === 0) { setCrewCerts([]); return; }
+        const { data } = await supabase
+          .from("certifications")
+          .select("*")
+          .in("employee_id", crewIds)
+          .order("expiry_date", { ascending: true });
+        setCrewCerts(data || []);
+      } catch (err) {
+        console.error("Failed to fetch crew certs:", err);
+      }
+    };
+    fetchCrewCerts();
+  }, [activeForeman, foremanTab, teamForProject]);
+
+  // ── Approval handler (FSCH-02, FSCH-03) ──
+  const handleApproveRequest = async () => {
+    if (!approvalSheet) return;
+    setApprovalLoading(true);
+    try {
+      const { supabase } = await import("../lib/supabase");
+      const newStatus = approvalSheet.action === "approve" ? "approved" : "denied";
+      await supabase
+        .from("shift_requests")
+        .update({
+          status: newStatus,
+          reviewed_by: activeForeman.id,
+          review_comment: approvalComment || null,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", approvalSheet.request.id);
+      setPendingRequests(prev => prev.filter(r => r.id !== approvalSheet.request.id));
+      setApprovalSheet(null);
+      setApprovalComment("");
+      show(newStatus === "approved" ? t("Request approved") : t("Request denied"), "ok");
+    } catch (err) {
+      show(t("Failed to update request"), "error");
+    } finally {
+      setApprovalLoading(false);
+    }
+  };
+
+  // ── Cert filter helper (CRED-04) ──
+  const filteredCrewCerts = useMemo(() => {
+    const now = new Date();
+    const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const byEmployee = {};
+    crewCerts.forEach(cert => {
+      if (!byEmployee[cert.employee_id]) byEmployee[cert.employee_id] = [];
+      const expiry = cert.expiry_date ? new Date(cert.expiry_date) : null;
+      const certStatus = !expiry ? "active" : expiry < now ? "expired" : expiry < in30 ? "expiring" : "active";
+      byEmployee[cert.employee_id].push({ ...cert, computedStatus: certStatus });
+    });
+    const teamMembers = teamForProject.map(member => {
+      const certs = byEmployee[member.id] || [];
+      const activeCount = certs.filter(c => c.computedStatus === "active").length;
+      const expiringCount = certs.filter(c => c.computedStatus === "expiring").length;
+      const expiredCount = certs.filter(c => c.computedStatus === "expired").length;
+      return { ...member, certs, activeCount, expiringCount, expiredCount };
+    });
+    if (certFilter === "expiring") return teamMembers.filter(m => m.expiringCount > 0);
+    if (certFilter === "expired") return teamMembers.filter(m => m.expiredCount > 0);
+    return teamMembers;
+  }, [crewCerts, teamForProject, certFilter]);
+
+  const pendingRequestCount = pendingRequests.length;
 
   const foremanTabDefs = [
     // Primary (4 + More trigger)
@@ -1653,6 +1751,103 @@ export function ForemanView({ app }) {
                       ))}
                     </div>
                   )}
+
+                  {/* ── Pending Requests section (FSCH-02, FSCH-03) per D-13 ── */}
+                  <div className="foreman-team-section">
+                    <div className="foreman-team-section-label">
+                      {t("PENDING REQUESTS")} {pendingRequests.length > 0 && <span className="foreman-team-count">{pendingRequests.length}</span>}
+                    </div>
+                    {pendingRequests.length === 0 ? (
+                      <EmptyState
+                        icon={Users}
+                        heading={t("No pending requests")}
+                        message={t("Your crew is all set")}
+                        t={t}
+                      />
+                    ) : (
+                      <div className="foreman-team-requests-list">
+                        {pendingRequests.map(req => (
+                          <PremiumCard variant="info" key={req.id} className="foreman-team-request-card">
+                            <div className="foreman-team-request-header">
+                              <div className="foreman-team-request-name">{req.employees?.name || t("Unknown")}</div>
+                              <div className={`foreman-team-request-type${req.type === "time_off" ? " foreman-team-request-type--timeoff" : ""}`}>
+                                {req.type === "time_off" ? t("TIME OFF") : t("SHIFT REQUEST")}
+                              </div>
+                            </div>
+                            <div className="foreman-team-request-details">
+                              {req.available_shifts?.date && <span>{req.available_shifts.date}</span>}
+                              {req.available_shifts?.start_time && req.available_shifts?.end_time && (
+                                <span>{req.available_shifts.start_time} - {req.available_shifts.end_time}</span>
+                              )}
+                            </div>
+                            <div className="foreman-team-request-actions">
+                              <FieldButton variant="primary" onClick={() => { setApprovalSheet({ request: req, action: "approve" }); setApprovalComment(""); }}>
+                                {t("Approve Request")}
+                              </FieldButton>
+                              <FieldButton variant="danger" onClick={() => { setApprovalSheet({ request: req, action: "deny" }); setApprovalComment(""); }}>
+                                {t("Deny Request")}
+                              </FieldButton>
+                            </div>
+                          </PremiumCard>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── Crew Certifications section (CRED-04) per D-17, D-18, D-19 ── */}
+                  <div className="foreman-team-section">
+                    <div className="foreman-team-section-label">{t("CREW CERTIFICATIONS")}</div>
+
+                    {/* Filter chips per D-18 */}
+                    <div className="foreman-team-cert-filters">
+                      {["all", "expiring", "expired"].map(filter => (
+                        <button
+                          key={filter}
+                          className={`foreman-team-cert-chip${certFilter === filter ? " foreman-team-cert-chip--active" : ""}`}
+                          onClick={() => setCertFilter(filter)}
+                        >
+                          {t(filter === "all" ? "All" : filter === "expiring" ? "Expiring" : "Expired")}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Cert rows per D-18 — grouped by crew member */}
+                    {filteredCrewCerts.length === 0 ? (
+                      <EmptyState
+                        icon={Shield}
+                        heading={certFilter === "expiring" ? t("No expiring credentials") : certFilter === "expired" ? t("No expired credentials") : t("No credentials found")}
+                        message={certFilter === "expired" ? t("All crew credentials are current") : t("Your crew certs are up to date")}
+                        t={t}
+                      />
+                    ) : (
+                      <div className="foreman-team-cert-list">
+                        {filteredCrewCerts.map(member => (
+                          <PremiumCard variant="info" key={member.id} className="foreman-team-cert-member">
+                            <div className="foreman-team-cert-member-header">
+                              <div className="foreman-team-cert-member-name">{member.name}</div>
+                              <div className="foreman-team-cert-summary">
+                                {member.activeCount > 0 && <span className="foreman-team-cert-count foreman-team-cert-count--active">{t("{n} active").replace("{n}", member.activeCount)}</span>}
+                                {member.expiringCount > 0 && <span className="foreman-team-cert-count foreman-team-cert-count--expiring">{t("{n} expiring").replace("{n}", member.expiringCount)}</span>}
+                                {member.expiredCount > 0 && <span className="foreman-team-cert-count foreman-team-cert-count--expired">{t("{n} expired").replace("{n}", member.expiredCount)}</span>}
+                              </div>
+                            </div>
+                            {/* Individual cert cards — view-only per D-19 */}
+                            {member.certs.map(cert => (
+                              <CredentialCard
+                                key={cert.id}
+                                certName={cert.cert_type}
+                                issuedDate={cert.issue_date}
+                                expiryDate={cert.expiry_date}
+                                issuingOrg={cert.issuing_org}
+                                status={cert.computedStatus}
+                                t={t}
+                              />
+                            ))}
+                          </PremiumCard>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })()}
@@ -3679,6 +3874,48 @@ export function ForemanView({ app }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Approval bottom sheet per D-15 */}
+      {approvalSheet && (
+        <>
+          <div className="field-tab-sheet-overlay" onClick={() => setApprovalSheet(null)} />
+          <div className="foreman-approval-sheet">
+            <div className="foreman-approval-sheet-header">
+              <div className="foreman-approval-sheet-title">
+                {approvalSheet.action === "approve" ? t("Approve Request") : t("Deny Request")}
+              </div>
+              <button className="foreman-approval-sheet-close" onClick={() => setApprovalSheet(null)}>
+                {t("Go Back")}
+              </button>
+            </div>
+            <div className="foreman-approval-sheet-body">
+              <div className="foreman-approval-sheet-summary">
+                <div className="text-base font-bold">{approvalSheet.request.employees?.name}</div>
+                <div className="text-sm text-muted">
+                  {approvalSheet.request.type === "time_off" ? t("TIME OFF") : t("SHIFT REQUEST")}
+                  {approvalSheet.request.available_shifts?.date && ` — ${approvalSheet.request.available_shifts.date}`}
+                </div>
+              </div>
+              <FieldInput
+                label={t("Add comment (optional)")}
+                value={approvalComment}
+                onChange={e => setApprovalComment(e.target.value)}
+                inputMode="text"
+                placeholder={t("Add comment (optional)")}
+                t={t}
+              />
+              <FieldButton
+                variant={approvalSheet.action === "approve" ? "primary" : "danger"}
+                onClick={handleApproveRequest}
+                loading={approvalLoading}
+                className="foreman-approval-sheet-confirm"
+              >
+                {approvalSheet.action === "approve" ? t("Confirm Approval") : t("Confirm Denial")}
+              </FieldButton>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

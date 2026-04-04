@@ -397,6 +397,40 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .foreman-dashboard-section-label{font-size:var(--text-sm);font-weight:var(--weight-bold);color:var(--text3);text-transform:uppercase;letter-spacing:var(--tracking-wider);margin-bottom:var(--space-3)}
 .foreman-dashboard-alerts-list{display:flex;flex-direction:column;gap:var(--space-2)}
 .foreman-dashboard-view-all{background:none;border:none;color:var(--accent);font-size:var(--text-base);font-weight:var(--weight-bold);cursor:pointer;padding:var(--space-2) 0;min-height:var(--touch-min)}
+/* ── FOREMAN TEAM ── */
+.foreman-team-section{margin-top:var(--space-8)}
+.foreman-team-section-label{font-size:var(--text-sm);font-weight:var(--weight-bold);color:var(--text3);text-transform:uppercase;letter-spacing:var(--tracking-wider);margin-bottom:var(--space-3);display:flex;align-items:center;gap:var(--space-2)}
+.foreman-team-count{background:var(--accent);color:var(--bg);font-size:var(--text-sm);font-weight:var(--weight-bold);border-radius:10px;padding:1px 8px;min-width:20px;text-align:center}
+.foreman-team-requests-list{display:flex;flex-direction:column;gap:var(--space-3)}
+.foreman-team-request-card{display:flex;flex-direction:column;gap:var(--space-2)}
+.foreman-team-request-header{display:flex;align-items:center;justify-content:space-between}
+.foreman-team-request-name{font-size:var(--text-base);font-weight:var(--weight-bold);color:var(--text)}
+.foreman-team-request-type{font-size:var(--text-sm);font-weight:var(--weight-bold);color:var(--accent);text-transform:uppercase;letter-spacing:var(--tracking-wider)}
+.foreman-team-request-type--timeoff{color:var(--yellow)}
+.foreman-team-request-details{font-size:var(--text-base);color:var(--text2);display:flex;gap:var(--space-2)}
+.foreman-team-request-actions{display:flex;gap:var(--space-2);margin-top:var(--space-2)}
+.foreman-team-request-actions .field-button{flex:1}
+.foreman-team-cert-filters{display:flex;gap:var(--space-2);overflow-x:auto;margin-bottom:var(--space-3);-ms-overflow-style:none;scrollbar-width:none}
+.foreman-team-cert-filters::-webkit-scrollbar{display:none}
+.foreman-team-cert-chip{background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:var(--text-sm);font-weight:var(--weight-bold);padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap;min-height:var(--touch-min)}
+.foreman-team-cert-chip--active{background:rgba(255,127,33,0.15);border-color:var(--accent);color:var(--accent)}
+.foreman-team-cert-list{display:flex;flex-direction:column;gap:var(--space-3)}
+.foreman-team-cert-member{display:flex;flex-direction:column;gap:var(--space-2)}
+.foreman-team-cert-member-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-1)}
+.foreman-team-cert-member-name{font-size:var(--text-base);font-weight:var(--weight-bold);color:var(--text)}
+.foreman-team-cert-summary{display:flex;gap:var(--space-2);flex-wrap:wrap}
+.foreman-team-cert-count{font-size:var(--text-sm);font-weight:var(--weight-bold)}
+.foreman-team-cert-count--active{color:var(--green)}
+.foreman-team-cert-count--expiring{color:var(--yellow)}
+.foreman-team-cert-count--expired{color:var(--red)}
+/* ── FOREMAN APPROVAL SHEET ── */
+.foreman-approval-sheet{position:fixed;bottom:0;left:0;right:0;max-height:50vh;background:var(--bg3);border-top:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;padding:var(--space-4);z-index:1001;transform:translateY(0);transition:transform var(--transition-state)}
+.foreman-approval-sheet-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4)}
+.foreman-approval-sheet-title{font-size:var(--text-lg);font-weight:var(--weight-bold);color:var(--text)}
+.foreman-approval-sheet-close{background:none;border:none;color:var(--text2);font-size:var(--text-base);cursor:pointer;min-height:var(--touch-min);padding:var(--space-2)}
+.foreman-approval-sheet-body{display:flex;flex-direction:column;gap:var(--space-4)}
+.foreman-approval-sheet-summary{padding:var(--space-3);background:var(--bg2);border-radius:var(--radius-sm)}
+.foreman-approval-sheet-confirm{width:100%;min-height:var(--touch-min)}
 /* ShiftCard */
 .shift-card--active{border-left:3px solid var(--accent)}
 .shift-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2)}
