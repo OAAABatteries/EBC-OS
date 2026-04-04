@@ -52,6 +52,8 @@ Exceptions:
 - PortalHeader height: 48px (locked, pre-existing).
 - "Last updated" timestamp label: 11px (--text-sm), sits flush below week strip at --space-2 below the strip.
 
+Project-override declaration: This project extends the standard 8-point set {4, 8, 16, 24, 32, 48, 64} with four additional values — 12px (--space-3), 20px (--space-5), 40px (--space-10), and 44px (--touch-min). All four are multiples of 4. They were established in Phase 1 tokens.css and carried forward unchanged through Phase 7. They are not new deviations introduced in Phase 8 — they are inherited project tokens. This declaration is the explicit record of that project decision, consistent with the precedent set in 07-UI-SPEC.md Spacing Scale ("Non-canonical values note").
+
 Source: tokens.css (direct read), 07-UI-SPEC.md Spacing Scale section
 
 ---
