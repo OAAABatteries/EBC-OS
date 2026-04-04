@@ -126,9 +126,9 @@ Requirements for milestone v1.1: Premium Construction UI Overhaul. Design spec: 
 
 ### Data Model
 
-- [ ] **DATA-01**: `available_shifts` Supabase table created (date, time, project_id, foreman_id, trade, overtime, status, claimed_by)
-- [ ] **DATA-02**: `certifications` table extended with issuing_org, photo_path, cert_category columns
-- [ ] **DATA-03**: `shift_requests` table for employee shift pickup requests (employee_id, shift_id, status, reviewed_by)
+- [x] **DATA-01**: `available_shifts` Supabase table created (date, time, project_id, foreman_id, trade, overtime, status, claimed_by)
+- [x] **DATA-02**: `certifications` table extended with issuing_org, photo_path, cert_category columns
+- [x] **DATA-03**: `shift_requests` table for employee shift pickup requests (employee_id, shift_id, status, reviewed_by)
 
 ### Driver Portal
 
@@ -221,9 +221,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 7 | Pending |
-| DATA-02 | Phase 7 | Pending |
-| DATA-03 | Phase 7 | Pending |
+| DATA-01 | Phase 7 | Complete |
+| DATA-02 | Phase 7 | Complete |
+| DATA-03 | Phase 7 | Complete |
 | VIS-01 | Phase 7 | Pending |
 | VIS-02 | Phase 7 | Pending |
 | VIS-03 | Phase 7 | Pending |

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Field Portal Perfection
-status: planning
-stopped_at: Phase 7 context gathered
-last_updated: "2026-04-03T17:29:17.419Z"
-last_activity: 2026-04-03 -- v1.1 roadmap created (4 phases, 42 requirements mapped)
+status: executing
+stopped_at: Completed 07-02-PLAN.md
+last_updated: "2026-04-04T04:14:25.475Z"
+last_activity: 2026-04-04
 progress:
   total_phases: 7
   completed_phases: 6
-  total_plans: 22
-  completed_plans: 22
+  total_plans: 27
+  completed_plans: 23
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Field crews can manage their entire workday from one app that feels fast, reliable, and professional on a phone in the field.
-**Current focus:** Milestone v1.1 -- Premium Construction UI Overhaul. Roadmap created, ready for Phase 7 planning.
+**Current focus:** Phase 07 — premium-foundation
 
 ## Current Position
 
-Phase: 7 -- Premium Foundation (next up)
-Plan: --
-Status: Roadmap complete, awaiting phase planning
-Last activity: 2026-04-03 -- v1.1 roadmap created (4 phases, 42 requirements mapped)
+Phase: 07 (premium-foundation) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-04-04
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -74,6 +74,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02-shared-field-components PP06 | 7m | 2 tasks | 5 files |
 | Phase 06-polish-and-theme-audit P01 | 3m | 2 tasks | 3 files |
 | Phase 06 P02 | 2m | 2 tasks | 5 files |
+| Phase 07-premium-foundation P02 | 1 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -106,6 +107,9 @@ Recent decisions affecting current work:
 - [Phase 06-polish-and-theme-audit]: --accent aliases var(--amber) across all 7 non-ebc themes (plan specified 5, extended to midnight + cyberpunk for consistency)
 - [Phase 06-polish-and-theme-audit]: Global transition covers background-color, border-color, color, box-shadow only -- excludes transform/opacity to avoid animation conflicts
 - [Phase 06]: Login/PIN screen PortalHeaders excluded from network prop -- offline banner only in authenticated views
+- [Phase 07-premium-foundation]: available_shifts.date stored as TEXT to match existing schema conventions
+- [Phase 07-premium-foundation]: shift_requests employees INSERT for themselves; foremen manage approvals via UPDATE; no DELETE to preserve audit trail
+- [Phase 07-premium-foundation]: certifications.photo_path is nullable (no DEFAULT) since cert photos are optional
 
 ### v1.1 Roadmap Decisions
 
@@ -130,6 +134,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T17:29:17.416Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-premium-foundation/07-CONTEXT.md
+Last session: 2026-04-04T04:14:25.472Z
+Stopped at: Completed 07-02-PLAN.md
+Resume file: None
