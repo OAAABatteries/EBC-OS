@@ -21,7 +21,7 @@ Driver portal gets Premium Construction visuals with a new Home tab (alerts feed
 - **D-01:** Add a new Home tab to Driver as the default landing screen. Shows today's delivery count hero (PremiumCard Hero variant), stat tiles (Pending/Completed/Miles), and alerts feed (schedule changes, delivery updates via AlertCard).
 - **D-02:** Route cards upgrade from FieldCard to PremiumCard Info variant. Full Premium Construction visual language applied throughout.
 - **D-03:** Driver tab layout: Home (landing), Route, Completed, More. Settings moves to More overflow (consistent with Employee pattern from Phase 8 D-01).
-- **D-04:** PortalTabBar maxPrimary = 4 for Driver (Home + Route + Completed + More).
+- **D-04:** Driver tab bar shows 4 visible buttons total (Home + Route + Completed + More trigger). Per PortalTabBar API, `maxPrimary=3` means 3 content tabs rendered as primary + auto-added More overflow trigger = 4 visible. The prop value in code is `maxPrimary={3}`, which achieves the intent of 4 visible buttons.
 - **D-05:** No Drawings tab for Driver — drivers never view floor plans. DRVR-07 and PLAN-02 removed from Phase 9.
 
 ### Foreman Tab Restructure
