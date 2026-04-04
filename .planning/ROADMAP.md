@@ -132,7 +132,13 @@ Plans:
   3. EmptyState always includes an actionable button -- no instance renders with only passive text
   4. Supabase has `available_shifts` and `shift_requests` tables, and `certifications` table has issuing_org, photo_path, cert_category columns
   5. A shared DrawingsTab component exists in `src/components/field/` with readOnly and projectFilter props, extracting logic from ForemanView
-**Plans**: TBD
+**Plans:** 5/5 plans complete
+Plans:
+- [x] 07-01-PLAN.md -- Visual refresh (default theme, eagle logo, EmptyState, PortalTabBar, FieldButton audit)
+- [x] 07-02-PLAN.md -- Supabase schema (available_shifts, shift_requests tables, certifications extension, RLS)
+- [x] 07-03-PLAN.md -- PremiumCard component (Hero/Info/Alert variants + CSS)
+- [x] 07-04-PLAN.md -- New shared components (StatTile, AlertCard, ShiftCard, CredentialCard) + translations
+- [x] 07-05-PLAN.md -- DrawingsTab extraction from ForemanView
 **UI hint**: yes
 
 ### Phase 8: Employee Portal Overhaul
@@ -187,7 +193,7 @@ v1.1: Phases 7 -> 8 -> 9 -> 10
 | 4. EmployeeView Refactor | 0/TBD | Not started | - |
 | 5. ForemanView Refactor | 0/TBD | Not started | - |
 | 6. Polish and Theme Audit | 2/3 | In Progress | |
-| 7. Premium Foundation | 0/TBD | Not started | - |
+| 7. Premium Foundation | 5/5 | Planned | - |
 | 8. Employee Portal Overhaul | 0/TBD | Not started | - |
 | 9. Driver + Foreman Portal Updates | 0/TBD | Not started | - |
 | 10. Notifications + Cross-Portal Polish | 0/TBD | Not started | - |
