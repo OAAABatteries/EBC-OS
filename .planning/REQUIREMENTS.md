@@ -78,22 +78,22 @@ Requirements for milestone v1.1: Premium Construction UI Overhaul. Design spec: 
 
 ### Employee Home
 
-- [ ] **HOME-01**: New Home tab is the default landing with clock status hero, stat tiles, and alerts feed
-- [ ] **HOME-02**: Stat tiles (Hours/Tasks/Pending) navigate to their respective detail views on tap
-- [ ] **HOME-03**: Active project card shows current assignment with trade tags, tappable to project detail
-- [ ] **HOME-04**: Alerts feed shows credential warnings, material approvals, schedule changes (newest first, max 3 + "View All")
-- [ ] **HOME-05**: Each alert navigates to its source tab (credentials, materials, schedule) on tap
-- [ ] **HOME-06**: Home tab auto-refreshes clock status and stats when returning from Clock tab
+- [x] **HOME-01**: New Home tab is the default landing with clock status hero, stat tiles, and alerts feed
+- [x] **HOME-02**: Stat tiles (Hours/Tasks/Pending) navigate to their respective detail views on tap
+- [x] **HOME-03**: Active project card shows current assignment with trade tags, tappable to project detail
+- [x] **HOME-04**: Alerts feed shows credential warnings, material approvals, schedule changes (newest first, max 3 + "View All")
+- [x] **HOME-05**: Each alert navigates to its source tab (credentials, materials, schedule) on tap
+- [x] **HOME-06**: Home tab auto-refreshes clock status and stats when returning from Clock tab
 
 ### Schedule
 
-- [x] **SCHED-01**: Week strip shows 7 days with today highlighted and shift dot indicators
-- [x] **SCHED-02**: Shift cards display time range, project, location, and status badge (ACTIVE/SCHEDULED/COMPLETED)
-- [x] **SCHED-03**: Available shifts section shows foreman-posted shifts with "Request" action button
-- [x] **SCHED-04**: Shift pickup requires foreman approval (employee requests -> status PENDING -> foreman approves/denies)
-- [x] **SCHED-05**: Time-off request flow: bottom sheet with date range, reason dropdown, notes, submit to foreman
-- [x] **SCHED-06**: Schedule shows time-off status inline: "OFF -- Requested" / "OFF -- Approved" / "OFF -- Denied"
-- [x] **SCHED-07**: Schedule tab shows cached last-fetched data when offline with "Last updated" timestamp
+- [ ] **SCHED-01**: Week strip shows 7 days with today highlighted and shift dot indicators
+- [ ] **SCHED-02**: Shift cards display time range, project, location, and status badge (ACTIVE/SCHEDULED/COMPLETED)
+- [ ] **SCHED-03**: Available shifts section shows foreman-posted shifts with "Request" action button
+- [ ] **SCHED-04**: Shift pickup requires foreman approval (employee requests -> status PENDING -> foreman approves/denies)
+- [ ] **SCHED-05**: Time-off request flow: bottom sheet with date range, reason dropdown, notes, submit to foreman
+- [ ] **SCHED-06**: Schedule shows time-off status inline: "OFF -- Requested" / "OFF -- Approved" / "OFF -- Denied"
+- [ ] **SCHED-07**: Schedule tab shows cached last-fetched data when offline with "Last updated" timestamp
 
 ### Credentials
 
@@ -231,19 +231,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VIS-05 | Phase 7 | Complete (07-01) |
 | VIS-06 | Phase 7 | Complete (07-04 + gap closure) |
 | PLAN-03 | Phase 7 | Complete (07-05) |
-| HOME-01 | Phase 8 | Pending |
-| HOME-02 | Phase 8 | Pending |
-| HOME-03 | Phase 8 | Pending |
-| HOME-04 | Phase 8 | Pending |
-| HOME-05 | Phase 8 | Pending |
-| HOME-06 | Phase 8 | Pending |
-| SCHED-01 | Phase 8 | Complete |
-| SCHED-02 | Phase 8 | Complete |
-| SCHED-03 | Phase 8 | Complete |
-| SCHED-04 | Phase 8 | Complete |
-| SCHED-05 | Phase 8 | Complete |
-| SCHED-06 | Phase 8 | Complete |
-| SCHED-07 | Phase 8 | Complete |
+| HOME-01 | Phase 8 | Complete |
+| HOME-02 | Phase 8 | Complete |
+| HOME-03 | Phase 8 | Complete |
+| HOME-04 | Phase 8 | Complete |
+| HOME-05 | Phase 8 | Complete |
+| HOME-06 | Phase 8 | Complete |
+| SCHED-01 | Phase 8 | Pending |
+| SCHED-02 | Phase 8 | Pending |
+| SCHED-03 | Phase 8 | Pending |
+| SCHED-04 | Phase 8 | Pending |
+| SCHED-05 | Phase 8 | Pending |
+| SCHED-06 | Phase 8 | Pending |
+| SCHED-07 | Phase 8 | Pending |
 | CRED-01 | Phase 8 | Complete |
 | CRED-02 | Phase 8 | Complete |
 | CRED-03 | Phase 8 | Complete |

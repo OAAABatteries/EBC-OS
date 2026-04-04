@@ -154,8 +154,8 @@ Plans:
 **Plans:** 3/5 plans executed
 Plans:
 - [x] 08-01-PLAN.md -- Foundation: migration SQL, CSS classes, tab skeleton, directory + stubs, Drawings wiring
-- [ ] 08-02-PLAN.md -- HomeTab.jsx: clock hero, stat tiles, project card, alerts feed (parallel)
-- [x] 08-03-PLAN.md -- ScheduleTab.jsx: week strip, shifts, available shifts, pickup, time-off (parallel)
+- [x] 08-02-PLAN.md -- HomeTab.jsx: clock hero, stat tiles, project card, alerts feed (parallel)
+- [ ] 08-03-PLAN.md -- ScheduleTab.jsx: week strip, shifts, available shifts, pickup, time-off (parallel)
 - [x] 08-04-PLAN.md -- CredentialsTab.jsx: credential wallet, add-credential bottom sheet (parallel)
 - [ ] 08-05-PLAN.md -- EN/ES translations and final human verification
 **UI hint**: yes
