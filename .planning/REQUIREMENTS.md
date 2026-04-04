@@ -237,13 +237,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOME-04 | Phase 8 | Complete |
 | HOME-05 | Phase 8 | Complete |
 | HOME-06 | Phase 8 | Complete |
-| SCHED-01 | Phase 8 | Pending |
-| SCHED-02 | Phase 8 | Pending |
-| SCHED-03 | Phase 8 | Pending |
-| SCHED-04 | Phase 8 | Pending |
-| SCHED-05 | Phase 8 | Pending |
-| SCHED-06 | Phase 8 | Pending |
-| SCHED-07 | Phase 8 | Pending |
+| SCHED-01 | Phase 8 | Complete (08-03) |
+| SCHED-02 | Phase 8 | Complete (08-03) |
+| SCHED-03 | Phase 8 | Complete (08-03) |
+| SCHED-04 | Phase 8 | Complete (08-03) |
+| SCHED-05 | Phase 8 | Complete (08-03) |
+| SCHED-06 | Phase 8 | Complete (08-03) |
+| SCHED-07 | Phase 8 | Complete (08-03) |
 | CRED-01 | Phase 8 | Complete |
 | CRED-02 | Phase 8 | Complete |
 | CRED-03 | Phase 8 | Complete |
