@@ -113,7 +113,7 @@ Requirements for milestone v1.1: Premium Construction UI Overhaul. Design spec: 
 - [ ] **FSCH-01**: Post Available Shifts modal in Team tab (date, time, project, trade, overtime flag)
 - [ ] **FSCH-02**: Shift pickup request queue with approve/deny buttons in Team tab
 - [ ] **FSCH-03**: Time-off request queue with approve/deny + optional comments in Team tab
-- [ ] **FSCH-04**: Foreman notified in-app when employee requests shift or time-off
+- [x] **FSCH-04**: Foreman notified in-app when employee requests shift or time-off
 
 ### Notifications
 
@@ -255,7 +255,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FSCH-01 | Phase 9 | Pending |
 | FSCH-02 | Phase 9 | Pending |
 | FSCH-03 | Phase 9 | Pending |
-| FSCH-04 | Phase 9 | Pending |
+| FSCH-04 | Phase 9 | Complete |
 | CRED-04 | Phase 9 | Pending |
 | NOTIF-01 | Phase 10 | Pending |
 | NOTIF-02 | Phase 10 | Pending |

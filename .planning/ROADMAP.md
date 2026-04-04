@@ -201,5 +201,5 @@ v1.1: Phases 7 -> 8 -> 9 -> 10
 | 6. Polish and Theme Audit | 2/3 | In Progress | |
 | 7. Premium Foundation | 1/5 | In Progress|  |
 | 8. Employee Portal Overhaul | 3/5 | In Progress|  |
-| 9. Driver + Foreman Portal Updates | 0/3 | Planned | - |
+| 9. Driver + Foreman Portal Updates | 2/3 | In Progress|  |
 | 10. Notifications + Cross-Portal Polish | 0/TBD | Not started | - |
