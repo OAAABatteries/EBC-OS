@@ -151,14 +151,13 @@ Plans:
   3. Schedule tab shows a 7-day week strip with today highlighted, shift cards with project/time/status, and an Available Shifts section when the foreman has posted open shifts
   4. Employee can submit a time-off request via bottom sheet (date range, reason, notes) and see its status inline on the schedule (Requested/Approved/Denied)
   5. Employee can view, add, and track credentials with expiry dates, and expiring certs surface as alerts in the Home feed
-**Plans:** 6 plans
+**Plans:** 5 plans (3 waves -- HomeTab/ScheduleTab/CredentialsTab run in parallel)
 Plans:
-- [ ] 08-01-PLAN.md -- Tab skeleton, CSS classes, migration SQL, Drawings tab wiring
-- [ ] 08-02-PLAN.md -- Home dashboard (clock hero, stat tiles, project card, alerts)
-- [ ] 08-03-PLAN.md -- Schedule tab (week strip, shifts, available shifts, pickup)
-- [ ] 08-04-PLAN.md -- Time-off request bottom sheet and inline status
-- [ ] 08-05-PLAN.md -- Credential wallet and add-credential bottom sheet
-- [ ] 08-06-PLAN.md -- EN/ES translations and final human verification
+- [ ] 08-01-PLAN.md -- Foundation: migration SQL, CSS classes, tab skeleton, directory + stubs, Drawings wiring
+- [ ] 08-02-PLAN.md -- HomeTab.jsx: clock hero, stat tiles, project card, alerts feed (parallel)
+- [ ] 08-03-PLAN.md -- ScheduleTab.jsx: week strip, shifts, available shifts, pickup, time-off (parallel)
+- [ ] 08-04-PLAN.md -- CredentialsTab.jsx: credential wallet, add-credential bottom sheet (parallel)
+- [ ] 08-05-PLAN.md -- EN/ES translations and final human verification
 **UI hint**: yes
 
 ### Phase 9: Driver + Foreman Portal Updates
@@ -201,6 +200,6 @@ v1.1: Phases 7 -> 8 -> 9 -> 10
 | 5. ForemanView Refactor | 0/TBD | Not started | - |
 | 6. Polish and Theme Audit | 2/3 | In Progress | |
 | 7. Premium Foundation | 1/5 | In Progress|  |
-| 8. Employee Portal Overhaul | 0/6 | Planned | - |
+| 8. Employee Portal Overhaul | 0/5 | Planned | - |
 | 9. Driver + Foreman Portal Updates | 0/TBD | Not started | - |
 | 10. Notifications + Cross-Portal Polish | 0/TBD | Not started | - |
