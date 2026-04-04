@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Field Portal Perfection
 status: executing
-stopped_at: Completed 07-03-PLAN.md
-last_updated: "2026-04-04T04:25:00.000Z"
-last_activity: 2026-04-04
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-04-03T23:16:30.000Z"
+last_activity: 2026-04-03
 progress:
   total_phases: 7
   completed_phases: 6
@@ -74,6 +74,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02-shared-field-components PP06 | 7m | 2 tasks | 5 files |
 | Phase 06-polish-and-theme-audit P01 | 3m | 2 tasks | 3 files |
 | Phase 06 P02 | 2m | 2 tasks | 5 files |
+| Phase 07-premium-foundation P01 | 3m | 2 tasks | 6 files |
 | Phase 07-premium-foundation P02 | 1 | 1 tasks | 1 files |
 | Phase 07-premium-foundation P03 | 8m | 2 tasks | 2 files |
 
@@ -114,6 +115,9 @@ Recent decisions affecting current work:
 - [Phase 07-premium-foundation]: PremiumCard alert bg uses var(--amber-dim) not rgba(var(--accent-rgb)) -- --accent-rgb does not exist in any theme in constants.js
 - [Phase 07-premium-foundation]: PremiumCard has zero imports -- pure JSX + CSS class composition, self-contained, no circular dependency risk
 - [Phase 07-premium-foundation]: PremiumCard coexists with FieldCard per D-01 -- separate visual language, not a replacement
+- [Phase 07-premium-foundation P01]: Default theme changed to ebc -- new users see EBC Brand; existing users keep saved theme
+- [Phase 07-premium-foundation P01]: PortalHeader theme prop defaults to null -- daylight CSS filter dormant until Phases 8-9 wire the prop
+- [Phase 07-premium-foundation P01]: portal-header-accent-border overrides border-bottom-color only -- glass-border width/style remain from .header
 
 ### v1.1 Roadmap Decisions
 
@@ -138,6 +142,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T04:14:25.472Z
-Stopped at: Completed 07-02-PLAN.md
+Last session: 2026-04-03T23:16:30.000Z
+Stopped at: Completed 07-01-PLAN.md
 Resume file: None
