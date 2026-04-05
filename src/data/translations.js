@@ -946,4 +946,13 @@ export const T = {
   "Pending T&M": { es: "T&M Pendientes" },
   "Production Today": { es: "Producción Hoy" },
   "Deliveries Pending": { es: "Entregas Pendientes" },
+
+  // ── Offline persistence ──
+  "Draft saved": { es: "Borrador guardado" },
+  "Resume draft?": { es: "¿Reanudar borrador?" },
+  "Draft restored": { es: "Borrador restaurado" },
+  "Discard draft": { es: "Descartar borrador" },
+  "actions pending": { es: "acciones pendientes" },
+  "syncing": { es: "sincronizando" },
+  "actions": { es: "acciones" },
 };

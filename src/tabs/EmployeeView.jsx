@@ -9,6 +9,7 @@ import { ReportProblemModal } from "../components/ReportProblemModal";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { useNotifications } from "../hooks/useNotifications";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
+import { useFormDraft } from "../hooks/useFormDraft";
 import { findNearestGeofence, getLocationsInRange, pointInPolygon, polygonAreaSqFt } from "../utils/geofence";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
@@ -116,7 +117,10 @@ export function EmployeeView({ app }) {
   const [showProjectSearch, setShowProjectSearch] = useState(false);
 
   // ── material request state ──
-  const [matForm, setMatForm] = useState({ material: "", qty: "", unit: "EA", notes: "", photo: null, photos: [] });
+  const [matForm, setMatForm, { clearDraft: clearMatDraft, hasDraft: hasMatDraft }] = useFormDraft(
+    `mat_request_${activeEmp?.id || "anon"}`,
+    { material: "", qty: "", unit: "EA", notes: "", photo: null, photos: [] }
+  );
   const [matProjectId, setMatProjectId] = useState(null);
 
   // ── clock map ──
@@ -669,7 +673,7 @@ export function EmployeeView({ app }) {
       driverId: null,
     };
     setMaterialRequests(prev => [newReq, ...prev]);
-    setMatForm({ material: "", qty: "", unit: "EA", notes: "", photo: null, photos: [] });
+    clearMatDraft();
     show(t("Request Material") + " — " + newReq.material, "ok");
   };
 

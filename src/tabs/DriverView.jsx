@@ -6,6 +6,7 @@ import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, EmptyState, Statu
 import { PodModal } from "../components/field/PodModal";
 import { ShortageReportModal } from "../components/field/ShortageReportModal";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
+import { useFormDraft } from "../hooks/useFormDraft";
 
 // ═══════════════════════════════════════════════════════════════
 //  Driver View — Delivery Route Map + Queue Management
@@ -86,7 +87,10 @@ export function DriverView({ app }) {
   const [loadQty, setLoadQty] = useState("");
   const [loadNote, setLoadNote] = useState("");
   const [showReturnForm, setShowReturnForm] = useState(false);
-  const [returnForm, setReturnForm] = useState({ material: "", qty: "", reason: "Material Return", destination: "Yard", notes: "" });
+  const [returnForm, setReturnForm, { clearDraft: clearReturnDraft }] = useFormDraft(
+    `return_trip_${activeDriver?.id || "anon"}`,
+    { material: "", qty: "", reason: "Material Return", destination: "Yard", notes: "" }
+  );
   const [returnTrips, setReturnTrips] = useState(() => {
     try { return JSON.parse(localStorage.getItem("ebc_returnTrips") || "[]"); } catch { return []; }
   });
@@ -351,7 +355,7 @@ export function DriverView({ app }) {
       status: "pending",
     };
     setReturnTrips(prev => [trip, ...prev]);
-    setReturnForm({ material: "", qty: "", reason: "Material Return", destination: "Yard", notes: "" });
+    clearReturnDraft();
     setShowReturnForm(false);
     show(t("Return Pickup") + " \u2713", "ok");
   };

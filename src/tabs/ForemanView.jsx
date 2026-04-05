@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, ClipboardList, HardHat, MessageSquare, Pin, PinOff, LayoutDashboard, Users, Clock as ClockIcon, MoreHorizontal, FileText, Calendar, Settings, BarChart3, ClipboardCheck } from "lucide-react";
 import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, FieldInput, EmptyState, StatusBadge, StatTile, AlertCard, FieldSignaturePad, CredentialCard } from "../components/field";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
+import { useFormDraft } from "../hooks/useFormDraft";
 import { FeatureGuide } from "../components/FeatureGuide";
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { T } from "../data/translations";
@@ -124,7 +125,10 @@ export function ForemanView({ app }) {
   const [laborEntries, setLaborEntries] = useState(() => {
     try { return JSON.parse(localStorage.getItem("ebc_laborEntries") || "[]"); } catch { return []; }
   });
-  const [laborForm, setLaborForm] = useState({ employeeId: "", areaId: "", costCode: "framing", hours: "", payType: "regular", notes: "" });
+  const [laborForm, setLaborForm, { clearDraft: clearLaborDraft }] = useFormDraft(
+    `labor_entry_${activeForeman?.id || "anon"}`,
+    { employeeId: "", areaId: "", costCode: "framing", hours: "", payType: "regular", notes: "" }
+  );
   const COST_CODES = ["framing", "board", "tape", "finish", "ACT", "demo", "cleanup", "general"];
   const PAY_TYPES = ["regular", "overtime", "doubletime"];
 
@@ -448,7 +452,7 @@ export function ForemanView({ app }) {
       localStorage.setItem("ebc_laborEntries", JSON.stringify(updated));
       return updated;
     });
-    setLaborForm({ employeeId: "", areaId: "", costCode: "framing", hours: "", payType: "regular", notes: "" });
+    clearLaborDraft();
     show?.(`${t("Labor Entry")} — ${emp?.name} · ${laborForm.hours}h ${laborForm.costCode} ✓`);
   };
 
