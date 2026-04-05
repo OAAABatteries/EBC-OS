@@ -122,6 +122,8 @@ export function ForemanView({ app }) {
 
   // ── Labor Entry state ──
   const [showLaborEntry, setShowLaborEntry] = useState(false);
+  const [bulkLaborMode, setBulkLaborMode] = useState(true); // default to bulk
+  const [bulkLaborSelected, setBulkLaborSelected] = useState({});
   const [laborEntries, setLaborEntries] = useState(() => {
     try { return JSON.parse(localStorage.getItem("ebc_laborEntries") || "[]"); } catch { return []; }
   });
@@ -454,6 +456,59 @@ export function ForemanView({ app }) {
     });
     clearLaborDraft();
     show?.(`${t("Labor Entry")} — ${emp?.name} · ${laborForm.hours}h ${laborForm.costCode} ✓`);
+  };
+
+  // ── bulk labor handler: same hours for multiple crew ──
+  const handleBulkLabor = () => {
+    const selectedIds = Object.entries(bulkLaborSelected).filter(([, v]) => v).map(([id]) => id);
+    if (selectedIds.length === 0 || !laborForm.areaId || !laborForm.hours) return;
+    const area = (areas || []).find(a => String(a.id) === String(laborForm.areaId));
+    const newEntries = selectedIds.map(empId => {
+      const emp = employees.find(e => String(e.id) === String(empId));
+      return {
+        id: crypto.randomUUID(),
+        employeeId: empId,
+        employeeName: emp?.name || "Unknown",
+        projectId: selectedProjectId,
+        areaId: laborForm.areaId,
+        areaName: area?.name || "Unknown",
+        floor: area?.floor || "",
+        zone: area?.zone || "",
+        costCode: laborForm.costCode,
+        hours: Number(laborForm.hours),
+        payType: laborForm.payType,
+        notes: laborForm.notes.trim(),
+        date: new Date().toISOString().slice(0, 10),
+        createdAt: new Date().toISOString(),
+      };
+    });
+    setLaborEntries(prev => {
+      const updated = [...newEntries, ...prev];
+      localStorage.setItem("ebc_laborEntries", JSON.stringify(updated));
+      return updated;
+    });
+    setBulkLaborSelected({});
+    clearLaborDraft();
+    show?.(`${t("Labor Entry")} — ${selectedIds.length} ${t("crew")} · ${laborForm.hours}h ${laborForm.costCode} ✓`);
+  };
+
+  // ── labor entry edit/delete ──
+  const handleDeleteLabor = (entryId) => {
+    setLaborEntries(prev => {
+      const updated = prev.map(le => le.id === entryId ? { ...le, status: "deleted", deletedAt: new Date().toISOString(), deletedBy: activeForeman?.name } : le);
+      localStorage.setItem("ebc_laborEntries", JSON.stringify(updated));
+      return updated;
+    });
+    show?.(`${t("Labor Entry")} ${t("deleted")} ✓`);
+  };
+
+  const handleEditLabor = (entryId, newHours) => {
+    setLaborEntries(prev => {
+      const updated = prev.map(le => le.id === entryId ? { ...le, hours: Number(newHours), editedAt: new Date().toISOString(), editedBy: activeForeman?.name, originalHours: le.originalHours || le.hours } : le);
+      localStorage.setItem("ebc_laborEntries", JSON.stringify(updated));
+      return updated;
+    });
+    show?.(`${t("Labor Entry")} ${t("updated")} ✓`);
   };
 
   // ── today's time entries for this foreman ──
@@ -849,18 +904,18 @@ export function ForemanView({ app }) {
   const pendingTmCount = (tmTickets || []).filter(t => String(t.projectId) === String(selectedProjectId) && (t.status === "draft" || t.status === "submitted")).length;
 
   const foremanTabDefs = [
-    // Primary (4 field-critical tabs)
+    // Primary (4 field-critical tabs — Daily Report promoted per R7 audit)
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, badge: false },
     { id: "production", label: t("Production"), icon: BarChart3, badge: false },
     { id: "tm", label: t("T&M"), icon: FileText, badge: pendingTmCount > 0 },
     { id: "team", label: "Team", icon: Users, badge: pendingRequestCount > 0 },
-    // Overflow (5 tabs — Clock merged into Dashboard, Hours merged into Dashboard KPIs, Documents accessible via Drawings, Settings in PortalHeader)
+    // Overflow (frequency-driven order)
+    { id: "reports", label: t("Daily Report"), icon: ClipboardList, badge: (dailyReports || []).filter(r => r.projectId === selectedProjectId && r.date === new Date().toISOString().slice(0,10)).length > 0 },
     { id: "punchList", label: t("Punch List"), icon: ClipboardCheck, badge: openPunchCount > 0 },
     { id: "materials", label: "Materials", icon: Package, badge: projectMatRequests.filter(r => r.status === "requested" || r.status === "pending").length > 0 },
-    { id: "jsa", label: "JSA", icon: Shield, badge: activeJsaCount > 0 },
-    { id: "drawings", label: "Drawings", icon: FileText, badge: false },
-    { id: "reports", label: "Daily Report", icon: ClipboardList, badge: (dailyReports || []).filter(r => r.projectId === selectedProjectId && r.date === new Date().toISOString().slice(0,10)).length > 0 },
     { id: "issues", label: t("Issues"), icon: AlertTriangle, badge: (problems || []).filter(p => String(p.projectId) === String(selectedProjectId) && p.status !== "resolved").length > 0 },
+    { id: "drawings", label: "Drawings", icon: FileText, badge: false },
+    { id: "jsa", label: "JSA", icon: Shield, badge: activeJsaCount > 0 },
   ];
 
   // FSCH-04: Pull-based in-app alert. Foreman sees pending request alerts when opening Dashboard.
@@ -1839,14 +1894,45 @@ export function ForemanView({ app }) {
                     </div>
                   )}
 
-                  {/* ── Labor Entry Form ── */}
+                  {/* ── Labor Entry Form (Bulk + Single mode) ── */}
                   {showLaborEntry && (
                     <div style={{ marginBottom: 14, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, padding: 12 }}>
-                      <div className="text-sm font-bold mb-8">{t("Labor Entry")} — {t("by area & cost code")}</div>
-                      <select className="form-input field-input mb-8" value={laborForm.employeeId} onChange={e => setLaborForm(p => ({ ...p, employeeId: e.target.value }))}>
-                        <option value="">{t("Select crew member")}</option>
-                        {allDisplayCrew.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                        <div className="text-sm font-bold">{t("Labor Entry")}</div>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          <button className={`btn btn-sm ${bulkLaborMode ? "btn-primary" : "btn-ghost"}`} style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => setBulkLaborMode(true)}>{t("Bulk")}</button>
+                          <button className={`btn btn-sm ${!bulkLaborMode ? "btn-primary" : "btn-ghost"}`} style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => setBulkLaborMode(false)}>{t("Single")}</button>
+                        </div>
+                      </div>
+
+                      {/* Crew selection — bulk (checkboxes) or single (dropdown) */}
+                      {bulkLaborMode ? (
+                        <div style={{ maxHeight: 180, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 8, marginBottom: 8, padding: 4 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 8px", borderBottom: "1px solid var(--border)" }}>
+                            <span className="text-xs font-bold">{t("Select crew")} ({Object.values(bulkLaborSelected).filter(Boolean).length})</span>
+                            <button className="text-xs" style={{ color: "var(--accent)", background: "none", border: "none", cursor: "pointer" }}
+                              onClick={() => { const all = {}; allDisplayCrew.forEach(c => { all[c.id] = true; }); setBulkLaborSelected(all); }}>
+                              {t("Select All")}
+                            </button>
+                          </div>
+                          {allDisplayCrew.map(c => (
+                            <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", cursor: "pointer", borderBottom: "1px solid var(--border)" }}>
+                              {bulkLaborSelected[c.id]
+                                ? <CheckSquare size={16} style={{ color: "var(--accent)", flexShrink: 0 }} onClick={() => setBulkLaborSelected(p => ({ ...p, [c.id]: false }))} />
+                                : <Square size={16} style={{ color: "var(--text3)", flexShrink: 0 }} onClick={() => setBulkLaborSelected(p => ({ ...p, [c.id]: true }))} />
+                              }
+                              <span className="text-sm">{c.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      ) : (
+                        <select className="form-input field-input mb-8" value={laborForm.employeeId} onChange={e => setLaborForm(p => ({ ...p, employeeId: e.target.value }))}>
+                          <option value="">{t("Select crew member")}</option>
+                          {allDisplayCrew.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                      )}
+
+                      {/* Shared fields: area, cost code, hours, pay type */}
                       <select className="form-input field-input mb-8" value={laborForm.areaId} onChange={e => setLaborForm(p => ({ ...p, areaId: e.target.value }))}>
                         <option value="">{t("Select area")}</option>
                         {(areas || []).filter(a => String(a.projectId) === String(selectedProjectId)).map(a => <option key={a.id} value={a.id}>{a.name} — {a.floor} {a.zone}</option>)}
@@ -1863,19 +1949,37 @@ export function ForemanView({ app }) {
                         </select>
                       </div>
                       <input type="text" className="form-input field-input mb-8" placeholder={t("Notes")} value={laborForm.notes} onChange={e => setLaborForm(p => ({ ...p, notes: e.target.value }))} />
-                      <button className="btn btn-primary touch-target" style={{ width: "100%", height: 48, fontSize: 15, fontWeight: 700, borderRadius: 10 }} onClick={handleAddLabor}
-                        disabled={!laborForm.employeeId || !laborForm.areaId || !laborForm.hours}>
-                        {t("Add Labor")}
-                      </button>
-                      {/* Today's labor entries for this project */}
-                      {laborEntries.filter(le => le.projectId === selectedProjectId && le.date === new Date().toISOString().slice(0, 10)).length > 0 && (
+
+                      {/* Submit button — bulk or single */}
+                      {bulkLaborMode ? (
+                        <button className="btn btn-primary touch-target" style={{ width: "100%", height: 48, fontSize: 15, fontWeight: 700, borderRadius: 10 }} onClick={handleBulkLabor}
+                          disabled={Object.values(bulkLaborSelected).filter(Boolean).length === 0 || !laborForm.areaId || !laborForm.hours}>
+                          {t("Add Labor")} ({Object.values(bulkLaborSelected).filter(Boolean).length} {t("crew")})
+                        </button>
+                      ) : (
+                        <button className="btn btn-primary touch-target" style={{ width: "100%", height: 48, fontSize: 15, fontWeight: 700, borderRadius: 10 }} onClick={handleAddLabor}
+                          disabled={!laborForm.employeeId || !laborForm.areaId || !laborForm.hours}>
+                          {t("Add Labor")}
+                        </button>
+                      )}
+
+                      {/* Today's labor entries with edit/delete */}
+                      {laborEntries.filter(le => le.projectId === selectedProjectId && le.date === new Date().toISOString().slice(0, 10) && le.status !== "deleted").length > 0 && (
                         <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
-                          <div className="text-xs font-bold mb-4">{t("Today's Labor")}</div>
-                          {laborEntries.filter(le => le.projectId === selectedProjectId && le.date === new Date().toISOString().slice(0, 10)).map(le => (
-                            <div key={le.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 12, borderBottom: "1px solid var(--border)" }}>
-                              <span>{le.employeeName}</span>
-                              <span>{le.areaName} · {le.costCode}</span>
-                              <span style={{ fontWeight: 700 }}>{le.hours}h {le.payType !== "regular" ? `(${le.payType.toUpperCase().slice(0,2)})` : ""}</span>
+                          <div className="text-xs font-bold mb-4">{t("Today's Labor")} ({laborEntries.filter(le => le.projectId === selectedProjectId && le.date === new Date().toISOString().slice(0, 10) && le.status !== "deleted").reduce((s, le) => s + le.hours, 0).toFixed(1)}h)</div>
+                          {laborEntries.filter(le => le.projectId === selectedProjectId && le.date === new Date().toISOString().slice(0, 10) && le.status !== "deleted").map(le => (
+                            <div key={le.id} style={{ display: "flex", alignItems: "center", padding: "4px 0", fontSize: 12, borderBottom: "1px solid var(--border)", gap: 6 }}>
+                              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{le.employeeName}</span>
+                              <span className="text-muted">{le.costCode}</span>
+                              <span style={{ fontWeight: 700, minWidth: 40, textAlign: "right" }}>{le.hours}h{le.payType !== "regular" ? ` ${le.payType.slice(0,2).toUpperCase()}` : ""}</span>
+                              <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 2 }}
+                                onClick={() => { const newHrs = prompt(t("Edit hours") + ` (${le.employeeName}):`, le.hours); if (newHrs && !isNaN(newHrs)) handleEditLabor(le.id, newHrs); }}>
+                                <PenLine size={12} />
+                              </button>
+                              <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--red)", padding: 2 }}
+                                onClick={() => handleDeleteLabor(le.id)}>
+                                <X size={12} />
+                              </button>
                             </div>
                           ))}
                         </div>

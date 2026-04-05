@@ -568,6 +568,11 @@ const _demoChangeOrders = [
 // ── SEED: RFIs ──
 const _demoRfis = [
   {id:401,projectId:19,number:"RFI-001",subject:"Thin-cut stone pricing for columns per architect",status:"open",submitted:"2026-03-06",assigned:"Jeremy Price"},
+  // Endurance - Woodside Laboratory (projectId: 1) — seed RFIs for PM audit
+  {id:402,projectId:1,number:"RFI-001",subject:"Ceiling grid layout at corridor intersection — confirm centerline vs offset",status:"open",submitted:"2026-03-28",assigned:"Mason Williams",priority:"high",specRef:"09 51 13",costImpact:"Possible add if offset grid required",scheduleImpact:"2 day delay if redesign needed",question:"At the corridor intersection near Grid B/3, the reflected ceiling plan shows a centerline grid but the partition layout suggests an offset alignment. Please confirm which layout takes priority.",area:"Corridor A",daysOut:8},
+  {id:403,projectId:1,number:"RFI-002",subject:"Framing height at Control Room — confirm top-of-wall vs deck",status:"Answered",submitted:"2026-03-25",assigned:"Mason Williams",priority:"medium",specRef:"05 40 00",response:"Frame to deck. Refer to detail 4/A3.2. Full height framing with deflection track at top.",responseDate:"2026-03-27",question:"Control Room wall section shows 10'-0\" AFF but structural deck is at 12'-6\". Confirm if framing terminates at 10' with cripple or runs full height to deck.",area:"Control Room",daysOut:0},
+  {id:404,projectId:1,number:"RFI-003",subject:"ACT tile substitution — Armstrong 770 vs specified Ultima",status:"open",submitted:"2026-04-01",assigned:"Mason Williams",priority:"low",specRef:"09 51 00",costImpact:"$0.12/SF savings if approved",scheduleImpact:"None — lead times equal",question:"Armstrong Ultima HRC specified but 770 is available locally with same NRC/CAC ratings and shorter lead time. Request approval for substitution.",area:"Main Lab",daysOut:4},
+  {id:405,projectId:1,number:"RFI-004",subject:"Fire-rated shaft wall assembly at elevator — UL reference needed",status:"open",submitted:"2026-04-03",assigned:"Mason Williams",priority:"critical",specRef:"09 21 16",costImpact:"Potential $2,400 add for upgraded assembly",scheduleImpact:"3 day delay if current assembly rejected",question:"Elevator shaft requires 2-hour fire rating. Current spec calls for standard CH assembly but code review suggests SA assembly may be required. Please provide UL design number or confirm CH is acceptable.",area:"Elevator Shaft",daysOut:2},
 ];
 
 // ── SEED: SUBMITTALS ──
@@ -628,7 +633,12 @@ const _demoIncidents = [];
 
 const _demoToolboxTalks = [];
 
-const _demoDailyReports = [];
+const _demoDailyReports = [
+  // Endurance - Woodside Laboratory (projectId: 1) — seed daily reports for PM audit
+  {id:"dr-ws-1",projectId:1,date:"2026-04-03",foremanId:4,foremanName:"Antonio Ramirez",temperature:"82°F",conditions:"clear",teamPresent:[2,3,5,6,7],crewCount:5,totalHours:40,workPerformed:"Framed east wall of Main Lab. Hung 200 SF drywall on Control Room ceiling. Started demo of existing partition at Corridor A.",materialsReceived:"200 EA 3-5/8\" studs, 80 SHT 5/8\" Type X",equipmentOnSite:"Scissor lift, powder-actuated tool",visitors:"Mason Williams (GC super) — morning walkthrough",safetyIncident:"None",issues:"Pipe run blocking framing at Grid B — submitted RFI-001.",tomorrowPlan:"Continue Main Lab framing. Start corridor ceiling grid layout.",photos:[],reviewedBy:null,reviewedAt:null,submittedAt:"2026-04-03T15:30:00Z"},
+  {id:"dr-ws-2",projectId:1,date:"2026-04-04",foremanId:4,foremanName:"Antonio Ramirez",temperature:"79°F",conditions:"partly cloudy",teamPresent:[2,3,5,6,7,8],crewCount:6,totalHours:48,workPerformed:"Completed Main Lab east wall framing. Hung remaining drywall on Control Room ceiling. GC confirmed RFI-002 — frame to deck. Started elevator shaft layout.",materialsReceived:"None",equipmentOnSite:"Scissor lift",visitors:"None",safetyIncident:"None",issues:"Elevator shaft fire rating needs UL confirmation — submitted RFI-004.",tomorrowPlan:"Continue elevator shaft framing. Begin ACT grid at Storage Room A.",photos:[],reviewedBy:"Abner Aguilar",reviewedAt:"2026-04-04T17:00:00Z",submittedAt:"2026-04-04T15:45:00Z"},
+  {id:"dr-ws-3",projectId:1,date:"2026-04-05",foremanId:4,foremanName:"Antonio Ramirez",temperature:"76°F",conditions:"overcast",teamPresent:[2,3,5,6],crewCount:4,totalHours:32,workPerformed:"Elevator shaft framing in progress. Started ACT grid layout at Storage Room A. Punch items from corridor walkthrough documented.",materialsReceived:"ACT grid runners + cross tees (delivery from EBC Yard)",equipmentOnSite:"Scissor lift, laser level",visitors:"None",safetyIncident:"None",issues:"ACT tile substitution pending — RFI-003 awaiting response.",tomorrowPlan:"Weekend — resume Monday with corridor framing and ACT install.",photos:[],reviewedBy:null,reviewedAt:null,submittedAt:"2026-04-05T15:15:00Z"},
+];
 
 // ── SEED: TAKEOFFS ──
 const _demoTakeoffs = [];
