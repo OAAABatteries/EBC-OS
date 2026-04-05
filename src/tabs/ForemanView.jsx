@@ -1244,6 +1244,56 @@ export function ForemanView({ app }) {
                     )}
                   </div>
                 )}
+
+                {/* Today's Activity Summary — deliveries, open punch, pending T&M, production */}
+                <div style={{ marginTop: "var(--space-8)" }}>
+                  <div className="foreman-dashboard-section-label">{t("TODAY'S ACTIVITY")}</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
+                    <div style={{ padding: "10px 12px", background: "var(--bg2)", borderRadius: 8 }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: "var(--red)" }}>{openPunchCount}</div>
+                      <div className="text-xs text-muted">{t("Open Punch")}</div>
+                    </div>
+                    <div style={{ padding: "10px 12px", background: "var(--bg2)", borderRadius: 8 }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: "var(--amber)" }}>{pendingTmCount}</div>
+                      <div className="text-xs text-muted">{t("Pending T&M")}</div>
+                    </div>
+                    <div style={{ padding: "10px 12px", background: "var(--bg2)", borderRadius: 8 }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: "var(--green)" }}>
+                        {(productionLogs || []).filter(pl => pl.projectId === selectedProjectId && (pl.date === new Date().toISOString().slice(0,10) || (pl.createdAt && pl.createdAt.startsWith(new Date().toISOString().slice(0,10))))).length}
+                      </div>
+                      <div className="text-xs text-muted">{t("Production Today")}</div>
+                    </div>
+                    <div style={{ padding: "10px 12px", background: "var(--bg2)", borderRadius: 8 }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: "var(--blue)" }}>
+                        {projectMatRequests.filter(r => r.status === "approved" || r.status === "in-transit").length}
+                      </div>
+                      <div className="text-xs text-muted">{t("Deliveries Pending")}</div>
+                    </div>
+                  </div>
+                  {/* Look-ahead preview — next 3 days from calendar events */}
+                  {(() => {
+                    const upcoming = (calendarEvents || [])
+                      .filter(ev => {
+                        const evDate = new Date(ev.date || ev.start);
+                        const today = new Date(); today.setHours(0,0,0,0);
+                        const inThreeDays = new Date(today); inThreeDays.setDate(inThreeDays.getDate() + 3);
+                        return evDate >= today && evDate < inThreeDays && (!ev.projectId || String(ev.projectId) === String(selectedProjectId));
+                      })
+                      .slice(0, 4);
+                    if (upcoming.length === 0) return null;
+                    return (
+                      <div style={{ marginTop: 12 }}>
+                        <div className="text-xs font-bold mb-4">{t("Upcoming")}</div>
+                        {upcoming.map((ev, i) => (
+                          <div key={i} className="text-xs" style={{ padding: "4px 0", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between" }}>
+                            <span>{ev.title || ev.type}</span>
+                            <span className="text-muted">{new Date(ev.date || ev.start).toLocaleDateString(lang === "es" ? "es" : "en", { weekday: "short", month: "short", day: "numeric" })}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
             )}
 

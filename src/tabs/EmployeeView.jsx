@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Search, MapPin, Calendar, Clock, AlertTriangle, Shield, Package, ClipboardList, FileText, PenLine, Settings, Home, ShieldCheck, BarChart3 } from "lucide-react";
-import { PortalHeader, PortalTabBar, FieldButton, FieldInput, FieldSelect, EmptyState, StatusBadge, DrawingsTab } from "../components/field";
+import { PortalHeader, PortalTabBar, FieldButton, FieldInput, FieldSelect, EmptyState, StatusBadge, DrawingsTab, PhotoCapture } from "../components/field";
 import { HomeTab } from './employee/HomeTab';
 import { ProductionEntry } from './employee/ProductionEntry';
 import { ScheduleTab } from './employee/ScheduleTab';
@@ -116,7 +116,7 @@ export function EmployeeView({ app }) {
   const [showProjectSearch, setShowProjectSearch] = useState(false);
 
   // ── material request state ──
-  const [matForm, setMatForm] = useState({ material: "", qty: "", unit: "EA", notes: "", photo: null });
+  const [matForm, setMatForm] = useState({ material: "", qty: "", unit: "EA", notes: "", photo: null, photos: [] });
   const [matProjectId, setMatProjectId] = useState(null);
 
   // ── clock map ──
@@ -649,10 +649,8 @@ export function EmployeeView({ app }) {
   const handleMatSubmit = () => {
     if (!matProjectId || !matForm.material.trim() || !matForm.qty) return;
     const proj = projects.find(p => String(p.id) === String(matProjectId));
-    let photoUrl = null;
-    if (matForm.photo) {
-      photoUrl = URL.createObjectURL(matForm.photo);
-    }
+    const photos = matForm.photos || [];
+    const photoUrl = photos.length > 0 ? photos[0] : (matForm.photo ? URL.createObjectURL(matForm.photo) : null);
     const newReq = {
       id: crypto.randomUUID(),
       employeeId: activeEmp.id,
@@ -671,7 +669,7 @@ export function EmployeeView({ app }) {
       driverId: null,
     };
     setMaterialRequests(prev => [newReq, ...prev]);
-    setMatForm({ material: "", qty: "", unit: "EA", notes: "", photo: null });
+    setMatForm({ material: "", qty: "", unit: "EA", notes: "", photo: null, photos: [] });
     show(t("Request Material") + " — " + newReq.material, "ok");
   };
 
@@ -974,6 +972,26 @@ export function EmployeeView({ app }) {
         {/* ═══ CLOCK TAB ═══ */}
         {empTab === "clock" && (
           <div className="emp-content">
+            {/* Quick Clock In — big button when scheduled assignment exists, not clocked in */}
+            {!isClockedIn && assignedProject && (
+              <div style={{ marginBottom: 16, padding: 16, background: "var(--green-dim, rgba(16,185,129,0.1))", borderRadius: 12, border: "2px solid var(--green)", textAlign: "center" }}>
+                <div className="text-xs text-muted mb-4">{t("Scheduled today")}</div>
+                <div className="text-base font-bold mb-8" style={{ color: "var(--green)" }}>{assignedProject.name}</div>
+                <button
+                  className="btn btn-primary touch-target"
+                  style={{ width: "100%", height: 56, fontSize: 18, fontWeight: 800, borderRadius: 12, background: "var(--green)", border: "none", color: "#fff" }}
+                  onClick={() => {
+                    setSelectedProject({ id: assignedProject.id, name: assignedProject.name, withinGeofence: true });
+                    // Trigger clock-in with GPS in background
+                    handleClockIn();
+                  }}
+                >
+                  {t("CLOCK IN")}
+                </button>
+                <div className="text-xs text-muted" style={{ marginTop: 6 }}>{t("GPS check runs in background")}</div>
+              </div>
+            )}
+
             <div className="clock-card">
               <div className={`clock-status ${isClockedIn ? "in" : "out"}`}>
                 {isClockedIn ? t("Clocked In") : t("Clocked Out")}
@@ -1261,45 +1279,68 @@ export function EmployeeView({ app }) {
           />
         )}
 
-        {/* ═══ TIME LOG TAB ═══ */}
-        {empTab === "log" && (
-          <div className="emp-content">
-            <div className="section-header">
-              <div>
-                <div className="section-title emp-section-title">{t("Time Log")}</div>
-                <div className="section-sub">{t("This Week")} — {weekTotal.toFixed(1)}h</div>
+        {/* ═══ TIME LOG TAB — daily grouped with totals ═══ */}
+        {empTab === "log" && (() => {
+          // Group entries by date
+          const dayGroups = {};
+          weekEntries.forEach(entry => {
+            const day = new Date(entry.clockIn).toLocaleDateString(lang === "es" ? "es" : "en-US", { weekday: "short", month: "short", day: "numeric" });
+            if (!dayGroups[day]) dayGroups[day] = [];
+            dayGroups[day].push(entry);
+          });
+          return (
+            <div className="emp-content">
+              <div className="section-header">
+                <div>
+                  <div className="section-title emp-section-title">{t("Time Log")}</div>
+                  <div className="section-sub">{t("This Week")} — <strong>{weekTotal.toFixed(1)}h</strong></div>
+                </div>
               </div>
+              {weekEntries.length === 0 ? (
+                <EmptyState icon={Clock} heading={t("No entries this week")} t={t} />
+              ) : (
+                <div className="emp-log-list">
+                  {Object.entries(dayGroups).map(([dayLabel, entries]) => {
+                    const dayTotal = entries.reduce((s, e) => s + (e.totalHours || 0), 0);
+                    return (
+                      <div key={dayLabel}>
+                        {/* Day header with total */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0 4px", borderBottom: "2px solid var(--border)" }}>
+                          <span className="text-sm font-bold">{dayLabel}</span>
+                          <span className="text-sm font-bold" style={{ color: "var(--amber)" }}>{dayTotal.toFixed(1)}h</span>
+                        </div>
+                        {entries.map((entry) => (
+                          <div key={entry.id} className="card emp-log-entry" style={{ marginTop: 4 }}>
+                            <div className="flex-between mb-4">
+                              <span className="text-xs text-muted">{entry.projectName}</span>
+                              <span className={`badge ${entry.geofenceStatus === "inside" ? "badge-green" : entry.geofenceStatus === "override" ? "badge-amber" : "badge-red"}`}>
+                                {entry.geofenceStatus}
+                              </span>
+                            </div>
+                            <div className="flex-between">
+                              <span className="text-xs font-mono text-muted">
+                                {fmtTime(entry.clockIn)} — {fmtTime(entry.clockOut)}
+                              </span>
+                              <span className="text-sm font-bold text-amber">
+                                {entry.totalHours ? entry.totalHours.toFixed(2) + "h" : t("Active")}
+                              </span>
+                            </div>
+                            {entry.lunchDeducted > 0 && (
+                              <div className="text-xs text-dim mt-2">{t("lunch")}: -30m</div>
+                            )}
+                            {entry.overrideReason && (
+                              <div className="text-xs text-dim mt-2">{t("Override")}: {entry.overrideReason}</div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            {weekEntries.length === 0 ? (
-              <EmptyState icon={Clock} heading={t("No entries this week")} t={t} />
-            ) : (
-              <div className="emp-log-list">
-                {weekEntries.map((entry) => (
-                  <div key={entry.id} className="card emp-log-entry">
-                    <div className="flex-between mb-4">
-                      <span className="text-sm font-semi">{fmtDate(entry.clockIn)}</span>
-                      <span className={`badge ${entry.geofenceStatus === "inside" ? "badge-green" : entry.geofenceStatus === "override" ? "badge-amber" : "badge-red"}`}>
-                        {entry.geofenceStatus}
-                      </span>
-                    </div>
-                    <div className="text-xs text-muted mb-4">{entry.projectName}</div>
-                    <div className="flex-between">
-                      <span className="text-xs font-mono text-muted">
-                        {fmtTime(entry.clockIn)} — {fmtTime(entry.clockOut)}
-                      </span>
-                      <span className="text-sm font-bold text-amber">
-                        {entry.totalHours ? entry.totalHours.toFixed(2) + "h" : t("Active")}
-                      </span>
-                    </div>
-                    {entry.overrideReason && (
-                      <div className="text-xs text-dim mt-4">{t("Override")}: {entry.overrideReason}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+          );
+        })()}
 
         {/* ═══ JSA TAB ═══ */}
         {empTab === "jsa" && (() => {
@@ -1578,13 +1619,12 @@ export function EmployeeView({ app }) {
               </div>
               <div className="form-group mb-12">
                 <label className="form-label">{t("Photo (optional)")}</label>
-                <input type="file" accept="image/*" capture="environment"
-                  onChange={(e) => setMatForm(f => ({ ...f, photo: e.target.files?.[0] || null }))}
-                  style={{ color: 'var(--text)', fontSize: 'var(--text-base)' }} />
-                {matForm.photo && (
-                  <img src={URL.createObjectURL(matForm.photo)} alt="Preview"
-                    style={{ marginTop: 'var(--space-2)', maxHeight: '120px', borderRadius: 'var(--radius-sm)', objectFit: 'cover' }} />
-                )}
+                <PhotoCapture
+                  photos={matForm.photos || []}
+                  onPhotosChange={(photos) => setMatForm(f => ({ ...f, photos, photo: photos.length > 0 ? photos[0] : null }))}
+                  maxPhotos={3}
+                  t={t}
+                />
               </div>
               <FieldButton
                 variant="primary"

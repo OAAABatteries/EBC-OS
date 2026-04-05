@@ -316,14 +316,14 @@ export function DriverView({ app }) {
         setMaterialRequests(prev => prev.map(r => {
           if (r.id !== reqId) return r;
           const trail = [...(r.auditTrail || []), { action: "picked_up", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, timestamp: now, gps: { lat: pos.coords.latitude, lng: pos.coords.longitude }, loadedQty: actualQty, loadNote }];
-          return { ...r, status: "picked_up", driverId: activeDriver.id, loadedQty: actualQty, loadNote, auditTrail: trail };
+          return { ...r, status: "picked_up", pickedUpAt: now, driverId: activeDriver.id, loadedQty: actualQty, loadNote, auditTrail: trail };
         }));
       },
       () => {
         setMaterialRequests(prev => prev.map(r => {
           if (r.id !== reqId) return r;
           const trail = [...(r.auditTrail || []), { action: "picked_up", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, timestamp: now, loadedQty: actualQty, loadNote }];
-          return { ...r, status: "picked_up", driverId: activeDriver.id, loadedQty: actualQty, loadNote, auditTrail: trail };
+          return { ...r, status: "picked_up", pickedUpAt: now, driverId: activeDriver.id, loadedQty: actualQty, loadNote, auditTrail: trail };
         }));
       }
     );
@@ -334,10 +334,14 @@ export function DriverView({ app }) {
   // ── return trip handler ──
   const handleAddReturn = () => {
     if (!returnForm.material.trim()) return;
+    // Auto-link to most recent completed delivery's project
+    const lastDelivery = todayDelivered[0];
     const trip = {
       id: crypto.randomUUID(),
       driverId: activeDriver?.id,
       driverName: activeDriver?.name,
+      projectId: returnForm.projectId || lastDelivery?.projectId || null,
+      projectName: returnForm.projectName || lastDelivery?.projectName || "",
       material: returnForm.material.trim(),
       qty: Number(returnForm.qty) || 1,
       reason: returnForm.reason,
@@ -804,7 +808,7 @@ export function DriverView({ app }) {
                   {todayDelivered.map(req => (
                     <PremiumCard key={req.id} variant="info" className="driver-completed-card">
                       <div className="flex-between mb-4">
-                        <span className="text-sm font-semi">{req.material}</span>
+                        <span className="text-sm font-semi">{req.materialName || req.material || "Unknown"}</span>
                         <StatusBadge status="completed" t={t} />
                       </div>
                       <div className="text-xs text-muted mb-4">{req.projectName} — {req.qty} {req.unit}</div>

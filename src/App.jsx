@@ -2451,11 +2451,61 @@ function App({ auth, onLogout }) {
         </div>
       </div>
 
-      {/* View Toggle: List | Schedule */}
+      {/* View Toggle: List | Summary | Schedule */}
       <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
         <button className={`btn btn-sm ${projectViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("list")} style={{ display: "flex", alignItems: "center", gap: 4 }}><List style={{ width: 14, height: 14 }} /> List</button>
+        <button className={`btn btn-sm ${projectViewMode === "summary" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("summary")} style={{ display: "flex", alignItems: "center", gap: 4 }}><Columns style={{ width: 14, height: 14 }} /> Summary</button>
         <button className={`btn btn-sm ${projectViewMode === "schedule" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("schedule")} style={{ display: "flex", alignItems: "center", gap: 4 }}><BarChart2 style={{ width: 14, height: 14 }} /> Schedule</button>
       </div>
+
+      {/* Cross-Project Summary Table */}
+      {projectViewMode === "summary" && (
+        <div style={{ overflowX: "auto", marginBottom: 16 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <thead>
+              <tr style={{ borderBottom: "2px solid var(--border)", textAlign: "left" }}>
+                <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700 }}>Project</th>
+                <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700, textAlign: "right" }}>Progress</th>
+                <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700, textAlign: "right" }}>Contract</th>
+                <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700, textAlign: "right" }}>RFIs</th>
+                <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700, textAlign: "right" }}>COs</th>
+                <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700, textAlign: "right" }}>T&M</th>
+                <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700, textAlign: "right" }}>Punch</th>
+                <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700, textAlign: "right" }}>Hours</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProjects.filter(p => p.status === "in-progress" || (p.progress || 0) < 100).map(p => {
+                const pRfis = rfis.filter(r => r.projectId === p.id && r.status !== "Answered" && r.status !== "Closed").length;
+                const pCOs = changeOrders.filter(c => c.projectId === p.id && c.status === "pending").length;
+                const pTm = (tmTickets || []).filter(t => String(t.projectId) === String(p.id) && t.status !== "approved" && t.status !== "billed").length;
+                const pPunch = (punchItems || []).filter(pi => String(pi.projectId) === String(p.id) && pi.status !== "resolved" && pi.status !== "complete").length;
+                const pHours = timeEntries.filter(te => String(te.projectId) === String(p.id) && te.totalHours).reduce((s, te) => s + te.totalHours, 0);
+                return (
+                  <tr key={p.id} style={{ borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+                    onClick={() => { setProjects(prev => prev.map(proj => proj.id === p.id ? { ...proj, lastAccessed: new Date().toISOString() } : proj)); setModal({ type: "editProject", data: p }); }}>
+                    <td style={{ padding: "8px 6px", fontWeight: 600, color: "var(--blue)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</td>
+                    <td style={{ padding: "8px 6px", textAlign: "right" }}>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        <div style={{ width: 40, height: 6, background: "var(--bg3)", borderRadius: 3, overflow: "hidden" }}>
+                          <div style={{ width: `${p.progress || 0}%`, height: "100%", background: (p.progress || 0) >= 80 ? "var(--green)" : "var(--amber)", borderRadius: 3 }} />
+                        </div>
+                        <span>{p.progress || 0}%</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: "8px 6px", textAlign: "right", fontFamily: "monospace" }}>${((p.contract || 0) / 1000).toFixed(0)}k</td>
+                    <td style={{ padding: "8px 6px", textAlign: "right", color: pRfis > 0 ? "var(--red)" : "var(--text3)", fontWeight: pRfis > 0 ? 700 : 400 }}>{pRfis}</td>
+                    <td style={{ padding: "8px 6px", textAlign: "right", color: pCOs > 0 ? "var(--amber)" : "var(--text3)", fontWeight: pCOs > 0 ? 700 : 400 }}>{pCOs}</td>
+                    <td style={{ padding: "8px 6px", textAlign: "right", color: pTm > 0 ? "var(--amber)" : "var(--text3)" }}>{pTm}</td>
+                    <td style={{ padding: "8px 6px", textAlign: "right", color: pPunch > 0 ? "var(--red)" : "var(--text3)" }}>{pPunch}</td>
+                    <td style={{ padding: "8px 6px", textAlign: "right", fontFamily: "monospace" }}>{pHours.toFixed(0)}h</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Schedule / Gantt View */}
       {projectViewMode === "schedule" && (
