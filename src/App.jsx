@@ -1009,6 +1009,68 @@ function App({ auth, onLogout }) {
         </div>
       )}
 
+      {/* ── Today's Field Activity Summary — aggregates foreman-entered data ── */}
+      {(() => {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const todayProd = (productionLogs || []).filter(pl => pl.date === todayStr || (pl.createdAt && pl.createdAt.startsWith(todayStr)));
+        const todayTm = (tmTickets || []).filter(t => t.createdAt && t.createdAt.startsWith(todayStr));
+        const todayPunch = (punchItems || []).filter(p => (p.createdAt && p.createdAt.startsWith(todayStr)) || (p.resolvedAt && p.resolvedAt.startsWith(todayStr)));
+        const punchCreated = todayPunch.filter(p => p.createdAt && p.createdAt.startsWith(todayStr)).length;
+        const punchResolved = todayPunch.filter(p => p.resolvedAt && p.resolvedAt.startsWith(todayStr)).length;
+        const todayProblems = (problems || []).filter(p => p.reportedAt && p.reportedAt.startsWith(todayStr));
+        const hasActivity = todayProd.length > 0 || todayTm.length > 0 || todayPunch.length > 0 || todayProblems.length > 0;
+        if (!hasActivity) return null;
+        return (
+          <div className="card" style={{ padding: "14px 16px", marginBottom: 16, borderLeft: "3px solid var(--green)" }}>
+            <div className="text-sm font-semi mb-8" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <ClipboardList size={15} /> {t("Today's Field Activity")}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 8 }}>
+              {todayProd.length > 0 && (
+                <div style={{ padding: "8px 10px", borderRadius: 6, background: "var(--bg3)" }}>
+                  <div className="text-lg font-bold" style={{ color: "var(--green)" }}>{todayProd.length}</div>
+                  <div className="text-xs text-muted">{t("Production logged")}</div>
+                  <div className="text-xs text-dim">{todayProd.length} {t("entries today")}</div>
+                </div>
+              )}
+              {todayTm.length > 0 && (
+                <div style={{ padding: "8px 10px", borderRadius: 6, background: "var(--bg3)" }}>
+                  <div className="text-lg font-bold" style={{ color: "var(--amber)" }}>{todayTm.length}</div>
+                  <div className="text-xs text-muted">{t("T&M tickets")}</div>
+                  <div className="text-xs text-dim">{todayTm.length} {t("created today")}</div>
+                </div>
+              )}
+              {(punchCreated > 0 || punchResolved > 0) && (
+                <div style={{ padding: "8px 10px", borderRadius: 6, background: "var(--bg3)" }}>
+                  <div className="text-lg font-bold" style={{ color: "var(--red)" }}>{punchCreated}</div>
+                  <div className="text-xs text-muted">{t("Punch items")}</div>
+                  <div className="text-xs text-dim">{punchResolved} {t("resolved today")}</div>
+                </div>
+              )}
+              {todayProblems.length > 0 && (
+                <div style={{ padding: "8px 10px", borderRadius: 6, background: "var(--bg3)" }}>
+                  <div className="text-lg font-bold" style={{ color: "var(--red)" }}>{todayProblems.length}</div>
+                  <div className="text-xs text-muted">{t("Problems reported")}</div>
+                </div>
+              )}
+            </div>
+            {/* Per-project breakdown */}
+            <div style={{ marginTop: 10 }}>
+              {[...new Set(todayProd.map(p => p.projectId))].map(pid => {
+                const proj = projects.find(p => String(p.id) === String(pid));
+                const count = todayProd.filter(p => p.projectId === pid).length;
+                return proj ? (
+                  <div key={pid} className="text-xs" style={{ padding: "3px 0", cursor: "pointer", color: "var(--blue)" }}
+                    onClick={() => setModal({ type: "editProject", data: proj })}>
+                    {proj.name}: {count} {t("entries today")}
+                  </div>
+                ) : null;
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Today's Sites — quick directions / clock-in ── */}
       {(() => {
         const mySites = projects.filter(p => p.status === "in-progress" && p.lat && p.lng);
@@ -4458,6 +4520,49 @@ const ModalHub = ({ type, data, app }) => {
                       </div>
                     );
                   })()}
+
+                  {/* ── Generate Project Status Report ── */}
+                  <div style={{ marginTop: 16 }}>
+                    <button className="btn btn-primary" style={{ width: "100%", height: 44, fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+                      onClick={() => {
+                        const projAreas = (app.areas || []).filter(a => String(a.projectId) === String(draft.id));
+                        const complete = projAreas.filter(a => a.status === "complete").length;
+                        const totalBudget = projAreas.reduce((s, a) => s + (a.scopeItems || []).reduce((si, i) => si + (i.budgetQty || 0), 0), 0);
+                        const totalInstalled = projAreas.reduce((s, a) => s + (a.scopeItems || []).reduce((si, i) => si + (i.installedQty || 0), 0), 0);
+                        const pct = totalBudget > 0 ? Math.round((totalInstalled / totalBudget) * 100) : 0;
+                        const projTm = (app.tmTickets || []).filter(t => String(t.projectId) === String(draft.id));
+                        const tmTotal = projTm.reduce((s, t) => s + (t.laborEntries || []).reduce((ls, l) => ls + (l.hours * l.rate), 0) + (t.materialEntries || []).reduce((ms, m) => ms + (m.qty * m.unitCost), 0), 0);
+                        const openPunch = (app.punchItems || []).filter(p => String(p.projectId) === String(draft.id) && p.status !== "resolved" && p.status !== "complete").length;
+                        const report = [
+                          `PROJECT STATUS REPORT — ${draft.name}`,
+                          `Date: ${new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" })}`,
+                          `Prepared by: ${auth?.name || "EBC"}`,
+                          ``,
+                          `CONTRACT: $${(draft.contract || 0).toLocaleString()}  |  BILLED: $${totalBilled.toLocaleString()}  |  REMAINING: $${remaining.toLocaleString()}`,
+                          `PROGRESS: ${draft.progress}%  |  PRODUCTION: ${pct}%`,
+                          ``,
+                          `AREAS: ${complete}/${projAreas.length} complete`,
+                          ...projAreas.map(a => `  ${a.name} (${a.floor} ${a.zone}) — ${a.status}`),
+                          ``,
+                          `CHANGE ORDERS: ${projCOs.length} (${projCOs.filter(c => c.status === "approved").length} approved, ${projCOs.filter(c => c.status !== "approved" && c.status !== "rejected").length} pending)`,
+                          `RFIs: ${projRFIs.length} (${projRFIs.filter(r => r.status === "open").length} open)`,
+                          `SUBMITTALS: ${projSubmittals.length}`,
+                          `T&M EXPOSURE: $${tmTotal.toLocaleString()} across ${projTm.length} tickets`,
+                          `OPEN PUNCH: ${openPunch} items`,
+                          `LABOR HOURS: ${totalHrs.toFixed(1)}h`,
+                          ``,
+                          `--- EBC Construction | Generated by EBC-OS ---`,
+                        ].join("\n");
+                        navigator.clipboard.writeText(report).then(() => {
+                          show(t("Report copied") + " — " + t("paste into email or document"), "ok");
+                        }).catch(() => {
+                          // Fallback: show in alert
+                          window.prompt("Copy this report:", report);
+                        });
+                      }}>
+                      <ClipboardList size={16} /> {t("Generate Report")} ({t("Copy to Clipboard")})
+                    </button>
+                  </div>
                 </div>
               );
             })()}

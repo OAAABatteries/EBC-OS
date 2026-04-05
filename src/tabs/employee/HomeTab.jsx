@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import { Calendar } from 'lucide-react';
+import { Calendar, AlertTriangle } from 'lucide-react';
 import { PremiumCard, StatTile, AlertCard, EmptyState, FieldButton } from '../../components/field';
 import { supabase } from '../../lib/supabase';
 
@@ -20,7 +20,7 @@ import { supabase } from '../../lib/supabase';
  *   t                — translation function
  *   lang             — 'en' | 'es'
  */
-export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, mySchedule, myMatRequests, projects, setEmpTab, setSelectedInfoProject, t, lang }) {
+export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, mySchedule, myMatRequests, projects, setEmpTab, setSelectedInfoProject, onReportProblem, t, lang }) {
   // --- Greeting (time-of-day based) ---
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -144,6 +144,16 @@ export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, m
             <div className="text-base font-bold">{assignedProject.name}</div>
             <div className="text-sm text-muted">{assignedProject.address || assignedProject.location || ''}</div>
           </PremiumCard>
+        </div>
+      )}
+
+      {/* 3b. Report Problem FAB — 1-tap access from home */}
+      {onReportProblem && (
+        <div style={{marginTop: 'var(--space-8)'}}>
+          <FieldButton variant="outline" onClick={onReportProblem} t={t}
+            style={{width: '100%', gap: 8, justifyContent: 'center', color: 'var(--warning)', borderColor: 'var(--warning)'}}>
+            <AlertTriangle size={16} /> {t("Report Problem")}
+          </FieldButton>
         </div>
       )}
 

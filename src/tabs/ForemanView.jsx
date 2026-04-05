@@ -115,6 +115,19 @@ export function ForemanView({ app }) {
   const [rcPendingCard, setRcPendingCard] = useState(null);
   const [rcSelectedHazardIdxs, setRcSelectedHazardIdxs] = useState({});
 
+  // ── Bulk Roll Call state ──
+  const [rollCallMode, setRollCallMode] = useState(false);
+  const [rollCallSelected, setRollCallSelected] = useState({});
+
+  // ── Labor Entry state ──
+  const [showLaborEntry, setShowLaborEntry] = useState(false);
+  const [laborEntries, setLaborEntries] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ebc_laborEntries") || "[]"); } catch { return []; }
+  });
+  const [laborForm, setLaborForm] = useState({ employeeId: "", areaId: "", costCode: "framing", hours: "", payType: "regular", notes: "" });
+  const COST_CODES = ["framing", "board", "tape", "finish", "ACT", "demo", "cleanup", "general"];
+  const PAY_TYPES = ["regular", "overtime", "doubletime"];
+
   // ── Submit RFI modal ──
   const [showRfiModal, setShowRfiModal] = useState(false);
   const [rfiFormData, setRfiFormData] = useState({ subject: "", description: "", drawingRef: "" });
@@ -312,7 +325,8 @@ export function ForemanView({ app }) {
     const totalMs = Date.now() - new Date(clockEntry.clockIn).getTime();
     const rawHours = totalMs / 3600000;
     // Auto-deduct 30-min unpaid lunch for shifts over 6 hours
-    const totalHours = +(rawHours >= 6 ? rawHours - 0.5 : rawHours).toFixed(2);
+    const lunchDeducted = rawHours >= 6 ? 0.5 : 0;
+    const totalHours = +(rawHours - lunchDeducted).toFixed(2);
     const proj = projects.find(p => String(p.id) === String(clockEntry.projectId || selectedProjectId));
     const newEntry = {
       id: crypto.randomUUID(),
@@ -327,6 +341,7 @@ export function ForemanView({ app }) {
       clockOutLat: loc?.lat || null,
       clockOutLng: loc?.lng || null,
       totalHours,
+      lunchDeducted,
       geofenceStatus: "inside",
       // Phase 2C: photo verification
       photoUrl: clockEntry.photoUrl || null,
@@ -337,7 +352,8 @@ export function ForemanView({ app }) {
     }
     setClockEntry(null);
     localStorage.removeItem(CLOCK_KEY);
-    show?.(`${t("Clocked out")} · ${totalHours}h ✓`);
+    const lunchNote = lunchDeducted > 0 ? ` (${rawHours.toFixed(1)}h - 30m ${t("lunch")} = ${totalHours}h)` : "";
+    show?.(`${t("Clocked out")} · ${totalHours}h${lunchNote} ✓`);
   };
 
   // ── team clock-in/out ──
@@ -361,7 +377,8 @@ export function ForemanView({ app }) {
     const totalMs = Date.now() - new Date(entry.clockIn).getTime();
     const rawHours = totalMs / 3600000;
     // Auto-deduct 30-min unpaid lunch for shifts over 6 hours
-    const totalHours = +(rawHours >= 6 ? rawHours - 0.5 : rawHours).toFixed(2);
+    const lunchDeducted = rawHours >= 6 ? 0.5 : 0;
+    const totalHours = +(rawHours - lunchDeducted).toFixed(2);
     const emp = employees.find(e => e.id === empId);
     const proj = projects.find(p => String(p.id) === String(entry.projectId || selectedProjectId));
     const newEntry = {
@@ -375,13 +392,64 @@ export function ForemanView({ app }) {
       clockOut: new Date().toISOString(),
       clockOutLat: loc?.lat || null, clockOutLng: loc?.lng || null,
       totalHours,
+      lunchDeducted,
       geofenceStatus: "inside",
     };
     if (setTimeEntries) setTimeEntries(prev => [...prev, newEntry]);
     const updated = { ...teamClocks };
     delete updated[empId];
     persistTeamClocks(updated);
-    show?.(`${emp?.name || "Crew"} ${t("clocked out")} · ${totalHours}h ✓`);
+    const lunchNote = lunchDeducted > 0 ? ` (${rawHours.toFixed(1)}h - 30m lunch)` : "";
+    show?.(`${emp?.name || "Crew"} ${t("clocked out")} · ${totalHours}h${lunchNote} ✓`);
+  };
+
+  // ── bulk roll call handler ──
+  const handleBulkClockIn = async () => {
+    const selected = Object.entries(rollCallSelected).filter(([, v]) => v).map(([id]) => id);
+    if (selected.length === 0) return;
+    const loc = await getLocation();
+    const now = new Date().toISOString();
+    const updated = { ...teamClocks };
+    let count = 0;
+    for (const empId of selected) {
+      if (updated[empId]) continue; // already clocked in
+      updated[empId] = { clockIn: now, lat: loc?.lat || null, lng: loc?.lng || null, projectId: selectedProjectId };
+      count++;
+    }
+    persistTeamClocks(updated);
+    setRollCallMode(false);
+    setRollCallSelected({});
+    show?.(`${count} ${t("crew members clocked in")} ✓`);
+  };
+
+  // ── labor entry handler ──
+  const handleAddLabor = () => {
+    if (!laborForm.employeeId || !laborForm.areaId || !laborForm.hours) return;
+    const emp = employees.find(e => String(e.id) === String(laborForm.employeeId));
+    const area = (areas || []).find(a => String(a.id) === String(laborForm.areaId));
+    const entry = {
+      id: crypto.randomUUID(),
+      employeeId: laborForm.employeeId,
+      employeeName: emp?.name || "Unknown",
+      projectId: selectedProjectId,
+      areaId: laborForm.areaId,
+      areaName: area?.name || "Unknown",
+      floor: area?.floor || "",
+      zone: area?.zone || "",
+      costCode: laborForm.costCode,
+      hours: Number(laborForm.hours),
+      payType: laborForm.payType,
+      notes: laborForm.notes.trim(),
+      date: new Date().toISOString().slice(0, 10),
+      createdAt: new Date().toISOString(),
+    };
+    setLaborEntries(prev => {
+      const updated = [entry, ...prev];
+      localStorage.setItem("ebc_laborEntries", JSON.stringify(updated));
+      return updated;
+    });
+    setLaborForm({ employeeId: "", areaId: "", costCode: "framing", hours: "", payType: "regular", notes: "" });
+    show?.(`${t("Labor Entry")} — ${emp?.name} · ${laborForm.hours}h ${laborForm.costCode} ✓`);
   };
 
   // ── today's time entries for this foreman ──
@@ -1658,6 +1726,108 @@ export function ForemanView({ app }) {
 
               return (
                 <div className="emp-content">
+                  {/* ── Roll Call + Labor Entry action row ── */}
+                  <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                    <button
+                      className="btn btn-sm touch-target"
+                      style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, background: rollCallMode ? "var(--green)" : "var(--blue)", color: "#fff", padding: "10px 12px", borderRadius: 8, border: "none" }}
+                      onClick={() => { setRollCallMode(v => !v); if (!rollCallMode) setRollCallSelected({}); }}
+                    >
+                      <CheckSquare size={15} />
+                      {rollCallMode ? t("Cancel") : t("Roll Call")}
+                    </button>
+                    <button
+                      className="btn btn-sm touch-target"
+                      style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, background: "var(--amber)", color: "#fff", padding: "10px 12px", borderRadius: 8, border: "none" }}
+                      onClick={() => setShowLaborEntry(v => !v)}
+                    >
+                      <Clock size={15} />
+                      {t("Labor Entry")}
+                    </button>
+                  </div>
+
+                  {/* ── Roll Call Mode: checkbox crew list with bulk clock-in ── */}
+                  {rollCallMode && allDisplayCrew.length > 0 && (
+                    <div style={{ marginBottom: 14, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, padding: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                        <span className="text-sm font-bold">{t("Roll Call")} — {t("Select crew to clock in")}</span>
+                        <button className="text-xs" style={{ color: "var(--accent)", background: "none", border: "none", cursor: "pointer" }}
+                          onClick={() => {
+                            const allIds = {};
+                            allDisplayCrew.forEach(c => { if (!teamClocks[c.id]) allIds[c.id] = true; });
+                            setRollCallSelected(allIds);
+                          }}>
+                          {t("Select All")}
+                        </button>
+                      </div>
+                      {allDisplayCrew.map(c => (
+                        <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid var(--border)", cursor: teamClocks[c.id] ? "default" : "pointer", opacity: teamClocks[c.id] ? 0.5 : 1 }}>
+                          {teamClocks[c.id] ? (
+                            <CheckCircle size={18} style={{ color: "var(--green)", flexShrink: 0 }} />
+                          ) : (
+                            rollCallSelected[c.id]
+                              ? <CheckSquare size={18} style={{ color: "var(--accent)", flexShrink: 0 }} onClick={() => setRollCallSelected(p => ({ ...p, [c.id]: false }))} />
+                              : <Square size={18} style={{ color: "var(--text3)", flexShrink: 0 }} onClick={() => setRollCallSelected(p => ({ ...p, [c.id]: true }))} />
+                          )}
+                          <span className="text-sm" style={{ flex: 1 }}>{c.name}</span>
+                          {teamClocks[c.id] && <span className="text-xs" style={{ color: "var(--green)" }}>✓ {t("Clocked In")}</span>}
+                        </label>
+                      ))}
+                      <button
+                        className="btn btn-primary touch-target"
+                        style={{ width: "100%", marginTop: 12, height: 48, fontSize: 15, fontWeight: 700, borderRadius: 10 }}
+                        onClick={handleBulkClockIn}
+                        disabled={Object.values(rollCallSelected).filter(Boolean).length === 0}
+                      >
+                        <CheckSquare size={16} /> {t("Clock In Selected")} ({Object.values(rollCallSelected).filter(Boolean).length})
+                      </button>
+                    </div>
+                  )}
+
+                  {/* ── Labor Entry Form ── */}
+                  {showLaborEntry && (
+                    <div style={{ marginBottom: 14, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, padding: 12 }}>
+                      <div className="text-sm font-bold mb-8">{t("Labor Entry")} — {t("by area & cost code")}</div>
+                      <select className="form-input field-input mb-8" value={laborForm.employeeId} onChange={e => setLaborForm(p => ({ ...p, employeeId: e.target.value }))}>
+                        <option value="">{t("Select crew member")}</option>
+                        {allDisplayCrew.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                      <select className="form-input field-input mb-8" value={laborForm.areaId} onChange={e => setLaborForm(p => ({ ...p, areaId: e.target.value }))}>
+                        <option value="">{t("Select area")}</option>
+                        {(areas || []).filter(a => String(a.projectId) === String(selectedProjectId)).map(a => <option key={a.id} value={a.id}>{a.name} — {a.floor} {a.zone}</option>)}
+                      </select>
+                      <select className="form-input field-input mb-8" value={laborForm.costCode} onChange={e => setLaborForm(p => ({ ...p, costCode: e.target.value }))}>
+                        {COST_CODES.map(cc => <option key={cc} value={cc}>{t(cc.charAt(0).toUpperCase() + cc.slice(1))}</option>)}
+                      </select>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <input type="number" className="form-input field-input mb-8" placeholder={t("Hours")} value={laborForm.hours} onChange={e => setLaborForm(p => ({ ...p, hours: e.target.value }))} style={{ flex: 1, fontSize: 16, height: 48 }} />
+                        <select className="form-input field-input mb-8" value={laborForm.payType} onChange={e => setLaborForm(p => ({ ...p, payType: e.target.value }))} style={{ flex: 1 }}>
+                          <option value="regular">{t("Regular")}</option>
+                          <option value="overtime">{t("Overtime")}</option>
+                          <option value="doubletime">{t("Double Time")}</option>
+                        </select>
+                      </div>
+                      <input type="text" className="form-input field-input mb-8" placeholder={t("Notes")} value={laborForm.notes} onChange={e => setLaborForm(p => ({ ...p, notes: e.target.value }))} />
+                      <button className="btn btn-primary touch-target" style={{ width: "100%", height: 48, fontSize: 15, fontWeight: 700, borderRadius: 10 }} onClick={handleAddLabor}
+                        disabled={!laborForm.employeeId || !laborForm.areaId || !laborForm.hours}>
+                        {t("Add Labor")}
+                      </button>
+                      {/* Today's labor entries for this project */}
+                      {laborEntries.filter(le => le.projectId === selectedProjectId && le.date === new Date().toISOString().slice(0, 10)).length > 0 && (
+                        <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+                          <div className="text-xs font-bold mb-4">{t("Today's Labor")}</div>
+                          {laborEntries.filter(le => le.projectId === selectedProjectId && le.date === new Date().toISOString().slice(0, 10)).map(le => (
+                            <div key={le.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 12, borderBottom: "1px solid var(--border)" }}>
+                              <span>{le.employeeName}</span>
+                              <span>{le.areaName} · {le.costCode}</span>
+                              <span style={{ fontWeight: 700 }}>{le.hours}h {le.payType !== "regular" ? `(${le.payType.toUpperCase().slice(0,2)})` : ""}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="section-header" style={{ alignItems: "center" }}>
                     <div className="section-title" style={{ fontSize: 16 }}>{t("Crew Members")}</div>
                     <button

@@ -82,6 +82,14 @@ export function DriverView({ app }) {
   const [dragIdx, setDragIdx] = useState(null);
   const [podDelivery, setPodDelivery] = useState(null);
   const [shortageDelivery, setShortageDelivery] = useState(null);
+  const [loadVerifyStop, setLoadVerifyStop] = useState(null); // stop pending load confirmation
+  const [loadQty, setLoadQty] = useState("");
+  const [loadNote, setLoadNote] = useState("");
+  const [showReturnForm, setShowReturnForm] = useState(false);
+  const [returnForm, setReturnForm] = useState({ material: "", qty: "", reason: "Material Return", destination: "Yard", notes: "" });
+  const [returnTrips, setReturnTrips] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ebc_returnTrips") || "[]"); } catch { return []; }
+  });
   const [deliverySchedules, setDeliverySchedules] = useState(() => {
     try {
       const saved = localStorage.getItem(DELIVERY_SCHEDULE_KEY);
@@ -98,6 +106,10 @@ export function DriverView({ app }) {
   useEffect(() => {
     localStorage.setItem(DELIVERY_SCHEDULE_KEY, JSON.stringify(deliverySchedules));
   }, [deliverySchedules]);
+
+  useEffect(() => {
+    localStorage.setItem("ebc_returnTrips", JSON.stringify(returnTrips));
+  }, [returnTrips]);
 
   const setScheduleDate = (reqId, date) => {
     setDeliverySchedules(prev => ({ ...prev, [reqId]: date }));
@@ -169,6 +181,10 @@ export function DriverView({ app }) {
         gateCode: proj?.gateCode || null,
         accessInstructions: proj?.accessInstructions || proj?.siteAccessNotes || null,
         deliveryEntrance: proj?.deliveryEntrance || null,
+        // Pickup info — default to EBC Yard if no pickupAddress on request
+        pickupName: req.pickupName || "EBC Yard",
+        pickupAddress: req.pickupAddress || "EBC Material Yard",
+        pickupPhone: req.pickupPhone || null,
       };
     });
     return stops;
@@ -280,27 +296,60 @@ export function DriverView({ app }) {
   }, []);
 
   // ── actions (Phase 2A: audit trail on status changes) ──
+  // Load verification intercept — show confirm modal before starting
   const handleStartDelivery = (reqId) => {
+    const stop = optimizedStops.find(s => s.id === reqId) || allStops.find(s => s.id === reqId);
+    if (stop) {
+      setLoadVerifyStop(stop);
+      setLoadQty(String(stop.qty || ""));
+      setLoadNote("");
+    }
+  };
+
+  const confirmLoadAndStart = () => {
+    if (!loadVerifyStop) return;
+    const reqId = loadVerifyStop.id;
+    const actualQty = Number(loadQty) || loadVerifyStop.qty;
     const now = new Date().toISOString();
-    // GPS stamp on pickup
     navigator.geolocation?.getCurrentPosition(
       (pos) => {
         setMaterialRequests(prev => prev.map(r => {
           if (r.id !== reqId) return r;
-          const trail = [...(r.auditTrail || []), { action: "picked_up", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, timestamp: now, gps: { lat: pos.coords.latitude, lng: pos.coords.longitude } }];
-          return { ...r, status: "picked_up", driverId: activeDriver.id, auditTrail: trail };
+          const trail = [...(r.auditTrail || []), { action: "picked_up", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, timestamp: now, gps: { lat: pos.coords.latitude, lng: pos.coords.longitude }, loadedQty: actualQty, loadNote }];
+          return { ...r, status: "picked_up", driverId: activeDriver.id, loadedQty: actualQty, loadNote, auditTrail: trail };
         }));
       },
       () => {
-        // GPS unavailable — proceed without coordinates
         setMaterialRequests(prev => prev.map(r => {
           if (r.id !== reqId) return r;
-          const trail = [...(r.auditTrail || []), { action: "picked_up", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, timestamp: now }];
-          return { ...r, status: "picked_up", driverId: activeDriver.id, auditTrail: trail };
+          const trail = [...(r.auditTrail || []), { action: "picked_up", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, timestamp: now, loadedQty: actualQty, loadNote }];
+          return { ...r, status: "picked_up", driverId: activeDriver.id, loadedQty: actualQty, loadNote, auditTrail: trail };
         }));
       }
     );
-    show(t("Delivery started") + " \u2713", "ok");
+    setLoadVerifyStop(null);
+    show(t("Load verified") + " · " + t("Delivery started") + " \u2713", "ok");
+  };
+
+  // ── return trip handler ──
+  const handleAddReturn = () => {
+    if (!returnForm.material.trim()) return;
+    const trip = {
+      id: crypto.randomUUID(),
+      driverId: activeDriver?.id,
+      driverName: activeDriver?.name,
+      material: returnForm.material.trim(),
+      qty: Number(returnForm.qty) || 1,
+      reason: returnForm.reason,
+      destination: returnForm.destination,
+      notes: returnForm.notes.trim(),
+      createdAt: new Date().toISOString(),
+      status: "pending",
+    };
+    setReturnTrips(prev => [trip, ...prev]);
+    setReturnForm({ material: "", qty: "", reason: "Material Return", destination: "Yard", notes: "" });
+    setShowReturnForm(false);
+    show(t("Return Pickup") + " \u2713", "ok");
   };
 
   const handleMarkDelivered = (delivery) => {
@@ -601,6 +650,12 @@ export function DriverView({ app }) {
                         {idx + 1}
                       </div>
                       <div className="flex-1">
+                        {/* Pickup location indicator */}
+                        {!stop.isInTransit && stop.pickupName && (
+                          <div style={{ fontSize: 10, color: "var(--amber)", fontWeight: 700, marginBottom: 4 }}>
+                            <Package size={10} style={{verticalAlign: "middle", marginRight: 3}} />{t("PICKUP")}: {stop.pickupName}{stop.pickupAddress && stop.pickupAddress !== stop.pickupName ? ` — ${stop.pickupAddress}` : ""}
+                          </div>
+                        )}
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: stop.isInTransit ? "var(--blue-dim)" : "var(--green-dim)", color: stop.isInTransit ? "var(--blue)" : "var(--green)", textTransform: "uppercase" }}>
                             {stop.isInTransit ? t("In Transit") : t("Drop-Off")}
@@ -640,7 +695,7 @@ export function DriverView({ app }) {
                     {/* Material info */}
                     <div className="driver-card-body">
                       <div className="flex-between mb-4">
-                        <span className="text-sm font-semi">{stop.material}</span>
+                        <span className="text-sm font-semi">{stop.materialName || stop.material || "Unknown"}</span>
                         <span className="text-sm font-mono">{stop.qty} {stop.unit}</span>
                       </div>
                       <div className="text-xs text-muted mb-8">
@@ -765,6 +820,30 @@ export function DriverView({ app }) {
                 </div>
               )
             )}
+
+            {/* Return Trips Section */}
+            <div className="section-header" style={{marginTop: "var(--space-8)"}}>
+              <div className="section-title driver-section-title">{t("Return Pickup")}s</div>
+              <FieldButton variant="outline" className="btn-sm" onClick={() => setShowReturnForm(true)} t={t}>
+                <RefreshCw size={14} /> {t("Add Return Trip")}
+              </FieldButton>
+            </div>
+            {returnTrips.filter(rt => rt.driverId === activeDriver?.id && new Date(rt.createdAt).toDateString() === new Date().toDateString()).length === 0 ? (
+              <div className="text-xs text-muted" style={{padding: "var(--space-4)", textAlign: "center"}}>{t("No return trips today")}</div>
+            ) : (
+              <div className="driver-route-list">
+                {returnTrips.filter(rt => rt.driverId === activeDriver?.id && new Date(rt.createdAt).toDateString() === new Date().toDateString()).map(rt => (
+                  <PremiumCard key={rt.id} variant="info" className="driver-completed-card">
+                    <div className="flex-between mb-4">
+                      <span className="text-sm font-semi">{rt.material}</span>
+                      <span style={{fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "var(--amber-dim)", color: "var(--amber)", textTransform: "uppercase"}}>{t("Return")}</span>
+                    </div>
+                    <div className="text-xs text-muted mb-4">{rt.reason} → {t(rt.destination)} &middot; {rt.qty} {t("items")}</div>
+                    {rt.notes && <div className="text-xs text-dim">{rt.notes}</div>}
+                  </PremiumCard>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -832,6 +911,72 @@ export function DriverView({ app }) {
         maxPrimary={3}
         t={t}
       />
+
+      {/* Load Verification Modal */}
+      {loadVerifyStop && (
+        <div className="modal-overlay" onClick={() => setLoadVerifyStop(null)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{maxWidth: 400, margin: "auto", marginTop: "15vh"}}>
+            <div className="modal-header">
+              <h3 className="text-base font-bold">{t("Confirm Load")}</h3>
+              <button className="modal-close touch-target" onClick={() => setLoadVerifyStop(null)}>&times;</button>
+            </div>
+            <div style={{padding: "var(--space-4)"}}>
+              <div className="text-sm mb-4">
+                <strong>{loadVerifyStop.materialName || loadVerifyStop.material}</strong>
+              </div>
+              <div className="text-xs text-muted mb-8">
+                {t("Requester")}: {loadVerifyStop.employeeName} &middot; {loadVerifyStop.projectName}
+              </div>
+              <div className="text-xs text-muted mb-8">
+                {t("Pickup")}: <strong>{loadVerifyStop.pickupName || "EBC Yard"}</strong>
+              </div>
+              <label className="text-xs font-semi mb-2" style={{display: "block"}}>{t("Loaded Qty")} ({t("expected")}: {loadVerifyStop.qty} {loadVerifyStop.unit})</label>
+              <input type="number" className="form-input field-input mb-8" value={loadQty} onChange={e => setLoadQty(e.target.value)} style={{fontSize: 16, height: 48}} />
+              <label className="text-xs font-semi mb-2" style={{display: "block"}}>{t("Notes")} ({t("optional")})</label>
+              <input type="text" className="form-input field-input mb-8" value={loadNote} onChange={e => setLoadNote(e.target.value)} placeholder={t("e.g. 10 sheets short")} />
+              <FieldButton variant="primary" onClick={confirmLoadAndStart} t={t} style={{width: "100%", height: 48}}>
+                <CheckCircle size={16} /> {t("Confirm & Start")}
+              </FieldButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Return Trip Form Modal */}
+      {showReturnForm && (
+        <div className="modal-overlay" onClick={() => setShowReturnForm(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{maxWidth: 400, margin: "auto", marginTop: "10vh"}}>
+            <div className="modal-header">
+              <h3 className="text-base font-bold">{t("Add Return Trip")}</h3>
+              <button className="modal-close touch-target" onClick={() => setShowReturnForm(false)}>&times;</button>
+            </div>
+            <div style={{padding: "var(--space-4)"}}>
+              <label className="text-xs font-semi mb-2" style={{display: "block"}}>{t("Material / Item")}</label>
+              <input type="text" className="form-input field-input mb-8" value={returnForm.material} onChange={e => setReturnForm(p => ({...p, material: e.target.value}))} placeholder={t("e.g. Leftover ceiling tiles")} style={{fontSize: 14}} />
+              <label className="text-xs font-semi mb-2" style={{display: "block"}}>{t("Qty")}</label>
+              <input type="number" className="form-input field-input mb-8" value={returnForm.qty} onChange={e => setReturnForm(p => ({...p, qty: e.target.value}))} style={{fontSize: 14}} />
+              <label className="text-xs font-semi mb-2" style={{display: "block"}}>{t("Return reason")}</label>
+              <select className="form-input field-input mb-8" value={returnForm.reason} onChange={e => setReturnForm(p => ({...p, reason: e.target.value}))}>
+                <option value="Material Return">{t("Material Return")}</option>
+                <option value="Equipment Return">{t("Equipment Return")}</option>
+                <option value="Trash/Debris">{t("Trash/Debris")}</option>
+                <option value="Tool Pickup">{t("Tool Pickup")}</option>
+              </select>
+              <label className="text-xs font-semi mb-2" style={{display: "block"}}>{t("Destination")}</label>
+              <select className="form-input field-input mb-8" value={returnForm.destination} onChange={e => setReturnForm(p => ({...p, destination: e.target.value}))}>
+                <option value="Yard">{t("Yard")}</option>
+                <option value="Warehouse">{t("Warehouse")}</option>
+                <option value="Next Jobsite">{t("Next Jobsite")}</option>
+              </select>
+              <label className="text-xs font-semi mb-2" style={{display: "block"}}>{t("Notes")} ({t("optional")})</label>
+              <input type="text" className="form-input field-input mb-8" value={returnForm.notes} onChange={e => setReturnForm(p => ({...p, notes: e.target.value}))} style={{fontSize: 14}} />
+              <FieldButton variant="primary" onClick={handleAddReturn} t={t} style={{width: "100%", height: 48}}>
+                <RefreshCw size={16} /> {t("Add Return Trip")}
+              </FieldButton>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* POD + Shortage modals */}
       {podDelivery && (

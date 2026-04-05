@@ -522,15 +522,17 @@ export function EmployeeView({ app }) {
     const clockOut = new Date();
     const rawHours = (clockOut - clockIn) / 3600000;
     // Auto-deduct 30-min unpaid lunch for shifts over 6 hours
-    const totalHours = Math.round((rawHours >= 6 ? rawHours - 0.5 : rawHours) * 100) / 100;
+    const lunchDeducted = rawHours >= 6 ? 0.5 : 0;
+    const totalHours = Math.round((rawHours - lunchDeducted) * 100) / 100;
     setTimeEntries((prev) =>
       prev.map((e) =>
         e.id === activeEntry.id
-          ? { ...e, clockOut: clockOut.toISOString(), clockOutLat: outLat, clockOutLng: outLng, totalHours }
+          ? { ...e, clockOut: clockOut.toISOString(), clockOutLat: outLat, clockOutLng: outLng, totalHours, lunchDeducted }
           : e
       )
     );
-    show(`Clocked out — ${totalHours.toFixed(2)} hours`, "ok");
+    const lunchNote = lunchDeducted > 0 ? ` (${rawHours.toFixed(1)}h - 30m ${t("lunch")} = ${totalHours.toFixed(2)}h)` : "";
+    show(`${t("Clocked out")} — ${totalHours.toFixed(2)} ${t("hours")}${lunchNote}`, "ok");
   };
 
   // ── employee's time log (current week) ──
@@ -625,21 +627,21 @@ export function EmployeeView({ app }) {
   // ── portal tab bar definition ──
   const isCrewRole = activeEmp.role === "Crew" || activeEmp.role === "Employee";
   const portalTabs = [
-    // ── Primary (4 + More) ──
+    // ── Primary (4 + More) — frequency-driven: Home, Clock, Log Work, Drawings ──
     { id: "home", label: t("Home"), icon: Home, badge: false },
     { id: "clock", label: t("Clock"), icon: Clock, badge: isClockedIn },
     { id: "production", label: t("Log Work"), icon: BarChart3, badge: false },
-    { id: "schedule", label: t("Schedule"), icon: Calendar, badge: false },
-    // ── More overflow (ranked by crew use frequency) ──
     { id: "drawings", label: t("Drawings"), icon: FileText, badge: false },
-    { id: "jsa", label: t("JSA"), icon: ShieldCheck, badge: false },
+    // ── More overflow (ranked by crew use frequency) ──
+    { id: "schedule", label: t("Schedule"), icon: Calendar, badge: false },
     { id: "materials", label: t("Materials"), icon: Package, badge: myMatRequests?.some(r => r.status === "requested") },
-    { id: "credentials", label: t("Credentials"), icon: Shield, badge: credBadgeCount > 0 ? credBadgeCount : false },
+    { id: "jsa", label: t("JSA"), icon: ShieldCheck, badge: false },
     { id: "log", label: t("Time Log"), icon: ClipboardList, badge: false },
     ...(!isCrewRole ? [
       { id: "cos", label: t("Change Orders"), icon: FileText, badge: false },
       { id: "rfis", label: t("RFIs"), icon: FileText, badge: false },
     ] : []),
+    { id: "credentials", label: t("Credentials"), icon: Shield, badge: credBadgeCount > 0 ? credBadgeCount : false },
     { id: "settings", label: t("Settings"), icon: Settings, badge: false },
   ];
 
@@ -961,6 +963,7 @@ export function EmployeeView({ app }) {
             projects={projects}
             setEmpTab={setEmpTab}
             setSelectedInfoProject={setSelectedInfoProject}
+            onReportProblem={() => setShowReportProblem(true)}
             areas={areas}
             schedule={teamSchedule}
             t={t}
