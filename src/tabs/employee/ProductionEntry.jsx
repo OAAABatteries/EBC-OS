@@ -7,6 +7,7 @@ import { useState, useMemo } from "react";
 import { PhotoCapture } from "../../components/field/PhotoCapture";
 import { FieldInput } from "../../components/field/FieldInput";
 import { FieldButton } from "../../components/field/FieldButton";
+import { FieldSelect } from "../../components/field/FieldSelect";
 import { CheckCircle } from "lucide-react";
 
 export function ProductionEntry({
@@ -26,6 +27,7 @@ export function ProductionEntry({
   const [photos, setPhotos] = useState([]);
   const [saving, setSaving] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
+  const [manualAreaId, setManualAreaId] = useState("");
 
   // Auto-detect assigned area from today's schedule
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -40,9 +42,16 @@ export function ProductionEntry({
   }, [schedule, employeeId, todayStr]);
 
   const currentArea = useMemo(() => {
-    if (!assignedEntry?.areaId || !areas) return null;
-    return areas.find((a) => a.id === assignedEntry.areaId);
-  }, [assignedEntry, areas]);
+    const areaId = assignedEntry?.areaId || manualAreaId;
+    if (!areaId || !areas) return null;
+    return areas.find((a) => a.id === areaId);
+  }, [assignedEntry, manualAreaId, areas]);
+
+  // Areas available for manual selection (filtered to employee's project)
+  const projectAreas = useMemo(() => {
+    if (!areas) return [];
+    return areas.filter((a) => String(a.projectId) === String(projectId));
+  }, [areas, projectId]);
 
   const scopeItems = currentArea?.scopeItems || [];
 
@@ -140,11 +149,22 @@ export function ProductionEntry({
             background: "var(--bg3)",
             borderRadius: 12,
             padding: "14px 16px",
-            color: "var(--text2)",
-            fontSize: "var(--text-base, 14px)",
           }}
         >
-          {tr("No area assigned for today")}
+          <div style={{ color: "var(--text2)", fontSize: "var(--text-sm, 12px)", marginBottom: 8 }}>
+            {tr("No area assigned for today")}
+          </div>
+          <FieldSelect
+            label={tr("Select your area")}
+            value={manualAreaId}
+            onChange={(e) => { setManualAreaId(e.target.value); setSelectedScopeIdx(null); }}
+            t={tr}
+          >
+            <option value="">{tr("Select Area")}</option>
+            {projectAreas.map((a) => (
+              <option key={a.id} value={a.id}>{a.name} (F{a.floor} Z{a.zone})</option>
+            ))}
+          </FieldSelect>
         </div>
       )}
 

@@ -4180,27 +4180,42 @@ const ModalHub = ({ type, data, app }) => {
     const [coEditId, setCoEditId] = useState(null);
     const [coExpandedId, setCoExpandedId] = useState(null);
     const coNextNum = projCOs.length > 0 ? Math.max(...projCOs.map(c => parseInt(String(c.number || "0").replace(/\D/g, "")) || 0)) + 1 : 1;
-    const [coForm, setCoForm] = useState({ number: "", description: "", type: "add", amount: "", status: "draft", date: new Date().toISOString().slice(0, 10), notes: "" });
+    const [coForm, setCoForm] = useState({ number: "", description: "", type: "add", amount: "", status: "draft", date: new Date().toISOString().slice(0, 10), notes: "", tmTicketIds: [] });
     const coNetTotal = projCOs.reduce((s, c) => s + (c.type === "no cost" ? 0 : (c.amount || 0)), 0);
     const coAdjustedContract = (draft.contract || 0) + coNetTotal;
     const coStatusColor = (st) => ({ draft: "badge-ghost", submitted: "badge-amber", approved: "badge-green", rejected: "badge-red" }[st] || "badge-ghost");
     const coTypeLabel = (t) => ({ add: "+Add", deduct: "-Deduct", "no cost": "No Cost" }[t] || t);
-    const resetCoForm = () => { setCoForm({ number: "", description: "", type: "add", amount: "", status: "draft", date: new Date().toISOString().slice(0, 10), notes: "" }); setCoEditId(null); };
+    const resetCoForm = () => { setCoForm({ number: "", description: "", type: "add", amount: "", status: "draft", date: new Date().toISOString().slice(0, 10), notes: "", tmTicketIds: [] }); setCoEditId(null); };
     const saveCo = () => {
       const num = coForm.number || `CO-${String(coNextNum).padStart(3, "0")}`;
       const amt = parseFloat(coForm.amount) || 0;
       const finalAmt = coForm.type === "deduct" ? -Math.abs(amt) : coForm.type === "no cost" ? 0 : Math.abs(amt);
+      const tmIds = coForm.tmTicketIds || [];
       if (coEditId) {
-        app.setChangeOrders(prev => prev.map(c => c.id === coEditId ? { ...c, number: num, description: coForm.description, type: coForm.type, amount: finalAmt, status: coForm.status, date: coForm.date, notes: coForm.notes } : c));
+        // Clear changeOrderId from previously linked T&M tickets that are no longer selected
+        const oldCo = app.changeOrders.find(c => c.id === coEditId);
+        const removedTmIds = (oldCo?.tmTicketIds || []).filter(id => !tmIds.includes(id));
+        if (removedTmIds.length > 0) {
+          app.setTmTickets(prev => prev.map(t => removedTmIds.includes(t.id) ? { ...t, changeOrderId: undefined } : t));
+        }
+        app.setChangeOrders(prev => prev.map(c => c.id === coEditId ? { ...c, number: num, description: coForm.description, type: coForm.type, amount: finalAmt, status: coForm.status, date: coForm.date, notes: coForm.notes, tmTicketIds: tmIds } : c));
       } else {
-        const newCo = { id: crypto.randomUUID(), projectId: draft.id, number: num, description: coForm.description, type: coForm.type, amount: finalAmt, status: coForm.status, date: coForm.date, notes: coForm.notes, created: new Date().toISOString() };
+        const newCo = { id: crypto.randomUUID(), projectId: draft.id, number: num, description: coForm.description, type: coForm.type, amount: finalAmt, status: coForm.status, date: coForm.date, notes: coForm.notes, tmTicketIds: tmIds, created: new Date().toISOString() };
         app.setChangeOrders(prev => [...prev, newCo]);
+        // Set changeOrderId on linked T&M tickets
+        if (tmIds.length > 0) {
+          app.setTmTickets(prev => prev.map(t => tmIds.includes(t.id) ? { ...t, changeOrderId: newCo.id } : t));
+        }
+      }
+      // Update changeOrderId on newly linked T&M tickets
+      if (coEditId && tmIds.length > 0) {
+        app.setTmTickets(prev => prev.map(t => tmIds.includes(t.id) ? { ...t, changeOrderId: coEditId } : t));
       }
       resetCoForm();
       setCoFormOpen(false);
     };
     const editCo = (co) => {
-      setCoForm({ number: co.number || "", description: co.description || co.desc || "", type: co.type || "add", amount: String(Math.abs(co.amount || 0)), status: co.status || "draft", date: co.date || co.submitted || "", notes: co.notes || "" });
+      setCoForm({ number: co.number || "", description: co.description || co.desc || "", type: co.type || "add", amount: String(Math.abs(co.amount || 0)), status: co.status || "draft", date: co.date || co.submitted || "", notes: co.notes || "", tmTicketIds: co.tmTicketIds || [] });
       setCoEditId(co.id);
       setCoFormOpen(true);
     };
@@ -4512,6 +4527,49 @@ const ModalHub = ({ type, data, app }) => {
                       <label className="text-xs text-dim">Notes</label>
                       <textarea className="input input-sm" rows={2} placeholder="Additional notes..." value={coForm.notes} onChange={e => setCoForm(p => ({ ...p, notes: e.target.value }))} style={{ resize: "vertical" }} />
                     </div>
+                    {/* T&M Backup Selection */}
+                    {(() => {
+                      const projTm = (app.tmTickets || []).filter(t => String(t.projectId) === String(draft.id));
+                      const availableTm = projTm.filter(t => {
+                        // Show tickets not linked to another CO (or linked to this CO being edited)
+                        if (coForm.tmTicketIds.includes(t.id)) return true;
+                        const linkedToOther = app.changeOrders.some(c => c.id !== coEditId && (c.tmTicketIds || []).includes(t.id));
+                        return !linkedToOther;
+                      });
+                      if (availableTm.length === 0) return null;
+                      const selectedTm = projTm.filter(t => coForm.tmTicketIds.includes(t.id));
+                      const tmLaborTotal = selectedTm.reduce((s, t) => s + (t.laborEntries || []).reduce((ls, l) => ls + (l.hours * l.rate), 0), 0);
+                      const tmMatTotal = selectedTm.reduce((s, t) => s + (t.materialEntries || []).reduce((ms, m) => ms + (m.qty * m.unitCost * (1 + (m.markup || 0) / 100)), 0), 0);
+                      return (
+                        <div className="mb-8" style={{ padding: 10, background: "var(--bg2)", borderRadius: 8, border: "1px solid var(--border)" }}>
+                          <label className="text-xs text-dim" style={{ textTransform: "uppercase", fontWeight: 700 }}>T&M Backup</label>
+                          <div style={{ maxHeight: 160, overflowY: "auto", marginTop: 6 }}>
+                            {availableTm.map(t => {
+                              const checked = coForm.tmTicketIds.includes(t.id);
+                              const tLabor = (t.laborEntries || []).reduce((s, l) => s + l.hours * l.rate, 0);
+                              const tMat = (t.materialEntries || []).reduce((s, m) => s + m.qty * m.unitCost * (1 + (m.markup || 0) / 100), 0);
+                              return (
+                                <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", cursor: "pointer", fontSize: 13 }}>
+                                  <input type="checkbox" checked={checked} onChange={() => {
+                                    setCoForm(p => ({ ...p, tmTicketIds: checked ? p.tmTicketIds.filter(id => id !== t.id) : [...p.tmTicketIds, t.id] }));
+                                  }} />
+                                  <span style={{ fontWeight: 600, minWidth: 60 }}>{t.ticketNumber || t.id}</span>
+                                  <span className="text-dim" style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description || "—"}</span>
+                                  <span className="font-mono text-xs">${(tLabor + tMat).toLocaleString()}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                          {selectedTm.length > 0 && (
+                            <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                              <span>{selectedTm.length} ticket{selectedTm.length !== 1 ? "s" : ""} selected</span>
+                              <span style={{ fontWeight: 700, color: "var(--amber)" }}>T&M Total: ${(tmLaborTotal + tmMatTotal).toLocaleString()}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     <div className="flex gap-8 justify-end">
                       <button className="btn btn-sm btn-primary" onClick={saveCo} disabled={!coForm.description}>{coEditId ? "Update CO" : "Save CO"}</button>
                     </div>
@@ -4564,6 +4622,39 @@ const ModalHub = ({ type, data, app }) => {
                                 <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{co.description || co.desc}{co.notes ? `\n\nNotes: ${co.notes}` : ""}</div>
                               </div>
                             )}
+                            {/* Linked T&M Backup */}
+                            {co.tmTicketIds && co.tmTicketIds.length > 0 && (() => {
+                              const linked = (app.tmTickets || []).filter(t => co.tmTicketIds.includes(t.id));
+                              if (!linked.length) return null;
+                              const totalLabor = linked.reduce((s, t) => s + (t.laborEntries || []).reduce((ls, l) => ls + (l.hours * l.rate), 0), 0);
+                              const totalMat = linked.reduce((s, t) => s + (t.materialEntries || []).reduce((ms, m) => ms + (m.qty * m.unitCost * (1 + (m.markup || 0) / 100)), 0), 0);
+                              return (
+                                <div style={{ marginTop: 4, marginBottom: 8, padding: 12, background: "var(--bg2)", borderRadius: 8, border: "1px solid var(--border)" }}>
+                                  <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>Linked T&M Backup</div>
+                                  {linked.map(t => {
+                                    const tLabor = (t.laborEntries || []).reduce((s, l) => s + l.hours * l.rate, 0);
+                                    const tMat = (t.materialEntries || []).reduce((s, m) => s + m.qty * m.unitCost * (1 + (m.markup || 0) / 100), 0);
+                                    return (
+                                      <div key={t.id} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                          <span style={{ fontWeight: 600 }}>{t.ticketNumber || t.id}</span>
+                                          <span style={{ color: "var(--text2)" }}>{t.date || "—"}</span>
+                                        </div>
+                                        <div style={{ color: "var(--text2)", fontSize: 12, marginTop: 2 }}>{t.description || "—"}</div>
+                                        <div style={{ display: "flex", gap: 12, marginTop: 4, fontSize: 12 }}>
+                                          <span>Labor: <strong>${tLabor.toLocaleString()}</strong></span>
+                                          <span>Material: <strong>${tMat.toLocaleString()}</strong></span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                  <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 13 }}>
+                                    <span>T&M Total</span>
+                                    <span style={{ color: "var(--amber)" }}>${(totalLabor + totalMat).toLocaleString()}</span>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                             <div className="flex gap-8">
                               <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); editCo(co); }}>Edit</button>
                               <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); exportCoPdf(co); }}>Export PDF</button>

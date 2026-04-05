@@ -11,6 +11,7 @@ import { FieldButton } from "../../components/field/FieldButton";
 import { FieldInput } from "../../components/field/FieldInput";
 import { FieldSelect } from "../../components/field/FieldSelect";
 import { StatTile } from "../../components/field/StatTile";
+import { PhotoCapture } from "../../components/field/PhotoCapture";
 
 export function ProductionTab({ productionLogs = [], setProductionLogs, areas = [], setAreas, projectId, employees = [], t }) {
   const tr = t || ((k) => k);
@@ -24,6 +25,7 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
   const [entryNotes, setEntryNotes] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const [formPhotos, setFormPhotos] = useState([]);
 
   // Project areas
   const projectAreas = useMemo(
@@ -110,6 +112,7 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
       enteredBy: "Foreman",
       enteredAt: now,
       notes: entryNotes.trim(),
+      photos: formPhotos,
     };
 
     setProductionLogs((prev) => [...prev, entry]);
@@ -135,6 +138,7 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
     setLaborHours("");
     setCrewSize("");
     setEntryNotes("");
+    setFormPhotos([]);
     setSaveMsg(tr("Saved!"));
     setTimeout(() => setSaveMsg(""), 2000);
   };
@@ -258,6 +262,8 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
                 </div>
 
                 <FieldInput label={tr("Notes")} value={entryNotes} onChange={(e) => setEntryNotes(e.target.value)} t={t} />
+
+                <PhotoCapture photos={formPhotos} onPhotos={setFormPhotos} t={tr} />
 
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <FieldButton onClick={handleSave} disabled={!(parseFloat(qtyInstalled) > 0)} t={t} style={{ flex: 1, minHeight: 48 }}>

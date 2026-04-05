@@ -681,7 +681,7 @@ export function DriverView({ app }) {
                           <FieldButton
                             variant="primary"
                             className="btn-sm driver-action-btn driver-delivered-btn"
-                            onClick={() => handleMarkDelivered(stop)}
+                            onClick={() => handleMarkDelivered({ ...stop, materialName: stop.material })}
                             t={t}
                           >
                             <CheckCircle size={14} aria-hidden="true" /> {t("Mark Delivered")}
@@ -700,7 +700,7 @@ export function DriverView({ app }) {
                         <FieldButton
                           variant="danger"
                           className="btn-sm driver-action-btn"
-                          onClick={() => setShortageDelivery(stop)}
+                          onClick={() => setShortageDelivery({ ...stop, materialName: stop.material })}
                           t={t}
                         >
                           <AlertTriangle size={14} aria-hidden="true" /> {t("Report Issue")}

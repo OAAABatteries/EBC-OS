@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
-import { Plus, ChevronDown, ChevronUp, FileText, DollarSign, Camera, Trash2 } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp, FileText, DollarSign, Camera, Trash2, Pencil } from "lucide-react";
 import { FieldCard } from "../../components/field/FieldCard";
 import { FieldButton } from "../../components/field/FieldButton";
 import { FieldInput } from "../../components/field/FieldInput";
@@ -43,6 +43,7 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
 
   const [expandedId, setExpandedId] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   // Form state
   const [formDesc, setFormDesc] = useState("");
@@ -93,32 +94,83 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
     setFormPhotos([]);
     setFormLabor([]);
     setFormMaterials([]);
+    setEditingId(null);
     setShowForm(false);
+  };
+
+  const startEdit = (ticket) => {
+    setFormDesc(ticket.description || "");
+    setFormNotes(ticket.notes || "");
+    setFormArea(ticket.areaId || "");
+    setFormDate(ticket.date || new Date().toISOString().slice(0, 10));
+    setFormPhotos(ticket.photos || []);
+    setFormLabor(ticket.laborEntries || []);
+    setFormMaterials(ticket.materialEntries || []);
+    setEditingId(ticket.id);
+    setShowForm(true);
+  };
+
+  const handleDelete = (ticket) => {
+    if (ticket.status !== "draft") return;
+    if (!window.confirm(tr("Delete this T&M ticket?"))) return;
+    setTmTickets((prev) => prev.filter((t) => t.id !== ticket.id));
   };
 
   const handleSave = (asDraft) => {
     if (!formDesc.trim()) return;
     const now = new Date().toISOString();
-    const ticket = {
-      id: crypto.randomUUID(),
-      projectId: Number(projectId),
-      ticketNumber: nextTicketNum(tmTickets),
-      date: formDate,
-      status: asDraft ? "draft" : "submitted",
-      description: formDesc.trim(),
-      notes: formNotes.trim(),
-      photos: formPhotos,
-      laborEntries: formLabor,
-      materialEntries: formMaterials,
-      submittedDate: asDraft ? null : now,
-      approvedDate: null,
-      billedDate: null,
-      auditTrail: [
-        { action: "created", actor: "Foreman", at: now },
-        ...(asDraft ? [] : [{ action: "submitted", actor: "Foreman", at: now }]),
-      ],
-    };
-    setTmTickets((prev) => [...prev, ticket]);
+    const areaObj = projectAreas.find((a) => a.id === formArea);
+
+    if (editingId) {
+      // Update existing ticket
+      setTmTickets((prev) =>
+        prev.map((t) => {
+          if (t.id !== editingId) return t;
+          return {
+            ...t,
+            date: formDate,
+            status: asDraft ? "draft" : "submitted",
+            description: formDesc.trim(),
+            notes: formNotes.trim(),
+            areaId: formArea || null,
+            areaName: areaObj ? `${areaObj.name} (F${areaObj.floor} Z${areaObj.zone})` : "",
+            photos: formPhotos,
+            laborEntries: formLabor,
+            materialEntries: formMaterials,
+            submittedDate: asDraft ? t.submittedDate : now,
+            auditTrail: [
+              ...(t.auditTrail || []),
+              { action: "edited", actor: "Foreman", at: now },
+              ...(asDraft ? [] : [{ action: "submitted", actor: "Foreman", at: now }]),
+            ],
+          };
+        })
+      );
+    } else {
+      // Create new ticket
+      const ticket = {
+        id: crypto.randomUUID(),
+        projectId: Number(projectId),
+        ticketNumber: nextTicketNum(tmTickets),
+        date: formDate,
+        status: asDraft ? "draft" : "submitted",
+        description: formDesc.trim(),
+        notes: formNotes.trim(),
+        areaId: formArea || null,
+        areaName: areaObj ? `${areaObj.name} (F${areaObj.floor} Z${areaObj.zone})` : "",
+        photos: formPhotos,
+        laborEntries: formLabor,
+        materialEntries: formMaterials,
+        submittedDate: asDraft ? null : now,
+        approvedDate: null,
+        billedDate: null,
+        auditTrail: [
+          { action: "created", actor: "Foreman", at: now },
+          ...(asDraft ? [] : [{ action: "submitted", actor: "Foreman", at: now }]),
+        ],
+      };
+      setTmTickets((prev) => [...prev, ticket]);
+    }
     resetForm();
   };
 
@@ -146,7 +198,7 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
       {showForm && (
         <FieldCard>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ fontWeight: 700, fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>{tr("New T&M Ticket")}</div>
+            <div style={{ fontWeight: 700, fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>{editingId ? tr("Edit T&M Ticket") : tr("New T&M Ticket")}</div>
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <div style={{ flex: "1 1 120px" }}>
@@ -256,8 +308,8 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
             {/* ── Actions ── */}
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <FieldButton variant="ghost" onClick={resetForm} t={t}>{tr("Cancel")}</FieldButton>
-              <FieldButton variant="ghost" onClick={() => handleSave(true)} disabled={!formDesc.trim()} t={t}>{tr("Save Draft")}</FieldButton>
-              <FieldButton onClick={() => handleSave(false)} disabled={!formDesc.trim()} t={t}>{tr("Submit")}</FieldButton>
+              <FieldButton variant="ghost" onClick={() => handleSave(true)} disabled={!formDesc.trim()} t={t}>{editingId ? tr("Update Draft") : tr("Save Draft")}</FieldButton>
+              <FieldButton onClick={() => handleSave(false)} disabled={!formDesc.trim()} t={t}>{editingId ? tr("Update & Submit") : tr("Submit")}</FieldButton>
             </div>
           </div>
         </FieldCard>
@@ -350,6 +402,18 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
                         <img src={p.data} alt={p.name || "photo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Edit / Delete actions (draft only) */}
+                {ticket.status === "draft" && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                    <FieldButton variant="ghost" onClick={() => startEdit(ticket)} t={t} style={{ padding: "4px 10px", fontSize: "var(--text-sm, 12px)" }}>
+                      <Pencil size={12} style={{ marginRight: 4 }} />{tr("Edit")}
+                    </FieldButton>
+                    <FieldButton variant="ghost" onClick={() => handleDelete(ticket)} t={t} style={{ padding: "4px 10px", fontSize: "var(--text-sm, 12px)", color: "var(--red)" }}>
+                      <Trash2 size={12} style={{ marginRight: 4 }} />{tr("Delete")}
+                    </FieldButton>
                   </div>
                 )}
 
