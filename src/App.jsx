@@ -834,7 +834,7 @@ function App({ auth, onLogout }) {
     }).sort((a, b) => (parseDate(a.due) || 0) - (parseDate(b.due) || 0));
 
     // COs pending approval
-    const cosPending = changeOrders.filter(co => co.status === "pending");
+    const cosPending = changeOrders.filter(co => co.status !== "approved" && co.status !== "rejected");
     const cosPendingTotal = cosPending.reduce((s, co) => s + (co.amount || 0), 0);
 
     // RFIs open (with age)
