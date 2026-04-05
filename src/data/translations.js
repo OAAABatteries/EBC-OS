@@ -928,4 +928,22 @@ export const T = {
   "Select crew to clock in": { es: "Seleccionar equipo para registrar" },
   "Clocked In": { es: "Registrado" },
   "Summary": { es: "Resumen" },
+
+  // ── Round 7 fixes ──
+  "Issues": { es: "Problemas" },
+  "Issues & Blockers": { es: "Problemas y Bloqueos" },
+  "open": { es: "abiertos" },
+  "resolved": { es: "resueltos" },
+  "Resolved": { es: "Resueltos" },
+  "Resolve": { es: "Resolver" },
+  "No issues reported": { es: "Sin problemas reportados" },
+  "Tap Report Problem to log an issue": { es: "Toque Reportar Problema para registrar un problema" },
+  "General": { es: "General" },
+  "This Week Look-Ahead": { es: "Vista Semanal" },
+  "Full Calendar": { es: "Calendario Completo" },
+  "TODAY'S ACTIVITY": { es: "ACTIVIDAD DE HOY" },
+  "Open Punch": { es: "Punch Abiertos" },
+  "Pending T&M": { es: "T&M Pendientes" },
+  "Production Today": { es: "Producción Hoy" },
+  "Deliveries Pending": { es: "Entregas Pendientes" },
 };

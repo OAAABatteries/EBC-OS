@@ -856,6 +856,7 @@ export function ForemanView({ app }) {
     { id: "jsa", label: "JSA", icon: Shield, badge: activeJsaCount > 0 },
     { id: "drawings", label: "Drawings", icon: FileText, badge: false },
     { id: "reports", label: "Daily Report", icon: ClipboardList, badge: (dailyReports || []).filter(r => r.projectId === selectedProjectId && r.date === new Date().toISOString().slice(0,10)).length > 0 },
+    { id: "issues", label: t("Issues"), icon: AlertTriangle, badge: (problems || []).filter(p => String(p.projectId) === String(selectedProjectId) && p.status !== "resolved").length > 0 },
   ];
 
   // FSCH-04: Pull-based in-app alert. Foreman sees pending request alerts when opening Dashboard.
@@ -4004,6 +4005,69 @@ export function ForemanView({ app }) {
                 })()}
               </div>
             )}
+
+            {/* ═══ ISSUES / BLOCKERS TAB ═══ */}
+            {foremanTab === "issues" && (() => {
+              const projProblems = (problems || []).filter(p => String(p.projectId) === String(selectedProjectId))
+                .sort((a, b) => new Date(b.reportedAt || b.createdAt) - new Date(a.reportedAt || a.createdAt));
+              const openProblems = projProblems.filter(p => p.status !== "resolved");
+              const resolvedProblems = projProblems.filter(p => p.status === "resolved");
+              return (
+                <div className="emp-content">
+                  <div className="section-header" style={{ alignItems: "center" }}>
+                    <div>
+                      <div className="section-title" style={{ fontSize: 16 }}>{t("Issues & Blockers")}</div>
+                      <div className="text-xs text-muted">{openProblems.length} {t("open")} · {resolvedProblems.length} {t("resolved")}</div>
+                    </div>
+                    <button className="btn btn-sm" style={{ background: "var(--amber)", color: "#fff", borderRadius: 8, border: "none", display: "flex", alignItems: "center", gap: 6 }}
+                      onClick={() => setShowReportProblem(true)}>
+                      <AlertTriangle size={14} /> {t("Report Problem")}
+                    </button>
+                  </div>
+                  {openProblems.length === 0 && resolvedProblems.length === 0 ? (
+                    <EmptyState icon={AlertTriangle} heading={t("No issues reported")} message={t("Tap Report Problem to log an issue")} t={t} />
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {openProblems.map(p => (
+                        <PremiumCard key={p.id} variant="info" style={{ borderLeft: `3px solid ${p.priority === "high" || p.priority === "critical" ? "var(--red)" : "var(--amber)"}` }}>
+                          <div className="flex-between mb-4">
+                            <span className="text-sm font-bold">{p.category || t("General")}</span>
+                            <span className={`badge ${p.priority === "high" || p.priority === "critical" ? "badge-red" : "badge-amber"}`}>{p.priority || "medium"}</span>
+                          </div>
+                          <div className="text-xs text-muted mb-4">{p.description || p.notes || ""}</div>
+                          {p.location && <div className="text-xs text-dim mb-4"><MapPin size={10} /> {p.location}</div>}
+                          <div className="flex-between">
+                            <span className="text-xs text-dim">{p.reportedBy || t("Unknown")} · {new Date(p.reportedAt || p.createdAt).toLocaleDateString()}</span>
+                            <button className="btn btn-sm badge-green" style={{ fontSize: 10, padding: "4px 8px", border: "none", cursor: "pointer" }}
+                              onClick={() => setProblems(prev => prev.map(pr => pr.id === p.id ? { ...pr, status: "resolved", resolvedAt: new Date().toISOString() } : pr))}>
+                              {t("Resolve")}
+                            </button>
+                          </div>
+                          {p.photos?.length > 0 && (
+                            <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
+                              {p.photos.slice(0, 3).map((ph, i) => (
+                                <img key={i} src={ph} alt="" style={{ width: 48, height: 48, borderRadius: 6, objectFit: "cover" }} />
+                              ))}
+                            </div>
+                          )}
+                        </PremiumCard>
+                      ))}
+                      {resolvedProblems.length > 0 && (
+                        <div style={{ marginTop: 8 }}>
+                          <div className="text-xs font-bold text-muted mb-4">{t("Resolved")} ({resolvedProblems.length})</div>
+                          {resolvedProblems.slice(0, 5).map(p => (
+                            <div key={p.id} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", opacity: 0.6, fontSize: 12 }}>
+                              <span style={{ textDecoration: "line-through" }}>{p.category}: {(p.description || "").slice(0, 50)}</span>
+                              <span className="text-xs text-dim" style={{ marginLeft: 8 }}>{new Date(p.resolvedAt).toLocaleDateString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* ═══ PRODUCTION TAB ═══ */}
             {foremanTab === "production" && (

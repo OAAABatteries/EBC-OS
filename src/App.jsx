@@ -1071,6 +1071,67 @@ function App({ auth, onLogout }) {
         );
       })()}
 
+      {/* ── This Week Look-Ahead — crew + deliveries + events ── */}
+      {(() => {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const weekDays = [];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(today); d.setDate(d.getDate() + i);
+          weekDays.push(d);
+        }
+        const dayKey = (d) => ['sun','mon','tue','wed','thu','fri','sat'][d.getDay()];
+        const fmtDay = (d) => d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+        const todayStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+
+        // Build daily entries
+        const days = weekDays.map(d => {
+          const dk = dayKey(d);
+          const ds = todayStr(d);
+          const crewCount = (teamSchedule || []).filter(s => s.days?.[dk]).length;
+          const deliveries = (materialRequests || []).filter(r => {
+            const sched = r.scheduledDate || r.deliveryDate;
+            return sched === ds && (r.status === "approved" || r.status === "assigned");
+          }).length;
+          const events = (calendarEvents || []).filter(ev => {
+            const evDate = ev.date || ev.start;
+            return evDate && evDate.startsWith(ds);
+          });
+          return { date: d, label: fmtDay(d), crew: crewCount, deliveries, events, isToday: i === 0 };
+        });
+
+        // Only show if we have some data
+        const hasData = days.some(d => d.crew > 0 || d.deliveries > 0 || d.events.length > 0);
+        if (!hasData) return null;
+
+        return (
+          <div className="card" style={{ padding: "14px 16px", marginBottom: 16, borderLeft: "3px solid var(--amber)" }}>
+            <div className="text-sm font-semi mb-8" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Calendar size={15} /> {t("This Week Look-Ahead")}
+              </span>
+              <button className="btn btn-ghost btn-sm" onClick={() => handleTabClick("calendar")}>{t("Full Calendar")}</button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(weekDays.length, 7)}, 1fr)`, gap: 4, fontSize: 11 }}>
+              {days.map((d, i) => (
+                <div key={i} style={{ padding: "6px 4px", borderRadius: 6, background: i === 0 ? "rgba(16,185,129,0.08)" : "var(--bg3)", textAlign: "center", border: i === 0 ? "1px solid var(--green)" : "1px solid transparent" }}>
+                  <div style={{ fontWeight: 700, fontSize: 10, color: i === 0 ? "var(--green)" : "var(--text3)", marginBottom: 4 }}>
+                    {d.label.split(",")[0]}
+                  </div>
+                  {d.crew > 0 && <div style={{ color: "var(--blue)" }}>{d.crew} <span style={{fontSize: 9}}>crew</span></div>}
+                  {d.deliveries > 0 && <div style={{ color: "var(--amber)" }}>{d.deliveries} <span style={{fontSize: 9}}>del</span></div>}
+                  {d.events.map((ev, ei) => (
+                    <div key={ei} style={{ fontSize: 9, color: "var(--text3)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {ev.title || ev.type}
+                    </div>
+                  ))}
+                  {d.crew === 0 && d.deliveries === 0 && d.events.length === 0 && <div style={{ color: "var(--text3)", fontSize: 9 }}>—</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Today's Sites — quick directions / clock-in ── */}
       {(() => {
         const mySites = projects.filter(p => p.status === "in-progress" && p.lat && p.lng);
