@@ -928,6 +928,15 @@ export const T = {
   "Select crew to clock in": { es: "Seleccionar equipo para registrar" },
   "Clocked In": { es: "Registrado" },
   "Summary": { es: "Resumen" },
+  "worked": { es: "trabajadas" },
+  "paid": { es: "pagadas" },
+  "Bulk": { es: "Masivo" },
+  "Single": { es: "Individual" },
+  "Select crew": { es: "Seleccionar equipo" },
+  "crew": { es: "equipo" },
+  "deleted": { es: "eliminado" },
+  "updated": { es: "actualizado" },
+  "Edit hours": { es: "Editar horas" },
 
   // ── Round 7 fixes ──
   "Issues": { es: "Problemas" },

@@ -1230,16 +1230,19 @@ export function EmployeeView({ app }) {
                             </div>
                           )}
                         </div>
-                        <div className="emp-project-actions">
-                          {hasPerimeter ? (
-                            <button className="emp-project-action-btn emp-project-action-btn--delete" onClick={() => clearPerimeter(p.id)}>
-                              Clear
+                        {/* Perimeter controls: restricted to foreman/PM/admin/super only */}
+                        {!isCrewRole && (
+                          <div className="emp-project-actions">
+                            {hasPerimeter ? (
+                              <button className="emp-project-action-btn emp-project-action-btn--delete" onClick={() => clearPerimeter(p.id)}>
+                                Clear
+                              </button>
+                            ) : null}
+                            <button className="emp-project-action-btn emp-project-action-btn--draw" onClick={() => startDrawPerimeter(p.id)} style={{ background: hasPerimeter ? "var(--surface-alt)" : color, color: hasPerimeter ? "var(--text-muted)" : "#fff" }}>
+                              {hasPerimeter ? "Redraw" : "Draw Perimeter"}
                             </button>
-                          ) : null}
-                          <button className="emp-project-action-btn emp-project-action-btn--draw" onClick={() => startDrawPerimeter(p.id)} style={{ background: hasPerimeter ? "var(--surface-alt)" : color, color: hasPerimeter ? "var(--text-muted)" : "#fff" }}>
-                            {hasPerimeter ? "Redraw" : "Draw Perimeter"}
-                          </button>
-                        </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -1330,7 +1333,9 @@ export function EmployeeView({ app }) {
                               </span>
                             </div>
                             {entry.lunchDeducted > 0 && (
-                              <div className="text-xs text-dim mt-2">{t("lunch")}: -30m</div>
+                              <div className="text-xs text-dim mt-2">
+                                {(entry.totalHours + entry.lunchDeducted).toFixed(1)}h {t("worked")} - 30m {t("lunch")} = {entry.totalHours.toFixed(1)}h {t("paid")}
+                              </div>
                             )}
                             {entry.overrideReason && (
                               <div className="text-xs text-dim mt-2">{t("Override")}: {entry.overrideReason}</div>
@@ -1625,8 +1630,8 @@ export function EmployeeView({ app }) {
                 <label className="form-label">{t("Photo (optional)")}</label>
                 <PhotoCapture
                   photos={matForm.photos || []}
-                  onPhotosChange={(photos) => setMatForm(f => ({ ...f, photos, photo: photos.length > 0 ? photos[0] : null }))}
-                  maxPhotos={3}
+                  onPhotos={(photos) => setMatForm(f => ({ ...f, photos, photo: photos.length > 0 ? photos[0] : null }))}
+                  multiple={true}
                   t={t}
                 />
               </div>
