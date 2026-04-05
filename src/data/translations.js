@@ -849,6 +849,7 @@ export const T = {
   "What did you install?": { es: "¿Qué instalaste?" },
   "No area assigned for today": { es: "Sin área asignada para hoy" },
   "Select Area": { es: "Seleccionar Área" },
+  "Select your area": { es: "Selecciona tu área" },
   "Location": { es: "Ubicación" },
   "Description (optional with photo)": { es: "Descripción (opcional con foto)" },
   "Quick note (optional if photo attached)...": { es: "Nota rápida (opcional si hay foto)..." },
