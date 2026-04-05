@@ -10,10 +10,11 @@ import {
   OSHA_CHECKLIST, COMPANY_DEFAULTS, getHF,
   initEmployees, initCompanyLocations, initTimeEntries, initCrewSchedule, initMaterialRequests,
   initTmTickets, DATA_VERSION,
-  initAreas, initProductionLogs
+  initAreas, initProductionLogs, initDecisionLog
 } from "./data/constants";
 import { AreasTab } from "./tabs/AreasTab";
 import { PunchListTab } from "./tabs/PunchListTab";
+import { DecisionLogTab } from "./tabs/DecisionLogTab";
 import { PhaseTracker, getDefaultPhases } from "./components/PhaseTracker";
 import { EstimatingTab } from "./tabs/Estimating";
 import { MoreTabs } from "./tabs/MoreTabs";
@@ -402,6 +403,7 @@ function App({ auth, onLogout }) {
   const [punchItems, setPunchItems, _syncPunch] = useSyncedState("punchItems", initPunchItems);
   const [areas, setAreas, _syncAreas] = useSyncedState("areas", initAreas);
   const [productionLogs, setProductionLogs, _syncProductionLogs] = useSyncedState("productionLogs", initProductionLogs);
+  const [decisionLog, setDecisionLog, _syncDecisionLog] = useSyncedState("decisionLog", initDecisionLog);
   const [insurancePolicies, setInsurancePolicies, _syncInsurance] = useSyncedState("insurancePolicies", []);
   const [problems, setProblems, _syncProblems] = useSyncedState("problems", []);
 
@@ -615,6 +617,7 @@ function App({ auth, onLogout }) {
     punchItems, setPunchItems,
     areas, setAreas,
     productionLogs, setProductionLogs,
+    decisionLog, setDecisionLog,
     insurancePolicies, setInsurancePolicies,
     problems, setProblems,
     show, setModal, modal, search, setSearch, tab, setTab, subTab, setSubTab, fmt, fmtK, nextId,
@@ -4172,7 +4175,7 @@ const ModalHub = ({ type, data, app }) => {
     const totalBilled = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);
     const remaining = (draft.contract || 0) - totalBilled;
     const [projTab, setProjTab] = useState(app.initialProjTab || "overview");
-    const projTabs = ["overview", "change orders", "submittals", "rfis", "areas", "punch", "team", "financials", "closeout", "sound", "logistics", "notes"];
+    const projTabs = ["overview", "change orders", "submittals", "rfis", "areas", "punch", "log", "team", "financials", "closeout", "sound", "logistics", "notes"];
     const [coFormOpen, setCoFormOpen] = useState(false);
     const [coEditId, setCoEditId] = useState(null);
     const [coExpandedId, setCoExpandedId] = useState(null);
@@ -5223,6 +5226,11 @@ const ModalHub = ({ type, data, app }) => {
             {/* ── Punch List ── */}
             {projTab === "punch" && (
               <PunchListTab punchItems={app.punchItems} setPunchItems={app.setPunchItems} areas={(app.areas || []).filter(a => String(a.projectId) === String(draft.id))} employees={app.employees} projectId={draft.id} t={app.t} />
+            )}
+
+            {/* ── Decision / Communication Log ── */}
+            {projTab === "log" && (
+              <DecisionLogTab decisionLog={app.decisionLog} setDecisionLog={app.setDecisionLog} projectId={draft.id} employees={app.employees} t={app.t} />
             )}
 
             {/* ── Sound Quality Testing ── */}

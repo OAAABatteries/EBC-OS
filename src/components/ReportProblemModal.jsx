@@ -147,7 +147,7 @@ export function ReportProblemModal({ reporter, projects, defaultProjectId, areas
                     background: category === cat ? "rgba(245,158,11,0.12)" : "var(--bg3)",
                     color: category === cat ? "var(--amber, #f59e0b)" : "var(--text2)",
                     fontWeight: category === cat ? 700 : 500,
-                    fontSize: 13,
+                    fontSize: "var(--text-base, 13px)",
                     cursor: "pointer",
                     textAlign: "center",
                   }}
@@ -174,7 +174,7 @@ export function ReportProblemModal({ reporter, projects, defaultProjectId, areas
                     background: priority === p ? `${PRIORITY_COLOR[p]}1a` : "var(--bg3)",
                     color: priority === p ? PRIORITY_COLOR[p] : "var(--text2)",
                     fontWeight: priority === p ? 700 : 500,
-                    fontSize: 12,
+                    fontSize: "var(--text-sm, 12px)",
                     cursor: "pointer",
                     textAlign: "center",
                   }}

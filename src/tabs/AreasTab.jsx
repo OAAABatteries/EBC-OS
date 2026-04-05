@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
-import { ChevronDown, ChevronUp, MapPin, Layers, BarChart3 } from "lucide-react";
+import { ChevronDown, ChevronUp, MapPin, Layers, BarChart3, AlertTriangle } from "lucide-react";
 import { FieldCard } from "../components/field/FieldCard";
 import { FieldSelect } from "../components/field/FieldSelect";
 import { StatusBadge } from "../components/field/StatusBadge";
@@ -53,6 +53,15 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
     return list.sort((a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9));
   }, [projectAreas, filterFloor, filterZone]);
 
+  // Actual labor hours per area from production logs
+  const laborByArea = useMemo(() => {
+    const map = {};
+    productionLogs
+      .filter((l) => String(l.projectId) === String(projectId))
+      .forEach((l) => { map[l.areaId] = (map[l.areaId] || 0) + (l.laborHours || 0); });
+    return map;
+  }, [productionLogs, projectId]);
+
   // Summary stats
   const stats = useMemo(() => {
     const total = projectAreas.length;
@@ -63,8 +72,15 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
       (a.scopeItems || []).forEach((s) => { installed += s.installedQty || 0; budget += s.budgetQty || 0; })
     );
     const pct = budget > 0 ? Math.round((installed / budget) * 100) : 0;
-    return { total, complete, inProgress, pct };
-  }, [projectAreas]);
+    // Labor efficiency: total actual hours vs total budgeted hours
+    let totalBudgetHrs = 0, totalActualHrs = 0;
+    projectAreas.forEach((a) => {
+      totalBudgetHrs += a.laborBudgetHours || 0;
+      totalActualHrs += laborByArea[a.id] || 0;
+    });
+    const laborPct = totalBudgetHrs > 0 ? Math.round((totalActualHrs / totalBudgetHrs) * 100) : 0;
+    return { total, complete, inProgress, pct, laborPct, totalBudgetHrs, totalActualHrs };
+  }, [projectAreas, laborByArea]);
 
   // Resolve employee name
   const empName = (id) => {
@@ -87,6 +103,7 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
         <StatTile label={tr("Complete")} value={stats.complete} color="var(--green)" t={t} />
         <StatTile label={tr("In Progress")} value={stats.inProgress} color="var(--amber)" t={t} />
         <StatTile label={tr("Overall %")} value={`${stats.pct}%`} color="var(--blue)" t={t} />
+        <StatTile label={tr("Labor Burn")} value={`${stats.laborPct}%`} color={stats.laborPct > stats.pct ? "var(--red)" : "var(--green)"} t={t} />
       </div>
 
       {/* ── Filters ── */}
@@ -121,6 +138,10 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
 
       {filtered.map((area) => {
         const pct = progressPct(area.scopeItems);
+        const actualHrs = laborByArea[area.id] || 0;
+        const budgetHrs = area.laborBudgetHours || 0;
+        const laborBurnPct = budgetHrs > 0 ? Math.round((actualHrs / budgetHrs) * 100) : 0;
+        const isOverBurning = budgetHrs > 0 && laborBurnPct > pct;
         const isExpanded = expandedId === area.id;
         const logs = isExpanded ? logsForArea(area.id) : [];
 
@@ -154,6 +175,24 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
             <div style={{ height: 4, background: "var(--bg3)", borderRadius: 2, marginTop: 8, overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${Math.min(pct, 100)}%`, background: pct >= 100 ? "var(--green)" : "var(--amber)", borderRadius: 2, transition: "width 0.3s" }} />
             </div>
+
+            {/* Labor burn rate */}
+            {budgetHrs > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                <span style={{ fontSize: "var(--text-sm, 12px)", color: "var(--text2)", minWidth: 70 }}>
+                  {tr("Labor")}: {actualHrs}/{budgetHrs}h
+                </span>
+                <div style={{ flex: 1, height: 4, background: "var(--bg3)", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${Math.min(laborBurnPct, 100)}%`, background: isOverBurning ? "var(--red)" : "var(--green)", borderRadius: 2, transition: "width 0.3s" }} />
+                </div>
+                <span style={{ fontSize: "var(--text-sm, 12px)", fontWeight: 600, color: isOverBurning ? "var(--red)" : "var(--text2)", minWidth: 36, textAlign: "right" }}>
+                  {laborBurnPct}%
+                </span>
+                {isOverBurning && (
+                  <AlertTriangle size={12} style={{ color: "var(--red)", flexShrink: 0 }} title={tr("Labor burn exceeds production")} />
+                )}
+              </div>
+            )}
 
             {/* Expanded: Scope Items */}
             {isExpanded && (

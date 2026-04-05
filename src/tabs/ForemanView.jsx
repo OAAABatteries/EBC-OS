@@ -773,24 +773,24 @@ export function ForemanView({ app }) {
 
   const pendingRequestCount = pendingRequests.length;
 
+  const openPunchCount = (punchItems || []).filter(p => String(p.projectId) === String(selectedProjectId) && p.status === "open").length;
+  const pendingTmCount = (tmTickets || []).filter(t => String(t.projectId) === String(selectedProjectId) && (t.status === "draft" || t.status === "submitted")).length;
+
   const foremanTabDefs = [
-    // Primary (4 + More trigger)
+    // Primary (5 field-critical tabs + More)
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, badge: false },
+    { id: "production", label: t("Production"), icon: BarChart3, badge: false },
+    { id: "tm", label: t("T&M"), icon: FileText, badge: pendingTmCount > 0 },
     { id: "team", label: "Team", icon: Users, badge: pendingRequestCount > 0 },
+    // More overflow
+    { id: "punchList", label: t("Punch List"), icon: ClipboardCheck, badge: openPunchCount > 0 },
     { id: "hours", label: "Hours", icon: ClockIcon, badge: false },
     { id: "materials", label: "Materials", icon: Package, badge: projectMatRequests.filter(r => r.status === "requested" || r.status === "pending").length > 0 },
-    // More overflow (9 items)
     { id: "clock", label: "Clock", icon: ClockIcon, badge: false },
     { id: "jsa", label: "JSA", icon: Shield, badge: activeJsaCount > 0 },
     { id: "drawings", label: "Drawings", icon: FileText, badge: false },
-    { id: "lookahead", label: "Look-Ahead", icon: Calendar, badge: lookAheadEvents.length > 0 },
     { id: "reports", label: "Daily Report", icon: ClipboardList, badge: (dailyReports || []).filter(r => r.projectId === selectedProjectId && r.date === new Date().toISOString().slice(0,10)).length > 0 },
-    { id: "site", label: "Site", icon: MapPin, badge: criticalUnchecked.length > 0 },
-    { id: "notes", label: "Notes", icon: MessageSquare, badge: projNotesCount > 0 },
     { id: "documents", label: "Documents", icon: FileQuestion, badge: rfiAlerts.length > 0 },
-    { id: "production", label: t("Production"), icon: BarChart3, badge: false },
-    { id: "tm", label: t("T&M"), icon: FileText, badge: false },
-    { id: "punchList", label: t("Punch List"), icon: ClipboardCheck, badge: false },
     { id: "settings", label: "Settings", icon: Settings, badge: false },
   ];
 
@@ -3740,6 +3740,7 @@ export function ForemanView({ app }) {
                 productionLogs={productionLogs}
                 setProductionLogs={setProductionLogs}
                 areas={(areas || []).filter(a => String(a.projectId) === String(selectedProjectId))}
+                setAreas={setAreas}
                 projectId={selectedProjectId}
                 employees={employees}
                 t={t}

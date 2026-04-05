@@ -150,6 +150,7 @@ export const TABLE_MAP = {
   punchItems:        "punch_items",
   areas:             "areas",
   productionLogs:    "production_logs",
+  decisionLog:       "decision_log",
   incentiveProjects: "incentive_projects",
   projectDrawings:   "project_drawings",
   emailScans:        "email_scans",

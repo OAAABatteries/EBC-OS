@@ -29,7 +29,9 @@ export function PodModal({ delivery, onConfirm, onClose, t }) {
   };
 
   const handleConfirm = async () => {
-    if (!recipientName.trim()) return;
+    if (!recipientName.trim()) {
+      if (!window.confirm(tr("No recipient name — are you sure?"))) return;
+    }
     setSaving(true);
 
     // Capture signature
@@ -254,19 +256,17 @@ export function PodModal({ delivery, onConfirm, onClose, t }) {
           </button>
           <button
             onClick={handleConfirm}
-            disabled={!recipientName.trim() || saving}
+            disabled={saving}
             style={{
               flex: 2,
               padding: "14px",
               fontSize: 15,
               fontWeight: 700,
-              background: !recipientName.trim()
-                ? "var(--bg3)"
-                : "var(--green, #22c55e)",
-              color: !recipientName.trim() ? "var(--text3)" : "#fff",
+              background: "var(--green, #22c55e)",
+              color: "#fff",
               border: "none",
               borderRadius: 10,
-              cursor: !recipientName.trim() ? "not-allowed" : "pointer",
+              cursor: saving ? "not-allowed" : "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -275,7 +275,7 @@ export function PodModal({ delivery, onConfirm, onClose, t }) {
           >
             <ClipboardCheck
               size={18}
-              color={!recipientName.trim() ? "var(--text3)" : "#fff"}
+              color="#fff"
             />
             {saving ? tr("Saving...") : tr("Confirm Delivery")}
           </button>

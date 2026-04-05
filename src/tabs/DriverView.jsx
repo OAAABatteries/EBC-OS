@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Calendar, Settings, Navigation, Package, Truck, CheckCircle, MapPin, RefreshCw, Home } from "lucide-react";
+import { Calendar, Settings, Navigation, Package, Truck, CheckCircle, MapPin, RefreshCw, Home, AlertTriangle } from "lucide-react";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
 import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, EmptyState, StatusBadge, Skeleton, StatTile, AlertCard } from "../components/field";
@@ -168,6 +168,7 @@ export function DriverView({ app }) {
         siteContactPhone: proj?.siteContactPhone || null,
         gateCode: proj?.gateCode || null,
         accessInstructions: proj?.accessInstructions || proj?.siteAccessNotes || null,
+        deliveryEntrance: proj?.deliveryEntrance || null,
       };
     });
     return stops;
@@ -601,7 +602,7 @@ export function DriverView({ app }) {
                       </div>
                       <div className="flex-1">
                         <div className="text-sm driver-project-name">{stop.projectName}</div>
-                        {stop.address && <div className="text-xs text-muted">{stop.address}</div>}
+                        {stop.address && <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(stop.address)}`} target="_blank" rel="noopener noreferrer" className="text-xs" style={{ color: "var(--blue)", textDecoration: "none" }}>{stop.address}</a>}
                         {stop.siteContact && (
                           <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
                             <span style={{ fontSize: 12, color: "var(--text2)" }}>{stop.siteContact}</span>
@@ -615,6 +616,11 @@ export function DriverView({ app }) {
                         {stop.gateCode && (
                           <div style={{ fontSize: 12, color: "var(--green)", marginTop: 4 }}>
                             Gate: {stop.gateCode}
+                          </div>
+                        )}
+                        {stop.deliveryEntrance && (
+                          <div style={{ fontSize: 12, color: "var(--blue)", marginTop: 4, fontWeight: 600 }}>
+                            {t("Delivery Entrance")}: {stop.deliveryEntrance}
                           </div>
                         )}
                         {stop.accessInstructions && (
@@ -691,12 +697,14 @@ export function DriverView({ app }) {
                             <MapPin size={14} aria-hidden="true" /> {t("Navigate")}
                           </FieldButton>
                         )}
-                        <button
+                        <FieldButton
+                          variant="danger"
+                          className="btn-sm driver-action-btn"
                           onClick={() => setShortageDelivery(stop)}
-                          style={{ padding: "8px 12px", background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                          t={t}
                         >
-                          {t("Report Issue")}
-                        </button>
+                          <AlertTriangle size={14} aria-hidden="true" /> {t("Report Issue")}
+                        </FieldButton>
                       </div>
                     </div>
                   </PremiumCard>

@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
-import { Plus, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { Plus, CheckCircle, Clock, AlertTriangle, Pencil, Trash2 } from "lucide-react";
 import { FieldCard } from "../../components/field/FieldCard";
 import { FieldButton } from "../../components/field/FieldButton";
 import { FieldInput } from "../../components/field/FieldInput";
@@ -22,6 +22,7 @@ export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterArea, setFilterArea] = useState("all");
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   // Form
   const [formDesc, setFormDesc] = useState("");
@@ -67,9 +68,55 @@ export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees
     );
   };
 
+  const resetForm = () => {
+    setFormDesc("");
+    setFormArea("");
+    setFormPriority("medium");
+    setFormAssignee("");
+    setFormPhotos([]);
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const startEdit = (item) => {
+    setFormDesc(item.description || "");
+    setFormArea("");
+    setFormPriority(item.priority || "medium");
+    setFormAssignee(item.assignedTo || "");
+    setFormPhotos(item.photos || []);
+    setEditingId(item.id);
+    setShowForm(true);
+  };
+
+  const handleDelete = (item) => {
+    if (!window.confirm(tr("Delete this punch item?"))) return;
+    setPunchItems((prev) => prev.filter((p) => p.id !== item.id));
+  };
+
   const handleAdd = () => {
     if (!formDesc.trim()) return;
     const areaObj = projectAreas.find((a) => a.id === formArea);
+
+    if (editingId) {
+      const location = areaObj ? `${areaObj.name}, Floor ${areaObj.floor}, Zone ${areaObj.zone}` : undefined;
+      setPunchItems((prev) =>
+        prev.map((p) =>
+          p.id === editingId
+            ? {
+                ...p,
+                description: formDesc.trim(),
+                ...(location !== undefined ? { location } : {}),
+                assignedTo: formAssignee || null,
+                priority: formPriority,
+                photos: formPhotos,
+              }
+            : p
+        )
+      );
+      resetForm();
+      return;
+    }
+
     const newItem = {
       id: crypto.randomUUID(),
       projectId: Number(projectId),
@@ -85,12 +132,7 @@ export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees
       signedOffAt: null,
     };
     setPunchItems((prev) => [...prev, newItem]);
-    setFormDesc("");
-    setFormArea("");
-    setFormPriority("medium");
-    setFormAssignee("");
-    setFormPhotos([]);
-    setShowForm(false);
+    resetForm();
   };
 
   return (
@@ -105,7 +147,7 @@ export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees
             </span>
           )}
         </div>
-        <FieldButton onClick={() => setShowForm(!showForm)} t={t} style={{ minHeight: 44 }}>
+        <FieldButton onClick={() => { if (showForm && editingId) { resetForm(); } else { setShowForm(!showForm); } }} t={t} style={{ minHeight: 44 }}>
           <Plus size={16} style={{ marginRight: 4 }} />
           {tr("Add")}
         </FieldButton>
@@ -155,8 +197,8 @@ export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees
             </FieldSelect>
             <PhotoCapture photos={formPhotos} onPhotos={setFormPhotos} t={t} />
             <div style={{ display: "flex", gap: 8 }}>
-              <FieldButton variant="ghost" onClick={() => setShowForm(false)} t={t} style={{ flex: 1, minHeight: 48 }}>{tr("Cancel")}</FieldButton>
-              <FieldButton onClick={handleAdd} disabled={!formDesc.trim()} t={t} style={{ flex: 1, minHeight: 48 }}>{tr("Save")}</FieldButton>
+              <FieldButton variant="ghost" onClick={resetForm} t={t} style={{ flex: 1, minHeight: 48 }}>{tr("Cancel")}</FieldButton>
+              <FieldButton onClick={handleAdd} disabled={!formDesc.trim()} t={t} style={{ flex: 1, minHeight: 48 }}>{editingId ? tr("Update") : tr("Save")}</FieldButton>
             </div>
           </div>
         </FieldCard>
@@ -227,6 +269,30 @@ export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees
                   )}
                 </div>
               )}
+
+              {/* Edit / Delete */}
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button
+                  onClick={() => startEdit(item)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 4, padding: "6px 12px",
+                    fontSize: "var(--text-sm, 12px)", background: "var(--bg3)", border: "1px solid var(--border)",
+                    borderRadius: 6, color: "var(--text2)", cursor: "pointer", minHeight: 36,
+                  }}
+                >
+                  <Pencil size={14} /> {tr("Edit")}
+                </button>
+                <button
+                  onClick={() => handleDelete(item)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 4, padding: "6px 12px",
+                    fontSize: "var(--text-sm, 12px)", background: "var(--bg3)", border: "1px solid var(--border)",
+                    borderRadius: 6, color: "var(--red)", cursor: "pointer", minHeight: 36,
+                  }}
+                >
+                  <Trash2 size={14} /> {tr("Delete")}
+                </button>
+              </div>
             </div>
           </div>
         </FieldCard>

@@ -628,10 +628,10 @@ export function EmployeeView({ app }) {
     // ── Primary (4 + More) ──
     { id: "home", label: t("Home"), icon: Home, badge: false },
     { id: "clock", label: t("Clock"), icon: Clock, badge: isClockedIn },
+    { id: "production", label: t("Log Work"), icon: BarChart3, badge: false },
     { id: "schedule", label: t("Schedule"), icon: Calendar, badge: false },
-    { id: "drawings", label: t("Drawings"), icon: FileText, badge: false },
     // ── More overflow (ranked by crew use frequency) ──
-    { id: "production", label: t("Production"), icon: BarChart3, badge: false },
+    { id: "drawings", label: t("Drawings"), icon: FileText, badge: false },
     { id: "jsa", label: t("JSA"), icon: ShieldCheck, badge: false },
     { id: "materials", label: t("Materials"), icon: Package, badge: myMatRequests?.some(r => r.status === "requested") },
     { id: "credentials", label: t("Credentials"), icon: Shield, badge: credBadgeCount > 0 ? credBadgeCount : false },
@@ -945,7 +945,8 @@ export function EmployeeView({ app }) {
                 <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>{t("Today's Work")}</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)" }}>{myTodaySchedule.task || area.name}</div>
                 <div style={{ fontSize: 14, color: "var(--text2)", marginTop: 4 }}>Floor {area.floor}, Zone {area.zone} — {area.name}</div>
-                {myTodaySchedule.trade && <div style={{ display: "inline-block", padding: "4px 10px", background: "var(--amber-dim)", color: "var(--amber)", borderRadius: 6, fontSize: 12, fontWeight: 700, marginTop: 8 }}>{t(myTodaySchedule.trade)}</div>}
+                {myTodaySchedule.trade && <div style={{ display: "inline-block", padding: "4px 10px", background: "var(--amber-dim)", color: "var(--amber)", borderRadius: 6, fontSize: "var(--text-sm)", fontWeight: 700, marginTop: 8 }}>{t(myTodaySchedule.trade)}</div>}
+                {area.notes && <div style={{ marginTop: 8, padding: "8px 12px", background: "var(--amber-dim)", borderRadius: 8, fontSize: "var(--text-sm)", color: "var(--amber)", fontWeight: 600, borderLeft: "3px solid var(--amber)" }}>{area.notes}</div>}
               </div>
             );
           })()}
@@ -1791,6 +1792,22 @@ export function EmployeeView({ app }) {
           </div>
         )}
       </div>
+
+      {/* Floating Report Problem Button — accessible from every tab */}
+      <button
+        onClick={() => setShowReportProblem(true)}
+        aria-label={t("Report a Problem")}
+        style={{
+          position: "fixed", bottom: 72, right: 16, zIndex: 140,
+          width: 52, height: 52, borderRadius: "50%",
+          background: "var(--red)", color: "#fff", border: "none",
+          boxShadow: "0 4px 16px rgba(239,68,68,0.4)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer",
+        }}
+      >
+        <AlertTriangle size={22} />
+      </button>
 
       <PortalTabBar
         tabs={portalTabs}

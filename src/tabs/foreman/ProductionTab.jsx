@@ -5,14 +5,14 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
-import { Plus, BarChart3, TrendingUp, Save } from "lucide-react";
+import { Plus, BarChart3, TrendingUp, Save, Trash2 } from "lucide-react";
 import { FieldCard } from "../../components/field/FieldCard";
 import { FieldButton } from "../../components/field/FieldButton";
 import { FieldInput } from "../../components/field/FieldInput";
 import { FieldSelect } from "../../components/field/FieldSelect";
 import { StatTile } from "../../components/field/StatTile";
 
-export function ProductionTab({ productionLogs = [], setProductionLogs, areas = [], projectId, employees = [], t }) {
+export function ProductionTab({ productionLogs = [], setProductionLogs, areas = [], setAreas, projectId, employees = [], t }) {
   const tr = t || ((k) => k);
 
   // Entry form state
@@ -114,6 +114,22 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
 
     setProductionLogs((prev) => [...prev, entry]);
 
+    // Update area scope installedQty so progress bars reflect reality
+    if (setAreas) {
+      setAreas((prev) =>
+        prev.map((area) => {
+          if (area.id !== selectedAreaId) return area;
+          return {
+            ...area,
+            scopeItems: (area.scopeItems || []).map((si) => {
+              if (si.trade !== selectedTrade) return si;
+              return { ...si, installedQty: (si.installedQty || 0) + qty };
+            }),
+          };
+        })
+      );
+    }
+
     // Clear form
     setQtyInstalled("");
     setLaborHours("");
@@ -121,6 +137,28 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
     setEntryNotes("");
     setSaveMsg(tr("Saved!"));
     setTimeout(() => setSaveMsg(""), 2000);
+  };
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const handleDeleteEntry = (log) => {
+    if (!window.confirm(tr("Delete this production entry?"))) return;
+    setProductionLogs((prev) => prev.filter((l) => l.id !== log.id));
+    // Reverse the installedQty on the area scope
+    if (setAreas) {
+      setAreas((prev) =>
+        prev.map((area) => {
+          if (area.id !== log.areaId) return area;
+          return {
+            ...area,
+            scopeItems: (area.scopeItems || []).map((si) => {
+              if (si.trade !== log.trade) return si;
+              return { ...si, installedQty: Math.max(0, (si.installedQty || 0) - log.qtyInstalled) };
+            }),
+          };
+        })
+      );
+    }
   };
 
   // Overall project stats
@@ -247,7 +285,23 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
             <div key={log.id} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: "var(--text-sm, 12px)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text)" }}>
                 <span>{log.date} &middot; {log.trade}</span>
-                <span style={{ fontWeight: 600 }}>{log.qtyInstalled} {log.unit}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontWeight: 600 }}>{log.qtyInstalled} {log.unit}</span>
+                  {log.date === todayStr && (
+                    <button
+                      onClick={() => handleDeleteEntry(log)}
+                      title={tr("Delete")}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        width: 24, height: 24, padding: 0, border: "1px solid var(--border)",
+                        borderRadius: 4, background: "var(--bg3)", color: "var(--red)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
+                </div>
               </div>
               <div style={{ color: "var(--text3)", marginTop: 2 }}>
                 {log.laborHours}h &middot; {log.crewSize} crew &middot; Rate: {log.laborHours > 0 ? (log.qtyInstalled / log.laborHours).toFixed(1) : "—"}/{tr("hr")}

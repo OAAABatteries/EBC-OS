@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
-import { Plus, AlertTriangle, CheckCircle, Clock, Filter } from "lucide-react";
+import { Plus, AlertTriangle, CheckCircle, Clock, Filter, Pencil, Trash2, Lock } from "lucide-react";
 import { FieldCard } from "../components/field/FieldCard";
 import { FieldButton } from "../components/field/FieldButton";
 import { FieldInput } from "../components/field/FieldInput";
@@ -23,6 +23,9 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterArea, setFilterArea] = useState("all");
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [signOffId, setSignOffId] = useState(null);
+  const [signOffName, setSignOffName] = useState("");
 
   // Form state
   const [formDesc, setFormDesc] = useState("");
@@ -61,18 +64,81 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
   const advanceStatus = (item) => {
     const next = STATUS_FLOW[item.status];
     if (!next) return;
+    if (next === "complete") {
+      // Prompt for sign-off instead of immediately completing
+      setSignOffId(item.id);
+      setSignOffName("");
+      return;
+    }
     setPunchItems((prev) =>
       prev.map((p) =>
-        p.id === item.id
-          ? { ...p, status: next, ...(next === "complete" ? { completedAt: new Date().toISOString() } : {}) }
+        p.id === item.id ? { ...p, status: next } : p
+      )
+    );
+  };
+
+  const confirmSignOff = (itemId) => {
+    if (!signOffName.trim()) return;
+    setPunchItems((prev) =>
+      prev.map((p) =>
+        p.id === itemId
+          ? { ...p, status: "complete", completedAt: new Date().toISOString(), signedOffBy: signOffName.trim(), signedOffAt: new Date().toISOString() }
           : p
       )
     );
+    setSignOffId(null);
+    setSignOffName("");
+  };
+
+  const resetForm = () => {
+    setFormDesc("");
+    setFormArea("");
+    setFormPriority("medium");
+    setFormAssignee("");
+    setFormPhotos([]);
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const startEdit = (item) => {
+    setFormDesc(item.description || "");
+    setFormArea("");
+    setFormPriority(item.priority || "medium");
+    setFormAssignee(item.assignedTo || "");
+    setFormPhotos(item.photos || []);
+    setEditingId(item.id);
+    setShowForm(true);
+  };
+
+  const handleDelete = (item) => {
+    if (!window.confirm(tr("Delete this punch item?"))) return;
+    setPunchItems((prev) => prev.filter((p) => p.id !== item.id));
   };
 
   const handleAdd = () => {
     if (!formDesc.trim()) return;
     const areaObj = projectAreas.find((a) => a.id === formArea);
+
+    if (editingId) {
+      const location = areaObj ? `${areaObj.name}, Floor ${areaObj.floor}, Zone ${areaObj.zone}` : undefined;
+      setPunchItems((prev) =>
+        prev.map((p) =>
+          p.id === editingId
+            ? {
+                ...p,
+                description: formDesc.trim(),
+                ...(location !== undefined ? { location } : {}),
+                assignedTo: formAssignee || null,
+                priority: formPriority,
+                photos: formPhotos,
+              }
+            : p
+        )
+      );
+      resetForm();
+      return;
+    }
+
     const newItem = {
       id: crypto.randomUUID(),
       projectId: Number(projectId),
@@ -88,12 +154,7 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
       signedOffAt: null,
     };
     setPunchItems((prev) => [...prev, newItem]);
-    setFormDesc("");
-    setFormArea("");
-    setFormPriority("medium");
-    setFormAssignee("");
-    setFormPhotos([]);
-    setShowForm(false);
+    resetForm();
   };
 
   return (
@@ -125,7 +186,7 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
             ))}
           </FieldSelect>
         </div>
-        <FieldButton onClick={() => setShowForm(!showForm)} t={t}>
+        <FieldButton onClick={() => { if (showForm && editingId) { resetForm(); } else { setShowForm(!showForm); } }} t={t}>
           <Plus size={14} style={{ marginRight: 4 }} />
           {tr("Add Punch Item")}
         </FieldButton>
@@ -135,7 +196,7 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
       {showForm && (
         <FieldCard>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ fontWeight: 700, fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>{tr("New Punch Item")}</div>
+            <div style={{ fontWeight: 700, fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>{editingId ? tr("Edit Punch Item") : tr("New Punch Item")}</div>
             <FieldInput label={tr("Description")} value={formDesc} onChange={(e) => setFormDesc(e.target.value)} t={t} />
             <FieldSelect label={tr("Area")} value={formArea} onChange={(e) => setFormArea(e.target.value)} t={t}>
               <option value="">{tr("Select Area")}</option>
@@ -156,8 +217,8 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
             </FieldSelect>
             <PhotoCapture photos={formPhotos} onPhotos={setFormPhotos} t={t} />
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <FieldButton variant="ghost" onClick={() => setShowForm(false)} t={t}>{tr("Cancel")}</FieldButton>
-              <FieldButton onClick={handleAdd} disabled={!formDesc.trim()} t={t}>{tr("Save")}</FieldButton>
+              <FieldButton variant="ghost" onClick={resetForm} t={t}>{tr("Cancel")}</FieldButton>
+              <FieldButton onClick={handleAdd} disabled={!formDesc.trim()} t={t}>{editingId ? tr("Update") : tr("Save")}</FieldButton>
             </div>
           </div>
         </FieldCard>
@@ -219,6 +280,52 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
                   ))}
                 </div>
               )}
+
+              {/* Sign-off inline form */}
+              {signOffId === item.id && (
+                <div style={{ marginTop: 8, padding: 8, background: "var(--bg3)", borderRadius: "var(--radius-sm, 4px)", border: "1px solid var(--border)" }}>
+                  <div style={{ fontSize: "var(--text-sm, 12px)", fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>{tr("Sign Off to Complete")}</div>
+                  <div style={{ display: "flex", gap: 6, alignItems: "flex-end" }}>
+                    <div style={{ flex: 1 }}>
+                      <FieldInput label={tr("Signed Off By")} value={signOffName} onChange={(e) => setSignOffName(e.target.value)} placeholder={tr("Name of verifier")} t={t} />
+                    </div>
+                    <FieldButton onClick={() => confirmSignOff(item.id)} disabled={!signOffName.trim()} t={t}>{tr("Complete")}</FieldButton>
+                    <FieldButton variant="ghost" onClick={() => { setSignOffId(null); setSignOffName(""); }} t={t}>{tr("Cancel")}</FieldButton>
+                  </div>
+                </div>
+              )}
+
+              {/* Sign-off info on completed items */}
+              {item.status === "complete" && item.signedOffBy && (
+                <div style={{ marginTop: 6, fontSize: "var(--text-sm, 12px)", color: "var(--green)", display: "flex", alignItems: "center", gap: 4 }}>
+                  <Lock size={10} />
+                  {tr("Signed off by")} {item.signedOffBy} &middot; {new Date(item.signedOffAt).toLocaleDateString()}
+                </div>
+              )}
+
+              {/* Edit / Delete */}
+              <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                <button
+                  onClick={() => startEdit(item)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 4, padding: "4px 10px",
+                    fontSize: "var(--text-sm, 12px)", background: "var(--bg3)", border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-sm, 4px)", color: "var(--text2)", cursor: "pointer",
+                  }}
+                >
+                  <Pencil size={12} /> {tr("Edit")}
+                </button>
+                <button
+                  onClick={() => handleDelete(item)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 4, padding: "4px 10px",
+                    fontSize: "var(--text-sm, 12px)", background: "var(--bg3)", border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-sm, 4px)", color: "var(--red)", cursor: "pointer",
+                  }}
+                >
+                  <Trash2 size={12} /> {tr("Delete")}
+                </button>
+              </div>
             </div>
           </div>
         </FieldCard>
