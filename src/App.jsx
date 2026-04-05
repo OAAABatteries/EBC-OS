@@ -9,8 +9,11 @@ import {
   initIncidents, initToolboxTalks, initDailyReports, initTakeoffs, initPunchItems,
   OSHA_CHECKLIST, COMPANY_DEFAULTS, getHF,
   initEmployees, initCompanyLocations, initTimeEntries, initCrewSchedule, initMaterialRequests,
-  initTmTickets, DATA_VERSION
+  initTmTickets, DATA_VERSION,
+  initAreas, initProductionLogs
 } from "./data/constants";
+import { AreasTab } from "./tabs/AreasTab";
+import { PunchListTab } from "./tabs/PunchListTab";
 import { PhaseTracker, getDefaultPhases } from "./components/PhaseTracker";
 import { EstimatingTab } from "./tabs/Estimating";
 import { MoreTabs } from "./tabs/MoreTabs";
@@ -397,6 +400,8 @@ function App({ auth, onLogout }) {
   const [incentiveProjects, setIncentiveProjects, _syncIncentiveProjects] = useSyncedState("incentiveProjects", []);
   const [sdsSheets, setSdsSheets, _syncSds] = useSyncedState("sdsSheets", []);
   const [punchItems, setPunchItems, _syncPunch] = useSyncedState("punchItems", initPunchItems);
+  const [areas, setAreas, _syncAreas] = useSyncedState("areas", initAreas);
+  const [productionLogs, setProductionLogs, _syncProductionLogs] = useSyncedState("productionLogs", initProductionLogs);
   const [insurancePolicies, setInsurancePolicies, _syncInsurance] = useSyncedState("insurancePolicies", []);
   const [problems, setProblems, _syncProblems] = useSyncedState("problems", []);
 
@@ -608,6 +613,8 @@ function App({ auth, onLogout }) {
     tmTickets, setTmTickets,
     sdsSheets, setSdsSheets,
     punchItems, setPunchItems,
+    areas, setAreas,
+    productionLogs, setProductionLogs,
     insurancePolicies, setInsurancePolicies,
     problems, setProblems,
     show, setModal, modal, search, setSearch, tab, setTab, subTab, setSubTab, fmt, fmtK, nextId,
@@ -4165,7 +4172,7 @@ const ModalHub = ({ type, data, app }) => {
     const totalBilled = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);
     const remaining = (draft.contract || 0) - totalBilled;
     const [projTab, setProjTab] = useState(app.initialProjTab || "overview");
-    const projTabs = ["overview", "change orders", "submittals", "rfis", "team", "financials", "closeout", "sound", "logistics", "notes"];
+    const projTabs = ["overview", "change orders", "submittals", "rfis", "areas", "punch", "team", "financials", "closeout", "sound", "logistics", "notes"];
     const [coFormOpen, setCoFormOpen] = useState(false);
     const [coEditId, setCoEditId] = useState(null);
     const [coExpandedId, setCoExpandedId] = useState(null);
@@ -4394,6 +4401,45 @@ const ModalHub = ({ type, data, app }) => {
                     <div><span className="text-dim text-xs">RFIs</span><div className="font-mono">{projRFIs.length}</div></div>
                     <div><span className="text-dim text-xs">SUBMITTALS</span><div className="font-mono">{projSubmittals.length}</div></div>
                   </div>
+
+                  {/* T&M Exposure */}
+                  {(() => {
+                    const projTm = (app.tmTickets || []).filter(t => String(t.projectId) === String(draft.id));
+                    const pending = projTm.filter(t => t.status === "submitted").reduce((s, t) => s + (t.laborEntries || []).reduce((ls, l) => ls + (l.hours * l.rate), 0) + (t.materialEntries || []).reduce((ms, m) => ms + (m.qty * m.unitCost * (1 + (m.markup || 0) / 100)), 0), 0);
+                    const approved = projTm.filter(t => t.status === "approved").reduce((s, t) => s + (t.laborEntries || []).reduce((ls, l) => ls + (l.hours * l.rate), 0) + (t.materialEntries || []).reduce((ms, m) => ms + (m.qty * m.unitCost * (1 + (m.markup || 0) / 100)), 0), 0);
+                    if (projTm.length === 0) return null;
+                    return (
+                      <div style={{ padding: "12px 16px", background: "var(--bg3)", borderRadius: 8, marginTop: 12 }}>
+                        <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>T&M Exposure</div>
+                        <div style={{ display: "flex", gap: 16 }}>
+                          <div><span style={{ color: "var(--amber)", fontWeight: 700 }}>${pending.toLocaleString()}</span> <span style={{ fontSize: 11, color: "var(--text3)" }}>pending</span></div>
+                          <div><span style={{ color: "var(--green)", fontWeight: 700 }}>${approved.toLocaleString()}</span> <span style={{ fontSize: 11, color: "var(--text3)" }}>approved</span></div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Production Progress & Areas Complete */}
+                  {(() => {
+                    const projAreas = (app.areas || []).filter(a => String(a.projectId) === String(draft.id));
+                    if (projAreas.length === 0) return null;
+                    const complete = projAreas.filter(a => a.status === "complete").length;
+                    const totalBudget = projAreas.reduce((s, a) => s + (a.scopeItems || []).reduce((si, i) => si + (i.budgetQty || 0), 0), 0);
+                    const totalInstalled = projAreas.reduce((s, a) => s + (a.scopeItems || []).reduce((si, i) => si + (i.installedQty || 0), 0), 0);
+                    const pct = totalBudget > 0 ? Math.round((totalInstalled / totalBudget) * 100) : 0;
+                    return (
+                      <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+                        <div style={{ flex: 1, padding: "12px 16px", background: "var(--bg3)", borderRadius: 8, textAlign: "center" }}>
+                          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--amber)" }}>{complete}/{projAreas.length}</div>
+                          <div style={{ fontSize: 11, color: "var(--text3)" }}>Areas Complete</div>
+                        </div>
+                        <div style={{ flex: 1, padding: "12px 16px", background: "var(--bg3)", borderRadius: 8, textAlign: "center" }}>
+                          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--amber)" }}>{pct}%</div>
+                          <div style={{ fontSize: 11, color: "var(--text3)" }}>Production</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })()}
@@ -5168,6 +5214,16 @@ const ModalHub = ({ type, data, app }) => {
               </div>
               );
             })()}
+
+            {/* ── Areas ── */}
+            {projTab === "areas" && (
+              <AreasTab areas={app.areas} productionLogs={app.productionLogs} employees={app.employees} projectId={draft.id} t={app.t} />
+            )}
+
+            {/* ── Punch List ── */}
+            {projTab === "punch" && (
+              <PunchListTab punchItems={app.punchItems} setPunchItems={app.setPunchItems} areas={(app.areas || []).filter(a => String(a.projectId) === String(draft.id))} employees={app.employees} projectId={draft.id} t={app.t} />
+            )}
 
             {/* ── Sound Quality Testing ── */}
             {projTab === "sound" && (() => {

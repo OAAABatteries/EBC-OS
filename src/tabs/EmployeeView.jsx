@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Search, MapPin, Calendar, Clock, AlertTriangle, Shield, Package, ClipboardList, FileText, PenLine, Settings, Home, ShieldCheck } from "lucide-react";
+import { Search, MapPin, Calendar, Clock, AlertTriangle, Shield, Package, ClipboardList, FileText, PenLine, Settings, Home, ShieldCheck, BarChart3 } from "lucide-react";
 import { PortalHeader, PortalTabBar, FieldButton, FieldInput, FieldSelect, EmptyState, StatusBadge, DrawingsTab } from "../components/field";
 import { HomeTab } from './employee/HomeTab';
+import { ProductionEntry } from './employee/ProductionEntry';
 import { ScheduleTab } from './employee/ScheduleTab';
 import { CredentialsTab } from './employee/CredentialsTab';
 import { ReportProblemModal } from "../components/ReportProblemModal";
@@ -61,6 +62,7 @@ export function EmployeeView({ app }) {
     materialRequests, setMaterialRequests,
     jsas, setJsas,
     problems, setProblems,
+    areas, productionLogs, setProductionLogs,
     theme, setTheme, show
   } = app;
 
@@ -621,6 +623,7 @@ export function EmployeeView({ app }) {
   }, [activeEmp, lang, isClockedIn]);
 
   // ── portal tab bar definition ──
+  const isCrewRole = activeEmp.role === "Crew" || activeEmp.role === "Employee";
   const portalTabs = [
     // ── Primary (4 + More) ──
     { id: "home", label: t("Home"), icon: Home, badge: false },
@@ -628,12 +631,15 @@ export function EmployeeView({ app }) {
     { id: "schedule", label: t("Schedule"), icon: Calendar, badge: false },
     { id: "drawings", label: t("Drawings"), icon: FileText, badge: false },
     // ── More overflow (ranked by crew use frequency) ──
+    { id: "production", label: t("Production"), icon: BarChart3, badge: false },
     { id: "jsa", label: t("JSA"), icon: ShieldCheck, badge: false },
     { id: "materials", label: t("Materials"), icon: Package, badge: myMatRequests?.some(r => r.status === "requested") },
     { id: "credentials", label: t("Credentials"), icon: Shield, badge: credBadgeCount > 0 ? credBadgeCount : false },
     { id: "log", label: t("Time Log"), icon: ClipboardList, badge: false },
-    { id: "cos", label: t("Change Orders"), icon: FileText, badge: false },
-    { id: "rfis", label: t("RFIs"), icon: FileText, badge: false },
+    ...(!isCrewRole ? [
+      { id: "cos", label: t("Change Orders"), icon: FileText, badge: false },
+      { id: "rfis", label: t("RFIs"), icon: FileText, badge: false },
+    ] : []),
     { id: "settings", label: t("Settings"), icon: Settings, badge: false },
   ];
 
@@ -896,13 +902,14 @@ export function EmployeeView({ app }) {
   //  MAIN EMPLOYEE VIEW (logged in)
   // ═══════════════════════════════════════════════════════════════
   return (
-    <div className="employee-app">
+    <div className="employee-app crew-view">
       {/* Report Problem Modal */}
       {showReportProblem && (
         <ReportProblemModal
           reporter={activeEmp.name}
           projects={projects}
           defaultProjectId={selectedProject?.id}
+          areas={areas}
           t={t}
           onSave={(problem) => {
             setProblems(prev => [problem, ...(prev || [])]);
@@ -925,7 +932,23 @@ export function EmployeeView({ app }) {
       <div className="employee-body emp-content-pad">
 
         {/* ═══ HOME TAB ═══ */}
-        {empTab === "home" && (
+        {empTab === "home" && (<>
+          {/* Today's Work card */}
+          {(() => {
+            const todayDay = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+            const myTodaySchedule = (teamSchedule || []).find(s => String(s.employeeId) === String(activeEmp?.id) && s.days?.[todayDay] && s.areaId);
+            if (!myTodaySchedule) return null;
+            const area = (areas || []).find(a => a.id === myTodaySchedule.areaId);
+            if (!area) return null;
+            return (
+              <div style={{ padding: 16, background: "var(--bg3)", borderRadius: 12, marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>{t("Today's Work")}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)" }}>{myTodaySchedule.task || area.name}</div>
+                <div style={{ fontSize: 14, color: "var(--text2)", marginTop: 4 }}>Floor {area.floor}, Zone {area.zone} — {area.name}</div>
+                {myTodaySchedule.trade && <div style={{ display: "inline-block", padding: "4px 10px", background: "var(--amber-dim)", color: "var(--amber)", borderRadius: 6, fontSize: 12, fontWeight: 700, marginTop: 8 }}>{t(myTodaySchedule.trade)}</div>}
+              </div>
+            );
+          })()}
           <HomeTab
             activeEmp={activeEmp}
             isClockedIn={isClockedIn}
@@ -937,10 +960,12 @@ export function EmployeeView({ app }) {
             projects={projects}
             setEmpTab={setEmpTab}
             setSelectedInfoProject={setSelectedInfoProject}
+            areas={areas}
+            schedule={teamSchedule}
             t={t}
             lang={lang}
           />
-        )}
+        </>)}
 
         {/* ═══ CLOCK TAB ═══ */}
         {empTab === "clock" && (
@@ -1611,6 +1636,20 @@ export function EmployeeView({ app }) {
           <div className="emp-content">
             <DrawingsTab readOnly={true} projectFilter={assignedProject?.id || null} t={t} />
           </div>
+        )}
+
+        {/* ═══ PRODUCTION TAB ═══ */}
+        {empTab === "production" && (
+          <ProductionEntry
+            productionLogs={productionLogs}
+            setProductionLogs={setProductionLogs}
+            areas={areas}
+            schedule={teamSchedule}
+            employeeId={activeEmp?.id}
+            employeeName={activeEmp?.name}
+            projectId={assignedProject?.id}
+            t={t}
+          />
         )}
 
         {/* ═══ CHANGE ORDERS TAB (Foreman only) ═══ */}

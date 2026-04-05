@@ -7,7 +7,7 @@ import { isDemoMode } from "./defaults";
 const _demo = isDemoMode();
 
 // Bump this when seed data changes to bust stale localStorage caches
-export const DATA_VERSION = 17;
+export const DATA_VERSION = 18;
 
 // ── THEMES ────────────────────────────────────────────────────
 export const THEMES = {
@@ -448,7 +448,7 @@ const _demoBids = [
 // Real project data extracted from Google Docs proposals
 export const PM_NAMES = { 3: "Emmanuel Aguilar", 4: "Isai Aguilar", 8: "Abner Aguilar" };
 const _demoProjects = [
-  {id:1,name:"Endurance - Woodside Laboratory",gc:"Endurance Builders",contract:74800,status:"in-progress",phase:"Commercial",address:"4200 San Jacinto St, Houston, TX 77004",suite:"",parking:"",lat:29.7224,lng:-95.3785,pm:"Abner Aguilar",laborHours:1200,progress:0,start:"2026-03-30",end:"2026-08-21",teamSize:5,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"]},
+  {id:1,name:"Endurance - Woodside Laboratory",gc:"Endurance Builders",contract:74800,status:"in-progress",phase:"Commercial",address:"4200 San Jacinto St, Houston, TX 77004",suite:"",parking:"",lat:29.7224,lng:-95.3785,pm:"Abner Aguilar",laborHours:1200,progress:0,start:"2026-03-30",end:"2026-08-21",teamSize:5,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],siteContact:"Mason Williams",siteContactPhone:"713-899-6142",gateCode:"4200#",accessInstructions:"Enter from San Jacinto St. Staging area at east loading dock. Badge required after 7 AM.",deliveryEntrance:"East loading dock off San Jacinto"},
   {id:2,name:"WCC - CB&I CEO/Lvl 2/Lvl 7",gc:"WC Construction",contract:59800,status:"in-progress",phase:"Commercial",address:"1725 Hughes Landing Blvd, The Woodlands, TX 77380",suite:"CEO Office / Level 2 / Level 7",parking:"",lat:30.1658,lng:-95.4613,pm:"Abner Aguilar",laborHours:900,progress:5,start:"2026-03-20",end:"2026-06-15",teamSize:4,scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish"]},
   {id:3,name:"Forney - BSLMC Cath Labs 4 & 9",gc:"Forney Construction",contract:104500,status:"on-hold",phase:"Medical",address:"6720 Bertner Ave, Houston, TX 77030",suite:"Cath Labs 4 & 9",parking:"",lat:29.7066,lng:-95.3966,pm:"Abner Aguilar",laborHours:0,progress:0,start:"2026-05-01",end:"2026-09-30",scope:["Demo","Metal Framing","Drywall","Lead-Lined Walls","ACT Ceilings"]},
   {id:16,name:"ROD - Brunello Cucinelli Expansion (Landlord Work)",gc:"United Constructors",contract:49900,status:"in-progress",phase:"Retail",address:"4444 Westheimer Rd, Houston, TX 77027",suite:"",parking:"",lat:29.7376,lng:-95.4328,pm:"Abner Aguilar",laborHours:400,progress:20,start:"2026-03-01",end:"2026-05-30",teamSize:3,scope:["Metal Framing","Drywall"]},
@@ -552,7 +552,10 @@ const _demoInvoices = [
 
 // ── SEED: T&M TICKETS ──
 // Time & Material tracking — separate from original project contract
-const _demoTmTickets = [];
+const _demoTmTickets = [
+  {id:"tm1",projectId:1,ticketNumber:"TM-001",date:"2026-04-01",status:"submitted",description:"Containment wall build-out — GC-directed unforeseen asbestos abatement barrier at Main Lab east wall. Not in original scope.",notes:"Mason Williams (Endurance Super) verbally directed. Documented immediately.",photos:[],laborEntries:[{id:"tl1",employeeName:"Oscar Alvarez",hours:4,rate:65,description:"Layout + framing containment wall"},{id:"tl2",employeeName:"Ricardo Mendez",hours:4,rate:55,description:"Hang poly + board containment"}],materialEntries:[{id:"tm1m1",item:"3-5/8\" Metal Studs 25ga",qty:20,unit:"EA",unitCost:8.50,markup:10},{id:"tm1m2",item:"5/8\" Type X Drywall",qty:10,unit:"SHT",unitCost:14.25,markup:10},{id:"tm1m3",item:"6-mil Poly Sheeting",qty:2,unit:"ROLL",unitCost:42,markup:10}],submittedDate:"2026-04-01",approvedDate:null,billedDate:null,auditTrail:[{action:"created",actor:"Oscar Alvarez",at:"2026-04-01T09:15:00Z"},{action:"submitted",actor:"Oscar Alvarez",at:"2026-04-01T15:30:00Z"}]},
+  {id:"tm2",projectId:1,ticketNumber:"TM-002",date:"2026-04-02",status:"draft",description:"Demo existing CMU partition at Storage/Mechanical — not in original scope. GC confirmed demo required for new MEP routing.",notes:"Verbal direction from Mason Williams.",photos:[],laborEntries:[{id:"tl3",employeeName:"Oscar Alvarez",hours:6,rate:65,description:"CMU demo + haul-off prep"}],materialEntries:[{id:"tm2m1",item:"Debris Haul-Off",qty:1,unit:"LOAD",unitCost:350,markup:0}],submittedDate:null,approvedDate:null,billedDate:null,auditTrail:[{action:"created",actor:"Oscar Alvarez",at:"2026-04-02T10:00:00Z"}]},
+];
 
 // ── SEED: CHANGE ORDERS ──
 const _demoChangeOrders = [
@@ -633,6 +636,10 @@ const _demoTakeoffs = [];
 const _demoPunchItems = [
   {id:501,projectId:19,description:"Punch item #1 — overdue (reminder since 3/5/2026)",location:"",assignedTo:"Bo Ruiz",priority:"high",status:"open",photos:[],createdAt:"2026-03-05T00:00:00.000Z",completedAt:null,signedOffBy:null,signedOffAt:null},
   {id:502,projectId:19,description:"Punch item #2 — overdue (reminder since 3/5/2026)",location:"",assignedTo:"Bo Ruiz",priority:"high",status:"open",photos:[],createdAt:"2026-03-05T00:00:00.000Z",completedAt:null,signedOffBy:null,signedOffAt:null},
+  // Endurance - Woodside Lab
+  {id:503,projectId:1,description:"Drywall joint cracking at Main Lab header — re-tape and skim",location:"Main Lab, Floor 1, Zone A",assignedTo:"Ricardo Mendez",priority:"high",status:"open",photos:[],createdAt:"2026-04-03T14:00:00.000Z",completedAt:null,signedOffBy:null,signedOffAt:null},
+  {id:504,projectId:1,description:"ACT grid misaligned at corridor junction — re-level 4 tiles",location:"Corridor A, Floor 1, Zone B",assignedTo:"Ricardo Mendez",priority:"medium",status:"open",photos:[],createdAt:"2026-04-03T14:15:00.000Z",completedAt:null,signedOffBy:null,signedOffAt:null},
+  {id:505,projectId:1,description:"Door frame not plumb — Conference Rm 201, shimmed but needs re-check",location:"Conference Room, Floor 2, Zone C",assignedTo:"Carlos Fuentes",priority:"high",status:"in-progress",photos:[],createdAt:"2026-04-02T11:00:00.000Z",completedAt:null,signedOffBy:null,signedOffAt:null},
 ];
 
 // ── OSHA CHECKLIST ──
@@ -697,12 +704,19 @@ const _ws = _currentWeekStart();
 const _demoMaterialRequests = [
   { id: "mr3", employeeId: 5, employeeName: "David Ramirez", projectId: 5, projectName: "Texas Heart Center - Baytown", material: "Lead-Lined Drywall (1/32\" Pb)", qty: 40, unit: "SHT", notes: "X-ray room — confirm lead spec with GC", status: "requested", requestedAt: new Date(Date.now() - 43200000).toISOString() },
   { id: "mr4", employeeId: 9, employeeName: "Antonio Hernandez", projectId: 12, projectName: "Arch-Con - Sprouts Farmers Market", material: "Mud & Tape Compound (5gal)", qty: 10, unit: "BKT", notes: "", status: "approved", requestedAt: new Date(Date.now() - 259200000).toISOString(), approvedAt: new Date(Date.now() - 172800000).toISOString() },
+  // Endurance - Woodside Laboratory
+  {id:"mr-ws1",employeeId:1,employeeName:"Oscar Alvarez",projectId:1,projectName:"Endurance - Woodside Laboratory",material:"3-5/8\" Metal Studs 25ga (10ft)",qty:200,unit:"EA",notes:"Main Lab + Control Room framing. Deliver to east dock.",status:"approved",requestedAt:"2026-03-28T08:00:00Z",approvedAt:"2026-03-28T14:00:00Z"},
+  {id:"mr-ws2",employeeId:1,employeeName:"Oscar Alvarez",projectId:1,projectName:"Endurance - Woodside Laboratory",material:"5/8\" Type X Drywall (4x12)",qty:80,unit:"SHT",notes:"Control Room + Main Lab first layer",status:"in-transit",requestedAt:"2026-04-01T07:00:00Z",approvedAt:"2026-04-01T10:00:00Z",driverId:8},
+  {id:"mr-ws3",employeeId:1,employeeName:"Oscar Alvarez",projectId:1,projectName:"Endurance - Woodside Laboratory",material:"ACT Grid T-Bar 15/16\" (12ft)",qty:60,unit:"EA",notes:"Corridor A + Control Room ceilings. Need by 4/7.",status:"requested",requestedAt:"2026-04-03T12:00:00Z"},
 ];
 
 // ── SEED: CREW SCHEDULE ──
 // Assigns foremen + team to active projects for the current week
 const _demoCrewSchedule = [
-  // Oscar Alvarez (Foreman id:1) → ROD Brunello Cucinelli Expansion (id:16)
+  // Oscar Alvarez (Foreman id:1) → Endurance Woodside Lab (id:1) Mon-Thu + ROD Brunello Fri
+  { id: "cs1", employeeId: 1, projectId: 1, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: false }, hours: { start: "06:30", end: "15:00" }, task: "Metal Framing", trade: "Framing", floor: "1", zone: "A", areaId: "a1" },
+  { id: "cs2", employeeId: 2, projectId: 1, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: false }, hours: { start: "06:30", end: "15:00" }, task: "Drywall Hang", trade: "Board", floor: "1", zone: "A", areaId: "a2" },
+  { id: "cs3", employeeId: 3, projectId: 1, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: false }, hours: { start: "07:00", end: "15:30" }, task: "Demo & Framing Assist", trade: "Framing", floor: "1", zone: "A", areaId: "a7" },
   { id: "cs6", employeeId: 1, projectId: 16, weekStart: _ws, days: { mon: false, tue: false, wed: false, thu: false, fri: true }, hours: { start: "06:30", end: "15:00" } },
 
   // David Ramirez (Foreman id:5) → Texas Heart Center Baytown (id:5) + MH MC Single Plane IR (id:7)
@@ -760,6 +774,30 @@ function _seedTimeEntries() {
 }
 const _demoTimeEntries = _seedTimeEntries();
 
+// ── SEED: AREAS / ZONES ──
+// Area-based work model — ties production, punch, crew assignments to physical locations
+const _demoAreas = [
+  // Endurance - Woodside Laboratory (projectId: 1)
+  {id:"a1",projectId:1,name:"Main Lab",floor:"1",zone:"A",type:"Lab",status:"in-progress",assignedTo:1,notes:"Primary lab space. Containment wall added (T&M). Fire-rated partitions.",scopeItems:[{trade:"Demo",unit:"SF",budgetQty:200,installedQty:200},{trade:"Metal Framing",unit:"LF",budgetQty:1200,installedQty:390},{trade:"Drywall",unit:"SF",budgetQty:2400,installedQty:480},{trade:"ACT Ceilings",unit:"SF",budgetQty:1800,installedQty:0},{trade:"Tape & Finish",unit:"SF",budgetQty:2400,installedQty:0}]},
+  {id:"a2",projectId:1,name:"Control Room",floor:"1",zone:"A",type:"Office",status:"in-progress",assignedTo:1,notes:"Adjacent to Main Lab. Standard partition.",scopeItems:[{trade:"Metal Framing",unit:"LF",budgetQty:320,installedQty:320},{trade:"Drywall",unit:"SF",budgetQty:640,installedQty:640},{trade:"ACT Ceilings",unit:"SF",budgetQty:480,installedQty:0},{trade:"Tape & Finish",unit:"SF",budgetQty:640,installedQty:0}]},
+  {id:"a3",projectId:1,name:"Corridor A",floor:"1",zone:"B",type:"Corridor",status:"not-started",assignedTo:null,notes:"",scopeItems:[{trade:"Metal Framing",unit:"LF",budgetQty:480,installedQty:0},{trade:"Drywall",unit:"SF",budgetQty:960,installedQty:0},{trade:"ACT Ceilings",unit:"SF",budgetQty:720,installedQty:0},{trade:"Tape & Finish",unit:"SF",budgetQty:960,installedQty:0}]},
+  {id:"a4",projectId:1,name:"Storage / Mechanical",floor:"1",zone:"B",type:"Utility",status:"in-progress",assignedTo:2,notes:"CMU demo added as T&M (TM-002).",scopeItems:[{trade:"Demo",unit:"SF",budgetQty:400,installedQty:150},{trade:"Metal Framing",unit:"LF",budgetQty:280,installedQty:0},{trade:"Drywall",unit:"SF",budgetQty:560,installedQty:0}]},
+  {id:"a5",projectId:1,name:"Conference Room",floor:"2",zone:"C",type:"Office",status:"not-started",assignedTo:null,notes:"L5 finish. Confirm paint spec.",scopeItems:[{trade:"Metal Framing",unit:"LF",budgetQty:360,installedQty:0},{trade:"Drywall",unit:"SF",budgetQty:720,installedQty:0},{trade:"ACT Ceilings",unit:"SF",budgetQty:540,installedQty:0},{trade:"Tape & Finish",unit:"SF",budgetQty:720,installedQty:0}]},
+  {id:"a6",projectId:1,name:"Open Office",floor:"2",zone:"C",type:"Office",status:"not-started",assignedTo:null,notes:"4 door frames included.",scopeItems:[{trade:"Metal Framing",unit:"LF",budgetQty:600,installedQty:0},{trade:"Drywall",unit:"SF",budgetQty:1200,installedQty:0},{trade:"ACT Ceilings",unit:"SF",budgetQty:900,installedQty:0},{trade:"Tape & Finish",unit:"SF",budgetQty:1200,installedQty:0},{trade:"Doors & Hardware",unit:"EA",budgetQty:4,installedQty:0}]},
+  {id:"a7",projectId:1,name:"Lobby / Reception",floor:"1",zone:"A",type:"Common",status:"in-progress",assignedTo:3,notes:"Demo complete. Framing started.",scopeItems:[{trade:"Demo",unit:"SF",budgetQty:150,installedQty:150},{trade:"Metal Framing",unit:"LF",budgetQty:200,installedQty:80},{trade:"Drywall",unit:"SF",budgetQty:400,installedQty:0},{trade:"Tape & Finish",unit:"SF",budgetQty:400,installedQty:0}]},
+  {id:"a8",projectId:1,name:"Restrooms (x2)",floor:"1",zone:"B",type:"Wet",status:"not-started",assignedTo:null,notes:"Moisture-resistant board required.",scopeItems:[{trade:"Metal Framing",unit:"LF",budgetQty:240,installedQty:0},{trade:"Drywall",unit:"SF",budgetQty:480,installedQty:0},{trade:"ACT Ceilings",unit:"SF",budgetQty:320,installedQty:0},{trade:"Tape & Finish",unit:"SF",budgetQty:480,installedQty:0}]},
+];
+
+// ── SEED: PRODUCTION LOGS ──
+// Daily production entries — foreman or crew enters what was installed
+const _demoProductionLogs = [
+  {id:"pl1",projectId:1,areaId:"a1",date:"2026-03-31",trade:"Metal Framing",unit:"LF",qtyInstalled:180,laborHours:16,crewSize:2,enteredBy:"Oscar Alvarez",enteredAt:"2026-03-31T15:00:00Z",notes:"Started Main Lab framing. East wall complete."},
+  {id:"pl2",projectId:1,areaId:"a1",date:"2026-04-01",trade:"Metal Framing",unit:"LF",qtyInstalled:210,laborHours:16,crewSize:2,enteredBy:"Oscar Alvarez",enteredAt:"2026-04-01T15:10:00Z",notes:"North + south walls framed. Header detail at window."},
+  {id:"pl3",projectId:1,areaId:"a2",date:"2026-04-01",trade:"Metal Framing",unit:"LF",qtyInstalled:320,laborHours:8,crewSize:1,enteredBy:"Oscar Alvarez",enteredAt:"2026-04-01T15:15:00Z",notes:"Control Room framing complete."},
+  {id:"pl4",projectId:1,areaId:"a2",date:"2026-04-02",trade:"Drywall",unit:"SF",qtyInstalled:640,laborHours:16,crewSize:2,enteredBy:"Oscar Alvarez",enteredAt:"2026-04-02T15:20:00Z",notes:"Control Room board hung — both sides, one layer each."},
+  {id:"pl5",projectId:1,areaId:"a1",date:"2026-04-03",trade:"Drywall",unit:"SF",qtyInstalled:480,laborHours:16,crewSize:2,enteredBy:"Oscar Alvarez",enteredAt:"2026-04-03T15:00:00Z",notes:"Main Lab east wall + south wall board hung."},
+];
+
 // ── CONDITIONAL EXPORTS ──
 // Projects & employees ALWAYS load (real EBC data), other seed data is demo-only
 // ── SEED: MATERIAL SUPPLIERS ──
@@ -777,7 +815,7 @@ export const initProjects = _demoProjects; // always load — real EBC project l
 export const initContacts = _demoContacts; // always load — real GC contacts
 export const initCallLog = _demoCallLog; // always load — real call log
 export const initInvoices = _demoInvoices; // always load — real invoices
-export const initTmTickets = _demo ? _demoTmTickets : [];
+export const initTmTickets = _demoTmTickets; // always load — foreman T&M capture needs this
 export const initChangeOrders = _demoChangeOrders; // always load — foreman portal needs this
 export const initRfis = _demoRfis; // always load — foreman portal needs this
 export const initSubmittals = _demoSubmittals; // always load — foreman portal needs this
@@ -792,3 +830,5 @@ export const initCompanyLocations = _demoCompanyLocations; // always load — of
 export const initMaterialRequests = _demoMaterialRequests; // always load — foreman portal needs this
 export const initCrewSchedule = _demoCrewSchedule; // always load — foreman portal needs this
 export const initTimeEntries = _demoTimeEntries; // always load — foreman portal needs this
+export const initAreas = _demoAreas; // always load — area-based work model
+export const initProductionLogs = _demoProductionLogs; // always load — production tracking

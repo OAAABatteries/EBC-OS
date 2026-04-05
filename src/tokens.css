@@ -31,6 +31,16 @@
   --tracking-wide:    0.05em;
   --tracking-wider:   0.08em;
 
+  /* ── CREW VIEW OVERRIDES ──────────────────────────────────── */
+  /* Applied via .crew-view class on EmployeeView root */
+  /* Larger font sizes for field readability (sunlight, gloves, distance) */
+}
+.crew-view {
+  --text-sm:      13px;
+  --text-base:    16px;
+  --text-lg:      22px;
+}
+:root {
   /* ── TOUCH & INTERACTION ─────────────────────────────────── */
   --touch-min: 44px;
 

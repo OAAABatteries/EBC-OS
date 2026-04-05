@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useGeolocation } from "../hooks/useGeolocation";
+import { PhotoCapture } from "./field/PhotoCapture";
 
 const CATEGORIES = [
   "Safety Hazard",
@@ -39,7 +40,7 @@ function AlertTriangleIcon({ size = 20, color = "currentColor" }) {
   );
 }
 
-export function ReportProblemModal({ reporter, projects, defaultProjectId, onSave, onClose, t }) {
+export function ReportProblemModal({ reporter, projects, defaultProjectId, areas, onSave, onClose, t }) {
   const tr = t || ((k) => k);
 
   const [category, setCategory] = useState("Safety Hazard");
@@ -48,13 +49,16 @@ export function ReportProblemModal({ reporter, projects, defaultProjectId, onSav
   const [projectId, setProjectId] = useState(defaultProjectId || (projects?.[0]?.id ?? ""));
   const [gpsStatus, setGpsStatus] = useState("");
   const [saving, setSaving] = useState(false);
+  const [photos, setPhotos] = useState([]);
+  const [areaId, setAreaId] = useState("");
 
   const { getPosition, loading: gpsLoading } = useGeolocation();
 
   const selectedProject = projects?.find((p) => String(p.id) === String(projectId));
+  const projectAreas = (areas || []).filter((a) => String(a.projectId) === String(projectId));
 
   const handleSubmit = async () => {
-    if (!description.trim()) return;
+    if (!description.trim() && photos.length === 0) return;
     setSaving(true);
 
     let gps = null;
@@ -66,6 +70,7 @@ export function ReportProblemModal({ reporter, projects, defaultProjectId, onSav
       setGpsStatus("Location unavailable");
     }
 
+    const selectedArea = projectAreas.find((a) => a.id === areaId);
     const problem = {
       id: crypto.randomUUID(),
       category,
@@ -74,6 +79,9 @@ export function ReportProblemModal({ reporter, projects, defaultProjectId, onSav
       reporter: reporter || "Unknown",
       projectId: projectId || null,
       projectName: selectedProject?.name || "",
+      areaId: areaId || null,
+      areaName: selectedArea ? `${selectedArea.name}, Floor ${selectedArea.floor}, Zone ${selectedArea.zone}` : "",
+      photos,
       reportedAt: new Date().toISOString(),
       gps,
       status: "open",
@@ -177,18 +185,39 @@ export function ReportProblemModal({ reporter, projects, defaultProjectId, onSav
             </div>
           </div>
 
+          {/* Area / Location */}
+          {projectAreas.length > 0 && (
+            <div>
+              <label className="form-label" style={{ marginBottom: 6, display: "block" }}>{tr("Location")}</label>
+              <select
+                className="form-select"
+                value={areaId}
+                onChange={(e) => setAreaId(e.target.value)}
+                style={{ fontSize: 15 }}
+              >
+                <option value="">{tr("Select area...")}</option>
+                {projectAreas.map((a) => (
+                  <option key={a.id} value={a.id}>{`${a.name} — Floor ${a.floor}, Zone ${a.zone}`}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Description */}
           <div>
-            <label className="form-label" style={{ marginBottom: 6, display: "block" }}>{tr("Description")}</label>
+            <label className="form-label" style={{ marginBottom: 6, display: "block" }}>{tr("Description (optional with photo)")}</label>
             <textarea
               className="form-textarea"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder={tr("Describe the problem clearly...")}
-              rows={4}
-              style={{ width: "100%", resize: "vertical", fontSize: 15, minHeight: 100 }}
+              placeholder={tr("Quick note (optional if photo attached)...")}
+              rows={2}
+              style={{ width: "100%", resize: "vertical", fontSize: 15, minHeight: 60 }}
             />
           </div>
+
+          {/* Photo Capture */}
+          <PhotoCapture photos={photos} onPhotos={setPhotos} t={tr} />
 
           {gpsStatus && (
             <div style={{ fontSize: 12, color: "var(--text3)", display: "flex", alignItems: "center", gap: 6 }}>
@@ -209,24 +238,24 @@ export function ReportProblemModal({ reporter, projects, defaultProjectId, onSav
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!description.trim() || saving || gpsLoading}
+            disabled={(!description.trim() && photos.length === 0) || saving || gpsLoading}
             style={{
               flex: 2,
               padding: "14px",
               fontSize: 15,
               fontWeight: 700,
-              background: !description.trim() ? "var(--bg3)" : "var(--amber, #f59e0b)",
-              color: !description.trim() ? "var(--text3)" : "#0f1f2e",
+              background: (!description.trim() && photos.length === 0) ? "var(--bg3)" : "var(--amber, #f59e0b)",
+              color: (!description.trim() && photos.length === 0) ? "var(--text3)" : "#0f1f2e",
               border: "none",
               borderRadius: 10,
-              cursor: !description.trim() ? "not-allowed" : "pointer",
+              cursor: (!description.trim() && photos.length === 0) ? "not-allowed" : "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: 8,
             }}
           >
-            <AlertTriangleIcon size={18} color={!description.trim() ? "var(--text3)" : "#0f1f2e"} />
+            <AlertTriangleIcon size={18} color={(!description.trim() && photos.length === 0) ? "var(--text3)" : "#0f1f2e"} />
             {saving ? tr("Submitting...") : tr("Submit Report")}
           </button>
         </div>

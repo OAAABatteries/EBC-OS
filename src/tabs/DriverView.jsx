@@ -3,6 +3,8 @@ import { Calendar, Settings, Navigation, Package, Truck, CheckCircle, MapPin, Re
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
 import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, EmptyState, StatusBadge, Skeleton, StatTile, AlertCard } from "../components/field";
+import { PodModal } from "../components/field/PodModal";
+import { ShortageReportModal } from "../components/field/ShortageReportModal";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 
 // ═══════════════════════════════════════════════════════════════
@@ -78,6 +80,8 @@ export function DriverView({ app }) {
   const [driverLat, setDriverLat] = useState(null);
   const [driverLng, setDriverLng] = useState(null);
   const [dragIdx, setDragIdx] = useState(null);
+  const [podDelivery, setPodDelivery] = useState(null);
+  const [shortageDelivery, setShortageDelivery] = useState(null);
   const [deliverySchedules, setDeliverySchedules] = useState(() => {
     try {
       const saved = localStorage.getItem(DELIVERY_SCHEDULE_KEY);
@@ -160,6 +164,10 @@ export function DriverView({ app }) {
         lng: proj?.lng || null,
         projectName: req.projectName || proj?.name || "Unknown",
         isInTransit: req.status === "in-transit",
+        siteContact: proj?.siteContact || null,
+        siteContactPhone: proj?.siteContactPhone || null,
+        gateCode: proj?.gateCode || null,
+        accessInstructions: proj?.accessInstructions || proj?.siteAccessNotes || null,
       };
     });
     return stops;
@@ -273,23 +281,54 @@ export function DriverView({ app }) {
   // ── actions (Phase 2A: audit trail on status changes) ──
   const handleStartDelivery = (reqId) => {
     const now = new Date().toISOString();
-    setMaterialRequests(prev => prev.map(r => {
-      if (r.id !== reqId) return r;
-      const trail = [...(r.auditTrail || []), { action: "picked_up", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, timestamp: now }];
-      return { ...r, status: "picked_up", driverId: activeDriver.id, auditTrail: trail };
-    }));
-    show(t("Delivery started") + " ✓", "ok");
+    // GPS stamp on pickup
+    navigator.geolocation?.getCurrentPosition(
+      (pos) => {
+        setMaterialRequests(prev => prev.map(r => {
+          if (r.id !== reqId) return r;
+          const trail = [...(r.auditTrail || []), { action: "picked_up", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, timestamp: now, gps: { lat: pos.coords.latitude, lng: pos.coords.longitude } }];
+          return { ...r, status: "picked_up", driverId: activeDriver.id, auditTrail: trail };
+        }));
+      },
+      () => {
+        // GPS unavailable — proceed without coordinates
+        setMaterialRequests(prev => prev.map(r => {
+          if (r.id !== reqId) return r;
+          const trail = [...(r.auditTrail || []), { action: "picked_up", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, timestamp: now }];
+          return { ...r, status: "picked_up", driverId: activeDriver.id, auditTrail: trail };
+        }));
+      }
+    );
+    show(t("Delivery started") + " \u2713", "ok");
   };
 
-  const handleMarkDelivered = (reqId) => {
+  const handleMarkDelivered = (delivery) => {
+    setPodDelivery(delivery);
+  };
+
+  const handlePodConfirm = (podData) => {
+    const delivery = podDelivery;
     const now = new Date().toISOString();
-    setMaterialRequests(prev => prev.map(r => {
-      if (r.id !== reqId) return r;
-      const trail = [...(r.auditTrail || []), { action: "delivered", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, timestamp: now }];
-      return { ...r, status: "delivered", deliveredAt: now, auditTrail: trail };
-    }));
+    setMaterialRequests(prev => prev.map(mr =>
+      mr.id === delivery.id
+        ? { ...mr, status: "delivered", deliveredAt: now, pod: podData, auditTrail: [...(mr.auditTrail || []), { action: "delivered", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, at: now, gps: podData.gps }] }
+        : mr
+    ));
+    setPodDelivery(null);
     setManualOrder(null);
-    show(t("Delivered") + " ✓", "ok");
+    show(t("Delivered") + " \u2713", "ok");
+  };
+
+  const handleShortageReport = (reportData) => {
+    const delivery = shortageDelivery;
+    const now = new Date().toISOString();
+    setMaterialRequests(prev => prev.map(mr =>
+      mr.id === delivery.id
+        ? { ...mr, shortageReport: reportData, auditTrail: [...(mr.auditTrail || []), { action: "shortage_reported", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, at: now }] }
+        : mr
+    ));
+    setShortageDelivery(null);
+    show(t("Issue reported") + " \u2713", "ok");
   };
 
   // ── Google Maps multi-stop URL ──
@@ -563,6 +602,26 @@ export function DriverView({ app }) {
                       <div className="flex-1">
                         <div className="text-sm driver-project-name">{stop.projectName}</div>
                         {stop.address && <div className="text-xs text-muted">{stop.address}</div>}
+                        {stop.siteContact && (
+                          <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 12, color: "var(--text2)" }}>{stop.siteContact}</span>
+                            {stop.siteContactPhone && (
+                              <a href={`tel:${stop.siteContactPhone}`} style={{ color: "var(--amber)", fontWeight: 700, fontSize: 13, textDecoration: "none" }}>
+                                {stop.siteContactPhone}
+                              </a>
+                            )}
+                          </div>
+                        )}
+                        {stop.gateCode && (
+                          <div style={{ fontSize: 12, color: "var(--green)", marginTop: 4 }}>
+                            Gate: {stop.gateCode}
+                          </div>
+                        )}
+                        {stop.accessInstructions && (
+                          <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>
+                            {stop.accessInstructions}
+                          </div>
+                        )}
                       </div>
                       <div className="driver-drag-handle">&#x2807;</div>
                     </div>
@@ -616,7 +675,7 @@ export function DriverView({ app }) {
                           <FieldButton
                             variant="primary"
                             className="btn-sm driver-action-btn driver-delivered-btn"
-                            onClick={() => handleMarkDelivered(stop.id)}
+                            onClick={() => handleMarkDelivered(stop)}
                             t={t}
                           >
                             <CheckCircle size={14} aria-hidden="true" /> {t("Mark Delivered")}
@@ -632,6 +691,12 @@ export function DriverView({ app }) {
                             <MapPin size={14} aria-hidden="true" /> {t("Navigate")}
                           </FieldButton>
                         )}
+                        <button
+                          onClick={() => setShortageDelivery(stop)}
+                          style={{ padding: "8px 12px", background: "var(--red-dim)", color: "var(--red)", border: "1px solid var(--red)", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                        >
+                          {t("Report Issue")}
+                        </button>
                       </div>
                     </div>
                   </PremiumCard>
@@ -676,6 +741,12 @@ export function DriverView({ app }) {
                       </div>
                       <div className="text-xs text-muted mb-4">{req.projectName} — {req.qty} {req.unit}</div>
                       <div className="text-xs text-dim">{t("Delivered")} {fmtTime(req.deliveredAt)}</div>
+                      {req.pod && (
+                        <div style={{ marginTop: 8, padding: 8, background: "var(--bg3)", borderRadius: 8, fontSize: 12 }}>
+                          <div style={{ color: "var(--green)", fontWeight: 700 }}>POD: {req.pod.recipientName} — {req.pod.condition}</div>
+                          {req.pod.photos?.length > 0 && <div style={{ color: "var(--text3)" }}>{req.pod.photos.length} photo(s)</div>}
+                        </div>
+                      )}
                     </PremiumCard>
                   ))}
                 </div>
@@ -748,6 +819,24 @@ export function DriverView({ app }) {
         maxPrimary={3}
         t={t}
       />
+
+      {/* POD + Shortage modals */}
+      {podDelivery && (
+        <PodModal
+          delivery={podDelivery}
+          onConfirm={handlePodConfirm}
+          onClose={() => setPodDelivery(null)}
+          t={t}
+        />
+      )}
+      {shortageDelivery && (
+        <ShortageReportModal
+          delivery={shortageDelivery}
+          onReport={handleShortageReport}
+          onClose={() => setShortageDelivery(null)}
+          t={t}
+        />
+      )}
     </div>
   );
 }

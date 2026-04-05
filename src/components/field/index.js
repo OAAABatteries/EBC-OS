@@ -19,3 +19,6 @@ export { StatTile } from './StatTile';
 export { AlertCard } from './AlertCard';
 export { ShiftCard } from './ShiftCard';
 export { CredentialCard } from './CredentialCard';
+export { PhotoCapture } from './PhotoCapture';
+export { PodModal } from './PodModal';
+export { ShortageReportModal } from './ShortageReportModal';

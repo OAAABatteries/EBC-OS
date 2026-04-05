@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, ClipboardList, HardHat, MessageSquare, Pin, PinOff, LayoutDashboard, Users, Clock as ClockIcon, MoreHorizontal, FileText, Calendar, Settings } from "lucide-react";
+import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, ClipboardList, HardHat, MessageSquare, Pin, PinOff, LayoutDashboard, Users, Clock as ClockIcon, MoreHorizontal, FileText, Calendar, Settings, BarChart3, ClipboardCheck } from "lucide-react";
 import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, FieldInput, EmptyState, StatusBadge, StatTile, AlertCard, FieldSignaturePad, CredentialCard } from "../components/field";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { FeatureGuide } from "../components/FeatureGuide";
@@ -8,6 +8,9 @@ import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
 import { PhaseTracker, getDefaultPhases } from "../components/PhaseTracker";
 import { DrawingsTab } from "../components/field/DrawingsTab";
+import { TmCaptureTab } from "./foreman/TmCaptureTab";
+import { PunchTab } from "./foreman/PunchTab";
+import { ProductionTab } from "./foreman/ProductionTab";
 import {
   PPE_ITEMS, RISK_LIKELIHOOD, RISK_SEVERITY, riskColor,
   HAZARD_CATEGORIES, CONTROL_HIERARCHY, PERMIT_TYPES,
@@ -41,7 +44,11 @@ export function ForemanView({ app }) {
     jsas, setJsas,
     dailyReports, setDailyReports,
     problems, setProblems,
-    theme, setTheme, show
+    theme, setTheme, show,
+    tmTickets, setTmTickets,
+    punchItems, setPunchItems,
+    areas, setAreas,
+    productionLogs, setProductionLogs,
   } = app;
 
   // ── i18n ──
@@ -781,6 +788,9 @@ export function ForemanView({ app }) {
     { id: "site", label: "Site", icon: MapPin, badge: criticalUnchecked.length > 0 },
     { id: "notes", label: "Notes", icon: MessageSquare, badge: projNotesCount > 0 },
     { id: "documents", label: "Documents", icon: FileQuestion, badge: rfiAlerts.length > 0 },
+    { id: "production", label: t("Production"), icon: BarChart3, badge: false },
+    { id: "tm", label: t("T&M"), icon: FileText, badge: false },
+    { id: "punchList", label: t("Punch List"), icon: ClipboardCheck, badge: false },
     { id: "settings", label: "Settings", icon: Settings, badge: false },
   ];
 
@@ -809,6 +819,7 @@ export function ForemanView({ app }) {
           reporter={activeForeman.name}
           projects={myProjects.length > 0 ? myProjects : projects}
           defaultProjectId={selectedProjectId}
+          areas={(areas || []).filter(a => String(a.projectId) === String(selectedProjectId))}
           t={t}
           onSave={(problem) => {
             setProblems(prev => [problem, ...(prev || [])]);
@@ -3721,6 +3732,43 @@ export function ForemanView({ app }) {
                   );
                 })()}
               </div>
+            )}
+
+            {/* ═══ PRODUCTION TAB ═══ */}
+            {foremanTab === "production" && (
+              <ProductionTab
+                productionLogs={productionLogs}
+                setProductionLogs={setProductionLogs}
+                areas={(areas || []).filter(a => String(a.projectId) === String(selectedProjectId))}
+                projectId={selectedProjectId}
+                employees={employees}
+                t={t}
+              />
+            )}
+
+            {/* ═══ T&M TAB ═══ */}
+            {foremanTab === "tm" && (
+              <TmCaptureTab
+                tmTickets={tmTickets}
+                setTmTickets={setTmTickets}
+                projects={projects}
+                employees={employees}
+                projectId={selectedProjectId}
+                areas={(areas || []).filter(a => String(a.projectId) === String(selectedProjectId))}
+                t={t}
+              />
+            )}
+
+            {/* ═══ PUNCH LIST TAB ═══ */}
+            {foremanTab === "punchList" && (
+              <PunchTab
+                punchItems={punchItems}
+                setPunchItems={setPunchItems}
+                areas={(areas || []).filter(a => String(a.projectId) === String(selectedProjectId))}
+                employees={employees}
+                projectId={selectedProjectId}
+                t={t}
+              />
             )}
           </>
         )}
