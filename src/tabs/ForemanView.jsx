@@ -155,7 +155,10 @@ export function ForemanView({ app }) {
     issues: "",
     tomorrowPlan: "",
   };
-  const [reportForm, setReportForm] = useState({ ...EMPTY_REPORT_FORM });
+  const [reportForm, setReportForm, { clearDraft: clearReportDraft }] = useFormDraft(
+    `daily_report_${activeForeman?.id || "anon"}_${selectedProjectId || "none"}`,
+    { ...EMPTY_REPORT_FORM }
+  );
   const [showReportForm, setShowReportForm] = useState(false);
   const [teamSearch, setCrewSearch] = useState("");
   const [expandedReportId, setExpandedReportId] = useState(null);
@@ -3659,7 +3662,7 @@ export function ForemanView({ app }) {
                         } else {
                           setDailyReports(prev => [...prev, report]);
                         }
-                        setReportForm({ ...EMPTY_REPORT_FORM, date: new Date().toISOString().slice(0, 10) });
+                        clearReportDraft();
                         setShowReportForm(false);
                         setEditingReportId(null);
                         show(editingReportId ? t("Report updated") : t("Daily report submitted"));
