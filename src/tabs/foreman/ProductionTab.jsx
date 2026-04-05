@@ -75,7 +75,7 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
 
   // Project logs for this project
   const projectLogs = useMemo(
-    () => productionLogs.filter((l) => String(l.projectId) === String(projectId)),
+    () => productionLogs.filter((l) => String(l.projectId) === String(projectId) && l.status !== "deleted"),
     [productionLogs, projectId]
   );
 
@@ -147,7 +147,8 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
 
   const handleDeleteEntry = (log) => {
     if (!window.confirm(tr("Delete this production entry?"))) return;
-    setProductionLogs((prev) => prev.filter((l) => l.id !== log.id));
+    // Soft-delete: preserve record with audit trail
+    setProductionLogs((prev) => prev.map((l) => l.id === log.id ? { ...l, status: "deleted", deletedAt: new Date().toISOString(), deletedBy: foreman?.name || "Foreman" } : l));
     // Reverse the installedQty on the area scope
     if (setAreas) {
       setAreas((prev) =>

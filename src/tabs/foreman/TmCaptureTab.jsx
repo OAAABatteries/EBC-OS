@@ -63,7 +63,7 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
   );
 
   const projectTickets = useMemo(
-    () => tmTickets.filter((t) => String(t.projectId) === String(projectId)).sort((a, b) => b.date.localeCompare(a.date)),
+    () => tmTickets.filter((t) => String(t.projectId) === String(projectId) && t.status !== "deleted").sort((a, b) => b.date.localeCompare(a.date)),
     [tmTickets, projectId]
   );
 
@@ -118,7 +118,8 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
   const handleDelete = (ticket) => {
     if (ticket.status !== "draft") return;
     if (!window.confirm(tr("Delete this T&M ticket?"))) return;
-    setTmTickets((prev) => prev.filter((t) => t.id !== ticket.id));
+    // Soft-delete: preserve record with audit trail
+    setTmTickets((prev) => prev.map((t) => t.id === ticket.id ? { ...t, status: "deleted", deletedAt: new Date().toISOString(), deletedBy: foreman?.name || "Foreman" } : t));
   };
 
   const commitSave = (asDraft, gcSignatureData) => {

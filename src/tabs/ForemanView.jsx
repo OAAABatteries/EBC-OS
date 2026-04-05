@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, ClipboardList, HardHat, MessageSquare, Pin, PinOff, LayoutDashboard, Users, Clock as ClockIcon, MoreHorizontal, FileText, Calendar, Settings, BarChart3, ClipboardCheck } from "lucide-react";
+import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, ClipboardList, HardHat, MessageSquare, Pin, PinOff, LayoutDashboard, Users, Clock as ClockIcon, MoreHorizontal, FileText, Calendar, Settings, BarChart3, ClipboardCheck, PenLine } from "lucide-react";
 import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, FieldInput, EmptyState, StatusBadge, StatTile, AlertCard, FieldSignaturePad, CredentialCard } from "../components/field";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -115,6 +115,10 @@ export function ForemanView({ app }) {
   const [rcIndoorOutdoor, setRcIndoorOutdoor] = useState("indoor");
   const [rcPendingCard, setRcPendingCard] = useState(null);
   const [rcSelectedHazardIdxs, setRcSelectedHazardIdxs] = useState({});
+
+  // ── Inline labor edit state ──
+  const [editingLaborId, setEditingLaborId] = useState(null);
+  const [editingLaborHours, setEditingLaborHours] = useState("");
 
   // ── Bulk Roll Call state ──
   const [rollCallMode, setRollCallMode] = useState(false);
@@ -918,6 +922,7 @@ export function ForemanView({ app }) {
     { id: "materials", label: "Materials", icon: Package, badge: projectMatRequests.filter(r => r.status === "requested" || r.status === "pending").length > 0 },
     { id: "issues", label: t("Issues"), icon: AlertTriangle, badge: (problems || []).filter(p => String(p.projectId) === String(selectedProjectId) && p.status !== "resolved").length > 0 },
     { id: "drawings", label: "Drawings", icon: FileText, badge: false },
+    { id: "hours", label: t("Hours"), icon: BarChart3, badge: false },
     { id: "jsa", label: "JSA", icon: Shield, badge: activeJsaCount > 0 },
   ];
 
@@ -1282,6 +1287,18 @@ export function ForemanView({ app }) {
                     onTap={() => setForemanTab("team")}
                     t={t}
                   />
+                </div>
+
+                {/* Quick Actions — 1-tap access to Labor Entry + Daily Report */}
+                <div style={{ display: "flex", gap: 8, marginTop: "var(--space-4)" }}>
+                  <button className="btn touch-target" style={{ flex: 1, height: 48, fontSize: 14, fontWeight: 700, borderRadius: 10, background: "var(--amber)", color: "#fff", border: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                    onClick={() => { setForemanTab("team"); setShowLaborEntry(true); }}>
+                    <ClockIcon size={16} /> {t("Enter Labor")}
+                  </button>
+                  <button className="btn touch-target" style={{ flex: 1, height: 48, fontSize: 14, fontWeight: 700, borderRadius: 10, background: "var(--blue)", color: "#fff", border: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                    onClick={() => setForemanTab("reports")}>
+                    <ClipboardList size={16} /> {t("Daily Report")}
+                  </button>
                 </div>
 
                 {/* Alerts feed per D-09 — actionable first (requests, budget), then informational (cert warnings) */}
@@ -1974,11 +1991,25 @@ export function ForemanView({ app }) {
                             <div key={le.id} style={{ display: "flex", alignItems: "center", padding: "4px 0", fontSize: 12, borderBottom: "1px solid var(--border)", gap: 6 }}>
                               <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{le.employeeName}</span>
                               <span className="text-muted">{le.costCode}</span>
-                              <span style={{ fontWeight: 700, minWidth: 40, textAlign: "right" }}>{le.hours}h{le.payType !== "regular" ? ` ${le.payType.slice(0,2).toUpperCase()}` : ""}</span>
-                              <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 2 }}
-                                onClick={() => { const newHrs = prompt(t("Edit hours") + ` (${le.employeeName}):`, le.hours); if (newHrs && !isNaN(newHrs)) handleEditLabor(le.id, newHrs); }}>
-                                <PenLine size={12} />
-                              </button>
+                              {editingLaborId === le.id ? (
+                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                  <input type="number" value={editingLaborHours} onChange={e => setEditingLaborHours(e.target.value)}
+                                    style={{ width: 50, height: 32, fontSize: 14, fontWeight: 700, textAlign: "center", border: "2px solid var(--accent)", borderRadius: 6, background: "var(--bg3)", color: "var(--text)" }}
+                                    autoFocus onKeyDown={e => { if (e.key === "Enter") { handleEditLabor(le.id, editingLaborHours); setEditingLaborId(null); } if (e.key === "Escape") setEditingLaborId(null); }} />
+                                  <button style={{ background: "var(--green)", color: "#fff", border: "none", borderRadius: 4, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}
+                                    onClick={() => { handleEditLabor(le.id, editingLaborHours); setEditingLaborId(null); }}>✓</button>
+                                  <button style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 11 }}
+                                    onClick={() => setEditingLaborId(null)}>✕</button>
+                                </div>
+                              ) : (
+                                <>
+                                  <span style={{ fontWeight: 700, minWidth: 40, textAlign: "right" }}>{le.hours}h{le.payType !== "regular" ? ` ${le.payType.slice(0,2).toUpperCase()}` : ""}</span>
+                                  <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 2 }}
+                                    onClick={() => { setEditingLaborId(le.id); setEditingLaborHours(String(le.hours)); }}>
+                                    <PenLine size={12} />
+                                  </button>
+                                </>
+                              )}
                               <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--red)", padding: 2 }}
                                 onClick={() => handleDeleteLabor(le.id)}>
                                 <X size={12} />

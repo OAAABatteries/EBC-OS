@@ -37,7 +37,7 @@ export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees
   );
 
   const projectItems = useMemo(
-    () => punchItems.filter((p) => String(p.projectId) === String(projectId)),
+    () => punchItems.filter((p) => String(p.projectId) === String(projectId) && p.status !== "deleted"),
     [punchItems, projectId]
   );
 
@@ -90,7 +90,7 @@ export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees
 
   const handleDelete = (item) => {
     if (!window.confirm(tr("Delete this punch item?"))) return;
-    setPunchItems((prev) => prev.filter((p) => p.id !== item.id));
+    setPunchItems((prev) => prev.map((p) => p.id === item.id ? { ...p, status: "deleted", deletedAt: new Date().toISOString(), deletedBy: foreman?.name || "Foreman" } : p));
   };
 
   const handleAdd = () => {

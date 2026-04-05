@@ -955,6 +955,9 @@ export const T = {
   "Pending T&M": { es: "T&M Pendientes" },
   "Production Today": { es: "Producción Hoy" },
   "Deliveries Pending": { es: "Entregas Pendientes" },
+  "Enter Labor": { es: "Ingresar Mano de Obra" },
+  "Daily Report": { es: "Reporte Diario" },
+  "Hours": { es: "Horas" },
 
   // ── Offline persistence ──
   "Draft saved": { es: "Borrador guardado" },
