@@ -79,6 +79,10 @@ export function DecisionLogTab({ decisionLog = [], setDecisionLog, projectId, em
   };
 
   const handleDelete = (entry) => {
+    if (isImmutable(entry.recordedAt)) {
+      window.alert(tr("This entry is locked (older than 24 hours) and cannot be deleted."));
+      return;
+    }
     if (!window.confirm(tr("Delete this log entry?"))) return;
     setDecisionLog((prev) => prev.filter((d) => d.id !== entry.id));
   };

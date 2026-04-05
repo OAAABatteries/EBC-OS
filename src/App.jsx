@@ -2538,7 +2538,7 @@ function App({ auth, onLogout }) {
             <tbody>
               {filteredProjects.filter(p => p.status === "in-progress" || (p.progress || 0) < 100).map(p => {
                 const pRfis = rfis.filter(r => r.projectId === p.id && r.status !== "Answered" && r.status !== "Closed").length;
-                const pCOs = changeOrders.filter(c => c.projectId === p.id && c.status === "pending").length;
+                const pCOs = changeOrders.filter(c => c.projectId === p.id && c.status !== "approved" && c.status !== "rejected").length;
                 const pTm = (tmTickets || []).filter(t => String(t.projectId) === String(p.id) && t.status !== "approved" && t.status !== "billed").length;
                 const pPunch = (punchItems || []).filter(pi => String(pi.projectId) === String(p.id) && pi.status !== "resolved" && pi.status !== "complete").length;
                 const pHours = timeEntries.filter(te => String(te.projectId) === String(p.id) && te.totalHours).reduce((s, te) => s + te.totalHours, 0);
