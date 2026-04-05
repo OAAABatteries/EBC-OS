@@ -601,7 +601,12 @@ export function DriverView({ app }) {
                         {idx + 1}
                       </div>
                       <div className="flex-1">
-                        <div className="text-sm driver-project-name">{stop.projectName}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: stop.isInTransit ? "var(--blue-dim)" : "var(--green-dim)", color: stop.isInTransit ? "var(--blue)" : "var(--green)", textTransform: "uppercase" }}>
+                            {stop.isInTransit ? t("In Transit") : t("Drop-Off")}
+                          </span>
+                          <span className="text-sm driver-project-name">{stop.projectName}</span>
+                        </div>
                         {stop.address && <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(stop.address)}`} target="_blank" rel="noopener noreferrer" className="text-xs" style={{ color: "var(--blue)", textDecoration: "none" }}>{stop.address}</a>}
                         {stop.siteContact && (
                           <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>

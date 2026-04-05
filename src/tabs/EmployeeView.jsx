@@ -942,7 +942,7 @@ export function EmployeeView({ app }) {
             if (!area) return null;
             return (
               <div style={{ padding: 16, background: "var(--bg3)", borderRadius: 12, marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>{t("Today's Work")}</div>
+                <div style={{ fontSize: "var(--text-sm)", color: "var(--text3)", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>{t("Today's Work")}</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)" }}>{myTodaySchedule.task || area.name}</div>
                 <div style={{ fontSize: 14, color: "var(--text2)", marginTop: 4 }}>Floor {area.floor}, Zone {area.zone} — {area.name}</div>
                 {myTodaySchedule.trade && <div style={{ display: "inline-block", padding: "4px 10px", background: "var(--amber-dim)", color: "var(--amber)", borderRadius: 6, fontSize: "var(--text-sm)", fontWeight: 700, marginTop: 8 }}>{t(myTodaySchedule.trade)}</div>}

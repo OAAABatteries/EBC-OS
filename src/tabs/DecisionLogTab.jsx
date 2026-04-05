@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
-import { Plus, Lock, FileText, Filter } from "lucide-react";
+import { Plus, Lock, FileText, Filter, Pencil, Trash2 } from "lucide-react";
 import { FieldCard } from "../components/field/FieldCard";
 import { FieldButton } from "../components/field/FieldButton";
 import { FieldInput } from "../components/field/FieldInput";
@@ -38,6 +38,7 @@ export function DecisionLogTab({ decisionLog = [], setDecisionLog, projectId, em
 
   const [filterType, setFilterType] = useState("all");
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   // Form state
   const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10));
@@ -57,8 +58,53 @@ export function DecisionLogTab({ decisionLog = [], setDecisionLog, projectId, em
     return list.sort((a, b) => (b.recordedAt || b.date || "").localeCompare(a.recordedAt || a.date || ""));
   }, [projectEntries, filterType]);
 
+  const resetForm = () => {
+    setFormDate(new Date().toISOString().slice(0, 10));
+    setFormType("decision");
+    setFormDesc("");
+    setFormAttributed("");
+    setFormRecordedBy("");
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const startEdit = (entry) => {
+    setFormDate(entry.date || new Date().toISOString().slice(0, 10));
+    setFormType(entry.type || "decision");
+    setFormDesc(entry.description || "");
+    setFormAttributed(entry.attributedTo || "");
+    setFormRecordedBy(entry.recordedBy || "");
+    setEditingId(entry.id);
+    setShowForm(true);
+  };
+
+  const handleDelete = (entry) => {
+    if (!window.confirm(tr("Delete this log entry?"))) return;
+    setDecisionLog((prev) => prev.filter((d) => d.id !== entry.id));
+  };
+
   const handleAdd = () => {
     if (!formDesc.trim()) return;
+
+    if (editingId) {
+      setDecisionLog((prev) =>
+        prev.map((d) =>
+          d.id === editingId
+            ? {
+                ...d,
+                date: formDate,
+                type: formType,
+                description: formDesc.trim(),
+                attributedTo: formAttributed.trim(),
+                recordedBy: formRecordedBy.trim(),
+              }
+            : d
+        )
+      );
+      resetForm();
+      return;
+    }
+
     const newEntry = {
       id: crypto.randomUUID(),
       projectId: Number(projectId),
@@ -70,12 +116,7 @@ export function DecisionLogTab({ decisionLog = [], setDecisionLog, projectId, em
       recordedAt: new Date().toISOString(),
     };
     setDecisionLog((prev) => [...prev, newEntry]);
-    setFormDate(new Date().toISOString().slice(0, 10));
-    setFormType("decision");
-    setFormDesc("");
-    setFormAttributed("");
-    setFormRecordedBy("");
-    setShowForm(false);
+    resetForm();
   };
 
   return (
@@ -90,7 +131,7 @@ export function DecisionLogTab({ decisionLog = [], setDecisionLog, projectId, em
             ))}
           </FieldSelect>
         </div>
-        <FieldButton onClick={() => setShowForm(!showForm)} t={t}>
+        <FieldButton onClick={() => { if (showForm && editingId) { resetForm(); } else { setShowForm(!showForm); } }} t={t}>
           <Plus size={14} style={{ marginRight: 4 }} />
           {tr("Add Entry")}
         </FieldButton>
@@ -100,7 +141,7 @@ export function DecisionLogTab({ decisionLog = [], setDecisionLog, projectId, em
       {showForm && (
         <FieldCard>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ fontWeight: 700, fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>{tr("New Log Entry")}</div>
+            <div style={{ fontWeight: 700, fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>{editingId ? tr("Edit Log Entry") : tr("New Log Entry")}</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <div style={{ flex: "1 1 140px" }}>
                 <FieldInput label={tr("Date")} type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} t={t} />
@@ -123,8 +164,8 @@ export function DecisionLogTab({ decisionLog = [], setDecisionLog, projectId, em
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <FieldButton variant="ghost" onClick={() => setShowForm(false)} t={t}>{tr("Cancel")}</FieldButton>
-              <FieldButton onClick={handleAdd} disabled={!formDesc.trim()} t={t}>{tr("Save")}</FieldButton>
+              <FieldButton variant="ghost" onClick={resetForm} t={t}>{tr("Cancel")}</FieldButton>
+              <FieldButton onClick={handleAdd} disabled={!formDesc.trim()} t={t}>{editingId ? tr("Update") : tr("Save")}</FieldButton>
             </div>
           </div>
         </FieldCard>
@@ -177,6 +218,32 @@ export function DecisionLogTab({ decisionLog = [], setDecisionLog, projectId, em
                     <span> &middot; {new Date(entry.recordedAt).toLocaleString()}</span>
                   )}
                 </div>
+
+                {/* Edit / Delete — only for mutable entries */}
+                {!locked && (
+                  <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                    <button
+                      onClick={() => startEdit(entry)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 4, padding: "4px 10px",
+                        fontSize: "var(--text-sm, 12px)", background: "var(--bg3)", border: "1px solid var(--border)",
+                        borderRadius: "var(--radius-sm, 4px)", color: "var(--text2)", cursor: "pointer",
+                      }}
+                    >
+                      <Pencil size={12} /> {tr("Edit")}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(entry)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 4, padding: "4px 10px",
+                        fontSize: "var(--text-sm, 12px)", background: "var(--bg3)", border: "1px solid var(--border)",
+                        borderRadius: "var(--radius-sm, 4px)", color: "var(--red)", cursor: "pointer",
+                      }}
+                    >
+                      <Trash2 size={12} /> {tr("Delete")}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </FieldCard>

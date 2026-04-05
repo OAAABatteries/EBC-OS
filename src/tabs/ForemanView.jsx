@@ -777,21 +777,17 @@ export function ForemanView({ app }) {
   const pendingTmCount = (tmTickets || []).filter(t => String(t.projectId) === String(selectedProjectId) && (t.status === "draft" || t.status === "submitted")).length;
 
   const foremanTabDefs = [
-    // Primary (5 field-critical tabs + More)
+    // Primary (4 field-critical tabs)
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, badge: false },
     { id: "production", label: t("Production"), icon: BarChart3, badge: false },
     { id: "tm", label: t("T&M"), icon: FileText, badge: pendingTmCount > 0 },
     { id: "team", label: "Team", icon: Users, badge: pendingRequestCount > 0 },
-    // More overflow
+    // Overflow (5 tabs — Clock merged into Dashboard, Hours merged into Dashboard KPIs, Documents accessible via Drawings, Settings in PortalHeader)
     { id: "punchList", label: t("Punch List"), icon: ClipboardCheck, badge: openPunchCount > 0 },
-    { id: "hours", label: "Hours", icon: ClockIcon, badge: false },
     { id: "materials", label: "Materials", icon: Package, badge: projectMatRequests.filter(r => r.status === "requested" || r.status === "pending").length > 0 },
-    { id: "clock", label: "Clock", icon: ClockIcon, badge: false },
     { id: "jsa", label: "JSA", icon: Shield, badge: activeJsaCount > 0 },
     { id: "drawings", label: "Drawings", icon: FileText, badge: false },
     { id: "reports", label: "Daily Report", icon: ClipboardList, badge: (dailyReports || []).filter(r => r.projectId === selectedProjectId && r.date === new Date().toISOString().slice(0,10)).length > 0 },
-    { id: "documents", label: "Documents", icon: FileQuestion, badge: rfiAlerts.length > 0 },
-    { id: "settings", label: "Settings", icon: Settings, badge: false },
   ];
 
   // FSCH-04: Pull-based in-app alert. Foreman sees pending request alerts when opening Dashboard.
@@ -802,7 +798,7 @@ export function ForemanView({ app }) {
       alerts.push({ type: "info", message: t("{n} pending requests").replace("{n}", pendingRequestCount), timestamp: t("Today"), navigateTo: "team" });
     }
     if (pctUsed > 90) {
-      alerts.push({ type: "error", message: t("Budget at {n}%").replace("{n}", pctUsed), timestamp: t("Today"), navigateTo: "hours" });
+      alerts.push({ type: "error", message: t("Budget at {n}%").replace("{n}", pctUsed), timestamp: t("Today"), navigateTo: "dashboard" });
     }
     if (teamForProject.length > 0) {
       const clockedInCount = teamForProject.filter(c => teamClocks[c.id]).length;
@@ -3020,6 +3016,61 @@ export function ForemanView({ app }) {
                     {showReportForm ? t("Cancel") : `+ ${t("New Report")}`}
                   </button>
                 </div>
+
+                {/* Auto-aggregated summary from today's entries */}
+                {(() => {
+                  const today = new Date().toISOString().slice(0, 10);
+                  const todayProd = (productionLogs || []).filter(l => l.date === today && String(l.projectId) === String(selectedProjectId));
+                  const todayTm = (tmTickets || []).filter(t2 => t2.date === today && String(t2.projectId) === String(selectedProjectId));
+                  const todayPunch = (punchItems || []).filter(p => String(p.projectId) === String(selectedProjectId) && (p.createdAt || "").startsWith(today));
+                  const todayTime = (timeEntries || []).filter(te => String(te.projectId) === String(selectedProjectId) && (te.clockIn || "").startsWith(today));
+                  const totalHours = todayTime.reduce((s, te) => s + (te.totalHours || 0), 0);
+
+                  if (todayProd.length === 0 && todayTm.length === 0 && todayPunch.length === 0 && todayTime.length === 0) return null;
+
+                  return (
+                    <div style={{ padding: 12, background: "var(--bg3)", borderRadius: 8, marginBottom: 16, marginTop: 12, border: "1px solid var(--border)" }}>
+                      <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>{t("Today's Activity")} ({t("Auto-Populated")})</div>
+
+                      {todayTime.length > 0 && (
+                        <div style={{ fontSize: 13, color: "var(--text)", marginBottom: 6 }}>
+                          <strong>{todayTime.length} {t("crew")}</strong> {t("on site")} · <strong>{totalHours.toFixed(1)}h</strong> {t("total")}
+                        </div>
+                      )}
+
+                      {todayProd.length > 0 && (
+                        <div style={{ marginBottom: 6 }}>
+                          <div style={{ fontSize: 12, color: "var(--text2)", fontWeight: 600 }}>{t("Production")}:</div>
+                          {todayProd.map(p => (
+                            <div key={p.id} style={{ fontSize: 12, color: "var(--text)", paddingLeft: 8 }}>
+                              {"\u2022"} {p.trade}: {p.qtyInstalled} {p.unit} {t("in")} {(areas || []).find(a => a.id === p.areaId)?.name || "\u2014"}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {todayTm.length > 0 && (
+                        <div style={{ marginBottom: 6 }}>
+                          <div style={{ fontSize: 12, color: "var(--text2)", fontWeight: 600 }}>{t("T&M")} {t("Tickets")}:</div>
+                          {todayTm.map(tk => (
+                            <div key={tk.id} style={{ fontSize: 12, color: "var(--text)", paddingLeft: 8 }}>
+                              {"\u2022"} {tk.ticketNumber}: {(tk.description || "").slice(0, 60)}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {todayPunch.length > 0 && (
+                        <div>
+                          <div style={{ fontSize: 12, color: "var(--text2)", fontWeight: 600 }}>{t("Punch List")}:</div>
+                          <div style={{ fontSize: 12, color: "var(--text)", paddingLeft: 8 }}>
+                            {todayPunch.length} {t("new")} {t("item")}{todayPunch.length !== 1 ? "s" : ""} {t("logged")}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* ── Report Creation / Edit Form ── */}
                 {showReportForm && (

@@ -4551,7 +4551,10 @@ const ModalHub = ({ type, data, app }) => {
                               return (
                                 <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", cursor: "pointer", fontSize: 13 }}>
                                   <input type="checkbox" checked={checked} onChange={() => {
-                                    setCoForm(p => ({ ...p, tmTicketIds: checked ? p.tmTicketIds.filter(id => id !== t.id) : [...p.tmTicketIds, t.id] }));
+                                    const newIds = checked ? coForm.tmTicketIds.filter(id => id !== t.id) : [...coForm.tmTicketIds, t.id];
+                                    const newSelected = projTm.filter(tm => newIds.includes(tm.id));
+                                    const autoAmt = newSelected.reduce((s, tm) => s + (tm.laborEntries || []).reduce((ls, l) => ls + l.hours * l.rate, 0) + (tm.materialEntries || []).reduce((ms, m) => ms + m.qty * m.unitCost * (1 + (m.markup || 0) / 100), 0), 0);
+                                    setCoForm(p => ({ ...p, tmTicketIds: newIds, amount: autoAmt > 0 ? String(Math.round(autoAmt * 100) / 100) : p.amount }));
                                   }} />
                                   <span style={{ fontWeight: 600, minWidth: 60 }}>{t.ticketNumber || t.id}</span>
                                   <span className="text-dim" style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description || "—"}</span>

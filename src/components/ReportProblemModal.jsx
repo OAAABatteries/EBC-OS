@@ -107,7 +107,7 @@ export function ReportProblemModal({ reporter, projects, defaultProjectId, areas
           </div>
           <button
             onClick={onClose}
-            style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: 8, width: 32, height: 32, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}
+            style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: 8, width: 44, height: 44, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}
           >
             ✕
           </button>

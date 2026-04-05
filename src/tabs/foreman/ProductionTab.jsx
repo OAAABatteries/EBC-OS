@@ -313,6 +313,15 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
                 {log.laborHours}h &middot; {log.crewSize} crew &middot; Rate: {log.laborHours > 0 ? (log.qtyInstalled / log.laborHours).toFixed(1) : "—"}/{tr("hr")}
               </div>
               {log.notes && <div style={{ color: "var(--text2)", fontStyle: "italic", marginTop: 2 }}>{log.notes}</div>}
+              {log.photos && log.photos.length > 0 && (
+                <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
+                  {log.photos.map((p, i) => (
+                    <div key={i} style={{ width: 36, height: 36, borderRadius: 4, overflow: "hidden" }}>
+                      <img src={p.data} alt={p.name || "photo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </FieldCard>

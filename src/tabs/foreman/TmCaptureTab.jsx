@@ -13,6 +13,7 @@ import { FieldSelect } from "../../components/field/FieldSelect";
 import { StatusBadge } from "../../components/field/StatusBadge";
 import { StatTile } from "../../components/field/StatTile";
 import { PhotoCapture } from "../../components/field/PhotoCapture";
+import { FieldSignaturePad } from "../../components/field/FieldSignaturePad";
 
 const TM_STATUS_BADGE = { draft: "badge-muted", submitted: "badge-amber", approved: "badge-green", billed: "badge-blue" };
 const DEFAULT_RATE = 65;
@@ -44,6 +45,8 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
   const [expandedId, setExpandedId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [showSignature, setShowSignature] = useState(false);
+  const [pendingSignature, setPendingSignature] = useState(null);
 
   // Form state
   const [formDesc, setFormDesc] = useState("");
@@ -96,6 +99,8 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
     setFormMaterials([]);
     setEditingId(null);
     setShowForm(false);
+    setShowSignature(false);
+    setPendingSignature(null);
   };
 
   const startEdit = (ticket) => {
@@ -116,10 +121,12 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
     setTmTickets((prev) => prev.filter((t) => t.id !== ticket.id));
   };
 
-  const handleSave = (asDraft) => {
-    if (!formDesc.trim()) return;
+  const commitSave = (asDraft, gcSignatureData) => {
     const now = new Date().toISOString();
     const areaObj = projectAreas.find((a) => a.id === formArea);
+    const signatureFields = gcSignatureData
+      ? { gcSignature: gcSignatureData, gcSignedAt: now }
+      : {};
 
     if (editingId) {
       // Update existing ticket
@@ -138,6 +145,7 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
             laborEntries: formLabor,
             materialEntries: formMaterials,
             submittedDate: asDraft ? t.submittedDate : now,
+            ...signatureFields,
             auditTrail: [
               ...(t.auditTrail || []),
               { action: "edited", actor: "Foreman", at: now },
@@ -164,6 +172,7 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
         submittedDate: asDraft ? null : now,
         approvedDate: null,
         billedDate: null,
+        ...signatureFields,
         auditTrail: [
           { action: "created", actor: "Foreman", at: now },
           ...(asDraft ? [] : [{ action: "submitted", actor: "Foreman", at: now }]),
@@ -172,6 +181,24 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
       setTmTickets((prev) => [...prev, ticket]);
     }
     resetForm();
+  };
+
+  const handleSave = (asDraft) => {
+    if (!formDesc.trim()) return;
+    if (asDraft) {
+      commitSave(true, null);
+    } else {
+      // Show signature step before submitting
+      setShowSignature(true);
+    }
+  };
+
+  const handleSignatureConfirm = () => {
+    commitSave(false, pendingSignature);
+  };
+
+  const handleSkipSignature = () => {
+    commitSave(false, null);
   };
 
   const laborTotal = calcLaborTotal(formLabor);
@@ -306,11 +333,30 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
             </div>
 
             {/* ── Actions ── */}
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <FieldButton variant="ghost" onClick={resetForm} t={t}>{tr("Cancel")}</FieldButton>
-              <FieldButton variant="ghost" onClick={() => handleSave(true)} disabled={!formDesc.trim()} t={t}>{editingId ? tr("Update Draft") : tr("Save Draft")}</FieldButton>
-              <FieldButton onClick={() => handleSave(false)} disabled={!formDesc.trim()} t={t}>{editingId ? tr("Update & Submit") : tr("Submit")}</FieldButton>
-            </div>
+            {!showSignature && (
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <FieldButton variant="ghost" onClick={resetForm} t={t}>{tr("Cancel")}</FieldButton>
+                <FieldButton variant="ghost" onClick={() => handleSave(true)} disabled={!formDesc.trim()} t={t}>{editingId ? tr("Update Draft") : tr("Save Draft")}</FieldButton>
+                <FieldButton onClick={() => handleSave(false)} disabled={!formDesc.trim()} t={t}>{editingId ? tr("Update & Submit") : tr("Submit")}</FieldButton>
+              </div>
+            )}
+
+            {/* ── GC Signature Step ── */}
+            {showSignature && (
+              <div style={{ padding: 12, background: "var(--bg3)", borderRadius: "var(--radius-sm, 6px)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ fontWeight: 700, fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>{tr("GC Acknowledgment Signature")}</div>
+                <div style={{ fontSize: "var(--text-sm, 12px)", color: "var(--text2)" }}>{tr("Have the GC sign below to acknowledge this T&M ticket, or skip if unavailable.")}</div>
+                <FieldSignaturePad
+                  onSignature={(dataUrl) => setPendingSignature(dataUrl)}
+                  t={t}
+                />
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                  <FieldButton variant="ghost" onClick={() => { setShowSignature(false); setPendingSignature(null); }} t={t}>{tr("Back")}</FieldButton>
+                  <FieldButton variant="ghost" onClick={handleSkipSignature} t={t}>{tr("Submit Without GC Signature")}</FieldButton>
+                  <FieldButton onClick={handleSignatureConfirm} disabled={!pendingSignature} t={t}>{tr("Confirm & Submit")}</FieldButton>
+                </div>
+              </div>
+            )}
           </div>
         </FieldCard>
       )}
@@ -414,6 +460,17 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
                     <FieldButton variant="ghost" onClick={() => handleDelete(ticket)} t={t} style={{ padding: "4px 10px", fontSize: "var(--text-sm, 12px)", color: "var(--red)" }}>
                       <Trash2 size={12} style={{ marginRight: 4 }} />{tr("Delete")}
                     </FieldButton>
+                  </div>
+                )}
+
+                {/* GC Signature */}
+                {ticket.gcSignature && (
+                  <div style={{ marginTop: 4 }}>
+                    <div style={{ fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", marginBottom: 4, fontSize: "var(--text-sm, 12px)" }}>{tr("GC Signature")}</div>
+                    <img src={ticket.gcSignature} alt={tr("GC Signature")} style={{ maxWidth: 200, height: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius-sm, 4px)" }} />
+                    {ticket.gcSignedAt && (
+                      <div style={{ fontSize: "var(--text-xs, 11px)", color: "var(--text3)", marginTop: 2 }}>{tr("Signed")}: {new Date(ticket.gcSignedAt).toLocaleString()}</div>
+                    )}
                   </div>
                 )}
 
