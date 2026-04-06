@@ -640,7 +640,7 @@ export function EmployeeView({ app }) {
     { id: "schedule", label: t("Schedule"), icon: Calendar, badge: false },
     { id: "materials", label: t("Materials"), icon: Package, badge: myMatRequests?.some(r => r.status === "requested") },
     { id: "jsa", label: t("JSA"), icon: ShieldCheck, badge: false },
-    { id: "log", label: t("Time Log"), icon: ClipboardList, badge: false },
+    { id: "log", label: t("My Hours"), icon: ClipboardList, badge: false },
     ...(!isCrewRole ? [
       { id: "cos", label: t("Change Orders"), icon: FileText, badge: false },
       { id: "rfis", label: t("RFIs"), icon: FileText, badge: false },
@@ -1310,7 +1310,7 @@ export function EmployeeView({ app }) {
             <div className="emp-content">
               <div className="section-header">
                 <div>
-                  <div className="section-title emp-section-title">{t("Time Log")}</div>
+                  <div className="section-title emp-section-title">{t("My Hours")}</div>
                   <div className="section-sub">{t("This Week")} — <strong>{weekTotal.toFixed(1)}h</strong></div>
                 </div>
               </div>
@@ -1596,10 +1596,20 @@ export function EmployeeView({ app }) {
                 </FieldSelect>
               </div>
               <div className="mb-12">
+                <label className="form-label" style={{ fontSize: 11, fontWeight: 600, marginBottom: 6 }}>{t("Material")}</label>
+                {/* Common materials quick-select */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
+                  {['5/8" GWB', '1/2" GWB', '3-5/8" Studs', '1-5/8" Track', 'Screws', 'Tape', 'Mud/JDL', 'Corner Bead', 'ACT Tile', 'Grid Wire', 'Insulation', 'Other'].map(item => (
+                    <button key={item} type="button"
+                      style={{ padding: "5px 10px", fontSize: 11, fontWeight: matForm.material === item ? 700 : 500, borderRadius: 6, border: matForm.material === item ? "2px solid var(--accent)" : "1px solid var(--border)", background: matForm.material === item ? "var(--accent)" : "var(--bg3)", color: matForm.material === item ? "#fff" : "var(--text)", cursor: "pointer" }}
+                      onClick={() => setMatForm(f => ({ ...f, material: item === "Other" ? "" : item }))}>
+                      {item}
+                    </button>
+                  ))}
+                </div>
                 <FieldInput
-                  label={t("Material")}
                   inputMode="text"
-                  placeholder='e.g., 5/8" Type X GWB'
+                  placeholder={t("or type custom material name")}
                   value={matForm.material}
                   onChange={(e) => setMatForm(f => ({ ...f, material: e.target.value }))}
                   t={t}

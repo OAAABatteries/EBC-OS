@@ -937,6 +937,8 @@ export const T = {
   "Report reviewed": { es: "Reporte revisado" },
   "Reviewed by": { es: "Revisado por" },
   "SAFETY INCIDENT": { es: "INCIDENTE DE SEGURIDAD" },
+  "My Hours": { es: "Mis Horas" },
+  "or type custom material name": { es: "o escribe nombre del material" },
   "worked": { es: "trabajadas" },
   "paid": { es: "pagadas" },
   "Bulk": { es: "Masivo" },

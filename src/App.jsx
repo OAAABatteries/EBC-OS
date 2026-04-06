@@ -4347,11 +4347,11 @@ const ModalHub = ({ type, data, app }) => {
 
   // ── View Project (read-only) ──
   if (type === "viewProject") {
-    const projCOs = app.changeOrders.filter(co => co.projectId === draft.id);
-    const projRFIs = (app.rfis || []).filter(r => r.projectId === draft.id);
-    const projSubmittals = (app.submittals || []).filter(s => s.projectId === draft.id);
-    const projCrew = app.teamSchedule.filter(s => s.projectId === draft.id);
-    const projTime = app.timeEntries.filter(t => t.projectId === draft.id && t.clockOut);
+    const projCOs = app.changeOrders.filter(co => String(co.projectId) === String(draft.id));
+    const projRFIs = (app.rfis || []).filter(r => String(r.projectId) === String(draft.id));
+    const projSubmittals = (app.submittals || []).filter(s => String(s.projectId) === String(draft.id));
+    const projCrew = app.teamSchedule.filter(s => String(s.projectId) === String(draft.id));
+    const projTime = app.timeEntries.filter(t => String(t.projectId) === String(draft.id) && t.clockOut);
     const totalHrs = projTime.reduce((s, t) => s + (t.totalHours || 0), 0);
     const projInvoices = app.invoices.filter(i => i.projectId === draft.id);
     const totalBilled = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);

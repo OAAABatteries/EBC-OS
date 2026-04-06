@@ -916,12 +916,12 @@ export function ForemanView({ app }) {
     { id: "production", label: t("Production"), icon: BarChart3, badge: false },
     { id: "tm", label: t("T&M"), icon: FileText, badge: pendingTmCount > 0 },
     { id: "team", label: "Team", icon: Users, badge: pendingRequestCount > 0 },
-    // Overflow (frequency-driven order)
+    // Overflow (frequency-driven: daily-use first, then weekly)
     { id: "reports", label: t("Daily Report"), icon: ClipboardList, badge: (dailyReports || []).filter(r => r.projectId === selectedProjectId && r.date === new Date().toISOString().slice(0,10)).length > 0 },
+    { id: "drawings", label: "Drawings", icon: FileText, badge: false },
     { id: "punchList", label: t("Punch List"), icon: ClipboardCheck, badge: openPunchCount > 0 },
     { id: "materials", label: "Materials", icon: Package, badge: projectMatRequests.filter(r => r.status === "requested" || r.status === "pending").length > 0 },
     { id: "issues", label: t("Issues"), icon: AlertTriangle, badge: (problems || []).filter(p => String(p.projectId) === String(selectedProjectId) && p.status !== "resolved").length > 0 },
-    { id: "drawings", label: "Drawings", icon: FileText, badge: false },
     { id: "hours", label: t("Hours"), icon: BarChart3, badge: false },
     { id: "jsa", label: "JSA", icon: Shield, badge: activeJsaCount > 0 },
   ];
@@ -3882,7 +3882,7 @@ export function ForemanView({ app }) {
                         </div>
                       );
                     })}
-                  {(dailyReports || []).filter(r => myProjectIds.has(r.projectId)).length === 0 && !showReportForm && (
+                  {(dailyReports || []).filter(r => myProjectIds.has(r.projectId) && r.status !== "deleted").length === 0 && !showReportForm && (
                     <div className="empty-state" style={{ padding: "30px 20px" }}>
                       <div className="empty-icon"><ClipboardList size={32} /></div>
                       <div className="empty-text">{t("No daily reports yet")}</div>
@@ -4220,6 +4220,7 @@ export function ForemanView({ app }) {
                 setAreas={setAreas}
                 projectId={selectedProjectId}
                 employees={employees}
+                foreman={activeForeman}
                 t={t}
               />
             )}
@@ -4233,6 +4234,7 @@ export function ForemanView({ app }) {
                 employees={employees}
                 projectId={selectedProjectId}
                 areas={(areas || []).filter(a => String(a.projectId) === String(selectedProjectId))}
+                foreman={activeForeman}
                 t={t}
               />
             )}
@@ -4245,6 +4247,7 @@ export function ForemanView({ app }) {
                 areas={(areas || []).filter(a => String(a.projectId) === String(selectedProjectId))}
                 employees={employees}
                 projectId={selectedProjectId}
+                foreman={activeForeman}
                 t={t}
               />
             )}
@@ -4310,6 +4313,19 @@ export function ForemanView({ app }) {
                   value={rfiFormData.drawingRef}
                   onChange={e => setRfiFormData(f => ({ ...f, drawingRef: e.target.value }))}
                   style={{ width: "100%", fontSize: 14 }}
+                />
+              </div>
+
+              {/* Photo attachment for RFI */}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text2)", display: "block", marginBottom: 6 }}>
+                  {t("Photos")} ({t("optional")})
+                </label>
+                <PhotoCapture
+                  photos={rfiFormData.photos || []}
+                  onPhotos={(photos) => setRfiFormData(f => ({ ...f, photos }))}
+                  multiple={true}
+                  t={t}
                 />
               </div>
             </div>

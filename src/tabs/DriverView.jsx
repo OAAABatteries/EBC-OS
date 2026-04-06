@@ -662,6 +662,7 @@ export function DriverView({ app }) {
                         {!stop.isInTransit && stop.pickupName && (
                           <div style={{ fontSize: 10, color: "var(--amber)", fontWeight: 700, marginBottom: 4 }}>
                             <Package size={10} style={{verticalAlign: "middle", marginRight: 3}} />{t("PICKUP")}: {stop.pickupName}{stop.pickupAddress && stop.pickupAddress !== stop.pickupName ? ` — ${stop.pickupAddress}` : ""}
+                            {stop.pickupPhone && <a href={`tel:${stop.pickupPhone}`} style={{ marginLeft: 8, color: "var(--amber)", fontWeight: 700, textDecoration: "none" }}>{stop.pickupPhone}</a>}
                           </div>
                         )}
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -791,6 +792,30 @@ export function DriverView({ app }) {
                 <RefreshCw size={14} aria-hidden="true" /> {t("Re-optimize Route")}
               </FieldButton>
             )}
+
+            {/* Pending return trips on Route tab */}
+            {(() => {
+              const todayReturns = returnTrips.filter(rt => rt.driverId === activeDriver?.id && new Date(rt.createdAt).toDateString() === new Date().toDateString() && rt.status === "pending");
+              if (todayReturns.length === 0) return null;
+              return (
+                <div style={{ marginTop: 16 }}>
+                  <div className="section-header" style={{ marginBottom: 8 }}>
+                    <div className="section-title driver-section-title" style={{ color: "var(--amber)" }}>
+                      <RefreshCw size={14} style={{ marginRight: 6 }} />{t("Return Pickup")}s ({todayReturns.length})
+                    </div>
+                  </div>
+                  {todayReturns.map(rt => (
+                    <PremiumCard key={rt.id} variant="info" style={{ marginBottom: 6, borderLeft: "3px solid var(--amber)" }}>
+                      <div className="flex-between mb-4">
+                        <span className="text-sm font-semi">{rt.material}</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "var(--amber-dim)", color: "var(--amber)", textTransform: "uppercase" }}>{t("Return")}</span>
+                      </div>
+                      <div className="text-xs text-muted">{rt.reason} → {t(rt.destination)} · {rt.qty} {t("items")}{rt.projectName ? ` · ${rt.projectName}` : ""}</div>
+                    </PremiumCard>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         )}
 
