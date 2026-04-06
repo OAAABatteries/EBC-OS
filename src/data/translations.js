@@ -939,6 +939,8 @@ export const T = {
   "SAFETY INCIDENT": { es: "INCIDENTE DE SEGURIDAD" },
   "My Hours": { es: "Mis Horas" },
   "or type custom material name": { es: "o escribe nombre del material" },
+  "Complete Return": { es: "Completar Retorno" },
+  "Return completed": { es: "Retorno completado" },
   "worked": { es: "trabajadas" },
   "paid": { es: "pagadas" },
   "Bulk": { es: "Masivo" },

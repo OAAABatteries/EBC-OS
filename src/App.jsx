@@ -862,7 +862,7 @@ function App({ auth, onLogout }) {
     // Projects with no invoice in last 30 days (active projects only)
     // Suppress entirely when no invoices exist (no data to judge from)
     const projNoBilling = invoices.length === 0 ? [] : projects.filter(p => (p.progress || 0) < 100).filter(p => {
-      const projInvs = invoices.filter(i => i.projectId === p.id);
+      const projInvs = invoices.filter(i => String(i.projectId) === String(p.id));
       if (projInvs.length === 0) return true;
       const latest = Math.max(...projInvs.map(i => parseDate(i.date)?.getTime() || 0));
       return (now.getTime() - latest) > 30 * 86400000;
@@ -2546,8 +2546,8 @@ function App({ auth, onLogout }) {
             </thead>
             <tbody>
               {filteredProjects.filter(p => p.status === "in-progress" || (p.progress || 0) < 100).map(p => {
-                const pRfis = rfis.filter(r => r.projectId === p.id && r.status !== "Answered" && r.status !== "Closed").length;
-                const pCOs = changeOrders.filter(c => c.projectId === p.id && c.status !== "approved" && c.status !== "rejected").length;
+                const pRfis = rfis.filter(r => String(r.projectId) === String(p.id) && r.status !== "Answered" && r.status !== "Closed").length;
+                const pCOs = changeOrders.filter(c => String(c.projectId) === String(p.id) && c.status !== "approved" && c.status !== "rejected").length;
                 const pTm = (tmTickets || []).filter(t => String(t.projectId) === String(p.id) && t.status !== "approved" && t.status !== "billed").length;
                 const pPunch = (punchItems || []).filter(pi => String(pi.projectId) === String(p.id) && pi.status !== "resolved" && pi.status !== "complete").length;
                 const pHours = timeEntries.filter(te => String(te.projectId) === String(p.id) && te.totalHours).reduce((s, te) => s + te.totalHours, 0);
@@ -3074,8 +3074,8 @@ function App({ auth, onLogout }) {
     try {
       const { analyzeProjectRisks } = await import("./utils/api.js");
       const projectData = projects.map(p => {
-        const projCOs = (changeOrders || []).filter(c => c.projectId === p.id);
-        const projTM = (tmTickets || []).filter(t => t.projectId === p.id);
+        const projCOs = (changeOrders || []).filter(c => String(c.projectId) === String(p.id));
+        const projTM = (tmTickets || []).filter(t => String(t.projectId) === String(p.id));
         return {
           name: p.name || p.project, gc: p.gc, phase: p.phase,
           contract: p.contract, billed: p.billed, margin: p.margin, progress: p.progress,
@@ -4353,7 +4353,7 @@ const ModalHub = ({ type, data, app }) => {
     const projCrew = app.teamSchedule.filter(s => String(s.projectId) === String(draft.id));
     const projTime = app.timeEntries.filter(t => String(t.projectId) === String(draft.id) && t.clockOut);
     const totalHrs = projTime.reduce((s, t) => s + (t.totalHours || 0), 0);
-    const projInvoices = app.invoices.filter(i => i.projectId === draft.id);
+    const projInvoices = app.invoices.filter(i => String(i.projectId) === String(draft.id));
     const totalBilled = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);
     const remaining = (draft.contract || 0) - totalBilled;
     const [projTab, setProjTab] = useState(app.initialProjTab || "overview");
@@ -5497,13 +5497,13 @@ const ModalHub = ({ type, data, app }) => {
                     try {
                       const { generateCloseoutPdf } = await import("./utils/closeoutPdf.js");
                       generateCloseoutPdf(draft, {
-                        rfis: (app.rfis || []).filter(r => r.projectId === draft.id),
-                        submittals: (app.submittals || []).filter(s => s.projectId === draft.id),
+                        rfis: (app.rfis || []).filter(r => String(r.projectId) === String(draft.id)),
+                        submittals: (app.submittals || []).filter(s => String(s.projectId) === String(draft.id)),
                         changeOrders: projCOs,
                         invoices: projInvoices,
-                        dailyReports: (app.dailyReports || []).filter(d => d.projectId === draft.id),
-                        jsas: (app.jsas || []).filter(j => j.projectId === draft.id),
-                        tmTickets: (app.tmTickets || []).filter(t => t.projectId === draft.id),
+                        dailyReports: (app.dailyReports || []).filter(d => String(d.projectId) === String(draft.id)),
+                        jsas: (app.jsas || []).filter(j => String(j.projectId) === String(draft.id)),
+                        tmTickets: (app.tmTickets || []).filter(t => String(t.projectId) === String(draft.id)),
                         closeoutResult: {
                           readinessScore: pct,
                           grade: pct >= 90 ? "A" : pct >= 75 ? "B" : pct >= 50 ? "C" : pct >= 25 ? "D" : "F",

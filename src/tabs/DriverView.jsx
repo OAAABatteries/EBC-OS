@@ -661,7 +661,9 @@ export function DriverView({ app }) {
                         {/* Pickup location indicator */}
                         {!stop.isInTransit && stop.pickupName && (
                           <div style={{ fontSize: 10, color: "var(--amber)", fontWeight: 700, marginBottom: 4 }}>
-                            <Package size={10} style={{verticalAlign: "middle", marginRight: 3}} />{t("PICKUP")}: {stop.pickupName}{stop.pickupAddress && stop.pickupAddress !== stop.pickupName ? ` — ${stop.pickupAddress}` : ""}
+                            <Package size={10} style={{verticalAlign: "middle", marginRight: 3}} />{t("PICKUP")}: {stop.pickupAddress && stop.pickupAddress !== "EBC Material Yard"
+                              ? <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(stop.pickupAddress)}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--amber)", textDecoration: "none" }}>{stop.pickupName}{stop.pickupAddress !== stop.pickupName ? ` — ${stop.pickupAddress}` : ""}</a>
+                              : <>{stop.pickupName}{stop.pickupAddress && stop.pickupAddress !== stop.pickupName ? ` — ${stop.pickupAddress}` : ""}</>}
                             {stop.pickupPhone && <a href={`tel:${stop.pickupPhone}`} style={{ marginLeft: 8, color: "var(--amber)", fontWeight: 700, textDecoration: "none" }}>{stop.pickupPhone}</a>}
                           </div>
                         )}
@@ -810,7 +812,18 @@ export function DriverView({ app }) {
                         <span className="text-sm font-semi">{rt.material}</span>
                         <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "var(--amber-dim)", color: "var(--amber)", textTransform: "uppercase" }}>{t("Return")}</span>
                       </div>
-                      <div className="text-xs text-muted">{rt.reason} → {t(rt.destination)} · {rt.qty} {t("items")}{rt.projectName ? ` · ${rt.projectName}` : ""}</div>
+                      <div className="text-xs text-muted mb-4">{rt.reason} → {t(rt.destination)} · {rt.qty} {t("items")}{rt.projectName ? ` · ${rt.projectName}` : ""}</div>
+                      <FieldButton variant="primary" className="btn-sm" style={{ fontSize: 12 }}
+                        onClick={() => {
+                          setReturnTrips(prev => {
+                            const updated = prev.map(r => r.id === rt.id ? { ...r, status: "completed", completedAt: new Date().toISOString() } : r);
+                            localStorage.setItem("ebc_returnTrips", JSON.stringify(updated));
+                            return updated;
+                          });
+                          show(t("Return completed") + " ✓", "ok");
+                        }} t={t}>
+                        <CheckCircle size={14} /> {t("Complete Return")}
+                      </FieldButton>
                     </PremiumCard>
                   ))}
                 </div>
