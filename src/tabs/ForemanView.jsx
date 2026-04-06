@@ -2755,7 +2755,7 @@ export function ForemanView({ app }) {
                             borderLeft: rcSelected[c.id] ? "4px solid #10b981" : "4px solid var(--border)",
                             opacity: rcSelected[c.id] ? 1 : 0.5,
                           }} onClick={() => setRcSelected(prev => ({ ...prev, [c.id]: !prev[c.id] }))}>
-                            <span style={{ width: 28, display: "flex", justifyContent: "center" }}>{rcSelected[c.id] ? <CheckCircle size={20} style={{ color: "#10b981" }} /> : <Square size={20} style={{ color: "var(--text3)" }} />}</span>
+                            <span style={{ width: 28, display: "flex", justifyContent: "center" }}>{rcSelected[c.id] ? <CheckCircle size={20} style={{ color: "var(--green)" }} /> : <Square size={20} style={{ color: "var(--text3)" }} />}</span>
                             <div>
                               <div style={{ fontSize: 14, fontWeight: 600 }}>{c.name}</div>
                               <div style={{ fontSize: 11, color: "var(--text3)" }}>{c.role || "Crew"}</div>
@@ -2813,7 +2813,7 @@ export function ForemanView({ app }) {
                             <span>{t("Pass device to next person")}</span>
                           </div>
                           <div style={{ height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${(progress / total) * 100}%`, background: "#10b981", borderRadius: 2, transition: "width 0.3s" }} />
+                            <div style={{ height: "100%", width: `${(progress / total) * 100}%`, background: "var(--green)", borderRadius: 2, transition: "width 0.3s" }} />
                           </div>
                         </div>
 
@@ -2939,7 +2939,7 @@ export function ForemanView({ app }) {
                     const finalJsa = (jsas || []).find(j => j.id === rcJsaId);
                     return (
                       <div style={{ textAlign: "center" }}>
-                        <div style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}><CheckCircle size={48} style={{ color: "#10b981" }} /></div>
+                        <div style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}><CheckCircle size={48} style={{ color: "var(--green)" }} /></div>
                         <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>{t("Pre-Task Safety Complete")}</div>
                         <div style={{ fontSize: 14, color: "var(--text2)", marginBottom: 20 }}>
                           {(finalJsa?.teamSignOn || []).length} {t("team members signed")} · {finalJsa?.title}
@@ -2950,7 +2950,7 @@ export function ForemanView({ app }) {
                           {(finalJsa?.teamSignOn || []).map((c, i) => (
                             <div key={i} className="flex-between" style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
                               <span style={{ fontSize: 13, fontWeight: 500 }}>{c.name}</span>
-                              <span style={{ fontSize: 11, color: "#10b981" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                              <span style={{ fontSize: 11, color: "var(--green)" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                             </div>
                           ))}
                         </div>
@@ -2985,7 +2985,7 @@ export function ForemanView({ app }) {
                   const allHazards = jsa.steps.flatMap(s => s.hazards || []);
                   const maxRisk = Math.max(0, ...allHazards.map(h => (h.likelihood || 1) * (h.severity || 1)));
                   const rc = riskColor(maxRisk);
-                  const statusClr = jsa.status === "active" ? "#10b981" : jsa.status === "draft" ? "#f59e0b" : "var(--text3)";
+                  const statusClr = jsa.status === "active" ? "var(--green)" : jsa.status === "draft" ? "var(--amber)" : "var(--text3)";
                   return (
                     <div>
                       <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
@@ -3013,7 +3013,7 @@ export function ForemanView({ app }) {
                           <div style={{ fontSize: 10, color: "var(--text3)" }}>{t("Hazards")}</div>
                         </div>
                         <div className="card" style={{ padding: 10, textAlign: "center" }}>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: "#10b981" }}>{(jsa.teamSignOn || []).length}</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, color: "var(--green)" }}>{(jsa.teamSignOn || []).length}</div>
                           <div style={{ fontSize: 10, color: "var(--text3)" }}>{t("Crew Signed")}</div>
                         </div>
                       </div>
@@ -3068,7 +3068,7 @@ export function ForemanView({ app }) {
                         {(jsa.teamSignOn || []).map((c, i) => (
                           <div key={i} className="flex-between" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                             <span style={{ fontSize: 13, fontWeight: 500 }}>{c.name}</span>
-                            <span style={{ fontSize: 11, color: "#10b981" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                            <span style={{ fontSize: 11, color: "var(--green)" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                           </div>
                         ))}
                         {jsa.status === "active" && (

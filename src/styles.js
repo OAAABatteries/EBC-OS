@@ -1177,9 +1177,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .driver-status-chip--transit{background:var(--blue-dim);color:var(--blue)}
 .driver-status-chip--arrived{background:var(--amber-dim);color:var(--amber)}
 .driver-address-link{font-size:var(--text-sm);color:var(--blue);text-decoration:none;display:block;margin-top:2px}
+.driver-return-chip{font-size:var(--text-xs);font-weight:var(--weight-bold);padding:2px 6px;border-radius:var(--radius-xs);background:var(--amber-dim);color:var(--amber);text-transform:uppercase}
 /* ── POD Modal ── */
-.pod-modal{max-width:480px;width:100%;background:var(--card);border-radius:16px;padding:0;overflow:hidden;max-height:85vh}
-.pod-modal-header{background:var(--navy, #0f1f2e);padding:20px 20px 16px;display:flex;align-items:center;gap:12px}
+.pod-modal{max-width:480px;width:100%;background:var(--card);border-radius:var(--radius-xl);padding:0;overflow:hidden;max-height:85vh}
+.pod-modal-header{background:var(--navy, #0f1f2e);padding:var(--space-5) var(--space-5) var(--space-4);display:flex;align-items:center;gap:var(--space-3)}
 .pod-modal-header-text{flex:1}
 .pod-modal-title{color:#fff;font-weight:var(--weight-bold);font-size:var(--text-lg, 17px)}
 .pod-modal-subtitle{color:rgba(255,255,255,0.55);font-size:var(--text-sm)}

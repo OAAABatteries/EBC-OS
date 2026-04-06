@@ -879,10 +879,10 @@ export function DriverView({ app }) {
                     <PremiumCard key={rt.id} variant="info" style={{ marginBottom: 6, borderLeft: "3px solid var(--amber)" }}>
                       <div className="flex-between mb-4">
                         <span className="text-sm font-semi">{rt.material}</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "var(--amber-dim)", color: "var(--amber)", textTransform: "uppercase" }}>{t("Return")}</span>
+                        <span className="driver-return-chip">{t("Return")}</span>
                       </div>
                       <div className="text-xs text-muted mb-4">{rt.reason} → {t(rt.destination)} · {rt.qty} {t("items")}{rt.projectName ? ` · ${rt.projectName}` : ""}</div>
-                      <FieldButton variant="primary" className="btn-sm" style={{ fontSize: 12 }}
+                      <FieldButton variant="primary" className="driver-action-btn"
                         onClick={() => {
                           setReturnTrips(prev => {
                             const updated = prev.map(r => r.id === rt.id ? { ...r, status: "completed", completedAt: new Date().toISOString() } : r);
@@ -940,7 +940,7 @@ export function DriverView({ app }) {
             {/* Return Trips Section */}
             <div className="section-header" style={{marginTop: "var(--space-8)"}}>
               <div className="section-title driver-section-title">{t("Return Pickup")}s</div>
-              <FieldButton variant="outline" className="btn-sm" onClick={() => setShowReturnForm(true)} t={t}>
+              <FieldButton variant="outline" onClick={() => setShowReturnForm(true)} t={t}>
                 <RefreshCw size={14} /> {t("Add Return Trip")}
               </FieldButton>
             </div>
@@ -968,7 +968,7 @@ export function DriverView({ app }) {
           <div className="settings-wrap">
             <FieldButton
               variant="ghost"
-              className="btn-sm driver-settings-back"
+              className="driver-settings-back"
               onClick={() => setDriverTab("route")}
               t={t}
             >
@@ -1148,12 +1148,12 @@ export function DriverView({ app }) {
             <div className="pod-modal-body">
               {/* Delivery info */}
               <div className="pod-grid">
-                <div><div className="pod-label">{t("Delivered")}</div><div style={{ fontSize: 14, fontWeight: 600 }}>{viewPod.deliveredAt ? new Date(viewPod.deliveredAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</div></div>
-                <div><div className="pod-label">{t("Qty")}</div><div style={{ fontSize: 14, fontWeight: 600 }}>{viewPod.qty} {viewPod.unit}</div></div>
+                <div><div className="pod-label">{t("Delivered")}</div><div className="pod-value">{viewPod.deliveredAt ? new Date(viewPod.deliveredAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</div></div>
+                <div><div className="pod-label">{t("Qty")}</div><div className="pod-value">{viewPod.qty} {viewPod.unit}</div></div>
               </div>
               {/* Recipient + Condition */}
               <div className="pod-grid">
-                <div><div className="pod-label">{t("Recipient")}</div><div style={{ fontSize: 14, fontWeight: 600 }}>{viewPod.pod.recipientName || "—"}</div></div>
+                <div><div className="pod-label">{t("Recipient")}</div><div className="pod-value">{viewPod.pod.recipientName || "—"}</div></div>
                 <div><div className="pod-label">{t("Condition")}</div><div style={{ fontSize: 14, fontWeight: 600, color: viewPod.pod.condition === "Intact" ? "var(--green)" : viewPod.pod.condition === "Damaged" ? "var(--red)" : "var(--amber)" }}>{t(viewPod.pod.condition)}</div></div>
               </div>
               {/* GPS */}
