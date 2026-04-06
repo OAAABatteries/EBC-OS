@@ -20,7 +20,7 @@ import { supabase } from '../../lib/supabase';
  *   t                — translation function
  *   lang             — 'en' | 'es'
  */
-export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, mySchedule, myMatRequests, projects, setEmpTab, setSelectedInfoProject, onReportProblem, t, lang }) {
+export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, mySchedule, myMatRequests, projects, areas, setEmpTab, setSelectedInfoProject, onReportProblem, t, lang }) {
   // --- Greeting (time-of-day based) ---
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -39,13 +39,33 @@ export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, m
     return `${hours}h ${mins}m`;
   }, [activeEntry, now]);
 
-  // --- Assigned project from today's schedule ---
-  const assignedProject = useMemo(() => {
+  // --- Assigned project + area/task from today's schedule ---
+  const todayAssignments = useMemo(() => {
     const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
-    const todayAssignment = mySchedule.find(s => s.days?.[todayKey] && s.projectId);
-    if (!todayAssignment) return null;
-    return projects.find(p => p.id === todayAssignment.projectId) || null;
-  }, [mySchedule, projects]);
+    return mySchedule.filter(s => s.days?.[todayKey] && s.projectId);
+  }, [mySchedule]);
+
+  const assignedProject = useMemo(() => {
+    if (todayAssignments.length === 0) return null;
+    return projects.find(p => p.id === todayAssignments[0].projectId) || null;
+  }, [todayAssignments, projects]);
+
+  // Derive area/task/trade/floor/zone from schedule + areas data
+  const todayWork = useMemo(() => {
+    return todayAssignments.map(s => {
+      const proj = projects.find(p => p.id === s.projectId);
+      const area = s.areaId ? (areas || []).find(a => String(a.id) === String(s.areaId)) : null;
+      return {
+        projectName: proj?.name || "Unknown",
+        task: s.task || area?.name || "",
+        trade: s.trade || "",
+        floor: s.floor || area?.floor || "",
+        zone: s.zone || area?.zone || "",
+        areaName: area?.name || "",
+        areaNotes: area?.notes || "",
+      };
+    });
+  }, [todayAssignments, projects, areas]);
 
   // --- Stat counts ---
   const activeTaskCount = useMemo(() => {
@@ -136,13 +156,40 @@ export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, m
         <StatTile label={t("Pending")} value={String(pendingCount)} onTap={() => setEmpTab("materials")} t={t} />
       </div>
 
-      {/* 3. Active project card — per D-05, HOME-03 */}
-      {assignedProject && (
+      {/* 3. Active project card with task/area detail — per D-05, HOME-03 */}
+      {assignedProject ? (
         <div style={{marginTop: 'var(--space-8)'}}>
-          <div className="section-label">{t("ACTIVE PROJECT")}</div>
+          <div className="section-label">{t("TODAY'S WORK")}</div>
           <PremiumCard variant="info" className="home-project-card" onClick={() => setSelectedInfoProject(assignedProject.id)} style={{marginTop: 'var(--space-2)'}}>
             <div className="text-base font-bold">{assignedProject.name}</div>
             <div className="text-sm text-muted">{assignedProject.address || assignedProject.location || ''}</div>
+            {/* Area/task/trade detail from schedule */}
+            {todayWork.length > 0 && todayWork[0].task && (
+              <div style={{marginTop: 8, padding: '8px 10px', background: 'var(--bg3)', borderRadius: 8}}>
+                {todayWork.map((w, i) => (
+                  <div key={i} style={{display: 'flex', alignItems: 'center', gap: 8, padding: i > 0 ? '6px 0 0' : 0, borderTop: i > 0 ? '1px solid var(--border)' : 'none'}}>
+                    <div style={{flex: 1}}>
+                      <div style={{fontSize: 14, fontWeight: 700, color: 'var(--text)'}}>{w.task || w.areaName}</div>
+                      <div style={{fontSize: 12, color: 'var(--text2)'}}>
+                        {w.floor && `${t("Floor")} ${w.floor}`}{w.zone && `, ${t("Zone")} ${w.zone}`}
+                        {w.areaName && w.task !== w.areaName && ` — ${w.areaName}`}
+                      </div>
+                    </div>
+                    {w.trade && (
+                      <span style={{fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: 'var(--amber-dim, rgba(245,158,11,0.15))', color: 'var(--amber)', textTransform: 'uppercase'}}>{w.trade}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </PremiumCard>
+        </div>
+      ) : (
+        <div style={{marginTop: 'var(--space-8)'}}>
+          <div className="section-label">{t("TODAY'S WORK")}</div>
+          <PremiumCard variant="info" style={{marginTop: 'var(--space-2)', textAlign: 'center', padding: 16, opacity: 0.7}}>
+            <div className="text-sm text-muted">{t("No assignment today")}</div>
+            <div className="text-xs text-dim" style={{marginTop: 4}}>{t("Check with your foreman")}</div>
           </PremiumCard>
         </div>
       )}

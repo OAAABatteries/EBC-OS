@@ -956,6 +956,11 @@ export const T = {
   "Production Today": { es: "Producción Hoy" },
   "Deliveries Pending": { es: "Entregas Pendientes" },
   "Enter Labor": { es: "Ingresar Mano de Obra" },
+  "TODAY'S WORK": { es: "TRABAJO DE HOY" },
+  "No assignment today": { es: "Sin asignación hoy" },
+  "Check with your foreman": { es: "Consulta con tu capataz" },
+  "Floor": { es: "Piso" },
+  "Zone": { es: "Zona" },
   "Daily Report": { es: "Reporte Diario" },
   "Hours": { es: "Horas" },
 
