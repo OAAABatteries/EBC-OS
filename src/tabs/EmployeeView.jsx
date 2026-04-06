@@ -108,7 +108,33 @@ export function EmployeeView({ app }) {
   const [showOverride, setShowOverride] = useState(false);
 
   // ── notifications ──
-  const { requestPermission, scheduleClockReminder, getNextScheduledTime } = useNotifications();
+  const { requestPermission, scheduleClockReminder, getNextScheduledTime, sendNotification } = useNotifications();
+  // Request notification permission on first mount
+  const notifRequested = useRef(false);
+  useEffect(() => {
+    if (!notifRequested.current && activeEmp) {
+      notifRequested.current = true;
+      requestPermission();
+    }
+  }, [activeEmp]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Watch material request status changes → notify on approval/delivery
+  const prevMatStatuses = useRef({});
+  useEffect(() => {
+    if (!activeEmp) return;
+    const myMats = materialRequests.filter(r => r.employeeId === activeEmp.id);
+    myMats.forEach(r => {
+      const prev = prevMatStatuses.current[r.id];
+      if (prev && prev !== r.status && (r.status === "approved" || r.status === "delivered")) {
+        sendNotification({
+          title: `EBC · ${r.status === "approved" ? "Material Approved" : "Material Delivered"}`,
+          body: `${r.material}${r.projectName ? " — " + r.projectName : ""}`,
+          tag: `mat-${r.id}-${r.status}`,
+        });
+      }
+      prevMatStatuses.current[r.id] = r.status;
+    });
+  }, [materialRequests, activeEmp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── schedule/project info state ──
   const [selectedInfoProject, setSelectedInfoProject] = useState(null);

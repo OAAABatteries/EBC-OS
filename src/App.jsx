@@ -40,6 +40,7 @@ import { OnboardingWizard } from "./components/OnboardingWizard";
 import { SyncStatus } from "./components/SyncStatus";
 import { UpdateBanner } from "./components/InstallPrompt";
 import { useNetworkStatus } from "./hooks/useNetworkStatus";
+import { useNotifications } from "./hooks/useNotifications";
 import { hasAccess, ROLES } from "./data/roles";
 import { supabase, isSupabaseConfigured, signOut as supaSignOut, onAuthStateChange, signIn as supaSignIn, signUp as supaSignUp } from "./lib/supabase";
 
@@ -562,12 +563,41 @@ function App({ auth, onLogout }) {
 
   // ── network / offline status ──
   const network = useNetworkStatus();
+  const { requestPermission: reqNotifPerm, sendNotification: pmNotify } = useNotifications();
   useEffect(() => {
     if (network.wasOffline && network.online) {
       flushSyncQueue().then(() => network.refreshPending());
       show("Back online — syncing changes...");
     }
   }, [network.wasOffline, network.online]);
+
+  // ── PM notifications: overdue RFIs + missing daily reports ──
+  useEffect(() => {
+    if (auth?.role === "pm" || auth?.role === "admin") reqNotifPerm();
+  }, [auth?.role]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pmNotifFired = useRef({});
+  useEffect(() => {
+    if (!auth || (auth.role !== "pm" && auth.role !== "admin")) return;
+    const today = new Date().toISOString().slice(0, 10);
+    // Overdue RFIs (>7 days open)
+    const overdueRfis = (rfis || []).filter(r => r.status === "open" || r.status === "submitted")
+      .filter(r => { const d = new Date(r.submittedAt || r.createdAt); return !isNaN(d) && (Date.now() - d.getTime()) > 7 * 86400000; });
+    if (overdueRfis.length > 0 && !pmNotifFired.current[`rfi-overdue-${today}`]) {
+      pmNotify({ title: "EBC · RFIs Overdue", body: `${overdueRfis.length} RFI${overdueRfis.length > 1 ? "s" : ""} overdue (>7 days)`, tag: "pm-rfi-overdue" });
+      pmNotifFired.current[`rfi-overdue-${today}`] = true;
+    }
+    // Missing daily reports (after 4 PM, check if today's report exists for active projects)
+    const hour = new Date().getHours();
+    if (hour >= 16 && !pmNotifFired.current[`report-missing-${today}`]) {
+      const activeProjs = (projects || []).filter(p => p.status === "in-progress");
+      const todayReports = (dailyReports || []).filter(r => r.date === today);
+      const missing = activeProjs.filter(p => !todayReports.some(r => String(r.projectId) === String(p.id)));
+      if (missing.length > 0) {
+        pmNotify({ title: "EBC · Daily Reports Missing", body: `${missing.length} project${missing.length > 1 ? "s" : ""} have no daily report today`, tag: "pm-report-missing" });
+        pmNotifFired.current[`report-missing-${today}`] = true;
+      }
+    }
+  }, [rfis, dailyReports, auth]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── bid filter (for bids tab) ──
   const [bidFilter, setBidFilter] = useState("All");

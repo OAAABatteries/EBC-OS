@@ -6,6 +6,7 @@ import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, EmptyState, Statu
 import { PodModal } from "../components/field/PodModal";
 import { ShortageReportModal } from "../components/field/ShortageReportModal";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
+import { useNotifications } from "../hooks/useNotifications";
 import { useFormDraft } from "../hooks/useFormDraft";
 
 // ═══════════════════════════════════════════════════════════════
@@ -60,6 +61,7 @@ export function DriverView({ app }) {
 
   // ── network status ──
   const network = useNetworkStatus();
+  const { requestPermission, sendNotification } = useNotifications();
 
   // ── session ──
   const mainAuth = app.auth;
@@ -166,6 +168,22 @@ export function DriverView({ app }) {
     const today = new Date().toDateString();
     return materialRequests.filter(r => r.status === "delivered" && r.driverId === activeDriver?.id && r.deliveredAt && new Date(r.deliveredAt).toDateString() === today);
   }, [materialRequests, activeDriver]);
+
+  // ── Notifications: request permission + watch for new assignments ──
+  const prevQueueCount = useRef(queueItems.length);
+  useEffect(() => {
+    if (activeDriver) requestPermission();
+  }, [activeDriver]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (queueItems.length > prevQueueCount.current && activeDriver) {
+      sendNotification({
+        title: "EBC · New Delivery",
+        body: `${queueItems.length} delivery${queueItems.length !== 1 ? "s" : ""} in your queue`,
+        tag: "driver-new-assignment",
+      });
+    }
+    prevQueueCount.current = queueItems.length;
+  }, [queueItems.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── all active stops (queue + in-transit) with project data ──
   const [manualOrder, setManualOrder] = useState(null);

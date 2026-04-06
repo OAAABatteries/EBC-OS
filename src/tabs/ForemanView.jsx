@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, ClipboardList, HardHat, MessageSquare, Pin, PinOff, LayoutDashboard, Users, Clock as ClockIcon, MoreHorizontal, FileText, Calendar, Settings, BarChart3, ClipboardCheck, PenLine } from "lucide-react";
 import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, FieldInput, EmptyState, StatusBadge, StatTile, AlertCard, FieldSignaturePad, CredentialCard, PhotoCapture } from "../components/field";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
+import { useNotifications } from "../hooks/useNotifications";
 import { useFormDraft } from "../hooks/useFormDraft";
 import { FeatureGuide } from "../components/FeatureGuide";
 import { ReportProblemModal } from "../components/ReportProblemModal";
@@ -76,6 +77,7 @@ export function ForemanView({ app }) {
 
   const [foremanTab, setForemanTab] = useState("dashboard");
   const network = useNetworkStatus();
+  const { requestPermission, sendNotification } = useNotifications();
   const [showReportProblem, setShowReportProblem] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [clockEntry, setClockEntry] = useState(null); // { clockIn, lat, lng, projectId }
@@ -909,6 +911,31 @@ export function ForemanView({ app }) {
 
   const openPunchCount = (punchItems || []).filter(p => String(p.projectId) === String(selectedProjectId) && p.status === "open").length;
   const pendingTmCount = (tmTickets || []).filter(t => String(t.projectId) === String(selectedProjectId) && (t.status === "draft" || t.status === "submitted")).length;
+
+  // ── Notifications: permission + RFI answered + inspection tomorrow ──
+  useEffect(() => { if (activeForeman) requestPermission(); }, [activeForeman]); // eslint-disable-line react-hooks/exhaustive-deps
+  const prevAnsweredRfis = useRef(new Set());
+  useEffect(() => {
+    const answered = (rfis || []).filter(r => r.status === "answered");
+    answered.forEach(r => {
+      if (!prevAnsweredRfis.current.has(r.id)) {
+        sendNotification({ title: "EBC · RFI Answered", body: `${r.subject || "RFI"} — response received`, tag: `rfi-answered-${r.id}` });
+      }
+    });
+    prevAnsweredRfis.current = new Set(answered.map(r => r.id));
+  }, [rfis]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Inspection tomorrow alert (fire once per day)
+  useEffect(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+    const inspections = (calendarEvents || []).filter(ev => (ev.date || ev.start || "").slice(0, 10) === tomorrowStr && (ev.type === "inspection" || ev.title?.toLowerCase().includes("inspect")));
+    const notifKey = `ebc_inspection_notif_${tomorrowStr}`;
+    if (inspections.length > 0 && !localStorage.getItem(notifKey)) {
+      sendNotification({ title: "EBC · Inspection Tomorrow", body: `${inspections.length} inspection${inspections.length > 1 ? "s" : ""} scheduled for tomorrow`, tag: "inspection-tomorrow" });
+      localStorage.setItem(notifKey, "1");
+    }
+  }, [calendarEvents]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // RFI badge: count answered RFIs not yet viewed
   const answeredRfiCount = (rfis || []).filter(r => String(r.projectId) === String(selectedProjectId) && r.status === "answered").length;
