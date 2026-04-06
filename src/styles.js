@@ -108,6 +108,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .btn-ghost:hover{border-color:var(--text3);color:var(--text)}
 .btn-danger{background:var(--red-dim);color:var(--red);border:1px solid transparent}
 .btn-danger:hover{background:var(--red);color:#fff}
+.btn-warning{background:rgba(245,158,11,0.10);color:var(--amber);border:2px solid rgba(245,158,11,0.35);font-weight:var(--weight-bold)}
+.btn-warning:hover{background:rgba(245,158,11,0.20)}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-outline:hover{background:var(--bg3);border-color:var(--text3)}
 .btn-sm{padding:4px 10px;font-size:11px;min-height:28px}
 .btn-icon{width:36px;height:36px;padding:0;display:flex;align-items:center;justify-content:center;
   border-radius:8px;background:none;border:1px solid var(--border);color:var(--text2);
@@ -393,6 +397,13 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .foreman-dashboard-clock-value{font-size:var(--text-display);font-weight:900;color:var(--text);line-height:var(--leading-tight)}
 .foreman-dashboard-clock-hint{font-size:var(--text-sm);font-weight:var(--weight-bold);color:var(--text3);text-transform:uppercase}
 .foreman-dashboard-stats{display:flex;gap:var(--space-2);margin-top:var(--space-5)}
+.foreman-dashboard-actions{display:flex;gap:var(--space-2);margin-top:var(--space-4)}
+.foreman-action-btn{height:48px;font-size:var(--text-md);display:flex;align-items:center;justify-content:center;gap:var(--space-2)}
+.foreman-action-btn--amber.btn-primary{background:var(--amber);border-color:var(--amber)}
+.foreman-action-btn--blue.btn-primary{background:var(--blue);border-color:var(--blue)}
+.foreman-action-btn--full{width:100%;margin-top:var(--space-2)}
+.foreman-action-badge{background:var(--accent);color:#fff;border-radius:10px;padding:1px 7px;font-size:var(--text-xs);font-weight:var(--weight-bold)}
+.foreman-report-problem-btn{width:100%;max-width:320px}
 .foreman-dashboard-alerts{margin-top:var(--space-5)}
 .foreman-dashboard-section-label{font-size:var(--text-sm);font-weight:var(--weight-bold);color:var(--text3);text-transform:uppercase;letter-spacing:var(--tracking-wider);margin-bottom:var(--space-3)}
 .foreman-dashboard-alerts-list{display:flex;flex-direction:column;gap:var(--space-2)}
@@ -786,6 +797,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .network-banner--reconnecting{background:var(--green-dim);color:var(--green)}
 .offline-pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);animation:pulse-dot 1.5s ease-in-out infinite;flex-shrink:0}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.8)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 .offline-status-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;margin:0 0 8px;border-radius:var(--radius);background:var(--bg3);border:1px solid var(--border);font-size:var(--text-sm);color:var(--text2)}
 .offline-last-sync{margin-left:auto;font-size:var(--text-xs);color:var(--text3)}
 

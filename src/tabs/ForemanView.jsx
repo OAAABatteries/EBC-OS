@@ -1259,31 +1259,10 @@ export function ForemanView({ app }) {
                   )}
 
                   {/* Report Problem button */}
-                  <div style={{ marginTop: 32 }}>
-                    <button
-                      onClick={() => setShowReportProblem(true)}
-                      style={{
-                        width: "100%",
-                        maxWidth: 320,
-                        padding: "16px 20px",
-                        borderRadius: 12,
-                        background: "rgba(245,158,11,0.10)",
-                        border: "2px solid rgba(245,158,11,0.35)",
-                        color: "var(--amber, #f59e0b)",
-                        fontWeight: 700,
-                        fontSize: 16,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 10,
-                      }}
-                    >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                      </svg>
-                      {t("Report a Problem")}
-                    </button>
+                  <div style={{ marginTop: "var(--space-8)" }}>
+                    <FieldButton variant="warning" className="foreman-report-problem-btn" onClick={() => setShowReportProblem(true)} t={t}>
+                      <AlertTriangle size={18} /> {t("Report a Problem")}
+                    </FieldButton>
                   </div>
                 </div>
               </div>
@@ -1337,28 +1316,23 @@ export function ForemanView({ app }) {
                 </div>
 
                 {/* Quick Actions — 1-tap access to Labor Entry + Daily Report */}
-                <div style={{ display: "flex", gap: 8, marginTop: "var(--space-4)" }}>
-                  <button className="btn touch-target" style={{ flex: 1, height: 48, fontSize: 14, fontWeight: 700, borderRadius: 10, background: "var(--amber)", color: "#fff", border: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-                    onClick={() => {
+                <div className="foreman-dashboard-actions">
+                  <FieldButton variant="primary" className="flex-1 foreman-action-btn foreman-action-btn--amber" onClick={() => {
                       setForemanTab("team");
                       setShowLaborEntry(true);
-                      // Pre-check clocked-in crew for bulk labor
                       const autoSelected = {};
                       Object.keys(teamClocks).forEach(id => { autoSelected[id] = true; });
                       if (Object.keys(autoSelected).length > 0) setBulkLaborSelected(autoSelected);
-                    }}>
+                    }} t={t}>
                     <ClockIcon size={16} /> {t("Enter Labor")}
-                  </button>
-                  <button className="btn touch-target" style={{ flex: 1, height: 48, fontSize: 14, fontWeight: 700, borderRadius: 10, background: "var(--blue)", color: "#fff", border: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-                    onClick={() => setForemanTab("reports")}>
+                  </FieldButton>
+                  <FieldButton variant="primary" className="flex-1 foreman-action-btn foreman-action-btn--blue" onClick={() => setForemanTab("reports")} t={t}>
                     <ClipboardList size={16} /> {t("Daily Report")}
-                  </button>
+                  </FieldButton>
                 </div>
-                {/* Look-Ahead shortcut — R15 auditor: "first thing every morning" */}
-                <button className="btn touch-target" style={{ width: "100%", height: 44, fontSize: 13, fontWeight: 600, borderRadius: 10, background: "var(--bg3)", color: "var(--text1)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8 }}
-                  onClick={() => setForemanTab("lookahead")}>
-                  <Calendar size={15} /> {t("Look-Ahead")} {upcomingEventCount > 0 && <span style={{ background: "var(--accent)", color: "#fff", borderRadius: 10, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>{upcomingEventCount}</span>}
-                </button>
+                <FieldButton variant="ghost" className="foreman-action-btn foreman-action-btn--full" onClick={() => setForemanTab("lookahead")} t={t}>
+                  <Calendar size={15} /> {t("Look-Ahead")} {upcomingEventCount > 0 && <span className="foreman-action-badge">{upcomingEventCount}</span>}
+                </FieldButton>
 
                 {/* Alerts feed per D-09 — actionable first (requests, budget), then informational (cert warnings) */}
                 {foremanAlerts.length > 0 && (
@@ -4468,7 +4442,7 @@ export function ForemanView({ app }) {
           tabs={foremanTabDefs}
           activeTab={foremanTab}
           onTabChange={setForemanTab}
-          maxPrimary={4}
+          maxPrimary={5}
           t={t}
         />
       )}

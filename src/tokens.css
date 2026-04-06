@@ -11,13 +11,16 @@
   --space-12: 48px;
 
   /* ── TYPOGRAPHY SCALE ────────────────────────────────────── */
+  --text-xs:      10px;  /* timestamps, fine print, overline captions */
   --text-sm:      11px;  /* badge text, kpi-label */
   --text-base:    13px;  /* primary body: table cells, btn, toast, form-input */
+  --text-md:      15px;  /* card titles, emphasis text */
   --text-lg:      18px;  /* modal-title, logo */
   --text-display: 28px;  /* kpi-value display figures */
 
   /* Font weights */
   --weight-normal: 400;
+  --weight-semi:   600;
   --weight-bold:   700;
 
   /* Line heights */

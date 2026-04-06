@@ -26,10 +26,10 @@ const SATELLITE_TILES = "https://server.arcgisonline.com/ArcGIS/rest/services/Wo
 const STREET_TILES = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TILE_SETS = { dark: DARK_TILES, satellite: SATELLITE_TILES, street: STREET_TILES };
 const PHASE_COLORS = {
-  "Pre-Construction": "#e09422",
-  "Estimating": "#3b82f6",
-  "Active": "#10b981",
-  "Complete": "#6b7280",
+  "Pre-Construction": "var(--amber)",
+  "Estimating": "var(--blue)",
+  "Active": "var(--green)",
+  "Complete": "var(--text3)",
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -322,7 +322,7 @@ export function EmployeeView({ app }) {
     // add project markers
     projects.forEach(p => {
       if (!p.lat || !p.lng) return;
-      const color = PHASE_COLORS[p.phase] || "#e09422";
+      const color = PHASE_COLORS[p.phase] || "var(--amber)";
       const icon = L.divIcon({
         className: "map-marker-wrap",
         html: `<div class="map-marker" style="background:${color};box-shadow:0 0 8px ${color}"></div>`,

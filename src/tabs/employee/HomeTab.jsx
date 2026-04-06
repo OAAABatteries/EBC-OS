@@ -79,9 +79,11 @@ export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, m
 
   // --- Credential expiry alerts (CRED-03) ---
   const [credentials, setCredentials] = useState([]);
+  const [credLoading, setCredLoading] = useState(true);
 
   const loadCredentials = useCallback(async () => {
-    if (!activeEmp?.id) return;
+    if (!activeEmp?.id) { setCredLoading(false); return; }
+    setCredLoading(true);
     try {
       const { data, error } = await supabase
         .from('certifications')
@@ -89,6 +91,7 @@ export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, m
         .eq('employee_id', activeEmp.id);
       if (!error && data) setCredentials(data);
     } catch {}
+    setCredLoading(false);
   }, [activeEmp?.id]);
 
   useEffect(() => { loadCredentials(); }, [loadCredentials]);
@@ -221,7 +224,14 @@ export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, m
 
       {/* 4. Alerts feed — per D-08, HOME-04, HOME-05 */}
       <div className="home-alerts-section" style={{marginTop: 'var(--space-8)'}}>
-        {homeAlerts.length > 0 ? (
+        {credLoading ? (
+          <>
+            <div className="section-label">{t("ALERTS")}</div>
+            <div className="home-alerts-skeleton">
+              {[1,2].map(i => <div key={i} className="skeleton-card" style={{ height: 52, borderRadius: 'var(--radius)', background: 'var(--bg3)', marginBottom: 8, animation: 'pulse 1.5s ease-in-out infinite' }} />)}
+            </div>
+          </>
+        ) : homeAlerts.length > 0 ? (
           <>
             <div className="home-alerts-header">
               <span className="section-label">{t("ALERTS")}</span>

@@ -7,6 +7,8 @@ const VARIANT_CLASS_MAP = {
   primary: 'btn-primary',
   ghost: 'btn-ghost',
   danger: 'btn-danger',
+  warning: 'btn-warning',
+  outline: 'btn-outline',
 };
 
 export function FieldButton({
