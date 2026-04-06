@@ -441,6 +441,17 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .foreman-crew-row--not-clocked{border-left:3px solid var(--amber);opacity:0.8}
 .foreman-subsection-label{font-size:var(--text-xs);color:var(--text3);font-weight:var(--weight-semi);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:var(--space-2)}
 .foreman-roll-call-toggle{display:flex;gap:var(--space-2);margin-bottom:var(--space-4)}
+/* ── FOREMAN TABLE/FORM PATTERNS ── */
+.foreman-table-header{font-weight:var(--weight-semi);font-size:var(--text-xs);text-transform:uppercase;color:var(--text3)}
+.foreman-table-total{font-weight:var(--weight-semi);border-top:1px solid var(--border);padding-top:var(--space-2)}
+.foreman-cell{flex:1;text-align:right}
+.foreman-cell--name{flex:2;text-align:left}
+.foreman-cell--mono{font-family:var(--font-mono);color:var(--text2)}
+.foreman-cell--accent{font-family:var(--font-mono);color:var(--amber)}
+.foreman-form-card{padding:var(--space-4);margin-bottom:var(--space-4)}
+.foreman-form-stack{display:flex;flex-direction:column;gap:var(--space-3)}
+.foreman-form-row{display:flex;gap:var(--space-2)}
+.foreman-form-label{font-size:var(--text-xs);color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:var(--space-1);display:block}
 .foreman-team-cert-list{display:flex;flex-direction:column;gap:var(--space-3)}
 .foreman-team-cert-member{display:flex;flex-direction:column;gap:var(--space-2)}
 .foreman-team-cert-member-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-1)}

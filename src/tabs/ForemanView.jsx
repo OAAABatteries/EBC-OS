@@ -2300,29 +2300,27 @@ export function ForemanView({ app }) {
                   <div className="text-sm text-muted">{t("No team assigned")}</div>
                 ) : (
                   <div className="foreman-kpi-card">
-                    <div className="foreman-cost-row" style={{ fontWeight: 600, fontSize: 10, textTransform: "uppercase", color: "var(--text3)" }}>
-                      <span style={{ flex: 2 }}>{t("Crew")}</span>
-                      <span style={{ flex: 1, textAlign: "right" }}>{t("Role")}</span>
-                      <span style={{ flex: 1, textAlign: "right" }}>{t("Hours Today")}</span>
-                      <span style={{ flex: 1, textAlign: "right" }}>{t("Hours This Week")}</span>
+                    <div className="foreman-cost-row foreman-table-header">
+                      <span className="foreman-cell--name">{t("Crew")}</span>
+                      <span className="foreman-cell">{t("Role")}</span>
+                      <span className="foreman-cell">{t("Hours Today")}</span>
+                      <span className="foreman-cell">{t("Hours This Week")}</span>
                     </div>
                     {teamForProject.map(c => (
                       <div key={c.id} className="foreman-cost-row">
-                        <span style={{ flex: 2 }}>
-                          <span style={{ color: "var(--text)", fontWeight: 500 }}>{c.name}</span>
-                        </span>
-                        <span style={{ flex: 1, textAlign: "right", color: "var(--text2)", fontSize: 12 }}>{t(c.role)}</span>
-                        <span style={{ flex: 1, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--text2)" }}>{fmtHours(c.todayHours)}</span>
-                        <span style={{ flex: 1, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--amber)" }}>{fmtHours(c.weekHours)}</span>
+                        <span className="foreman-cell--name">{c.name}</span>
+                        <span className="foreman-cell text-xs text-muted">{t(c.role)}</span>
+                        <span className="foreman-cell foreman-cell--mono">{fmtHours(c.todayHours)}</span>
+                        <span className="foreman-cell foreman-cell--accent">{fmtHours(c.weekHours)}</span>
                       </div>
                     ))}
-                    <div className="foreman-cost-row" style={{ fontWeight: 600, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
-                      <span style={{ flex: 2, color: "var(--text)" }}>Total</span>
-                      <span style={{ flex: 1 }}></span>
-                      <span style={{ flex: 1, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--text2)" }}>
+                    <div className="foreman-cost-row foreman-table-total">
+                      <span className="foreman-cell--name">Total</span>
+                      <span className="foreman-cell"></span>
+                      <span className="foreman-cell foreman-cell--mono">
                         {fmtHours(teamForProject.reduce((s, c) => s + c.todayHours, 0))}
                       </span>
-                      <span style={{ flex: 1, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--amber)" }}>
+                      <span className="foreman-cell foreman-cell--accent">
                         {fmtHours(teamForProject.reduce((s, c) => s + c.weekHours, 0))}
                       </span>
                     </div>
@@ -2337,21 +2335,21 @@ export function ForemanView({ app }) {
                 <div className="section-header">
                   <div className="section-title" style={{ fontSize: 16 }}>{t("Request Material")}</div>
                 </div>
-                <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div className="card foreman-form-card">
+                  <div className="foreman-form-stack">
                     <div>
-                      <label className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Material")}</label>
+                      <label className="foreman-form-label">{t("Material")}</label>
                       <input type="text" className="login-input" placeholder='e.g., 5/8" Type X GWB'
                         value={matForm.material} onChange={e => setMatForm(f => ({ ...f, material: e.target.value }))} />
                     </div>
-                    <div style={{ display: "flex", gap: 8 }}>
+                    <div className="foreman-form-row">
                       <div style={{ flex: 1 }}>
-                        <label className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Quantity")}</label>
+                        <label className="foreman-form-label">{t("Quantity")}</label>
                         <input type="number" className="login-input" min="1"
                           value={matForm.qty} onChange={e => setMatForm(f => ({ ...f, qty: e.target.value }))} />
                       </div>
                       <div>
-                        <label className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Unit")}</label>
+                        <label className="foreman-form-label">{t("Unit")}</label>
                         <select className="settings-select" value={matForm.unit} onChange={e => setMatForm(f => ({ ...f, unit: e.target.value }))}>
                           {["EA", "LF", "SF", "BDL", "BOX", "BKT", "BAG", "GAL", "SHT"].map(u => (
                             <option key={u} value={u}>{u}</option>
@@ -2360,13 +2358,13 @@ export function ForemanView({ app }) {
                       </div>
                     </div>
                     <div>
-                      <label className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Notes")}</label>
+                      <label className="foreman-form-label">{t("Notes")}</label>
                       <textarea className="login-input" rows={2} style={{ resize: "vertical", minHeight: 60 }}
                         value={matForm.notes} onChange={e => setMatForm(f => ({ ...f, notes: e.target.value }))} />
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
                       <div style={{ flex: 1 }}>
-                        <label className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Priority")}</label>
+                        <label className="foreman-form-label">{t("Priority")}</label>
                         <select className="settings-select" value={matForm.urgency} onChange={e => setMatForm(f => ({ ...f, urgency: e.target.value }))}>
                           <option value="normal">{t("Normal")}</option>
                           <option value="urgent">⚡ {t("Urgent")}</option>
@@ -2374,7 +2372,7 @@ export function ForemanView({ app }) {
                         </select>
                       </div>
                       <div style={{ flex: 1 }}>
-                        <label className="text-xs text-muted" style={{ textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Needed By")}</label>
+                        <label className="foreman-form-label">{t("Needed By")}</label>
                         <input type="date" className="login-input" value={matForm.neededBy} onChange={e => setMatForm(f => ({ ...f, neededBy: e.target.value }))} />
                       </div>
                     </div>
