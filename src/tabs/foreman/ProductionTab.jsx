@@ -13,7 +13,7 @@ import { FieldSelect } from "../../components/field/FieldSelect";
 import { StatTile } from "../../components/field/StatTile";
 import { PhotoCapture } from "../../components/field/PhotoCapture";
 
-export function ProductionTab({ productionLogs = [], setProductionLogs, areas = [], setAreas, projectId, employees = [], t }) {
+export function ProductionTab({ productionLogs = [], setProductionLogs, areas = [], setAreas, projectId, employees = [], foreman, t }) {
   const tr = t || ((k) => k);
 
   // Entry form state

@@ -39,7 +39,7 @@ function calcMaterialTotal(entries) {
   }, 0);
 }
 
-export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], employees = [], projectId, areas = [], t }) {
+export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], employees = [], projectId, areas = [], foreman, t }) {
   const tr = t || ((k) => k);
 
   const [expandedId, setExpandedId] = useState(null);

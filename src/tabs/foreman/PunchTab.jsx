@@ -16,7 +16,7 @@ const PRIORITY_BADGE = { high: "badge-red", medium: "badge-amber", low: "badge-m
 const STATUS_BADGE = { open: "badge-red", "in-progress": "badge-amber", complete: "badge-green" };
 const STATUS_FLOW = { open: "in-progress", "in-progress": "complete" };
 
-export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees = [], projectId, t }) {
+export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees = [], projectId, foreman, t }) {
   const tr = t || ((k) => k);
 
   const [filterStatus, setFilterStatus] = useState("all");

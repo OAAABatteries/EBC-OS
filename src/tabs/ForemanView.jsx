@@ -1339,7 +1339,7 @@ export function ForemanView({ app }) {
                     </div>
                     <div style={{ padding: "10px 12px", background: "var(--bg2)", borderRadius: 8 }}>
                       <div style={{ fontSize: 20, fontWeight: 700, color: "var(--green)" }}>
-                        {(productionLogs || []).filter(pl => pl.projectId === selectedProjectId && (pl.date === new Date().toISOString().slice(0,10) || (pl.createdAt && pl.createdAt.startsWith(new Date().toISOString().slice(0,10))))).length}
+                        {(productionLogs || []).filter(pl => String(pl.projectId) === String(selectedProjectId) && pl.status !== "deleted" && (pl.date === new Date().toISOString().slice(0,10) || (pl.createdAt && pl.createdAt.startsWith(new Date().toISOString().slice(0,10))))).length}
                       </div>
                       <div className="text-xs text-muted">{t("Production Today")}</div>
                     </div>
@@ -3383,9 +3383,9 @@ export function ForemanView({ app }) {
                 {/* Auto-aggregated summary from today's entries */}
                 {(() => {
                   const today = new Date().toISOString().slice(0, 10);
-                  const todayProd = (productionLogs || []).filter(l => l.date === today && String(l.projectId) === String(selectedProjectId));
-                  const todayTm = (tmTickets || []).filter(t2 => t2.date === today && String(t2.projectId) === String(selectedProjectId));
-                  const todayPunch = (punchItems || []).filter(p => String(p.projectId) === String(selectedProjectId) && (p.createdAt || "").startsWith(today));
+                  const todayProd = (productionLogs || []).filter(l => l.date === today && String(l.projectId) === String(selectedProjectId) && l.status !== "deleted");
+                  const todayTm = (tmTickets || []).filter(t2 => t2.date === today && String(t2.projectId) === String(selectedProjectId) && t2.status !== "deleted");
+                  const todayPunch = (punchItems || []).filter(p => String(p.projectId) === String(selectedProjectId) && (p.createdAt || "").startsWith(today) && p.status !== "deleted");
                   const todayTime = (timeEntries || []).filter(te => String(te.projectId) === String(selectedProjectId) && (te.clockIn || "").startsWith(today));
                   const totalHours = todayTime.reduce((s, te) => s + (te.totalHours || 0), 0);
 
@@ -4359,10 +4359,11 @@ export function ForemanView({ app }) {
                     dateSubmitted: new Date().toISOString().slice(0, 10),
                     submitted: new Date().toISOString().slice(0, 10),
                     createdAt: new Date().toISOString(),
+                    photos: rfiFormData.photos || [],
                   };
                   if (setRfis) setRfis(prev => [...prev, newRfi]);
                   setShowRfiModal(false);
-                  setRfiFormData({ subject: "", description: "", drawingRef: "" });
+                  setRfiFormData({ subject: "", description: "", drawingRef: "", photos: [] });
                   show(`${t("RFI submitted")} · ${rfiNum}`, "ok");
                   setOpenSections(prev => ({ ...prev, rfis: true }));
                 }}
