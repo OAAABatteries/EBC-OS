@@ -1018,7 +1018,9 @@ function App({ auth, onLogout }) {
         const punchCreated = todayPunch.filter(p => p.createdAt && p.createdAt.startsWith(todayStr)).length;
         const punchResolved = todayPunch.filter(p => p.resolvedAt && p.resolvedAt.startsWith(todayStr)).length;
         const todayProblems = (problems || []).filter(p => p.reportedAt && p.reportedAt.startsWith(todayStr));
-        const hasActivity = todayProd.length > 0 || todayTm.length > 0 || todayPunch.length > 0 || todayProblems.length > 0;
+        const todayReports = (dailyReports || []).filter(r => r.submittedAt && r.submittedAt.startsWith(todayStr));
+        const unreviewed = todayReports.filter(r => !r.reviewedBy).length;
+        const hasActivity = todayProd.length > 0 || todayTm.length > 0 || todayPunch.length > 0 || todayProblems.length > 0 || todayReports.length > 0;
         if (!hasActivity) return null;
         return (
           <div className="card" style={{ padding: "14px 16px", marginBottom: 16, borderLeft: "3px solid var(--green)" }}>
@@ -1051,6 +1053,13 @@ function App({ auth, onLogout }) {
                 <div style={{ padding: "8px 10px", borderRadius: 6, background: "var(--bg3)" }}>
                   <div className="text-lg font-bold" style={{ color: "var(--red)" }}>{todayProblems.length}</div>
                   <div className="text-xs text-muted">{t("Problems reported")}</div>
+                </div>
+              )}
+              {todayReports.length > 0 && (
+                <div style={{ padding: "8px 10px", borderRadius: 6, background: "var(--bg3)" }}>
+                  <div className="text-lg font-bold" style={{ color: "var(--blue)" }}>{todayReports.length}</div>
+                  <div className="text-xs text-muted">{t("Daily reports")}</div>
+                  {unreviewed > 0 && <div className="text-xs" style={{ color: "var(--amber)", fontWeight: 700 }}>{unreviewed} {t("un-reviewed")}</div>}
                 </div>
               )}
             </div>
@@ -4348,7 +4357,7 @@ const ModalHub = ({ type, data, app }) => {
     const totalBilled = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);
     const remaining = (draft.contract || 0) - totalBilled;
     const [projTab, setProjTab] = useState(app.initialProjTab || "overview");
-    const projTabs = ["overview", "change orders", "submittals", "rfis", "areas", "punch", "log", "team", "financials", "closeout", "sound", "logistics", "notes"];
+    const projTabs = ["overview", "change orders", "submittals", "rfis", "areas", "punch", "log", "reports", "team", "financials", "closeout", "sound", "logistics", "notes"];
     const [coFormOpen, setCoFormOpen] = useState(false);
     const [coEditId, setCoEditId] = useState(null);
     const [coExpandedId, setCoExpandedId] = useState(null);
@@ -5542,6 +5551,62 @@ const ModalHub = ({ type, data, app }) => {
             {projTab === "log" && (
               <DecisionLogTab decisionLog={app.decisionLog} setDecisionLog={app.setDecisionLog} projectId={draft.id} employees={app.employees} t={app.t} />
             )}
+
+            {/* ── Daily Reports (PM view of foreman reports) ── */}
+            {projTab === "reports" && (() => {
+              const projReports = (app.dailyReports || [])
+                .filter(r => String(r.projectId) === String(draft.id))
+                .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+              return (
+                <div>
+                  <div className="flex-between mb-12">
+                    <div className="text-sm font-semi">{t("Daily Reports")} ({projReports.length})</div>
+                    <span className="text-xs text-muted">{projReports.filter(r => !r.reviewedBy).length} {t("un-reviewed")}</span>
+                  </div>
+                  {projReports.length === 0 ? (
+                    <div className="empty-state" style={{ padding: 30 }}>
+                      <div className="empty-icon"><ClipboardList style={{ width: 40, height: 40 }} /></div>
+                      <div className="empty-text">{t("No daily reports yet")}</div>
+                    </div>
+                  ) : (
+                    <div className="flex-col gap-8">
+                      {projReports.map(r => (
+                        <div key={r.id} className="card" style={{ padding: "12px 16px", borderLeft: r.reviewedBy ? "3px solid var(--green)" : "3px solid var(--amber)" }}>
+                          <div className="flex-between mb-4">
+                            <div>
+                              <span className="text-sm font-bold">{r.date}</span>
+                              <span className="text-xs text-muted" style={{ marginLeft: 8 }}>{r.foremanName} · {r.crewCount || (r.teamPresent || []).length} crew · {r.totalHours || 0}h</span>
+                            </div>
+                            {r.reviewedBy ? (
+                              <span className="badge badge-green" style={{ fontSize: 10 }}>{t("Reviewed")}</span>
+                            ) : (
+                              <button className="btn btn-sm btn-primary" style={{ fontSize: 10, padding: "3px 8px" }}
+                                onClick={() => {
+                                  app.setDailyReports(prev => prev.map(dr => dr.id === r.id ? { ...dr, reviewedBy: auth?.name || "PM", reviewedAt: new Date().toISOString() } : dr));
+                                  show(t("Report reviewed"));
+                                }}>
+                                {t("Mark Reviewed")}
+                              </button>
+                            )}
+                          </div>
+                          <div className="text-sm mb-4" style={{ whiteSpace: "pre-wrap" }}>{r.workPerformed}</div>
+                          {r.materialsReceived && <div className="text-xs text-muted mb-2"><strong>{t("Materials")}:</strong> {r.materialsReceived}</div>}
+                          {r.issues && <div className="text-xs mb-2" style={{ color: "var(--amber)" }}><strong>{t("Issues")}:</strong> {r.issues}</div>}
+                          {r.tomorrowPlan && <div className="text-xs text-dim mb-2"><strong>{t("Tomorrow")}:</strong> {r.tomorrowPlan}</div>}
+                          {r.safetyIncident && r.safetyIncident !== "None" && (
+                            <div className="text-xs" style={{ color: "var(--red)", fontWeight: 700 }}>{t("SAFETY INCIDENT")}: {r.safetyDescription || r.safetyIncident}</div>
+                          )}
+                          <div className="text-xs text-dim" style={{ marginTop: 6 }}>
+                            {r.conditions || r.weatherCondition} {r.temperature} · {t("Submitted")} {new Date(r.submittedAt || r.createdAt).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"})}
+                            {r.reviewedBy && ` · ${t("Reviewed by")} ${r.reviewedBy}`}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* ── Sound Quality Testing ── */}
             {projTab === "sound" && (() => {

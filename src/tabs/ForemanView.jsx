@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, ClipboardList, HardHat, MessageSquare, Pin, PinOff, LayoutDashboard, Users, Clock as ClockIcon, MoreHorizontal, FileText, Calendar, Settings, BarChart3, ClipboardCheck, PenLine } from "lucide-react";
-import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, FieldInput, EmptyState, StatusBadge, StatTile, AlertCard, FieldSignaturePad, CredentialCard } from "../components/field";
+import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, FieldInput, EmptyState, StatusBadge, StatTile, AlertCard, FieldSignaturePad, CredentialCard, PhotoCapture } from "../components/field";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { useFormDraft } from "../hooks/useFormDraft";
 import { FeatureGuide } from "../components/FeatureGuide";
@@ -3598,38 +3598,15 @@ export function ForemanView({ app }) {
                       )}
                     </div>
 
-                    {/* Photos */}
+                    {/* Photos — uses PhotoCapture for direct camera access */}
                     <div style={{ marginTop: 10 }}>
                       <label className="form-label">{t("Photos")} ({(reportForm.photos || []).length})</label>
-                      <input type="file" accept="image/*" multiple
-                        style={{ fontSize: 12 }}
-                        onChange={e => {
-                          const files = Array.from(e.target.files || []);
-                          files.forEach(file => {
-                            const reader = new FileReader();
-                            reader.onload = (ev) => {
-                              setReportForm(f => ({
-                                ...f,
-                                photos: [...(f.photos || []), { data: ev.target.result, name: file.name, caption: "" }]
-                              }));
-                            };
-                            reader.readAsDataURL(file);
-                          });
-                          e.target.value = "";
-                        }} />
-                      {(reportForm.photos || []).length > 0 && (
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-                          {reportForm.photos.map((p, i) => (
-                            <div key={i} style={{ position: "relative", width: 64, height: 64 }}>
-                              <img src={p.data} alt={p.name} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 6, border: "1px solid var(--border)" }} />
-                              <button style={{ position: "absolute", top: -4, right: -4, width: 18, height: 18, borderRadius: 9, background: "var(--red)", color: "#fff", border: "none", fontSize: 10, cursor: "pointer", lineHeight: "18px", textAlign: "center" }}
-                                onClick={() => setReportForm(f => ({ ...f, photos: f.photos.filter((_, j) => j !== i) }))}>
-                                x
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <PhotoCapture
+                        photos={reportForm.photos || []}
+                        onPhotos={(photos) => setReportForm(f => ({ ...f, photos }))}
+                        multiple={true}
+                        t={t}
+                      />
                     </div>
 
                     {/* Issues / Delays */}
@@ -3865,6 +3842,29 @@ export function ForemanView({ app }) {
                                     }
                                   }}>
                                   {t("Export PDF")}
+                                </button>
+                                <button className="btn btn-sm" style={{ fontSize: 11 }}
+                                  onClick={() => {
+                                    const proj = projects.find(p => p.id === r.projectId);
+                                    const report = [
+                                      `DAILY REPORT — ${proj?.name || "Project"} — ${r.date}`,
+                                      `Foreman: ${r.foremanName || activeForeman?.name}`,
+                                      `Crew: ${(r.teamPresent || []).length} on site | ${r.totalHours || 0}h total`,
+                                      `Weather: ${r.weatherCondition || r.weather || ""} ${r.temperature || ""}`,
+                                      ``,
+                                      `WORK PERFORMED:`,
+                                      r.workPerformed || "—",
+                                      r.materialsReceived ? `\nMATERIALS: ${r.materialsReceived}` : "",
+                                      r.equipmentOnSite ? `EQUIPMENT: ${r.equipmentOnSite}` : "",
+                                      r.visitors ? `VISITORS: ${r.visitors}` : "",
+                                      r.issues ? `\nISSUES: ${r.issues}` : "",
+                                      r.tomorrowPlan ? `\nTOMORROW: ${r.tomorrowPlan}` : "",
+                                      r.safetyIncident ? `\nSAFETY INCIDENT: ${r.safetyDescription || "Yes"}` : "",
+                                      `\n--- EBC Construction | ${new Date(r.createdAt || r.submittedAt).toLocaleString()} ---`,
+                                    ].filter(Boolean).join("\n");
+                                    navigator.clipboard.writeText(report).then(() => show(t("Report copied"))).catch(() => window.prompt("Copy:", report));
+                                  }}>
+                                  {t("Copy to Clipboard")}
                                 </button>
                                 <button className="btn btn-sm" style={{ fontSize: 11, color: "var(--red)" }}
                                   onClick={() => {
