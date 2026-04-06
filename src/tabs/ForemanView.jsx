@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, ClipboardList, HardHat, MessageSquare, Pin, PinOff, LayoutDashboard, Users, Clock as ClockIcon, MoreHorizontal, FileText, Calendar, Settings, BarChart3, ClipboardCheck, PenLine } from "lucide-react";
-import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, FieldInput, EmptyState, StatusBadge, StatTile, AlertCard, FieldSignaturePad, CredentialCard, PhotoCapture } from "../components/field";
+import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, FieldInput, EmptyState, StatusBadge, StatTile, AlertCard, FieldSignaturePad, CredentialCard, PhotoCapture, Skeleton } from "../components/field";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { useNotifications } from "../hooks/useNotifications";
 import { useFormDraft } from "../hooks/useFormDraft";
@@ -172,7 +172,9 @@ export function ForemanView({ app }) {
 
   // ── Team tab state (Plan 03: FSCH-02, FSCH-03, CRED-04) ──
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [pendingLoading, setPendingLoading] = useState(false);
   const [crewCerts, setCrewCerts] = useState([]);
+  const [certsLoading, setCertsLoading] = useState(false);
   const [certFilter, setCertFilter] = useState("all"); // "all" | "expiring" | "expired"
   const [approvalSheet, setApprovalSheet] = useState(null); // { request, action: 'approve'|'deny' }
   const [approvalComment, setApprovalComment] = useState("");
@@ -821,6 +823,7 @@ export function ForemanView({ app }) {
   useEffect(() => {
     if (!activeForeman || !selectedProjectId) return;
     const fetchPendingRequests = async () => {
+      setPendingLoading(true);
       try {
         const { supabase } = await import("../lib/supabase");
         const { data: shiftReqs } = await supabase
@@ -832,6 +835,7 @@ export function ForemanView({ app }) {
       } catch (err) {
         console.error("Failed to fetch pending requests:", err);
       }
+      setPendingLoading(false);
     };
     fetchPendingRequests();
   }, [activeForeman, selectedProjectId, foremanTab]);
@@ -840,10 +844,11 @@ export function ForemanView({ app }) {
   useEffect(() => {
     if (!activeForeman || foremanTab !== "team") return;
     const fetchCrewCerts = async () => {
+      setCertsLoading(true);
       try {
         const { supabase } = await import("../lib/supabase");
         const crewIds = teamForProject.map(m => m.id);
-        if (crewIds.length === 0) { setCrewCerts([]); return; }
+        if (crewIds.length === 0) { setCrewCerts([]); setCertsLoading(false); return; }
         const { data } = await supabase
           .from("certifications")
           .select("*")
@@ -853,6 +858,7 @@ export function ForemanView({ app }) {
       } catch (err) {
         console.error("Failed to fetch crew certs:", err);
       }
+      setCertsLoading(false);
     };
     fetchCrewCerts();
   }, [activeForeman, foremanTab, teamForProject]);
@@ -2160,7 +2166,11 @@ export function ForemanView({ app }) {
                     <div className="foreman-team-section-label">
                       {t("PENDING REQUESTS")} {pendingRequests.length > 0 && <span className="foreman-team-count">{pendingRequests.length}</span>}
                     </div>
-                    {pendingRequests.length === 0 ? (
+                    {pendingLoading ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {[1,2].map(i => <Skeleton key={i} width="100%" height="64px" style={{ borderRadius: "var(--radius)" }} />)}
+                      </div>
+                    ) : pendingRequests.length === 0 ? (
                       <EmptyState
                         icon={Users}
                         heading={t("No pending requests")}
@@ -2215,7 +2225,11 @@ export function ForemanView({ app }) {
                     </div>
 
                     {/* Cert rows per D-18 — grouped by crew member */}
-                    {filteredCrewCerts.length === 0 ? (
+                    {certsLoading ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+                        {[1,2,3].map(i => <Skeleton key={i} width="100%" height="56px" style={{ borderRadius: "var(--radius)" }} />)}
+                      </div>
+                    ) : filteredCrewCerts.length === 0 ? (
                       <EmptyState
                         icon={Shield}
                         heading={certFilter === "expiring" ? t("No expiring credentials") : certFilter === "expired" ? t("No expired credentials") : t("No credentials found")}
