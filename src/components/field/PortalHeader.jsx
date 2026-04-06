@@ -92,16 +92,23 @@ export function PortalHeader({
         </div>
       )}
 
-      {/* Network status banner — offline indicator */}
+      {/* Network status banner — offline confidence indicator */}
       {network && !network.online && (
         <div className="network-banner network-banner--offline">
-          <WifiOff size={16} />
-          {t ? t("Offline") : "Offline"} — {network.pendingCount} {t ? t("actions pending") : "actions pending"}
+          <span className="offline-pulse-dot" />
+          <WifiOff size={14} />
+          <span><strong>{t ? t("Offline Mode") : "Offline Mode"}</strong> — {t ? t("your work is saved locally") : "your work is saved locally"}</span>
+          {network.pendingCount > 0 && (
+            <span style={{ marginLeft: "auto", fontSize: 11, opacity: 0.9 }}>
+              {network.pendingCount} {t ? t("changes will sync when connected") : "changes will sync when connected"}
+            </span>
+          )}
         </div>
       )}
       {network && network.wasOffline && network.online && (
         <div className="network-banner network-banner--reconnecting">
-          {t ? t("Back online") : "Back online"} — {t ? t("syncing") : "syncing"} {network.pendingCount} {t ? t("actions") : "actions"}
+          <span style={{ fontSize: 14 }}>&#10003;</span>
+          <span><strong>{t ? t("Back online") : "Back online"}</strong> — {network.pendingCount > 0 ? `${t ? t("syncing") : "syncing"} ${network.pendingCount} ${t ? t("changes") : "changes"}` : (t ? t("all changes synced") : "all changes synced")}</span>
         </div>
       )}
     </>

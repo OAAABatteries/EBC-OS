@@ -23,13 +23,28 @@ export function PhotoCapture({ photos = [], onPhotos, multiple = true, label, t 
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const entry = { name: file.name, data: reader.result, capturedAt: new Date().toISOString() };
-        onPhotos((prev) => (multiple ? [...prev, entry] : [entry]));
-      };
-      reader.readAsDataURL(file);
+    // Capture GPS location at time of photo
+    const gpsPromise = new Promise((resolve) => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+          () => resolve(null),
+          { enableHighAccuracy: true, timeout: 5000 }
+        );
+      } else {
+        resolve(null);
+      }
+    });
+
+    gpsPromise.then((gps) => {
+      files.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const entry = { name: file.name, data: reader.result, capturedAt: new Date().toISOString(), gps };
+          onPhotos((prev) => (multiple ? [...prev, entry] : [entry]));
+        };
+        reader.readAsDataURL(file);
+      });
     });
     // Reset input so same file can be re-selected
     e.target.value = "";
@@ -82,13 +97,13 @@ export function PhotoCapture({ photos = [], onPhotos, multiple = true, label, t 
                 onClick={() => removePhoto(i)}
                 style={{
                   position: "absolute", top: 2, right: 2,
-                  width: 20, height: 20, borderRadius: "50%",
+                  width: 36, height: 36, borderRadius: "50%",
                   background: "rgba(0,0,0,0.7)", border: "none",
                   color: "#fff", cursor: "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center", padding: 0,
                 }}
               >
-                <X size={12} />
+                <X size={18} />
               </button>
             </div>
           ))}

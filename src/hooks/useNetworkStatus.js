@@ -14,12 +14,17 @@ function getQueueCount() {
   } catch { return 0; }
 }
 
+function getLastSync() {
+  try { return Number(localStorage.getItem("ebc_last_sync") || "0"); } catch { return 0; }
+}
+
 export function useNetworkStatus() {
   const [online, setOnline] = useState(() =>
     typeof navigator !== "undefined" ? navigator.onLine : true
   );
   const [pendingCount, setPendingCount] = useState(getQueueCount);
   const [wasOffline, setWasOffline] = useState(false);
+  const [lastSync, setLastSync] = useState(getLastSync);
 
   useEffect(() => {
     const goOnline = () => {
@@ -41,17 +46,19 @@ export function useNetworkStatus() {
     };
   }, []);
 
-  // Poll pending queue count every 2s (lightweight, just reads localStorage)
+  // Poll pending queue count + last sync every 2s
   useEffect(() => {
     const interval = setInterval(() => {
       setPendingCount(getQueueCount());
+      setLastSync(getLastSync());
     }, 2000);
     return () => clearInterval(interval);
   }, []);
 
   const refreshPending = useCallback(() => {
     setPendingCount(getQueueCount());
+    setLastSync(getLastSync());
   }, []);
 
-  return { online, pendingCount, wasOffline, refreshPending };
+  return { online, pendingCount, wasOffline, lastSync, refreshPending };
 }

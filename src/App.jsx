@@ -1096,7 +1096,7 @@ function App({ auth, onLogout }) {
         const todayStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 
         // Build daily entries
-        const days = weekDays.map(d => {
+        const days = weekDays.map((d, i) => {
           const dk = dayKey(d);
           const ds = todayStr(d);
           const crewCount = (teamSchedule || []).filter(s => s.days?.[dk]).length;

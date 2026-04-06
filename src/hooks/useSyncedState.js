@@ -76,15 +76,33 @@ function removeFromQueue(index) {
   localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
 }
 
-// ── Flush offline queue when back online ──
+// ── Flush offline queue when back online (skip-and-continue after 3 retries) ──
+const FAILED_QUEUE_KEY = "ebc_sync_failed";
 let flushingQueue = false;
+
+function getFailedQueue() {
+  try { return JSON.parse(localStorage.getItem(FAILED_QUEUE_KEY) || "[]"); } catch { return []; }
+}
+
+function moveToFailed(op, error) {
+  const failed = getFailedQueue();
+  failed.push({ ...op, failedAt: Date.now(), error: error?.message || "Unknown error" });
+  try { localStorage.setItem(FAILED_QUEUE_KEY, JSON.stringify(failed)); } catch {}
+}
+
+export function getFailedCount() {
+  return getFailedQueue().length;
+}
+
 export async function flushSyncQueue() {
   if (!isSupabaseConfigured() || !supabase || flushingQueue) return;
   flushingQueue = true;
   try {
-    const queue = getQueue();
-    for (let i = 0; i < queue.length; i++) {
-      const op = queue[i];
+    let queue = getQueue();
+    let processed = 0;
+    while (queue.length > 0) {
+      const op = queue[0];
+      const retries = op._retries || 0;
       try {
         if (op.type === "upsert") {
           await supabase.from(op.table).upsert(op.data, { onConflict: "id" });
@@ -93,11 +111,25 @@ export async function flushSyncQueue() {
         } else if (op.type === "bulk_upsert") {
           await supabase.from(op.table).upsert(op.data, { onConflict: "id" });
         }
-        removeFromQueue(0); // always remove first since we shift
+        removeFromQueue(0);
+        processed++;
+        try { localStorage.setItem("ebc_last_sync", String(Date.now())); } catch {}
       } catch (err) {
-        console.warn("[sync] queue flush failed for", op.table, err.message);
-        break; // stop on first failure, retry later
+        console.warn(`[sync] queue flush failed for ${op.table} (attempt ${retries + 1}/3):`, err.message);
+        if (retries >= 2) {
+          // 3 strikes — move to failed bucket, continue with rest of queue
+          moveToFailed(op, err);
+          removeFromQueue(0);
+          console.warn(`[sync] moved ${op.table} op to failed bucket after 3 retries`);
+        } else {
+          // Increment retry count and stop for now (will retry on next flush)
+          const q = getQueue();
+          q[0] = { ...q[0], _retries: retries + 1 };
+          try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); } catch {}
+          break;
+        }
       }
+      queue = getQueue();
     }
   } finally {
     flushingQueue = false;
@@ -307,57 +339,84 @@ export function useSyncedState(key, initialValue) {
       // Save to localStorage immediately (cache)
       try { localStorage.setItem(lsKey, JSON.stringify(next)); } catch {}
 
-      // Async push to Supabase
+      // Async push to Supabase (skip entirely if offline — queue only)
       if (table && isSupabaseConfigured() && supabase) {
         skipRealtimeUpdate.current = true;
         setTimeout(() => { skipRealtimeUpdate.current = false; }, 3000);
 
-        if (Array.isArray(next)) {
-          // Diff: find what changed
-          const prevIds = new Set((prev || []).map(item => item.id));
-          const nextIds = new Set(next.map(item => item.id));
+        // If offline, queue immediately — don't attempt network calls
+        if (!navigator.onLine) {
+          if (Array.isArray(next)) {
+            const prevIds = new Set((prev || []).map(item => item.id));
+            const nextIds = new Set(next.map(item => item.id));
+            const deleted = (prev || []).filter(item => !nextIds.has(item.id));
+            const upserted = next.filter(item => {
+              if (!prevIds.has(item.id)) return true;
+              const old = (prev || []).find(p => p.id === item.id);
+              return JSON.stringify(old) !== JSON.stringify(item);
+            });
+            if (upserted.length > 0) {
+              const cols = _columnCache[table];
+              addToQueue({ type: "bulk_upsert", table, data: upserted.map(row => stripUnknownColumns(keysToSnake(row), cols)) });
+            }
+            for (const item of deleted) addToQueue({ type: "delete", table, id: item.id });
+          } else {
+            const cols = _columnCache[table];
+            addToQueue({ type: "upsert", table, data: stripUnknownColumns(keysToSnake(next), cols) });
+          }
+        } else {
+          // Online — attempt Supabase push with network error fallback to queue
+          if (Array.isArray(next)) {
+            const prevIds = new Set((prev || []).map(item => item.id));
+            const nextIds = new Set(next.map(item => item.id));
+            const deleted = (prev || []).filter(item => !nextIds.has(item.id));
+            const upserted = next.filter(item => {
+              if (!prevIds.has(item.id)) return true;
+              const old = (prev || []).find(p => p.id === item.id);
+              return JSON.stringify(old) !== JSON.stringify(item);
+            });
 
-          // Deleted items
-          const deleted = (prev || []).filter(item => !nextIds.has(item.id));
-          // New or updated items
-          const upserted = next.filter(item => {
-            if (!prevIds.has(item.id)) return true; // new
-            const old = (prev || []).find(p => p.id === item.id);
-            return JSON.stringify(old) !== JSON.stringify(item); // changed
-          });
+            if (upserted.length > 0) {
+              const cols = _columnCache[table];
+              const snakeData = upserted.map(row => stripUnknownColumns(keysToSnake(row), cols));
+              supabase.from(table).upsert(snakeData, { onConflict: "id" })
+                .then(({ error }) => {
+                  if (error) {
+                    console.warn(`[sync] upsert ${table}:`, error.message);
+                    addToQueue({ type: "bulk_upsert", table, data: snakeData });
+                  } else {
+                    try { localStorage.setItem("ebc_last_sync", String(Date.now())); } catch {}
+                  }
+                })
+                .catch(() => addToQueue({ type: "bulk_upsert", table, data: snakeData }));
+            }
 
-          if (upserted.length > 0) {
-            const cols = _columnCache[table]; // use cached columns if available
-            const snakeData = upserted.map(row => stripUnknownColumns(keysToSnake(row), cols));
+            for (const item of deleted) {
+              supabase.from(table).delete().eq("id", item.id)
+                .then(({ error }) => {
+                  if (error) {
+                    console.warn(`[sync] delete ${table}:`, error.message);
+                    addToQueue({ type: "delete", table, id: item.id });
+                  } else {
+                    try { localStorage.setItem("ebc_last_sync", String(Date.now())); } catch {}
+                  }
+                })
+                .catch(() => addToQueue({ type: "delete", table, id: item.id }));
+            }
+          } else {
+            const cols = _columnCache[table];
+            const snakeData = stripUnknownColumns(keysToSnake(next), cols);
             supabase.from(table).upsert(snakeData, { onConflict: "id" })
               .then(({ error }) => {
                 if (error) {
                   console.warn(`[sync] upsert ${table}:`, error.message);
-                  addToQueue({ type: "bulk_upsert", table, data: snakeData });
+                  addToQueue({ type: "upsert", table, data: snakeData });
+                } else {
+                  try { localStorage.setItem("ebc_last_sync", String(Date.now())); } catch {}
                 }
-              });
+              })
+              .catch(() => addToQueue({ type: "upsert", table, data: snakeData }));
           }
-
-          for (const item of deleted) {
-            supabase.from(table).delete().eq("id", item.id)
-              .then(({ error }) => {
-                if (error) {
-                  console.warn(`[sync] delete ${table}:`, error.message);
-                  addToQueue({ type: "delete", table, id: item.id });
-                }
-              });
-          }
-        } else {
-          // Singular object
-          const cols = _columnCache[table];
-          const snakeData = stripUnknownColumns(keysToSnake(next), cols);
-          supabase.from(table).upsert(snakeData, { onConflict: "id" })
-            .then(({ error }) => {
-              if (error) {
-                console.warn(`[sync] upsert ${table}:`, error.message);
-                addToQueue({ type: "upsert", table, data: snakeData });
-              }
-            });
         }
       }
 

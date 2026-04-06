@@ -10,6 +10,8 @@ import { useGeolocation } from "../hooks/useGeolocation";
 import { useNotifications } from "../hooks/useNotifications";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { useFormDraft } from "../hooks/useFormDraft";
+import { useDrawingCache } from "../hooks/useDrawingCache";
+import { getDrawingsByProject, downloadFile } from "../lib/supabase";
 import { findNearestGeofence, getLocationsInRange, pointInPolygon, polygonAreaSqFt } from "../utils/geofence";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
@@ -596,6 +598,54 @@ export function EmployeeView({ app }) {
     return projects.find(p => p.id === todayAssignment.projectId) || null;
   }, [mySchedule, projects]);
 
+  // ── Auto-cache assigned project drawings for offline use ──
+  const { cacheDrawing, isCached } = useDrawingCache();
+  const [drawingRevisionAlerts, setDrawingRevisionAlerts] = useState([]);
+
+  useEffect(() => {
+    if (!assignedProject || !network.online) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const drawings = await getDrawingsByProject(assignedProject.id);
+        if (cancelled || !drawings?.length) return;
+
+        // Check for revision changes → generate alerts
+        const cachedMeta = JSON.parse(localStorage.getItem("ebc_downloadedDrawings") || "{}");
+        const lastSeenRevisions = JSON.parse(localStorage.getItem("ebc_drawing_revisions") || "{}");
+        const alerts = [];
+
+        for (const d of drawings) {
+          const path = d.storagePath || `drawings/project-${assignedProject.id}/${d.fileName}`;
+          const prevRev = lastSeenRevisions[path];
+          if (prevRev && d.revision && d.revision > prevRev) {
+            alerts.push({ drawing: d.fileName?.replace(".pdf", "").replace(/_/g, " ") || "Drawing", oldRev: prevRev, newRev: d.revision, revLabel: d.revisionLabel || `Rev ${d.revision}` });
+          }
+          // Update seen revisions
+          if (d.revision) lastSeenRevisions[path] = d.revision;
+
+          // Auto-cache current drawings that aren't cached yet (or are stale)
+          if (d.isCurrent !== false) {
+            const meta = cachedMeta[path];
+            const isStale = meta?.cachedAt && d.updatedAt && new Date(d.updatedAt) > new Date(meta.cachedAt);
+            if (!meta || isStale) {
+              try {
+                const blob = await downloadFile(path);
+                if (!cancelled) await cacheDrawing(path, blob);
+              } catch {} // silently skip — drawing will load from network when needed
+            }
+          }
+        }
+
+        localStorage.setItem("ebc_drawing_revisions", JSON.stringify(lastSeenRevisions));
+        if (alerts.length > 0 && !cancelled) setDrawingRevisionAlerts(alerts);
+      } catch {} // no-op — drawings are optional
+    })();
+
+    return () => { cancelled = true; };
+  }, [assignedProject?.id, network.online]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── my material requests ──
   const myMatRequests = useMemo(() => {
     if (!activeEmp) return [];
@@ -939,6 +989,14 @@ export function EmployeeView({ app }) {
       />
 
       <div className="employee-body emp-content-pad">
+        {/* Offline status chip — visible across all tabs */}
+        {!network.online && (
+          <div className="offline-status-chip">
+            <span className="offline-pulse-dot" />
+            {t("Offline Mode")} — {t("saved locally")}
+            {network.lastSync > 0 && <span className="offline-last-sync">{t("Last synced")}: {(() => { const m = Math.round((Date.now() - network.lastSync) / 60000); return m < 1 ? t("just now") : `${m}m ago`; })()}</span>}
+          </div>
+        )}
 
         {/* ═══ HOME TAB ═══ */}
         {empTab === "home" && (<>
@@ -957,6 +1015,7 @@ export function EmployeeView({ app }) {
             onReportProblem={() => setShowReportProblem(true)}
             areas={areas}
             schedule={teamSchedule}
+            drawingRevisionAlerts={drawingRevisionAlerts}
             t={t}
             lang={lang}
           />

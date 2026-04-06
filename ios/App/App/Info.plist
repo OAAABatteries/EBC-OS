@@ -47,5 +47,13 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>EBC-OS needs camera access to capture photos for material requests, RFIs, daily reports, and load verification.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>EBC-OS needs photo library access to attach existing photos to reports and documentation.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>EBC-OS uses your location for clock-in verification, delivery tracking, and site geofencing.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>EBC-OS uses background location for delivery route tracking and geofence-based clock management.</string>
 </dict>
 </plist>

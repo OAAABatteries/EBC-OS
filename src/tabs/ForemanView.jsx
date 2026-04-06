@@ -910,13 +910,25 @@ export function ForemanView({ app }) {
   const openPunchCount = (punchItems || []).filter(p => String(p.projectId) === String(selectedProjectId) && p.status === "open").length;
   const pendingTmCount = (tmTickets || []).filter(t => String(t.projectId) === String(selectedProjectId) && (t.status === "draft" || t.status === "submitted")).length;
 
+  // RFI badge: count answered RFIs not yet viewed
+  const answeredRfiCount = (rfis || []).filter(r => String(r.projectId) === String(selectedProjectId) && r.status === "answered").length;
+  // Look-ahead badge: events in next 48 hours
+  const next48h = Date.now() + 48 * 60 * 60 * 1000;
+  const upcomingEventCount = (calendarEvents || []).filter(ev => {
+    const d = new Date(ev.date || ev.start);
+    return !isNaN(d) && d.getTime() >= Date.now() && d.getTime() <= next48h;
+  }).length;
+
   const foremanTabDefs = [
-    // Primary (4 field-critical tabs — Daily Report promoted per R7 audit)
+    // Primary (4 field-critical tabs)
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, badge: false },
     { id: "production", label: t("Production"), icon: BarChart3, badge: false },
     { id: "tm", label: t("T&M"), icon: FileText, badge: pendingTmCount > 0 },
     { id: "team", label: "Team", icon: Users, badge: pendingRequestCount > 0 },
-    // Overflow (frequency-driven: daily-use first, then weekly)
+    // Promoted daily-use tabs (R15 auditor: "daily-use features shouldn't require 3+ taps")
+    { id: "documents", label: t("Documents"), icon: FileText, badge: answeredRfiCount > 0 },
+    { id: "lookahead", label: t("Look-Ahead"), icon: Calendar, badge: upcomingEventCount > 0 },
+    // Overflow (frequency-driven)
     { id: "reports", label: t("Daily Report"), icon: ClipboardList, badge: (dailyReports || []).filter(r => r.projectId === selectedProjectId && r.date === new Date().toISOString().slice(0,10)).length > 0 },
     { id: "drawings", label: "Drawings", icon: FileText, badge: false },
     { id: "punchList", label: t("Punch List"), icon: ClipboardCheck, badge: openPunchCount > 0 },
@@ -993,6 +1005,14 @@ export function ForemanView({ app }) {
       />
 
       <div className="employee-body">
+        {/* Offline status chip */}
+        {!network.online && (
+          <div className="offline-status-chip">
+            <span className="offline-pulse-dot" />
+            {t("Offline Mode")} — {t("saved locally")}
+            {network.lastSync > 0 && <span className="offline-last-sync">{t("Last synced")}: {(() => { const m = Math.round((Date.now() - network.lastSync) / 60000); return m < 1 ? t("just now") : `${m}m ago`; })()}</span>}
+          </div>
+        )}
 
         {myProjects.length === 0 && foremanTab !== "settings" && (
           <div className="empty-state" style={{ padding: "40px 20px" }}>
@@ -1307,6 +1327,11 @@ export function ForemanView({ app }) {
                     <ClipboardList size={16} /> {t("Daily Report")}
                   </button>
                 </div>
+                {/* Look-Ahead shortcut — R15 auditor: "first thing every morning" */}
+                <button className="btn touch-target" style={{ width: "100%", height: 44, fontSize: 13, fontWeight: 600, borderRadius: 10, background: "var(--bg3)", color: "var(--text1)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8 }}
+                  onClick={() => setForemanTab("lookahead")}>
+                  <Calendar size={15} /> {t("Look-Ahead")} {upcomingEventCount > 0 && <span style={{ background: "var(--accent)", color: "#fff", borderRadius: 10, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>{upcomingEventCount}</span>}
+                </button>
 
                 {/* Alerts feed per D-09 — actionable first (requests, budget), then informational (cert warnings) */}
                 {foremanAlerts.length > 0 && (

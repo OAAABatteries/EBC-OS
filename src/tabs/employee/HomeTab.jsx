@@ -20,7 +20,7 @@ import { supabase } from '../../lib/supabase';
  *   t                — translation function
  *   lang             — 'en' | 'es'
  */
-export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, mySchedule, myMatRequests, projects, areas, setEmpTab, setSelectedInfoProject, onReportProblem, t, lang }) {
+export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, mySchedule, myMatRequests, projects, areas, setEmpTab, setSelectedInfoProject, onReportProblem, drawingRevisionAlerts, t, lang }) {
   // --- Greeting (time-of-day based) ---
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -122,6 +122,16 @@ export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, m
         message: `${r.material} ${t("approved")}`,
         timestamp: r.approvedAt || r.requestedAt,
         sourceTab: 'materials',
+      });
+    });
+    // Drawing revision alerts (from parent — auto-detected revision changes)
+    (drawingRevisionAlerts || []).forEach((d, i) => {
+      alerts.push({
+        id: `drawing-rev-${i}`,
+        type: 'error',
+        message: `${t("New drawing")}: ${d.drawing} — ${d.revLabel}`,
+        timestamp: new Date().toISOString(),
+        sourceTab: 'drawings',
       });
     });
     // Sort newest first

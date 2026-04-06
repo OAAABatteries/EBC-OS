@@ -998,4 +998,30 @@ export const T = {
   "actions pending": { es: "acciones pendientes" },
   "syncing": { es: "sincronizando" },
   "actions": { es: "acciones" },
+  // Phase R14 — Driver arrived/refused statuses
+  "Arrived at Site": { es: "Llegó al Sitio" },
+  "Arrived": { es: "Llegó" },
+  "Arrived at site": { es: "Llegó al sitio" },
+  "Refused": { es: "Rechazado" },
+  "Refuse Delivery": { es: "Rechazar Entrega" },
+  "Confirm Refusal": { es: "Confirmar Rechazo" },
+  "Delivery refused": { es: "Entrega rechazada" },
+  "No reason given": { es: "Sin razón dada" },
+  "Site not ready, wrong material, no one to receive...": { es: "Sitio no listo, material incorrecto, nadie para recibir..." },
+  // Offline mode — R14 confidence indicators
+  "Offline Mode": { es: "Modo Sin Conexión" },
+  "your work is saved locally": { es: "tu trabajo se guarda localmente" },
+  "saved locally": { es: "guardado localmente" },
+  "changes will sync when connected": { es: "cambios se sincronizarán al conectarse" },
+  "all changes synced": { es: "todos los cambios sincronizados" },
+  "changes": { es: "cambios" },
+  "Last synced": { es: "Última sincronización" },
+  "just now": { es: "ahora mismo" },
+  // Driver POD detail view
+  "Tap to view full POD": { es: "Toca para ver POD completo" },
+  "GPS Location": { es: "Ubicación GPS" },
+  "Recipient": { es: "Receptor" },
+  "recorded": { es: "registrado" },
+  // Drawing revision alerts
+  "New drawing": { es: "Nuevo plano" },
 };

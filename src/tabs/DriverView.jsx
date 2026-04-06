@@ -83,6 +83,7 @@ export function DriverView({ app }) {
   const [dragIdx, setDragIdx] = useState(null);
   const [podDelivery, setPodDelivery] = useState(null);
   const [shortageDelivery, setShortageDelivery] = useState(null);
+  const [viewPod, setViewPod] = useState(null); // completed delivery to view full POD
   const [loadVerifyStop, setLoadVerifyStop] = useState(null); // stop pending load confirmation
   const [loadQty, setLoadQty] = useState("");
   const [loadNote, setLoadNote] = useState("");
@@ -159,7 +160,7 @@ export function DriverView({ app }) {
     r.status === "approved" || r.status === "assigned"  // backward compat: old "approved" + new "assigned"
   ), [materialRequests]);
   const inTransitItems = useMemo(() => materialRequests.filter(r =>
-    (r.status === "in-transit" || r.status === "picked_up") && r.driverId === activeDriver?.id
+    (r.status === "in-transit" || r.status === "picked_up" || r.status === "arrived") && r.driverId === activeDriver?.id
   ), [materialRequests, activeDriver]);
   const todayDelivered = useMemo(() => {
     const today = new Date().toDateString();
@@ -179,7 +180,8 @@ export function DriverView({ app }) {
         lat: proj?.lat || null,
         lng: proj?.lng || null,
         projectName: req.projectName || proj?.name || "Unknown",
-        isInTransit: req.status === "in-transit" || req.status === "picked_up",
+        isInTransit: req.status === "in-transit" || req.status === "picked_up" || req.status === "arrived",
+        isArrived: req.status === "arrived",
         siteContact: proj?.siteContact || null,
         siteContactPhone: proj?.siteContactPhone || null,
         gateCode: proj?.gateCode || null,
@@ -360,6 +362,45 @@ export function DriverView({ app }) {
     show(t("Return Pickup") + " \u2713", "ok");
   };
 
+  // ── "Arrived at Site" intermediate status ──
+  const handleArrivedAtSite = (reqId) => {
+    const now = new Date().toISOString();
+    navigator.geolocation?.getCurrentPosition(
+      (pos) => {
+        setMaterialRequests(prev => prev.map(r => {
+          if (r.id !== reqId) return r;
+          const trail = [...(r.auditTrail || []), { action: "arrived", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, timestamp: now, gps: { lat: pos.coords.latitude, lng: pos.coords.longitude } }];
+          return { ...r, status: "arrived", arrivedAt: now, auditTrail: trail };
+        }));
+      },
+      () => {
+        setMaterialRequests(prev => prev.map(r => {
+          if (r.id !== reqId) return r;
+          const trail = [...(r.auditTrail || []), { action: "arrived", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, timestamp: now }];
+          return { ...r, status: "arrived", arrivedAt: now, auditTrail: trail };
+        }));
+      }
+    );
+    show(t("Arrived at site") + " \u2713", "ok");
+  };
+
+  // ── "Refused" delivery ──
+  const [refusedStop, setRefusedStop] = useState(null);
+  const [refuseReason, setRefuseReason] = useState("");
+
+  const confirmRefuseDelivery = () => {
+    if (!refusedStop) return;
+    const now = new Date().toISOString();
+    setMaterialRequests(prev => prev.map(r => {
+      if (r.id !== refusedStop.id) return r;
+      const trail = [...(r.auditTrail || []), { action: "refused", actor: activeDriver?.name || "Driver", actorId: activeDriver?.id, timestamp: now, reason: refuseReason.trim() || "No reason given" }];
+      return { ...r, status: "refused", refusedAt: now, refuseReason: refuseReason.trim() || "No reason given", auditTrail: trail };
+    }));
+    show(t("Delivery refused") + " — " + (refuseReason.trim() || t("No reason given")), "warn");
+    setRefusedStop(null);
+    setRefuseReason("");
+  };
+
   const handleMarkDelivered = (delivery) => {
     setPodDelivery(delivery);
   };
@@ -513,6 +554,14 @@ export function DriverView({ app }) {
       />
 
       <div className="employee-body driver-content-pad">
+        {/* Offline status chip */}
+        {!network.online && (
+          <div className="offline-status-chip">
+            <span className="offline-pulse-dot" />
+            {t("Offline Mode")} — {t("saved locally")}
+            {network.lastSync > 0 && <span className="offline-last-sync">{t("Last synced")}: {(() => { const m = Math.round((Date.now() - network.lastSync) / 60000); return m < 1 ? t("just now") : `${m}m ago`; })()}</span>}
+          </div>
+        )}
 
         {/* ═══ HOME TAB — Dashboard hero + stat tiles + alerts ═══ */}
         {driverTab === "home" && (
@@ -666,8 +715,8 @@ export function DriverView({ app }) {
                           </div>
                         )}
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: stop.isInTransit ? "var(--blue-dim)" : "var(--green-dim)", color: stop.isInTransit ? "var(--blue)" : "var(--green)", textTransform: "uppercase" }}>
-                            {stop.isInTransit ? t("In Transit") : t("Drop-Off")}
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: stop.isArrived ? "var(--amber-dim)" : stop.isInTransit ? "var(--blue-dim)" : "var(--green-dim)", color: stop.isArrived ? "var(--amber)" : stop.isInTransit ? "var(--blue)" : "var(--green)", textTransform: "uppercase" }}>
+                            {stop.isArrived ? t("Arrived") : stop.isInTransit ? t("In Transit") : t("Drop-Off")}
                           </span>
                           <span className="text-sm driver-project-name">{stop.projectName}</span>
                         </div>
@@ -746,14 +795,33 @@ export function DriverView({ app }) {
                           >
                             <Truck size={14} aria-hidden="true" /> {t("Start Delivery")}
                           </FieldButton>
+                        ) : stop.isArrived ? (
+                          <>
+                            <FieldButton
+                              variant="primary"
+                              className="btn-sm driver-action-btn driver-delivered-btn"
+                              onClick={() => handleMarkDelivered({ ...stop, materialName: stop.material })}
+                              t={t}
+                            >
+                              <CheckCircle size={14} aria-hidden="true" /> {t("Mark Delivered")}
+                            </FieldButton>
+                            <FieldButton
+                              variant="danger"
+                              className="btn-sm driver-action-btn"
+                              onClick={() => { setRefusedStop(stop); setRefuseReason(""); }}
+                              t={t}
+                            >
+                              <AlertTriangle size={14} aria-hidden="true" /> {t("Refused")}
+                            </FieldButton>
+                          </>
                         ) : (
                           <FieldButton
                             variant="primary"
-                            className="btn-sm driver-action-btn driver-delivered-btn"
-                            onClick={() => handleMarkDelivered({ ...stop, materialName: stop.material })}
+                            className="btn-sm driver-action-btn"
+                            onClick={() => handleArrivedAtSite(stop.id)}
                             t={t}
                           >
-                            <CheckCircle size={14} aria-hidden="true" /> {t("Mark Delivered")}
+                            <MapPin size={14} aria-hidden="true" /> {t("Arrived at Site")}
                           </FieldButton>
                         )}
                         {getNavLink(stop) && (
@@ -846,7 +914,7 @@ export function DriverView({ app }) {
               ) : (
                 <div className="driver-route-list">
                   {todayDelivered.map(req => (
-                    <PremiumCard key={req.id} variant="info" className="driver-completed-card">
+                    <PremiumCard key={req.id} variant="info" className="driver-completed-card" onClick={() => req.pod && setViewPod(req)}>
                       <div className="flex-between mb-4">
                         <span className="text-sm font-semi">{req.materialName || req.material || "Unknown"}</span>
                         <StatusBadge status="completed" t={t} />
@@ -857,6 +925,7 @@ export function DriverView({ app }) {
                         <div style={{ marginTop: 8, padding: 8, background: "var(--bg3)", borderRadius: 8, fontSize: 12 }}>
                           <div style={{ color: "var(--green)", fontWeight: 700 }}>POD: {req.pod.recipientName} — {req.pod.condition}</div>
                           {req.pod.photos?.length > 0 && <div style={{ color: "var(--text3)" }}>{req.pod.photos.length} photo(s)</div>}
+                          <div style={{ color: "var(--blue)", fontSize: 11, marginTop: 4, fontWeight: 600 }}>{t("Tap to view full POD")} →</div>
                         </div>
                       )}
                     </PremiumCard>
@@ -1038,6 +1107,85 @@ export function DriverView({ app }) {
           onClose={() => setShortageDelivery(null)}
           t={t}
         />
+      )}
+      {/* Refuse delivery confirmation */}
+      {refusedStop && (
+        <div className="field-tab-sheet-overlay" onClick={() => setRefusedStop(null)}>
+          <div className="field-tab-sheet" onClick={e => e.stopPropagation()} style={{ maxWidth: 400, padding: 24 }}>
+            <h3 style={{ margin: "0 0 12px", fontSize: 16, color: "var(--red)" }}>{t("Refuse Delivery")}</h3>
+            <p style={{ fontSize: 13, color: "var(--text2)", margin: "0 0 12px" }}>
+              {refusedStop.projectName} — {refusedStop.material || refusedStop.materialName}
+            </p>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "var(--text2)", display: "block", marginBottom: 6 }}>{t("Reason")}</label>
+            <textarea
+              value={refuseReason}
+              onChange={e => setRefuseReason(e.target.value)}
+              placeholder={t("Site not ready, wrong material, no one to receive...")}
+              style={{ width: "100%", minHeight: 80, padding: 10, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg2)", color: "var(--text1)", fontSize: 14, resize: "vertical" }}
+            />
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <FieldButton variant="ghost" className="flex-1" onClick={() => setRefusedStop(null)} t={t}>{t("Cancel")}</FieldButton>
+              <FieldButton variant="danger" className="flex-1" onClick={confirmRefuseDelivery} t={t}>{t("Confirm Refusal")}</FieldButton>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* POD detail view — full proof-of-delivery record */}
+      {viewPod && viewPod.pod && (
+        <div className="modal-overlay" onClick={() => setViewPod(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 480, width: "100%", background: "var(--card)", borderRadius: 16, padding: 0, overflow: "hidden", maxHeight: "85vh" }}>
+            <div style={{ background: "var(--navy, #0f1f2e)", padding: "20px 20px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+              <CheckCircle size={24} color="var(--green)" />
+              <div style={{ flex: 1 }}>
+                <div style={{ color: "#fff", fontWeight: 700, fontSize: 17 }}>{t("Proof of Delivery")}</div>
+                <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 12 }}>{viewPod.projectName} — {viewPod.materialName || viewPod.material}</div>
+              </div>
+              <button onClick={() => setViewPod(null)} style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: 8, width: 32, height: 32, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+            </div>
+            <div style={{ padding: 20, overflowY: "auto", maxHeight: "65vh", display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* Delivery info */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div><div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase" }}>{t("Delivered")}</div><div style={{ fontSize: 14, fontWeight: 600 }}>{viewPod.deliveredAt ? new Date(viewPod.deliveredAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</div></div>
+                <div><div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase" }}>{t("Qty")}</div><div style={{ fontSize: 14, fontWeight: 600 }}>{viewPod.qty} {viewPod.unit}</div></div>
+              </div>
+              {/* Recipient + Condition */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div><div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase" }}>{t("Recipient")}</div><div style={{ fontSize: 14, fontWeight: 600 }}>{viewPod.pod.recipientName || "—"}</div></div>
+                <div><div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase" }}>{t("Condition")}</div><div style={{ fontSize: 14, fontWeight: 600, color: viewPod.pod.condition === "Intact" ? "var(--green)" : viewPod.pod.condition === "Damaged" ? "var(--red)" : "var(--amber)" }}>{t(viewPod.pod.condition)}</div></div>
+              </div>
+              {/* GPS */}
+              {viewPod.pod.gps && (
+                <div><div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase" }}>{t("GPS Location")}</div><div style={{ fontSize: 13 }}>{viewPod.pod.gps.lat.toFixed(5)}, {viewPod.pod.gps.lng.toFixed(5)} <span style={{ color: "var(--text3)", fontSize: 11 }}>(±{viewPod.pod.gps.accuracy}m)</span></div></div>
+              )}
+              {/* Notes */}
+              {viewPod.pod.notes && (
+                <div><div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase" }}>{t("Notes")}</div><div style={{ fontSize: 13 }}>{viewPod.pod.notes}</div></div>
+              )}
+              {/* Photos */}
+              {viewPod.pod.photos?.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }}>{t("Photos")} ({viewPod.pod.photos.length})</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: 8 }}>
+                    {viewPod.pod.photos.map((p, i) => <img key={i} src={p.data} alt={p.name} style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 8 }} />)}
+                  </div>
+                </div>
+              )}
+              {/* Signature */}
+              {viewPod.pod.signature && (
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }}>{t("Signature")}</div>
+                  <div style={{ background: "#fff", borderRadius: 8, padding: 8 }}>
+                    <img src={viewPod.pod.signature} alt="Signature" style={{ width: "100%", maxHeight: 120, objectFit: "contain" }} />
+                  </div>
+                </div>
+              )}
+              {/* Timestamp */}
+              <div style={{ fontSize: 11, color: "var(--text3)", textAlign: "center", borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+                POD {t("recorded")} {viewPod.pod.timestamp ? new Date(viewPod.pod.timestamp).toLocaleString() : "—"}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
