@@ -928,6 +928,9 @@ function App({ auth, onLogout }) {
               </select>
             )}
             {dashActions.urgentCount > 0 && <span style={{ color: "var(--red)", fontWeight: 700 }}>{dashActions.urgentCount} items need attention</span>}
+            <span style={{ fontSize: 10, color: "var(--text3)", marginLeft: 8 }}>
+              {t("Data")}: {new Date().toLocaleTimeString([], {hour: "numeric", minute: "2-digit"})} ({t("local")})
+            </span>
           </div>
         </div>
         <div className="flex gap-8">
@@ -1148,6 +1151,47 @@ function App({ auth, onLogout }) {
         );
       })()}
 
+      {/* ── Today's Manpower — cross-project headcount ── */}
+      {(() => {
+        const todayStr2 = new Date().toDateString();
+        const todayKey2 = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+        // Group crew by project from today's clock-ins + schedule
+        const projManpower = {};
+        timeEntries.filter(te => new Date(te.clockIn).toDateString() === todayStr2).forEach(te => {
+          const pid = te.projectId;
+          if (!projManpower[pid]) projManpower[pid] = { crew: new Set(), hours: 0 };
+          projManpower[pid].crew.add(te.employeeId);
+          projManpower[pid].hours += te.totalHours || 0;
+        });
+        // Also add scheduled (not yet clocked in)
+        (teamSchedule || []).filter(s => s.days?.[todayKey2]).forEach(s => {
+          const pid = s.projectId;
+          if (!projManpower[pid]) projManpower[pid] = { crew: new Set(), hours: 0 };
+          projManpower[pid].crew.add(s.employeeId);
+        });
+        const entries = Object.entries(projManpower);
+        if (entries.length === 0) return null;
+        const totalCrew = new Set(entries.flatMap(([, v]) => [...v.crew])).size;
+        return (
+          <div className="card" style={{ padding: "14px 16px", marginBottom: 16, borderLeft: "3px solid var(--blue)" }}>
+            <div className="text-sm font-semi mb-8" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <HardHat size={15} /> {t("Today's Manpower")} — {totalCrew} {t("crew")} {t("across")} {entries.length} {t("sites")}
+            </div>
+            {entries.map(([pid, data]) => {
+              const proj = projects.find(p => String(p.id) === String(pid));
+              if (!proj) return null;
+              return (
+                <div key={pid} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid var(--border)", fontSize: 12, cursor: "pointer" }}
+                  onClick={() => setModal({ type: "editProject", data: proj })}>
+                  <span style={{ color: "var(--blue)", fontWeight: 600 }}>{proj.name}</span>
+                  <span><strong>{data.crew.size}</strong> crew · {data.hours.toFixed(0)}h</span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
       {/* ── Today's Sites — quick directions / clock-in ── */}
       {(() => {
         const mySites = projects.filter(p => p.status === "in-progress" && p.lat && p.lng);
@@ -1306,13 +1350,16 @@ function App({ auth, onLogout }) {
               <div className="text-xs text-muted" style={{ marginTop: 2 }}>{fmtK(dashActions.cosPendingTotal)} awaiting approval</div>
             </div>
           )}
-          {dashActions.rfisOpen.length > 0 && (
-            <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--blue)" }} onClick={() => handleTabClick("projects")}>
-              <div className="text-xs text-muted">Open RFIs</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: "var(--blue)" }}>{dashActions.rfisOpen.length}</div>
-              {dashActions.rfisOpen[0]?.age > 7 && <div className="text-xs" style={{ color: "var(--red)", marginTop: 2 }}>Oldest: {dashActions.rfisOpen[0].age}d</div>}
-            </div>
-          )}
+          {dashActions.rfisOpen.length > 0 && (() => {
+            const overdueRfis = dashActions.rfisOpen.filter(r => r.age > 7);
+            return (
+              <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: `3px solid ${overdueRfis.length > 0 ? "var(--red)" : "var(--blue)"}` }} onClick={() => handleTabClick("projects")}>
+                <div className="text-xs text-muted">Open RFIs</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: overdueRfis.length > 0 ? "var(--red)" : "var(--blue)" }}>{dashActions.rfisOpen.length}</div>
+                {overdueRfis.length > 0 && <div className="text-xs" style={{ color: "var(--red)", fontWeight: 700, marginTop: 2 }}>{overdueRfis.length} overdue (oldest: {dashActions.rfisOpen[0].age}d)</div>}
+              </div>
+            );
+          })()}
           {dashActions.subsDueSoon.length > 0 && (
             <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--amber)" }} onClick={() => handleTabClick("projects")}>
               <div className="text-xs text-muted">Submittals Due</div>
@@ -5310,15 +5357,27 @@ const ModalHub = ({ type, data, app }) => {
             )}
 
             {/* ── Financials ── */}
-            {projTab === "financials" && (
+            {projTab === "financials" && (() => {
+              const approvedCOTotal = projCOs.filter(c => c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
+              const pendingCOTotal = projCOs.filter(c => c.status !== "approved" && c.status !== "rejected").reduce((s, c) => s + (c.amount || 0), 0);
+              return (
               <div>
                 <div className="flex gap-16 mb-16 flex-wrap">
                   <div><span className="text-dim text-xs">CONTRACT</span><div className="font-mono text-amber">{fmt(draft.contract)}</div></div>
-                  <div><span className="text-dim text-xs">COs</span><div className="font-mono">{fmt(projCOs.reduce((s, c) => s + (c.amount || 0), 0))}</div></div>
-                  <div><span className="text-dim text-xs">REVISED</span><div className="font-mono font-bold">{fmt((draft.contract || 0) + projCOs.reduce((s, c) => s + (c.amount || 0), 0))}</div></div>
+                  <div><span className="text-dim text-xs">APPROVED COs</span><div className="font-mono" style={{color: "var(--green)"}}>{fmt(approvedCOTotal)}</div></div>
+                  <div><span className="text-dim text-xs">PENDING COs</span><div className="font-mono" style={{color: pendingCOTotal > 0 ? "var(--red)" : "var(--text3)"}}>{fmt(pendingCOTotal)}</div></div>
+                  <div><span className="text-dim text-xs">REVISED</span><div className="font-mono font-bold">{fmt((draft.contract || 0) + approvedCOTotal)}</div></div>
                   <div><span className="text-dim text-xs">INVOICED</span><div className="font-mono">{fmt(totalBilled)}</div></div>
                   <div><span className="text-dim text-xs">REMAINING</span><div className="font-mono" style={{ color: remaining > 0 ? "var(--green)" : "var(--red)" }}>{fmt(remaining)}</div></div>
                 </div>
+                {/* Labor budget vs actual */}
+                {(draft.laborBudget > 0 || draft.laborCost > 0) && (
+                  <div style={{ display: "flex", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
+                    <div><span className="text-dim text-xs">LABOR BUDGET</span><div className="font-mono">{fmt(draft.laborBudget || 0)}</div></div>
+                    <div><span className="text-dim text-xs">LABOR SPENT</span><div className="font-mono" style={{ color: (draft.laborCost || 0) > (draft.laborBudget || 0) ? "var(--red)" : "var(--text)" }}>{fmt(draft.laborCost || 0)}</div></div>
+                    <div><span className="text-dim text-xs">LABOR REMAINING</span><div className="font-mono" style={{ color: ((draft.laborBudget || 0) - (draft.laborCost || 0)) > 0 ? "var(--green)" : "var(--red)" }}>{fmt((draft.laborBudget || 0) - (draft.laborCost || 0))}</div></div>
+                  </div>
+                )}
                 {projInvoices.length > 0 && (
                   <table className="data-table">
                     <thead><tr><th>#</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
@@ -5335,7 +5394,8 @@ const ModalHub = ({ type, data, app }) => {
                   </table>
                 )}
               </div>
-            )}
+              );
+            })()}
 
             {/* ── Closeout ── */}
             {projTab === "closeout" && (() => {

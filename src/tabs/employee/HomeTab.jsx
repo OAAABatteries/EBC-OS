@@ -180,6 +180,11 @@ export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, m
                     )}
                   </div>
                 ))}
+                {/* Quick-log shortcut */}
+                <FieldButton variant="ghost" onClick={(e) => { e.stopPropagation(); setEmpTab("production"); }} t={t}
+                  style={{width: '100%', marginTop: 8, fontSize: 12, gap: 6, justifyContent: 'center', color: 'var(--green)', borderColor: 'var(--green)', border: '1px solid var(--green)', borderRadius: 6}}>
+                  {t("Log Progress")}
+                </FieldButton>
               </div>
             )}
           </PremiumCard>

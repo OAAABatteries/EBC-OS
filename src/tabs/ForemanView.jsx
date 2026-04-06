@@ -3903,8 +3903,36 @@ export function ForemanView({ app }) {
             {/* ═══ DOCUMENTS TAB ═══ */}
             {foremanTab === "documents" && (
               <div className="emp-content">
-                <div className="section-header">
+                <div className="section-header" style={{ alignItems: "center" }}>
                   <div className="section-title" style={{ fontSize: 16 }}>{t("Documents")}</div>
+                  <button className="btn btn-sm" style={{ background: "var(--accent)", color: "#fff", borderRadius: 8, border: "none", display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}
+                    onClick={() => setShowRfiModal(true)}>
+                    <FileQuestion size={14} /> {t("New RFI")}
+                  </button>
+                </div>
+
+                {/* My RFIs */}
+                <div className="project-section" style={{ marginBottom: 12 }}>
+                  <div className="project-section-header" onClick={() => toggleSection("myRfis")}>
+                    <span>{t("My RFIs")} ({(rfis || []).filter(r => String(r.projectId) === String(selectedProjectId)).length})</span>
+                    <span>{openSections.myRfis ? "▾" : "▸"}</span>
+                  </div>
+                  {openSections.myRfis && (() => {
+                    const myRfis = (rfis || []).filter(r => String(r.projectId) === String(selectedProjectId)).sort((a, b) => (b.submitted || b.dateSubmitted || "").localeCompare(a.submitted || a.dateSubmitted || ""));
+                    return myRfis.length === 0
+                      ? <div className="text-xs text-muted" style={{ padding: "8px 0" }}>{t("No RFIs submitted")}</div>
+                      : myRfis.map(r => (
+                        <div key={r.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)", fontSize: 12 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span className="font-bold">{r.number}</span>
+                            <span className={`badge ${r.status === "open" || r.status === "submitted" ? "badge-amber" : r.status === "Answered" ? "badge-green" : "badge-muted"}`} style={{ fontSize: 10 }}>{r.status}</span>
+                          </div>
+                          <div className="text-muted" style={{ marginTop: 2 }}>{r.subject}</div>
+                          {r.response && <div style={{ marginTop: 4, padding: "4px 8px", background: "var(--green-dim, rgba(16,185,129,0.1))", borderRadius: 4, color: "var(--green)", fontSize: 11 }}>{t("Answer")}: {r.response}</div>}
+                          {r.daysOut > 0 && !r.response && <div className="text-dim" style={{ marginTop: 2 }}>{r.daysOut}d {t("outstanding")}</div>}
+                        </div>
+                      ));
+                  })()}
                 </div>
 
                 {/* Submittals */}
