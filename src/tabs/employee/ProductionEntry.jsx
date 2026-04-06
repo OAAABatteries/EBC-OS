@@ -33,11 +33,12 @@ export function ProductionEntry({
   const todayStr = new Date().toISOString().slice(0, 10);
   const assignedEntry = useMemo(() => {
     if (!schedule || !Array.isArray(schedule)) return null;
+    const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
     return schedule.find(
       (s) =>
-        s.employeeId === employeeId &&
+        String(s.employeeId) === String(employeeId) &&
         s.areaId &&
-        s.date?.slice(0, 10) === todayStr
+        (s.days?.[todayKey] || s.date?.slice(0, 10) === todayStr)
     );
   }, [schedule, employeeId, todayStr]);
 

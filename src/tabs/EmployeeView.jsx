@@ -1601,7 +1601,7 @@ export function EmployeeView({ app }) {
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
                   {['5/8" GWB', '1/2" GWB', '3-5/8" Studs', '1-5/8" Track', 'Screws', 'Tape', 'Mud/JDL', 'Corner Bead', 'ACT Tile', 'Grid Wire', 'Insulation', 'Other'].map(item => (
                     <button key={item} type="button"
-                      style={{ padding: "5px 10px", fontSize: 11, fontWeight: matForm.material === item ? 700 : 500, borderRadius: 6, border: matForm.material === item ? "2px solid var(--accent)" : "1px solid var(--border)", background: matForm.material === item ? "var(--accent)" : "var(--bg3)", color: matForm.material === item ? "#fff" : "var(--text)", cursor: "pointer" }}
+                      style={{ padding: "8px 14px", fontSize: 13, fontWeight: matForm.material === item ? 700 : 500, borderRadius: 8, border: matForm.material === item ? "2px solid var(--accent)" : "1px solid var(--border)", background: matForm.material === item ? "var(--accent)" : "var(--bg3)", color: matForm.material === item ? "#fff" : "var(--text)", cursor: "pointer", minHeight: 36 }}
                       onClick={() => setMatForm(f => ({ ...f, material: item === "Other" ? "" : item }))}>
                       {item}
                     </button>
