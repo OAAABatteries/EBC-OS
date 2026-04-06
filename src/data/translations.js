@@ -940,6 +940,8 @@ export const T = {
   "My Hours": { es: "Mis Horas" },
   "or type custom material name": { es: "o escribe nombre del material" },
   "Complete Return": { es: "Completar Retorno" },
+  "TOMORROW": { es: "MAÑANA" },
+  "Look-Ahead": { es: "Vista Previa" },
   "Return completed": { es: "Retorno completado" },
   "worked": { es: "trabajadas" },
   "paid": { es: "pagadas" },

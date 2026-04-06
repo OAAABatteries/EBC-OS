@@ -1084,7 +1084,7 @@ function App({ auth, onLogout }) {
       {(() => {
         const today = new Date(); today.setHours(0,0,0,0);
         const weekDays = [];
-        for (let i = 0; i < 7; i++) {
+        for (let i = 0; i < lookAheadDays; i++) {
           const d = new Date(today); d.setDate(d.getDate() + i);
           weekDays.push(d);
         }
@@ -1116,7 +1116,14 @@ function App({ auth, onLogout }) {
           <div className="card" style={{ padding: "14px 16px", marginBottom: 16, borderLeft: "3px solid var(--amber)" }}>
             <div className="text-sm font-semi mb-8" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <Calendar size={15} /> {t("This Week Look-Ahead")}
+                <Calendar size={15} /> {t("Look-Ahead")}
+                <span style={{ display: "flex", gap: 2, marginLeft: 8 }}>
+                  {[7, 14, 21].map(d => (
+                    <button key={d} className={`btn btn-sm ${lookAheadDays === d ? "btn-primary" : "btn-ghost"}`}
+                      style={{ fontSize: 10, padding: "2px 6px", minHeight: 0 }}
+                      onClick={() => setLookAheadDays(d)}>{d}d</button>
+                  ))}
+                </span>
               </span>
               <button className="btn btn-ghost btn-sm" onClick={() => handleTabClick("calendar")}>{t("Full Calendar")}</button>
             </div>
@@ -2939,6 +2946,7 @@ function App({ auth, onLogout }) {
   const [briefResult, setBriefResult] = useState(null);
   const [briefLoading, setBriefLoading] = useState(false);
   const [showBrief, setShowBrief] = useState(false);
+  const [lookAheadDays, setLookAheadDays] = useState(7);
 
   const runMorningBrief = async () => {
     if (!apiKey) { show("Set API key in Settings first", "err"); return; }

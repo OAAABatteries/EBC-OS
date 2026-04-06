@@ -1292,7 +1292,14 @@ export function ForemanView({ app }) {
                 {/* Quick Actions — 1-tap access to Labor Entry + Daily Report */}
                 <div style={{ display: "flex", gap: 8, marginTop: "var(--space-4)" }}>
                   <button className="btn touch-target" style={{ flex: 1, height: 48, fontSize: 14, fontWeight: 700, borderRadius: 10, background: "var(--amber)", color: "#fff", border: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-                    onClick={() => { setForemanTab("team"); setShowLaborEntry(true); }}>
+                    onClick={() => {
+                      setForemanTab("team");
+                      setShowLaborEntry(true);
+                      // Pre-check clocked-in crew for bulk labor
+                      const autoSelected = {};
+                      Object.keys(teamClocks).forEach(id => { autoSelected[id] = true; });
+                      if (Object.keys(autoSelected).length > 0) setBulkLaborSelected(autoSelected);
+                    }}>
                     <ClockIcon size={16} /> {t("Enter Labor")}
                   </button>
                   <button className="btn touch-target" style={{ flex: 1, height: 48, fontSize: 14, fontWeight: 700, borderRadius: 10, background: "var(--blue)", color: "#fff", border: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}

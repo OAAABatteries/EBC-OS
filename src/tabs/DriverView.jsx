@@ -661,9 +661,7 @@ export function DriverView({ app }) {
                         {/* Pickup location indicator */}
                         {!stop.isInTransit && stop.pickupName && (
                           <div style={{ fontSize: 10, color: "var(--amber)", fontWeight: 700, marginBottom: 4 }}>
-                            <Package size={10} style={{verticalAlign: "middle", marginRight: 3}} />{t("PICKUP")}: {stop.pickupAddress && stop.pickupAddress !== "EBC Material Yard"
-                              ? <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(stop.pickupAddress)}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--amber)", textDecoration: "none" }}>{stop.pickupName}{stop.pickupAddress !== stop.pickupName ? ` — ${stop.pickupAddress}` : ""}</a>
-                              : <>{stop.pickupName}{stop.pickupAddress && stop.pickupAddress !== stop.pickupName ? ` — ${stop.pickupAddress}` : ""}</>}
+                            <Package size={10} style={{verticalAlign: "middle", marginRight: 3}} />{t("PICKUP")}: <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(stop.pickupAddress || stop.pickupName || "EBC Yard")}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--amber)", textDecoration: "none" }}>{stop.pickupName}{stop.pickupAddress && stop.pickupAddress !== stop.pickupName ? ` — ${stop.pickupAddress}` : ""}</a>
                             {stop.pickupPhone && <a href={`tel:${stop.pickupPhone}`} style={{ marginLeft: 8, color: "var(--amber)", fontWeight: 700, textDecoration: "none" }}>{stop.pickupPhone}</a>}
                           </div>
                         )}

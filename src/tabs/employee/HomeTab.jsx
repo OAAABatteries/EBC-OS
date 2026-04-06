@@ -227,6 +227,32 @@ export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, m
           </>
         )}
       </div>
+
+      {/* 5. Tomorrow preview — what's next */}
+      {(() => {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowKey = ['sun','mon','tue','wed','thu','fri','sat'][tomorrow.getDay()];
+        const tomorrowWork = mySchedule.filter(s => s.days?.[tomorrowKey] && s.projectId).map(s => {
+          const proj = projects.find(p => p.id === s.projectId);
+          const area = s.areaId ? (areas || []).find(a => String(a.id) === String(s.areaId)) : null;
+          return { task: s.task || area?.name || proj?.name || "", trade: s.trade || "", floor: s.floor || area?.floor || "", zone: s.zone || area?.zone || "" };
+        });
+        if (tomorrowWork.length === 0) return null;
+        return (
+          <div style={{marginTop: 'var(--space-8)'}}>
+            <div className="section-label">{t("TOMORROW")}</div>
+            <div style={{marginTop: 'var(--space-2)', padding: '10px 12px', background: 'var(--bg3)', borderRadius: 8, borderLeft: '3px solid var(--blue)'}}>
+              {tomorrowWork.map((w, i) => (
+                <div key={i} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: i > 0 ? '4px 0 0' : 0}}>
+                  <span className="text-sm">{w.task}{w.floor ? ` — ${t("Floor")} ${w.floor}` : ""}</span>
+                  {w.trade && <span style={{fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'var(--blue-dim, rgba(59,130,246,0.15))', color: 'var(--blue)'}}>{w.trade}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

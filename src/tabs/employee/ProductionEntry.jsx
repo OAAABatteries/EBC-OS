@@ -102,8 +102,8 @@ export function ProductionEntry({
       budgetQty: scopeItem?.budgetQty || null,
     });
 
-    // Reset form
-    setSelectedScopeIdx(null);
+    // Reset form — keep last scope item selected for repeat entries
+    // setSelectedScopeIdx(null); // intentionally NOT reset — crew often logs same item multiple times
     setQty("");
     setPhotos([]);
     setSaving(false);

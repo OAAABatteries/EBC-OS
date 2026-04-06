@@ -121,7 +121,12 @@ export function EmployeeView({ app }) {
     `mat_request_${activeEmp?.id || "anon"}`,
     { material: "", qty: "", unit: "EA", notes: "", photo: null, photos: [] }
   );
-  const [matProjectId, setMatProjectId] = useState(null);
+  const [matProjectId, setMatProjectId] = useState(() => {
+    // Auto-select today's assigned project
+    const todayDay = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+    const todayEntry = (teamSchedule || []).find(s => String(s.employeeId) === String(activeEmp?.id) && s.days?.[todayDay] && s.projectId);
+    return todayEntry?.projectId || null;
+  });
 
   // ── clock map ──
   const clockMapRef = useRef(null);
@@ -937,34 +942,7 @@ export function EmployeeView({ app }) {
 
         {/* ═══ HOME TAB ═══ */}
         {empTab === "home" && (<>
-          {/* Today's Work card */}
-          {/* Today's Work — shows all assignments with area/floor/zone/trade */}
-          {(() => {
-            const todayDay = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
-            const todayEntries = (teamSchedule || []).filter(s => String(s.employeeId) === String(activeEmp?.id) && s.days?.[todayDay] && s.projectId);
-            if (todayEntries.length === 0) return null;
-            return (
-              <div style={{ padding: 16, background: "var(--bg3)", borderRadius: 12, marginBottom: 16 }}>
-                <div style={{ fontSize: "var(--text-sm)", color: "var(--text3)", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>{t("Today's Work")}</div>
-                {todayEntries.map((s, i) => {
-                  const area = s.areaId ? (areas || []).find(a => String(a.id) === String(s.areaId)) : null;
-                  const proj = projects.find(p => p.id === s.projectId);
-                  return (
-                    <div key={s.id || i} style={{ padding: i > 0 ? '8px 0 0' : 0, borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)" }}>{s.task || area?.name || proj?.name || "—"}</div>
-                      <div style={{ fontSize: 14, color: "var(--text2)", marginTop: 4 }}>
-                        {area ? `${t("Floor")} ${area.floor}, ${t("Zone")} ${area.zone} — ${area.name}` : (proj?.address || "")}
-                        {!area && s.floor && ` · ${t("Floor")} ${s.floor}`}
-                        {!area && s.zone && `, ${t("Zone")} ${s.zone}`}
-                      </div>
-                      {s.trade && <div style={{ display: "inline-block", padding: "4px 10px", background: "var(--amber-dim)", color: "var(--amber)", borderRadius: 6, fontSize: "var(--text-sm)", fontWeight: 700, marginTop: 8 }}>{t(s.trade)}</div>}
-                      {area?.notes && <div style={{ marginTop: 8, padding: "8px 12px", background: "var(--amber-dim)", borderRadius: 8, fontSize: "var(--text-sm)", color: "var(--amber)", fontWeight: 600, borderLeft: "3px solid var(--amber)" }}>{area.notes}</div>}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
+          {/* Today's Work is rendered inside HomeTab — no duplicate inline card */}
           <HomeTab
             activeEmp={activeEmp}
             isClockedIn={isClockedIn}

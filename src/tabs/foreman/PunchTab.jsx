@@ -59,10 +59,14 @@ export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees
   const advanceStatus = (item) => {
     const next = STATUS_FLOW[item.status];
     if (!next) return;
+    const now = new Date().toISOString();
     setPunchItems((prev) =>
       prev.map((p) =>
         p.id === item.id
-          ? { ...p, status: next, ...(next === "complete" ? { completedAt: new Date().toISOString() } : {}) }
+          ? { ...p, status: next,
+              ...(next === "complete" ? { completedAt: now } : {}),
+              auditTrail: [...(p.auditTrail || []), { action: "status_changed", from: item.status, to: next, actor: foreman?.name || "Foreman", at: now }]
+            }
           : p
       )
     );
@@ -117,6 +121,7 @@ export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees
       return;
     }
 
+    const now = new Date().toISOString();
     const newItem = {
       id: crypto.randomUUID(),
       projectId: Number(projectId),
@@ -126,10 +131,11 @@ export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees
       priority: formPriority,
       status: "open",
       photos: formPhotos,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
       completedAt: null,
       signedOffBy: null,
       signedOffAt: null,
+      auditTrail: [{ action: "created", actor: foreman?.name || "Foreman", at: now }],
     };
     setPunchItems((prev) => [...prev, newItem]);
     resetForm();
