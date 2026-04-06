@@ -1712,14 +1712,14 @@ export function ForemanView({ app }) {
                     <span className="text-xs text-muted">{t("Stage")}:</span>
                     {(() => {
                       const STAGES = [
-                        { key: "pre-con", label: "Pre-Con", color: "#8b5cf6", progress: 5 },
-                        { key: "mobilize", label: "Mobilize", color: "#3b82f6", progress: 10 },
-                        { key: "demo", label: "Demo", color: "#ef4444", progress: 20 },
-                        { key: "framing", label: "Framing", color: "#f59e0b", progress: 40 },
-                        { key: "board", label: "Board", color: "#f97316", progress: 60 },
-                        { key: "tape", label: "Tape/Finish", color: "#10b981", progress: 80 },
-                        { key: "punch", label: "Punch", color: "#06b6d4", progress: 90 },
-                        { key: "closeout", label: "Closeout", color: "#6366f1", progress: 100 },
+                        { key: "pre-con", label: "Pre-Con", color: "var(--purple, #8b5cf6)", progress: 5 },
+                        { key: "mobilize", label: "Mobilize", color: "var(--blue)", progress: 10 },
+                        { key: "demo", label: "Demo", color: "var(--red)", progress: 20 },
+                        { key: "framing", label: "Framing", color: "var(--amber)", progress: 40 },
+                        { key: "board", label: "Board", color: "var(--accent)", progress: 60 },
+                        { key: "tape", label: "Tape/Finish", color: "var(--green)", progress: 80 },
+                        { key: "punch", label: "Punch", color: "var(--cyan, #06b6d4)", progress: 90 },
+                        { key: "closeout", label: "Closeout", color: "var(--indigo, #6366f1)", progress: 100 },
                       ];
                       const currentIdx = STAGES.findIndex(s => s.key === selectedProject.constructionStage);
                       const current = currentIdx >= 0 ? STAGES[currentIdx] : null;
@@ -2467,7 +2467,7 @@ export function ForemanView({ app }) {
                     ) : myJsas.sort((a, b) => b.date.localeCompare(a.date)).map(j => {
                       const maxRisk = Math.max(0, ...j.steps.flatMap(s => (s.hazards || []).map(h => (h.likelihood || 1) * (h.severity || 1))));
                       const rc = riskColor(maxRisk);
-                      const statusClr = j.status === "active" ? "#10b981" : j.status === "draft" ? "#f59e0b" : "var(--text3)";
+                      const statusClr = j.status === "active" ? "var(--green)" : j.status === "draft" ? "var(--amber)" : "var(--text3)";
                       const proj = projects.find(p => String(p.id) === String(j.projectId));
                       return (
                         <div key={j.id} className="card" style={{ padding: 12, marginBottom: 8, cursor: "pointer" }} onClick={() => { setActiveJsaId(j.id); setJsaView("detail"); }}>
@@ -2658,18 +2658,18 @@ export function ForemanView({ app }) {
                                 style={{
                                   display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px",
                                   background: isChecked ? "var(--bg2)" : "var(--bg3)",
-                                  border: `1.5px solid ${isChecked ? "#eab308" : "var(--border)"}`,
+                                  border: `1.5px solid ${isChecked ? "var(--amber)" : "var(--border)"}`,
                                   borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
                                 }}
                               >
-                                <div style={{ flexShrink: 0, marginTop: 1, color: isChecked ? "#eab308" : "var(--text3)" }}>
+                                <div style={{ flexShrink: 0, marginTop: 1, color: isChecked ? "var(--amber)" : "var(--text3)" }}>
                                   {isChecked ? <CheckSquare size={18} /> : <Square size={18} />}
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ fontSize: 13, fontWeight: 600, color: isChecked ? "var(--text)" : "var(--text3)" }}>{wh.hazard}</div>
                                   {wh.hazardEs && <div style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic" }}>{wh.hazardEs}</div>}
                                 </div>
-                                <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "#eab30822", color: "#eab308", fontWeight: 700, flexShrink: 0 }}>
+                                <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "#eab30822", color: "var(--amber)", fontWeight: 700, flexShrink: 0 }}>
                                   Weather
                                 </span>
                               </div>

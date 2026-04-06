@@ -178,24 +178,20 @@ export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, m
             <div className="text-sm text-muted">{assignedProject.address || assignedProject.location || ''}</div>
             {/* Area/task/trade detail from schedule */}
             {todayWork.length > 0 && todayWork[0].task && (
-              <div style={{marginTop: 8, padding: '8px 10px', background: 'var(--bg3)', borderRadius: 8}}>
+              <div className="home-work-detail">
                 {todayWork.map((w, i) => (
-                  <div key={i} style={{display: 'flex', alignItems: 'center', gap: 8, padding: i > 0 ? '6px 0 0' : 0, borderTop: i > 0 ? '1px solid var(--border)' : 'none'}}>
-                    <div style={{flex: 1}}>
-                      <div style={{fontSize: 14, fontWeight: 700, color: 'var(--text)'}}>{w.task || w.areaName}</div>
-                      <div style={{fontSize: 12, color: 'var(--text2)'}}>
+                  <div key={i} className={`home-work-item${i > 0 ? " home-work-item--border" : ""}`}>
+                    <div className="flex-1">
+                      <div className="home-work-task">{w.task || w.areaName}</div>
+                      <div className="home-work-location">
                         {w.floor && `${t("Floor")} ${w.floor}`}{w.zone && `, ${t("Zone")} ${w.zone}`}
                         {w.areaName && w.task !== w.areaName && ` — ${w.areaName}`}
                       </div>
                     </div>
-                    {w.trade && (
-                      <span style={{fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: 'var(--amber-dim, rgba(245,158,11,0.15))', color: 'var(--amber)', textTransform: 'uppercase'}}>{w.trade}</span>
-                    )}
+                    {w.trade && <span className="home-trade-badge">{w.trade}</span>}
                   </div>
                 ))}
-                {/* Quick-log shortcut */}
-                <FieldButton variant="ghost" onClick={(e) => { e.stopPropagation(); setEmpTab("production"); }} t={t}
-                  style={{width: '100%', marginTop: 8, fontSize: 12, gap: 6, justifyContent: 'center', color: 'var(--green)', borderColor: 'var(--green)', border: '1px solid var(--green)', borderRadius: 6}}>
+                <FieldButton variant="outline" className="home-log-progress-btn" onClick={(e) => { e.stopPropagation(); setEmpTab("production"); }} t={t}>
                   {t("Log Progress")}
                 </FieldButton>
               </div>
@@ -265,13 +261,13 @@ export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, m
         });
         if (tomorrowWork.length === 0) return null;
         return (
-          <div style={{marginTop: 'var(--space-8)'}}>
+          <div className="home-section">
             <div className="section-label">{t("TOMORROW")}</div>
-            <div style={{marginTop: 'var(--space-2)', padding: '10px 12px', background: 'var(--bg3)', borderRadius: 8, borderLeft: '3px solid var(--blue)'}}>
+            <div className="home-tomorrow-card">
               {tomorrowWork.map((w, i) => (
-                <div key={i} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: i > 0 ? '4px 0 0' : 0}}>
+                <div key={i} className={`home-tomorrow-item${i > 0 ? " home-tomorrow-item--gap" : ""}`}>
                   <span className="text-sm">{w.task}{w.floor ? ` — ${t("Floor")} ${w.floor}` : ""}</span>
-                  {w.trade && <span style={{fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'var(--blue-dim, rgba(59,130,246,0.15))', color: 'var(--blue)'}}>{w.trade}</span>}
+                  {w.trade && <span className="home-trade-badge home-trade-badge--blue">{w.trade}</span>}
                 </div>
               ))}
             </div>
