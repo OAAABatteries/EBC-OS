@@ -3683,7 +3683,7 @@ export function ForemanView({ app }) {
                 {/* ── Report List ── */}
                 <div style={{ marginTop: 16 }}>
                   {(dailyReports || [])
-                    .filter(r => myProjectIds.has(r.projectId))
+                    .filter(r => myProjectIds.has(r.projectId) && r.status !== "deleted")
                     .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || ""))
                     .map(r => {
                       const isExpanded = expandedReportId === r.id;
@@ -3869,7 +3869,7 @@ export function ForemanView({ app }) {
                                 <button className="btn btn-sm" style={{ fontSize: 11, color: "var(--red)" }}
                                   onClick={() => {
                                     if (confirm(t("Delete this daily report?"))) {
-                                      setDailyReports(prev => prev.filter(rp => rp.id !== r.id));
+                                      setDailyReports(prev => prev.map(rp => rp.id === r.id ? { ...rp, status: "deleted", deletedAt: new Date().toISOString(), deletedBy: activeForeman?.name || "Foreman" } : rp));
                                       setExpandedReportId(null);
                                       show(t("Report deleted"));
                                     }
