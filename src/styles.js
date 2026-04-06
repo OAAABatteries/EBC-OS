@@ -401,6 +401,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .foreman-action-btn{height:48px;font-size:var(--text-md);display:flex;align-items:center;justify-content:center;gap:var(--space-2)}
 .foreman-action-btn--amber.btn-primary{background:var(--amber);border-color:var(--amber)}
 .foreman-action-btn--blue.btn-primary{background:var(--blue);border-color:var(--blue)}
+.foreman-action-btn--green.btn-primary{background:var(--green);border-color:var(--green)}
 .foreman-action-btn--full{width:100%;margin-top:var(--space-2)}
 .foreman-action-badge{background:var(--accent);color:#fff;border-radius:10px;padding:1px 7px;font-size:var(--text-xs);font-weight:var(--weight-bold)}
 .foreman-report-problem-btn{width:100%;max-width:320px}
@@ -425,6 +426,21 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .foreman-team-cert-filters::-webkit-scrollbar{display:none}
 .foreman-team-cert-chip{background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:var(--text-sm);font-weight:var(--weight-bold);padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap;min-height:var(--touch-min)}
 .foreman-team-cert-chip--active{background:rgba(255,127,33,0.15);border-color:var(--accent);color:var(--accent)}
+/* ── FOREMAN ROLL CALL ── */
+.foreman-avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:var(--weight-bold);color:#fff;flex-shrink:0}
+.foreman-avatar--sm{width:30px;height:30px;font-size:var(--text-sm)}
+.foreman-avatar--md{width:36px;height:36px;font-size:var(--text-md)}
+.foreman-avatar--active{background:var(--green)}
+.foreman-avatar--inactive{background:var(--bg4);color:var(--text3)}
+.foreman-clock-chip{font-size:var(--text-xs);font-weight:var(--weight-semi);padding:4px 10px;border-radius:var(--radius-sm);white-space:nowrap}
+.foreman-clock-chip--in{background:var(--red);color:#fff}
+.foreman-clock-chip--out{background:var(--amber);color:#000}
+.foreman-crew-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:var(--space-2)}
+.foreman-crew-row{padding:var(--space-3) var(--space-3);display:flex;align-items:center;gap:var(--space-3)}
+.foreman-crew-row--clocked{border-left:3px solid var(--green)}
+.foreman-crew-row--not-clocked{border-left:3px solid var(--amber);opacity:0.8}
+.foreman-subsection-label{font-size:var(--text-xs);color:var(--text3);font-weight:var(--weight-semi);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:var(--space-2)}
+.foreman-roll-call-toggle{display:flex;gap:var(--space-2);margin-bottom:var(--space-4)}
 .foreman-team-cert-list{display:flex;flex-direction:column;gap:var(--space-3)}
 .foreman-team-cert-member{display:flex;flex-direction:column;gap:var(--space-2)}
 .foreman-team-cert-member-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-1)}

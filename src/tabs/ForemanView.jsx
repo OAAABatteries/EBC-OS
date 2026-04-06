@@ -1586,7 +1586,7 @@ export function ForemanView({ app }) {
                                         setCrewSearch(null);
                                       }}
                                     >
-                                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: isIn ? "var(--green)" : "var(--bg4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: isIn ? "#fff" : "var(--text3)", flexShrink: 0 }}>
+                                      <div className={`foreman-avatar foreman-avatar--sm ${isIn ? "foreman-avatar--active" : "foreman-avatar--inactive"}`}>
                                         {c.name.split(" ").map(n => n[0]).join("")}
                                       </div>
                                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -1596,7 +1596,7 @@ export function ForemanView({ app }) {
                                           {isAssigned && <span style={{ color: "var(--amber)", marginLeft: 4 }}>· {t("Assigned")}</span>}
                                         </div>
                                       </div>
-                                      <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 6, background: isIn ? "var(--red)" : "var(--amber)", color: isIn ? "#fff" : "#000", whiteSpace: "nowrap" }}>
+                                      <span className={`foreman-clock-chip ${isIn ? "foreman-clock-chip--in" : "foreman-clock-chip--out"}`}>
                                         {isIn ? t("Clock Out") : t("Clock In")}
                                       </span>
                                     </div>
@@ -1615,17 +1615,17 @@ export function ForemanView({ app }) {
                       const clockedIn = clockedInIds.map(id => employees.find(e => e.id === id)).filter(Boolean);
                       if (clockedIn.length === 0) return null;
                       return (
-                        <div style={{ marginBottom: 16 }}>
-                          <div className="text-xs text-muted" style={{ marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{t("Clocked In")} ({clockedIn.length})</div>
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>
+                        <div style={{ marginBottom: "var(--space-4)" }}>
+                          <div className="foreman-subsection-label">{t("Clocked In")} ({clockedIn.length})</div>
+                          <div className="foreman-crew-grid">
                             {clockedIn.map(c => {
                               const clockData = teamClocks[c.id];
                               const isAssigned = teamForProject.some(cp => cp.id === c.id);
                               const todayEntries = timeEntries.filter(te => te.employeeId === c.id && new Date(te.clockIn).toDateString() === todayStr && te.totalHours);
                               const todayTotal = todayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
                               return (
-                                <div key={c.id} className="foreman-team-row" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, borderLeft: "3px solid var(--green)" }}>
-                                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                                <div key={c.id} className="foreman-team-row foreman-crew-row foreman-crew-row--clocked">
+                                  <div className="foreman-avatar foreman-avatar--md foreman-avatar--active">
                                     {c.name.split(" ").map(n => n[0]).join("")}
                                   </div>
                                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -1641,10 +1641,10 @@ export function ForemanView({ app }) {
                                       </div>
                                     )}
                                   </div>
-                                  <button className="btn btn-sm" style={{ minWidth: 80, fontSize: 12, padding: "8px 12px", background: "var(--red)", color: "#fff" }}
-                                    onClick={() => handleCrewClockOut(c.id)}>
+                                  <FieldButton variant="danger" className="btn-sm" style={{ minWidth: 80 }}
+                                    onClick={() => handleCrewClockOut(c.id)} t={t}>
                                     {t("Clock Out")}
-                                  </button>
+                                  </FieldButton>
                                 </div>
                               );
                             })}
@@ -1659,24 +1659,24 @@ export function ForemanView({ app }) {
                       if (notIn.length === 0) return null;
                       return (
                         <div>
-                          <div className="text-xs text-muted" style={{ marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{t("Not Clocked In")} ({notIn.length})</div>
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>
+                          <div className="foreman-subsection-label">{t("Not Clocked In")} ({notIn.length})</div>
+                          <div className="foreman-crew-grid">
                             {notIn.map(c => {
                               const todayEntries = timeEntries.filter(te => te.employeeId === c.id && new Date(te.clockIn).toDateString() === todayStr && te.totalHours);
                               const todayTotal = todayEntries.reduce((s, e) => s + (e.totalHours || 0), 0);
                               return (
-                                <div key={c.id} className="foreman-team-row" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, opacity: 0.7 }}>
-                                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--glass-bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "var(--text3)", flexShrink: 0 }}>
+                                <div key={c.id} className="foreman-team-row foreman-crew-row foreman-crew-row--not-clocked">
+                                  <div className="foreman-avatar foreman-avatar--md foreman-avatar--inactive">
                                     {c.name.split(" ").map(n => n[0]).join("")}
                                   </div>
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div className="text-sm font-semi">{c.name}</div>
                                     <div className="text-xs text-muted">{t(c.role)}{todayTotal > 0 ? ` · ${todayTotal.toFixed(1)}h ${t("today")}` : ""}</div>
                                   </div>
-                                  <button className="btn btn-primary btn-sm" style={{ minWidth: 80, fontSize: 12, padding: "8px 12px" }}
-                                    onClick={() => handleCrewClockIn(c.id)}>
+                                  <FieldButton variant="primary" className="btn-sm" style={{ minWidth: 80 }}
+                                    onClick={() => handleCrewClockIn(c.id)} t={t}>
                                     {t("Clock In")}
-                                  </button>
+                                  </FieldButton>
                                 </div>
                               );
                             })}
@@ -1896,23 +1896,17 @@ export function ForemanView({ app }) {
               return (
                 <div className="emp-content">
                   {/* ── Roll Call + Labor Entry action row ── */}
-                  <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                    <button
-                      className="btn btn-sm touch-target"
-                      style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, background: rollCallMode ? "var(--green)" : "var(--blue)", color: "#fff", padding: "10px 12px", borderRadius: 8, border: "none" }}
-                      onClick={() => { setRollCallMode(v => !v); if (!rollCallMode) setRollCallSelected({}); }}
-                    >
+                  <div className="foreman-roll-call-toggle">
+                    <FieldButton variant="primary" className={`flex-1 foreman-action-btn ${rollCallMode ? "foreman-action-btn--green" : "foreman-action-btn--blue"}`}
+                      onClick={() => { setRollCallMode(v => !v); if (!rollCallMode) setRollCallSelected({}); }} t={t}>
                       <CheckSquare size={15} />
                       {rollCallMode ? t("Cancel") : t("Roll Call")}
-                    </button>
-                    <button
-                      className="btn btn-sm touch-target"
-                      style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, background: "var(--amber)", color: "#fff", padding: "10px 12px", borderRadius: 8, border: "none" }}
-                      onClick={() => setShowLaborEntry(v => !v)}
-                    >
+                    </FieldButton>
+                    <FieldButton variant="primary" className="flex-1 foreman-action-btn foreman-action-btn--amber"
+                      onClick={() => setShowLaborEntry(v => !v)} t={t}>
                       <Clock size={15} />
                       {t("Labor Entry")}
-                    </button>
+                    </FieldButton>
                   </div>
 
                   {/* ── Roll Call Mode: checkbox crew list with bulk clock-in ── */}
