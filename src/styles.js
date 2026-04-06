@@ -801,6 +801,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .offline-status-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;margin:0 0 8px;border-radius:var(--radius);background:var(--bg3);border:1px solid var(--border);font-size:var(--text-sm);color:var(--text2)}
 .offline-last-sync{margin-left:auto;font-size:var(--text-xs);color:var(--text3)}
 
+/* ══ CLOCK-IN HERO ══ */
+.clock-in-hero{margin-bottom:var(--space-4);padding:var(--space-4);background:var(--green-dim, rgba(16,185,129,0.1));border-radius:var(--radius-lg, 12px);border:2px solid var(--green);text-align:center}
+.clock-in-cta.btn{width:100%;height:56px;font-size:var(--text-lg);font-weight:800;border-radius:var(--radius-lg, 12px);background:var(--green);border:none;color:#fff}
+.clock-in-cta.btn:hover{background:var(--green);opacity:0.9}
+
 /* ══ EMPLOYEE VIEW ══ */
 .emp-lang-switch{display:inline-flex;border-radius:var(--radius);overflow:hidden;border:1px solid var(--glass-border);background:var(--bg2)}
 .emp-lang-option{padding:var(--space-1) var(--space-2);font-size:var(--text-xs);font-weight:var(--weight-bold);letter-spacing:0.05em;border:none;background:transparent;color:var(--text3);cursor:pointer;transition:background var(--transition-micro),color var(--transition-micro);min-width:32px;text-align:center}
@@ -1145,6 +1150,22 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .driver-status-chip--transit{background:var(--blue-dim);color:var(--blue)}
 .driver-status-chip--arrived{background:var(--amber-dim);color:var(--amber)}
 .driver-address-link{font-size:var(--text-sm);color:var(--blue);text-decoration:none;display:block;margin-top:2px}
+/* ── POD Modal ── */
+.pod-modal{max-width:480px;width:100%;background:var(--card);border-radius:16px;padding:0;overflow:hidden;max-height:85vh}
+.pod-modal-header{background:var(--navy, #0f1f2e);padding:20px 20px 16px;display:flex;align-items:center;gap:12px}
+.pod-modal-header-text{flex:1}
+.pod-modal-title{color:#fff;font-weight:var(--weight-bold);font-size:var(--text-lg, 17px)}
+.pod-modal-subtitle{color:rgba(255,255,255,0.55);font-size:var(--text-sm)}
+.pod-modal-close{background:rgba(255,255,255,0.1);border:none;color:#fff;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.pod-modal-body{padding:20px;overflow-y:auto;max-height:65vh;display:flex;flex-direction:column;gap:var(--space-4)}
+.pod-label{font-size:var(--text-xs, 11px);color:var(--text3);font-weight:var(--weight-bold);text-transform:uppercase}
+.pod-value{font-size:var(--text-md, 14px);font-weight:var(--weight-semi)}
+.pod-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)}
+.pod-photo-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(100px, 1fr));gap:var(--space-2)}
+.pod-photo-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px}
+.pod-signature{background:#fff;border-radius:8px;padding:var(--space-2)}
+.pod-signature img{width:100%;max-height:120px;object-fit:contain}
+.pod-footer{font-size:var(--text-xs);color:var(--text3);text-align:center;border-top:1px solid var(--border);padding-top:var(--space-3)}
 
 /* Project Name */
 .driver-project-name{color:var(--amber);font-weight:var(--weight-bold)}
@@ -1160,7 +1181,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 
 /* Action Buttons */
 .driver-action-row{display:flex;gap:var(--space-2)}
-.driver-action-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:var(--space-1)}
+.driver-action-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:var(--space-1);min-height:var(--touch-min);font-size:var(--text-base)}
 .driver-delivered-btn{background:var(--green);color:#fff}
 .driver-delivered-btn:hover{filter:brightness(1.1)}
 

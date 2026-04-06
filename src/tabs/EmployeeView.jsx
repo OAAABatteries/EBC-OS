@@ -1052,21 +1052,21 @@ export function EmployeeView({ app }) {
           <div className="emp-content">
             {/* Quick Clock In — big button when scheduled assignment exists, not clocked in */}
             {!isClockedIn && assignedProject && (
-              <div style={{ marginBottom: 16, padding: 16, background: "var(--green-dim, rgba(16,185,129,0.1))", borderRadius: 12, border: "2px solid var(--green)", textAlign: "center" }}>
+              <div className="clock-in-hero">
                 <div className="text-xs text-muted mb-4">{t("Scheduled today")}</div>
                 <div className="text-base font-bold mb-8" style={{ color: "var(--green)" }}>{assignedProject.name}</div>
-                <button
-                  className="btn btn-primary touch-target"
-                  style={{ width: "100%", height: 56, fontSize: 18, fontWeight: 800, borderRadius: 12, background: "var(--green)", border: "none", color: "#fff" }}
+                <FieldButton
+                  variant="primary"
+                  className="clock-in-cta"
                   onClick={() => {
                     setSelectedProject({ id: assignedProject.id, name: assignedProject.name, withinGeofence: true });
-                    // Trigger clock-in with GPS in background
                     handleClockIn();
                   }}
+                  t={t}
                 >
                   {t("CLOCK IN")}
-                </button>
-                <div className="text-xs text-muted" style={{ marginTop: 6 }}>{t("GPS check runs in background")}</div>
+                </FieldButton>
+                <div className="text-xs text-muted" style={{ marginTop: "var(--space-2)" }}>{t("GPS check runs in background")}</div>
               </div>
             )}
 

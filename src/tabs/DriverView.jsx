@@ -792,7 +792,7 @@ export function DriverView({ app }) {
                         {!stop.isInTransit ? (
                           <FieldButton
                             variant="primary"
-                            className="btn-sm driver-action-btn"
+                            className="driver-action-btn"
                             onClick={() => handleStartDelivery(stop.id)}
                             t={t}
                           >
@@ -802,7 +802,7 @@ export function DriverView({ app }) {
                           <>
                             <FieldButton
                               variant="primary"
-                              className="btn-sm driver-action-btn driver-delivered-btn"
+                              className="driver-action-btn driver-delivered-btn"
                               onClick={() => handleMarkDelivered({ ...stop, materialName: stop.material })}
                               t={t}
                             >
@@ -810,7 +810,7 @@ export function DriverView({ app }) {
                             </FieldButton>
                             <FieldButton
                               variant="danger"
-                              className="btn-sm driver-action-btn"
+                              className="driver-action-btn"
                               onClick={() => { setRefusedStop(stop); setRefuseReason(""); }}
                               t={t}
                             >
@@ -820,7 +820,7 @@ export function DriverView({ app }) {
                         ) : (
                           <FieldButton
                             variant="primary"
-                            className="btn-sm driver-action-btn"
+                            className="driver-action-btn"
                             onClick={() => handleArrivedAtSite(stop.id)}
                             t={t}
                           >
@@ -830,7 +830,7 @@ export function DriverView({ app }) {
                         {getNavLink(stop) && (
                           <FieldButton
                             variant="ghost"
-                            className="btn-sm driver-action-btn"
+                            className="driver-action-btn"
                             onClick={() => window.open(getNavLink(stop), "_blank")}
                             t={t}
                           >
@@ -839,7 +839,7 @@ export function DriverView({ app }) {
                         )}
                         <FieldButton
                           variant="danger"
-                          className="btn-sm driver-action-btn"
+                          className="driver-action-btn"
                           onClick={() => setShortageDelivery({ ...stop, materialName: stop.material })}
                           t={t}
                         >
@@ -1136,54 +1136,54 @@ export function DriverView({ app }) {
       {/* POD detail view — full proof-of-delivery record */}
       {viewPod && viewPod.pod && (
         <div className="modal-overlay" onClick={() => setViewPod(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 480, width: "100%", background: "var(--card)", borderRadius: 16, padding: 0, overflow: "hidden", maxHeight: "85vh" }}>
-            <div style={{ background: "var(--navy, #0f1f2e)", padding: "20px 20px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="modal-content pod-modal" onClick={e => e.stopPropagation()}>
+            <div className="pod-modal-header">
               <CheckCircle size={24} color="var(--green)" />
-              <div style={{ flex: 1 }}>
-                <div style={{ color: "#fff", fontWeight: 700, fontSize: 17 }}>{t("Proof of Delivery")}</div>
-                <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 12 }}>{viewPod.projectName} — {viewPod.materialName || viewPod.material}</div>
+              <div className="pod-modal-header-text">
+                <div className="pod-modal-title">{t("Proof of Delivery")}</div>
+                <div className="pod-modal-subtitle">{viewPod.projectName} — {viewPod.materialName || viewPod.material}</div>
               </div>
-              <button onClick={() => setViewPod(null)} style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: 8, width: 32, height: 32, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              <button className="pod-modal-close" onClick={() => setViewPod(null)}>✕</button>
             </div>
-            <div style={{ padding: 20, overflowY: "auto", maxHeight: "65vh", display: "flex", flexDirection: "column", gap: 16 }}>
+            <div className="pod-modal-body">
               {/* Delivery info */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div><div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase" }}>{t("Delivered")}</div><div style={{ fontSize: 14, fontWeight: 600 }}>{viewPod.deliveredAt ? new Date(viewPod.deliveredAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</div></div>
-                <div><div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase" }}>{t("Qty")}</div><div style={{ fontSize: 14, fontWeight: 600 }}>{viewPod.qty} {viewPod.unit}</div></div>
+              <div className="pod-grid">
+                <div><div className="pod-label">{t("Delivered")}</div><div style={{ fontSize: 14, fontWeight: 600 }}>{viewPod.deliveredAt ? new Date(viewPod.deliveredAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</div></div>
+                <div><div className="pod-label">{t("Qty")}</div><div style={{ fontSize: 14, fontWeight: 600 }}>{viewPod.qty} {viewPod.unit}</div></div>
               </div>
               {/* Recipient + Condition */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div><div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase" }}>{t("Recipient")}</div><div style={{ fontSize: 14, fontWeight: 600 }}>{viewPod.pod.recipientName || "—"}</div></div>
-                <div><div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase" }}>{t("Condition")}</div><div style={{ fontSize: 14, fontWeight: 600, color: viewPod.pod.condition === "Intact" ? "var(--green)" : viewPod.pod.condition === "Damaged" ? "var(--red)" : "var(--amber)" }}>{t(viewPod.pod.condition)}</div></div>
+              <div className="pod-grid">
+                <div><div className="pod-label">{t("Recipient")}</div><div style={{ fontSize: 14, fontWeight: 600 }}>{viewPod.pod.recipientName || "—"}</div></div>
+                <div><div className="pod-label">{t("Condition")}</div><div style={{ fontSize: 14, fontWeight: 600, color: viewPod.pod.condition === "Intact" ? "var(--green)" : viewPod.pod.condition === "Damaged" ? "var(--red)" : "var(--amber)" }}>{t(viewPod.pod.condition)}</div></div>
               </div>
               {/* GPS */}
               {viewPod.pod.gps && (
-                <div><div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase" }}>{t("GPS Location")}</div><div style={{ fontSize: 13 }}>{viewPod.pod.gps.lat.toFixed(5)}, {viewPod.pod.gps.lng.toFixed(5)} <span style={{ color: "var(--text3)", fontSize: 11 }}>(±{viewPod.pod.gps.accuracy}m)</span></div></div>
+                <div><div className="pod-label">{t("GPS Location")}</div><div style={{ fontSize: 13 }}>{viewPod.pod.gps.lat.toFixed(5)}, {viewPod.pod.gps.lng.toFixed(5)} <span style={{ color: "var(--text3)", fontSize: 11 }}>(±{viewPod.pod.gps.accuracy}m)</span></div></div>
               )}
               {/* Notes */}
               {viewPod.pod.notes && (
-                <div><div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase" }}>{t("Notes")}</div><div style={{ fontSize: 13 }}>{viewPod.pod.notes}</div></div>
+                <div><div className="pod-label">{t("Notes")}</div><div style={{ fontSize: 13 }}>{viewPod.pod.notes}</div></div>
               )}
               {/* Photos */}
               {viewPod.pod.photos?.length > 0 && (
                 <div>
-                  <div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }}>{t("Photos")} ({viewPod.pod.photos.length})</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: 8 }}>
-                    {viewPod.pod.photos.map((p, i) => <img key={i} src={p.data} alt={p.name} style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 8 }} />)}
+                  <div className="pod-label" style={{ marginBottom: 8 }}>{t("Photos")} ({viewPod.pod.photos.length})</div>
+                  <div className="pod-photo-grid">
+                    {viewPod.pod.photos.map((p, i) => <img key={i} src={p.data} alt={p.name} />)}
                   </div>
                 </div>
               )}
               {/* Signature */}
               {viewPod.pod.signature && (
                 <div>
-                  <div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }}>{t("Signature")}</div>
-                  <div style={{ background: "#fff", borderRadius: 8, padding: 8 }}>
-                    <img src={viewPod.pod.signature} alt="Signature" style={{ width: "100%", maxHeight: 120, objectFit: "contain" }} />
+                  <div className="pod-label" style={{ marginBottom: 8 }}>{t("Signature")}</div>
+                  <div className="pod-signature">
+                    <img src={viewPod.pod.signature} alt="Signature" />
                   </div>
                 </div>
               )}
               {/* Timestamp */}
-              <div style={{ fontSize: 11, color: "var(--text3)", textAlign: "center", borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+              <div className="pod-footer">
                 POD {t("recorded")} {viewPod.pod.timestamp ? new Date(viewPod.pod.timestamp).toLocaleString() : "—"}
               </div>
             </div>
