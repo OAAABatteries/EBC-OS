@@ -717,7 +717,7 @@ const _demoMaterialRequests = [
   { id: "mr4", employeeId: 9, employeeName: "Antonio Hernandez", projectId: 12, projectName: "Arch-Con - Sprouts Farmers Market", material: "Mud & Tape Compound (5gal)", qty: 10, unit: "BKT", notes: "", status: "approved", requestedAt: new Date(Date.now() - 259200000).toISOString(), approvedAt: new Date(Date.now() - 172800000).toISOString() },
   // Endurance - Woodside Laboratory
   {id:"mr-ws1",employeeId:1,employeeName:"Oscar Alvarez",projectId:1,projectName:"Endurance - Woodside Laboratory",material:"3-5/8\" Metal Studs 25ga (10ft)",qty:200,unit:"EA",notes:"Main Lab + Control Room framing. Deliver to east dock.",status:"approved",requestedAt:"2026-03-28T08:00:00Z",approvedAt:"2026-03-28T14:00:00Z"},
-  {id:"mr-ws2",employeeId:1,employeeName:"Oscar Alvarez",projectId:1,projectName:"Endurance - Woodside Laboratory",material:"5/8\" Type X Drywall (4x12)",qty:80,unit:"SHT",notes:"Control Room + Main Lab first layer",status:"in-transit",requestedAt:"2026-04-01T07:00:00Z",approvedAt:"2026-04-01T10:00:00Z",driverId:8},
+  {id:"mr-ws2",employeeId:1,employeeName:"Oscar Alvarez",projectId:1,projectName:"Endurance - Woodside Laboratory",material:"5/8\" Type X Drywall (4x12)",qty:80,unit:"SHT",notes:"Control Room + Main Lab first layer",status:"in-transit",requestedAt:"2026-04-01T07:00:00Z",approvedAt:"2026-04-01T10:00:00Z",driverId:7},
   {id:"mr-ws3",employeeId:1,employeeName:"Oscar Alvarez",projectId:1,projectName:"Endurance - Woodside Laboratory",material:"ACT Grid T-Bar 15/16\" (12ft)",qty:60,unit:"EA",notes:"Corridor A + Control Room ceilings. Need by 4/7.",status:"requested",requestedAt:"2026-04-03T12:00:00Z"},
 ];
 

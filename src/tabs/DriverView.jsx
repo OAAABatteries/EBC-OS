@@ -179,7 +179,7 @@ export function DriverView({ app }) {
         lat: proj?.lat || null,
         lng: proj?.lng || null,
         projectName: req.projectName || proj?.name || "Unknown",
-        isInTransit: req.status === "in-transit",
+        isInTransit: req.status === "in-transit" || req.status === "picked_up",
         siteContact: proj?.siteContact || null,
         siteContactPhone: proj?.siteContactPhone || null,
         gateCode: proj?.gateCode || null,
