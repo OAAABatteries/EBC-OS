@@ -1034,11 +1034,7 @@ function App({ auth, onLogout }) {
             </div>
           )}
 
-          {briefResult.motivationalNote && (
-            <div className="text-sm" style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", fontStyle: "italic", color: "var(--amber)" }}>
-              {briefResult.motivationalNote}
-            </div>
-          )}
+          {/* Motivational quote removed per design audit — replaced with action-oriented content */}
         </div>
       )}
 

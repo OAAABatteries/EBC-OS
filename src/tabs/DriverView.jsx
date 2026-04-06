@@ -719,57 +719,31 @@ export function DriverView({ app }) {
                     onDrop={() => handleDrop(idx)}
                     draggable
                   >
-                    {/* Stop number + project name + drag handle */}
+                    {/* ═══ ZONE 1: Header — stop#, status, project, address ═══ */}
                     <div className="driver-card-header">
                       <div className={`driver-stop-badge${stop.isInTransit ? " driver-stop-badge--in-transit" : ""}`}>
                         {idx + 1}
                       </div>
                       <div className="flex-1">
-                        {/* Pickup location indicator */}
                         {!stop.isInTransit && stop.pickupName && (
-                          <div style={{ fontSize: 10, color: "var(--amber)", fontWeight: 700, marginBottom: 4 }}>
-                            <Package size={10} style={{verticalAlign: "middle", marginRight: 3}} />{t("PICKUP")}: <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(stop.pickupAddress || stop.pickupName || "EBC Yard")}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--amber)", textDecoration: "none" }}>{stop.pickupName}{stop.pickupAddress && stop.pickupAddress !== stop.pickupName ? ` — ${stop.pickupAddress}` : ""}</a>
-                            {stop.pickupPhone && <a href={`tel:${stop.pickupPhone}`} style={{ marginLeft: 8, color: "var(--amber)", fontWeight: 700, textDecoration: "none" }}>{stop.pickupPhone}</a>}
+                          <div className="driver-pickup-line">
+                            <Package size={10} aria-hidden="true" />{t("PICKUP")}: <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(stop.pickupAddress || stop.pickupName || "EBC Yard")}`} target="_blank" rel="noopener noreferrer" className="driver-pickup-link">{stop.pickupName}{stop.pickupAddress && stop.pickupAddress !== stop.pickupName ? ` — ${stop.pickupAddress}` : ""}</a>
+                            {stop.pickupPhone && <a href={`tel:${stop.pickupPhone}`} className="driver-pickup-phone">{stop.pickupPhone}</a>}
                           </div>
                         )}
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: stop.isArrived ? "var(--amber-dim)" : stop.isInTransit ? "var(--blue-dim)" : "var(--green-dim)", color: stop.isArrived ? "var(--amber)" : stop.isInTransit ? "var(--blue)" : "var(--green)", textTransform: "uppercase" }}>
+                        <div className="driver-status-row">
+                          <span className={`driver-status-chip${stop.isArrived ? " driver-status-chip--arrived" : stop.isInTransit ? " driver-status-chip--transit" : " driver-status-chip--dropoff"}`}>
                             {stop.isArrived ? t("Arrived") : stop.isInTransit ? t("In Transit") : t("Drop-Off")}
                           </span>
                           <span className="text-sm driver-project-name">{stop.projectName}</span>
                         </div>
-                        {stop.address && <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(stop.address)}`} target="_blank" rel="noopener noreferrer" className="text-xs" style={{ color: "var(--blue)", textDecoration: "none" }}>{stop.address}</a>}
-                        {stop.siteContact && (
-                          <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 12, color: "var(--text2)" }}>{stop.siteContact}</span>
-                            {stop.siteContactPhone && (
-                              <a href={`tel:${stop.siteContactPhone}`} style={{ color: "var(--amber)", fontWeight: 700, fontSize: 13, textDecoration: "none" }}>
-                                {stop.siteContactPhone}
-                              </a>
-                            )}
-                          </div>
-                        )}
-                        {stop.gateCode && (
-                          <div style={{ fontSize: 12, color: "var(--green)", marginTop: 4 }}>
-                            Gate: {stop.gateCode}
-                          </div>
-                        )}
-                        {stop.deliveryEntrance && (
-                          <div style={{ fontSize: 12, color: "var(--blue)", marginTop: 4, fontWeight: 600 }}>
-                            {t("Delivery Entrance")}: {stop.deliveryEntrance}
-                          </div>
-                        )}
-                        {stop.accessInstructions && (
-                          <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>
-                            {stop.accessInstructions}
-                          </div>
-                        )}
+                        {stop.address && <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(stop.address)}`} target="_blank" rel="noopener noreferrer" className="driver-address-link">{stop.address}</a>}
                       </div>
                       <div className="driver-drag-handle">&#x2807;</div>
                     </div>
 
-                    {/* Material info */}
-                    <div className="driver-card-body">
+                    {/* ═══ ZONE 2: Details — material, site access, schedule ═══ */}
+                    <div className="driver-card-details">
                       <div className="flex-between mb-4">
                         <span className="text-sm font-semi">{stop.materialName || stop.material || "Unknown"}</span>
                         <span className="text-sm font-mono">{stop.qty} {stop.unit}</span>
@@ -778,9 +752,22 @@ export function DriverView({ app }) {
                         {t("Requester")}: {stop.employeeName}
                         {stop.distFromPrev ? ` · ~${stop.distFromPrev.toFixed(1)} mi` : ""}
                       </div>
-                      {stop.notes && <div className="text-xs text-dim mb-8">{stop.notes}</div>}
+                      {stop.notes && <div className="text-xs text-dim">{stop.notes}</div>}
+                      {/* Site access details */}
+                      {(stop.siteContact || stop.gateCode || stop.deliveryEntrance) && (
+                        <div className="driver-site-access">
+                          {stop.siteContact && (
+                            <span className="driver-site-contact">{stop.siteContact}{stop.siteContactPhone && <> · <a href={`tel:${stop.siteContactPhone}`} className="driver-site-phone">{stop.siteContactPhone}</a></>}</span>
+                          )}
+                          {stop.gateCode && <span className="driver-site-detail">Gate: {stop.gateCode}</span>}
+                          {stop.deliveryEntrance && <span className="driver-site-detail">{stop.deliveryEntrance}</span>}
+                        </div>
+                      )}
+                      {stop.accessInstructions && <div className="driver-access-note">{stop.accessInstructions}</div>}
+                    </div>
 
-                      {/* Delivery schedule */}
+                    {/* ═══ ZONE 3: Actions — schedule + buttons ═══ */}
+                    <div className="driver-card-actions">
                       <div className="driver-schedule-row">
                         <Calendar size={13} className="driver-schedule-label" aria-hidden="true" />
                         <span className="text-xs driver-schedule-label">{t("Scheduled")}:</span>
@@ -801,8 +788,6 @@ export function DriverView({ app }) {
                           </button>
                         )}
                       </div>
-
-                      {/* Action buttons (DRVR-02 — 44px touch targets via FieldButton) */}
                       <div className="driver-action-row">
                         {!stop.isInTransit ? (
                           <FieldButton

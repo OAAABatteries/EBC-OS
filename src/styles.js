@@ -99,7 +99,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;
   border-radius:8px;font-family:var(--font-body);font-size:13px;font-weight:500;
   cursor:pointer;transition:all 0.2s cubic-bezier(.4,0,.2,1);white-space:nowrap;
-  min-height:36px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  min-height:var(--touch-min, 44px);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .btn:active{transform:scale(0.97)}
 .btn-primary{background:var(--amber);color:#000;box-shadow:0 2px 8px var(--amber-glow)}
 .btn-primary:hover{background:var(--amber2);box-shadow:0 4px 16px var(--amber-glow);transform:translateY(-1px)}
@@ -1128,7 +1128,23 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 
 /* Card Header / Body */
 .driver-card-header{display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-2)}
+.driver-card-details{margin-left:42px;padding:var(--space-2) 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:var(--space-2);display:flex;flex-direction:column;gap:4px}
+.driver-card-actions{margin-left:42px;margin-top:var(--space-2)}
 .driver-card-body{margin-left:42px}
+.driver-site-access{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:var(--text-sm);color:var(--text2);margin-top:4px}
+.driver-site-contact{font-weight:var(--weight-semi)}
+.driver-site-phone{color:var(--amber);font-weight:var(--weight-bold);text-decoration:none;margin-left:4px}
+.driver-site-detail{color:var(--green);font-weight:var(--weight-semi)}
+.driver-access-note{font-size:var(--text-xs, 10px);color:var(--text3);margin-top:2px}
+.driver-pickup-line{font-size:var(--text-xs, 10px);color:var(--amber);font-weight:var(--weight-bold);margin-bottom:4px}
+.driver-pickup-link{color:var(--amber);text-decoration:none}
+.driver-pickup-phone{margin-left:8px;color:var(--amber);font-weight:var(--weight-bold);text-decoration:none}
+.driver-status-row{display:flex;align-items:center;gap:6px}
+.driver-status-chip{font-size:var(--text-xs, 10px);font-weight:var(--weight-bold);padding:2px 6px;border-radius:4px;text-transform:uppercase}
+.driver-status-chip--dropoff{background:var(--green-dim);color:var(--green)}
+.driver-status-chip--transit{background:var(--blue-dim);color:var(--blue)}
+.driver-status-chip--arrived{background:var(--amber-dim);color:var(--amber)}
+.driver-address-link{font-size:var(--text-sm);color:var(--blue);text-decoration:none;display:block;margin-top:2px}
 
 /* Project Name */
 .driver-project-name{color:var(--amber);font-weight:var(--weight-bold)}
