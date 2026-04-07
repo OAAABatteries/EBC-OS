@@ -943,7 +943,7 @@ function App({ auth, onLogout }) {
       {/* ── Header — action-oriented ── */}
       <div className="section-header">
         <div>
-          <div className="section-title font-head" className="fs-20">{t("Command Center")}</div>
+          <div className="section-title font-head fs-20">{t("Command Center")}</div>
           <div className="section-sub" style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span>{auth?.name || "EBC"} — {new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</span>
             {(auth?.role === "owner" || auth?.role === "admin") && (
@@ -987,7 +987,7 @@ function App({ auth, onLogout }) {
           {/* Urgent Alerts */}
           {briefResult.urgentAlerts?.length > 0 && (
             <div className="mb-12">
-              <div className="text-sm font-semi mb-8" className="text-red">{t("Urgent Alerts")}</div>
+              <div className="text-sm font-semi mb-8 text-red">{t("Urgent Alerts")}</div>
               {briefResult.urgentAlerts.map((a, i) => (
                 <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", cursor: a.project ? "pointer" : undefined }}
                   onClick={a.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); } : undefined}>
@@ -995,7 +995,7 @@ function App({ auth, onLogout }) {
                     <span className="text-sm">{a.alert}</span>
                     <span className="badge badge-red">{a.type}</span>
                   </div>
-                  <div className="text-xs mt-2" className="text-green">{a.action}</div>
+                  <div className="text-xs mt-2 text-green">{a.action}</div>
                 </div>
               ))}
             </div>
@@ -1004,7 +1004,7 @@ function App({ auth, onLogout }) {
           {/* Today's Focus */}
           {briefResult.todaysFocus?.length > 0 && (
             <div className="mb-12">
-              <div className="text-sm font-semi mb-8" className="text-amber">{t("Today's Focus")}</div>
+              <div className="text-sm font-semi mb-8 text-amber">{t("Today's Focus")}</div>
               {briefResult.todaysFocus.map((f, i) => (
                 <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", cursor: f.project ? "pointer" : undefined }}
                   onClick={f.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(f.project.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); } : undefined}>
@@ -1012,7 +1012,7 @@ function App({ auth, onLogout }) {
                     <span className="text-sm">{f.item}</span>
                     <span className={`badge ${f.priority === "critical" ? "badge-red" : f.priority === "high" ? "badge-amber" : "badge-muted"}`}>{f.priority}</span>
                   </div>
-                  {f.project && <div className="text-xs text-dim mt-2" className="text-blue" style={{ textDecoration: "underline" }}>{f.project}</div>}
+                  {f.project && <div className="text-xs text-dim mt-2 text-blue" style={{ textDecoration: "underline" }}>{f.project}</div>}
                 </div>
               ))}
             </div>
@@ -1026,7 +1026,7 @@ function App({ auth, onLogout }) {
                 <div key={i} className="queue-row">
                   <div className="flex-between">
                     <span className="text-sm">{m.item}</span>
-                    <span className="font-semi text-sm" className="text-green">{m.amount}</span>
+                    <span className="font-semi text-sm text-green">{m.amount}</span>
                   </div>
                   <div className="text-xs text-muted mt-2">{m.action} — {m.deadline}</div>
                 </div>
@@ -1052,43 +1052,43 @@ function App({ auth, onLogout }) {
         const hasActivity = todayProd.length > 0 || todayTm.length > 0 || todayPunch.length > 0 || todayProblems.length > 0 || todayReports.length > 0;
         if (!hasActivity) return null;
         return (
-          <div className="card" className="dash-card dash-card--green">
-            <div className="text-sm font-semi mb-8" className="flex-center-gap-6">
+          <div className="card dash-card dash-card--green">
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
               <ClipboardList size={15} /> {t("Today's Field Activity")}
             </div>
             <div className="grid-auto-180">
               {todayProd.length > 0 && (
                 <div className="activity-tile">
-                  <div className="text-lg font-bold" className="text-green">{todayProd.length}</div>
+                  <div className="text-lg font-bold text-green">{todayProd.length}</div>
                   <div className="text-xs text-muted">{t("Production logged")}</div>
                   <div className="text-xs text-dim">{todayProd.length} {t("entries today")}</div>
                 </div>
               )}
               {todayTm.length > 0 && (
                 <div className="activity-tile">
-                  <div className="text-lg font-bold" className="text-amber">{todayTm.length}</div>
+                  <div className="text-lg font-bold text-amber">{todayTm.length}</div>
                   <div className="text-xs text-muted">{t("T&M tickets")}</div>
                   <div className="text-xs text-dim">{todayTm.length} {t("created today")}</div>
                 </div>
               )}
               {(punchCreated > 0 || punchResolved > 0) && (
                 <div className="activity-tile">
-                  <div className="text-lg font-bold" className="text-red">{punchCreated}</div>
+                  <div className="text-lg font-bold text-red">{punchCreated}</div>
                   <div className="text-xs text-muted">{t("Punch items")}</div>
                   <div className="text-xs text-dim">{punchResolved} {t("resolved today")}</div>
                 </div>
               )}
               {todayProblems.length > 0 && (
                 <div className="activity-tile">
-                  <div className="text-lg font-bold" className="text-red">{todayProblems.length}</div>
+                  <div className="text-lg font-bold text-red">{todayProblems.length}</div>
                   <div className="text-xs text-muted">{t("Problems reported")}</div>
                 </div>
               )}
               {todayReports.length > 0 && (
                 <div className="activity-tile">
-                  <div className="text-lg font-bold" className="text-blue">{todayReports.length}</div>
+                  <div className="text-lg font-bold text-blue">{todayReports.length}</div>
                   <div className="text-xs text-muted">{t("Daily reports")}</div>
-                  {unreviewed > 0 && <div className="text-xs" className="text-amber fw-700">{unreviewed} {t("un-reviewed")}</div>}
+                  {unreviewed > 0 && <div className="text-xs text-amber fw-700">{unreviewed} {t("un-reviewed")}</div>}
                 </div>
               )}
             </div>
@@ -1098,7 +1098,7 @@ function App({ auth, onLogout }) {
                 const proj = projects.find(p => String(p.id) === String(pid));
                 const count = todayProd.filter(p => p.projectId === pid).length;
                 return proj ? (
-                  <div key={pid} className="text-xs" className="py-3 cursor-pointer text-blue"
+                  <div key={pid} className="text-xs py-3 cursor-pointer text-blue"
                     onClick={() => setModal({ type: "editProject", data: proj })}>
                     {proj.name}: {count} {t("entries today")}
                   </div>
@@ -1142,8 +1142,8 @@ function App({ auth, onLogout }) {
         if (!hasData) return null;
 
         return (
-          <div className="card" className="dash-card dash-card--amber">
-            <div className="text-sm font-semi mb-8" className="flex-between">
+          <div className="card dash-card dash-card--amber">
+            <div className="text-sm font-semi mb-8 flex-between">
               <span className="flex-center-gap-6">
                 <Calendar size={15} /> {t("Look-Ahead")}
                 <span className="flex gap-2 ml-8">
@@ -1199,8 +1199,8 @@ function App({ auth, onLogout }) {
         if (entries.length === 0) return null;
         const totalCrew = new Set(entries.flatMap(([, v]) => [...v.crew])).size;
         return (
-          <div className="card" className="card dash-card dash-card--blue">
-            <div className="text-sm font-semi mb-8" className="flex-center-gap-6">
+          <div className="card card dash-card dash-card--blue">
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
               <HardHat size={15} /> {t("Today's Manpower")} — {totalCrew} {t("crew")} {t("across")} {entries.length} {t("sites")}
             </div>
             {entries.map(([pid, data]) => {
@@ -1224,10 +1224,10 @@ function App({ auth, onLogout }) {
         if (mySites.length === 0) return null;
         const PROXIMITY_M = 200;
         return (
-          <div className="card" className="card dash-card dash-card--blue">
-            <div className="text-sm font-semi mb-8" className="flex-center-gap-6">
+          <div className="card card dash-card dash-card--blue">
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
               <MapPin size={15} /> Today's Sites
-              <span className="text-xs text-muted" className="fw-400">({mySites.length} active)</span>
+              <span className="text-xs text-muted fw-400">({mySites.length} active)</span>
             </div>
             <div className="grid-auto-260">
               {mySites.slice(0, 6).map(p => {
@@ -1239,20 +1239,20 @@ function App({ auth, onLogout }) {
                 return (
                   <div key={p.id} className="activity-tile flex-between flex-center-gap-8">
                     <div className="flex-1" style={{ minWidth: 0 }}>
-                      <div className="text-sm font-semi" className="text-ellipsis cursor-pointer text-blue"
+                      <div className="text-sm font-semi text-ellipsis cursor-pointer text-blue"
                         onClick={() => setModal({ type: "editProject", data: p })}>{p.name}</div>
-                      <div className="text-xs text-muted" className="text-ellipsis">
+                      <div className="text-xs text-muted text-ellipsis">
                         {p.address}{p.suite ? ` — ${p.suite}` : ""}
                       </div>
                       {distLabel && <div className="text-xs" style={{ color: isOnSite ? "var(--green)" : "var(--text-muted)", marginTop: 2 }}>{isOnSite ? "On site" : distLabel}</div>}
                     </div>
                     {isOnSite ? (
-                      <button className="btn btn-primary btn-sm" className="ws-nowrap flex-shrink-0"
+                      <button className="btn btn-primary btn-sm ws-nowrap flex-shrink-0"
                         onClick={() => handleTabClick("timeclock")}>
                         Clock In
                       </button>
                     ) : (
-                      <button className="btn btn-ghost btn-sm" className="ws-nowrap flex-shrink-0"
+                      <button className="btn btn-ghost btn-sm ws-nowrap flex-shrink-0"
                         onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`, "_blank")}>
                         Directions
                       </button>
@@ -1262,7 +1262,7 @@ function App({ auth, onLogout }) {
               })}
             </div>
             {mySites.length > 6 && (
-              <div className="text-xs text-muted" className="mt-6 cursor-pointer text-blue"
+              <div className="text-xs text-muted mt-6 cursor-pointer text-blue"
                 onClick={() => handleTabClick("projects")}>View all {mySites.length} sites →</div>
             )}
           </div>
@@ -1279,60 +1279,60 @@ function App({ auth, onLogout }) {
         const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length;
         if (queueTotal === 0) return null;
         return (
-          <div className="card" className="dash-card dash-card--amber" className="bg-2">
+          <div className="card dash-card dash-card--amber bg-2">
             <div className="flex-between mb-8">
-              <div className="text-sm font-semi" className="flex-center-gap-6">
+              <div className="text-sm font-semi flex-center-gap-6">
                 <span>⚡</span> PM Action Queue
                 <span className="badge badge-amber" style={{ fontSize: 11, padding: "1px 8px" }}>{queueTotal}</span>
               </div>
             </div>
             <div className="flex-col-gap-6">
               {pendingMat.length > 0 && (
-                <div className="flex-between" className="queue-row">
+                <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
                     <span>📦</span>
                     <span className="text-sm">Material Requests</span>
                     {urgentMat.length > 0 && <span className="badge badge-red" style={{ fontSize: 9, padding: "0 5px" }}>{urgentMat.length} urgent</span>}
                   </div>
                   <div className="flex-center-gap-8">
-                    <span className="text-sm font-semi" className="text-amber">{pendingMat.length}</span>
-                    <button className="btn btn-ghost btn-sm" className="btn-inline" onClick={() => handleTabClick("materials")}>Review</button>
+                    <span className="text-sm font-semi text-amber">{pendingMat.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("materials")}>Review</button>
                   </div>
                 </div>
               )}
               {awaitingConfirm.length > 0 && (
-                <div className="flex-between" className="queue-row">
+                <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
                     <span>✓</span>
                     <span className="text-sm">Deliveries Awaiting Confirmation</span>
                   </div>
                   <div className="flex-center-gap-8">
-                    <span className="text-sm font-semi" className="text-green">{awaitingConfirm.length}</span>
-                    <button className="btn btn-ghost btn-sm" className="btn-inline" onClick={() => handleTabClick("materials")}>View</button>
+                    <span className="text-sm font-semi text-green">{awaitingConfirm.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("materials")}>View</button>
                   </div>
                 </div>
               )}
               {pendingReviews.length > 0 && (
-                <div className="flex-between" className="queue-row">
+                <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
                     <span>📋</span>
                     <span className="text-sm">Daily Reports</span>
                   </div>
                   <div className="flex-center-gap-8">
                     <span className="text-sm font-semi">{pendingReviews.length}</span>
-                    <button className="btn btn-ghost btn-sm" className="btn-inline" onClick={() => handleTabClick("reports")}>Review</button>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("reports")}>Review</button>
                   </div>
                 </div>
               )}
               {openProblems.length > 0 && (
-                <div className="flex-between" className="py-6">
+                <div className="flex-between py-6">
                   <div className="flex-center-gap-8">
                     <span>⚠️</span>
                     <span className="text-sm">Unassigned Problems</span>
                   </div>
                   <div className="flex-center-gap-8">
-                    <span className="text-sm font-semi" className="text-red">{openProblems.length}</span>
-                    <button className="btn btn-ghost btn-sm" className="btn-inline" onClick={() => handleTabClick("reports")}>Assign</button>
+                    <span className="text-sm font-semi text-red">{openProblems.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("reports")}>Assign</button>
                   </div>
                 </div>
               )}
@@ -1363,17 +1363,17 @@ function App({ auth, onLogout }) {
       {dashCfg.showKPIs && (dashActions.bidsDueSoon.length > 0 || dashActions.cosPending.length > 0 || dashActions.rfisOpen.length > 0 || dashActions.subsDueSoon.length > 0 || dashActions.overdueInv.length > 0 || dashActions.tmPending.length > 0 || dashActions.profitAlerts.length > 0) && (
         <div className="grid-auto-200 mb-16">
           {dashActions.bidsDueSoon.length > 0 && (
-            <div className="card" className="action-card action-card--red" onClick={() => handleTabClick("bids")}>
+            <div className="card action-card action-card--red" onClick={() => handleTabClick("bids")}>
               <div className="text-xs text-muted">Bids Due This Week</div>
               <div className="action-value text-red">{dashActions.bidsDueSoon.length}</div>
-              <div className="text-xs text-muted" className="mt-2">{dashActions.bidsDueSoon.slice(0, 2).map(b => b.name?.slice(0, 20) || "Untitled").join(", ")}{dashActions.bidsDueSoon.length > 2 ? "..." : ""}</div>
+              <div className="text-xs text-muted mt-2">{dashActions.bidsDueSoon.slice(0, 2).map(b => b.name?.slice(0, 20) || "Untitled").join(", ")}{dashActions.bidsDueSoon.length > 2 ? "..." : ""}</div>
             </div>
           )}
           {dashActions.cosPending.length > 0 && (
-            <div className="card" className="action-card action-card--amber" onClick={() => handleTabClick("projects")}>
+            <div className="card action-card action-card--amber" onClick={() => handleTabClick("projects")}>
               <div className="text-xs text-muted">COs Pending</div>
               <div style={{ fontSize: 22, fontWeight: 700, color: "var(--amber)" }}>{dashActions.cosPending.length}</div>
-              <div className="text-xs text-muted" className="mt-2">{fmtK(dashActions.cosPendingTotal)} awaiting approval</div>
+              <div className="text-xs text-muted mt-2">{fmtK(dashActions.cosPendingTotal)} awaiting approval</div>
             </div>
           )}
           {dashActions.rfisOpen.length > 0 && (() => {
@@ -1382,36 +1382,36 @@ function App({ auth, onLogout }) {
               <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: `3px solid ${overdueRfis.length > 0 ? "var(--red)" : "var(--blue)"}` }} onClick={() => handleTabClick("projects")}>
                 <div className="text-xs text-muted">Open RFIs</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: overdueRfis.length > 0 ? "var(--red)" : "var(--blue)" }}>{dashActions.rfisOpen.length}</div>
-                {overdueRfis.length > 0 && <div className="text-xs" className="text-red fw-700 mt-2">{overdueRfis.length} overdue (oldest: {dashActions.rfisOpen[0].age}d)</div>}
+                {overdueRfis.length > 0 && <div className="text-xs text-red fw-700 mt-2">{overdueRfis.length} overdue (oldest: {dashActions.rfisOpen[0].age}d)</div>}
               </div>
             );
           })()}
           {dashActions.subsDueSoon.length > 0 && (
-            <div className="card" className="action-card action-card--amber" onClick={() => handleTabClick("projects")}>
+            <div className="card action-card action-card--amber" onClick={() => handleTabClick("projects")}>
               <div className="text-xs text-muted">Submittals Due</div>
               <div className="action-value">{dashActions.subsDueSoon.length}</div>
-              <div className="text-xs text-muted" className="mt-2">within 14 days</div>
+              <div className="text-xs text-muted mt-2">within 14 days</div>
             </div>
           )}
           {dashActions.overdueInv.length > 0 && (
-            <div className="card" className="action-card action-card--red" onClick={() => handleTabClick("financials")}>
+            <div className="card action-card action-card--red" onClick={() => handleTabClick("financials")}>
               <div className="text-xs text-muted">Overdue Invoices</div>
               <div className="action-value text-red">{dashActions.overdueInv.length}</div>
-              <div className="text-xs text-muted" className="mt-2">{fmtK(dashActions.overdueTotal)} outstanding</div>
+              <div className="text-xs text-muted mt-2">{fmtK(dashActions.overdueTotal)} outstanding</div>
             </div>
           )}
           {dashActions.tmPending.length > 0 && (
-            <div className="card" className="action-card action-card--amber" onClick={() => handleTabClick("financials")}>
+            <div className="card action-card action-card--amber" onClick={() => handleTabClick("financials")}>
               <div className="text-xs text-muted">T&M Pending</div>
               <div className="action-value">{dashActions.tmPending.length}</div>
-              <div className="text-xs text-muted" className="mt-2">tickets to review</div>
+              <div className="text-xs text-muted mt-2">tickets to review</div>
             </div>
           )}
           {dashActions.profitAlerts.length > 0 && (
-            <div className="card" className="action-card action-card--red" onClick={() => handleTabClick("projects")}>
+            <div className="card action-card action-card--red" onClick={() => handleTabClick("projects")}>
               <div className="text-xs text-muted">Low Margin</div>
               <div className="action-value text-red">{dashActions.profitAlerts.length}</div>
-              <div className="text-xs text-muted" className="mt-2">projects below 30%</div>
+              <div className="text-xs text-muted mt-2">projects below 30%</div>
             </div>
           )}
         </div>
@@ -1440,10 +1440,10 @@ function App({ auth, onLogout }) {
               onClick={() => document.getElementById("profit-analysis-section")?.scrollIntoView({ behavior: "smooth" })}>
               <div className="flex-center-gap-4">
                 <TrendingDown size={12} className="text-red" />
-                <span className="text-xs" className="text-red text-uppercase" style={{ letterSpacing: "0.6px" }}>Profit Alert</span>
+                <span className="text-xs text-red text-uppercase" style={{ letterSpacing: "0.6px" }}>Profit Alert</span>
               </div>
               <div style={{ fontSize: 16, fontWeight: 700, color: "var(--red)" }}>{dashActions.profitAlerts.length}</div>
-              <div className="text-xs" className="text-red" style={{ opacity: 0.8 }}>{dashActions.profitAlerts.filter(p => p.margin < 15).length > 0 ? `${dashActions.profitAlerts.filter(p => p.margin < 15).length} critical` : "below 30%"}</div>
+              <div className="text-xs text-red" style={{ opacity: 0.8 }}>{dashActions.profitAlerts.filter(p => p.margin < 15).length > 0 ? `${dashActions.profitAlerts.filter(p => p.margin < 15).length} critical` : "below 30%"}</div>
             </div>
           )}
         </div>
@@ -1451,13 +1451,13 @@ function App({ auth, onLogout }) {
 
       {/* ── Section 3: Project Health — behind schedule / no billing ── */}
       {dashCfg.showKPIs && (dashActions.projAtRisk.length > 0 || dashActions.projNoBilling.length > 0) && (
-        <div className="card" className="dash-card">
+        <div className="card dash-card">
           <div className="text-sm font-semi mb-8">Project Health</div>
           {dashActions.projAtRisk.length > 0 && (
             <div style={{ marginBottom: dashActions.projNoBilling.length > 0 ? 10 : 0 }}>
-              <div className="text-xs" className="text-red mb-4">Behind Schedule ({dashActions.projAtRisk.length})</div>
+              <div className="text-xs text-red mb-4">Behind Schedule ({dashActions.projAtRisk.length})</div>
               {dashActions.projAtRisk.slice(0, 4).map(p => (
-                <div key={p.id} className="text-sm" className="py-3 cursor-pointer text-blue"
+                <div key={p.id} className="text-sm py-3 cursor-pointer text-blue"
                   onClick={() => setModal({ type: "editProject", data: p })}>{p.name} — {p.progress || 0}%</div>
               ))}
               {dashActions.projAtRisk.length > 4 && <div className="text-xs text-muted">+{dashActions.projAtRisk.length - 4} more</div>}
@@ -1465,9 +1465,9 @@ function App({ auth, onLogout }) {
           )}
           {dashActions.projNoBilling.length > 0 && (
             <div>
-              <div className="text-xs" className="text-amber mb-4">No Billing 30+ Days ({dashActions.projNoBilling.length})</div>
+              <div className="text-xs text-amber mb-4">No Billing 30+ Days ({dashActions.projNoBilling.length})</div>
               {dashActions.projNoBilling.slice(0, 4).map(p => (
-                <div key={p.id} className="text-sm" className="py-3 cursor-pointer text-blue"
+                <div key={p.id} className="text-sm py-3 cursor-pointer text-blue"
                   onClick={() => setModal({ type: "editProject", data: p })}>{p.name}</div>
               ))}
               {dashActions.projNoBilling.length > 4 && <div className="text-xs text-muted">+{dashActions.projNoBilling.length - 4} more</div>}
@@ -1498,15 +1498,15 @@ function App({ auth, onLogout }) {
         const criticalCount = dashActions.profitAlerts.filter(p => p.margin < 15).length;
         const warnCount = dashActions.profitAlerts.filter(p => p.margin >= 15).length;
         return (
-          <div id="profit-analysis-section" className="card" className="dash-card dash-card--red">
+          <div id="profit-analysis-section" className="card dash-card dash-card--red">
             <div className="flex-between mb-12">
               <div className="flex-center-gap-8">
                 <TrendingDown size={16} className="text-red" />
-                <span className="text-sm font-semi" className="text-default">Profit Analysis</span>
+                <span className="text-sm font-semi text-default">Profit Analysis</span>
                 <span className="text-xs text-muted">— projects below 30% margin</span>
               </div>
               <div className="flex-center-gap-6">
-                {criticalCount > 0 && <span className="badge badge-red" className="flex-center-gap-4"><AlertTriangle size={10} /> {criticalCount} critical</span>}
+                {criticalCount > 0 && <span className="badge badge-red flex-center-gap-4"><AlertTriangle size={10} /> {criticalCount} critical</span>}
                 {warnCount > 0 && <span className="badge badge-amber">{warnCount} warning</span>}
               </div>
             </div>
@@ -1529,14 +1529,14 @@ function App({ auth, onLogout }) {
                     return (
                       <tr key={p.id} className="cursor-pointer" onClick={() => setModal({ type: "editProject", data: p })}>
                         <td>
-                          <div className="text-sm" className="text-blue fw-500">{p.name}</div>
+                          <div className="text-sm text-blue fw-500">{p.name}</div>
                           <div className="text-xs text-muted">{p.phase}</div>
                         </td>
                         <td className="text-sm text-muted">{p.gc}</td>
                         <td className="num">{fmt(p.contract)}</td>
-                        <td className="num" className="text-muted">{fmt(p.totalCost)}</td>
+                        <td className="num text-muted">{fmt(p.totalCost)}</td>
                         <td className="num">
-                          <span className={`badge ${badgeClass}`} className="inline-block text-center" style={{ minWidth: 48 }}>
+                          <span className={`badge ${badgeClass} inline-block text-center`} style={{ minWidth: 48 }}>
                             {p.margin < 0 ? `${p.margin}%` : `${p.margin}%`}
                           </span>
                         </td>
@@ -1566,9 +1566,9 @@ function App({ auth, onLogout }) {
 
       {/* ── Section 4: Charts — only if data exists, compact ── */}
       {dashCfg.showCharts && gcWinRates.length > 0 && (
-        <div className="flex gap-16 mt-8" className="flex-wrap">
+        <div className="flex gap-16 mt-8 flex-wrap">
           <div className="card" style={{ flex: "1 1 480px", minWidth: 320 }}>
-            <div className="card-header"><div className="card-title font-head" className="fs-13">{t("Win Rate by GC")}</div></div>
+            <div className="card-header"><div className="card-title font-head fs-13">{t("Win Rate by GC")}</div></div>
             <ResponsiveContainer width="100%" height={Math.max(140, gcWinRates.length * 28 + 32)}>
               <BarChart data={gcWinRates.map(g => ({ name: g.gc.length > 18 ? g.gc.slice(0, 16) + "..." : g.gc, Awarded: g.awarded, Lost: g.lost, Pending: g.pending }))} layout="vertical" margin={{ left: 10, right: 20 }}>
                 <XAxis type="number" tick={{ fill: "var(--text2)", fontSize: 11 }} />
@@ -1583,7 +1583,7 @@ function App({ auth, onLogout }) {
           </div>
           {(cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90) > 0 && (
             <div className="card" style={{ flex: "1 1 260px", minWidth: 240 }}>
-              <div className="card-header"><div className="card-title font-head" className="fs-13">{t("Receivables Aging")}</div></div>
+              <div className="card-header"><div className="card-title font-head fs-13">{t("Receivables Aging")}</div></div>
               <ResponsiveContainer width="100%" height={170}>
                 <BarChart data={[
                   { name: "Current", value: cashFlow.current },
@@ -1610,14 +1610,14 @@ function App({ auth, onLogout }) {
       )}
 
       {/* ── Section 5: Follow-ups & Recent Activity side by side ── */}
-      <div className="flex gap-16 mt-16" className="flex-wrap">
+      <div className="flex gap-16 mt-16 flex-wrap">
         {dashActions.followUps.length > 0 && (
-          <div className="card" className="chart-card-half">
+          <div className="card chart-card-half">
             <div className="text-sm font-semi mb-8">Follow-ups</div>
             {dashActions.followUps.slice(0, 5).map((c, i) => (
-              <div key={i} className="flex gap-8" className="log-item--clickable"
+              <div key={i} className="flex gap-8 log-item--clickable"
                 onClick={() => { handleTabClick("contacts"); setTimeout(() => setContactSearch(c.contact || ""), 0); }}>
-                <div className="log-accent-bar" className="bg-amber" />
+                <div className="log-accent-bar bg-amber" />
                 <div className="flex-1">
                   <div className="flex-between">
                     <span className="text-sm font-semi">{c.contact}</span>
@@ -1629,12 +1629,12 @@ function App({ auth, onLogout }) {
             ))}
           </div>
         )}
-        <div className="card" className="chart-card-half">
+        <div className="card chart-card-half">
           <div className="text-sm font-semi mb-8">Recent Activity</div>
           {callLog.slice(0, 5).map(c => (
-            <div key={c.id} className="flex gap-8" className="log-item--clickable"
+            <div key={c.id} className="flex gap-8 log-item--clickable"
               onClick={() => { handleTabClick("contacts"); setTimeout(() => setContactSearch(c.contact || ""), 0); }}>
-              <div className="log-accent-bar" className="bg-blue" />
+              <div className="log-accent-bar bg-blue" />
               <div className="flex-1">
                 <div className="flex-between">
                   <span className="text-sm font-semi">{c.contact}</span>
@@ -1644,7 +1644,7 @@ function App({ auth, onLogout }) {
               </div>
             </div>
           ))}
-          {callLog.length === 0 && <div className="text-sm text-muted" className="p-8">No recent activity</div>}
+          {callLog.length === 0 && <div className="text-sm text-muted p-8">No recent activity</div>}
         </div>
       </div>
 
@@ -1659,7 +1659,7 @@ function App({ auth, onLogout }) {
         {!digestResult && !digestLoading && (
           <div className="text-xs text-muted">AI-powered portfolio summary — health, alerts, and recommendations.</div>
         )}
-        {digestLoading && <div className="text-xs text-muted" className="text-center p-8">Analyzing {projects.length} projects...</div>}
+        {digestLoading && <div className="text-xs text-muted text-center p-8">Analyzing {projects.length} projects...</div>}
         {digestResult && (
           <div>
             <div className="text-sm" style={{ padding: "8px 10px", borderRadius: 6, background: "var(--bg3)", marginBottom: 8 }}>{digestResult.healthSummary}</div>
@@ -1673,8 +1673,8 @@ function App({ auth, onLogout }) {
               <div className="mt-8">
                 <div className="text-xs font-semi mb-4">Recommendations</div>
                 {digestResult.recommendations.slice(0, 3).map((r, i) => (
-                  <div key={i} className="text-xs" className="py-3">
-                    <span className={`badge ${r.urgency === "now" ? "badge-red" : "badge-amber"}`} className="fs-10">{r.urgency}</span>{" "}
+                  <div key={i} className="text-xs py-3">
+                    <span className={`badge ${r.urgency === "now" ? "badge-red" : "badge-amber"} fs-10`}>{r.urgency}</span>{" "}
                     {r.action}
                   </div>
                 ))}
@@ -1751,7 +1751,7 @@ function App({ auth, onLogout }) {
         </div>
         <div className="flex gap-8">
           <div className="search-wrap">
-            <Search className="w-4 h-4" className="search-icon" />
+            <Search className="w-4 h-4 search-icon" />
             <input
               className="search-input"
               placeholder={t("Search bids...")}
@@ -1785,7 +1785,7 @@ function App({ auth, onLogout }) {
 
       {/* Email-to-Bid Scanner */}
       {showEmailScanner && (
-        <div className="card" className="p-16 mb-16">
+        <div className="card p-16 mb-16">
           <div className="flex-between mb-8">
             <div>
               <div className="text-sm font-semi">{t("Email-to-Bid Scanner")}</div>
@@ -1796,7 +1796,7 @@ function App({ auth, onLogout }) {
             value={emailText} onChange={e => setEmailText(e.target.value)}
             style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13, marginBottom: 8, minHeight: 120 }} />
           <div className="flex-between">
-            <div className="flex gap-8" className="flex-center">
+            <div className="flex gap-8 flex-center">
               <span className="text-xs text-dim">{emailText.length} chars</span>
               {emailText.length > 0 && <button className="btn btn-ghost btn-sm" onClick={() => { setEmailText(""); setEmailResults(null); setEditingEmailBid(null); }}>Clear</button>}
             </div>
@@ -1880,7 +1880,7 @@ function App({ auth, onLogout }) {
                   <div className="mt-8">
                     <label className="text-xs text-muted">Plan / Spec Links</label>
                     {bid.planLinks.map((link, li) => (
-                      <div key={li} className="text-xs mt-2" className="word-break-all">
+                      <div key={li} className="text-xs mt-2 word-break-all">
                         <a href={link} target="_blank" rel="noopener noreferrer" className="text-amber">{link}</a>
                       </div>
                     ))}
@@ -1891,7 +1891,7 @@ function App({ auth, onLogout }) {
                   <textarea className="form-input" rows={3} value={bid.notes || ""} onChange={e => updateField("notes", e.target.value)}
                     className="form-textarea-flex" />
                 </div>
-                <div className="flex gap-8 mt-8" className="justify-end">
+                <div className="flex gap-8 mt-8 justify-end">
                   <button className="btn btn-ghost btn-sm" onClick={() => setEditingEmailBid(null)}>Cancel</button>
                   <button className="btn btn-primary btn-sm" onClick={() => { importEmailBid(bid); setEditingEmailBid(null); }}>Create Bid</button>
                 </div>
@@ -1934,7 +1934,7 @@ function App({ auth, onLogout }) {
                   {bid.address && <div className="text-xs text-dim mt-4">Address: {bid.address}</div>}
                   {(bid.scope || []).length > 0 && (
                     <div className="flex gap-4 flex-wrap mt-4">
-                      {bid.scope.map(tag => <span key={tag} className="badge badge-blue" className="fs-10">{tag}</span>)}
+                      {bid.scope.map(tag => <span key={tag} className="badge badge-blue fs-10">{tag}</span>)}
                     </div>
                   )}
                   {(bid.contactName || bid.contactEmail) && (
@@ -1950,7 +1950,7 @@ function App({ auth, onLogout }) {
                       ))}
                     </div>
                   )}
-                  {bid.notes && <div className="text-xs text-dim mt-4" className="text-italic">{bid.notes}</div>}
+                  {bid.notes && <div className="text-xs text-dim mt-4 text-italic">{bid.notes}</div>}
                 </div>
               ))}
             </div>
@@ -2028,7 +2028,7 @@ function App({ auth, onLogout }) {
             <option value="no_bid">No Bid</option>
           </select>
           <button className="btn btn-ghost btn-sm" onClick={() => setSelectedBids(new Set())}>{t("Clear")}</button>
-          <button className="btn btn-ghost btn-sm" className="text-red" onClick={() => {
+          <button className="btn btn-ghost btn-sm text-red" onClick={() => {
             if (!confirm(`Delete ${selectedBids.size} bids?`)) return;
             setBids(prev => prev.filter(b => !selectedBids.has(b.id)));
             setSelectedBids(new Set());
@@ -2056,28 +2056,28 @@ function App({ auth, onLogout }) {
                     <span className="text-xs text-muted">{colBids.length} · {fmtK(colValue)}</span>
                   </div>
                   {colBids.length === 0 ? (
-                    <div className="text-xs text-dim" className="p-16 text-center">Empty</div>
+                    <div className="text-xs text-dim p-16 text-center">Empty</div>
                   ) : colBids.map(b => {
                     const linkedProject = b.convertedToProject ? projects.find(p => p.bidId === b.id) : null;
                     return (
                     <div key={b.id} className="bid-card" style={{ marginBottom: 8, padding: "10px 12px", cursor: "pointer", opacity: b.convertedToProject ? 0.7 : 1 }}
                       onClick={() => b.convertedToProject && linkedProject ? setModal({ type: "editProject", data: linkedProject }) : setModal({ type: "editBid", data: b })}>
-                      <div className="text-xs font-semi" className="lh-13 mb-4">{b.name}</div>
+                      <div className="text-xs font-semi lh-13 mb-4">{b.name}</div>
                       <div className="flex-between">
                         <span className="text-xs text-muted">{b.gc}</span>
                         <span className="text-xs font-mono text-amber">{b.value ? fmt(b.value) : "—"}</span>
                       </div>
                       <div className="flex gap-4 mt-4">
-                        <span className={`badge ${STATUS_BADGE[b.status] || "badge-muted"}`} className="fs-9">{STATUS_LABEL[b.status] || b.status}</span>
+                        <span className={`badge ${STATUS_BADGE[b.status] || "badge-muted"} fs-9`}>{STATUS_LABEL[b.status] || b.status}</span>
                         {b.contact && <span className="text-xs text-dim">{b.contact}</span>}
                       </div>
                       {b.estimatingBy && !b.convertedToProject && (
-                        <div className="text-xs mt-4" className="text-blue font-semi">
+                        <div className="text-xs mt-4 text-blue font-semi">
                           {b.estimatingBy.split(" ")[0]}
                         </div>
                       )}
                       {b.convertedToProject && (
-                        <div className="text-xs mt-4" className="text-green text-italic">
+                        <div className="text-xs mt-4 text-green text-italic">
                           → Moved to Projects
                         </div>
                       )}
@@ -2151,7 +2151,7 @@ function App({ auth, onLogout }) {
                   <button onClick={() => setBidCalMonth(p => { let m2 = p.month + 1, y2 = p.year; if (m2 > 11) { m2 = 0; y2++; } return { year: y2, month: m2 }; })}>&#9654;</button>
                 </div>
                 <button className="bidcal-today-btn" onClick={() => { const tn = new Date(); setBidCalMonth({ year: tn.getFullYear(), month: tn.getMonth() }); setBidCalSelected(todayStr); }}>Today</button>
-                <button className="btn btn-sm btn-ghost" className="ml-auto" onClick={() => { setBidCalAddOpen(true); setBidCalEventForm(f => ({ ...f, date: bidCalSelected || todayStr })); }}>+ Add Event</button>
+                <button className="btn btn-sm btn-ghost ml-auto" onClick={() => { setBidCalAddOpen(true); setBidCalEventForm(f => ({ ...f, date: bidCalSelected || todayStr })); }}>+ Add Event</button>
               </div>
               <div className="bidcal-grid">
                 {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(dw => <div key={dw} className="bidcal-hdr">{dw}</div>)}
@@ -2179,27 +2179,27 @@ function App({ auth, onLogout }) {
                 <div className="bidcal-day-detail">
                   <div className="bidcal-day-detail-title">
                     {new Date(bidCalSelected + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
-                    <span className="text-xs text-muted" className="ml-8">{selectedEvts.length} event{selectedEvts.length !== 1 ? "s" : ""}</span>
+                    <span className="text-xs text-muted ml-8">{selectedEvts.length} event{selectedEvts.length !== 1 ? "s" : ""}</span>
                   </div>
                   {selectedEvts.map((ev, si) => (
                     <div key={si} className="bidcal-detail-item" onClick={() => { if (ev.bid) setModal({ type: "editBid", data: ev.bid }); }}>
                       <div className="flex-between mb-4">
-                        <span className={`badge ${ev.status === "awarded" ? "badge-green" : ev.status === "lost" ? "badge-red" : ev.status === "no_bid" ? "badge-muted" : ev.type === "Site Walk" ? "badge-blue" : ev.type === "Pre-Bid Meeting" ? "badge-green" : ev.type === "Plan Review" ? "badge-blue" : ev.type === "Follow Up" ? "badge-red" : "badge-amber"}`} className="fs-10">{ev.type}</span>
+                        <span className={`badge ${ev.status === "awarded" ? "badge-green" : ev.status === "lost" ? "badge-red" : ev.status === "no_bid" ? "badge-muted" : ev.type === "Site Walk" ? "badge-blue" : ev.type === "Pre-Bid Meeting" ? "badge-green" : ev.type === "Plan Review" ? "badge-blue" : ev.type === "Follow Up" ? "badge-red" : "badge-amber"} fs-10`}>{ev.type}</span>
                         {ev.value > 0 && <span className="text-xs font-mono text-amber">{fmt(ev.value)}</span>}
                       </div>
                       <div className="text-sm font-semi">{ev.label}</div>
                       {ev.gc && <div className="text-xs text-muted">{ev.gc}</div>}
                       {ev.time && <div className="text-xs text-dim">Time: {ev.time}</div>}
                       {ev.location && <div className="text-xs text-dim">Location: {ev.location}</div>}
-                      {ev.notes && ev.type !== "Bid Due" && <div className="text-xs text-dim" className="mt-4">{ev.notes}</div>}
+                      {ev.notes && ev.type !== "Bid Due" && <div className="text-xs text-dim mt-4">{ev.notes}</div>}
                     </div>
                   ))}
                 </div>
               )}
               {bidCalSelected && selectedEvts.length === 0 && (
-                <div className="bidcal-day-detail" className="text-center p-24">
+                <div className="bidcal-day-detail text-center p-24">
                   <div className="text-sm text-muted">No events on {new Date(bidCalSelected + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric" })}</div>
-                  <button className="btn btn-ghost btn-sm" className="mt-8" onClick={() => { setBidCalAddOpen(true); setBidCalEventForm(f => ({ ...f, date: bidCalSelected })); }}>+ Add Event</button>
+                  <button className="btn btn-ghost btn-sm mt-8" onClick={() => { setBidCalAddOpen(true); setBidCalEventForm(f => ({ ...f, date: bidCalSelected })); }}>+ Add Event</button>
                 </div>
               )}
             </div>
@@ -2211,15 +2211,15 @@ function App({ auth, onLogout }) {
                 ) : upcoming.slice(0, 10).map((ev, ui) => (
                   <div key={ui} className="bidcal-upcoming-item" onClick={() => { setBidCalSelected(ev.dateStr); if (ev.bid) setModal({ type: "editBid", data: ev.bid }); }}>
                     <div className="flex-between">
-                      <span className={`badge ${ev.status === "awarded" ? "badge-green" : ev.status === "lost" ? "badge-red" : ev.type === "Site Walk" ? "badge-blue" : ev.type === "Pre-Bid Meeting" ? "badge-green" : "badge-amber"}`} className="fs-9">{ev.type}</span>
+                      <span className={`badge ${ev.status === "awarded" ? "badge-green" : ev.status === "lost" ? "badge-red" : ev.type === "Site Walk" ? "badge-blue" : ev.type === "Pre-Bid Meeting" ? "badge-green" : "badge-amber"} fs-9`}>{ev.type}</span>
                       <span className="text-xs text-dim">{new Date(ev.dateStr + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
                     </div>
-                    <div className="text-xs font-semi" className="mt-4">{ev.label}</div>
+                    <div className="text-xs font-semi mt-4">{ev.label}</div>
                     {ev.gc && <div className="text-xs text-muted">{ev.gc}</div>}
                     {ev.value > 0 && <div className="text-xs font-mono text-amber">{fmt(ev.value)}</div>}
                   </div>
                 ))}
-                {upcoming.length > 10 && <div className="text-xs text-dim" className="text-center" style={{ padding: 4 }}>+{upcoming.length - 10} more</div>}
+                {upcoming.length > 10 && <div className="text-xs text-dim text-center" style={{ padding: 4 }}>+{upcoming.length - 10} more</div>}
               </div>
               <div className="bidcal-sidebar-card">
                 <div className="bidcal-sidebar-title">Legend</div>
@@ -2234,7 +2234,7 @@ function App({ auth, onLogout }) {
                     { label: "Plan Review", color: "#8b5cf6" },
                     { label: "Follow Up", color: "var(--red)" },
                   ].map((lg, li) => (
-                    <div key={li} className="flex gap-8" className="flex-center">
+                    <div key={li} className="flex gap-8 flex-center">
                       <span className="bidcal-dot" style={{ background: lg.color }} />
                       <span className="text-xs text-muted">{lg.label}</span>
                     </div>
@@ -2251,8 +2251,8 @@ function App({ auth, onLogout }) {
                   return (
                     <div className="flex-col-gap-6">
                       <div className="flex-between"><span className="text-xs text-muted">Total Bids</span><span className="text-xs font-semi">{moBids.length}</span></div>
-                      <div className="flex-between"><span className="text-xs text-muted">Active</span><span className="text-xs font-semi" className="text-amber">{actCt}</span></div>
-                      <div className="flex-between"><span className="text-xs text-muted">Awarded</span><span className="text-xs font-semi" className="text-green">{awdCt}</span></div>
+                      <div className="flex-between"><span className="text-xs text-muted">Active</span><span className="text-xs font-semi text-amber">{actCt}</span></div>
+                      <div className="flex-between"><span className="text-xs text-muted">Awarded</span><span className="text-xs font-semi text-green">{awdCt}</span></div>
                       <div className="flex-between"><span className="text-xs text-muted">Total Value</span><span className="text-xs font-mono text-amber">{fmtK(totVal)}</span></div>
                     </div>
                   );
@@ -2261,7 +2261,7 @@ function App({ auth, onLogout }) {
             </div>
             {bidCalAddOpen && (
               <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setBidCalAddOpen(false); }}>
-                <div className="modal-content" className="modal-sm">
+                <div className="modal-content modal-sm">
                   <div className="modal-header flex-between">
                     <div className="modal-title">Add Bid Calendar Event</div>
                     <button className="btn btn-ghost btn-sm" onClick={() => setBidCalAddOpen(false)}>Close</button>
@@ -2298,7 +2298,7 @@ function App({ auth, onLogout }) {
                         <textarea className="form-textarea" rows={3} placeholder="Additional details..." value={bidCalEventForm.notes} onChange={e => setBidCalEventForm(f => ({ ...f, notes: e.target.value }))} />
                       </div>
                     </div>
-                    <div className="flex-between" className="mt-16">
+                    <div className="flex-between mt-16">
                       <button className="btn btn-ghost" onClick={() => setBidCalAddOpen(false)}>Cancel</button>
                       <button className="btn btn-primary" onClick={() => {
                         const relBid = bidCalEventForm.bidId ? bids.find(b => String(b.id) === String(bidCalEventForm.bidId)) : null;
@@ -2351,25 +2351,25 @@ function App({ auth, onLogout }) {
                     setSelectedBids(prev => { const n = new Set(prev); e.target.checked ? n.add(b.id) : n.delete(b.id); return n; });
                   }} className="cursor-pointer" />
                   <span className={`badge ${STATUS_BADGE[b.status] || "badge-muted"}`}>{STATUS_LABEL[b.status] || b.status}</span>
-                  {b.risk === "High" && <span className="badge badge-red" className="fs-10">High</span>}
+                  {b.risk === "High" && <span className="badge badge-red fs-10">High</span>}
                 </span>
                 <span style={{ fontSize: 11, fontWeight: 600, color: dueColor }}>{dueLabel}</span>
               </div>
               {/* Name + GC */}
-              <div className="card-title font-head" className="fs-14 mb-2 lh-13">{b.name}</div>
+              <div className="card-title font-head fs-14 mb-2 lh-13">{b.name}</div>
               <div className="text-xs text-muted">{b.gc}</div>
               {b.convertedToProject && (
-                <div className="text-xs mt-4" className="text-green text-italic fw-500">→ Moved to Projects</div>
+                <div className="text-xs mt-4 text-green text-italic fw-500">→ Moved to Projects</div>
               )}
               {b.estimatingBy && !b.convertedToProject && (
-                <div className="text-xs mt-4" className="text-blue font-semi">
+                <div className="text-xs mt-4 text-blue font-semi">
                   In progress: {b.estimatingBy.split(" ")[0]}{b.estimatingStarted ? ` · ${b.estimatingStarted}` : ""}
                 </div>
               )}
               {/* Value + Owner row */}
-              <div className="flex-between mt-6" className="items-end">
-                {hasValue ? <span className="font-mono font-bold text-amber" style={{ fontSize: 14 }}>{fmt(b.value)}</span> : <span className="text-xs text-muted" className="text-italic">No estimate</span>}
-                {b.estimator && <span className="text-xs" className="text-blue">{b.estimator}</span>}
+              <div className="flex-between mt-6 items-end">
+                {hasValue ? <span className="font-mono font-bold text-amber" style={{ fontSize: 14 }}>{fmt(b.value)}</span> : <span className="text-xs text-muted text-italic">No estimate</span>}
+                {b.estimator && <span className="text-xs text-blue">{b.estimator}</span>}
               </div>
               {/* Readiness bar */}
               <div style={{ marginTop: 8, display: "flex", gap: 3, alignItems: "center" }}>
@@ -2379,7 +2379,7 @@ function App({ auth, onLogout }) {
                 <span className="text-xs text-muted" style={{ marginLeft: 4, fontSize: 10 }}>{readiness}/{readinessMax}</span>
               </div>
               {/* Quick indicators row */}
-              <div className="flex gap-6 mt-6" className="flex-wrap fs-10 text-muted">
+              <div className="flex gap-6 mt-6 flex-wrap fs-10 text-muted">
                 <span style={{ color: hasPlans ? "var(--green)" : "var(--text3)" }}>{hasPlans ? "Plans" : "No plans"}</span>
                 {(b.addendaCount || 0) > 0 && <span className="text-amber">{b.addendaCount} addenda</span>}
                 {hasScope && <span>{(b.scope || []).slice(0, 3).join(", ")}{(b.scope || []).length > 3 ? "..." : ""}</span>}
@@ -2388,14 +2388,14 @@ function App({ auth, onLogout }) {
               {/* Action row */}
               <div className="flex gap-4 mt-6 flex-wrap">
                 {b.status === "submitted" && (
-                  <button className="btn btn-ghost btn-sm" className="btn-xs"
+                  <button className="btn btn-ghost btn-sm btn-xs"
                     onClick={(e) => { e.stopPropagation(); runFollowUp(b); }}
                     disabled={followUpLoading && followUpBid?.id === b.id}>
                     {followUpLoading && followUpBid?.id === b.id ? "Drafting..." : "Follow-Up"}
                   </button>
                 )}
                 {b.status === "awarded" && !projects.some(p => p.bidId === b.id) && (
-                  <button className="btn btn-primary btn-sm" className="btn-xs"
+                  <button className="btn btn-primary btn-sm btn-xs"
                     onClick={(e) => {
                       e.stopPropagation();
                       const newProj = {
@@ -2431,7 +2431,7 @@ function App({ auth, onLogout }) {
         </div>
       ) : null}
       {bidViewMode === "list" && filteredBids.length > bidPageSize && (
-        <div className="flex-between" className="mt-16 py-8">
+        <div className="flex-between mt-16 py-8">
           <span className="text-xs text-muted">Showing {Math.min(bidPageSize, filteredBids.length)} of {filteredBids.length}</span>
           <div className="flex gap-8">
             <button className="btn btn-ghost btn-sm" onClick={() => setBidPageSize(s => s + 24)}>
@@ -2447,7 +2447,7 @@ function App({ auth, onLogout }) {
       {/* Follow-Up Email Modal */}
       {followUpBid && followUpText && (
         <div className="modal-overlay" onMouseDown={onOverlayDown} onMouseUp={onOverlayUp(() => setFollowUpBid(null))}>
-          <div className="modal-content" className="modal-md">
+          <div className="modal-content modal-md">
             <div className="modal-header flex-between">
               <div className="modal-title">Follow-Up: {followUpBid.name}</div>
               <button className="btn btn-ghost btn-sm" onClick={() => setFollowUpBid(null)}>{t("Close")}</button>
@@ -2472,14 +2472,14 @@ function App({ auth, onLogout }) {
       {/* Win Predictor Modal */}
       {winPredBid && winPredResult && (
         <div className="modal-overlay" onMouseDown={onOverlayDown} onMouseUp={onOverlayUp(() => setWinPredBid(null))}>
-          <div className="modal-content" className="modal-xl">
+          <div className="modal-content modal-xl">
             <div className="modal-header flex-between">
               <div className="modal-title">Win Prediction: {winPredBid.name}</div>
               <button className="btn btn-ghost btn-sm" onClick={() => setWinPredBid(null)}>{t("Close")}</button>
             </div>
             <div className="p-16 max-h-500 overflow-auto">
               {/* Win Probability */}
-              <div className="card" className="p-16 mb-12 text-center">
+              <div className="card p-16 mb-12 text-center">
                 <div className="text-xs text-muted mb-4">{t("Win Probability")}</div>
                 <div style={{ fontSize: 48, fontWeight: 800, color: winPredResult.winProbability >= 70 ? "var(--green)" : winPredResult.winProbability >= 40 ? "var(--amber)" : "var(--red)" }}>
                   {winPredResult.winProbability}%
@@ -2491,7 +2491,7 @@ function App({ auth, onLogout }) {
 
               {/* GC History */}
               {winPredResult.gcHistory && (
-                <div className="card" className="p-16 mb-12">
+                <div className="card p-16 mb-12">
                   <div className="text-sm font-semi mb-8">GC Relationship: {winPredBid.gc}</div>
                   <div className="flex gap-16 flex-wrap">
                     <div><span className="text-xs text-muted">Bids:</span> <span className="font-semi">{winPredResult.gcHistory.totalBids}</span></div>
@@ -2504,7 +2504,7 @@ function App({ auth, onLogout }) {
 
               {/* Key Factors */}
               {winPredResult.factors?.length > 0 && (
-                <div className="card" className="p-16 mb-12">
+                <div className="card p-16 mb-12">
                   <div className="text-sm font-semi mb-8">{t("Key Factors")}</div>
                   {winPredResult.factors.map((f, i) => (
                     <div key={i} className="queue-row">
@@ -2520,8 +2520,8 @@ function App({ auth, onLogout }) {
 
               {/* Improvements */}
               {winPredResult.improvements?.length > 0 && (
-                <div className="card" className="p-16 mb-12">
-                  <div className="text-sm font-semi mb-8" className="text-amber">{t("Improve Win Chances")}</div>
+                <div className="card p-16 mb-12">
+                  <div className="text-sm font-semi mb-8 text-amber">{t("Improve Win Chances")}</div>
                   {winPredResult.improvements.map((imp, i) => (
                     <div key={i} className="queue-row">
                       <div className="flex-between">
@@ -2536,14 +2536,14 @@ function App({ auth, onLogout }) {
 
               {/* Pricing Insight */}
               {winPredResult.pricingInsight && (
-                <div className="card" className="p-16 mb-12">
+                <div className="card p-16 mb-12">
                   <div className="text-sm font-semi mb-4">{t("Pricing Insight")}</div>
                   <div className="text-sm text-muted">{winPredResult.pricingInsight}</div>
                 </div>
               )}
 
               {/* Summary */}
-              <div className="text-sm text-muted" className="p-8">{winPredResult.summary}</div>
+              <div className="text-sm text-muted p-8">{winPredResult.summary}</div>
             </div>
           </div>
         </div>
@@ -2683,12 +2683,12 @@ function App({ auth, onLogout }) {
 
       {/* Risk Radar Panel */}
       {showRiskRadar && (
-        <div className="card" className="p-16 mb-16">
+        <div className="card p-16 mb-16">
           <div className="flex-between mb-12">
             <div className="text-sm font-semi">{t("Project Risk Radar")}</div>
             <button className="btn btn-ghost btn-sm" onClick={() => { setShowRiskRadar(false); setRiskResult(null); }}>{t("Close")}</button>
           </div>
-          {riskLoading && <div className="text-sm text-muted" className="p-16 text-center">Analyzing {projects.length} projects for risks...</div>}
+          {riskLoading && <div className="text-sm text-muted p-16 text-center">Analyzing {projects.length} projects for risks...</div>}
           {riskResult && (
             <div>
               <div className="info-panel">
@@ -2703,13 +2703,13 @@ function App({ auth, onLogout }) {
                     onClick={() => { const p = projects.find(p => p.name?.toLowerCase().includes(r.project?.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); }}>
                     <div className="flex-between mb-4">
                       <span className="font-semi text-sm">{r.project}</span>
-                      <div className="flex gap-8" className="flex-center">
+                      <div className="flex gap-8 flex-center">
                         <span style={{ fontSize: 20, fontWeight: 800, color: riskColor }}>{r.riskScore}</span>
                         <span className={`badge ${r.riskLevel === "critical" ? "badge-red" : r.riskLevel === "high" ? "badge-amber" : r.riskLevel === "medium" ? "badge-blue" : "badge-green"}`}>{r.riskLevel}</span>
                       </div>
                     </div>
                     <div className="flex gap-4 flex-wrap mb-4">
-                      {r.factors?.map((f, j) => <span key={j} className="badge badge-muted" className="fs-10">{f}</span>)}
+                      {r.factors?.map((f, j) => <span key={j} className="badge badge-muted fs-10">{f}</span>)}
                     </div>
                     <div className="text-xs text-muted">{r.recommendation}</div>
                   </div>
@@ -2784,25 +2784,25 @@ function App({ auth, onLogout }) {
                       {STAGE_MAP[p.constructionStage].label}
                     </span>
                   )}
-                  <span className="badge badge-blue" className="fs-10">{p.phase || "—"}</span>
-                  {scheduleRisk && <span className="badge badge-red" className="fs-9">{scheduleRisk === "overdue" ? "OVERDUE" : "BEHIND"}</span>}
+                  <span className="badge badge-blue fs-10">{p.phase || "—"}</span>
+                  {scheduleRisk && <span className="badge badge-red fs-9">{scheduleRisk === "overdue" ? "OVERDUE" : "BEHIND"}</span>}
                 </span>
                 <span className="flex-center-gap-6">
-                  {p.pm && <span className="text-xs" className="text-blue">{p.pm.split(" ")[0]}</span>}
+                  {p.pm && <span className="text-xs text-blue">{p.pm.split(" ")[0]}</span>}
                   {p.assignedForeman != null && (() => {
                     const fm = employees.find(e => String(e.id) === String(p.assignedForeman));
-                    return fm ? <span className="text-xs" className="text-muted">· {fm.name.split(" ")[0]}</span> : null;
+                    return fm ? <span className="text-xs text-muted">· {fm.name.split(" ")[0]}</span> : null;
                   })()}
                 </span>
               </div>
               {/* Name + GC */}
-              <div className="card-title font-head" className="fs-14 mb-2 lh-13">{p.name}</div>
+              <div className="card-title font-head fs-14 mb-2 lh-13">{p.name}</div>
               <div className="text-xs text-muted mb-4">{p.gc}</div>
               {/* Contract + Billed (hide $0) */}
               <div className="flex-between text-sm mb-4">
                 {(p.contract || 0) > 0 ? (
                   <span>Contract: <span className="font-mono text-amber">{fmt(p.contract)}</span></span>
-                ) : <span className="text-xs text-muted" className="text-italic">No contract value</span>}
+                ) : <span className="text-xs text-muted text-italic">No contract value</span>}
                 {(p.billed || 0) > 0 && <span className="text-xs">Billed: <span className="font-mono">{fmt(p.billed)}</span></span>}
               </div>
               {/* Progress bar — colored by health */}
@@ -2818,7 +2818,7 @@ function App({ auth, onLogout }) {
                 )}
               </div>
               {/* Document counts row */}
-              <div className="flex gap-6 mt-6" className="flex-wrap fs-10 text-muted">
+              <div className="flex gap-6 mt-6 flex-wrap fs-10 text-muted">
                 {pRfis.length > 0 && <span style={{ color: overdueRfis > 0 ? "var(--red)" : "var(--amber)" }}>RFI: {pRfis.length}{overdueRfis > 0 ? ` (${overdueRfis} aging)` : ""}</span>}
                 {pSubs.length > 0 && <span className="text-amber">Sub: {pSubs.length}</span>}
                 {pCOs.length > 0 && <span className="text-amber">CO: {pCOs.length}</span>}
@@ -2842,7 +2842,7 @@ function App({ auth, onLogout }) {
         </div>
       )}
       {filteredProjects.length > projPageSize && (
-        <div className="flex-between" className="mt-16 py-8">
+        <div className="flex-between mt-16 py-8">
           <span className="text-xs text-muted">Showing {Math.min(projPageSize, filteredProjects.length)} of {filteredProjects.length}</span>
           <div className="flex gap-8">
             <button className="btn btn-ghost btn-sm" onClick={() => setProjPageSize(s => s + 24)}>
@@ -2860,7 +2860,7 @@ function App({ auth, onLogout }) {
       {/* Closeout Modal */}
       {closeoutProj && closeoutResult && (
         <div className="modal-overlay" onMouseDown={onOverlayDown} onMouseUp={onOverlayUp(() => setCloseoutProj(null))}>
-          <div className="modal-content" className="modal-xl">
+          <div className="modal-content modal-xl">
             <div className="modal-header flex-between">
               <div className="modal-title">Closeout: {closeoutProj.name}</div>
               <div className="flex gap-8">
@@ -2885,7 +2885,7 @@ function App({ auth, onLogout }) {
             </div>
             <div className="p-16 max-h-500 overflow-auto">
               {/* Readiness Score */}
-              <div className="flex gap-16 mb-16" className="flex-center">
+              <div className="flex gap-16 mb-16 flex-center">
                 <div className="text-center">
                   <div className="text-xs text-muted">{t("Readiness")}</div>
                   <div style={{ fontSize: 36, fontWeight: 800, color: closeoutResult.readinessScore >= 70 ? "var(--green)" : closeoutResult.readinessScore >= 40 ? "var(--amber)" : "var(--red)" }}>
@@ -2905,7 +2905,7 @@ function App({ auth, onLogout }) {
               {closeoutResult.financialStatus && (
                 <div className="flex gap-12 mb-12 flex-wrap" style={{ padding: 12, borderRadius: 8, background: "var(--bg3)" }}>
                   <div><span className="text-xs text-muted">Billed:</span> <span className="font-semi">${(closeoutResult.financialStatus.totalBilled || 0).toLocaleString()}</span></div>
-                  <div><span className="text-xs text-muted">Remaining:</span> <span className="font-semi" className="text-amber">${(closeoutResult.financialStatus.remaining || 0).toLocaleString()}</span></div>
+                  <div><span className="text-xs text-muted">Remaining:</span> <span className="font-semi text-amber">${(closeoutResult.financialStatus.remaining || 0).toLocaleString()}</span></div>
                   <div><span className="text-xs text-muted">Open COs:</span> <span className="font-semi">{closeoutResult.financialStatus.openCOs}</span></div>
                   <div><span className="text-xs text-muted">Margin:</span> <span className="font-semi">{closeoutResult.financialStatus.margin}</span></div>
                 </div>
@@ -2933,7 +2933,7 @@ function App({ auth, onLogout }) {
               {/* Outstanding Items */}
               {closeoutResult.outstandingItems?.length > 0 && (
                 <div className="mb-12">
-                  <div className="text-sm font-semi mb-8" className="text-red">{t("Outstanding Items")}</div>
+                  <div className="text-sm font-semi mb-8 text-red">{t("Outstanding Items")}</div>
                   {closeoutResult.outstandingItems.map((o, i) => (
                     <div key={i} className="queue-row">
                       <div className="flex-between">
@@ -2949,7 +2949,7 @@ function App({ auth, onLogout }) {
               {/* Risk of Loss */}
               {closeoutResult.riskOfLoss?.length > 0 && (
                 <div className="mb-12">
-                  <div className="text-sm font-semi mb-8" className="text-amber">{t("Risk of Loss")}</div>
+                  <div className="text-sm font-semi mb-8 text-amber">{t("Risk of Loss")}</div>
                   {closeoutResult.riskOfLoss.map((r, i) => (
                     <div key={i} className="queue-row">
                       <div className="flex-between">
@@ -3301,14 +3301,14 @@ function App({ auth, onLogout }) {
 
       {/* Scope Risk Panel */}
       {showScopeRisk && scopeRiskResult && (
-        <div className="card" className="p-20 mb-16">
+        <div className="card p-20 mb-16">
           <div className="flex-between mb-12">
             <div className="text-sm font-semi">{t("Scope Risk Analysis")}</div>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowScopeRisk(false)}>{t("Close")}</button>
           </div>
 
           {/* Score + Grade */}
-          <div className="flex gap-16 mb-16" className="flex-center">
+          <div className="flex gap-16 mb-16 flex-center">
             <div className="text-center">
               <div className="text-xs text-muted">{t("Risk Score")}</div>
               <div style={{ fontSize: 36, fontWeight: 800, color: scopeRiskResult.overallRisk <= 30 ? "var(--green)" : scopeRiskResult.overallRisk <= 60 ? "var(--amber)" : "var(--red)" }}>
@@ -3327,7 +3327,7 @@ function App({ auth, onLogout }) {
           {/* Red Flags */}
           {scopeRiskResult.redFlags?.length > 0 && (
             <div className="mb-12">
-              <div className="text-sm font-semi mb-8" className="text-red">{t("Red Flags")} ({scopeRiskResult.redFlags.length})</div>
+              <div className="text-sm font-semi mb-8 text-red">{t("Red Flags")} ({scopeRiskResult.redFlags.length})</div>
               {scopeRiskResult.redFlags.map((f, i) => (
                 <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
                   <div className="text-sm font-semi">{f.item}</div>
@@ -3342,7 +3342,7 @@ function App({ auth, onLogout }) {
           {/* Negotiation Points */}
           {scopeRiskResult.negotiationPoints?.length > 0 && (
             <div className="mb-12">
-              <div className="text-sm font-semi mb-8" className="text-amber">{t("Negotiation Points")}</div>
+              <div className="text-sm font-semi mb-8 text-amber">{t("Negotiation Points")}</div>
               {scopeRiskResult.negotiationPoints.map((n, i) => (
                 <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "var(--bg3)", border: "1px solid var(--border)" }}>
                   <div className="flex-between">
@@ -3375,10 +3375,10 @@ function App({ auth, onLogout }) {
           {/* Exclusions */}
           {scopeRiskResult.exclusions?.length > 0 && (
             <div className="mb-12">
-              <div className="text-sm font-semi mb-8" className="text-blue">{t("Recommended Exclusions")}</div>
+              <div className="text-sm font-semi mb-8 text-blue">{t("Recommended Exclusions")}</div>
               <ul style={{ margin: 0, paddingLeft: 20 }}>
                 {scopeRiskResult.exclusions.map((e, i) => (
-                  <li key={i} className="text-sm text-muted" className="mb-4">{e}</li>
+                  <li key={i} className="text-sm text-muted mb-4">{e}</li>
                 ))}
               </ul>
             </div>
@@ -3394,7 +3394,7 @@ function App({ auth, onLogout }) {
       </div>
 
       {scopeSubTab === "checklist" && (<>
-        <div className="flex gap-8 mb-16 flex-wrap" className="flex-center">
+        <div className="flex gap-8 mb-16 flex-wrap flex-center">
           <div className="form-group" style={{ minWidth: 200 }}>
             <label className="form-label">{t("Linked Bid")}</label>
             <select className="form-select" value={scopeBidId || ""} onChange={e => setScopeBidId(e.target.value || null)}>
@@ -3430,7 +3430,7 @@ function App({ auth, onLogout }) {
 
       {scopeSubTab === "gapchecker" && (
         <div>
-          <div className="card" className="p-20 mb-16">
+          <div className="card p-20 mb-16">
             <div className="text-sm font-semi mb-8">Paste your bid scope and contract/spec scope below. AI will identify gaps, extras, and risks.</div>
             <div className="grid-2col" style={{ gap: 12 }}>
               <div className="form-group">
@@ -3454,7 +3454,7 @@ function App({ auth, onLogout }) {
           {gapResult && (
             <div>
               {/* Score + Summary */}
-              <div className="card" className="p-16 mb-12">
+              <div className="card p-16 mb-12">
                 <div className="flex-between mb-8">
                   <div className="text-sm font-semi">{t("Coverage Score")}</div>
                   <div style={{ fontSize: 28, fontWeight: 800, color: gapResult.score >= 80 ? "var(--green)" : gapResult.score >= 50 ? "var(--amber)" : "var(--red)" }}>
@@ -3466,8 +3466,8 @@ function App({ auth, onLogout }) {
 
               {/* Gaps */}
               {gapResult.gaps?.length > 0 && (
-                <div className="card" className="p-16 mb-12">
-                  <div className="text-sm font-semi mb-8" className="text-red">
+                <div className="card p-16 mb-12">
+                  <div className="text-sm font-semi mb-8 text-red">
                     {t("Missing from Bid")} ({gapResult.gaps.length})
                   </div>
                   {gapResult.gaps.map((g, i) => (
@@ -3484,8 +3484,8 @@ function App({ auth, onLogout }) {
 
               {/* Extras */}
               {gapResult.extras?.length > 0 && (
-                <div className="card" className="p-16 mb-12">
-                  <div className="text-sm font-semi mb-8" className="text-amber">
+                <div className="card p-16 mb-12">
+                  <div className="text-sm font-semi mb-8 text-amber">
                     {t("In Bid but Not in Contract")} ({gapResult.extras.length})
                   </div>
                   {gapResult.extras.map((g, i) => (
@@ -3499,8 +3499,8 @@ function App({ auth, onLogout }) {
 
               {/* Risks */}
               {gapResult.risks?.length > 0 && (
-                <div className="card" className="p-16 mb-12">
-                  <div className="text-sm font-semi mb-8" className="text-blue">
+                <div className="card p-16 mb-12">
+                  <div className="text-sm font-semi mb-8 text-blue">
                     {t("Risks & Ambiguities")} ({gapResult.risks.length})
                   </div>
                   {gapResult.risks.map((g, i) => (
@@ -3540,7 +3540,7 @@ function App({ auth, onLogout }) {
         </div>
         <div className="flex gap-8">
           <div className="search-wrap">
-            <Search className="w-4 h-4" className="search-icon" />
+            <Search className="w-4 h-4 search-icon" />
             <input
               className="search-input"
               placeholder={t("Search contacts...")}
@@ -3576,7 +3576,7 @@ function App({ auth, onLogout }) {
             <div className="card-header"><div className="card-title font-head">{t("AI GC Relationship Intelligence")}</div></div>
             <button className="btn btn-ghost btn-sm" onClick={() => { setShowGcIntel(false); setGcIntelResult(null); }}>{t("Close")}</button>
           </div>
-          {gcIntelLoading && <div className="text-sm text-muted" className="p-16 text-center">Analyzing {contacts.length} contacts and {bids.length} bids...</div>}
+          {gcIntelLoading && <div className="text-sm text-muted p-16 text-center">Analyzing {contacts.length} contacts and {bids.length} bids...</div>}
           {gcIntelResult && (
             <div className="mt-8">
               {/* Summary */}
@@ -3595,7 +3595,7 @@ function App({ auth, onLogout }) {
                       <div className="text-xs text-muted mt-2">
                         {gc.totalBids} bids • {gc.wins}W ({gc.winRate}%) • {gc.activeProjects} active • {gc.trend}
                       </div>
-                      <div className="text-xs mt-2" className="text-blue">{gc.recommendation}</div>
+                      <div className="text-xs mt-2 text-blue">{gc.recommendation}</div>
                     </div>
                   ))}
                 </div>
@@ -3625,7 +3625,7 @@ function App({ auth, onLogout }) {
                     <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, background: "rgba(239,68,68,0.06)", borderLeft: "3px solid var(--red)", fontSize: 13 }}>
                       <span className="font-semi">{r.gc}</span>
                       <div className="text-xs text-muted mt-2">{r.concern}</div>
-                      <div className="text-xs mt-2" className="text-blue">{r.recommendation}</div>
+                      <div className="text-xs mt-2 text-blue">{r.recommendation}</div>
                     </div>
                   ))}
                 </div>
@@ -3664,11 +3664,11 @@ function App({ auth, onLogout }) {
       <div className="contact-grid">
         {filteredContacts.map(c => (
           <div key={c.id} className="contact-card" onClick={() => setModal({ type: "editContact", data: c })}>
-            <div className="flex gap-12" className="flex-center">
+            <div className="flex gap-12 flex-center">
               <div className="contact-avatar" style={{ background: c.color || "var(--amber)" }}>
                 {(c.name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
               </div>
-              <div className="flex-col" className="flex-1">
+              <div className="flex-col flex-1">
                 <div className="font-semi text-sm">{c.name}</div>
                 <div className="text-xs text-muted">{c.company}</div>
                 <div className="text-xs text-dim">{c.role}</div>
@@ -3690,8 +3690,8 @@ function App({ auth, onLogout }) {
           </div>
           {callLog.slice(0, 8).map(c => (
             <div key={c.id} className="flex gap-12 border-b" style={{ padding: "10px 0" }}>
-              <div className="log-accent-bar" className="bg-blue" />
-              <div className="flex-col gap-4" className="flex-1">
+              <div className="log-accent-bar bg-blue" />
+              <div className="flex-col gap-4 flex-1">
                 <div className="flex-between">
                   <span className="font-semi text-sm">{c.contact} <span className="text-dim">({c.company})</span></span>
                   <span className="text-xs text-dim">{c.time}</span>
@@ -3753,7 +3753,7 @@ function App({ auth, onLogout }) {
       {isCyber && <div className="cyber-scanlines" />}
 
       <header className="header">
-        <div className="logo" className="flex-center-gap-6">
+        <div className="logo flex-center-gap-6">
           <img src={theme === "daylight" ? "/eagle-blue.png" : "/ebc-eagle-white.png"} alt="Eagles Brothers Constructors" style={{ height: 32, width: "auto", objectFit: "contain", transition: "opacity 0.3s" }} onError={(e) => e.target.style.display = "none"} />
         </div>
         <button className="hamburger" onClick={() => setMobileNav(!mobileNav)} aria-label="Menu">
@@ -4404,16 +4404,16 @@ const ModalHub = ({ type, data, app }) => {
             {draft.notes && <div><span className="text-dim text-xs">NOTES</span><div className="text-sm">{draft.notes}</div></div>}
             {draft.contact && <div><span className="text-dim text-xs">CONTACT</span><div className="text-sm">{draft.contact}</div></div>}
           </div>
-          <div className="modal-actions" className="flex-between">
-            <button className="btn" className="badge-red-outlined" onClick={handleDelete}>Delete</button>
+          <div className="modal-actions flex-between">
+            <button className="btn badge-red-outlined" onClick={handleDelete}>Delete</button>
             <div className="flex gap-8">
               {draft.status !== "awarded" && (
-                <button className="btn" className="badge-green-outlined" onClick={handleAwardBid}>
+                <button className="btn badge-green-outlined" onClick={handleAwardBid}>
                   Award Bid
                 </button>
               )}
               {draft.status === "awarded" && (
-                <button className="btn" className="badge-yellow-outlined" onClick={handleUnAwardBid}>
+                <button className="btn badge-yellow-outlined" onClick={handleUnAwardBid}>
                   Un-award
                 </button>
               )}
@@ -4617,7 +4617,7 @@ const ModalHub = ({ type, data, app }) => {
           </div>
 
           {/* Sub-tabs */}
-          <div className="flex gap-4 mb-12" className="border-b overflow-x-auto" style={{ paddingBottom: 8 }}>
+          <div className="flex gap-4 mb-12 border-b overflow-x-auto" style={{ paddingBottom: 8 }}>
             {projTabs.map(tab => (
               <button key={tab} className={`btn btn-sm ${projTab === tab ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjTab(tab)}
                 style={{ whiteSpace: "nowrap", fontSize: 11, textTransform: "capitalize" }}>{tab}</button>
@@ -4654,7 +4654,7 @@ const ModalHub = ({ type, data, app }) => {
                     <div><span className="text-dim text-xs">END</span><div>{draft.end || "TBD"}</div></div>
                   </div>
                   <div><span className="text-dim text-xs">SCOPE</span>
-                    <div className="flex gap-4 flex-wrap mt-4">{(draft.scope || []).map(s => <span key={s} className="badge badge-amber" className="fs-10">{s}</span>)}</div>
+                    <div className="flex gap-4 flex-wrap mt-4">{(draft.scope || []).map(s => <span key={s} className="badge badge-amber fs-10">{s}</span>)}</div>
                   </div>
 
                   {/* ── Phase Tracker ── */}
@@ -4676,7 +4676,7 @@ const ModalHub = ({ type, data, app }) => {
                     />
                   </div>
 
-                  <div className="flex gap-16 flex-wrap" className="mt-4">
+                  <div className="flex gap-16 flex-wrap mt-4">
                     <div><span className="text-dim text-xs">LABOR HOURS</span><div className="font-mono">{totalHrs.toFixed(1)}h</div></div>
                     <div><span className="text-dim text-xs">CHANGE ORDERS</span><div className="font-mono">{projCOs.length}</div></div>
                     <div><span className="text-dim text-xs">RFIs</span><div className="font-mono">{projRFIs.length}</div></div>
@@ -4772,7 +4772,7 @@ const ModalHub = ({ type, data, app }) => {
             {projTab === "change orders" && (
               <div className="flex-col gap-12">
                 {/* Summary bar */}
-                <div className="flex gap-16 flex-wrap" className="field-card-compact">
+                <div className="flex gap-16 flex-wrap field-card-compact">
                   <div><span className="text-dim text-xs">ORIGINAL CONTRACT</span><div className="font-mono text-sm">{fmt(draft.contract)}</div></div>
                   <div><span className="text-dim text-xs">NET CO VALUE</span><div className="font-mono text-sm" style={{ color: coNetTotal >= 0 ? "var(--green)" : "var(--red)" }}>{coNetTotal >= 0 ? "+" : ""}{fmt(coNetTotal)}</div></div>
                   <div><span className="text-dim text-xs">ADJUSTED CONTRACT</span><div className="font-mono text-sm font-bold text-amber">{fmt(coAdjustedContract)}</div></div>
@@ -4787,7 +4787,7 @@ const ModalHub = ({ type, data, app }) => {
 
                 {/* CO Form (add/edit) */}
                 {coFormOpen && (
-                  <div className="card" className="card-amber-accent">
+                  <div className="card card-amber-accent">
                     <div className="flex-between mb-8">
                       <span className="font-semi text-sm">{coEditId ? "Edit Change Order" : "New Change Order"}</span>
                       <button className="btn btn-sm btn-ghost" onClick={() => { setCoFormOpen(false); resetCoForm(); }}>Cancel</button>
@@ -4848,7 +4848,7 @@ const ModalHub = ({ type, data, app }) => {
                       const tmMatTotal = selectedTm.reduce((s, t) => s + (t.materialEntries || []).reduce((ms, m) => ms + (m.qty * m.unitCost * (1 + (m.markup || 0) / 100)), 0), 0);
                       return (
                         <div className="mb-8" style={{ padding: 10, background: "var(--bg2)", borderRadius: 8, border: "1px solid var(--border)" }}>
-                          <label className="text-xs text-dim" className="text-uppercase fw-700">T&M Backup</label>
+                          <label className="text-xs text-dim text-uppercase fw-700">T&M Backup</label>
                           <div style={{ maxHeight: 160, overflowY: "auto", marginTop: 6 }}>
                             {availableTm.map(t => {
                               const checked = coForm.tmTicketIds.includes(t.id);
@@ -4887,7 +4887,7 @@ const ModalHub = ({ type, data, app }) => {
 
                 {/* CO List */}
                 {projCOs.length === 0 && !coFormOpen ? (
-                  <div className="text-sm text-dim" className="text-center p-32">No change orders yet. Click "+ Add Change Order" to create one.</div>
+                  <div className="text-sm text-dim text-center p-32">No change orders yet. Click "+ Add Change Order" to create one.</div>
                 ) : (
                   projCOs.map(co => {
                     const isExpanded = coExpandedId === co.id;
@@ -4919,7 +4919,7 @@ const ModalHub = ({ type, data, app }) => {
                           <div style={{ padding: "8px 12px 12px", borderTop: "1px solid var(--border)", background: "var(--bg3)" }}>
                             <div className="flex gap-16 flex-wrap mb-8">
                               <div><span className="text-dim text-xs">TYPE</span><div className="text-sm">{coTypeLabel(co.type || "add")}</div></div>
-                              <div><span className="text-dim text-xs">STATUS</span><div className="text-sm" className="text-capitalize">{coStatus}</div></div>
+                              <div><span className="text-dim text-xs">STATUS</span><div className="text-sm text-capitalize">{coStatus}</div></div>
                               <div><span className="text-dim text-xs">DATE</span><div className="text-sm">{co.date || co.submitted || "—"}</div></div>
                               <div><span className="text-dim text-xs">AMOUNT</span><div className="font-mono text-sm">{fmt(co.amount || 0)}</div></div>
                               {co.approved && <div><span className="text-dim text-xs">APPROVED</span><div className="text-sm">{co.approved}</div></div>}
@@ -4928,7 +4928,7 @@ const ModalHub = ({ type, data, app }) => {
                             {(co.notes || co.description || co.desc) && (
                               <div className="mb-8">
                                 <span className="text-dim text-xs">DESCRIPTION / NOTES</span>
-                                <div className="text-sm" className="ws-pre-wrap">{co.description || co.desc}{co.notes ? `\n\nNotes: ${co.notes}` : ""}</div>
+                                <div className="text-sm ws-pre-wrap">{co.description || co.desc}{co.notes ? `\n\nNotes: ${co.notes}` : ""}</div>
                               </div>
                             )}
                             {/* Linked T&M Backup */}
@@ -4967,7 +4967,7 @@ const ModalHub = ({ type, data, app }) => {
                             <div className="flex gap-8">
                               <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); editCo(co); }}>Edit</button>
                               <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); exportCoPdf(co); }}>Export PDF</button>
-                              <button className="btn btn-sm btn-ghost" className="text-red" onClick={(e) => { e.stopPropagation(); deleteCo(co.id); }}>Delete</button>
+                              <button className="btn btn-sm btn-ghost text-red" onClick={(e) => { e.stopPropagation(); deleteCo(co.id); }}>Delete</button>
                             </div>
                           </div>
                         )}
@@ -4985,7 +4985,7 @@ const ModalHub = ({ type, data, app }) => {
                 <div className="flex-between mb-8">
                   <div className="flex-center-gap-6">
                     <span className="font-semi text-sm">Submittal Log</span>
-                    <span className="badge badge-blue" className="fs-9">{projSubmittals.length}</span>
+                    <span className="badge badge-blue fs-9">{projSubmittals.length}</span>
                   </div>
                   <div className="flex gap-6">
                     {projSubmittals.length > 0 && (
@@ -4998,9 +4998,9 @@ const ModalHub = ({ type, data, app }) => {
                 </div>
 
                 {/* Quick Filters */}
-                <div className="flex gap-4 mb-8" className="flex-wrap">
+                <div className="flex gap-4 mb-8 flex-wrap">
                   {[["all", "All"], ["pending", "Pending"], ["approved", "Approved"], ["action", "Action Required"]].map(([key, label]) => (
-                    <button key={key} className={`btn btn-sm ${subFilter === key ? "btn-primary" : "btn-ghost"}`} className="fs-10" onClick={() => setSubFilter(key)}>
+                    <button key={key} className={`btn btn-sm ${subFilter === key ? "btn-primary" : "btn-ghost"} fs-10`} onClick={() => setSubFilter(key)}>
                       {label}
                       {key === "action" && projSubmittals.filter(s => ["revise & resubmit", "rejected"].includes(s.status)).length > 0 && (
                         <span style={{ marginLeft: 4, background: "var(--red)", color: "#fff", borderRadius: 99, padding: "0 5px", fontSize: 9 }}>
@@ -5058,7 +5058,7 @@ const ModalHub = ({ type, data, app }) => {
                       <label className="text-xs text-dim">Notes</label>
                       <textarea className="input input-sm" rows={2} placeholder="Additional notes..." value={subForm.notes} onChange={e => setSubForm(p => ({ ...p, notes: e.target.value }))} className="resize-v" />
                     </div>
-                    <div className="flex gap-8" className="justify-end">
+                    <div className="flex gap-8 justify-end">
                       <button className="btn btn-ghost btn-sm" onClick={() => { setSubFormOpen(false); resetSubForm(); }}>Cancel</button>
                       <button className="btn btn-primary btn-sm" onClick={saveSub}>{subEditId ? "Update" : "Add"} Submittal</button>
                     </div>
@@ -5067,7 +5067,7 @@ const ModalHub = ({ type, data, app }) => {
 
                 {/* Submittal Table */}
                 {filteredSubmittals.length === 0 ? (
-                  <div className="text-sm text-dim" className="text-center p-24">
+                  <div className="text-sm text-dim text-center p-24">
                     {projSubmittals.length === 0 ? "No submittals — click \"+ Add Submittal\" to create one" : "No submittals match this filter"}
                   </div>
                 ) : (
@@ -5096,7 +5096,7 @@ const ModalHub = ({ type, data, app }) => {
                                 <td className="num">{s.number}</td>
                                 <td className="font-semi" style={{ fontSize: 12 }}>{s.description || s.name || "—"}</td>
                                 <td className="text-xs" style={{ fontFamily: "var(--font-mono)" }}>{s.specSection || s.spec || "—"}</td>
-                                <td className="text-xs" className="text-capitalize">{s.type || "—"}</td>
+                                <td className="text-xs text-capitalize">{s.type || "—"}</td>
                                 <td>
                                   <span className="badge" style={{ background: stBadge.bg, color: stBadge.color, fontSize: 10, textTransform: "capitalize" }}>{s.status}</span>
                                 </td>
@@ -5111,18 +5111,18 @@ const ModalHub = ({ type, data, app }) => {
                                   <td colSpan={8} style={{ padding: 0, background: "var(--bg3)" }}>
                                     <div className="p-16">
                                       <div className="flex gap-16 flex-wrap mb-8">
-                                        <div><span className="text-dim text-xs">TYPE</span><div className="text-sm" className="text-capitalize">{s.type || "—"}</div></div>
+                                        <div><span className="text-dim text-xs">TYPE</span><div className="text-sm text-capitalize">{s.type || "—"}</div></div>
                                         <div><span className="text-dim text-xs">SPEC SECTION</span><div className="text-sm font-mono">{s.specSection || s.spec || "—"}</div></div>
                                         <div><span className="text-dim text-xs">STATUS</span><div><span className="badge" style={{ background: stBadge.bg, color: stBadge.color, fontSize: 10, textTransform: "capitalize" }}>{s.status}</span></div></div>
                                         <div><span className="text-dim text-xs">DATE SUBMITTED</span><div className="text-sm">{s.dateSubmitted || s.date || "—"}</div></div>
                                         <div><span className="text-dim text-xs">DATE RETURNED</span><div className="text-sm">{s.dateReturned || "—"}</div></div>
                                         {days !== null && <div><span className="text-dim text-xs">DAYS OUT</span><div className="text-sm" style={{ color: days > 14 ? "var(--red)" : "var(--amber)", fontWeight: 700 }}>{days} days{days > 14 ? " ⚠" : ""}</div></div>}
                                       </div>
-                                      {s.notes && <div className="mb-8"><span className="text-dim text-xs">NOTES</span><div className="text-sm" className="ws-pre-wrap">{s.notes}</div></div>}
+                                      {s.notes && <div className="mb-8"><span className="text-dim text-xs">NOTES</span><div className="text-sm ws-pre-wrap">{s.notes}</div></div>}
                                       <div className="text-xs text-muted mb-8">Created: {s.created ? new Date(s.created).toLocaleDateString() : "—"}</div>
                                       <div className="flex gap-8">
                                         <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); editSub(s); }}>Edit</button>
-                                        <button className="btn btn-sm btn-ghost" className="text-red" onClick={(e) => { e.stopPropagation(); deleteSub(s.id); }}>Delete</button>
+                                        <button className="btn btn-sm btn-ghost text-red" onClick={(e) => { e.stopPropagation(); deleteSub(s.id); }}>Delete</button>
                                       </div>
                                     </div>
                                   </td>
@@ -5144,7 +5144,7 @@ const ModalHub = ({ type, data, app }) => {
                     <div className="text-xs"><span className="text-amber">Submitted:</span> <span className="font-mono">{projSubmittals.filter(s => s.status === "submitted").length}</span></div>
                     <div className="text-xs"><span className="text-red">Action Req:</span> <span className="font-mono">{projSubmittals.filter(s => ["revise & resubmit", "rejected"].includes(s.status)).length}</span></div>
                     {projSubmittals.some(s => { const d = subDaysOut(s); return d !== null && d > 14; }) && (
-                      <div className="text-xs" className="text-red fw-700">Overdue: {projSubmittals.filter(s => { const d = subDaysOut(s); return d !== null && d > 14; }).length}</div>
+                      <div className="text-xs text-red fw-700">Overdue: {projSubmittals.filter(s => { const d = subDaysOut(s); return d !== null && d > 14; }).length}</div>
                     )}
                   </div>
                 )}
@@ -5155,7 +5155,7 @@ const ModalHub = ({ type, data, app }) => {
             {projTab === "rfis" && (
               <div className="flex-col gap-12">
                 {/* Summary stats */}
-                <div className="flex gap-16 flex-wrap" className="field-card-compact">
+                <div className="flex gap-16 flex-wrap field-card-compact">
                   <div><span className="text-dim text-xs">TOTAL RFIs</span><div className="font-mono text-sm">{projRFIs.length}</div></div>
                   <div><span className="text-dim text-xs">OPEN</span><div className="font-mono text-sm" style={{ color: rfiOpenCount > 0 ? "var(--amber)" : "var(--green)" }}>{rfiOpenCount}</div></div>
                   <div><span className="text-dim text-xs">OVERDUE (&gt;7d)</span><div className="font-mono text-sm" style={{ color: rfiOverdueCount > 0 ? "var(--red)" : "var(--green)" }}>{rfiOverdueCount}</div></div>
@@ -5175,7 +5175,7 @@ const ModalHub = ({ type, data, app }) => {
 
                 {/* RFI Form (add/edit) */}
                 {rfiFormOpen && (
-                  <div className="card" className="card-amber-accent">
+                  <div className="card card-amber-accent">
                     <div className="flex-between mb-8">
                       <span className="font-semi text-sm">{rfiEditId ? "Edit RFI" : "New RFI"}</span>
                       <button className="btn btn-sm btn-ghost" onClick={() => { setRfiFormOpen(false); resetRfiForm(); }}>Cancel</button>
@@ -5269,7 +5269,7 @@ const ModalHub = ({ type, data, app }) => {
 
                 {/* RFI List */}
                 {filteredRFIs.length === 0 ? (
-                  <div className="text-center text-muted" className="p-32">
+                  <div className="text-center text-muted p-32">
                     <div style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}><ClipboardList style={{ width: 32, height: 32, opacity: 0.4 }} /></div>
                     <div className="text-sm">{rfiFilter === "all" ? "No RFIs yet" : `No ${rfiFilter} RFIs`}</div>
                     <div className="text-xs text-dim mt-4">Click "+ Add RFI" to create one</div>
@@ -5292,15 +5292,15 @@ const ModalHub = ({ type, data, app }) => {
                           cursor: "pointer",
                           background: isOverdue ? "rgba(239,68,68,0.06)" : undefined,
                         }} onClick={() => setRfiExpandedId(isExpanded ? null : r.id)}>
-                          <div className="flex-between" className="items-start">
+                          <div className="flex-between items-start">
                             <div className="flex-1">
                               <div className="flex gap-8 items-center flex-wrap">
-                                <span className="font-mono text-xs font-bold" className="text-amber">{r.number}</span>
+                                <span className="font-mono text-xs font-bold text-amber">{r.number}</span>
                                 <span className="text-sm font-semi">{r.subject}</span>
                               </div>
-                              <div className="flex gap-6 mt-4 flex-wrap" className="flex-center">
+                              <div className="flex gap-6 mt-4 flex-wrap flex-center">
                                 <span style={{ display: "inline-block", padding: "1px 8px", borderRadius: 4, fontSize: 10, fontWeight: 600, background: stBadge.bg, color: stBadge.color }}>{r.status}</span>
-                                <span className={`badge ${RFI_PRIORITY_BADGE(r.priority)}`} className="fs-9">{r.priority}</span>
+                                <span className={`badge ${RFI_PRIORITY_BADGE(r.priority)} fs-9`}>{r.priority}</span>
                                 {r.submittedTo && <span className="text-xs text-muted">To: {r.submittedTo}</span>}
                                 {r.specRef && <span className="text-xs text-muted">Ref: {r.specRef}</span>}
                                 {days !== null && (
@@ -5309,19 +5309,19 @@ const ModalHub = ({ type, data, app }) => {
                                   </span>
                                 )}
                                 {r.costImpact && r.costImpact !== "None" && (
-                                  <span className="text-xs" className="text-amber">
+                                  <span className="text-xs text-amber">
                                     Cost: {r.costImpact === "Yes" ? fmt(r.costAmount || 0) : "TBD"}
                                   </span>
                                 )}
                                 {r.scheduleImpact && r.scheduleImpact !== "None" && (
-                                  <span className="text-xs" className="text-amber">
+                                  <span className="text-xs text-amber">
                                     Sched: {r.scheduleImpact === "Yes" ? `${r.scheduleDays || 0}d` : "TBD"}
                                   </span>
                                 )}
                               </div>
                             </div>
                             <div className="flex gap-4" style={{ flexShrink: 0 }}>
-                              <button className="btn btn-sm btn-ghost" className="fs-10" onClick={e => { e.stopPropagation(); editRfi(r); }}>Edit</button>
+                              <button className="btn btn-sm btn-ghost fs-10" onClick={e => { e.stopPropagation(); editRfi(r); }}>Edit</button>
                               <button className="btn btn-sm btn-ghost" style={{ fontSize: 10, color: "var(--red)" }} onClick={e => { e.stopPropagation(); deleteRfi(r.id); }}>Del</button>
                             </div>
                           </div>
@@ -5331,13 +5331,13 @@ const ModalHub = ({ type, data, app }) => {
                               {r.question && (
                                 <div className="mb-8">
                                   <div className="text-xs text-dim font-semi">QUESTION</div>
-                                  <div className="text-sm" className="ws-pre-wrap">{r.question}</div>
+                                  <div className="text-sm ws-pre-wrap">{r.question}</div>
                                 </div>
                               )}
                               {r.answer && (
                                 <div className="mb-8">
                                   <div className="text-xs text-dim font-semi">ANSWER</div>
-                                  <div className="text-sm" className="ws-pre-wrap text-green">{r.answer}</div>
+                                  <div className="text-sm ws-pre-wrap text-green">{r.answer}</div>
                                 </div>
                               )}
                               <div className="flex gap-16 flex-wrap text-xs text-muted">
@@ -5360,7 +5360,7 @@ const ModalHub = ({ type, data, app }) => {
             {/* ── Crew ── */}
             {projTab === "team" && (
               <div>
-                {projCrew.length === 0 ? <div className="text-sm text-dim" className="text-center p-24">No team assigned</div> : (
+                {projCrew.length === 0 ? <div className="text-sm text-dim text-center p-24">No team assigned</div> : (
                   <table className="data-table">
                     <thead><tr><th>Employee</th><th>Days</th><th>Hours</th></tr></thead>
                     <tbody>
@@ -5390,7 +5390,7 @@ const ModalHub = ({ type, data, app }) => {
               <div>
                 <div className="flex gap-16 mb-16 flex-wrap">
                   <div><span className="text-dim text-xs">CONTRACT</span><div className="font-mono text-amber">{fmt(draft.contract)}</div></div>
-                  <div><span className="text-dim text-xs">APPROVED COs</span><div className="font-mono" className="text-green">{fmt(approvedCOTotal)}</div></div>
+                  <div><span className="text-dim text-xs">APPROVED COs</span><div className="font-mono text-green">{fmt(approvedCOTotal)}</div></div>
                   <div><span className="text-dim text-xs">PENDING COs</span><div className="font-mono" style={{color: pendingCOTotal > 0 ? "var(--red)" : "var(--text3)"}}>{fmt(pendingCOTotal)}</div></div>
                   <div><span className="text-dim text-xs">REVISED</span><div className="font-mono font-bold">{fmt((draft.contract || 0) + approvedCOTotal)}</div></div>
                   <div><span className="text-dim text-xs">INVOICED</span><div className="font-mono">{fmt(totalBilled)}</div></div>
@@ -5495,7 +5495,7 @@ const ModalHub = ({ type, data, app }) => {
                     <span className="text-xs font-semi" style={{ color: pct === 100 ? "var(--green)" : pct >= 50 ? "var(--amber)" : "var(--text-muted)" }}>
                       Closeout Progress: {pct}% ({completedCount}/{CLOSEOUT_ITEMS.length})
                     </span>
-                    {closeout.completedDate && <span className="badge badge-green" className="fs-10">Closed {closeout.completedDate}</span>}
+                    {closeout.completedDate && <span className="badge badge-green fs-10">Closed {closeout.completedDate}</span>}
                   </div>
                   <div className="progress-bar" style={{ height: 10, borderRadius: 5 }}>
                     <div className="progress-fill" style={{ width: `${pct}%`, background: pct === 100 ? "var(--green)" : pct >= 50 ? "var(--amber)" : "var(--red)", borderRadius: 5, transition: "width 0.3s" }} />
@@ -5503,16 +5503,16 @@ const ModalHub = ({ type, data, app }) => {
                 </div>
 
                 {/* Financial Summary */}
-                <div className="card" className="p-12">
-                  <div className="text-xs font-semi mb-8" className="text-amber">FINANCIAL SUMMARY</div>
+                <div className="card p-12">
+                  <div className="text-xs font-semi mb-8 text-amber">FINANCIAL SUMMARY</div>
                   <div className="flex gap-16 flex-wrap">
                     <div><span className="text-dim text-xs">ORIGINAL CONTRACT</span><div className="font-mono">{fmt(draft.contract)}</div></div>
                     <div><span className="text-dim text-xs">CHANGE ORDERS</span><div className="font-mono">{fmt(coTotal)} ({projCOs.length})</div></div>
                     <div><span className="text-dim text-xs">REVISED CONTRACT</span><div className="font-mono font-bold text-amber">{fmt(revisedContract)}</div></div>
                     <div><span className="text-dim text-xs">TOTAL BILLED</span><div className="font-mono">{fmt(totalBilled)}</div></div>
                     <div><span className="text-dim text-xs">REMAINING</span><div className="font-mono" style={{ color: remainingBalance > 0 ? "var(--amber)" : "var(--green)" }}>{fmt(remainingBalance)}</div></div>
-                    <div><span className="text-dim text-xs">RETAINAGE (EST 10%)</span><div className="font-mono" className="text-red">{fmt(retainageHeld)}</div></div>
-                    <div><span className="text-dim text-xs">PAID</span><div className="font-mono" className="text-green">{fmt(paidInvoices)}</div></div>
+                    <div><span className="text-dim text-xs">RETAINAGE (EST 10%)</span><div className="font-mono text-red">{fmt(retainageHeld)}</div></div>
+                    <div><span className="text-dim text-xs">PAID</span><div className="font-mono text-green">{fmt(paidInvoices)}</div></div>
                   </div>
                 </div>
 
@@ -5528,8 +5528,8 @@ const ModalHub = ({ type, data, app }) => {
                       const borderColor = isDone ? "var(--green)" : itemOverdue ? "var(--red)" : "var(--border)";
                       return (
                         <div key={ci.id} className="card" style={{ padding: "8px 12px", borderLeft: `3px solid ${borderColor}`, background: bgColor }}>
-                          <div className="flex-between" className="items-start">
-                            <div className="flex gap-8" className="items-start flex-1">
+                          <div className="flex-between items-start">
+                            <div className="flex gap-8 items-start flex-1">
                               <button onClick={() => toggleItem(ci.id)}
                                 className="btn-bare fs-16 flex-shrink-0" style={{ padding: 0, lineHeight: 1, marginTop: 1 }}>
                                 {isDone ? <CheckSquare size={16} className="text-green" /> : <Square size={16} className="text-dim" />}
@@ -5538,8 +5538,8 @@ const ModalHub = ({ type, data, app }) => {
                                 <div className="text-sm" style={{ textDecoration: isDone ? "line-through" : "none", opacity: isDone ? 0.7 : 1 }}>
                                   <span className="fw-500">{idx + 1}. {ci.label}</span>
                                 </div>
-                                <div className="flex gap-8 mt-4 flex-wrap" className="flex-center">
-                                  <span className={`badge ${isDone ? "badge-green" : itemOverdue ? "badge-red" : "badge-amber"}`} className="fs-9">
+                                <div className="flex gap-8 mt-4 flex-wrap flex-center">
+                                  <span className={`badge ${isDone ? "badge-green" : itemOverdue ? "badge-red" : "badge-amber"} fs-9`}>
                                     {isDone ? "Complete" : itemOverdue ? "Overdue" : "Pending"}
                                   </span>
                                   <span className="text-xs text-muted">Resp: {item.responsible || ci.responsible}</span>
@@ -5587,7 +5587,7 @@ const ModalHub = ({ type, data, app }) => {
 
                 {/* Generate Report Button */}
                 <div className="flex gap-8">
-                  <button className="btn btn-primary" className="fs-11" onClick={async () => {
+                  <button className="btn btn-primary fs-11" onClick={async () => {
                     try {
                       const { generateCloseoutPdf } = await import("./utils/closeoutPdf.js");
                       generateCloseoutPdf(draft, {
@@ -5669,10 +5669,10 @@ const ModalHub = ({ type, data, app }) => {
                           <div className="flex-between mb-4">
                             <div>
                               <span className="text-sm font-bold">{r.date}</span>
-                              <span className="text-xs text-muted" className="ml-8">{r.foremanName} · {r.crewCount || (r.teamPresent || []).length} crew · {r.totalHours || 0}h</span>
+                              <span className="text-xs text-muted ml-8">{r.foremanName} · {r.crewCount || (r.teamPresent || []).length} crew · {r.totalHours || 0}h</span>
                             </div>
                             {r.reviewedBy ? (
-                              <span className="badge badge-green" className="fs-10">{t("Reviewed")}</span>
+                              <span className="badge badge-green fs-10">{t("Reviewed")}</span>
                             ) : (
                               <button className="btn btn-sm btn-primary" style={{ fontSize: 10, padding: "3px 8px" }}
                                 onClick={() => {
@@ -5683,14 +5683,14 @@ const ModalHub = ({ type, data, app }) => {
                               </button>
                             )}
                           </div>
-                          <div className="text-sm mb-4" className="ws-pre-wrap">{r.workPerformed}</div>
+                          <div className="text-sm mb-4 ws-pre-wrap">{r.workPerformed}</div>
                           {r.materialsReceived && <div className="text-xs text-muted mb-2"><strong>{t("Materials")}:</strong> {r.materialsReceived}</div>}
-                          {r.issues && <div className="text-xs mb-2" className="text-amber"><strong>{t("Issues")}:</strong> {r.issues}</div>}
+                          {r.issues && <div className="text-xs mb-2 text-amber"><strong>{t("Issues")}:</strong> {r.issues}</div>}
                           {r.tomorrowPlan && <div className="text-xs text-dim mb-2"><strong>{t("Tomorrow")}:</strong> {r.tomorrowPlan}</div>}
                           {r.safetyIncident && r.safetyIncident !== "None" && (
-                            <div className="text-xs" className="text-red fw-700">{t("SAFETY INCIDENT")}: {r.safetyDescription || r.safetyIncident}</div>
+                            <div className="text-xs text-red fw-700">{t("SAFETY INCIDENT")}: {r.safetyDescription || r.safetyIncident}</div>
                           )}
-                          <div className="text-xs text-dim" className="mt-6">
+                          <div className="text-xs text-dim mt-6">
                             {r.conditions || r.weatherCondition} {r.temperature} · {t("Submitted")} {new Date(r.submittedAt || r.createdAt).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"})}
                             {r.reviewedBy && ` · ${t("Reviewed by")} ${r.reviewedBy}`}
                           </div>
@@ -5744,7 +5744,7 @@ const ModalHub = ({ type, data, app }) => {
               return (
                 <div className="flex-col gap-12">
                   <div className="flex-between">
-                    <div className="flex gap-8" className="flex-center">
+                    <div className="flex gap-8 flex-center">
                       <Volume2 size={16} className="text-blue" />
                       <div>
                         <div className="font-semi text-sm">Sound Quality Testing</div>
@@ -5758,7 +5758,7 @@ const ModalHub = ({ type, data, app }) => {
 
                   {showSoundForm && (
                     <div className="card" style={{ padding: 16, border: "1px solid var(--blue-dim)" }}>
-                      <div className="text-xs font-semi mb-8" className="text-blue">NEW ACOUSTIC RECOMMENDATION</div>
+                      <div className="text-xs font-semi mb-8 text-blue">NEW ACOUSTIC RECOMMENDATION</div>
                       <div className="flex gap-8 flex-wrap mb-8">
                         <div style={{ flex: "0 0 180px" }}>
                           <label className="text-xs text-dim">Room Label / Name</label>
@@ -5783,16 +5783,16 @@ const ModalHub = ({ type, data, app }) => {
                       {/* Live recommendation preview */}
                       <div style={{ background: "rgba(59,130,246,0.07)", border: "1px solid var(--blue-dim)", borderRadius: 8, padding: 12, marginBottom: 12 }}>
                         <div className="flex-between mb-6">
-                          <span className="text-xs font-semi" className="text-blue">RECOMMENDED ASSEMBLY</span>
-                          <span className="badge badge-blue" className="fs-10">STC {selRT.stc}</span>
+                          <span className="text-xs font-semi text-blue">RECOMMENDED ASSEMBLY</span>
+                          <span className="badge badge-blue fs-10">STC {selRT.stc}</span>
                         </div>
                         <div className="font-semi text-sm mb-4">{selRT.label} — {selRT.stcDesc}</div>
-                        <div className="text-xs mb-6" className="text-muted" style={{ lineHeight: 1.5 }}>{selRT.assembly}</div>
-                        <div className="text-xs text-muted mb-8" className="text-italic">{selRT.note}</div>
-                        <div className="text-xs font-semi mb-4" className="text-dim">MATERIALS NEEDED:</div>
+                        <div className="text-xs mb-6 text-muted" style={{ lineHeight: 1.5 }}>{selRT.assembly}</div>
+                        <div className="text-xs text-muted mb-8 text-italic">{selRT.note}</div>
+                        <div className="text-xs font-semi mb-4 text-dim">MATERIALS NEEDED:</div>
                         <div className="flex-col gap-2 mb-8">
                           {selRT.materials.map((m, i) => (
-                            <div key={i} className="text-xs" className="flex-center-gap-6">
+                            <div key={i} className="text-xs flex-center-gap-6">
                               <span className="text-green fs-14">✓</span> {m}
                             </div>
                           ))}
@@ -5800,7 +5800,7 @@ const ModalHub = ({ type, data, app }) => {
                         {estSF > 0 && (
                           <div className="flex gap-12">
                             <div><span className="text-xs text-dim">EST. WALL SF</span><div className="font-mono text-sm">{estSF.toLocaleString()} SF</div></div>
-                            <div><span className="text-xs text-dim">EST. ADDITIONAL COST</span><div className="font-mono text-sm" className="text-amber">{fmt(estCost)}</div></div>
+                            <div><span className="text-xs text-dim">EST. ADDITIONAL COST</span><div className="font-mono text-sm text-amber">{fmt(estCost)}</div></div>
                             <div><span className="text-xs text-dim">UNIT RATE</span><div className="font-mono text-sm">${selRT.costSF.toFixed(2)}/SF</div></div>
                           </div>
                         )}
@@ -5811,39 +5811,39 @@ const ModalHub = ({ type, data, app }) => {
                   )}
 
                   {soundTests.length === 0 && !showSoundForm ? (
-                    <div className="text-sm text-dim" className="text-center p-32">No acoustic tests added. Click "+ Add Room" to generate a recommendation.</div>
+                    <div className="text-sm text-dim text-center p-32">No acoustic tests added. Click "+ Add Room" to generate a recommendation.</div>
                   ) : (
                     soundTests.map((test, i) => {
                       const rt = ROOM_TYPES.find(r => r.key === test.roomType);
                       return (
-                        <div key={test.id || i} className="card" className="p-12">
+                        <div key={test.id || i} className="card p-12">
                           <div className="flex-between mb-4">
-                            <div className="flex gap-8" className="flex-center">
+                            <div className="flex gap-8 flex-center">
                               <Volume2 size={13} className="text-blue" />
                               <span className="font-semi text-sm">{test.roomLabel}</span>
                               <span className="text-xs text-muted">{rt?.label || test.roomType}</span>
                             </div>
-                            <div className="flex gap-8" className="flex-center">
-                              <span className="badge badge-blue" className="fs-10">STC {test.stc}</span>
+                            <div className="flex gap-8 flex-center">
+                              <span className="badge badge-blue fs-10">STC {test.stc}</span>
                               <span className="text-xs text-muted">{test.date}</span>
-                              <button className="btn btn-sm btn-ghost" className="text-red btn-link" onClick={() => {
+                              <button className="btn btn-sm btn-ghost text-red btn-link" onClick={() => {
                                 const updated = { ...draft, soundTests: soundTests.filter((_, j) => j !== i) };
                                 app.setProjects(prev => prev.map(p => String(p.id) === String(draft.id) ? updated : p));
                                 setDraft(updated);
                               }}>✕</button>
                             </div>
                           </div>
-                          <div className="text-xs" className="text-muted mb-4">{test.assembly}</div>
+                          <div className="text-xs text-muted mb-4">{test.assembly}</div>
                           {test.wallDetails && <div className="text-xs text-muted mb-4">Notes: {test.wallDetails}</div>}
                           <div className="flex gap-8 flex-wrap">
                             {test.materials?.map((m, j) => (
-                              <span key={j} className="badge badge-muted" className="fs-9">{m}</span>
+                              <span key={j} className="badge badge-muted fs-9">{m}</span>
                             ))}
                           </div>
                           {(test.estimatedCost > 0 || test.estimatedSF > 0) && (
                             <div className="flex gap-12 mt-8">
                               {test.estimatedSF > 0 && <div><span className="text-xs text-dim">WALL SF</span><div className="font-mono text-xs">{test.estimatedSF.toLocaleString()} SF</div></div>}
-                              {test.estimatedCost > 0 && <div><span className="text-xs text-dim">EST. COST</span><div className="font-mono text-xs" className="text-amber">{fmt(test.estimatedCost)}</div></div>}
+                              {test.estimatedCost > 0 && <div><span className="text-xs text-dim">EST. COST</span><div className="font-mono text-xs text-amber">{fmt(test.estimatedCost)}</div></div>}
                             </div>
                           )}
                         </div>
@@ -5896,14 +5896,14 @@ const ModalHub = ({ type, data, app }) => {
 
               return (
                 <div className="flex-col gap-12">
-                  <div className="flex gap-8" className="flex-center">
+                  <div className="flex gap-8 flex-center">
                     <HardHat size={16} className="text-amber" />
                     <div>
                       <div className="font-semi text-sm">Site Logistics</div>
                       <div className="text-xs text-muted">Daily site readiness checklist · {today}</div>
                     </div>
                     <div className="ml-auto">
-                      <span className={`badge ${checkedCount === LOGISTICS_ITEMS.length ? "badge-green" : checkedCount > 0 ? "badge-amber" : "badge-muted"}`} className="fs-10">
+                      <span className={`badge ${checkedCount === LOGISTICS_ITEMS.length ? "badge-green" : checkedCount > 0 ? "badge-amber" : "badge-muted"} fs-10`}>
                         {checkedCount}/{LOGISTICS_ITEMS.length} checked
                       </span>
                     </div>
@@ -5911,9 +5911,9 @@ const ModalHub = ({ type, data, app }) => {
 
                   {criticalUnchecked.length > 0 && (
                     <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid var(--red)", borderRadius: 8, padding: "10px 12px" }}>
-                      <div className="flex gap-8 mb-4" className="flex-center">
+                      <div className="flex gap-8 mb-4 flex-center">
                         <AlertTriangle size={14} className="text-red" />
-                        <span className="text-xs font-semi" className="text-red">PM ALERT — Critical items unchecked:</span>
+                        <span className="text-xs font-semi text-red">PM ALERT — Critical items unchecked:</span>
                       </div>
                       {criticalUnchecked.map(i => (
                         <div key={i.id} className="text-xs text-muted" style={{ marginLeft: 22 }}>• {i.label}</div>
@@ -5926,7 +5926,7 @@ const ModalHub = ({ type, data, app }) => {
                       const checked = !!todayLog[item.id];
                       return (
                         <div key={item.id} className="card" style={{ padding: "10px 12px", borderLeft: `3px solid ${checked ? "var(--green)" : item.critical ? "var(--red)" : "var(--border)"}`, background: checked ? "rgba(16,185,129,0.05)" : item.critical && !checked ? "rgba(239,68,68,0.04)" : undefined }}>
-                          <div className="flex gap-10" className="flex-center">
+                          <div className="flex gap-10 flex-center">
                             <button onClick={() => toggleLogItem(item.id)} className="btn-bare flex-shrink-0" style={{ padding: 0, lineHeight: 1 }}>
                               {checked ? <CheckSquare size={16} className="text-green" /> : <Square size={16} className="text-dim" />}
                             </button>
@@ -5937,7 +5937,7 @@ const ModalHub = ({ type, data, app }) => {
                                 <span className="badge badge-red" style={{ fontSize: 9, marginLeft: 6 }}>Critical</span>
                               )}
                             </div>
-                            <span className={`badge ${checked ? "badge-green" : item.critical ? "badge-red" : "badge-muted"}`} className="fs-9">
+                            <span className={`badge ${checked ? "badge-green" : item.critical ? "badge-red" : "badge-muted"} fs-9`}>
                               {checked ? "OK" : item.critical ? "Action Needed" : "Pending"}
                             </span>
                           </div>
@@ -5949,7 +5949,7 @@ const ModalHub = ({ type, data, app }) => {
                   {/* History */}
                   {history.length > 0 && (
                     <div>
-                      <div className="text-xs font-semi mb-8" className="text-dim">RECENT HISTORY (Last 7 Days)</div>
+                      <div className="text-xs font-semi mb-8 text-dim">RECENT HISTORY (Last 7 Days)</div>
                       <div className="flex-col gap-4">
                         {history.map(({ date, log }) => {
                           const cnt = LOGISTICS_ITEMS.filter(i => log[i.id]).length;
@@ -6015,7 +6015,7 @@ const ModalHub = ({ type, data, app }) => {
 
               return (
                 <div className="flex-col gap-12">
-                  <div className="flex gap-8" className="flex-center">
+                  <div className="flex gap-8 flex-center">
                     <MessageSquare size={16} className="text-green" />
                     <div>
                       <div className="font-semi text-sm">Team Notes</div>
@@ -6050,18 +6050,18 @@ const ModalHub = ({ type, data, app }) => {
                   </div>
 
                   {visibleNotes.length === 0 ? (
-                    <div className="text-sm text-dim" className="text-center p-32">No notes yet. Post the first note above.</div>
+                    <div className="text-sm text-dim text-center p-32">No notes yet. Post the first note above.</div>
                   ) : (
                     <div className="flex-col gap-8">
                       {visibleNotes.map(note => (
                         <div key={note.id} className="card" style={{ padding: 12, borderLeft: `3px solid ${note.pinned ? "var(--amber)" : "var(--border)"}`, background: note.pinned ? "rgba(245,158,11,0.04)" : undefined }}>
                           <div className="flex-between mb-6">
-                            <div className="flex gap-8" className="flex-center">
+                            <div className="flex gap-8 flex-center">
                               {note.pinned && <Pin size={12} className="text-amber" />}
                               <span className="font-semi text-sm">{note.author}</span>
-                              <span className={`badge ${catBadge(note.category)}`} className="fs-9">{catLabel(note.category)} Note</span>
+                              <span className={`badge ${catBadge(note.category)} fs-9`}>{catLabel(note.category)} Note</span>
                             </div>
-                            <div className="flex gap-6" className="flex-center">
+                            <div className="flex gap-6 flex-center">
                               <span className="text-xs text-muted">{fmtTime(note.timestamp)}</span>
                               <button onClick={() => togglePin(note.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: note.pinned ? "var(--amber)" : "var(--text3)" }} title={note.pinned ? "Unpin" : "Pin"}>
                                 {note.pinned ? <PinOff size={12} /> : <Pin size={12} />}
@@ -6069,7 +6069,7 @@ const ModalHub = ({ type, data, app }) => {
                               <button onClick={() => deleteNote(note.id)} className="btn-bare fs-11" style={{ padding: "2px 4px" }}>✕</button>
                             </div>
                           </div>
-                          <div className="text-sm" className="ws-pre-wrap" style={{ lineHeight: 1.5 }}>{note.text}</div>
+                          <div className="text-sm ws-pre-wrap" style={{ lineHeight: 1.5 }}>{note.text}</div>
                         </div>
                       ))}
                     </div>
@@ -6079,8 +6079,8 @@ const ModalHub = ({ type, data, app }) => {
             })()}
           </div>
 
-          <div className="modal-actions" className="flex-between">
-            <button className="btn" className="badge-red-outlined" onClick={handleDelete}>Delete</button>
+          <div className="modal-actions flex-between">
+            <button className="btn badge-red-outlined" onClick={handleDelete}>Delete</button>
             <div className="flex gap-8">
               <button className="btn btn-ghost" onClick={close}>Close</button>
               <button className="btn btn-primary" onClick={() => setModal({ type: "editProject", data: draft })}>Edit</button>
@@ -6130,7 +6130,7 @@ const ModalHub = ({ type, data, app }) => {
         <div className="modal modal-lg">
           <div className="modal-header">
             <div className="modal-title">{isNew ? "Add Bid" : "Edit Bid"}</div>
-            <div className="flex gap-8" className="flex-center">
+            <div className="flex gap-8 flex-center">
               <label className="btn btn-sm" style={{ background: "var(--blue-dim)", color: "var(--blue)", border: "1px solid var(--blue)", fontSize: 11, cursor: "pointer", position: "relative" }}>
                 {pdfScanning ? "Scanning..." : "Scan Proposal PDF"}
                 <input type="file" accept=".pdf" style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} onChange={(e) => { if (e.target.files?.[0]) handlePdfScan(e.target.files[0]); e.target.value = ""; }} disabled={pdfScanning} />
@@ -6147,10 +6147,10 @@ const ModalHub = ({ type, data, app }) => {
               <div style={{ fontSize: 11, color: "var(--text2)", marginBottom: 8 }}>Paste the full email body from Procore, BuildingConnected, or any bid invite. Regex patterns will extract project name, GC, address, due date, and scope tags.</div>
               <textarea className="form-textarea" value={emailImportText} onChange={e => setEmailImportText(e.target.value)} placeholder={"Paste bid invite email here...\n\nExample:\nFrom: ABC Construction\nProject: Houston Medical Center Renovation\nBid Due: April 15, 2026\nProject Address: 1234 Main St, Houston, TX 77002\nScope of Work: Metal Framing, Drywall, ACT\n\nThe AI parser will extract key fields automatically."} style={{ minHeight: 130, fontSize: 12 }} />
               <div className="flex-between mt-8">
-                <span className="text2" className="fs-11">{emailImportText.length > 0 ? `${emailImportText.length} characters` : "Paste email text above"}</span>
+                <span className="text2 fs-11">{emailImportText.length > 0 ? `${emailImportText.length} characters` : "Paste email text above"}</span>
                 <div className="flex gap-8">
                   <button className="btn btn-ghost btn-sm" onClick={() => { setEmailImportText(""); setShowEmailImport(false); }}>Cancel</button>
-                  <button className="btn btn-sm" className="bg-green text-white" onClick={parseEmailBid}>Import Fields</button>
+                  <button className="btn btn-sm bg-green text-white" onClick={parseEmailBid}>Import Fields</button>
                 </div>
               </div>
             </div>
@@ -6161,7 +6161,7 @@ const ModalHub = ({ type, data, app }) => {
               <div style={{ fontSize: 12, color: "var(--amber)", fontWeight: 600, marginBottom: 8 }}>PASTE BID INVITE, SPEC EXCERPT, OR EMAIL</div>
               <textarea className="form-textarea" value={aiText} onChange={e => setAiText(e.target.value)} placeholder={"Paste the bid invite email, spec section, or project description here...\n\nThe AI will extract: project name, GC, due date, scope tags, risk level, phase, and key notes."} style={{ minHeight: 120, fontSize: 12 }} />
               <div className="flex-between mt-8">
-                <span className="text2" className="fs-11">{aiText.length > 0 ? `${aiText.length} characters` : "Paste text to analyze"}</span>
+                <span className="text2 fs-11">{aiText.length > 0 ? `${aiText.length} characters` : "Paste text to analyze"}</span>
                 <button className="btn btn-primary btn-sm" onClick={runAnalysis} disabled={aiLoading} style={{ minWidth: 140 }}>
                   {aiLoading ? "Analyzing..." : "Extract Fields"}
                 </button>
@@ -6334,7 +6334,7 @@ const ModalHub = ({ type, data, app }) => {
             </div>
             <div className="form-group">
               <label className="form-label">Contact</label>
-              <div className="flex gap-4" className="flex-center">
+              <div className="flex gap-4 flex-center">
                 <div style={{ flex: 1, position: "relative" }}>
                   <input
                     className="form-input"
@@ -6378,16 +6378,16 @@ const ModalHub = ({ type, data, app }) => {
               {quickContact && (
                 <div style={{ marginTop: 8, padding: 12, background: "var(--bg3)", borderRadius: "var(--radius)", border: "1px solid var(--border2)" }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "var(--amber)", marginBottom: 8 }}>QUICK ADD CONTACT</div>
-                  <div className="flex gap-8 mb-8" className="flex-wrap">
-                    <input className="form-input" className="flex-1-140" placeholder="Name *" value={quickContact.name}
+                  <div className="flex gap-8 mb-8 flex-wrap">
+                    <input className="form-input flex-1-140" placeholder="Name *" value={quickContact.name}
                       onChange={e => setQuickContact(prev => ({ ...prev, name: e.target.value }))} />
-                    <input className="form-input" className="flex-1-140" placeholder="Company" value={quickContact.company}
+                    <input className="form-input flex-1-140" placeholder="Company" value={quickContact.company}
                       onChange={e => setQuickContact(prev => ({ ...prev, company: e.target.value }))} />
                   </div>
-                  <div className="flex gap-8 mb-8" className="flex-wrap">
-                    <input className="form-input" className="flex-1-120" placeholder="Role" value={quickContact.role}
+                  <div className="flex gap-8 mb-8 flex-wrap">
+                    <input className="form-input flex-1-120" placeholder="Role" value={quickContact.role}
                       onChange={e => setQuickContact(prev => ({ ...prev, role: e.target.value }))} />
-                    <input className="form-input" className="flex-1-120" placeholder="Phone" value={quickContact.phone}
+                    <input className="form-input flex-1-120" placeholder="Phone" value={quickContact.phone}
                       onChange={e => setQuickContact(prev => ({ ...prev, phone: e.target.value }))} />
                     <input className="form-input" style={{ flex: "1 1 160px" }} placeholder="Email" value={quickContact.email}
                       onChange={e => setQuickContact(prev => ({ ...prev, email: e.target.value }))} />
@@ -6440,7 +6440,7 @@ const ModalHub = ({ type, data, app }) => {
 
             {/* ── File Attachments ── */}
             <div className="form-group full">
-              <label className="form-label" className="flex-center-gap-8">
+              <label className="form-label flex-center-gap-8">
                 Plans, Specs & Documents
                 {(draft.attachments || []).length === 0 && <span style={{ fontSize: 10, color: "var(--red)", fontWeight: 600 }}>NO PLANS UPLOADED</span>}
                 {(draft.attachments || []).length > 0 && <span style={{ fontSize: 10, color: "var(--green)", fontWeight: 600 }}>{(draft.attachments || []).length} file{(draft.attachments || []).length !== 1 ? "s" : ""}</span>}
@@ -6506,8 +6506,7 @@ const ModalHub = ({ type, data, app }) => {
                         <div className="flex gap-4">
                           {att.data && (
                             <button
-                              className="btn btn-ghost btn-sm"
-                              className="btn-link"
+                              className="btn btn-ghost btn-sm btn-link"
                               onClick={() => { const w = window.open(); w.document.write(`<iframe src="${att.data}" style="width:100%;height:100%;border:none"></iframe>`); }}
                               title="View"
                             >View</button>
@@ -6526,16 +6525,16 @@ const ModalHub = ({ type, data, app }) => {
               </div>
             </div>
           </div>
-          <div className="modal-actions" className="flex-between">
-            {!isNew && <button className="btn" className="badge-red-outlined" onClick={handleDelete}>Delete</button>}
-            <div className="flex gap-8" className="ml-auto">
+          <div className="modal-actions flex-between">
+            {!isNew && <button className="btn badge-red-outlined" onClick={handleDelete}>Delete</button>}
+            <div className="flex gap-8 ml-auto">
               {!isNew && draft.status !== "awarded" && (
-                <button className="btn" className="badge-green-outlined" onClick={handleAwardBid}>
+                <button className="btn badge-green-outlined" onClick={handleAwardBid}>
                   Award Bid
                 </button>
               )}
               {!isNew && draft.status === "awarded" && (
-                <button className="btn" className="badge-yellow-outlined" onClick={handleUnAwardBid}>
+                <button className="btn badge-yellow-outlined" onClick={handleUnAwardBid}>
                   Un-award
                 </button>
               )}
@@ -6634,9 +6633,9 @@ const ModalHub = ({ type, data, app }) => {
               </select>
               {draft.stageHistory?.length > 0 && (
                 <details className="mt-6">
-                  <summary className="text-xs text-dim" className="cursor-pointer">Stage history ({draft.stageHistory.length})</summary>
+                  <summary className="text-xs text-dim cursor-pointer">Stage history ({draft.stageHistory.length})</summary>
                   {draft.stageHistory.map((h, i) => (
-                    <div key={i} className="text-xs text-dim" className="py-2">
+                    <div key={i} className="text-xs text-dim py-2">
                       {h.changedAt ? new Date(h.changedAt).toLocaleDateString() : ""} · {h.changedBy} · {STAGE_MAP[h.from]?.label || h.from || "—"} → {STAGE_MAP[h.to]?.label || h.to || "—"}
                     </div>
                   ))}
@@ -6696,8 +6695,7 @@ const ModalHub = ({ type, data, app }) => {
               <div className="flex-center-gap-12 flex-wrap">
                 <button
                   type="button"
-                  className="btn btn-ghost"
-                  className="fs-13"
+                  className="btn btn-ghost fs-13"
                   onClick={() => setShowPerimeterMap(true)}
                   disabled={!draft.lat || !draft.lng}
                   title={!draft.lat || !draft.lng ? "Set Lat/Lng first" : "Draw polygon boundary on map"}
@@ -6718,8 +6716,7 @@ const ModalHub = ({ type, data, app }) => {
                 {draft.perimeter && draft.perimeter.length >= 3 && (
                   <button
                     type="button"
-                    className="btn btn-ghost btn-sm"
-                    className="fs-11 text-red"
+                    className="btn btn-ghost btn-sm fs-11 text-red"
                     onClick={() => upd("perimeter", [])}
                   >
                     Remove
@@ -6766,10 +6763,10 @@ const ModalHub = ({ type, data, app }) => {
                     e.target.value = "";
                   }}
                 />
-                <label htmlFor="proposal-upload" className="btn btn-ghost" className="cursor-pointer">
+                <label htmlFor="proposal-upload" className="btn btn-ghost cursor-pointer">
                   <Paperclip className="icon-inline" />Upload Proposal / Files
                 </label>
-                <div className="text-xs text-dim" className="mt-6">PDF, Word, Excel, Images</div>
+                <div className="text-xs text-dim mt-6">PDF, Word, Excel, Images</div>
               </div>
 
               {/* List attached files */}
@@ -6777,7 +6774,7 @@ const ModalHub = ({ type, data, app }) => {
                 <div className="mt-12">
                   {draft.attachments.map((att, i) => (
                     <div key={att.id || i} className="flex-between" style={{ padding: "8px 12px", background: "var(--bg3)", borderRadius: 6, marginBottom: 4 }}>
-                      <div className="flex gap-8" className="flex-center">
+                      <div className="flex gap-8 flex-center">
                         <span className="flex-center">{att.type?.includes("pdf") ? <FileText className="w-4 h-4" /> : att.type?.includes("image") ? <Image className="w-4 h-4" /> : att.type?.includes("sheet") || att.type?.includes("excel") ? <BarChart2 className="w-4 h-4" /> : <FolderOpen className="w-4 h-4" />}</span>
                         <div>
                           <div className="text-sm font-semi">{att.name}</div>
@@ -6785,7 +6782,7 @@ const ModalHub = ({ type, data, app }) => {
                         </div>
                       </div>
                       <div className="flex gap-4">
-                        <button className="btn btn-ghost btn-sm" className="fs-11"
+                        <button className="btn btn-ghost btn-sm fs-11"
                           onClick={() => {
                             const link = document.createElement("a");
                             link.href = att.data;
@@ -6846,17 +6843,17 @@ const ModalHub = ({ type, data, app }) => {
                     {pendingTM.length > 0 && <span style={{ fontSize: 11, color: "var(--amber)" }}>{pendingTM.length} T&M pending</span>}
                   </div>
                 )}
-                <div className="flex-between" className="mb-12">
+                <div className="flex-between mb-12">
                   <div className="fw-700 fs-14">Project Documents ({totalDocs})</div>
                 </div>
                 <div className="grid-auto-280">
                   {sections.map(sec => (
                     <div key={sec.label} style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", border: "1px solid var(--border)" }}>
-                      <div className="flex-between" className="mb-6">
+                      <div className="flex-between mb-6">
                         <div className="font-semi fs-12">{sec.label}</div>
                         <span className="flex gap-4">
-                          {sec.urgent > 0 && <span className="badge badge-red" className="fs-9">{sec.urgent} open</span>}
-                          <span className="badge badge-blue" className="fs-9">{sec.items.length}</span>
+                          {sec.urgent > 0 && <span className="badge badge-red fs-9">{sec.urgent} open</span>}
+                          <span className="badge badge-blue fs-9">{sec.items.length}</span>
                         </span>
                       </div>
                       {sec.items.length === 0 ? (
@@ -6870,10 +6867,10 @@ const ModalHub = ({ type, data, app }) => {
                           </div>
                         ))
                       )}
-                      {sec.items.length > 5 && <div className="text-xs" className="mt-4 cursor-pointer text-blue"
+                      {sec.items.length > 5 && <div className="text-xs mt-4 cursor-pointer text-blue"
                         onClick={() => { setModal(null); app.setSearch(draft.name || ""); app.setTab(sec.tab); }}>+{sec.items.length - 5} more →</div>}
                       <div className="flex gap-4 mt-6">
-                        <button className="btn btn-ghost" className="btn-link" onClick={() => { setModal(null); app.setSearch(draft.name || ""); app.setTab(sec.tab); }}>
+                        <button className="btn btn-ghost btn-link" onClick={() => { setModal(null); app.setSearch(draft.name || ""); app.setTab(sec.tab); }}>
                           View All →
                         </button>
                         {sec.label === "Submittals" && sec.items.length > 0 && (
@@ -6951,18 +6948,18 @@ const ModalHub = ({ type, data, app }) => {
 
             return (
               <div className="mt-16 border-t-2 pt-16">
-                <div className="flex-between" className="mb-12">
+                <div className="flex-between mb-12">
                   <div className="fw-700 fs-14">Punch List ({items.length})</div>
                   <div className="flex gap-8">
                     {items.length > 0 && doneItems === items.length && !items[0]?.signedOffBy && (
-                      <button className="btn btn-ghost btn-sm" className="text-green" onClick={signOffPunch}>Sign Off</button>
+                      <button className="btn btn-ghost btn-sm text-green" onClick={signOffPunch}>Sign Off</button>
                     )}
                     <button className="btn btn-primary btn-sm" onClick={() => setPunchAdding(!punchAdding)}>+ Add Item</button>
                   </div>
                 </div>
 
                 {items.length > 0 && (
-                  <div className="flex gap-8" className="mb-12">
+                  <div className="flex gap-8 mb-12">
                     <div className="activity-tile fs-11">Open: <strong className="text-red">{openItems}</strong></div>
                     <div className="activity-tile fs-11">In Progress: <strong className="text-amber">{ipItems}</strong></div>
                     <div className="activity-tile fs-11">Complete: <strong className="text-green">{doneItems}</strong></div>
@@ -6973,7 +6970,7 @@ const ModalHub = ({ type, data, app }) => {
                 {punchAdding && (
                   <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12 }}>
                     <div className="grid-2col">
-                      <div className="form-group" className="full">
+                      <div className="form-group full">
                         <label className="form-label">Description *</label>
                         <input className="form-input" value={punchForm.description} onChange={e => setPunchForm(f => ({ ...f, description: e.target.value }))} placeholder="e.g. Touch up tape joint at room 201 north wall" />
                       </div>
@@ -6997,7 +6994,7 @@ const ModalHub = ({ type, data, app }) => {
                         </select>
                       </div>
                     </div>
-                    <div className="flex gap-8" className="mt-8">
+                    <div className="flex gap-8 mt-8">
                       <button className="btn btn-primary btn-sm" onClick={addPunch}>Add</button>
                       <button className="btn btn-ghost btn-sm" onClick={() => setPunchAdding(false)}>Cancel</button>
                     </div>
@@ -7009,10 +7006,10 @@ const ModalHub = ({ type, data, app }) => {
                     <div className="flex-between">
                       <div className="flex-1">
                         <span style={{ fontWeight: 500, fontSize: 12, textDecoration: item.status === "complete" ? "line-through" : "none" }}>{item.description}</span>
-                        {item.location && <span className="text-xs text-muted" className="ml-8">{item.location}</span>}
+                        {item.location && <span className="text-xs text-muted ml-8">{item.location}</span>}
                       </div>
-                      <div className="flex gap-4" className="flex-center">
-                        <span className={`badge ${PRIORITY_BADGE[item.priority]}`} className="fs-9">{item.priority}</span>
+                      <div className="flex gap-4 flex-center">
+                        <span className={`badge ${PRIORITY_BADGE[item.priority]} fs-9`}>{item.priority}</span>
                         <button className={`badge ${STATUS_BADGE[item.status]}`} style={{ fontSize: 9, cursor: "pointer", border: "none" }} onClick={() => cyclePunchStatus(item)} title="Click to advance status">{item.status}</button>
                         <label className="cursor-pointer fs-12" title="Attach photo">
                           <Camera className="w-4 h-4" /><input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => addPunchPhoto(item.id, e)} />
@@ -7022,11 +7019,11 @@ const ModalHub = ({ type, data, app }) => {
                     </div>
                     {item.assignedTo && <div className="text-xs text-muted">Assigned: {item.assignedTo}</div>}
                     {(item.photos || []).length > 0 && (
-                      <div className="flex gap-4" className="mt-4">
+                      <div className="flex gap-4 mt-4">
                         {item.photos.map((p, i) => <img key={i} src={p.data} alt={p.name} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, border: "1px solid var(--border)" }} />)}
                       </div>
                     )}
-                    {item.signedOffBy && <div className="text-xs" className="text-green mt-4">Signed off by {item.signedOffBy} on {new Date(item.signedOffAt).toLocaleDateString()}</div>}
+                    {item.signedOffBy && <div className="text-xs text-green mt-4">Signed off by {item.signedOffBy} on {new Date(item.signedOffAt).toLocaleDateString()}</div>}
                   </div>
                 ))}
 
@@ -7056,7 +7053,7 @@ const ModalHub = ({ type, data, app }) => {
                     </div>
                   </div>
                   {activePhaseEdit && (
-                    <span className="badge badge-amber" className="fs-10">{activePhaseEdit.name}</span>
+                    <span className="badge badge-amber fs-10">{activePhaseEdit.name}</span>
                   )}
                 </div>
                 <PhaseTracker
@@ -7078,37 +7075,37 @@ const ModalHub = ({ type, data, app }) => {
             const PRIORITY_BADGE_MAP = { Low: "badge-green", Medium: "badge-amber", High: "badge-red", Urgent: "badge-red" };
             return (
               <div className="mt-16 border-t-2 pt-16">
-                <div className="flex-between" className="mb-10">
+                <div className="flex-between mb-10">
                   <div className="fw-700 fs-14 flex-center-gap-8">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                     </svg>
                     Reported Problems ({projProblems.length})
-                    {openProblems.length > 0 && <span className="badge badge-red" className="fs-10">{openProblems.length} open</span>}
+                    {openProblems.length > 0 && <span className="badge badge-red fs-10">{openProblems.length} open</span>}
                   </div>
                 </div>
                 {projProblems.length === 0 ? (
-                  <div className="text-xs text-muted" className="py-8">No problems reported for this project.</div>
+                  <div className="text-xs text-muted py-8">No problems reported for this project.</div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 280, overflowY: "auto" }}>
                     {projProblems.map(prob => (
                       <div key={prob.id} style={{ padding: "10px 12px", borderRadius: 8, background: "var(--bg3)", border: `1px solid ${prob.status === "resolved" ? "var(--border)" : "rgba(245,158,11,0.2)"}`, opacity: prob.status === "resolved" ? 0.65 : 1 }}>
-                        <div className="flex-between" className="mb-4">
+                        <div className="flex-between mb-4">
                           <div className="flex-center-gap-6">
-                            <span className={`badge ${PRIORITY_BADGE_MAP[prob.priority] || "badge-amber"}`} className="fs-9">{prob.priority}</span>
-                            <span className="text-xs font-semi" className="text-default">{prob.category}</span>
+                            <span className={`badge ${PRIORITY_BADGE_MAP[prob.priority] || "badge-amber"} fs-9`}>{prob.priority}</span>
+                            <span className="text-xs font-semi text-default">{prob.category}</span>
                           </div>
                           <div className="flex-center-gap-6">
-                            <span className={`badge ${prob.status === "resolved" ? "badge-green" : "badge-amber"}`} className="fs-9">{prob.status}</span>
+                            <span className={`badge ${prob.status === "resolved" ? "badge-green" : "badge-amber"} fs-9`}>{prob.status}</span>
                             {prob.status === "open" && (
-                              <button className="btn btn-ghost" className="btn-link"
+                              <button className="btn btn-ghost btn-link"
                                 onClick={() => app.setProblems(prev => prev.map(p => p.id === prob.id ? { ...p, status: "resolved", resolvedAt: new Date().toISOString(), resolvedBy: app.auth?.name } : p))}>
                                 Resolve
                               </button>
                             )}
                           </div>
                         </div>
-                        <div className="text-sm" className="mb-4">{prob.description}</div>
+                        <div className="text-sm mb-4">{prob.description}</div>
                         <div className="text-xs text-muted">
                           {prob.reporter} · {new Date(prob.reportedAt).toLocaleDateString()} {new Date(prob.reportedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           {prob.gps && <span style={{ marginLeft: 6, display: "inline-flex", alignItems: "center", gap: 2 }}><MapPin style={{ width: 12, height: 12 }} />{prob.gps.lat?.toFixed(4)}, {prob.gps.lng?.toFixed(4)}</span>}
@@ -7148,7 +7145,7 @@ const ModalHub = ({ type, data, app }) => {
             };
             return (
               <div className="mt-16 border-t-2 pt-16">
-                <div className="flex-between" className="mb-10">
+                <div className="flex-between mb-10">
                   <div className="fw-700 fs-14 flex-center-gap-8">
                     <Volume2 size={16} className="text-blue" />
                     Sound Testing ({soundTests.length})
@@ -7188,7 +7185,7 @@ const ModalHub = ({ type, data, app }) => {
                 {soundTests.map((test, i) => (
                   <div key={test.id || i} style={{ fontSize: 12, padding: "6px 10px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <strong>{test.roomLabel}</strong> <span className="badge badge-blue" className="fs-9">STC {test.stc}</span>
+                      <strong>{test.roomLabel}</strong> <span className="badge badge-blue fs-9">STC {test.stc}</span>
                       <div className="text-dim mt-2">{test.assembly}</div>
                       {test.estimatedCost > 0 && <span className="text-amber">Est. {fmt(test.estimatedCost)}</span>}
                     </div>
@@ -7222,13 +7219,13 @@ const ModalHub = ({ type, data, app }) => {
             const critUnchecked = LOGISTICS_ITEMS.filter(i => i.critical && !todayLog[i.id]);
             return (
               <div className="mt-16 border-t-2 pt-16">
-                <div className="flex-between" className="mb-10">
+                <div className="flex-between mb-10">
                   <div className="fw-700 fs-14 flex-center-gap-8">
                     <HardHat size={16} className="text-amber" />
                     Site Logistics · {todayStr}
-                    {critUnchecked.length > 0 && <span className="badge badge-red" className="fs-9">{critUnchecked.length} critical</span>}
+                    {critUnchecked.length > 0 && <span className="badge badge-red fs-9">{critUnchecked.length} critical</span>}
                   </div>
-                  <span className={`badge ${checkedCount === LOGISTICS_ITEMS.length ? "badge-green" : checkedCount > 0 ? "badge-amber" : "badge-muted"}`} className="fs-10">{checkedCount}/{LOGISTICS_ITEMS.length}</span>
+                  <span className={`badge ${checkedCount === LOGISTICS_ITEMS.length ? "badge-green" : checkedCount > 0 ? "badge-amber" : "badge-muted"} fs-10`}>{checkedCount}/{LOGISTICS_ITEMS.length}</span>
                 </div>
                 {critUnchecked.length > 0 && (
                   <div style={{ padding: "6px 10px", borderRadius: 6, background: "rgba(239,68,68,0.07)", border: "1px solid var(--red)", marginBottom: 8, fontSize: 11, color: "var(--red)" }}>
@@ -7273,7 +7270,7 @@ const ModalHub = ({ type, data, app }) => {
             };
             return (
               <div className="mt-16 border-t-2 pt-16">
-                <div className="flex-between" className="mb-10">
+                <div className="flex-between mb-10">
                   <div className="fw-700 fs-14 flex-center-gap-8">
                     <MessageSquare size={16} className="text-green" />
                     Team Notes ({allNotes.length})
@@ -7302,7 +7299,7 @@ const ModalHub = ({ type, data, app }) => {
                           <div className="flex-center-gap-6">
                             {note.pinned && <Pin size={10} className="text-amber" />}
                             <span className="font-semi fs-12">{note.author}</span>
-                            <span className={`badge ${catBadge(note.category)}`} className="fs-8">{catLabel(note.category)}</span>
+                            <span className={`badge ${catBadge(note.category)} fs-8`}>{catLabel(note.category)}</span>
                           </div>
                           <div className="flex-center-gap-4">
                             <span style={{ fontSize: 10, color: "var(--text3)" }}>{fmtTime(note.timestamp)}</span>
@@ -7321,9 +7318,9 @@ const ModalHub = ({ type, data, app }) => {
             );
           })()}
 
-          <div className="modal-actions" className="flex-between">
-            {!isNew && <button className="btn" className="badge-red-outlined" onClick={handleDelete}>Delete</button>}
-            <div className="flex gap-8" className="ml-auto">
+          <div className="modal-actions flex-between">
+            {!isNew && <button className="btn badge-red-outlined" onClick={handleDelete}>Delete</button>}
+            <div className="flex gap-8 ml-auto">
               <button className="btn btn-ghost" onClick={close}>Cancel</button>
               <button className="btn btn-primary" onClick={handleSave}>{isNew ? "Add Project" : "Save Changes"}</button>
             </div>
@@ -7386,7 +7383,7 @@ const ModalHub = ({ type, data, app }) => {
                 app.callLog.filter(c => c.contact === draft.name).map(c => (
                   <div key={c.id} className="flex gap-8 border-b" style={{ padding: "8px 0", alignItems: "center" }}>
                     <div className="text-xs text-dim" style={{ width: 130, flexShrink: 0 }}>{c.time}</div>
-                    <div className="text-sm" className="flex-1">{c.note}</div>
+                    <div className="text-sm flex-1">{c.note}</div>
                     <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 5px", color: "var(--red)", flexShrink: 0 }}
                       onClick={() => { if (confirm("Delete this call log?")) { app.setCallLog(prev => prev.filter(cl => cl.id !== c.id)); app.show("Call deleted"); } }}>✕</button>
                   </div>
@@ -7394,9 +7391,9 @@ const ModalHub = ({ type, data, app }) => {
               )}
             </div>
           )}
-          <div className="modal-actions" className="flex-between">
-            {!isNew && <button className="btn" className="badge-red-outlined" onClick={handleDelete}>Delete</button>}
-            <div className="flex gap-8" className="ml-auto">
+          <div className="modal-actions flex-between">
+            {!isNew && <button className="btn badge-red-outlined" onClick={handleDelete}>Delete</button>}
+            <div className="flex gap-8 ml-auto">
               <button className="btn btn-ghost" onClick={close}>Cancel</button>
               <button className="btn btn-primary" onClick={handleSave}>{isNew ? "Add Contact" : "Save Changes"}</button>
             </div>

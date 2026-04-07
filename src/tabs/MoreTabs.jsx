@@ -254,7 +254,7 @@ function InvoicesTab({ app }) {
                   <td>
                     <div className="flex gap-4">
                     {(inv.status === "pending" || inv.status === "overdue") && (
-                      <button className="btn btn-ghost btn-sm" className="btn-table-green"
+                      <button className="btn btn-ghost btn-sm btn-table-green"
                         onClick={() => {
                           const paidDate = prompt("Payment date (YYYY-MM-DD):", new Date().toISOString().slice(0, 10));
                           if (!paidDate) return;
@@ -266,13 +266,13 @@ function InvoicesTab({ app }) {
                       </button>
                     )}
                     {(inv.status === "pending" || inv.status === "overdue") && (
-                      <button className="btn btn-ghost btn-sm" className="btn-table-action"
+                      <button className="btn btn-ghost btn-sm btn-table-action"
                         onClick={() => collectId === inv.id && collectText ? setCollectId(null) : runCollection(inv)}
                         disabled={collectLoading && collectId === inv.id}>
                         {collectLoading && collectId === inv.id ? "..." : collectId === inv.id && collectText ? "Hide" : "Collect"}
                       </button>
                     )}
-                    <button className="btn btn-ghost btn-sm" className="btn-table-delete"
+                    <button className="btn btn-ghost btn-sm btn-table-delete"
                       onClick={() => { if (confirm("Delete this invoice?")) { app.setInvoices(prev => prev.filter(i => i.id !== inv.id)); app.show("Invoice deleted"); } }}>✕</button>
                     </div>
                   </td>
@@ -282,7 +282,7 @@ function InvoicesTab({ app }) {
                     <div className="more-detail-panel">
                       <div className="flex-between mb-8">
                         <span className="font-semi text-sm">AI Collection Email</span>
-                        <button className="btn btn-ghost btn-sm" className="btn-table-action" onClick={() => {
+                        <button className="btn btn-ghost btn-sm btn-table-action" onClick={() => {
                           navigator.clipboard.writeText(collectText);
                           app.show("Email copied to clipboard", "ok");
                         }}>Copy</button>
@@ -446,18 +446,18 @@ function ChangeOrdersTab({ app }) {
           <div className="form-group mt-8">
             <label className="form-label">Scope Items</label>
             {form.scope_items.map((item, i) => (
-              <div key={i} className="flex gap-8 mb-4" className="items-center">
+              <div key={i} className="flex gap-8 mb-4 items-center">
                 <span className="fs-12 text-muted">{i + 1}.</span>
-                <input className="form-input" className="flex-1" value={typeof item === "string" ? item : item.description} onChange={e => {
+                <input className="form-input flex-1" value={typeof item === "string" ? item : item.description} onChange={e => {
                   const updated = [...form.scope_items];
                   updated[i] = { description: e.target.value, amount: null };
                   setForm({ ...form, scope_items: updated });
                 }} />
-                <button className="btn btn-ghost btn-sm" className="btn-table-delete" onClick={() => setForm({ ...form, scope_items: form.scope_items.filter((_, j) => j !== i) })}>X</button>
+                <button className="btn btn-ghost btn-sm btn-table-delete" onClick={() => setForm({ ...form, scope_items: form.scope_items.filter((_, j) => j !== i) })}>X</button>
               </div>
             ))}
             <div className="flex gap-8">
-              <input className="form-input" className="flex-1" placeholder="Add scope item (e.g. Wall Demo)..." value={scopeInput} onChange={e => setScopeInput(e.target.value)} onKeyDown={e => {
+              <input className="form-input flex-1" placeholder="Add scope item (e.g. Wall Demo)..." value={scopeInput} onChange={e => setScopeInput(e.target.value)} onKeyDown={e => {
                 if (e.key === "Enter" && scopeInput.trim()) {
                   setForm({ ...form, scope_items: [...form.scope_items, { description: scopeInput.trim(), amount: null }] });
                   setScopeInput("");
@@ -509,7 +509,7 @@ function ChangeOrdersTab({ app }) {
                   <td>{pName(co.projectId)}</td>
                   <td>{co.desc}</td>
                   <td>{app.fmt(co.amount)}</td>
-                  <td><span className={badge(co.status)} className="more-cursor-pointer" title="Click to change status" onClick={() => {
+                  <td><span className={`${badge(co.status)} more-cursor-pointer`} title="Click to change status" onClick={() => {
                     const next = co.status === "pending" ? "approved" : co.status === "approved" ? "rejected" : "pending";
                     app.setChangeOrders(prev => prev.map(c => c.id === co.id ? {
                       ...c, status: next,
@@ -522,7 +522,7 @@ function ChangeOrdersTab({ app }) {
                   <td>{co.approved || "—"}</td>
                   <td>
                     <div className="flex gap-4">
-                    <button className="btn btn-ghost btn-sm" className="btn-table-action"
+                    <button className="btn btn-ghost btn-sm btn-table-action"
                       onClick={async () => {
                         const { generateChangeOrderPdf } = await import("../utils/changeOrderPdf.js");
                         const project = app.projects.find(p => p.id === co.projectId) || { name: "Unknown" };
@@ -530,12 +530,12 @@ function ChangeOrdersTab({ app }) {
                         await generateChangeOrderPdf(project, { ...co, description: co.description || co.desc }, app.company || {}, projectCOs);
                         app.show("CO PDF exported", "ok");
                       }}>PDF</button>
-                    <button className="btn btn-ghost btn-sm" className="btn-table-action"
+                    <button className="btn btn-ghost btn-sm btn-table-action"
                       onClick={() => impactId === co.id && impactResult ? setImpactId(null) : runImpact(co)}
                       disabled={impactLoading && impactId === co.id}>
                       {impactLoading && impactId === co.id ? "..." : impactId === co.id && impactResult ? "Hide" : "Analyze"}
                     </button>
-                    <button className="btn btn-ghost btn-sm" className="btn-table-delete"
+                    <button className="btn btn-ghost btn-sm btn-table-delete"
                       onClick={() => { if (confirm("Delete this change order?")) { app.setChangeOrders(prev => prev.filter(c => c.id !== co.id)); app.show("Change order deleted"); } }}>✕</button>
                     </div>
                   </td>
@@ -777,15 +777,15 @@ function TmTicketsTab({ app }) {
   return (
     <div>
       <div className="flex-between mt-16">
-        <div className="flex gap-8" className="flex-wrap">
-          <div className="kpi-card" className="kpi-min"><span className="text2">Total T&M</span><strong>{app.fmt(totalValue)}</strong></div>
-          <div className="kpi-card" className="kpi-min"><span className="text2">Pending</span><strong>{app.fmt(pendingValue)}</strong></div>
-          <div className="kpi-card" className="kpi-min"><span className="text2">Approved</span><strong>{app.fmt(approvedValue)}</strong></div>
+        <div className="flex gap-8 flex-wrap">
+          <div className="kpi-card kpi-min"><span className="text2">Total T&M</span><strong>{app.fmt(totalValue)}</strong></div>
+          <div className="kpi-card kpi-min"><span className="text2">Pending</span><strong>{app.fmt(pendingValue)}</strong></div>
+          <div className="kpi-card kpi-min"><span className="text2">Approved</span><strong>{app.fmt(approvedValue)}</strong></div>
         </div>
         <div className="flex gap-8">
           <button className="btn btn-ghost btn-sm" onClick={() => setGenOpen(!genOpen)} className="pos-relative">
             Generate from Clock
-            {totalTmFlagged > 0 && <span className="badge badge-amber" className="fs-9 ml-4">{totalTmFlagged}</span>}
+            {totalTmFlagged > 0 && <span className="badge badge-amber fs-9 ml-4">{totalTmFlagged}</span>}
           </button>
           <button className="btn btn-primary btn-sm" onClick={() => setAdding(!adding)}>+ New T&M Ticket</button>
         </div>
@@ -793,7 +793,7 @@ function TmTicketsTab({ app }) {
 
       {/* Generate from Clock Panel */}
       {genOpen && (
-        <div className="card mt-16" className="border-left-amber">
+        <div className="card mt-16 border-left-amber">
           <div className="card-header"><div className="card-title">Generate T&M Ticket from Time Clock</div></div>
           <div className="text-xs text-muted mb-12">Flag time entries as T&M in Time Clock &gt; Time Log, then generate a ticket here. Flagged entries will be linked to prevent double-billing.</div>
           <div className="form-grid">
@@ -874,7 +874,7 @@ function TmTicketsTab({ app }) {
           {/* Labor entries */}
           <div className="mt-16">
             <div className="flex-between">
-              <strong className="text2" className="more-section-label">Labor</strong>
+              <strong className="text2 more-section-label">Labor</strong>
               <button className="btn btn-ghost btn-sm" onClick={addLaborRow} className="btn-table-action">+ Add Row</button>
             </div>
             {form.laborEntries.map(e => (
@@ -886,13 +886,13 @@ function TmTicketsTab({ app }) {
                 <button className="btn btn-ghost btn-sm" onClick={() => removeLabor(e.id)} className="btn-remove-row">x</button>
               </div>
             ))}
-            <div className="text2 mt-8" className="btn-table-action">Labor subtotal: {app.fmt(calcLaborTotal(form.laborEntries))}</div>
+            <div className="text2 mt-8 btn-table-action">Labor subtotal: {app.fmt(calcLaborTotal(form.laborEntries))}</div>
           </div>
 
           {/* Material entries */}
           <div className="mt-16">
             <div className="flex-between">
-              <strong className="text2" className="more-section-label">Materials</strong>
+              <strong className="text2 more-section-label">Materials</strong>
               <button className="btn btn-ghost btn-sm" onClick={addMatRow} className="btn-table-action">+ Add Row</button>
             </div>
             {form.materialEntries.map(e => (
@@ -905,10 +905,10 @@ function TmTicketsTab({ app }) {
                 <button className="btn btn-ghost btn-sm" onClick={() => removeMat(e.id)} className="btn-remove-row">x</button>
               </div>
             ))}
-            <div className="text2 mt-8" className="btn-table-action">Materials subtotal: {app.fmt(calcMatTotal(form.materialEntries))}</div>
+            <div className="text2 mt-8 btn-table-action">Materials subtotal: {app.fmt(calcMatTotal(form.materialEntries))}</div>
           </div>
 
-          <div className="form-group" className="mt-12">
+          <div className="form-group mt-12">
             <label className="form-label">Notes</label>
             <input className="form-input" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Internal notes, approval references..." />
           </div>
@@ -925,7 +925,7 @@ function TmTicketsTab({ app }) {
 
       {/* Tickets list */}
       <div className="mt-16">
-        {allTickets.length === 0 && <div className="card" className="more-empty-cell">No T&M tickets yet<br/><span className="more-empty-hint">Track time & material work outside the original contract — add labor hours and materials per ticket</span></div>}
+        {allTickets.length === 0 && <div className="card more-empty-cell">No T&M tickets yet<br/><span className="more-empty-hint">Track time & material work outside the original contract — add labor hours and materials per ticket</span></div>}
         {allTickets.map(t => {
           const total = calcTicketTotal(t);
           const isExpanded = expandedId === t.id;
@@ -934,22 +934,22 @@ function TmTicketsTab({ app }) {
               <div className="flex-between">
                 <div>
                   <strong>{t.ticketNumber}</strong>
-                  <span className="text2" className="ml-8">{pName(t.projectId)}</span>
+                  <span className="text2 ml-8">{pName(t.projectId)}</span>
                 </div>
-                <div className="flex gap-8" className="items-center">
+                <div className="flex gap-8 items-center">
                   <strong>{app.fmt(total)}</strong>
                   <span className={badge(t.status)}>{t.status}</span>
                 </div>
               </div>
-              <div className="text2" className="fs-12 mt-4">{t.date} — {t.description}</div>
+              <div className="text2 fs-12 mt-4">{t.date} — {t.description}</div>
 
               {isExpanded && (
                 <div className="more-ticket-expanded" onClick={e => e.stopPropagation()}>
                   {/* Labor breakdown */}
                   {t.laborEntries.length > 0 && (
                     <div className="mb-12">
-                      <strong className="text2" className="more-section-label">Labor</strong>
-                      <table className="data-table" className="mt-4">
+                      <strong className="text2 more-section-label">Labor</strong>
+                      <table className="data-table mt-4">
                         <thead><tr><th>Employee</th><th>Hours</th><th>Rate</th><th>Description</th><th className="num">Total</th></tr></thead>
                         <tbody>
                           {t.laborEntries.map(e => (
@@ -963,15 +963,15 @@ function TmTicketsTab({ app }) {
                           ))}
                         </tbody>
                       </table>
-                      <div className="text2" className="more-ticket-subtotal">Labor: {app.fmt(calcLaborTotal(t.laborEntries))}</div>
+                      <div className="text2 more-ticket-subtotal">Labor: {app.fmt(calcLaborTotal(t.laborEntries))}</div>
                     </div>
                   )}
 
                   {/* Materials breakdown */}
                   {t.materialEntries.length > 0 && (
                     <div className="mb-12">
-                      <strong className="text2" className="more-section-label">Materials</strong>
-                      <table className="data-table" className="mt-4">
+                      <strong className="text2 more-section-label">Materials</strong>
+                      <table className="data-table mt-4">
                         <thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Unit Cost</th><th>Markup</th><th className="num">Total</th></tr></thead>
                         <tbody>
                           {t.materialEntries.map(e => {
@@ -990,11 +990,11 @@ function TmTicketsTab({ app }) {
                           })}
                         </tbody>
                       </table>
-                      <div className="text2" className="more-ticket-subtotal">Materials: {app.fmt(calcMatTotal(t.materialEntries))}</div>
+                      <div className="text2 more-ticket-subtotal">Materials: {app.fmt(calcMatTotal(t.materialEntries))}</div>
                     </div>
                   )}
 
-                  {t.notes && <div className="text2" className="more-ticket-notes">{t.notes}</div>}
+                  {t.notes && <div className="text2 more-ticket-notes">{t.notes}</div>}
 
                   <div className="more-ticket-meta">
                     {t.submittedDate && <span className="text2">Submitted: {t.submittedDate}</span>}
@@ -1009,7 +1009,7 @@ function TmTicketsTab({ app }) {
                     {t.status === "submitted" && <button className="btn btn-primary btn-sm" onClick={() => updateStatus(t.id, "approved")}>Mark Approved</button>}
                     {t.status === "approved" && <button className="btn btn-primary btn-sm" onClick={() => updateStatus(t.id, "billed")}>Mark Billed</button>}
                     {t.status === "approved" && (
-                      <button className="btn btn-ghost btn-sm" className="text-green" onClick={() => {
+                      <button className="btn btn-ghost btn-sm text-green" onClick={() => {
                         const labTotal = (t.laborEntries || []).reduce((s, e) => s + e.hours * e.rate, 0);
                         const matTotal = (t.materialEntries || []).reduce((s, e) => { const b = e.qty * e.unitCost; return s + b + b * e.markup / 100; }, 0);
                         const total = labTotal + matTotal;
@@ -1073,7 +1073,7 @@ function TmTicketsTab({ app }) {
                     <div className="more-info-card mt-12">
                       <div className="flex-between mb-8">
                         <span className="font-semi text-sm">AI Justification Narrative</span>
-                        <button className="btn btn-ghost btn-sm" className="btn-table-action" onClick={() => {
+                        <button className="btn btn-ghost btn-sm btn-table-action" onClick={() => {
                           navigator.clipboard.writeText(justifyText);
                           app.show("Justification copied to clipboard", "ok");
                         }}>Copy</button>
@@ -1151,7 +1151,7 @@ function JobCostingTab({ app }) {
             <div className="card-header"><div className="card-title">AI Cost Variance Analysis</div></div>
             <button className="btn btn-ghost btn-sm" onClick={() => { setShowVariance(false); setVarianceResult(null); }}>Close</button>
           </div>
-          {varianceLoading && <div className="text-sm text-muted" className="more-empty-cell">Analyzing cost data across {app.projects.length} projects...</div>}
+          {varianceLoading && <div className="text-sm text-muted more-empty-cell">Analyzing cost data across {app.projects.length} projects...</div>}
           {varianceResult && (
             <div className="mt-8">
               {/* Summary */}
@@ -1226,7 +1226,7 @@ function JobCostingTab({ app }) {
           )}
         </div>
       )}
-      {app.projects.length === 0 && <div className="card mt-16" className="more-empty-cell">No projects yet<br/><span className="more-empty-hint">Convert awarded bids to projects to track job costing, labor, and profitability</span></div>}
+      {app.projects.length === 0 && <div className="card mt-16 more-empty-cell">No projects yet<br/><span className="more-empty-hint">Convert awarded bids to projects to track job costing, labor, and profitability</span></div>}
       {app.projects.map(proj => {
         const billed = app.invoices.filter(i => i.projectId === proj.id).reduce((s, i) => s + i.amount, 0);
         const cos = app.changeOrders.filter(c => c.projectId === proj.id && c.status === "approved").reduce((s, c) => s + c.amount, 0);
@@ -1257,7 +1257,7 @@ function JobCostingTab({ app }) {
             {/* Labor Cost Rollup */}
             <div className="more-cost-grid--border">
               <div><span className="text2">Labor Hours</span><br /><span className="font-mono">{laborHours.toFixed(1)}h</span></div>
-              <div><span className="text2">Labor Cost</span><br /><span className="font-mono" className="text-amber">{app.fmt(laborCost)}</span></div>
+              <div><span className="text2">Labor Cost</span><br /><span className="font-mono text-amber">{app.fmt(laborCost)}</span></div>
               <div><span className="text2">Budget Remaining</span><br /><span className="font-mono" style={{ color: laborVariance >= 0 ? "var(--green)" : "var(--red)" }}>{app.fmt(laborVariance)}</span></div>
               <div><span className="text2">Labor Margin</span><br /><span className="font-mono" style={{ color: adjustedContract > 0 && laborCost / adjustedContract < 0.7 ? "var(--green)" : "var(--amber)" }}>{adjustedContract > 0 ? Math.round((1 - laborCost / adjustedContract) * 100) : 0}%</span></div>
             </div>
@@ -1336,7 +1336,7 @@ function PayrollSummaryTab({ app }) {
       <div className="flex-between">
         <div className="section-title">Payroll Summary</div>
         <div className="flex gap-8">
-          <select className="form-select" className="more-edit-select" value={period} onChange={e => setPeriod(e.target.value)}>
+          <select className="form-select more-edit-select" value={period} onChange={e => setPeriod(e.target.value)}>
             <option value="week">This Week</option>
             <option value="biweekly">Last 2 Weeks</option>
             <option value="month">This Month</option>
@@ -1383,7 +1383,7 @@ function PayrollSummaryTab({ app }) {
             {byEmployee.map(e => (
               <tr key={e.id}>
                 <td className="fw-500">{e.name}</td>
-                <td><span className="badge badge-blue" className="fs-10">{e.role}</span></td>
+                <td><span className="badge badge-blue fs-10">{e.role}</span></td>
                 <td className="td-right-mono">${e.rate}/hr</td>
                 <td className="td-right-mono">{e.regularHours.toFixed(1)}</td>
                 <td style={{ textAlign: "right", fontFamily: "var(--font-mono)", color: e.otHours > 0 ? "var(--red)" : "inherit" }}>{e.otHours.toFixed(1)}</td>
@@ -1440,7 +1440,7 @@ function AgingReportTab({ app }) {
         <div style={{ fontWeight: 700, fontSize: 16, color }}>{app.fmt(sum(items))}</div>
       </div>
       {items.length > 0 ? (
-        <table className="data-table" className="mt-8">
+        <table className="data-table mt-8">
           <thead><tr><th>Invoice #</th><th>Project</th><th>Date</th><th>Age</th><th className="num">Amount</th></tr></thead>
           <tbody>
             {items.sort((a, b) => b.age - a.age).map(inv => (
@@ -1454,7 +1454,7 @@ function AgingReportTab({ app }) {
             ))}
           </tbody>
         </table>
-      ) : <div className="text-sm text-muted" className="mt-8">No invoices in this bucket</div>}
+      ) : <div className="text-sm text-muted mt-8">No invoices in this bucket</div>}
     </div>
   );
 
@@ -1643,7 +1643,7 @@ function RfisTab({ app }) {
                   <td>
                     {rfi.subject}
                     {(rfi.attachments || []).length > 0 && (
-                      <div className="flex gap-4 flex-wrap" className="mt-4">
+                      <div className="flex gap-4 flex-wrap mt-4">
                         {rfi.attachments.map((a, ai) => (
                           <a key={ai} href={a.dataUrl} download={a.name} className="more-attach-link" onClick={e => e.stopPropagation()}>
                             {a.name}
@@ -1659,13 +1659,13 @@ function RfisTab({ app }) {
                   <td>
                     <div className="flex gap-4">
                     {rfi.status === "open" && (
-                      <button className="btn btn-ghost btn-sm" className="btn-table-action"
+                      <button className="btn btn-ghost btn-sm btn-table-action"
                         onClick={() => draftId === rfi.id && draftText ? setDraftId(null) : runDraftResponse(rfi)}
                         disabled={draftLoading && draftId === rfi.id}>
                         {draftLoading && draftId === rfi.id ? "..." : draftId === rfi.id && draftText ? "Hide" : "Draft Response"}
                       </button>
                     )}
-                    <button className="btn btn-ghost btn-sm" className="btn-table-delete"
+                    <button className="btn btn-ghost btn-sm btn-table-delete"
                       onClick={() => { if (confirm("Delete this RFI?")) { app.setRfis(prev => prev.filter(r => r.id !== rfi.id)); app.show("RFI deleted"); } }}>✕</button>
                     </div>
                   </td>
@@ -1675,7 +1675,7 @@ function RfisTab({ app }) {
                     <div className="more-detail-panel">
                       <div className="flex-between mb-8">
                         <span className="font-semi text-sm">AI-Drafted Response</span>
-                        <button className="btn btn-ghost btn-sm" className="btn-table-action" onClick={() => {
+                        <button className="btn btn-ghost btn-sm btn-table-action" onClick={() => {
                           navigator.clipboard.writeText(draftText);
                           app.show("Response copied to clipboard", "ok");
                         }}>Copy</button>
@@ -1869,11 +1869,11 @@ function SubmittalsTab({ app }) {
       ? items.filter(item => getLabel(item).toLowerCase().includes(search.toLowerCase()))
       : items.slice(0, 10);
     return (
-      <div className="form-group full" className="pos-relative">
+      <div className="form-group full pos-relative">
         <label className="form-label">{label}</label>
         {/* Selected pills */}
         {selectedIds.length > 0 && (
-          <div className="flex gap-4 flex-wrap" className="mb-6">
+          <div className="flex gap-4 flex-wrap mb-6">
             {selectedIds.map(id => {
               const item = items.find(i => getKey(i) === id);
               return (
@@ -2103,7 +2103,7 @@ function SubmittalsTab({ app }) {
                   <td><span className={`badge ${badge(sub.status)}`}>{sub.status}</span></td>
                   <td>
                     {sub.pdfKey ? (
-                      <button className="btn btn-sm btn-ghost" className="btn-table-action" onClick={e => { e.stopPropagation(); viewPdf(sub.pdfKey); }}>
+                      <button className="btn btn-sm btn-ghost btn-table-action" onClick={e => { e.stopPropagation(); viewPdf(sub.pdfKey); }}>
                         {sub.pdfName || "View PDF"}
                       </button>
                     ) : <span className="text-xs text-muted">—</span>}
@@ -2117,12 +2117,12 @@ function SubmittalsTab({ app }) {
                   </td>
                   <td>
                     <div className="flex gap-4">
-                    <button className="btn btn-ghost btn-sm" className="btn-table-action"
+                    <button className="btn btn-ghost btn-sm btn-table-action"
                       onClick={e => { e.stopPropagation(); reviewId === sub.id && reviewResult ? setReviewId(null) : runReview(sub); }}
                       disabled={reviewLoading && reviewId === sub.id}>
                       {reviewLoading && reviewId === sub.id ? "..." : reviewId === sub.id && reviewResult ? "Hide" : "AI Review"}
                     </button>
-                    <button className="btn btn-ghost btn-sm" className="btn-table-delete"
+                    <button className="btn btn-ghost btn-sm btn-table-delete"
                       onClick={e => { e.stopPropagation(); if (confirm("Delete this submittal?")) { app.setSubmittals(prev => prev.filter(s => s.id !== sub.id)); app.show("Submittal deleted"); } }}>✕</button>
                     </div>
                   </td>
@@ -2157,7 +2157,7 @@ function SubmittalsTab({ app }) {
                                 <span className="font-semi">{iss.item}</span>
                                 <span className={iss.severity === "critical" ? "badge-red" : iss.severity === "warning" ? "badge-amber" : "badge-blue"}>{iss.severity}</span>
                               </div>
-                              <div className="text-muted mt-4" className="fs-12">{iss.detail}</div>
+                              <div className="text-muted mt-4 fs-12">{iss.detail}</div>
                             </div>
                           ))}
                         </div>
@@ -2290,7 +2290,7 @@ function SubmittalsTab({ app }) {
                   <span className="fs-13">{editSub.pdfName}</span>
                   <span className="text-xs text-dim">{fmtSize(editSub.pdfSize)}</span>
                   <button className="btn btn-sm btn-ghost" onClick={() => viewPdf(editSub.pdfKey)}>View</button>
-                  <button className="btn btn-sm btn-ghost" className="text-red" onClick={() => removePdf(editSub)}>Remove</button>
+                  <button className="btn btn-sm btn-ghost text-red" onClick={() => removePdf(editSub)}>Remove</button>
                 </div>
               ) : (
                 <div className="sub-pdf-upload">
@@ -2437,7 +2437,7 @@ function Schedule({ app }) {
   return (
     <div className="mt-16">
       <div className="flex-between">
-        <div className="flex gap-8" className="items-center">
+        <div className="flex gap-8 items-center">
           <div className="section-title">Project Schedule</div>
           <select className="form-select" value={filter} onChange={e => setFilter(e.target.value)} className="w-auto">
             <option value="all">All Projects</option>
@@ -2478,7 +2478,7 @@ function Schedule({ app }) {
             <div className="card-header"><div className="card-title">AI Labor Forecast</div></div>
             <button className="btn btn-ghost btn-sm" onClick={() => { setShowLabor(false); setLaborResult(null); }}>Close</button>
           </div>
-          {laborLoading && <div className="text-sm text-muted" className="more-empty-cell">Analyzing schedule and team data...</div>}
+          {laborLoading && <div className="text-sm text-muted more-empty-cell">Analyzing schedule and team data...</div>}
           {laborResult && (
             <div className="mt-8">
               {/* Summary */}
@@ -2490,7 +2490,7 @@ function Schedule({ app }) {
               {laborResult.weeklyForecast?.length > 0 && (
                 <div className="mb-12">
                   <div className="text-sm font-semi mb-8">4-Week Outlook</div>
-                  <table className="data-table" className="fs-13">
+                  <table className="data-table fs-13">
                     <thead><tr><th>Week</th><th>Crews</th><th>Hours</th><th>Projects</th><th>Bottleneck</th></tr></thead>
                     <tbody>
                       {laborResult.weeklyForecast.map((w, i) => (
@@ -2566,7 +2566,7 @@ function Schedule({ app }) {
             <div className="card-header"><div className="card-title">AI Schedule Conflict Scan</div></div>
             <button className="btn btn-ghost btn-sm" onClick={() => { setShowConflict(false); setConflictResult(null); }}>Close</button>
           </div>
-          {conflictLoading && <div className="text-sm text-muted" className="more-empty-cell">Scanning schedule for conflicts...</div>}
+          {conflictLoading && <div className="text-sm text-muted more-empty-cell">Scanning schedule for conflicts...</div>}
           {conflictResult && (
             <div className="mt-8">
               <div className="more-detail-summary">{conflictResult.summary}</div>
@@ -2580,8 +2580,8 @@ function Schedule({ app }) {
                         <span className="font-semi">{c.type} — {(c.projects || []).join(", ")}</span>
                         <span className={c.severity === "critical" ? "badge-red" : c.severity === "warning" ? "badge-amber" : "badge-blue"}>{c.severity}</span>
                       </div>
-                      <div className="text-muted mt-4" className="fs-12">{c.detail}</div>
-                      <div className="text-xs mt-2" className="text-blue">Fix: {c.resolution}</div>
+                      <div className="text-muted mt-4 fs-12">{c.detail}</div>
+                      <div className="text-xs mt-2 text-blue">Fix: {c.resolution}</div>
                     </div>
                   ))}
                 </div>
@@ -2676,7 +2676,7 @@ function Schedule({ app }) {
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label" className="flex-center-gap-8">
+            <label className="form-label flex-center-gap-8">
               <input type="checkbox" checked={form.milestone} onChange={e => setForm({ ...form, milestone: e.target.checked })} />
               Milestone
             </label>
@@ -2689,8 +2689,8 @@ function Schedule({ app }) {
       )}
 
       {/* Gantt Chart */}
-      <div className="gantt-wrap mt-16" className="overflow-x-auto">
-        <div className="gantt-header" className="more-gantt-header">
+      <div className="gantt-wrap mt-16 overflow-x-auto">
+        <div className="gantt-header more-gantt-header">
           <div className="more-gantt-task-col">Task</div>
           <div className="more-gantt-months">
             {months.map(m => (
@@ -2704,10 +2704,10 @@ function Schedule({ app }) {
           const widthPct = (new Date(task.end) - new Date(task.start)) / 86400000 / totalDays * 100;
           return (
             <div className="gantt-row" key={task.id} className="more-gantt-row">
-              <div className="gantt-label" className="more-gantt-label">
+              <div className="gantt-label more-gantt-label">
                 {task.task}
               </div>
-              <div className="gantt-track" className="more-gantt-track">
+              <div className="gantt-track more-gantt-track">
                 {task.milestone ? (
                   <div className="gantt-milestone" style={{
                     position: "absolute",
@@ -2768,8 +2768,8 @@ function Schedule({ app }) {
                       </select>
                     </td>
                     <td className="more-edit-actions">
-                      <button className="btn btn-primary btn-sm" className="btn-table-save" onClick={() => { app.setSchedule(prev => prev.map(t => t.id === task.id ? { ...t, ...editTask, projectId: Number(editTask.projectId) } : t)); setEditTaskId(null); app.show("Task updated"); }}>Save</button>
-                      <button className="btn btn-ghost btn-sm" className="btn-table-save" onClick={() => setEditTaskId(null)}>Cancel</button>
+                      <button className="btn btn-primary btn-sm btn-table-save" onClick={() => { app.setSchedule(prev => prev.map(t => t.id === task.id ? { ...t, ...editTask, projectId: Number(editTask.projectId) } : t)); setEditTaskId(null); app.show("Task updated"); }}>Save</button>
+                      <button className="btn btn-ghost btn-sm btn-table-save" onClick={() => setEditTaskId(null)}>Cancel</button>
                     </td>
                   </tr>
                 );
@@ -2786,7 +2786,7 @@ function Schedule({ app }) {
                   <td className="more-edit-actions">
                     <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 6px" }}
                       onClick={() => { setEditTaskId(task.id); setEditTask({ task: task.task, projectId: task.projectId, team: task.team || "", start: task.start, end: task.end, status: task.status, predecessorId: task.predecessorId || "" }); }}>✎</button>
-                    <button className="btn btn-ghost btn-sm" className="btn-table-delete"
+                    <button className="btn btn-ghost btn-sm btn-table-delete"
                       onClick={() => { if (confirm("Delete this task?")) { app.setSchedule(prev => prev.filter(t => t.id !== task.id)); app.show("Task deleted"); } }}>✕</button>
                   </td>
                 </tr>
@@ -2930,7 +2930,7 @@ function Reports({ app }) {
     <div className="mt-16">
       {/* KPI Summary */}
       <div className="section-title">KPI Summary</div>
-      <div className="flex gap-8 mt-16" className="flex-wrap">
+      <div className="flex gap-8 mt-16 flex-wrap">
         <div className="kpi-card"><span className="text2">Total Pipeline</span><strong>{app.fmtK(totalPipeline)}</strong></div>
         <div className="kpi-card"><span className="text2">Avg Bid Size</span><strong>{app.fmtK(avgBidSize)}</strong></div>
         <div className="kpi-card"><span className="text2">Total Bids</span><strong>{bids.length}</strong></div>
@@ -2943,12 +2943,12 @@ function Reports({ app }) {
       <div className="card mt-16">
         <div className="card-header flex-between">
           <div className="card-title font-head">AI Business Forecast</div>
-          <button className="btn btn-ghost btn-sm" className="text-amber" onClick={() => { showForecast ? setShowForecast(false) : runForecast(); }} disabled={forecastLoading}>
+          <button className="btn btn-ghost btn-sm text-amber" onClick={() => { showForecast ? setShowForecast(false) : runForecast(); }} disabled={forecastLoading}>
             {forecastLoading ? "Forecasting..." : "AI Forecast"}
           </button>
         </div>
         {!showForecast && !forecastLoading && (
-          <div className="text-sm text-muted" className="py-8">AI-powered quarterly forecast — revenue projections, market trends, and growth opportunities.</div>
+          <div className="text-sm text-muted py-8">AI-powered quarterly forecast — revenue projections, market trends, and growth opportunities.</div>
         )}
         {showForecast && forecastResult && (
           <div className="max-h-500 overflow-auto">
@@ -2957,15 +2957,15 @@ function Reports({ app }) {
             {/* KPI Forecasts */}
             {forecastResult.kpiForecasts && (
               <div className="flex gap-12 mb-16 flex-wrap">
-                <div className="kpi-card" className="kpi-min-lg">
+                <div className="kpi-card kpi-min-lg">
                   <span className="text2">Win Rate</span>
                   <strong>{forecastResult.kpiForecasts.winRate?.current}% → {forecastResult.kpiForecasts.winRate?.projected}%</strong>
                 </div>
-                <div className="kpi-card" className="kpi-min-lg">
+                <div className="kpi-card kpi-min-lg">
                   <span className="text2">Avg Margin</span>
                   <strong>{forecastResult.kpiForecasts.avgMargin?.current}% → {forecastResult.kpiForecasts.avgMargin?.projected}%</strong>
                 </div>
-                <div className="kpi-card" className="kpi-min-lg">
+                <div className="kpi-card kpi-min-lg">
                   <span className="text2">Backlog</span>
                   <strong>{forecastResult.kpiForecasts.backlog?.projected}</strong>
                 </div>
@@ -2989,7 +2989,7 @@ function Reports({ app }) {
             {forecastResult.cashFlowProjection?.length > 0 && (
               <div className="mb-12">
                 <div className="text-sm font-semi mb-8">Cash Flow Projection</div>
-                <table className="data-table" className="fs-12">
+                <table className="data-table fs-12">
                   <thead><tr><th>Month</th><th>Inflow</th><th>Outflow</th><th>Net</th><th>Risk</th></tr></thead>
                   <tbody>
                     {forecastResult.cashFlowProjection.map((c, i) => (
@@ -3009,7 +3009,7 @@ function Reports({ app }) {
             {/* Growth Opportunities */}
             {forecastResult.growthOpportunities?.length > 0 && (
               <div className="mb-12">
-                <div className="text-sm font-semi mb-8" className="text-green">Growth Opportunities</div>
+                <div className="text-sm font-semi mb-8 text-green">Growth Opportunities</div>
                 {forecastResult.growthOpportunities.map((g, i) => (
                   <div key={i} className="more-list-row">
                     <div className="flex-between">
@@ -3041,7 +3041,7 @@ function Reports({ app }) {
             {/* Quarterly Goals */}
             {forecastResult.quarterlyGoals?.length > 0 && (
               <div>
-                <div className="text-sm font-semi mb-8" className="text-amber">Quarterly Goals</div>
+                <div className="text-sm font-semi mb-8 text-amber">Quarterly Goals</div>
                 {forecastResult.quarterlyGoals.map((g, i) => (
                   <div key={i} className="more-list-row">
                     <div className="text-sm font-semi">{g.goal}</div>
@@ -3063,9 +3063,9 @@ function Reports({ app }) {
           </button>
         </div>
         {!reportSummary && !reportLoading && (
-          <div className="text-sm text-muted" className="py-8">AI-powered executive brief of your business performance, GC relationships, and growth opportunities.</div>
+          <div className="text-sm text-muted py-8">AI-powered executive brief of your business performance, GC relationships, and growth opportunities.</div>
         )}
-        {reportLoading && <div className="text-sm text-muted" className="more-empty-cell">Analyzing {bids.length} bids and {projects.length} projects...</div>}
+        {reportLoading && <div className="text-sm text-muted more-empty-cell">Analyzing {bids.length} bids and {projects.length} projects...</div>}
         {reportSummary && (
           <div className="mt-8">
             {/* Executive Overview */}
@@ -3077,13 +3077,13 @@ function Reports({ app }) {
             <div className="more-grid-2-gap12">
               {reportSummary.strengths?.length > 0 && (
                 <div className="more-info-card--green">
-                  <div className="text-sm font-semi mb-8" className="text-green">Strengths</div>
+                  <div className="text-sm font-semi mb-8 text-green">Strengths</div>
                   {reportSummary.strengths.map((s, i) => <div key={i} style={{ fontSize: 13, padding: "3px 0" }}>{s}</div>)}
                 </div>
               )}
               {reportSummary.concerns?.length > 0 && (
                 <div className="more-info-card--red">
-                  <div className="text-sm font-semi mb-8" className="text-red">Concerns</div>
+                  <div className="text-sm font-semi mb-8 text-red">Concerns</div>
                   {reportSummary.concerns.map((c, i) => <div key={i} style={{ fontSize: 13, padding: "3px 0" }}>{c}</div>)}
                 </div>
               )}
@@ -3092,7 +3092,7 @@ function Reports({ app }) {
             {/* GC Analysis */}
             {reportSummary.gcAnalysis && (
               <div className="more-info-card">
-                <div className="font-semi mb-4" className="text-blue">GC Relationship Analysis</div>
+                <div className="font-semi mb-4 text-blue">GC Relationship Analysis</div>
                 {reportSummary.gcAnalysis}
               </div>
             )}
@@ -3100,7 +3100,7 @@ function Reports({ app }) {
             {/* Opportunities */}
             {reportSummary.opportunities?.length > 0 && (
               <div className="mb-12">
-                <div className="text-sm font-semi mb-8" className="text-amber">Growth Opportunities</div>
+                <div className="text-sm font-semi mb-8 text-amber">Growth Opportunities</div>
                 {reportSummary.opportunities.map((o, i) => (
                   <div key={i} className="more-list-row--plain">{o}</div>
                 ))}
@@ -3135,7 +3135,7 @@ function Reports({ app }) {
       </div>
 
       {/* Charts Row */}
-      <div className="flex gap-16 mt-24" className="flex-wrap">
+      <div className="flex gap-16 mt-24 flex-wrap">
         {/* Pipeline by Status Pie */}
         <div className="card" style={{ flex: "1 1 280px", minWidth: 280 }}>
           <div className="card-header"><div className="card-title font-head">Pipeline by Status</div></div>
@@ -3206,8 +3206,8 @@ function Reports({ app }) {
           const remaining = proj.contract - billed;
           const pct = proj.contract > 0 ? Math.round((billed / proj.contract) * 100) : 0;
           return (
-            <div key={proj.id} className="bar-row" className="mb-16">
-              <div className="flex-between" className="fs-13">
+            <div key={proj.id} className="bar-row mb-16">
+              <div className="flex-between fs-13">
                 <span className="bar-label">{proj.name}</span>
                 <span className="bar-value text2">{app.fmt(billed)} / {app.fmt(proj.contract)} ({app.fmt(remaining)} remaining)</span>
               </div>
@@ -3352,7 +3352,7 @@ function IncidentsTab({ app }) {
               });
             }} />
             {(form.photos || []).length > 0 && (
-              <div className="flex gap-4" className="mt-6">
+              <div className="flex gap-4 mt-6">
                 {form.photos.map((p, i) => (
                   <div key={i} className="pos-relative">
                     <img src={p.data} alt={p.name} style={{ width: 50, height: 50, objectFit: "cover", borderRadius: 4 }} />
@@ -3385,7 +3385,7 @@ function IncidentsTab({ app }) {
                   <td>{inc.corrective}</td>
                   <td>{inc.reportedBy}</td>
                   <td>
-                    <button className="btn btn-ghost btn-sm" className="btn-table-action"
+                    <button className="btn btn-ghost btn-sm btn-table-action"
                       onClick={() => rcaId === inc.id && rcaResult ? setRcaId(null) : runRCA(inc)}
                       disabled={rcaLoading && rcaId === inc.id}>
                       {rcaLoading && rcaId === inc.id ? "..." : rcaId === inc.id && rcaResult ? "Hide" : "RCA"}
@@ -3523,7 +3523,7 @@ function ToolboxTalksTab({ app }) {
       {showGen && (
         <div className="card mt-16">
           <div className="card-header"><div className="card-title">AI Toolbox Talk Generator</div></div>
-          <div className="flex gap-8" className="mb-12 items-end">
+          <div className="flex gap-8 mb-12 items-end">
             <div className="flex-1">
               <label className="form-label">Topic</label>
               <input className="form-input" placeholder="e.g. Silica dust exposure, Scaffold safety, Heat illness prevention..." value={genTopic} onChange={e => setGenTopic(e.target.value)}
@@ -3535,11 +3535,11 @@ function ToolboxTalksTab({ app }) {
           </div>
           <div className="flex gap-4 flex-wrap mb-12">
             {["Silica Dust Control", "Fall Protection", "Scaffold Safety", "Heat Illness", "Power Tool Safety", "Material Handling", "PPE Compliance", "Knife Safety"].map(t => (
-              <button key={t} className="btn btn-ghost btn-sm" className="btn-table-action" onClick={() => { setGenTopic(t); }}>{t}</button>
+              <button key={t} className="btn btn-ghost btn-sm btn-table-action" onClick={() => { setGenTopic(t); }}>{t}</button>
             ))}
           </div>
 
-          {genLoading && <div className="text-sm text-muted" className="more-empty-cell">Generating talk on "{genTopic}"...</div>}
+          {genLoading && <div className="text-sm text-muted more-empty-cell">Generating talk on "{genTopic}"...</div>}
 
           {genResult && (
             <div className="mt-8">
@@ -3548,7 +3548,7 @@ function ToolboxTalksTab({ app }) {
                   <div className="more-metric-value--md">{genResult.title}</div>
                   <div className="text-xs text-muted">{genResult.duration} • {genResult.complianceRef || "General safety"}</div>
                 </div>
-                <button className="btn btn-ghost btn-sm" className="btn-table-action" onClick={() => {
+                <button className="btn btn-ghost btn-sm btn-table-action" onClick={() => {
                   let text = `TOOLBOX TALK: ${genResult.title}\n`;
                   text += `Duration: ${genResult.duration}\n`;
                   if (genResult.complianceRef) text += `OSHA Ref: ${genResult.complianceRef}\n`;
@@ -3597,7 +3597,7 @@ function ToolboxTalksTab({ app }) {
               {/* Key Takeaways */}
               {genResult.keyTakeaways?.length > 0 && (
                 <div className="more-info-card--green">
-                  <div className="font-semi mb-4" className="text-green">Key Takeaways</div>
+                  <div className="font-semi mb-4 text-green">Key Takeaways</div>
                   {genResult.keyTakeaways.map((k, i) => (
                     <div key={i} className="more-talk-point">✓ {k}</div>
                   ))}
@@ -3680,11 +3680,11 @@ function ToolboxTalksTab({ app }) {
                     <td><input className="form-input" type="number" defaultValue={talk.attendees} className="more-edit-select" onChange={e => talk._attendees = Number(e.target.value)} /></td>
                     <td><input className="form-input" defaultValue={talk.conductor} className="more-edit-select" onChange={e => talk._conductor = e.target.value} /></td>
                     <td><div className="flex gap-4">
-                      <button className="btn btn-primary btn-sm" className="btn-table-save" onClick={() => {
+                      <button className="btn btn-primary btn-sm btn-table-save" onClick={() => {
                         app.setToolboxTalks(prev => prev.map(t => t.id === talk.id ? { ...t, date: talk._date ?? t.date, projectId: talk._projectId ?? t.projectId, topic: talk._topic ?? t.topic, attendees: talk._attendees ?? t.attendees, conductor: talk._conductor ?? t.conductor } : t));
                         setEditId(null); app.show("Talk updated");
                       }}>Save</button>
-                      <button className="btn btn-ghost btn-sm" className="btn-table-save" onClick={() => setEditId(null)}>Cancel</button>
+                      <button className="btn btn-ghost btn-sm btn-table-save" onClick={() => setEditId(null)}>Cancel</button>
                     </div></td>
                   </>
                 ) : (
@@ -3695,7 +3695,7 @@ function ToolboxTalksTab({ app }) {
                     <td>{talk.attendees}</td>
                     <td>{talk.conductor}</td>
                     <td><div className="flex gap-4">
-                      <button className="btn btn-ghost btn-sm" className="btn-table-save" onClick={() => setEditId(talk.id)}>Edit</button>
+                      <button className="btn btn-ghost btn-sm btn-table-save" onClick={() => setEditId(talk.id)}>Edit</button>
                       <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 6px", color: "var(--red)" }} onClick={() => { if (confirm("Delete this talk?")) { app.setToolboxTalks(prev => prev.filter(t => t.id !== talk.id)); app.show("Talk deleted"); } }}>✕</button>
                     </div></td>
                   </>
@@ -3796,7 +3796,7 @@ function DailyReportsTab({ app }) {
 
       {/* AI Digest Results */}
       {digestResult && (
-        <div className="card mt-16" className="p-16">
+        <div className="card mt-16 p-16">
           <div className="flex-between mb-12">
             <div className="text-sm font-semi">Field Operations Digest</div>
             <button className="btn btn-ghost btn-sm" onClick={() => setDigestResult(null)} className="btn-table-action">Close</button>
@@ -3822,13 +3822,13 @@ function DailyReportsTab({ app }) {
           <div className="more-dr-detail-grid">
             {digestResult.laborNotes && (
               <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", fontSize: 13 }}>
-                <div className="font-semi mb-4" className="fs-12">Labor</div>
+                <div className="font-semi mb-4 fs-12">Labor</div>
                 {digestResult.laborNotes}
               </div>
             )}
             {digestResult.materialNotes && (
               <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", fontSize: 13 }}>
-                <div className="font-semi mb-4" className="fs-12">Materials</div>
+                <div className="font-semi mb-4 fs-12">Materials</div>
                 {digestResult.materialNotes}
               </div>
             )}
@@ -3932,12 +3932,12 @@ function DailyReportsTab({ app }) {
         </div>
       )}
 
-      {drFiltered.length === 0 && <div className="card mt-16" className="more-text-center">{app.search ? "No matching reports" : "No daily reports"}</div>}
+      {drFiltered.length === 0 && <div className="card mt-16 more-text-center">{app.search ? "No matching reports" : "No daily reports"}</div>}
       {drFiltered.map(rpt => (
         <div className="card mt-16" key={rpt.id}>
           {editDr?.id === rpt.id ? (
             <>
-              <div className="form-grid" className="mb-12">
+              <div className="form-grid mb-12">
                 <div className="form-group"><label className="form-label">Date</label><input className="form-input" type="date" value={editDr.date} onChange={e => setEditDr(d => ({ ...d, date: e.target.value }))} /></div>
                 <div className="form-group"><label className="form-label">Project</label><select className="form-select" value={editDr.projectId} onChange={e => setEditDr(d => ({ ...d, projectId: Number(e.target.value) }))}><option value="">Select...</option>{app.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
                 <div className="form-group"><label className="form-label">Crew Size</label><input className="form-input" type="number" value={editDr.teamSize} onChange={e => setEditDr(d => ({ ...d, teamSize: Number(e.target.value) }))} /></div>
@@ -3959,7 +3959,7 @@ function DailyReportsTab({ app }) {
                 <div className="flex gap-8">
                   <span className="text2">{rpt.weather}</span>
                   <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 6px" }} onClick={() => setEditDr({ ...rpt })}>Edit</button>
-                  <button className="btn btn-ghost btn-sm" className="btn-table-delete"
+                  <button className="btn btn-ghost btn-sm btn-table-delete"
                     onClick={() => { if (confirm("Delete this daily report?")) { app.setDailyReports(prev => prev.filter(r => r.id !== rpt.id)); app.show("Report deleted"); } }}>✕</button>
                 </div>
               </div>
@@ -4025,7 +4025,7 @@ function OshaChecklistTab({ app }) {
     <div className="mt-16">
       <div className="flex-between">
         <div className="section-title">OSHA Compliance Checklist</div>
-        <div className="flex gap-8" className="items-center">
+        <div className="flex gap-8 items-center">
           <button className="btn btn-ghost btn-sm" onClick={runAudit} disabled={auditLoading}>
             {auditLoading ? "Analyzing..." : "AI Audit Readiness"}
           </button>
@@ -4040,7 +4040,7 @@ function OshaChecklistTab({ app }) {
             <div className="card-header"><div className="card-title">AI OSHA Audit Readiness Report</div></div>
             <button className="btn btn-ghost btn-sm" onClick={() => { setShowAudit(false); setAuditResult(null); }}>Close</button>
           </div>
-          {auditLoading && <div className="text-sm text-muted" className="more-empty-cell">Analyzing compliance checklist and incident history...</div>}
+          {auditLoading && <div className="text-sm text-muted more-empty-cell">Analyzing compliance checklist and incident history...</div>}
           {auditResult && (
             <div className="mt-8">
               {/* Score + Grade */}
@@ -4068,7 +4068,7 @@ function OshaChecklistTab({ app }) {
                         <span className="badge-red">{g.risk}</span>
                       </div>
                       <div className="text-xs text-muted mt-2">OSHA: {g.oshaRef}</div>
-                      <div className="text-xs mt-2" className="text-blue">Fix: {g.remediation} (by {g.deadline})</div>
+                      <div className="text-xs mt-2 text-blue">Fix: {g.remediation} (by {g.deadline})</div>
                     </div>
                   ))}
                 </div>
@@ -4093,7 +4093,7 @@ function OshaChecklistTab({ app }) {
               {/* Strengths */}
               {auditResult.strengths?.length > 0 && (
                 <div style={{ padding: 10, borderRadius: 6, background: "rgba(16,185,129,0.08)", border: "1px solid var(--green)", marginBottom: 12 }}>
-                  <div className="font-semi mb-4" className="text-green">Strengths</div>
+                  <div className="font-semi mb-4 text-green">Strengths</div>
                   {auditResult.strengths.map((s, i) => <div key={i} className="more-talk-point">✓ {s}</div>)}
                 </div>
               )}
@@ -4270,7 +4270,7 @@ function CertificationsTab({ app }) {
       <div className="card mt-16">
         <div className="card-header"><div className="card-title">Compliance Matrix</div></div>
         <div className="table-wrap">
-          <table className="data-table" className="btn-table-action">
+          <table className="data-table btn-table-action">
             <thead>
               <tr>
                 <th className="td-sticky">Employee</th>
@@ -4287,7 +4287,7 @@ function CertificationsTab({ app }) {
                     const s = cert.computedStatus;
                     return (
                       <td key={ct} className="more-text-center">
-                        <span className={`badge ${statusBadge(s)}`} className="fs-9 more-cursor-pointer" onClick={() => startEdit(cert)} title={`${cert.expiryDate || "No expiry"} — click to edit`}>
+                        <span className={`badge ${statusBadge(s)} fs-9 more-cursor-pointer`} onClick={() => startEdit(cert)} title={`${cert.expiryDate || "No expiry"} — click to edit`}>
                           {statusIcon(s)}
                         </span>
                       </td>
@@ -4302,13 +4302,13 @@ function CertificationsTab({ app }) {
 
       {/* Filters */}
       <div className="flex gap-8 mt-16">
-        <select className="form-select" className="min-w-150" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+        <select className="form-select min-w-150" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
           <option value="all">All Status</option>
           <option value="valid">Valid</option>
           <option value="expiring">Expiring Soon</option>
           <option value="expired">Expired</option>
         </select>
-        <select className="form-select" className="min-w-150" value={empFilter} onChange={e => setEmpFilter(e.target.value)}>
+        <select className="form-select min-w-150" value={empFilter} onChange={e => setEmpFilter(e.target.value)}>
           <option value="all">All Employees</option>
           {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
@@ -4317,7 +4317,7 @@ function CertificationsTab({ app }) {
       {/* Cert List */}
       <div className="mt-16">
         {filtered.length === 0 ? (
-          <div className="card" className="more-empty-card">
+          <div className="card more-empty-card">
             <div className="more-empty-icon"><ClipboardList className="more-empty-icon" /></div>
             <div className="text-sm text-muted mt-8">No certifications match your filters.</div>
           </div>
@@ -4334,11 +4334,11 @@ function CertificationsTab({ app }) {
                   <td>{c.name}</td>
                   <td className="font-mono text-sm">{c.issueDate || "—"}</td>
                   <td className="font-mono text-sm">{c.expiryDate || "No expiry"}</td>
-                  <td><span className={`badge ${statusBadge(c.computedStatus)}`} className="fs-10">{c.computedStatus}</span></td>
+                  <td><span className={`badge ${statusBadge(c.computedStatus)} fs-10`}>{c.computedStatus}</span></td>
                   <td>
                     <div className="flex gap-4">
-                      <button className="btn btn-ghost" className="btn-table-edit--amber" onClick={() => startEdit(c)}>Edit</button>
-                      <button className="btn btn-ghost" className="btn-table-edit--red" onClick={() => deleteCert(c)}>Remove</button>
+                      <button className="btn btn-ghost btn-table-edit--amber" onClick={() => startEdit(c)}>Edit</button>
+                      <button className="btn btn-ghost btn-table-edit--red" onClick={() => deleteCert(c)}>Remove</button>
                     </div>
                   </td>
                 </tr>
@@ -4483,8 +4483,7 @@ function SDSBinder({ app }) {
         <div className="flex gap-6 flex-wrap">
           {GHS_PICTOGRAMS.map(p => (
             <button key={p.id} type="button"
-              className={`btn btn-sm ${form.ghsPictograms.includes(p.id) ? "btn-primary" : "btn-ghost"}`}
-              className="fs-12" onClick={() => togglePictogram(p.id)}>
+              className={`btn btn-sm ${form.ghsPictograms.includes(p.id) ? "btn-primary" : "btn-ghost"} fs-12`} onClick={() => togglePictogram(p.id)}>
               {p.icon} {p.label}
             </button>
           ))}
@@ -4496,8 +4495,7 @@ function SDSBinder({ app }) {
         <div className="flex gap-6 flex-wrap">
           {app.projects.map(p => (
             <button key={p.id} type="button"
-              className={`btn btn-sm ${form.projectIds.includes(p.id) ? "btn-primary" : "btn-ghost"}`}
-              className="btn-table-action" onClick={() => toggleProject(p.id)}>
+              className={`btn btn-sm ${form.projectIds.includes(p.id) ? "btn-primary" : "btn-ghost"} btn-table-action`} onClick={() => toggleProject(p.id)}>
               {p.name || p.project}
             </button>
           ))}
@@ -4515,7 +4513,7 @@ function SDSBinder({ app }) {
         <textarea className="form-textarea" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="PPE requirements, storage instructions, etc." />
       </div>
 
-      <div className="mt-16" className="flex gap-8">
+      <div className="mt-16 flex gap-8">
         <button className="btn btn-primary btn-sm" onClick={save}>{editId ? "Update" : "Add SDS"}</button>
         <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setEditId(null); setFileData(null); }}>Cancel</button>
       </div>
@@ -4528,25 +4526,25 @@ function SDSBinder({ app }) {
     const isExpiringSoon = sheet.expiresAt && !isExpired && (new Date(sheet.expiresAt) - new Date()) < 30 * 86400000;
 
     return (
-      <div key={sheet.id} className="card" className="mb-8">
+      <div key={sheet.id} className="card mb-8">
         <div className="flex-between">
           <div>
             <div className="font-semi fs-14">{sheet.productName}</div>
             <div className="text-xs text-muted">{sheet.manufacturer}</div>
           </div>
-          <div className="flex gap-4" className="items-center">
-            {sheet.hazardClass && <span className="badge badge-amber" className="fs-10">{sheet.hazardClass}</span>}
-            {isExpired && <span className="badge badge-red" className="fs-10">EXPIRED</span>}
-            {isExpiringSoon && <span className="badge badge-amber" className="fs-10">Expiring Soon</span>}
+          <div className="flex gap-4 items-center">
+            {sheet.hazardClass && <span className="badge badge-amber fs-10">{sheet.hazardClass}</span>}
+            {isExpired && <span className="badge badge-red fs-10">EXPIRED</span>}
+            {isExpiringSoon && <span className="badge badge-amber fs-10">Expiring Soon</span>}
           </div>
         </div>
         {pictoIcons && <div className="fs-18 mt-6">{pictoIcons}</div>}
         {(sheet.projectIds || []).length > 0 && (
           <div className="flex gap-4 flex-wrap mt-6">
-            {sheet.projectIds.map(pid => <span key={pid} className="badge badge-blue" className="fs-9">{pName(pid)}</span>)}
+            {sheet.projectIds.map(pid => <span key={pid} className="badge badge-blue fs-9">{pName(pid)}</span>)}
           </div>
         )}
-        {sheet.notes && <div className="text-xs text-muted" className="mt-6">{sheet.notes}</div>}
+        {sheet.notes && <div className="text-xs text-muted mt-6">{sheet.notes}</div>}
         <div className="flex-between mt-8">
           <div className="text-xs text-muted">
             Uploaded by {sheet.uploadedBy} on {new Date(sheet.uploadedAt).toLocaleDateString()}
@@ -4554,14 +4552,14 @@ function SDSBinder({ app }) {
           </div>
           <div className="flex gap-4">
             {sheet.file && (
-              <button className="btn btn-ghost btn-sm" className="fs-10" onClick={() => {
+              <button className="btn btn-ghost btn-sm fs-10" onClick={() => {
                 const a = document.createElement("a"); a.href = sheet.file.dataUrl; a.download = sheet.file.name; a.click();
               }}>View PDF</button>
             )}
             {canEdit && (
               <>
-                <button className="btn btn-ghost btn-sm" className="btn-table-edit--amber" onClick={() => startEdit(sheet)}>Edit</button>
-                <button className="btn btn-ghost btn-sm" className="btn-table-edit--red" onClick={() => deleteSheet(sheet)}>Remove</button>
+                <button className="btn btn-ghost btn-sm btn-table-edit--amber" onClick={() => startEdit(sheet)}>Edit</button>
+                <button className="btn btn-ghost btn-sm btn-table-edit--red" onClick={() => deleteSheet(sheet)}>Remove</button>
               </>
             )}
           </div>
@@ -4597,7 +4595,7 @@ function SDSBinder({ app }) {
           </div>
           <input className="form-input mb-16" placeholder="Search by product, manufacturer, or hazard class..." value={search} onChange={e => setSearch(e.target.value)} />
           {filtered.length === 0 ? (
-            <div className="card" className="more-empty-card">
+            <div className="card more-empty-card">
               <div className="more-empty-icon"><ClipboardList className="more-empty-icon" /></div>
               <div className="text-sm text-muted mt-8">No SDS sheets yet. Click "+ Add SDS" to upload your first safety data sheet.</div>
             </div>
@@ -4608,7 +4606,7 @@ function SDSBinder({ app }) {
       {sub === "By Project" && (
         <div className="mt-16">
           {projectsWithSDS.length === 0 && unassigned.length === sheets.length ? (
-            <div className="card" className="more-empty-card">
+            <div className="card more-empty-card">
               <div className="more-empty-icon"><Folder className="more-empty-icon" /></div>
               <div className="text-sm text-muted mt-8">No SDS sheets assigned to projects yet. Edit an SDS sheet to assign it to a project.</div>
             </div>
@@ -4618,14 +4616,14 @@ function SDSBinder({ app }) {
                 const projSheets = sheets.filter(s => (s.projectIds || []).includes(proj.id));
                 return (
                   <div key={proj.id} className="mt-16">
-                    <div className="section-title" className="fs-14 mb-8">{proj.name || proj.project} ({projSheets.length} sheets)</div>
+                    <div className="section-title fs-14 mb-8">{proj.name || proj.project} ({projSheets.length} sheets)</div>
                     {projSheets.map(renderSheetCard)}
                   </div>
                 );
               })}
               {unassigned.length > 0 && (
                 <div className="mt-16">
-                  <div className="section-title" className="fs-14 mb-8 text-muted">Unassigned ({unassigned.length})</div>
+                  <div className="section-title fs-14 mb-8 text-muted">Unassigned ({unassigned.length})</div>
                   {unassigned.map(renderSheetCard)}
                 </div>
               )}
@@ -4647,13 +4645,13 @@ function SDSBinder({ app }) {
           </div>
           {search.length > 0 ? (
             filtered.length > 0 ? filtered.map(renderSheetCard) : (
-              <div className="card" className="more-empty-card">
+              <div className="card more-empty-card">
                 <div className="more-empty-icon"><Search className="more-empty-icon" /></div>
                 <div className="text-sm text-muted mt-8">No SDS sheets match "{search}"</div>
               </div>
             )
           ) : (
-            <div className="card" className="more-empty-card">
+            <div className="card more-empty-card">
               <div className="more-empty-icon"><Smartphone className="more-empty-icon" /></div>
               <div className="text-sm text-muted mt-8">Start typing to search SDS sheets. Designed for quick field access.</div>
             </div>
@@ -4699,7 +4697,7 @@ function Settings({ app }) {
       {sub === "Team" && isForeman && <ForemanTeamTab app={app} />}
 
       {/* ── Account / Logout ── */}
-      <div className="card mt-16" className="more-account-card">
+      <div className="card mt-16 more-account-card">
         <div>
           <div className="more-account-name">
             {app.auth?.name || "User"}
@@ -4709,8 +4707,7 @@ function Settings({ app }) {
           </div>
         </div>
         <button
-          className="btn btn-ghost"
-          className="more-btn-logout"
+          className="btn btn-ghost more-btn-logout"
           onClick={() => {
             if (confirm("Are you sure you want to log out?")) {
               app.onLogout();
@@ -4841,9 +4838,9 @@ function EquipmentTab({ app }) {
 
       {/* Add / Edit Form */}
       {form && (
-        <div className="card" className="p-20 mb-20">
+        <div className="card p-20 mb-20">
           <div className="text-sm font-semi mb-12">{adding ? "Add Equipment" : "Edit Equipment"}</div>
-          <div className="form-grid" className="gap-12">
+          <div className="form-grid gap-12">
             <div className="form-group">
               <label className="form-label">Name</label>
               <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Scissor Lift (26ft)" />
@@ -4879,7 +4876,7 @@ function EquipmentTab({ app }) {
                 {(app.projects || []).map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
               </select>
             </div>
-            <div className="form-group" className="full">
+            <div className="form-group full">
               <label className="form-label">Notes</label>
               <textarea className="form-input" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Serial number, condition, rental company..." className="resize-v" />
             </div>
@@ -5003,7 +5000,7 @@ function MarginTiersTab({ app }) {
               <div style={{ width: 12, height: 12, borderRadius: "50%", background: tc.color }} />
               <div style={{ fontWeight: 700, fontSize: 16, color: tc.color }}>{tc.label}</div>
             </div>
-            <div className="form-group" className="mb-12">
+            <div className="form-group mb-12">
               <label className="form-label">Minimum Margin (%)</label>
               <input
                 className="form-input"
@@ -5023,14 +5020,14 @@ function MarginTiersTab({ app }) {
         ))}
       </div>
 
-      <div className="card mt-16" className="p-16">
+      <div className="card mt-16 p-16">
         <div className="text-sm font-semi mb-8">How It Works</div>
         <div className="text-sm text-dim">
           When a project is completed, its profit margin determines the appreciation tier.
           Projects with a margin at or above the threshold qualify for that tier's perks.
           These rates are used by the Incentive & Appreciation system.
         </div>
-        <div className="mt-12" className="flex gap-16 flex-wrap">
+        <div className="mt-12 flex gap-16 flex-wrap">
           {TIER_CONFIG.map(tc => (
             <div key={tc.key} className="fs-13">
               <span style={{ color: tc.color, fontWeight: 700 }}>{tc.label}:</span>{" "}
@@ -5260,11 +5257,11 @@ function NotificationSettings({ userId }) {
   return (
     <div className="mt-16">
       <div className="section-title">Notifications</div>
-      <div className="card mt-8" className="p-16">
+      <div className="card mt-8 p-16">
         {permission !== "granted" && permission !== "unsupported" && (
           <div style={{ marginBottom: 12, padding: "8px 12px", borderRadius: 6, background: "rgba(224,148,34,0.1)", border: "1px solid rgba(224,148,34,0.3)", fontSize: 13 }}>
             Notifications are {permission === "denied" ? "blocked" : "not enabled"}.
-            {permission === "default" && <button className="btn btn-sm" className="ml-8" onClick={requestPerm}>Enable</button>}
+            {permission === "default" && <button className="btn btn-sm ml-8" onClick={requestPerm}>Enable</button>}
           </div>
         )}
         {[
@@ -5431,7 +5428,7 @@ function InsuranceTab({ app }) {
 
       <div className="mt-16">
         {policies.length === 0 ? (
-          <div className="card" className="more-empty-card">
+          <div className="card more-empty-card">
             <div className="more-empty-icon"><Shield className="more-empty-icon" /></div>
             <div className="text-sm text-muted mt-8">No insurance policies on file. Add your GL, WC, Auto, and Umbrella policies.</div>
           </div>
@@ -5444,19 +5441,19 @@ function InsuranceTab({ app }) {
                   <div className="font-semi fs-14">{pol.type}</div>
                   <div className="text-xs text-muted">{pol.carrier} — Policy #{pol.policyNumber}</div>
                 </div>
-                <span className={`badge ${STATUS_BADGE[status]}`} className="fs-10">{status}</span>
+                <span className={`badge ${STATUS_BADGE[status]} fs-10`}>{status}</span>
               </div>
               <div className="more-policy-grid">
                 <div><span className="text2">Coverage</span><br />{pol.coverageLimit || "—"}</div>
                 <div><span className="text2">Effective</span><br />{pol.effectiveDate || "—"}</div>
                 <div><span className="text2">Expires</span><br />{pol.expiryDate || "—"}</div>
               </div>
-              {pol.notes && <div className="text-xs text-muted" className="mt-6">{pol.notes}</div>}
-              <div className="flex gap-4" className="mt-8">
-                <button className="btn btn-ghost btn-sm" className="fs-10 flex-center-gap-4" onClick={() => shareCOI(pol)}><ClipboardCopy className="icon-12" /> Copy COI Info</button>
-                {pol.file && <button className="btn btn-ghost btn-sm" className="fs-10 flex-center-gap-4" onClick={() => { const a = document.createElement("a"); a.href = pol.file.dataUrl; a.download = pol.file.name; a.click(); }}><Download className="icon-12" /> Download</button>}
-                <button className="btn btn-ghost btn-sm" className="btn-table-edit--amber" onClick={() => startEdit(pol)}>Edit</button>
-                <button className="btn btn-ghost btn-sm" className="btn-table-edit--red" onClick={() => deletePol(pol)}>Remove</button>
+              {pol.notes && <div className="text-xs text-muted mt-6">{pol.notes}</div>}
+              <div className="flex gap-4 mt-8">
+                <button className="btn btn-ghost btn-sm fs-10 flex-center-gap-4" onClick={() => shareCOI(pol)}><ClipboardCopy className="icon-12" /> Copy COI Info</button>
+                {pol.file && <button className="btn btn-ghost btn-sm fs-10 flex-center-gap-4" onClick={() => { const a = document.createElement("a"); a.href = pol.file.dataUrl; a.download = pol.file.name; a.click(); }}><Download className="icon-12" /> Download</button>}
+                <button className="btn btn-ghost btn-sm btn-table-edit--amber" onClick={() => startEdit(pol)}>Edit</button>
+                <button className="btn btn-ghost btn-sm btn-table-edit--red" onClick={() => deletePol(pol)}>Remove</button>
               </div>
             </div>
           );
@@ -5542,7 +5539,7 @@ function ForemanTeamTab({ app }) {
               <input className="form-input" maxLength={6} value={form.pin} onChange={e => setForm({ ...form, pin: e.target.value.replace(/\D/g, "") })} placeholder="Auto-generated" />
             </div>
           </div>
-          <div className="mt-16" className="flex gap-8">
+          <div className="mt-16 flex gap-8">
             <button className="btn btn-primary btn-sm" onClick={addCrewMember}>Add to Team</button>
             <button className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
           </div>
@@ -5566,8 +5563,8 @@ function ForemanTeamTab({ app }) {
                 <tr key={u.id} style={{ opacity: u.active === false ? 0.5 : 1 }}>
                   <td className="fw-500">{u.name}</td>
                   <td className="fs-12">{u.email}</td>
-                  <td><span className="badge badge-blue" className="fs-10">{FOREMAN_INVITE_ROLES[u.role] || u.role}</span></td>
-                  <td><span className={`badge ${u.active === false ? "badge-red" : "badge-green"}`} className="fs-10">{u.active === false ? "Inactive" : "Active"}</span></td>
+                  <td><span className="badge badge-blue fs-10">{FOREMAN_INVITE_ROLES[u.role] || u.role}</span></td>
+                  <td><span className={`badge ${u.active === false ? "badge-red" : "badge-green"} fs-10`}>{u.active === false ? "Inactive" : "Active"}</span></td>
                 </tr>
               ))}
             </tbody>
@@ -5713,8 +5710,8 @@ function UsersTab({ app }) {
 
       {/* Filters */}
       <div className="flex gap-8 mt-16">
-        <input className="form-input" className="min-w-150" placeholder="Search by name or email..." value={searchQ} onChange={e => setSearchQ(e.target.value)} />
-        <select className="form-select" className="min-w-150" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
+        <input className="form-input min-w-150" placeholder="Search by name or email..." value={searchQ} onChange={e => setSearchQ(e.target.value)} />
+        <select className="form-select min-w-150" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
           <option value="all">All Roles</option>
           {Object.entries(ROLES_IMPORT).map(([k, v]) => <option key={k} value={k}>{v} ({roleCounts[k] || 0})</option>)}
         </select>
@@ -5746,7 +5743,7 @@ function UsersTab({ app }) {
               <input className="form-input" type="number" value={form.hourlyRate} onChange={e => setForm({ ...form, hourlyRate: e.target.value })} placeholder="35" />
             </div>
           </div>
-          <div className="mt-16" className="flex gap-8">
+          <div className="mt-16 flex gap-8">
             <button className="btn btn-primary btn-sm" onClick={addUser}>Create User</button>
             <button className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
           </div>
@@ -5776,7 +5773,7 @@ function UsersTab({ app }) {
                 <Fragment key={u.id}>
                 <tr style={{ opacity: u.active === false ? 0.5 : 1 }}>
                   <td>
-                    <button className="btn btn-ghost" className="btn-table-save" onClick={() => setExpandedId(isExpanded ? null : u.id)}>
+                    <button className="btn btn-ghost btn-table-save" onClick={() => setExpandedId(isExpanded ? null : u.id)}>
                       {isExpanded ? "▼" : "▶"}
                     </button>
                   </td>
@@ -5789,11 +5786,11 @@ function UsersTab({ app }) {
                   <td>
                     {editId === u.id ? (
                       <div className="flex-center-gap-4">
-                        <select className="form-select" className="more-edit-select" value={editRole} onChange={e => setEditRole(e.target.value)}>
+                        <select className="form-select more-edit-select" value={editRole} onChange={e => setEditRole(e.target.value)}>
                           {Object.entries(ROLES_IMPORT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                         </select>
-                        <button className="btn btn-primary" className="btn-table-edit" onClick={() => updateRole(u.id)}>Save</button>
-                        <button className="btn btn-ghost" className="btn-table-save" onClick={() => setEditId(null)}>{"\u2715"}</button>
+                        <button className="btn btn-primary btn-table-edit" onClick={() => updateRole(u.id)}>Save</button>
+                        <button className="btn btn-ghost btn-table-save" onClick={() => setEditId(null)}>{"\u2715"}</button>
                       </div>
                     ) : (
                       <span className="badge badge-blue" style={{ cursor: "pointer", fontSize: 10 }}
@@ -5803,17 +5800,17 @@ function UsersTab({ app }) {
                     )}
                   </td>
                   <td>
-                    <span className={`badge ${u.active === false ? "badge-red" : "badge-green"}`} className="fs-10 more-cursor-pointer"
+                    <span className={`badge ${u.active === false ? "badge-red" : "badge-green"} fs-10 more-cursor-pointer`}
                       onClick={() => toggleActive(u)} title="Click to toggle">
                       {u.active === false ? "Inactive" : "Active"}
                     </span>
                   </td>
                   <td>
                     <div className="more-edit-actions">
-                      <button className="btn btn-ghost" className="btn-table-edit--amber"
+                      <button className="btn btn-ghost btn-table-edit--amber"
                         onClick={() => resetPassword(u)} title="Reset to temp password">Reset PW</button>
                       {u.id !== app.auth.id && (
-                        <button className="btn btn-ghost" className="btn-table-edit--red"
+                        <button className="btn btn-ghost btn-table-edit--red"
                           onClick={() => deleteUser(u)}>Remove</button>
                       )}
                     </div>
@@ -5824,30 +5821,30 @@ function UsersTab({ app }) {
                     <td colSpan={6} className="px-12 py-8 bg-bg3">
                       <div className="more-grid-3">
                         <div>
-                          <div className="text-xs text-muted" className="fw-600 mb-6">Certifications</div>
+                          <div className="text-xs text-muted fw-600 mb-6">Certifications</div>
                           {details.certs.length === 0 ? <div className="text-xs text-muted">None on file</div> : (
                             details.certs.map(c => {
                               const expired = c.expiryDate && new Date(c.expiryDate) < new Date();
                               return (
                                 <div key={c.id} className="fs-11 mb-3">
-                                  <span className={`badge ${expired ? "badge-red" : "badge-green"}`} className="fs-9">{c.name}</span>
-                                  {c.expiryDate && <span className="text-xs text-muted" className="ml-4">exp {c.expiryDate}</span>}
+                                  <span className={`badge ${expired ? "badge-red" : "badge-green"} fs-9`}>{c.name}</span>
+                                  {c.expiryDate && <span className="text-xs text-muted ml-4">exp {c.expiryDate}</span>}
                                 </div>
                               );
                             })
                           )}
                         </div>
                         <div>
-                          <div className="text-xs text-muted" className="fw-600 mb-6">Time Summary</div>
+                          <div className="text-xs text-muted fw-600 mb-6">Time Summary</div>
                           <div className="btn-table-action">Total hours logged: <strong>{details.totalHours.toFixed(1)}h</strong></div>
                           <div className="fs-11 mt-2">Rate: <strong>${u.hourlyRate || 35}/hr</strong></div>
                           <div className="fs-11 mt-2 text-muted">Created: {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}</div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted" className="fw-600 mb-6">Assigned Projects</div>
+                          <div className="text-xs text-muted fw-600 mb-6">Assigned Projects</div>
                           {details.assignedProjects.length === 0 ? <div className="text-xs text-muted">None currently</div> : (
                             details.assignedProjects.map((p, i) => (
-                              <div key={i} className="badge badge-blue" className="fs-9 mb-2">{p}</div>
+                              <div key={i} className="badge badge-blue fs-9 mb-2">{p}</div>
                             ))
                           )}
                         </div>
@@ -5903,7 +5900,7 @@ function CompanyTab({ app }) {
       </div>
 
       <div className="section-title mt-16">Company Logo</div>
-      <div className="card mt-16" className="flex-center-gap-12">
+      <div className="card mt-16 flex-center-gap-12">
         {form.logoUrl && <img src={form.logoUrl} alt="Logo" style={{ maxHeight: 64, maxWidth: 200, borderRadius: 4, objectFit: "contain" }} />}
         <div>
           <input type="file" accept="image/*" onChange={e => {
@@ -5914,7 +5911,7 @@ function CompanyTab({ app }) {
             reader.readAsDataURL(file);
           }} />
           <div className="text-xs text-muted mt-4">PNG or JPG recommended. Stored locally.</div>
-          {form.logoUrl && <button className="btn btn-ghost btn-sm mt-8" className="text-red fs-11" onClick={() => setForm(f => ({ ...f, logoUrl: "" }))}>Remove Logo</button>}
+          {form.logoUrl && <button className="btn btn-ghost btn-sm mt-8 text-red fs-11" onClick={() => setForm(f => ({ ...f, logoUrl: "" }))}>Remove Logo</button>}
         </div>
       </div>
 
@@ -6002,7 +5999,7 @@ function AssembliesTab({ app }) {
               <input className="form-input" type="number" step="0.01" value={form.labRate} onChange={e => setForm({ ...form, labRate: e.target.value })} />
             </div>
             <div className="form-group">
-              <label className="form-label" className="flex-center-gap-8">
+              <label className="form-label flex-center-gap-8">
                 <input type="checkbox" checked={form.verified} onChange={e => setForm({ ...form, verified: e.target.checked })} />
                 Verified
               </label>
@@ -6139,22 +6136,22 @@ function DataTab({ app }) {
         <div className="flex-col gap-16">
           <div>
             <strong>Export Data</strong>
-            <p className="text2" className="mt-4 mb-8">Download all app data as a JSON backup file.</p>
+            <p className="text2 mt-4 mb-8">Download all app data as a JSON backup file.</p>
             <button className="btn btn-primary btn-sm" onClick={doExport}>Export JSON</button>
           </div>
           <div className="border-top pt-16">
             <strong>Import Data</strong>
-            <p className="text2" className="mt-4 mb-8">Restore data from a previously exported JSON file.</p>
+            <p className="text2 mt-4 mb-8">Restore data from a previously exported JSON file.</p>
             <input type="file" accept=".json" onChange={doImport} className="fs-13" />
           </div>
           <div className="border-top pt-16">
             <strong>Feature Guides</strong>
-            <p className="text2" className="mt-4 mb-8">Re-enable step-by-step guides for all sections. Guides will auto-trigger on your next visit to each section.</p>
+            <p className="text2 mt-4 mb-8">Re-enable step-by-step guides for all sections. Guides will auto-trigger on your next visit to each section.</p>
             <button className="btn btn-ghost btn-sm" onClick={() => { resetAllGuides(); app.show("Guides reset — they will show on next visit to each section", "ok"); }}>Reset All Guides</button>
           </div>
           <div className="border-top pt-16">
             <strong>Reset All Data</strong>
-            <p className="text2" className="mt-4 mb-8">Clear all data and restore factory defaults. This cannot be undone.</p>
+            <p className="text2 mt-4 mb-8">Clear all data and restore factory defaults. This cannot be undone.</p>
             <button className="btn btn-danger btn-sm" onClick={doReset}>Reset to Defaults</button>
           </div>
         </div>
@@ -6398,12 +6395,12 @@ function QuickBooksTab({ app }) {
       </div>
 
       {/* Reset */}
-      <div className="card mt-16" className="flex-between">
+      <div className="card mt-16 flex-between">
         <div>
           <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}>Reset All Mappings</div>
           <div className="more-account-email">Clear all QB name mappings and defaults. Start fresh.</div>
         </div>
-        <button className="btn btn-ghost btn-sm" className="more-btn-logout"
+        <button className="btn btn-ghost btn-sm more-btn-logout"
           onClick={() => { if (confirm("Reset all QB mappings and defaults?")) { save({}); app.show("QB mappings cleared"); } }}>
           Reset
         </button>
@@ -6435,7 +6432,7 @@ function ThemeTab({ app }) {
             >
               <div style={{ fontSize: 32 }}>{theme.icon}</div>
               <div style={{ marginTop: 8, fontWeight: 600 }}>{theme.name}</div>
-              {isActive && <div className="badge-green" className="mt-8">Active</div>}
+              {isActive && <div className="badge-green mt-8">Active</div>}
             </div>
           );
         })}
@@ -6499,12 +6496,12 @@ function ApiTab({ app }) {
             />
           </div>
         </div>
-        <div className="flex gap-8 mt-16" className="items-center">
+        <div className="flex gap-8 mt-16 items-center">
           <button className="btn btn-primary btn-sm" onClick={saveKey}>Save Key</button>
           <button className="btn btn-ghost btn-sm" onClick={testConnection} disabled={testing}>
             {testing ? "Testing..." : "Test Connection"}
           </button>
-          {key && <button className="btn btn-ghost btn-sm" className="text-red" onClick={() => { setKey(""); app.setApiKey(""); app.show("API key cleared"); }}>Clear Key</button>}
+          {key && <button className="btn btn-ghost btn-sm text-red" onClick={() => { setKey(""); app.setApiKey(""); app.show("API key cleared"); }}>Clear Key</button>}
           {status === "ok" && <span className="badge badge-green">Connected</span>}
           {status === "err" && <span className="badge badge-red">Failed</span>}
           {app.apiKey && !status && <span className="text-xs text-muted">Key set: sk-ant-...{app.apiKey.slice(-4)}</span>}
