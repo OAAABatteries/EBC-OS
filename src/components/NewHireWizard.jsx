@@ -81,7 +81,7 @@ const nhwStyles = `
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   padding: 12px;
   overflow-y: auto;
 }
@@ -111,7 +111,7 @@ const nhwStyles = `
   margin-bottom: 20px;
 }
 .nhw-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-head);
   font-size: 22px;
   font-weight: 700;
   color: #e09422;
@@ -125,7 +125,7 @@ const nhwStyles = `
   font-size: 13px;
   color: #8494ad;
   cursor: pointer;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
 }
 .nhw-close:hover { border-color: #e09422; color: #d4dae6; }
 
@@ -188,7 +188,7 @@ const nhwStyles = `
 
 /* ── form elements ── */
 .nhw-section-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-head);
   font-size: 17px;
   font-weight: 700;
   color: #d4dae6;
@@ -221,7 +221,7 @@ const nhwStyles = `
   border-radius: 6px;
   padding: 10px 12px;
   color: #d4dae6;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   outline: none;
   transition: border-color 0.2s;
@@ -345,7 +345,7 @@ const nhwStyles = `
   margin-bottom: 18px;
 }
 .nhw-review-heading {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-head);
   font-size: 13px;
   font-weight: 700;
   color: #e09422;
@@ -415,7 +415,7 @@ const nhwStyles = `
   border: none;
   border-radius: 8px;
   padding: 10px 28px;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-head);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.5px;

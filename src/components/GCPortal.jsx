@@ -408,7 +408,7 @@ export default function GCPortal() {
       <div className="gcp-body">
         {/* ── Company Welcome ── */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#0f172a" }}>{loginCompany}</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#0f172a" }}>{loginCompany}</div>
           <div style={{ fontSize: 13, color: "#64748b" }}>{activeCount} active project{activeCount !== 1 ? "s" : ""} with EBC</div>
         </div>
 
@@ -436,15 +436,15 @@ export default function GCPortal() {
             <div className="gcp-grid-3" style={{ marginBottom: 20 }}>
               <div className="gcp-card" style={{ textAlign: "center" }}>
                 <div className="gcp-stat-label">Active Projects</div>
-                <div style={{ fontSize: 32, fontWeight: 800, color: "#1a2e4a" }}>{activeCount}</div>
+                <div style={{ fontSize: 32, fontWeight: 700, color: "#1a2e4a" }}>{activeCount}</div>
               </div>
               <div className="gcp-card" style={{ textAlign: "center" }}>
                 <div className="gcp-stat-label">Crew on Site Today</div>
-                <div style={{ fontSize: 32, fontWeight: 800, color: "#059669" }}>{totalCrewOnSite}</div>
+                <div style={{ fontSize: 32, fontWeight: 700, color: "#059669" }}>{totalCrewOnSite}</div>
               </div>
               <div className="gcp-card" style={{ textAlign: "center" }}>
                 <div className="gcp-stat-label">Open Documents</div>
-                <div style={{ fontSize: 32, fontWeight: 800, color: "#2563eb" }}>
+                <div style={{ fontSize: 32, fontWeight: 700, color: "#2563eb" }}>
                   {allDocuments.filter(d => d.status === "open" || d.status === "pending").length}
                 </div>
               </div>
@@ -591,19 +591,19 @@ export default function GCPortal() {
             <div className="gcp-grid-3" style={{ marginBottom: 20 }}>
               <div className="gcp-card" style={{ textAlign: "center" }}>
                 <div className="gcp-stat-label">Total Billed</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: "#0f172a" }}>
+                <div style={{ fontSize: 24, fontWeight: 700, color: "#0f172a" }}>
                   ${allInvoices.reduce((s, i) => s + i.amount, 0).toLocaleString()}
                 </div>
               </div>
               <div className="gcp-card" style={{ textAlign: "center" }}>
                 <div className="gcp-stat-label">Paid</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: "#059669" }}>
+                <div style={{ fontSize: 24, fontWeight: 700, color: "#059669" }}>
                   ${allInvoices.filter(i => i.status === "paid").reduce((s, i) => s + i.amount, 0).toLocaleString()}
                 </div>
               </div>
               <div className="gcp-card" style={{ textAlign: "center" }}>
                 <div className="gcp-stat-label">Outstanding</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: "#d97706" }}>
+                <div style={{ fontSize: 24, fontWeight: 700, color: "#d97706" }}>
                   ${allInvoices.filter(i => i.status !== "paid").reduce((s, i) => s + i.amount, 0).toLocaleString()}
                 </div>
               </div>

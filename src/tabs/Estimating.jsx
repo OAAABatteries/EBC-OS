@@ -1328,7 +1328,7 @@ export function EstimatingTab({ app }) {
                 <div className="card" style={{ padding: 16, marginBottom: 12 }}>
                   <div className="flex-between mb-8">
                     <div className="text-sm font-semi">Coverage Score</div>
-                    <div style={{ fontSize: 28, fontWeight: 800, color: gapResult.score >= 80 ? "var(--green)" : gapResult.score >= 50 ? "var(--amber)" : "var(--red)" }}>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: gapResult.score >= 80 ? "var(--green)" : gapResult.score >= 50 ? "var(--amber)" : "var(--red)" }}>
                       {gapResult.score}/100
                     </div>
                   </div>

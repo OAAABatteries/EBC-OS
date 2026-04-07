@@ -432,7 +432,7 @@ export function IncentiveTab({ app }) {
             <div className="flex gap-16 mb-16" style={{ alignItems: "center" }}>
               <div style={{ textAlign: "center" }}>
                 <div className="text-xs text-muted">Program Score</div>
-                <div style={{ fontSize: 32, fontWeight: 800, color: stratResult.programHealth.score >= 70 ? "var(--green)" : stratResult.programHealth.score >= 40 ? "var(--amber)" : "var(--red)" }}>
+                <div style={{ fontSize: 32, fontWeight: 700, color: stratResult.programHealth.score >= 70 ? "var(--green)" : stratResult.programHealth.score >= 40 ? "var(--amber)" : "var(--red)" }}>
                   {stratResult.programHealth.score}/100
                 </div>
               </div>

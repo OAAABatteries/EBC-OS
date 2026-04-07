@@ -2481,7 +2481,7 @@ function App({ auth, onLogout }) {
               {/* Win Probability */}
               <div className="card p-16 mb-12 text-center">
                 <div className="text-xs text-muted mb-4">{t("Win Probability")}</div>
-                <div style={{ fontSize: 48, fontWeight: 800, color: winPredResult.winProbability >= 70 ? "var(--green)" : winPredResult.winProbability >= 40 ? "var(--amber)" : "var(--red)" }}>
+                <div style={{ fontSize: 48, fontWeight: 700, color: winPredResult.winProbability >= 70 ? "var(--green)" : winPredResult.winProbability >= 40 ? "var(--amber)" : "var(--red)" }}>
                   {winPredResult.winProbability}%
                 </div>
                 <span className={`badge ${winPredResult.confidence === "high" ? "badge-green" : winPredResult.confidence === "medium" ? "badge-amber" : "badge-red"}`}>
@@ -2704,7 +2704,7 @@ function App({ auth, onLogout }) {
                     <div className="flex-between mb-4">
                       <span className="font-semi text-sm">{r.project}</span>
                       <div className="flex gap-8 flex-center">
-                        <span style={{ fontSize: 20, fontWeight: 800, color: riskColor }}>{r.riskScore}</span>
+                        <span style={{ fontSize: 20, fontWeight: 700, color: riskColor }}>{r.riskScore}</span>
                         <span className={`badge ${r.riskLevel === "critical" ? "badge-red" : r.riskLevel === "high" ? "badge-amber" : r.riskLevel === "medium" ? "badge-blue" : "badge-green"}`}>{r.riskLevel}</span>
                       </div>
                     </div>
@@ -2888,7 +2888,7 @@ function App({ auth, onLogout }) {
               <div className="flex gap-16 mb-16 flex-center">
                 <div className="text-center">
                   <div className="text-xs text-muted">{t("Readiness")}</div>
-                  <div style={{ fontSize: 36, fontWeight: 800, color: closeoutResult.readinessScore >= 70 ? "var(--green)" : closeoutResult.readinessScore >= 40 ? "var(--amber)" : "var(--red)" }}>
+                  <div style={{ fontSize: 36, fontWeight: 700, color: closeoutResult.readinessScore >= 70 ? "var(--green)" : closeoutResult.readinessScore >= 40 ? "var(--amber)" : "var(--red)" }}>
                     {closeoutResult.readinessScore}/100
                   </div>
                 </div>
@@ -3311,7 +3311,7 @@ function App({ auth, onLogout }) {
           <div className="flex gap-16 mb-16 flex-center">
             <div className="text-center">
               <div className="text-xs text-muted">{t("Risk Score")}</div>
-              <div style={{ fontSize: 36, fontWeight: 800, color: scopeRiskResult.overallRisk <= 30 ? "var(--green)" : scopeRiskResult.overallRisk <= 60 ? "var(--amber)" : "var(--red)" }}>
+              <div style={{ fontSize: 36, fontWeight: 700, color: scopeRiskResult.overallRisk <= 30 ? "var(--green)" : scopeRiskResult.overallRisk <= 60 ? "var(--amber)" : "var(--red)" }}>
                 {scopeRiskResult.overallRisk}/100
               </div>
             </div>
@@ -3457,7 +3457,7 @@ function App({ auth, onLogout }) {
               <div className="card p-16 mb-12">
                 <div className="flex-between mb-8">
                   <div className="text-sm font-semi">{t("Coverage Score")}</div>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: gapResult.score >= 80 ? "var(--green)" : gapResult.score >= 50 ? "var(--amber)" : "var(--red)" }}>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: gapResult.score >= 80 ? "var(--green)" : gapResult.score >= 50 ? "var(--amber)" : "var(--red)" }}>
                     {gapResult.score}/100
                   </div>
                 </div>

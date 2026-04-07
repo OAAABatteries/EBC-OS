@@ -55,7 +55,7 @@ const wizardStyles = `
   align-items: center;
   justify-content: center;
   background: #06080c;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   position: relative;
   overflow: hidden;
 }
@@ -109,7 +109,7 @@ const wizardStyles = `
   font-size: 12px;
   color: #8494ad;
   cursor: pointer;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   transition: all 0.2s;
   display: flex;
   align-items: center;
@@ -152,7 +152,7 @@ const wizardStyles = `
   font-weight: 600;
 }
 .wizard-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-head);
   font-size: 28px;
   font-weight: 700;
   color: #f0f4fa;
@@ -161,7 +161,7 @@ const wizardStyles = `
   line-height: 1.1;
 }
 .wizard-title-sub {
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 13px;
   font-weight: 400;
   color: #455068;
@@ -215,7 +215,7 @@ const wizardStyles = `
   flex-shrink: 0;
 }
 .wiz-kpi-value {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-head);
   font-size: 20px;
   font-weight: 700;
   color: #f0f4fa;
@@ -298,7 +298,7 @@ const wizardStyles = `
   margin: 0 auto 12px;
 }
 .wiz-field-card-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-head);
   font-size: 16px;
   font-weight: 700;
   color: #f0f4fa;
@@ -359,7 +359,7 @@ const wizardStyles = `
   justify-content: center;
 }
 .wiz-big-icon-cell-label {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-head);
   font-size: 15px;
   font-weight: 700;
   color: #f0f4fa;
@@ -387,7 +387,7 @@ const wizardStyles = `
   border-radius: 8px;
   padding: 9px 10px;
   color: #d4dae6;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 13px;
   outline: none;
   transition: border-color 0.2s;
@@ -489,7 +489,7 @@ const wizardStyles = `
   border: none;
   border-radius: 9px;
   padding: 10px 20px;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-head);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -1216,16 +1216,16 @@ function EmployeeStep2() {
             <Clock style={{ width: 60, height: 60, color: "#10b981" }} />
           </div>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 700, color: "#f0f4fa" }}>Pulsa el botón</div>
+            <div style={{ fontFamily: "var(--font-head)", fontSize: 22, fontWeight: 700, color: "#f0f4fa" }}>Pulsa el botón</div>
             <div style={{ fontSize: 13, color: "#455068", marginTop: 4 }}>Tap the button</div>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 12, padding: "12px 24px", textAlign: "center" }}>
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 700, color: "#10b981" }}>ENTRADA</div>
+              <div style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 700, color: "#10b981" }}>ENTRADA</div>
               <div style={{ fontSize: 11, color: "#455068" }}>Clock In</div>
             </div>
             <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 12, padding: "12px 24px", textAlign: "center" }}>
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 700, color: "#ef4444" }}>SALIDA</div>
+              <div style={{ fontFamily: "var(--font-head)", fontSize: 18, fontWeight: 700, color: "#ef4444" }}>SALIDA</div>
               <div style={{ fontSize: 11, color: "#455068" }}>Clock Out</div>
             </div>
           </div>

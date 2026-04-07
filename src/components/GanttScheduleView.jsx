@@ -204,19 +204,19 @@ export function GanttScheduleView({ projects, onProjectClick }) {
       <div style={{ display: "flex", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
         <div className="card" style={{ padding: "10px 16px", flex: "1 1 120px", minWidth: 120 }}>
           <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", letterSpacing: 1 }}>Active Projects</div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "var(--green)", fontFamily: "var(--font-mono)" }}>{stats.active}</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--green)", fontFamily: "var(--font-mono)" }}>{stats.active}</div>
         </div>
         <div className="card" style={{ padding: "10px 16px", flex: "1 1 120px", minWidth: 120 }}>
           <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", letterSpacing: 1 }}>Crew Deployed</div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "var(--blue)", fontFamily: "var(--font-mono)" }}>{stats.totalCrew}</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--blue)", fontFamily: "var(--font-mono)" }}>{stats.totalCrew}</div>
         </div>
         <div className="card" style={{ padding: "10px 16px", flex: "1 1 120px", minWidth: 120 }}>
           <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", letterSpacing: 1 }}>Backlog</div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "var(--amber)", fontFamily: "var(--font-mono)" }}>{stats.backlogWeeks}<span style={{ fontSize: 12, fontWeight: 400 }}> wks</span></div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--amber)", fontFamily: "var(--font-mono)" }}>{stats.backlogWeeks}<span style={{ fontSize: 12, fontWeight: 400 }}> wks</span></div>
         </div>
         <div className="card" style={{ padding: "10px 16px", flex: "1 1 120px", minWidth: 120 }}>
           <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", letterSpacing: 1 }}>Scheduled</div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "var(--text)", fontFamily: "var(--font-mono)" }}>{ganttProjects.length}<span style={{ fontSize: 12, fontWeight: 400, color: "var(--text3)" }}> / {projects.length}</span></div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--text)", fontFamily: "var(--font-mono)" }}>{ganttProjects.length}<span style={{ fontSize: 12, fontWeight: 400, color: "var(--text3)" }}> / {projects.length}</span></div>
         </div>
       </div>
 

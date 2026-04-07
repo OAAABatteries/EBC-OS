@@ -842,13 +842,13 @@ export function TimeClockAdmin({ app }) {
               <div className="flex gap-16 mb-12" style={{ alignItems: "center" }}>
                 <div style={{ textAlign: "center" }}>
                   <div className="text-xs text-muted">Efficiency</div>
-                  <div style={{ fontSize: 32, fontWeight: 800, color: teamOptResult.score >= 70 ? "var(--green)" : teamOptResult.score >= 40 ? "var(--amber)" : "var(--red)" }}>
+                  <div style={{ fontSize: 32, fontWeight: 700, color: teamOptResult.score >= 70 ? "var(--green)" : teamOptResult.score >= 40 ? "var(--amber)" : "var(--red)" }}>
                     {teamOptResult.score}/100
                   </div>
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="text-xs text-muted">Grade</div>
-                  <div style={{ fontSize: 32, fontWeight: 800, color: "var(--amber)" }}>{teamOptResult.grade}</div>
+                  <div style={{ fontSize: 32, fontWeight: 700, color: "var(--amber)" }}>{teamOptResult.grade}</div>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div className="text-sm text-muted">{teamOptResult.summary}</div>

@@ -48,7 +48,7 @@ const loginStyles = `
   background: #06080c;
   position: relative;
   overflow: hidden;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
 }
 .login-bg {
   position: absolute;
@@ -103,7 +103,7 @@ const loginStyles = `
   text-align: left;
 }
 .splash-logo-name {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-head);
   font-size: 18px;
   font-weight: 400;
   letter-spacing: 1.5px;
@@ -115,7 +115,7 @@ const loginStyles = `
   font-size: 22px;
 }
 .splash-tagline {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-head);
   font-size: 11px;
   letter-spacing: 4px;
   text-transform: uppercase;
@@ -180,7 +180,7 @@ const loginStyles = `
   text-align: left;
 }
 .login-logo-name {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-head);
   font-size: 15px;
   font-weight: 400;
   letter-spacing: 1.2px;
@@ -233,7 +233,7 @@ const loginStyles = `
   border-radius: 10px;
   padding: 13px 14px;
   color: #d4dae6;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   font-size: 15px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   outline: none;
@@ -284,7 +284,7 @@ const loginStyles = `
   border: none;
   border-radius: 10px;
   padding: 15px;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-head);
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 1.5px;
@@ -342,7 +342,7 @@ const loginStyles = `
   border: none;
   cursor: pointer;
   text-decoration: underline;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
 }
 .login-pin-link:hover { color: #f0a83a; }
 .login-lang-toggle {
@@ -358,7 +358,7 @@ const loginStyles = `
   color: #8494ad;
   cursor: pointer;
   transition: border-color 0.2s;
-  font-family: 'Barlow', sans-serif;
+  font-family: var(--font-body);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -375,7 +375,7 @@ const loginStyles = `
 /* Password change modal */
 .login-change-pw { animation: splashRise 0.4s ease; }
 .login-change-pw-title {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-head);
   font-size: 20px;
   font-weight: 600;
   color: #e09422;
@@ -410,7 +410,7 @@ const loginStyles = `
   border: 1px solid #1c2233;
   border-radius: 10px;
   padding: 14px 8px;
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: var(--font-head);
   font-size: 20px;
   font-weight: 600;
   color: #d4dae6;
