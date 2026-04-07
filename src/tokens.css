@@ -1,4 +1,4 @@
-/* ── SPACING SCALE ──────────────────────────────────────────── */
+/* ── SPACING SCALE (4-point grid only) ─────────────────────── */
 :root {
   --space-1:   4px;
   --space-2:   8px;
@@ -10,58 +10,93 @@
   --space-10: 40px;
   --space-12: 48px;
 
-  /* ── TYPOGRAPHY SCALE ────────────────────────────────────── */
-  --text-xs:      10px;  /* timestamps, fine print, overline captions */
-  --text-sm:      11px;  /* badge text, kpi-label */
-  --text-base:    13px;  /* primary body: table cells, btn, toast, form-input */
-  --text-md:      15px;  /* card titles, emphasis text */
-  --text-lg:      18px;  /* modal-title, logo */
-  --text-display: 28px;  /* kpi-value display figures */
+  /* ── TYPOGRAPHY SCALE (role-based, fixed line heights) ────── */
+  /* Hero: clock display, live numerals */
+  --text-hero:     48px;
+  --lh-hero:       52px;
+
+  /* Screen title: "My Schedule", "Request Material" */
+  --text-title:    28px;
+  --lh-title:      32px;
+
+  /* Section title: "Appearance", "Notifications" */
+  --text-section:  18px;
+  --lh-section:    22px;
+
+  /* Card/row/project title, input text, button label */
+  --text-card:     17px;
+  --lh-card:       22px;
+
+  /* Secondary text: metadata, helper text, roles */
+  --text-secondary: 15px;
+  --lh-secondary:   20px;
+
+  /* Field label */
+  --text-label:    13px;
+  --lh-label:      16px;
+
+  /* Tab/nav label, badge text */
+  --text-tab:      11px;
+  --lh-tab:        14px;
+
+  /* Legacy aliases (for existing class references during migration) */
+  --text-xs:       10px;
+  --text-sm:       11px;
+  --text-base:     13px;
+  --text-md:       15px;
+  --text-lg:       18px;
+  --text-display:  28px;
 
   /* Font weights */
   --weight-normal: 400;
+  --weight-medium: 500;
   --weight-semi:   600;
   --weight-bold:   700;
 
-  /* Line heights */
-  --leading-tight:   1.2;
-  --leading-normal:  1.5;
-  --leading-relaxed: 1.75;
-
   /* Letter spacing */
-  --tracking-tight:  -0.01em;
-  --tracking-normal:  0;
-  --tracking-wide:    0.05em;
-  --tracking-wider:   0.08em;
+  --tracking-hero:    -0.02em;
+  --tracking-title:   -0.01em;
+  --tracking-normal:   0;
+  --tracking-label:    0.01em;
 
   /* ── CREW VIEW OVERRIDES ──────────────────────────────────── */
   /* Applied via .crew-view class on EmployeeView root */
-  /* Larger font sizes for field readability (sunlight, gloves, distance) */
+  /* Bumps sizes for field readability (sunlight, gloves, distance) */
 }
 .crew-view {
-  --text-sm:      13px;
-  --text-base:    16px;
-  --text-lg:      22px;
+  --text-sm:        13px;
+  --text-base:      16px;
+  --text-lg:        22px;
+  --text-label:     15px;
+  --text-secondary: 17px;
+  --text-card:      19px;
 }
 :root {
-  /* ── BORDER RADIUS SCALE ─────────────────────────────────── */
-  --radius-xs:   4px;
-  --radius-sm:   6px;
-  --radius:     10px;
-  --radius-lg:  12px;
-  --radius-xl:  16px;
-  --radius-pill: 99px;
+  /* ── BORDER RADIUS (three levels only) ──────────────────── */
+  --radius-control: 12px;  /* inputs, buttons, chips, compact elements */
+  --radius-card:    16px;  /* cards, grouped containers, schedule blocks */
+  --radius-sheet:   24px;  /* bottom sheets, large modals, major overlays */
+  --radius-pill:    99px;  /* badge pills only */
 
-  /* ── SHADOW SCALE ───────────────────────────────────────── */
-  --shadow-sm:  0 1px 2px rgba(0,0,0,0.15);
-  --shadow-md:  0 2px 8px rgba(0,0,0,0.2);
-  --shadow-lg:  0 4px 16px rgba(0,0,0,0.25);
+  /* Legacy aliases (for migration — map to nearest spec value) */
+  --radius-xs:   4px;   /* deprecated: use --radius-control */
+  --radius-sm:  12px;   /* remapped from 6px to 12px */
+  --radius:     16px;   /* remapped from 10px to 16px */
+  --radius-lg:  12px;   /* same as --radius-control */
+  --radius-xl:  16px;   /* same as --radius-card */
 
-  /* ── TOUCH & INTERACTION ─────────────────────────────────── */
-  --touch-min: 44px;
+  /* ── SHADOW SCALE (soft, nearly invisible in light mode) ── */
+  --shadow-sm:  0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md:  0 2px 6px rgba(0,0,0,0.08);
+  --shadow-lg:  0 4px 12px rgba(0,0,0,0.12);
+
+  /* ── CONTROL HEIGHTS ────────────────────────────────────── */
+  --control-primary: 52px;  /* text inputs, primary buttons, selects */
+  --touch-min:       44px;  /* secondary buttons, list rows, tab items */
+  --control-row:     56px;  /* list rows, bottom sheet items */
+  --control-textarea: 120px;
 
   /* ── FOCUS RING ──────────────────────────────────────────── */
-  /* Uses --amber (theme primitive) — resolves lazily at paint time */
   --focus-ring: 0 0 0 2px var(--amber);
 
   /* ── TRANSITIONS ─────────────────────────────────────────── */
