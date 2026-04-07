@@ -1297,7 +1297,7 @@ export function EmployeeView({ app }) {
                             <div className="emp-project-meta">
                               {areaLabel} &middot; {p.perimeter.length} pts
                               {position && (
-                                <span style={{ marginLeft: 6, color: isInside ? "#10b981" : "#ef4444" }}>
+                                <span style={{ marginLeft: 6, color: isInside ? "var(--green)" : "var(--red)" }}>
                                   {isInside ? "Inside" : "Outside"}
                                 </span>
                               )}

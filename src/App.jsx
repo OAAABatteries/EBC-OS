@@ -2140,7 +2140,7 @@ function App({ auth, onLogout }) {
         }
         const selectedEvts = bidCalSelected && evMap[bidCalSelected] ? evMap[bidCalSelected] : [];
         const BC_TYPES = ["Site Walk", "Pre-Bid Meeting", "Plan Review", "Follow Up"];
-        const dotClr = (sc) => sc === "status-awarded" ? "var(--green)" : sc === "status-lost" ? "var(--red)" : sc === "status-nobid" ? "#64748b" : sc === "site-walk" ? "var(--blue)" : sc === "pre-bid" ? "var(--green)" : sc === "plan-review" ? "#8b5cf6" : sc === "follow-up" ? "var(--red)" : "var(--amber)";
+        const dotClr = (sc) => sc === "status-awarded" ? "var(--green)" : sc === "status-lost" ? "var(--red)" : sc === "status-nobid" ? "var(--text3)" : sc === "site-walk" ? "var(--blue)" : sc === "pre-bid" ? "var(--green)" : sc === "plan-review" ? "var(--purple, #8b5cf6)" : sc === "follow-up" ? "var(--red)" : "var(--amber)";
         return (
           <div className="bidcal-wrap">
             <div className="bidcal-main">
