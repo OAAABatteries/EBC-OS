@@ -738,13 +738,13 @@ export function ForemanView({ app }) {
     return (
       <div className="employee-app">
         <header className="portal-login-header">
-          <div className="employee-logo" style={{ display: "flex", alignItems: "center", gap: 8 }}><img src="/ebc-eagle-white.png" alt="EBC" style={{ height: 28, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
+          <div className="employee-logo frm-flex-row-center"><img src="/ebc-eagle-white.png" alt="EBC" className="portal-header-logo" onError={(e) => e.target.style.display = "none"} /></div>
           <span className="text-sm text-muted">{t("Foreman Portal")}</span>
         </header>
         <div className="employee-body">
           <div className="login-wrap">
             <div className="login-title">{t("Sign In")}</div>
-            <div className="text-sm text-muted" style={{ textAlign: "center", marginTop: -12 }}>{t("Foreman Portal")}</div>
+            <div className="text-sm text-muted frm-text-center" style={{ marginTop: -12 }}>{t("Foreman Portal")}</div>
             <div className="login-form">
               <input
                 type="email"
@@ -1059,12 +1059,12 @@ export function ForemanView({ app }) {
         {foremanTab === "settings" && (
           <div className="settings-wrap">
             {/* Back button */}
-            <button className="btn btn-ghost btn-sm" style={{ marginBottom: "var(--space-3)" }} onClick={() => setForemanTab("dashboard")}>&#9664; {t("Back")}</button>
+            <button className="btn btn-ghost btn-sm frm-mb-12" onClick={() => setForemanTab("dashboard")}>&#9664; {t("Back")}</button>
             {/* Profile */}
             <div className="settings-section">
               <div className="settings-section-title">{t("Profile")}</div>
               <div className="settings-avatar">{getInitials(activeForeman.name)}</div>
-              <div style={{ textAlign: "center", marginBottom: 12 }}>
+              <div className="frm-text-center frm-mb-12">
                 <div className="text-md font-semi">{activeForeman.name}</div>
                 <div className="text-xs text-muted">{activeForeman.role} · {activeForeman.phone}</div>
                 <div className="text-xs text-dim">{activeForeman.email}</div>
@@ -1083,7 +1083,7 @@ export function ForemanView({ app }) {
                   </div>
                 ))}
               </div>
-              <div className="settings-row" style={{ marginTop: "var(--space-3)" }}>
+              <div className="settings-row frm-mt-12">
                 <span className="settings-label">{t("Language")}</span>
                 <div className="lang-toggle">
                   <button className={lang === "en" ? "active" : ""} onClick={() => setLang("en")}>EN</button>
@@ -1141,30 +1141,30 @@ export function ForemanView({ app }) {
             {/* ═══ CLOCK TAB ═══ */}
             {foremanTab === "clock" && (
               <div className="emp-content">
-                <div style={{ textAlign: "center", padding: "30px 20px" }}>
+                <div className="frm-text-center" style={{ padding: "30px 20px" }}>
                   {/* Big clock display */}
-                  <div style={{ fontSize: 42, fontWeight: 700, marginBottom: 6, fontFamily: "monospace" }}>
+                  <div className="frm-clock-big">
                     {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </div>
-                  <div className="text-sm text-muted" style={{ marginBottom: 24 }}>
+                  <div className="text-sm text-muted frm-mb-24">
                     {new Date().toLocaleDateString(lang === "es" ? "es-US" : "en-US", { weekday: "long", month: "long", day: "numeric" })}
                   </div>
 
-                  {gpsStatus && <div className="text-xs text-muted" style={{ marginBottom: 10 }}>{gpsStatus}</div>}
+                  {gpsStatus && <div className="text-xs text-muted frm-mb-10">{gpsStatus}</div>}
 
                   {/* ── Project Lookup for Clock-In ── */}
                   {!isClockedIn && (
-                    <div style={{ marginBottom: 20, textAlign: "left", maxWidth: 400, margin: "0 auto 20px" }}>
-                      <label className="form-label" style={{ textAlign: "center", display: "block", marginBottom: 8 }}>{t("Select Project")}</label>
+                    <div className="frm-project-search-wrap">
+                      <label className="form-label frm-text-center" style={{ display: "block", marginBottom: 8 }}>{t("Select Project")}</label>
                       <input
                         className="form-input"
                         type="text"
                         placeholder={t("Search project name or address...")}
                         value={clockProjectSearch}
                         onChange={(e) => setClockProjectSearch(e.target.value)}
-                        style={{ marginBottom: 6, textAlign: "center" }}
+                        className="frm-text-center frm-mb-6"
                       />
-                      <div style={{ maxHeight: 200, overflowY: "auto", borderRadius: 8, background: "var(--glass-bg)" }}>
+                      <div className="frm-project-list">
                         {(myProjects || projects)
                           .filter(p => {
                             if (!clockProjectSearch.trim()) return true;
@@ -1197,7 +1197,7 @@ export function ForemanView({ app }) {
                           ))}
                       </div>
                       {selectedProject && (
-                        <div className="text-sm font-semi" style={{ textAlign: "center", marginTop: 10, color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                        <div className="text-sm font-semi frm-selected-project">
                           <MapPin size={14} />{selectedProject.name}
                         </div>
                       )}
@@ -1207,7 +1207,7 @@ export function ForemanView({ app }) {
                   {!isClockedIn ? (
                     <button
                       className="btn btn-primary"
-                      style={{ width: 200, height: 200, borderRadius: "50%", fontSize: 22, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "0 auto" }}
+                      className="frm-clock-btn"
                       onClick={handleClockIn}
                       disabled={!selectedProjectId}
                     >
@@ -1216,12 +1216,12 @@ export function ForemanView({ app }) {
                     </button>
                   ) : (
                     <>
-                      <div style={{ marginBottom: "var(--space-4)" }}>
+                      <div className="frm-mb-16">
                         <div className="text-xs text-muted">{t("Clocked in at")}</div>
-                        <div style={{ fontSize: 20, fontWeight: 600, color: "var(--green)" }}>
+                        <div className="frm-font-20" style={{ color: "var(--green)" }}>
                           {new Date(clockEntry.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </div>
-                        <div className="text-xs text-muted" style={{ marginTop: 4 }}>
+                        <div className="text-xs text-muted frm-mt-4">
                           {(() => {
                             const elapsed = Date.now() - new Date(clockEntry.clockIn).getTime();
                             const hrs = Math.floor(elapsed / 3600000);
@@ -1232,7 +1232,7 @@ export function ForemanView({ app }) {
                       </div>
                       <button
                         className="btn"
-                        style={{ width: 200, height: 200, borderRadius: "50%", fontSize: 22, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "0 auto", background: "var(--red)", color: "#fff" }}
+                        className="frm-clock-out-btn"
                         onClick={handleClockOut}
                       >
                         <StopCircle size={40} />
@@ -1243,8 +1243,8 @@ export function ForemanView({ app }) {
 
                   {/* Today's entries */}
                   {myTodayEntries.length > 0 && (
-                    <div style={{ marginTop: 30, textAlign: "left" }}>
-                      <div className="section-title" style={{ fontSize: 14, marginBottom: 8 }}>{t("Today's Time Log")}</div>
+                    <div className="frm-mt-30">
+                      <div className="section-title frm-font-14 frm-mb-8">{t("Today's Time Log")}</div>
                       {myTodayEntries.map((te, i) => (
                         <div key={i} className="foreman-team-row" style={{ padding: "8px 12px", marginBottom: 4 }}>
                           <div>
@@ -1255,17 +1255,17 @@ export function ForemanView({ app }) {
                               {projects.find(p => p.id === te.projectId)?.name || t("General")}
                             </div>
                           </div>
-                          <div style={{ fontWeight: 600, color: "var(--accent)" }}>{te.totalHours}h</div>
+                          <div className="foreman-team-hours">{te.totalHours}h</div>
                         </div>
                       ))}
-                      <div className="text-sm font-semi" style={{ textAlign: "right", marginTop: 8, color: "var(--accent)" }}>
+                      <div className="text-sm font-semi frm-text-right frm-mt-8 frm-amber">
                         {t("Total")}: {myTodayHours.toFixed(1)}h
                       </div>
                     </div>
                   )}
 
                   {/* Report Problem button */}
-                  <div style={{ marginTop: "var(--space-8)" }}>
+                  <div className="frm-mt-30">
                     <FieldButton variant="warning" className="foreman-report-problem-btn" onClick={() => setShowReportProblem(true)} t={t}>
                       <AlertTriangle size={18} /> {t("Report a Problem")}
                     </FieldButton>
@@ -1365,25 +1365,25 @@ export function ForemanView({ app }) {
                 )}
 
                 {/* Today's Activity Summary — deliveries, open punch, pending T&M, production */}
-                <div style={{ marginTop: "var(--space-8)" }}>
+                <div className="frm-mt-30">
                   <div className="foreman-dashboard-section-label">{t("TODAY'S ACTIVITY")}</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
-                    <div style={{ padding: "10px 12px", background: "var(--bg2)", borderRadius: 8 }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: "var(--red)" }}>{openPunchCount}</div>
+                  <div className="frm-activity-grid">
+                    <div className="frm-activity-tile">
+                      <div className="frm-activity-value" style={{ color: "var(--red)" }}>{openPunchCount}</div>
                       <div className="text-xs text-muted">{t("Open Punch")}</div>
                     </div>
-                    <div style={{ padding: "10px 12px", background: "var(--bg2)", borderRadius: 8 }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: "var(--amber)" }}>{pendingTmCount}</div>
+                    <div className="frm-activity-tile">
+                      <div className="frm-activity-value" className="frm-amber">{pendingTmCount}</div>
                       <div className="text-xs text-muted">{t("Pending T&M")}</div>
                     </div>
-                    <div style={{ padding: "10px 12px", background: "var(--bg2)", borderRadius: 8 }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: "var(--green)" }}>
+                    <div className="frm-activity-tile">
+                      <div className="frm-activity-value" style={{ color: "var(--green)" }}>
                         {(productionLogs || []).filter(pl => String(pl.projectId) === String(selectedProjectId) && pl.status !== "deleted" && (pl.date === new Date().toISOString().slice(0,10) || (pl.createdAt && pl.createdAt.startsWith(new Date().toISOString().slice(0,10))))).length}
                       </div>
                       <div className="text-xs text-muted">{t("Production Today")}</div>
                     </div>
-                    <div style={{ padding: "10px 12px", background: "var(--bg2)", borderRadius: 8 }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: "var(--blue)" }}>
+                    <div className="frm-activity-tile">
+                      <div className="frm-activity-value" style={{ color: "var(--blue)" }}>
                         {projectMatRequests.filter(r => r.status === "approved" || r.status === "in-transit").length}
                       </div>
                       <div className="text-xs text-muted">{t("Deliveries Pending")}</div>
@@ -1401,10 +1401,10 @@ export function ForemanView({ app }) {
                       .slice(0, 4);
                     if (upcoming.length === 0) return null;
                     return (
-                      <div style={{ marginTop: "var(--space-3)" }}>
+                      <div className="frm-mt-12">
                         <div className="text-xs font-bold mb-4">{t("Upcoming")}</div>
                         {upcoming.map((ev, i) => (
-                          <div key={i} className="text-xs" style={{ padding: "4px 0", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between" }}>
+                          <div key={i} className="text-xs frm-flex-between" style={{ padding: "4px 0", borderBottom: "1px solid var(--border)" }}>
                             <span>{ev.title || ev.type}</span>
                             <span className="text-muted">{new Date(ev.date || ev.start).toLocaleDateString(lang === "es" ? "es" : "en", { weekday: "short", month: "short", day: "numeric" })}</span>
                           </div>
@@ -1419,30 +1419,30 @@ export function ForemanView({ app }) {
             {/* ═══ DASHBOARD TAB (legacy project KPI view — preserved for reference, unreachable with new tab structure) ═══ */}
             {foremanTab === "dashboard-kpi-legacy" && (
               <div className="emp-content">
-                <div style={{ textAlign: "center", padding: "30px 20px" }}>
+                <div className="frm-text-center" style={{ padding: "30px 20px" }}>
                   {/* Big clock display */}
-                  <div style={{ fontSize: 42, fontWeight: 700, marginBottom: 6, fontFamily: "monospace" }}>
+                  <div className="frm-clock-big">
                     {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </div>
-                  <div className="text-sm text-muted" style={{ marginBottom: 24 }}>
+                  <div className="text-sm text-muted frm-mb-24">
                     {new Date().toLocaleDateString(lang === "es" ? "es-US" : "en-US", { weekday: "long", month: "long", day: "numeric" })}
                   </div>
 
-                  {gpsStatus && <div className="text-xs text-muted" style={{ marginBottom: 10 }}>{gpsStatus}</div>}
+                  {gpsStatus && <div className="text-xs text-muted frm-mb-10">{gpsStatus}</div>}
 
                   {/* ── Project Lookup for Clock-In ── */}
                   {!isClockedIn && (
-                    <div style={{ marginBottom: 20, textAlign: "left", maxWidth: 400, margin: "0 auto 20px" }}>
-                      <label className="form-label" style={{ textAlign: "center", display: "block", marginBottom: 8 }}>{t("Select Project")}</label>
+                    <div className="frm-project-search-wrap">
+                      <label className="form-label frm-text-center" style={{ display: "block", marginBottom: 8 }}>{t("Select Project")}</label>
                       <input
                         className="form-input"
                         type="text"
                         placeholder={t("Search project name or address...")}
                         value={clockProjectSearch}
                         onChange={(e) => setClockProjectSearch(e.target.value)}
-                        style={{ marginBottom: 6, textAlign: "center" }}
+                        className="frm-text-center frm-mb-6"
                       />
-                      <div style={{ maxHeight: 200, overflowY: "auto", borderRadius: 8, background: "var(--glass-bg)" }}>
+                      <div className="frm-project-list">
                         {(myProjects || projects)
                           .filter(p => {
                             if (!clockProjectSearch.trim()) return true;
@@ -1475,7 +1475,7 @@ export function ForemanView({ app }) {
                           ))}
                       </div>
                       {selectedProject && (
-                        <div className="text-sm font-semi" style={{ textAlign: "center", marginTop: 10, color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                        <div className="text-sm font-semi frm-selected-project">
                           <MapPin size={14} />{selectedProject.name}
                         </div>
                       )}
@@ -1485,7 +1485,7 @@ export function ForemanView({ app }) {
                   {!isClockedIn ? (
                     <button
                       className="btn btn-primary"
-                      style={{ width: 200, height: 200, borderRadius: "50%", fontSize: 22, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "0 auto" }}
+                      className="frm-clock-btn"
                       onClick={handleClockIn}
                       disabled={!selectedProjectId}
                     >
@@ -1494,12 +1494,12 @@ export function ForemanView({ app }) {
                     </button>
                   ) : (
                     <>
-                      <div style={{ marginBottom: "var(--space-4)" }}>
+                      <div className="frm-mb-16">
                         <div className="text-xs text-muted">{t("Clocked in at")}</div>
-                        <div style={{ fontSize: 20, fontWeight: 600, color: "var(--green)" }}>
+                        <div className="frm-font-20" style={{ color: "var(--green)" }}>
                           {new Date(clockEntry.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </div>
-                        <div className="text-xs text-muted" style={{ marginTop: 4 }}>
+                        <div className="text-xs text-muted frm-mt-4">
                           {(() => {
                             const elapsed = Date.now() - new Date(clockEntry.clockIn).getTime();
                             const hrs = Math.floor(elapsed / 3600000);
@@ -1510,7 +1510,7 @@ export function ForemanView({ app }) {
                       </div>
                       <button
                         className="btn"
-                        style={{ width: 200, height: 200, borderRadius: "50%", fontSize: 22, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", margin: "0 auto", background: "var(--red)", color: "#fff" }}
+                        className="frm-clock-out-btn"
                         onClick={handleClockOut}
                       >
                         <StopCircle size={40} />
@@ -1521,8 +1521,8 @@ export function ForemanView({ app }) {
 
                   {/* Today's entries */}
                   {myTodayEntries.length > 0 && (
-                    <div style={{ marginTop: 30, textAlign: "left" }}>
-                      <div className="section-title" style={{ fontSize: 14, marginBottom: 8 }}>{t("Today's Time Log")}</div>
+                    <div className="frm-mt-30">
+                      <div className="section-title frm-font-14 frm-mb-8">{t("Today's Time Log")}</div>
                       {myTodayEntries.map((te, i) => (
                         <div key={i} className="foreman-team-row" style={{ padding: "8px 12px", marginBottom: 4 }}>
                           <div>
@@ -1533,30 +1533,30 @@ export function ForemanView({ app }) {
                               {projects.find(p => String(p.id) === String(te.projectId))?.name || t("General")}
                             </div>
                           </div>
-                          <div style={{ fontWeight: 600, color: "var(--accent)" }}>{te.totalHours}h</div>
+                          <div className="foreman-team-hours">{te.totalHours}h</div>
                         </div>
                       ))}
-                      <div className="text-sm font-semi" style={{ textAlign: "right", marginTop: 8, color: "var(--accent)" }}>
+                      <div className="text-sm font-semi frm-text-right frm-mt-8 frm-amber">
                         {t("Total")}: {myTodayHours.toFixed(1)}h
                       </div>
                     </div>
                   )}
 
                   {/* ── Crew Clock-In/Out ── */}
-                  <div style={{ marginTop: 30, textAlign: "left" }}>
-                    <div className="section-title" style={{ fontSize: 14, marginBottom: 12 }}>{t("Crew Time Clock")}</div>
+                  <div className="frm-mt-30">
+                    <div className="section-title frm-font-14 frm-mb-12">{t("Crew Time Clock")}</div>
 
                     {/* Add team member — searchable dropdown */}
-                    <div style={{ position: "relative", marginBottom: 16 }}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <div style={{ flex: 1, position: "relative" }}>
+                    <div className="frm-mb-16" style={{ position: "relative" }}>
+                      <div className="frm-flex-row-center">
+                        <div className="frm-flex-1" style={{ position: "relative" }}>
                           <input
                             type="text"
                             placeholder={t("Search or select team member...")}
                             value={teamSearch || ""}
                             onChange={e => setCrewSearch(e.target.value)}
                             onFocus={() => setCrewSearch(teamSearch || "")}
-                            style={{ width: "100%", padding: "10px 14px", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 8, color: "var(--text)", fontSize: 14 }}
+                            className="frm-crew-search-input"
                           />
                           {/* Dropdown list */}
                           {teamSearch !== null && teamSearch !== undefined && (() => {
@@ -1566,19 +1566,19 @@ export function ForemanView({ app }) {
                               ? allEmp.filter(e => e.name.toLowerCase().includes(q))
                               : allEmp;
                             if (filtered.length === 0 && q.length > 0) return (
-                              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "0 0 8px 8px", padding: "10px 14px" }}>
+                              <div className="frm-crew-dropdown frm-crew-dropdown-empty">
                                 <span className="text-sm text-muted">{t("No employees found")}</span>
                               </div>
                             );
                             if (q.length === 0 && !document.activeElement?.matches?.('input[placeholder*="Search"]')) return null;
                             return (
-                              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "0 0 8px 8px", maxHeight: 260, overflowY: "auto" }}>
+                              <div className="frm-crew-dropdown frm-crew-dropdown-scroll">
                                 {filtered.slice(0, 15).map(c => {
                                   const isIn = !!teamClocks[c.id];
                                   const isAssigned = teamForProject.some(cp => cp.id === c.id);
                                   return (
                                     <div key={c.id}
-                                      style={{ padding: "8px 14px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+                                      className="frm-crew-dropdown-row"
                                       onMouseDown={e => e.preventDefault()}
                                       onClick={() => {
                                         if (!isIn) { handleCrewClockIn(c.id); }
@@ -1589,7 +1589,7 @@ export function ForemanView({ app }) {
                                       <div className={`foreman-avatar foreman-avatar--sm ${isIn ? "foreman-avatar--active" : "foreman-avatar--inactive"}`}>
                                         {c.name.split(" ").map(n => n[0]).join("")}
                                       </div>
-                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div className="frm-flex-1">
                                         <div className="text-sm font-semi">{c.name}</div>
                                         <div className="text-xs text-muted">
                                           {c.role || c.title || ""}
@@ -1615,7 +1615,7 @@ export function ForemanView({ app }) {
                       const clockedIn = clockedInIds.map(id => employees.find(e => e.id === id)).filter(Boolean);
                       if (clockedIn.length === 0) return null;
                       return (
-                        <div style={{ marginBottom: "var(--space-4)" }}>
+                        <div className="frm-mb-16">
                           <div className="foreman-subsection-label">{t("Clocked In")} ({clockedIn.length})</div>
                           <div className="foreman-crew-grid">
                             {clockedIn.map(c => {
@@ -1628,14 +1628,14 @@ export function ForemanView({ app }) {
                                   <div className="foreman-avatar foreman-avatar--md foreman-avatar--active">
                                     {c.name.split(" ").map(n => n[0]).join("")}
                                   </div>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div className="frm-flex-1">
                                     <div className="text-sm font-semi">{c.name}</div>
                                     <div className="text-xs text-muted">
-                                      {c.role || c.title || ""}{!isAssigned && <span style={{ color: "var(--amber)" }}> · {t("Other team")}</span>}
+                                      {c.role || c.title || ""}{!isAssigned && <span className="frm-amber"> · {t("Other team")}</span>}
                                       {todayTotal > 0 ? ` · ${todayTotal.toFixed(1)}h ${t("today")}` : ""}
                                     </div>
                                     {clockData && (
-                                      <div className="text-xs" style={{ color: "var(--green)", marginTop: 2 }}>
+                                      <div className="text-xs frm-mt-2" style={{ color: "var(--green)" }}>
                                         {t("In since")} {new Date(clockData.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                                         {" · "}{(() => { const m = Math.floor((Date.now() - new Date(clockData.clockIn).getTime()) / 60000); return `${Math.floor(m/60)}h ${m%60}m`; })()}
                                       </div>
@@ -1669,7 +1669,7 @@ export function ForemanView({ app }) {
                                   <div className="foreman-avatar foreman-avatar--md foreman-avatar--inactive">
                                     {c.name.split(" ").map(n => n[0]).join("")}
                                   </div>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div className="frm-flex-1">
                                     <div className="text-sm font-semi">{c.name}</div>
                                     <div className="text-xs text-muted">{t(c.role)}{todayTotal > 0 ? ` · ${todayTotal.toFixed(1)}h ${t("today")}` : ""}</div>
                                   </div>
@@ -1701,7 +1701,7 @@ export function ForemanView({ app }) {
               return (
                 <div className="emp-content">
                   <div className="section-header">
-                    <div className="section-title" style={{ fontSize: "var(--text-md)" }}>{selectedProject.name}</div>
+                    <div className="section-title frm-section-title-md">{selectedProject.name}</div>
                   </div>
                   <div className="text-xs text-muted mb-8">
                     {selectedProject.gc} · {selectedProject.phase} · {selectedProject.address}
@@ -1780,24 +1780,24 @@ export function ForemanView({ app }) {
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-                    <div className="foreman-kpi-card" style={{ flex: 1 }}>
+                  <div className="frm-flex-row frm-mb-12" style={{ gap: 10 }}>
+                    <div className="foreman-kpi-card" className="frm-flex-1">
                       <div className="foreman-kpi-label">{t("Crew Members")}</div>
                       <div className="foreman-kpi-value" style={{ fontSize: 18 }}>{teamForProject.length}</div>
                     </div>
-                    <div className="foreman-kpi-card" style={{ flex: 1 }}>
+                    <div className="foreman-kpi-card" className="frm-flex-1">
                       <div className="foreman-kpi-label">{t("Materials")}</div>
                       <div className="foreman-kpi-value" style={{ fontSize: 18 }}>{projectMatRequests.length}</div>
                     </div>
-                    <div className="foreman-kpi-card" style={{ flex: 1 }}>
+                    <div className="foreman-kpi-card" className="frm-flex-1">
                       <div className="foreman-kpi-label">{t("Progress")}</div>
                       <div className="foreman-kpi-value" style={{ fontSize: 18 }}>{selectedProject.progress}%</div>
                     </div>
                   </div>
 
-                  <div className="foreman-kpi-card" style={{ marginBottom: "var(--space-3)" }}>
+                  <div className="foreman-kpi-card frm-mb-12">
                     <div className="foreman-kpi-label">{t("Progress")}</div>
-                    <div className="project-progress-bar" style={{ marginTop: 8 }}>
+                    <div className="project-progress-bar frm-mt-8">
                       <div className="project-progress-fill"
                         style={{ width: `${selectedProject.progress}%` }} />
                     </div>
@@ -1805,16 +1805,16 @@ export function ForemanView({ app }) {
 
                   {/* ── Phase Tracker ── */}
                   <div className="foreman-kpi-card">
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                    <div className="frm-flex-between frm-mb-10">
                       <div>
                         <div className="foreman-kpi-label">{t("Construction Phases")}</div>
-                        <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 2 }}>
+                        <div className="frm-font-11 frm-mt-2" style={{ color: "var(--text2)" }}>
                           {completedCount}/{projPhases.length} {t("complete")}
                           {activePhase ? ` · ${activePhase.name}` : ""}
                         </div>
                       </div>
                       {activePhase && (
-                        <span className="badge badge-amber" style={{ fontSize: 10 }}>{activePhase.name}</span>
+                        <span className="badge badge-amber" className="frm-font-10">{activePhase.name}</span>
                       )}
                     </div>
                     <PhaseTracker
@@ -1828,14 +1828,14 @@ export function ForemanView({ app }) {
 
                   {/* ── RFI Alerts (read-only, field visibility) ── */}
                   {rfiAlerts.length > 0 && (
-                    <div className="foreman-kpi-card" style={{ marginTop: "var(--space-3)" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <div className="foreman-kpi-card frm-mt-12">
+                      <div className="frm-flex-row-center frm-mb-10">
                         <FileQuestion size={16} style={{ color: "var(--amber, #f59e0b)" }} />
                         <div className="foreman-kpi-label" style={{ margin: 0 }}>
                           {t("RFIs Needing Attention")} ({rfiAlerts.length})
                         </div>
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div className="frm-flex-col-6">
                         {rfiAlerts.slice(0, 5).map(r => (
                           <div key={r.id} style={{
                             padding: "8px 12px", borderRadius: 8,
@@ -1845,27 +1845,27 @@ export function ForemanView({ app }) {
                               ? "rgba(34,197,94,0.2)" : "rgba(245,158,11,0.2)"}`,
                           }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                              <div className="text-sm font-semi" style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              <div className="text-sm font-semi" className="frm-flex-1 frm-truncate">
                                 {r.number ? `${r.number}: ` : ""}{r.subject || r.title || r.question}
                               </div>
-                              <span className={`badge ${r.status === "answered" || r.status === "closed" ? "badge-green" : "badge-amber"}`} style={{ fontSize: 9, flexShrink: 0 }}>
+                              <span className={`badge ${r.status === "answered" || r.status === "closed" ? "badge-green" : "badge-amber"}`} className="frm-shrink-0" style={{ fontSize: 9 }}>
                                 {r.status === "answered" || r.status === "closed" ? t("ANSWERED") : t("OPEN")}
                               </span>
                             </div>
                             {(r.status === "answered" || r.status === "closed") && r.response && (
-                              <div className="text-xs" style={{ marginTop: 4, color: "var(--green, #22c55e)", fontWeight: 500 }}>
+                              <div className="text-xs" className="frm-mt-4" style={{ color: "var(--green, #22c55e)", fontWeight: 500 }}>
                                 {t("Response")}: {r.response.length > 120 ? r.response.slice(0, 120) + "..." : r.response}
                               </div>
                             )}
                             {r.drawingRef && (
-                              <div className="text-xs text-muted" style={{ marginTop: 2 }}>
+                              <div className="text-xs text-muted frm-mt-2">
                                 {t("Drawing ref")}: {r.drawingRef}
                               </div>
                             )}
                           </div>
                         ))}
                         {rfiAlerts.length > 5 && (
-                          <button className="cal-nav-btn" style={{ fontSize: 11, alignSelf: "center" }}
+                          <button className="cal-nav-btn" className="frm-font-11" style={{ alignSelf: "center" }}
                             onClick={() => setForemanTab("documents")}>
                             {t("View all")} {rfiAlerts.length} {t("RFIs")} →
                           </button>
@@ -1911,10 +1911,10 @@ export function ForemanView({ app }) {
 
                   {/* ── Roll Call Mode: checkbox crew list with bulk clock-in ── */}
                   {rollCallMode && allDisplayCrew.length > 0 && (
-                    <div style={{ marginBottom: 14, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, padding: 12 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <div className="frm-roll-call-card">
+                      <div className="frm-flex-between frm-mb-10">
                         <span className="text-sm font-bold">{t("Roll Call")} — {t("Select crew to clock in")}</span>
-                        <button className="text-xs" style={{ color: "var(--accent)", background: "none", border: "none", cursor: "pointer" }}
+                        <button className="text-xs" className="frm-btn-unstyled--amber" className="frm-amber"
                           onClick={() => {
                             const allIds = {};
                             allDisplayCrew.forEach(c => { if (!teamClocks[c.id]) allIds[c.id] = true; });
@@ -1932,13 +1932,13 @@ export function ForemanView({ app }) {
                               ? <CheckSquare size={18} style={{ color: "var(--accent)", flexShrink: 0 }} onClick={() => setRollCallSelected(p => ({ ...p, [c.id]: false }))} />
                               : <Square size={18} style={{ color: "var(--text3)", flexShrink: 0 }} onClick={() => setRollCallSelected(p => ({ ...p, [c.id]: true }))} />
                           )}
-                          <span className="text-sm" style={{ flex: 1 }}>{c.name}</span>
+                          <span className="text-sm" className="frm-flex-1">{c.name}</span>
                           {teamClocks[c.id] && <span className="text-xs" style={{ color: "var(--green)" }}>✓ {t("Clocked In")}</span>}
                         </label>
                       ))}
                       <button
                         className="btn btn-primary touch-target"
-                        style={{ width: "100%", marginTop: 12, height: 48, fontSize: 15, fontWeight: 700, borderRadius: 10 }}
+                        className="frm-labor-submit frm-mt-12"
                         onClick={handleBulkClockIn}
                         disabled={Object.values(rollCallSelected).filter(Boolean).length === 0}
                       >
@@ -1949,27 +1949,27 @@ export function ForemanView({ app }) {
 
                   {/* ── Labor Entry Form (Bulk + Single mode) ── */}
                   {showLaborEntry && (
-                    <div style={{ marginBottom: 14, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, padding: 12 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <div className="frm-roll-call-card">
+                      <div className="frm-flex-between frm-mb-10">
                         <div className="text-sm font-bold">{t("Labor Entry")}</div>
-                        <div style={{ display: "flex", gap: 4 }}>
-                          <button className={`btn btn-sm ${bulkLaborMode ? "btn-primary" : "btn-ghost"}`} style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => setBulkLaborMode(true)}>{t("Bulk")}</button>
-                          <button className={`btn btn-sm ${!bulkLaborMode ? "btn-primary" : "btn-ghost"}`} style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => setBulkLaborMode(false)}>{t("Single")}</button>
+                        <div className="frm-flex-row" style={{ gap: 4 }}>
+                          <button className={`btn btn-sm ${bulkLaborMode ? "btn-primary" : "btn-ghost"}`} className="frm-font-11" style={{ padding: "4px 10px" }} onClick={() => setBulkLaborMode(true)}>{t("Bulk")}</button>
+                          <button className={`btn btn-sm ${!bulkLaborMode ? "btn-primary" : "btn-ghost"}`} className="frm-font-11" style={{ padding: "4px 10px" }} onClick={() => setBulkLaborMode(false)}>{t("Single")}</button>
                         </div>
                       </div>
 
                       {/* Crew selection — bulk (checkboxes) or single (dropdown) */}
                       {bulkLaborMode ? (
-                        <div style={{ maxHeight: 180, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 8, marginBottom: 8, padding: 4 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 8px", borderBottom: "1px solid var(--border)" }}>
+                        <div className="frm-labor-crew-list">
+                          <div className="frm-labor-crew-header">
                             <span className="text-xs font-bold">{t("Select crew")} ({Object.values(bulkLaborSelected).filter(Boolean).length})</span>
-                            <button className="text-xs" style={{ color: "var(--accent)", background: "none", border: "none", cursor: "pointer" }}
+                            <button className="text-xs" className="frm-btn-unstyled--amber" className="frm-amber"
                               onClick={() => { const all = {}; allDisplayCrew.forEach(c => { all[c.id] = true; }); setBulkLaborSelected(all); }}>
                               {t("Select All")}
                             </button>
                           </div>
                           {allDisplayCrew.map(c => (
-                            <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", cursor: "pointer", borderBottom: "1px solid var(--border)" }}>
+                            <label key={c.id} className="frm-labor-crew-row">
                               {bulkLaborSelected[c.id]
                                 ? <CheckSquare size={16} style={{ color: "var(--accent)", flexShrink: 0 }} onClick={() => setBulkLaborSelected(p => ({ ...p, [c.id]: false }))} />
                                 : <Square size={16} style={{ color: "var(--text3)", flexShrink: 0 }} onClick={() => setBulkLaborSelected(p => ({ ...p, [c.id]: true }))} />
@@ -1993,9 +1993,9 @@ export function ForemanView({ app }) {
                       <select className="form-input field-input mb-8" value={laborForm.costCode} onChange={e => setLaborForm(p => ({ ...p, costCode: e.target.value }))}>
                         {COST_CODES.map(cc => <option key={cc} value={cc}>{t(cc.charAt(0).toUpperCase() + cc.slice(1))}</option>)}
                       </select>
-                      <div style={{ display: "flex", gap: 8 }}>
+                      <div className="frm-flex-row">
                         <input type="number" className="form-input field-input mb-8" placeholder={t("Hours")} value={laborForm.hours} onChange={e => setLaborForm(p => ({ ...p, hours: e.target.value }))} style={{ flex: 1, fontSize: 16, height: 48 }} />
-                        <select className="form-input field-input mb-8" value={laborForm.payType} onChange={e => setLaborForm(p => ({ ...p, payType: e.target.value }))} style={{ flex: 1 }}>
+                        <select className="form-input field-input mb-8" value={laborForm.payType} onChange={e => setLaborForm(p => ({ ...p, payType: e.target.value }))} className="frm-flex-1">
                           <option value="regular">{t("Regular")}</option>
                           <option value="overtime">{t("Overtime")}</option>
                           <option value="doubletime">{t("Double Time")}</option>
@@ -2005,12 +2005,12 @@ export function ForemanView({ app }) {
 
                       {/* Submit button — bulk or single */}
                       {bulkLaborMode ? (
-                        <button className="btn btn-primary touch-target" style={{ width: "100%", height: 48, fontSize: 15, fontWeight: 700, borderRadius: 10 }} onClick={handleBulkLabor}
+                        <button className="btn btn-primary touch-target frm-labor-submit" onClick={handleBulkLabor}
                           disabled={Object.values(bulkLaborSelected).filter(Boolean).length === 0 || !laborForm.areaId || !laborForm.hours}>
                           {t("Add Labor")} ({Object.values(bulkLaborSelected).filter(Boolean).length} {t("crew")})
                         </button>
                       ) : (
-                        <button className="btn btn-primary touch-target" style={{ width: "100%", height: 48, fontSize: 15, fontWeight: 700, borderRadius: 10 }} onClick={handleAddLabor}
+                        <button className="btn btn-primary touch-target frm-labor-submit" onClick={handleAddLabor}
                           disabled={!laborForm.employeeId || !laborForm.areaId || !laborForm.hours}>
                           {t("Add Labor")}
                         </button>
@@ -2018,32 +2018,32 @@ export function ForemanView({ app }) {
 
                       {/* Today's labor entries with edit/delete */}
                       {laborEntries.filter(le => le.projectId === selectedProjectId && le.date === new Date().toISOString().slice(0, 10) && le.status !== "deleted").length > 0 && (
-                        <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
+                        <div className="frm-labor-today">
                           <div className="text-xs font-bold mb-4">{t("Today's Labor")} ({laborEntries.filter(le => le.projectId === selectedProjectId && le.date === new Date().toISOString().slice(0, 10) && le.status !== "deleted").reduce((s, le) => s + le.hours, 0).toFixed(1)}h)</div>
                           {laborEntries.filter(le => le.projectId === selectedProjectId && le.date === new Date().toISOString().slice(0, 10) && le.status !== "deleted").map(le => (
-                            <div key={le.id} style={{ display: "flex", alignItems: "center", padding: "4px 0", fontSize: 12, borderBottom: "1px solid var(--border)", gap: 6 }}>
-                              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{le.employeeName}</span>
+                            <div key={le.id} className="frm-labor-row">
+                              <span className="frm-flex-1 frm-truncate">{le.employeeName}</span>
                               <span className="text-muted">{le.costCode}</span>
                               {editingLaborId === le.id ? (
-                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                <div className="frm-flex-row-center" style={{ gap: 4 }}>
                                   <input type="number" value={editingLaborHours} onChange={e => setEditingLaborHours(e.target.value)}
-                                    style={{ width: 50, height: 32, fontSize: 14, fontWeight: 700, textAlign: "center", border: "2px solid var(--accent)", borderRadius: 6, background: "var(--bg3)", color: "var(--text)" }}
+                                    className="frm-labor-edit-input"
                                     autoFocus onKeyDown={e => { if (e.key === "Enter") { handleEditLabor(le.id, editingLaborHours); setEditingLaborId(null); } if (e.key === "Escape") setEditingLaborId(null); }} />
-                                  <button style={{ background: "var(--green)", color: "#fff", border: "none", borderRadius: 4, padding: "4px 8px", fontSize: 11, cursor: "pointer" }}
+                                  <button className="frm-labor-edit-ok"
                                     onClick={() => { handleEditLabor(le.id, editingLaborHours); setEditingLaborId(null); }}>✓</button>
-                                  <button style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 11 }}
+                                  <button className="frm-btn-unstyled--text3"
                                     onClick={() => setEditingLaborId(null)}>✕</button>
                                 </div>
                               ) : (
                                 <>
-                                  <span style={{ fontWeight: 700, minWidth: 40, textAlign: "right" }}>{le.hours}h{le.payType !== "regular" ? ` ${le.payType.slice(0,2).toUpperCase()}` : ""}</span>
-                                  <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 2 }}
+                                  <span className="frm-labor-hours">{le.hours}h{le.payType !== "regular" ? ` ${le.payType.slice(0,2).toUpperCase()}` : ""}</span>
+                                  <button className="frm-btn-unstyled--text3"
                                     onClick={() => { setEditingLaborId(le.id); setEditingLaborHours(String(le.hours)); }}>
                                     <PenLine size={12} />
                                   </button>
                                 </>
                               )}
-                              <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--red)", padding: 2 }}
+                              <button className="frm-btn-unstyled--red"
                                 onClick={() => handleDeleteLabor(le.id)}>
                                 <X size={12} />
                               </button>
@@ -2054,11 +2054,11 @@ export function ForemanView({ app }) {
                     </div>
                   )}
 
-                  <div className="section-header" style={{ alignItems: "center" }}>
-                    <div className="section-title" style={{ fontSize: "var(--text-md)" }}>{t("Crew Members")}</div>
+                  <div className="section-header">
+                    <div className="section-title frm-section-title-md">{t("Crew Members")}</div>
                     <button
                       className="btn btn-sm"
-                      style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, background: "var(--accent)", color: "#fff", padding: "8px 14px", borderRadius: 8 }}
+                      className="frm-add-crew-btn"
                       onClick={() => { setShowCrewAdd(v => !v); setCrewAddSearch(""); }}
                     >
                       <UserPlus size={15} />
@@ -2068,8 +2068,8 @@ export function ForemanView({ app }) {
 
                   {/* Add team member dropdown */}
                   {showCrewAdd && (
-                    <div style={{ marginBottom: 14, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: "1px solid var(--border)" }}>
+                    <div className="frm-crew-add-wrap">
+                      <div className="frm-crew-add-header">
                         <Search size={14} style={{ color: "var(--text3)", flexShrink: 0 }} />
                         <input
                           ref={teamAddRef}
@@ -2078,33 +2078,33 @@ export function ForemanView({ app }) {
                           placeholder={t("Search employees...")}
                           value={teamAddSearch}
                           onChange={e => setCrewAddSearch(e.target.value)}
-                          style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--text)", fontSize: 14 }}
+                          className="frm-crew-add-input"
                         />
-                        <button onClick={() => setShowCrewAdd(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 2 }}>
+                        <button onClick={() => setShowCrewAdd(false)} className="frm-btn-unstyled--text3">
                           <X size={14} />
                         </button>
                       </div>
                       {teamAddFiltered.length === 0 ? (
-                        <div style={{ padding: "12px 14px", fontSize: 13, color: "var(--text3)" }}>{t("No employees found")}</div>
+                        <div className="frm-crew-add-empty">{t("No employees found")}</div>
                       ) : (
                         teamAddFiltered.map(emp => (
                           <div
                             key={emp.id}
-                            style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+                            className="frm-crew-add-row"
                             onMouseDown={e => e.preventDefault()}
                             onClick={() => {
                               setExtraCrewIds(prev => [...prev, emp.id]);
                               setCrewAddSearch("");
                             }}
                           >
-                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                            <div className="frm-crew-add-avatar">
                               {emp.name.split(" ").map(n => n[0]).join("")}
                             </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>{emp.name}</div>
-                              <div style={{ fontSize: 11, color: "var(--text3)" }}>{emp.role || ""}</div>
+                            <div className="frm-flex-1">
+                              <div className="frm-font-14" style={{ color: "var(--text)" }}>{emp.name}</div>
+                              <div className="frm-font-11" style={{ color: "var(--text3)" }}>{emp.role || ""}</div>
                             </div>
-                            <UserPlus size={14} style={{ color: "var(--accent)" }} />
+                            <UserPlus size={14} className="frm-amber" />
                           </div>
                         ))
                       )}
@@ -2115,23 +2115,23 @@ export function ForemanView({ app }) {
                     <div className="empty-state" style={{ padding: "30px 20px" }}>
                       <div style={{ fontSize: 36, marginBottom: 8, opacity: 0.5 }}><UserPlus size={36} /></div>
                       <div className="empty-text">{t("No team assigned")}</div>
-                      <div className="text-xs text-muted" style={{ marginTop: 6 }}>{t("Tap Add Crew to add members")}</div>
+                      <div className="text-xs text-muted frm-mt-6">{t("Tap Add Crew to add members")}</div>
                     </div>
                   ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div className="frm-flex-col-6">
                       {teamForProject.map(c => (
                         <div key={c.id} className="foreman-team-row">
                           <div>
                             <div className="foreman-team-name">{c.name}</div>
                             <div className="foreman-team-role">{t(c.role)}</div>
-                            <div className="text-xs text-muted" style={{ marginTop: 2 }}>
+                            <div className="text-xs text-muted frm-mt-2">
                               {DAY_KEYS.filter(d => c.days?.[d]).map(d => t(d.charAt(0).toUpperCase() + d.slice(1))).join(", ")}
                             </div>
                           </div>
-                          <div style={{ textAlign: "right" }}>
+                          <div className="frm-text-right">
                             <div className="foreman-team-hours">{fmtHours(c.todayHours)}</div>
                             <div className="text-xs text-muted">{t("Hours Today")}</div>
-                            <div className="text-xs text-dim" style={{ marginTop: 2 }}>
+                            <div className="text-xs text-dim frm-mt-2">
                               {fmtHours(c.weekHours)} {t("This Week").toLowerCase()}
                             </div>
                           </div>
@@ -2142,10 +2142,10 @@ export function ForemanView({ app }) {
                           <div>
                             <div className="foreman-team-name">{c.name}</div>
                             <div className="foreman-team-role">{t(c.role)}</div>
-                            <div className="text-xs" style={{ color: "var(--amber)", marginTop: 2 }}>+ {t("Added today")}</div>
+                            <div className="text-xs frm-mt-2" className="frm-amber">+ {t("Added today")}</div>
                           </div>
                           <button
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 6 }}
+                            className="frm-btn-unstyled--text3" style={{ padding: 6 }}
                             onClick={() => setExtraCrewIds(prev => prev.filter(id => String(id) !== String(c.id)))}
                           >
                             <X size={16} />
@@ -2161,7 +2161,7 @@ export function ForemanView({ app }) {
                       {t("PENDING REQUESTS")} {pendingRequests.length > 0 && <span className="foreman-team-count">{pendingRequests.length}</span>}
                     </div>
                     {pendingLoading ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div className="frm-flex-col-8">
                         {[1,2].map(i => <Skeleton key={i} width="100%" height="64px" style={{ borderRadius: "var(--radius)" }} />)}
                       </div>
                     ) : pendingRequests.length === 0 ? (
@@ -2267,17 +2267,17 @@ export function ForemanView({ app }) {
             {foremanTab === "hours" && (
               <div className="emp-content">
                 <div className="section-header">
-                  <div className="section-title" style={{ fontSize: "var(--text-md)" }}>{t("Hours")}</div>
+                  <div className="section-title frm-section-title-md">{t("Hours")}</div>
                 </div>
 
                 {/* Summary card */}
-                <div className="foreman-kpi-card" style={{ marginBottom: "var(--space-4)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                <div className="foreman-kpi-card frm-mb-16">
+                  <div className="frm-flex-between frm-mb-8">
                     <div>
                       <div className="foreman-kpi-label">{t("Allocated Hours")}</div>
-                      <div className="foreman-kpi-value" style={{ fontSize: 20 }}>{allocatedHours.toLocaleString()} {t("hrs")}</div>
+                      <div className="foreman-kpi-value" className="frm-font-20">{allocatedHours.toLocaleString()} {t("hrs")}</div>
                     </div>
-                    <div style={{ textAlign: "right" }}>
+                    <div className="frm-text-right">
                       <div className="foreman-kpi-label">{t("Hours Used")}</div>
                       <div className="foreman-kpi-value" style={{ fontSize: 20, color: budgetColor }}>{hoursUsed.toFixed(1)} {t("hrs")}</div>
                     </div>
@@ -2286,15 +2286,15 @@ export function ForemanView({ app }) {
                     <div className="foreman-budget-fill"
                       style={{ width: `${Math.min(pctUsed, 100)}%`, background: budgetColor }} />
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <div className="frm-flex-between">
                     <span className="text-xs text-muted">{t("Hours Remaining")}: <b style={{ color: hoursRemaining < 0 ? "var(--red)" : "var(--green)" }}>{hoursRemaining.toFixed(1)} {t("hrs")}</b></span>
-                    <span className="text-xs text-muted">{t("Burn Rate")}: <b style={{ color: "var(--amber)" }}>{weeklyBurnHours.toFixed(1)} {t("hrs")}</b> {t("per week")}</span>
+                    <span className="text-xs text-muted">{t("Burn Rate")}: <b className="frm-amber">{weeklyBurnHours.toFixed(1)} {t("hrs")}</b> {t("per week")}</span>
                   </div>
                 </div>
 
                 {/* Per-employee hours breakdown */}
-                <div className="section-header" className="mb-8">
-                  <div className="section-title" style={{ fontSize: 14 }}>{t("Crew Members")}</div>
+                <div className="section-header mb-8">
+                  <div className="section-title frm-font-14">{t("Crew Members")}</div>
                 </div>
                 {teamForProject.length === 0 ? (
                   <div className="text-sm text-muted">{t("No team assigned")}</div>
@@ -2333,7 +2333,7 @@ export function ForemanView({ app }) {
             {foremanTab === "materials" && (
               <div className="emp-content">
                 <div className="section-header">
-                  <div className="section-title" style={{ fontSize: "var(--text-md)" }}>{t("Request Material")}</div>
+                  <div className="section-title frm-section-title-md">{t("Request Material")}</div>
                 </div>
                 <div className="card foreman-form-card">
                   <div className="foreman-form-stack">
@@ -2343,7 +2343,7 @@ export function ForemanView({ app }) {
                         value={matForm.material} onChange={e => setMatForm(f => ({ ...f, material: e.target.value }))} />
                     </div>
                     <div className="foreman-form-row">
-                      <div style={{ flex: 1 }}>
+                      <div className="frm-flex-1">
                         <label className="foreman-form-label">{t("Quantity")}</label>
                         <input type="number" className="login-input" min="1"
                           value={matForm.qty} onChange={e => setMatForm(f => ({ ...f, qty: e.target.value }))} />
@@ -2359,11 +2359,11 @@ export function ForemanView({ app }) {
                     </div>
                     <div>
                       <label className="foreman-form-label">{t("Notes")}</label>
-                      <textarea className="login-input" rows={2} style={{ resize: "vertical", minHeight: 60 }}
+                      <textarea className="login-input" rows={2} className="frm-resize-v" style={{ minHeight: 60 }}
                         value={matForm.notes} onChange={e => setMatForm(f => ({ ...f, notes: e.target.value }))} />
                     </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <div style={{ flex: 1 }}>
+                    <div className="frm-flex-row">
+                      <div className="frm-flex-1">
                         <label className="foreman-form-label">{t("Priority")}</label>
                         <select className="settings-select" value={matForm.urgency} onChange={e => setMatForm(f => ({ ...f, urgency: e.target.value }))}>
                           <option value="normal">{t("Normal")}</option>
@@ -2371,7 +2371,7 @@ export function ForemanView({ app }) {
                           <option value="emergency">🚨 {t("Emergency")}</option>
                         </select>
                       </div>
-                      <div style={{ flex: 1 }}>
+                      <div className="frm-flex-1">
                         <label className="foreman-form-label">{t("Needed By")}</label>
                         <input type="date" className="login-input" value={matForm.neededBy} onChange={e => setMatForm(f => ({ ...f, neededBy: e.target.value }))} />
                       </div>
@@ -2381,7 +2381,7 @@ export function ForemanView({ app }) {
                 </div>
 
                 <div className="section-header">
-                  <div className="section-title" style={{ fontSize: 14 }}>{t("Material Requests")}</div>
+                  <div className="section-title frm-font-14">{t("Material Requests")}</div>
                 </div>
                 {projectMatRequests.length === 0 ? (
                   <div className="empty-state" style={{ padding: "20px" }}>
@@ -2389,7 +2389,7 @@ export function ForemanView({ app }) {
                     <div className="empty-text">{t("No material requests yet")}</div>
                   </div>
                 ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div className="frm-flex-col-8">
                     {projectMatRequests.map(req => (
                       <div key={req.id} className="mat-request-card" style={{ borderLeft: req.urgency === "emergency" ? "3px solid var(--red)" : req.urgency === "urgent" ? "3px solid var(--amber)" : undefined }}>
                         <div className="flex-between mb-4">
@@ -2411,12 +2411,12 @@ export function ForemanView({ app }) {
                         {req.notes && <div className="text-xs text-dim mb-4">{req.notes}</div>}
                         {/* Confirm receipt when delivered */}
                         {req.status === "delivered" && !req.confirmedBy && (
-                          <div style={{ display: "flex", gap: 8 }}>
+                          <div className="frm-flex-row">
                             <button className="btn btn-primary btn-sm" style={{ background: "var(--green)", boxShadow: "0 2px 8px var(--green-dim)" }}
                               onClick={() => handleForemanConfirm(req.id, "")}>
                               ✓ {t("Confirm Receipt")}
                             </button>
-                            <button className="btn btn-ghost btn-sm" style={{ color: "var(--amber)" }}
+                            <button className="btn btn-ghost btn-sm" className="frm-amber"
                               onClick={() => { const exc = prompt(t("Describe issue") + ":"); if (exc) handleForemanConfirm(req.id, exc); }}>
                               ⚠ {t("Issue")}
                             </button>
@@ -2435,16 +2435,16 @@ export function ForemanView({ app }) {
                 {/* ── JSA LIST VIEW ── */}
                 {jsaView === "list" && (
                   <div>
-                    <div className="flex-between" style={{ marginBottom: "var(--space-3)" }}>
-                      <div className="section-title" style={{ fontSize: "var(--text-md)" }}>{t("Job Safety Analysis")}</div>
-                      <div style={{ display: "flex", gap: 6 }}>
+                    <div className="flex-between frm-mb-12">
+                      <div className="section-title frm-section-title-md">{t("Job Safety Analysis")}</div>
+                      <div className="frm-flex-row" style={{ gap: 6 }}>
                         <button className="btn btn-primary btn-sm" onClick={() => {
                           setJsaView("rollcall");
                           setRcStep("pick");
                           setRcWeather("clear");
                           setRcJsaId(null);
                         }}>{t("Pre-Task Safety")}</button>
-                        <button className="cal-nav-btn" style={{ fontSize: 11 }} onClick={() => {
+                        <button className="cal-nav-btn" className="frm-font-11" onClick={() => {
                           setJsaForm(f => ({ ...f, projectId: String(selectedProjectId || ""), supervisor: activeForeman.name, competentPerson: activeForeman.name }));
                           setJsaView("create");
                         }}>+</button>
@@ -2462,20 +2462,20 @@ export function ForemanView({ app }) {
                       const statusClr = j.status === "active" ? "var(--green)" : j.status === "draft" ? "var(--amber)" : "var(--text3)";
                       const proj = projects.find(p => String(p.id) === String(j.projectId));
                       return (
-                        <div key={j.id} className="card" style={{ padding: 12, marginBottom: 8, cursor: "pointer" }} onClick={() => { setActiveJsaId(j.id); setJsaView("detail"); }}>
-                          <div className="flex-between" style={{ marginBottom: 4 }}>
-                            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                        <div key={j.id} className="card" className="frm-p-12 frm-mb-8" style={{ cursor: "pointer" }} onClick={() => { setActiveJsaId(j.id); setJsaView("detail"); }}>
+                          <div className="flex-between" className="frm-mb-4">
+                            <div className="frm-flex-row-center" style={{ gap: 6, flexWrap: "wrap" }}>
                               <span className="jsa-status-badge" style={{ background: statusClr + "22", color: statusClr, fontSize: 10 }}>{j.status.toUpperCase()}</span>
                               <span className="jsa-risk-badge" style={{ background: rc.bg + "22", color: rc.bg, fontSize: 10 }}>{rc.label}</span>
                             </div>
-                            <span style={{ fontSize: 11, color: "var(--text3)" }}>{(j.teamSignOn || []).length} {t("signed")}</span>
+                            <span className="frm-font-11" style={{ color: "var(--text3)" }}>{(j.teamSignOn || []).length} {t("signed")}</span>
                           </div>
-                          <div style={{ fontSize: 14, fontWeight: 600 }}>{j.title}</div>
-                          <div style={{ fontSize: 11, color: "var(--text3)" }}>{proj?.name} · {j.date}</div>
-                          <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
+                          <div className="frm-font-14">{j.title}</div>
+                          <div className="frm-font-11" style={{ color: "var(--text3)" }}>{proj?.name} · {j.date}</div>
+                          <div className="frm-flex-row frm-mt-6" style={{ gap: 4 }}>
                             {(j.ppe || []).slice(0, 6).map(k => {
                               const item = PPE_ITEMS.find(p => p.key === k);
-                              return item ? <span key={k} style={{ fontSize: 14 }}>{item.icon}</span> : null;
+                              return item ? <span key={k} className="frm-font-14">{item.icon}</span> : null;
                             })}
                           </div>
                         </div>
@@ -2494,26 +2494,26 @@ export function ForemanView({ app }) {
                   if (rcStep === "pick") {
                     return (
                       <div>
-                        <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
+                        <div className="frm-flex-row-center frm-mb-16">
                           <button className="cal-nav-btn" onClick={() => setJsaView("list")}>{t("← Back")}</button>
-                          <span style={{ fontSize: 16, fontWeight: 700 }}>{t("Pre-Task Safety")}</span>
+                          <span className="frm-font-16">{t("Pre-Task Safety")}</span>
                         </div>
 
                         {!selectedProjectId && (
-                          <div className="card" style={{ padding: 16, textAlign: "center", color: "var(--amber)" }}>
+                          <div className="card" className="frm-text-center frm-p-16" className="frm-amber">
                             {t("Select a project first")}
                           </div>
                         )}
 
                         {selectedProjectId && (
                           <>
-                            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 4 }}>{proj?.name || "Project"}</div>
-                            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 16 }}>{t("Pick today's task")}</div>
+                            <div className="frm-font-13" style={{ color: "var(--text2)", marginBottom: 4 }}>{proj?.name || "Project"}</div>
+                            <div className="frm-font-13 frm-mb-16">{t("Pick today's task")}</div>
 
                             {/* Indoor / Outdoor toggle */}
-                            <div style={{ marginBottom: "var(--space-4)" }}>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text2)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("Work Environment")}</div>
-                              <div style={{ display: "flex", gap: 8 }}>
+                            <div className="frm-mb-16">
+                              <div className="frm-form-label-upper" className="frm-font-12">{t("Work Environment")}</div>
+                              <div className="frm-flex-row">
                                 {[{ key: "indoor", label: t("Indoor"), labelEs: "Interior" }, { key: "outdoor", label: t("Outdoor"), labelEs: "Exterior" }].map(opt => (
                                   <button
                                     key={opt.key}
@@ -2533,7 +2533,7 @@ export function ForemanView({ app }) {
                             </div>
 
                             {/* Trade cards - 2 column grid */}
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+                            <div className="frm-grid-2-10 frm-mb-20">
                               {TRADE_CARDS.map(card => {
                                 const tmpl = JSA_TEMPLATES.find(t => t.id === card.templateId);
                                 if (!tmpl) return null;
@@ -2567,7 +2567,7 @@ export function ForemanView({ app }) {
                             {rcIndoorOutdoor === "outdoor" && (
                               <div className="mb-8">
                                 <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text2)", marginBottom: 6 }}>{t("Weather")}</div>
-                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                <div className="frm-flex-wrap" style={{ gap: 6 }}>
                                   {WEATHER_QUICK.map(w => (
                                     <button key={w.key} className={rcWeather === w.key ? "btn btn-primary btn-sm" : "cal-nav-btn"}
                                       style={{ fontSize: 12, padding: "6px 10px" }}
@@ -2592,13 +2592,13 @@ export function ForemanView({ app }) {
                     const selectedCount = Object.values(rcSelectedHazardIdxs).filter(Boolean).length;
                     return (
                       <div>
-                        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
+                        <div className="frm-flex-row-center frm-mb-12">
                           <button className="cal-nav-btn" onClick={() => { setRcStep("pick"); setRcPendingCard(null); }}>{t("← Back")}</button>
-                          <span style={{ fontSize: 16, fontWeight: 700 }}>{t("Select Hazards")}</span>
+                          <span className="frm-font-16">{t("Select Hazards")}</span>
                         </div>
 
-                        <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 4 }}>{proj?.name}</div>
-                        <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 16 }}>
+                        <div className="frm-font-13" style={{ color: "var(--text2)", marginBottom: 4 }}>{proj?.name}</div>
+                        <div className="frm-font-12" style={{ color: "var(--text3)", marginBottom: 16 }}>
                           {t("Pick as many as apply")} · {TRADE_LABELS[trade]?.label || trade}
                         </div>
 
@@ -2620,13 +2620,13 @@ export function ForemanView({ app }) {
                                 <div style={{ flexShrink: 0, marginTop: 1, color: isChecked ? (catInfo?.color || "var(--accent)") : "var(--text3)" }}>
                                   {isChecked ? <CheckSquare size={18} /> : <Square size={18} />}
                                 </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
+                                <div className="frm-flex-1">
                                   <div style={{ fontSize: 13, fontWeight: 600, color: isChecked ? "var(--text)" : "var(--text3)" }}>{h.hazard}</div>
-                                  {h.hazardEs && <div style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic" }}>{h.hazardEs}</div>}
+                                  {h.hazardEs && <div className="frm-font-11" style={{ color: "var(--text3)", fontStyle: "italic" }}>{h.hazardEs}</div>}
                                   {isChecked && (
-                                    <div style={{ marginTop: 4 }}>
+                                    <div className="frm-mt-4">
                                       {h.controls.slice(0, 2).map((c, ci) => (
-                                        <div key={ci} style={{ fontSize: 11, color: "var(--text2)" }}>✓ {c}</div>
+                                        <div key={ci} className="frm-font-11" style={{ color: "var(--text2)" }}>✓ {c}</div>
                                       ))}
                                     </div>
                                   )}
@@ -2657,9 +2657,9 @@ export function ForemanView({ app }) {
                                 <div style={{ flexShrink: 0, marginTop: 1, color: isChecked ? "var(--amber)" : "var(--text3)" }}>
                                   {isChecked ? <CheckSquare size={18} /> : <Square size={18} />}
                                 </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
+                                <div className="frm-flex-1">
                                   <div style={{ fontSize: 13, fontWeight: 600, color: isChecked ? "var(--text)" : "var(--text3)" }}>{wh.hazard}</div>
-                                  {wh.hazardEs && <div style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic" }}>{wh.hazardEs}</div>}
+                                  {wh.hazardEs && <div className="frm-font-11" style={{ color: "var(--text3)", fontStyle: "italic" }}>{wh.hazardEs}</div>}
                                 </div>
                                 <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "#eab30822", color: "var(--amber)", fontWeight: 700, flexShrink: 0 }}>
                                   Weather
@@ -2671,7 +2671,7 @@ export function ForemanView({ app }) {
 
                         <button
                           className="btn btn-primary"
-                          style={{ width: "100%", padding: "14px", fontSize: 16 }}
+                          className="frm-w-full" style={{ padding: 14, fontSize: 16 }}
                           disabled={selectedCount === 0}
                           onClick={() => {
                             if (!tmpl) return;
@@ -2734,19 +2734,19 @@ export function ForemanView({ app }) {
                     const teamIds = new Set(allTeam.map(c => c.id));
                     return (
                       <div>
-                        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
+                        <div className="frm-flex-row-center frm-mb-12">
                           <button className="cal-nav-btn" onClick={() => { setRcStep("pick"); }}>{t("← Back")}</button>
-                          <span style={{ fontSize: 16, fontWeight: 700 }}>{t("Crew Roll Call")}</span>
+                          <span className="frm-font-16">{t("Crew Roll Call")}</span>
                         </div>
 
-                        <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 4 }}>{proj?.name} · {rcJsa?.title}</div>
-                        <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 16 }}>
+                        <div className="frm-font-13" style={{ color: "var(--text2)", marginBottom: 4 }}>{proj?.name} · {rcJsa?.title}</div>
+                        <div className="frm-font-12" style={{ color: "var(--text3)", marginBottom: 16 }}>
                           {new Date().toLocaleDateString(lang === "es" ? "es" : "en-US", { weekday: "long", month: "long", day: "numeric" })}
                         </div>
 
                         {/* Crew list */}
                         {allTeam.length === 0 ? (
-                          <div className="card" style={{ padding: 16, textAlign: "center", color: "var(--text3)" }}>
+                          <div className="card" className="frm-text-center frm-p-16" style={{ color: "var(--text3)" }}>
                             {t("No team scheduled. Add team members below.")}
                           </div>
                         ) : allTeam.map(c => (
@@ -2757,8 +2757,8 @@ export function ForemanView({ app }) {
                           }} onClick={() => setRcSelected(prev => ({ ...prev, [c.id]: !prev[c.id] }))}>
                             <span style={{ width: 28, display: "flex", justifyContent: "center" }}>{rcSelected[c.id] ? <CheckCircle size={20} style={{ color: "var(--green)" }} /> : <Square size={20} style={{ color: "var(--text3)" }} />}</span>
                             <div>
-                              <div style={{ fontSize: 14, fontWeight: 600 }}>{c.name}</div>
-                              <div style={{ fontSize: 11, color: "var(--text3)" }}>{c.role || "Crew"}</div>
+                              <div className="frm-font-14">{c.name}</div>
+                              <div className="frm-font-11" style={{ color: "var(--text3)" }}>{c.role || "Crew"}</div>
                             </div>
                           </div>
                         ))}
@@ -2784,7 +2784,7 @@ export function ForemanView({ app }) {
                         )}
 
                         {/* Start Sign-On */}
-                        <button className="btn btn-primary" style={{ width: "100%", marginTop: 20, padding: "14px", fontSize: 16 }}
+                        <button className="btn btn-primary frm-w-full" style={{ marginTop: 20, padding: 14, fontSize: 16 }}
                           disabled={Object.values(rcSelected).filter(Boolean).length === 0}
                           onClick={() => {
                             const queue = teamForProject.filter(c => rcSelected[c.id]).map(c => ({ employeeId: c.id, name: c.name }));
@@ -2807,7 +2807,7 @@ export function ForemanView({ app }) {
                     return (
                       <div>
                         {/* Progress */}
-                        <div style={{ marginBottom: "var(--space-3)" }}>
+                        <div className="frm-mb-12">
                           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--text3)", marginBottom: 4 }}>
                             <span>{progress} {t("of")} {total}</span>
                             <span>{t("Pass device to next person")}</span>
@@ -2818,26 +2818,26 @@ export function ForemanView({ app }) {
                         </div>
 
                         {/* Name banner */}
-                        <div style={{ textAlign: "center", padding: "16px 0", marginBottom: 12 }}>
+                        <div className="frm-text-center" style={{ padding: "16px 0", marginBottom: 12 }}>
                           <div style={{ fontSize: 28, fontWeight: 700 }}>{current.name}</div>
-                          <div style={{ fontSize: 13, color: "var(--text3)" }}>{proj?.name}</div>
+                          <div className="frm-font-13" style={{ color: "var(--text3)" }}>{proj?.name}</div>
                         </div>
 
                         {/* Hazard cards */}
-                        <div style={{ marginBottom: "var(--space-4)" }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--amber)", marginBottom: 8 }}>{t("Hazards")}</div>
+                        <div className="frm-mb-16">
+                          <div className="frm-jsa-label" style={{ fontSize: 13 }}>{t("Hazards")}</div>
                           {allHazards.map((h, i) => {
                             const score = (h.likelihood || 1) * (h.severity || 1);
                             const hrc = riskColor(score);
                             const catInfo = HAZARD_CATEGORIES[h.category];
                             return (
                               <div key={i} className="card" style={{ padding: 10, marginBottom: 6, borderLeft: `3px solid ${catInfo?.color || "var(--amber)"}` }}>
-                                <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4 }}>
+                                <div className="frm-flex-row-center frm-mb-4" style={{ gap: 6 }}>
                                   <span style={{ background: hrc.bg, color: "#fff", fontSize: 10, padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>{score}</span>
                                   <span style={{ fontSize: 12, fontWeight: 600 }}>{h.hazard}</span>
                                 </div>
-                                {h.hazardEs && <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 4, fontStyle: "italic" }}>{h.hazardEs}</div>}
-                                <div style={{ fontSize: 11, color: "var(--text2)" }}>
+                                {h.hazardEs && <div className="frm-font-11 frm-mb-4" style={{ color: "var(--text3)", fontStyle: "italic" }}>{h.hazardEs}</div>}
+                                <div className="frm-font-11" style={{ color: "var(--text2)" }}>
                                   {(h.controls || []).map((c, ci) => <div key={ci}>✓ {c}</div>)}
                                 </div>
                               </div>
@@ -2846,15 +2846,15 @@ export function ForemanView({ app }) {
                         </div>
 
                         {/* PPE */}
-                        <div style={{ marginBottom: "var(--space-4)" }}>
+                        <div className="frm-mb-16">
                           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Required PPE")}</div>
-                          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                          <div className="frm-flex-wrap" style={{ gap: 10 }}>
                             {(rcJsa?.ppe || []).map(k => {
                               const item = PPE_ITEMS.find(p => p.key === k);
                               return item ? (
-                                <div key={k} style={{ textAlign: "center" }}>
+                                <div key={k} className="frm-text-center">
                                   <div style={{ fontSize: 22 }}>{item.icon}</div>
-                                  <div style={{ fontSize: 10, color: "var(--text2)" }}>{item.label}</div>
+                                  <div className="frm-font-10" style={{ color: "var(--text2)" }}>{item.label}</div>
                                   <div style={{ fontSize: 9, color: "var(--text3)" }}>{item.labelEs}</div>
                                 </div>
                               ) : null;
@@ -2863,7 +2863,7 @@ export function ForemanView({ app }) {
                         </div>
 
                         {/* Signature pad */}
-                        <div style={{ marginBottom: "var(--space-3)" }}>
+                        <div className="frm-mb-12">
                           <FieldSignaturePad
                             key={rcSignIdx}
                             label={t("Sign below")}
@@ -2873,7 +2873,7 @@ export function ForemanView({ app }) {
                         </div>
 
                         {/* Sign & Next button */}
-                        <button className="btn btn-primary" style={{ width: "100%", padding: "14px", fontSize: 16 }}
+                        <button className="btn btn-primary frm-w-full" style={{ padding: 14, fontSize: 16 }}
                           onClick={() => {
                             const sigData = sigRef.current?.getSig?.();
                             if (!sigData) { show(t("Please sign first"), "err"); return; }
@@ -2905,10 +2905,10 @@ export function ForemanView({ app }) {
                   if (rcStep === "supervisor") {
                     return (
                       <div>
-                        <div style={{ textAlign: "center", padding: "24px 0", marginBottom: 16 }}>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: "var(--amber)" }}>{t("Supervisor Sign-Off")}</div>
+                        <div className="frm-text-center" style={{ padding: "24px 0", marginBottom: 16 }}>
+                          <div className="frm-font-16" className="frm-amber">{t("Supervisor Sign-Off")}</div>
                           <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>{activeForeman.name}</div>
-                          <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 4 }}>
+                          <div className="frm-font-13 frm-mt-4" style={{ color: "var(--text3)" }}>
                             {(rcJsa?.teamSignOn || []).length} {t("team members signed")}
                           </div>
                         </div>
@@ -2920,7 +2920,7 @@ export function ForemanView({ app }) {
                           onSave={(ref) => { sigRef.current = ref; }}
                         />
 
-                        <button className="btn btn-primary" style={{ width: "100%", marginTop: 16, padding: "14px", fontSize: 16 }}
+                        <button className="btn btn-primary frm-w-full frm-mt-16" style={{ padding: 14, fontSize: 16 }}
                           onClick={() => {
                             const sigData = sigRef.current?.getSig?.();
                             if (!sigData) { show(t("Please sign first"), "err"); return; }
@@ -2938,24 +2938,24 @@ export function ForemanView({ app }) {
                   if (rcStep === "done") {
                     const finalJsa = (jsas || []).find(j => j.id === rcJsaId);
                     return (
-                      <div style={{ textAlign: "center" }}>
-                        <div style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}><CheckCircle size={48} style={{ color: "var(--green)" }} /></div>
-                        <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>{t("Pre-Task Safety Complete")}</div>
-                        <div style={{ fontSize: 14, color: "var(--text2)", marginBottom: 20 }}>
+                      <div className="frm-text-center">
+                        <div className="frm-mb-8" style={{ display: "flex", justifyContent: "center" }}><CheckCircle size={48} style={{ color: "var(--green)" }} /></div>
+                        <div className="frm-font-20 frm-mb-4">{t("Pre-Task Safety Complete")}</div>
+                        <div className="frm-font-14 frm-mb-20" style={{ color: "var(--text2)" }}>
                           {(finalJsa?.teamSignOn || []).length} {t("team members signed")} · {finalJsa?.title}
                         </div>
 
                         {/* Signed team list */}
-                        <div style={{ textAlign: "left", marginBottom: 20 }}>
+                        <div className="frm-mb-20">
                           {(finalJsa?.teamSignOn || []).map((c, i) => (
-                            <div key={i} className="flex-between" style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                              <span style={{ fontSize: 13, fontWeight: 500 }}>{c.name}</span>
-                              <span style={{ fontSize: 11, color: "var(--green)" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                            <div key={i} className="flex-between frm-rfi-row" style={{ fontSize: "inherit" }}>
+                              <span className="frm-font-13" style={{ fontWeight: 500 }}>{c.name}</span>
+                              <span className="frm-font-11" style={{ color: "var(--green)" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                             </div>
                           ))}
                         </div>
 
-                        <div style={{ display: "flex", gap: 8 }}>
+                        <div className="frm-flex-row">
                           <button className="cal-nav-btn" style={{ flex: 1, padding: 12 }} onClick={async () => {
                             try {
                               const { generateJsaPdf } = await import("../utils/jsaPdf");
@@ -2991,42 +2991,42 @@ export function ForemanView({ app }) {
                       <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
                         <button className="cal-nav-btn" onClick={() => setJsaView("list")}>{t("← Back")}</button>
                         <span className="jsa-status-badge" style={{ background: statusClr + "22", color: statusClr }}>{jsa.status.toUpperCase()}</span>
-                        <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                        <div className="frm-flex-row" style={{ marginLeft: "auto", gap: 6 }}>
                           {jsa.status === "draft" && <button className="btn btn-primary btn-sm" onClick={() => updateJsa({ status: "active" })}>{t("Activate")}</button>}
                           {jsa.status === "active" && <button className="cal-nav-btn" onClick={() => updateJsa({ status: "closed" })}>{t("Close JSA")}</button>}
                         </div>
                       </div>
 
-                      <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{jsa.title}</h3>
-                      <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 12 }}>
+                      <h3 className="frm-font-16 frm-mb-4">{jsa.title}</h3>
+                      <div className="frm-font-12 frm-mb-12" style={{ color: "var(--text3)" }}>
                         {jsa.date} · {jsa.location} · {lang === "es" ? TRADE_LABELS[jsa.trade]?.labelEs : TRADE_LABELS[jsa.trade]?.label}
                       </div>
 
                       {/* Risk summary */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
-                        <div className="card" style={{ padding: 10, textAlign: "center" }}>
+                      <div className="frm-grid-3 frm-mb-16">
+                        <div className="card" className="frm-text-center frm-p-12">
                           <div style={{ fontSize: 20, fontWeight: 700, color: rc.bg }}>{maxRisk}</div>
-                          <div style={{ fontSize: 10, color: "var(--text3)" }}>{t("Highest Risk")}</div>
+                          <div className="frm-font-10" style={{ color: "var(--text3)" }}>{t("Highest Risk")}</div>
                         </div>
-                        <div className="card" style={{ padding: 10, textAlign: "center" }}>
-                          <div style={{ fontSize: 20, fontWeight: 700 }}>{allHazards.length}</div>
-                          <div style={{ fontSize: 10, color: "var(--text3)" }}>{t("Hazards")}</div>
+                        <div className="card" className="frm-text-center frm-p-12">
+                          <div className="frm-font-20">{allHazards.length}</div>
+                          <div className="frm-font-10" style={{ color: "var(--text3)" }}>{t("Hazards")}</div>
                         </div>
-                        <div className="card" style={{ padding: 10, textAlign: "center" }}>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: "var(--green)" }}>{(jsa.teamSignOn || []).length}</div>
-                          <div style={{ fontSize: 10, color: "var(--text3)" }}>{t("Crew Signed")}</div>
+                        <div className="card" className="frm-text-center frm-p-12">
+                          <div className="frm-activity-value" style={{ color: "var(--green)" }}>{(jsa.teamSignOn || []).length}</div>
+                          <div className="frm-font-10" style={{ color: "var(--text3)" }}>{t("Crew Signed")}</div>
                         </div>
                       </div>
 
                       {/* PPE */}
-                      <div style={{ marginBottom: "var(--space-4)" }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Required PPE")}</div>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <div className="frm-mb-16">
+                        <div className="frm-jsa-label">{t("Required PPE")}</div>
+                        <div className="frm-flex-wrap" style={{ gap: 8 }}>
                           {(jsa.ppe || []).map(k => {
                             const item = PPE_ITEMS.find(p => p.key === k);
                             return item ? (
                               <div key={k} style={{ textAlign: "center", fontSize: 11 }}>
-                                <div style={{ fontSize: 20 }}>{item.icon}</div>
+                                <div className="frm-font-20">{item.icon}</div>
                                 <div style={{ color: "var(--text3)" }}>{lang === "es" ? item.labelEs : item.label}</div>
                               </div>
                             ) : null;
@@ -3035,13 +3035,13 @@ export function ForemanView({ app }) {
                       </div>
 
                       {/* Steps & Hazards */}
-                      <div style={{ marginBottom: "var(--space-4)" }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Job Steps & Hazards")}</div>
+                      <div className="frm-mb-16">
+                        <div className="frm-jsa-label">{t("Job Steps & Hazards")}</div>
                         {(jsa.steps || []).map((step, idx) => (
                           <div key={step.id} className="card" style={{ padding: 10, marginBottom: 6 }}>
                             <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
                               <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--amber)", color: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{idx + 1}</span>
-                              <span style={{ fontSize: 13, fontWeight: 600 }}>{step.step}</span>
+                              <span className="frm-font-13">{step.step}</span>
                             </div>
                             {(step.hazards || []).map((h, hi) => {
                               const score = (h.likelihood || 1) * (h.severity || 1);
@@ -3050,9 +3050,9 @@ export function ForemanView({ app }) {
                                 <div key={hi} style={{ marginLeft: 30, padding: "6px 0", borderTop: "1px solid var(--border)" }}>
                                   <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 2 }}>
                                     <span className="jsa-risk-score" style={{ background: hrc.bg, color: "#fff", fontSize: 10, padding: "1px 6px", borderRadius: 4 }}>{score}</span>
-                                    <span style={{ fontSize: 12, fontWeight: 500 }}>{h.hazard}</span>
+                                    <span className="frm-font-12">{h.hazard}</span>
                                   </div>
-                                  <div style={{ fontSize: 11, color: "var(--text3)" }}>
+                                  <div className="frm-font-11" style={{ color: "var(--text3)" }}>
                                     {(h.controls || []).map((c, ci) => <span key={ci}>✓ {c}{ci < h.controls.length - 1 ? " · " : ""}</span>)}
                                   </div>
                                 </div>
@@ -3063,12 +3063,12 @@ export function ForemanView({ app }) {
                       </div>
 
                       {/* Crew Sign-On */}
-                      <div style={{ marginBottom: "var(--space-4)" }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Crew Sign-On")} ({(jsa.teamSignOn || []).length})</div>
+                      <div className="frm-mb-16">
+                        <div className="frm-jsa-label">{t("Crew Sign-On")} ({(jsa.teamSignOn || []).length})</div>
                         {(jsa.teamSignOn || []).map((c, i) => (
-                          <div key={i} className="flex-between" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
-                            <span style={{ fontSize: 13, fontWeight: 500 }}>{c.name}</span>
-                            <span style={{ fontSize: 11, color: "var(--green)" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                          <div key={i} className="flex-between frm-rfi-row" style={{ padding: "6px 0" }}>
+                            <span className="frm-font-13" style={{ fontWeight: 500 }}>{c.name}</span>
+                            <span className="frm-font-11" style={{ color: "var(--green)" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                           </div>
                         ))}
                         {jsa.status === "active" && (
@@ -3090,9 +3090,9 @@ export function ForemanView({ app }) {
 
                       {/* Near Misses */}
                       <div>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Near Misses")}</div>
+                        <div className="frm-jsa-label">{t("Near Misses")}</div>
                         {(jsa.nearMisses || []).length === 0 ? (
-                          <div style={{ fontSize: 12, color: "var(--text3)" }}>{t("None reported")}</div>
+                          <div className="frm-font-12" style={{ color: "var(--text3)" }}>{t("None reported")}</div>
                         ) : (jsa.nearMisses || []).map((nm, i) => (
                           <div key={i} className="card" style={{ padding: 8, marginBottom: 4, fontSize: 12 }}>
                             {nm.description} — {nm.reportedBy} ({nm.date})
@@ -3157,13 +3157,13 @@ export function ForemanView({ app }) {
 
                   return (
                     <div>
-                      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
+                      <div className="frm-flex-row-center frm-mb-12">
                         <button className="cal-nav-btn" onClick={() => setJsaView("list")}>{t("← Back")}</button>
-                        <span style={{ fontSize: 16, fontWeight: 700 }}>{t("Create New JSA")}</span>
+                        <span className="frm-font-16">{t("Create New JSA")}</span>
                       </div>
 
                       {/* Template */}
-                      <div className="form-group" style={{ marginBottom: "var(--space-3)" }}>
+                      <div className="form-group frm-mb-12">
                         <label className="form-label">{t("Start from Template")}</label>
                         <select className="form-select" value={jsaForm.templateId} onChange={e => applyTemplate(e.target.value)}>
                           <option value="">{t("— Blank JSA —")}</option>
@@ -3172,32 +3172,32 @@ export function ForemanView({ app }) {
                       </div>
 
                       {/* Basic fields */}
-                      <div className="form-group" className="mb-8">
+                      <div className="form-group mb-8">
                         <label className="form-label">{t("Project")}</label>
                         <select className="form-select" value={jsaForm.projectId} onChange={e => updJsaForm("projectId", e.target.value)}>
                           <option value="">{t("Select...")}</option>
                           {myProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
                       </div>
-                      <div className="form-group" className="mb-8">
+                      <div className="form-group mb-8">
                         <label className="form-label">{t("Trade")}</label>
                         <select className="form-select" value={jsaForm.trade} onChange={e => updJsaForm("trade", e.target.value)}>
                           {Object.entries(TRADE_LABELS).map(([k, v]) => <option key={k} value={k}>{lang === "es" ? v.labelEs : v.label}</option>)}
                         </select>
                       </div>
-                      <div className="form-group" className="mb-8">
+                      <div className="form-group mb-8">
                         <label className="form-label">{t("JSA Title")}</label>
                         <input className="form-input" value={jsaForm.title} onChange={e => updJsaForm("title", e.target.value)} placeholder={t("e.g. Metal Stud Framing — Level 2")} />
                       </div>
-                      <div className="form-group" className="mb-8">
+                      <div className="form-group mb-8">
                         <label className="form-label">{t("Location on Site")}</label>
                         <input className="form-input" value={jsaForm.location} onChange={e => updJsaForm("location", e.target.value)} />
                       </div>
-                      <div className="form-group" className="mb-8">
+                      <div className="form-group mb-8">
                         <label className="form-label">{t("Date")}</label>
                         <input className="form-input" type="date" value={jsaForm.date} onChange={e => updJsaForm("date", e.target.value)} />
                       </div>
-                      <div className="form-group" className="mb-8">
+                      <div className="form-group mb-8">
                         <label className="form-label">{t("Weather")}</label>
                         <select className="form-select" value={jsaForm.weather} onChange={e => updJsaForm("weather", e.target.value)}>
                           <option value="clear">{t("Clear")}</option>
@@ -3210,21 +3210,21 @@ export function ForemanView({ app }) {
                       </div>
 
                       {weatherHazard && jsaForm.weather !== "clear" && (
-                        <div className="jsa-weather-warn" style={{ marginBottom: "var(--space-3)" }}>
+                        <div className="jsa-weather-warn frm-mb-12">
                           <AlertTriangle size={14} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />{lang === "es" ? weatherHazard.hazardEs : weatherHazard.hazard}
                         </div>
                       )}
 
                       {/* PPE */}
-                      <div style={{ marginBottom: "var(--space-3)" }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Required PPE")}</div>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <div className="frm-mb-12">
+                        <div className="frm-jsa-label">{t("Required PPE")}</div>
+                        <div className="frm-flex-wrap" style={{ gap: 6 }}>
                           {PPE_ITEMS.map(item => {
                             const active = jsaForm.ppe.includes(item.key);
                             return (
                               <div key={item.key} className={`jsa-ppe-pick${active ? " active" : ""}`}
                                 onClick={() => updJsaForm("ppe", active ? jsaForm.ppe.filter(k => k !== item.key) : [...jsaForm.ppe, item.key])}
-                                style={{ padding: "4px 8px", textAlign: "center", cursor: "pointer" }}>
+                                className="frm-text-center" style={{ padding: "4px 8px", cursor: "pointer" }}>
                                 <div style={{ fontSize: 18 }}>{item.icon}</div>
                                 <div style={{ fontSize: 9 }}>{lang === "es" ? item.labelEs : item.label}</div>
                               </div>
@@ -3234,9 +3234,9 @@ export function ForemanView({ app }) {
                       </div>
 
                       {/* Permits */}
-                      <div style={{ marginBottom: "var(--space-3)" }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Permits Required")}</div>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <div className="frm-mb-12">
+                        <div className="frm-jsa-label">{t("Permits Required")}</div>
+                        <div className="frm-flex-wrap" style={{ gap: 6 }}>
                           {PERMIT_TYPES.map(p => {
                             const active = jsaForm.permits.includes(p.key);
                             return (
@@ -3251,16 +3251,16 @@ export function ForemanView({ app }) {
                       </div>
 
                       {/* Steps */}
-                      <div style={{ marginBottom: "var(--space-4)" }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--amber)", marginBottom: 6 }}>{t("Job Steps & Hazards")}</div>
+                      <div className="frm-mb-16">
+                        <div className="frm-jsa-label">{t("Job Steps & Hazards")}</div>
                         {jsaForm.steps.map((step, idx) => (
                           <div key={step.id} className="card" style={{ padding: 10, marginBottom: 6 }}>
-                            <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
+                            <div className="frm-flex-row-center frm-mb-6" style={{ gap: 6 }}>
                               <span style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--amber)", color: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{idx + 1}</span>
-                              <input className="form-input" style={{ flex: 1, fontSize: 12 }} value={step.step}
+                              <input className="form-input" className="frm-flex-1 frm-font-12" value={step.step}
                                 onChange={e => updJsaForm("steps", jsaForm.steps.map((s, i) => i === idx ? { ...s, step: e.target.value } : s))}
                                 placeholder={t("Describe this step...")} />
-                              <button style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 14 }}
+                              <button className="frm-btn-unstyled--red"
                                 onClick={() => updJsaForm("steps", jsaForm.steps.filter((_, i) => i !== idx))}>✕</button>
                             </div>
                             {(step.hazards || []).map((h, hi) => {
@@ -3269,8 +3269,8 @@ export function ForemanView({ app }) {
                               return (
                                 <div key={hi} style={{ marginLeft: 26, padding: "4px 0", display: "flex", gap: 6, alignItems: "center", borderTop: "1px solid var(--border)" }}>
                                   <span className="jsa-risk-score" style={{ background: hrc.bg, color: "#fff", fontSize: 10, padding: "1px 5px", borderRadius: 4 }}>{score}</span>
-                                  <span style={{ fontSize: 11, flex: 1 }}>{h.hazard}</span>
-                                  <button style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 12 }}
+                                  <span className="frm-font-11 frm-flex-1">{h.hazard}</span>
+                                  <button className="frm-btn-unstyled--red"
                                     onClick={() => {
                                       const steps = [...jsaForm.steps];
                                       steps[idx] = { ...steps[idx], hazards: steps[idx].hazards.filter((_, i) => i !== hi) };
@@ -3299,13 +3299,13 @@ export function ForemanView({ app }) {
                             </select>
                           </div>
                         ))}
-                        <button className="cal-nav-btn" style={{ fontSize: 12 }}
+                        <button className="cal-nav-btn" className="frm-font-12"
                           onClick={() => updJsaForm("steps", [...jsaForm.steps, { id: "s_" + Date.now(), step: "", hazards: [] }])}>
                           {t("+ Add Step")}
                         </button>
                       </div>
 
-                      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                      <div className="frm-flex-row" style={{ justifyContent: "flex-end" }}>
                         <button className="cal-nav-btn" onClick={() => setJsaView("list")}>{t("Cancel")}</button>
                         <button className="btn btn-primary" onClick={saveJsa}>{t("Create JSA")}</button>
                       </div>
@@ -3330,19 +3330,19 @@ export function ForemanView({ app }) {
             {foremanTab === "lookahead" && (
               <div className="emp-content">
                 <div className="section-header">
-                  <div className="section-title" style={{ fontSize: "var(--text-md)" }}>{t("14-Day Look-Ahead")}</div>
+                  <div className="section-title frm-section-title-md">{t("14-Day Look-Ahead")}</div>
                 </div>
-                <div className="text-xs text-muted" style={{ marginBottom: "var(--space-3)" }}>
+                <div className="text-xs text-muted frm-mb-12">
                   {t("Upcoming milestones, inspections, and deadlines for this project. Read-only — contact PM for changes.")}
                 </div>
 
                 {lookAheadEvents.length === 0 ? (
                   <div className="empty-state" style={{ padding: "30px 20px" }}>
                     <div className="empty-text">{t("No events in the next 14 days")}</div>
-                    <div className="text-xs text-muted" style={{ marginTop: 6 }}>{t("The PM will add milestones, inspections, and deadlines here.")}</div>
+                    <div className="text-xs text-muted frm-mt-6">{t("The PM will add milestones, inspections, and deadlines here.")}</div>
                   </div>
                 ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div className="frm-flex-col-6">
                     {(() => {
                       // Group events by date
                       const groups = {};
@@ -3374,13 +3374,13 @@ export function ForemanView({ app }) {
                               };
                               const color = typeColors[ev.type] || "var(--text2)";
                               return (
-                                <div key={ev.id} className="card" style={{ padding: "10px 14px", marginTop: 4 }}>
-                                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                <div key={ev.id} className="card" className="frm-mt-4" style={{ padding: "10px 14px" }}>
+                                  <div className="frm-flex-row-center" style={{ gap: 10 }}>
                                     <div style={{
                                       width: 4, height: 32, borderRadius: 2, background: color, flexShrink: 0,
                                     }} />
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                      <div className="text-sm font-semi" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    <div className="frm-flex-1">
+                                      <div className="text-sm font-semi" className="frm-truncate">
                                         {ev.title}
                                       </div>
                                       <div className="text-xs text-muted">
@@ -3389,7 +3389,7 @@ export function ForemanView({ app }) {
                                         {ev.start_time ? ` · ${ev.start_time}` : ""}
                                         {ev.location ? ` · ${ev.location}` : ""}
                                       </div>
-                                      {ev.notes && <div className="text-xs text-dim" style={{ marginTop: 2 }}>{ev.notes.length > 80 ? ev.notes.slice(0, 80) + "..." : ev.notes}</div>}
+                                      {ev.notes && <div className="text-xs text-dim frm-mt-2">{ev.notes.length > 80 ? ev.notes.slice(0, 80) + "..." : ev.notes}</div>}
                                     </div>
                                     {ev.status && ev.status !== "scheduled" && (
                                       <span className={`badge ${ev.status === "completed" ? "badge-green" : "badge-amber"}`} style={{ fontSize: 9 }}>
@@ -3412,8 +3412,8 @@ export function ForemanView({ app }) {
             {/* ═══ DAILY REPORT TAB ═══ */}
             {foremanTab === "reports" && (
               <div className="emp-content">
-                <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div className="section-title" style={{ fontSize: "var(--text-md)" }}>{t("Daily Reports")}</div>
+                <div className="section-header frm-flex-between">
+                  <div className="section-title frm-section-title-md">{t("Daily Reports")}</div>
                   <button className="btn btn-primary btn-sm" onClick={() => { setShowReportForm(!showReportForm); setEditingReportId(null); if (!showReportForm) setReportForm({ ...EMPTY_REPORT_FORM, date: new Date().toISOString().slice(0, 10) }); }}>
                     {showReportForm ? t("Cancel") : `+ ${t("New Report")}`}
                   </button>
@@ -3435,16 +3435,16 @@ export function ForemanView({ app }) {
                       <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>{t("Today's Activity")} ({t("Auto-Populated")})</div>
 
                       {todayTime.length > 0 && (
-                        <div style={{ fontSize: 13, color: "var(--text)", marginBottom: 6 }}>
+                        <div className="frm-font-13 frm-mb-6" style={{ color: "var(--text)" }}>
                           <strong>{todayTime.length} {t("crew")}</strong> {t("on site")} · <strong>{totalHours.toFixed(1)}h</strong> {t("total")}
                         </div>
                       )}
 
                       {todayProd.length > 0 && (
-                        <div style={{ marginBottom: 6 }}>
-                          <div style={{ fontSize: 12, color: "var(--text2)", fontWeight: 600 }}>{t("Production")}:</div>
+                        <div className="frm-mb-6">
+                          <div className="frm-font-12" style={{ color: "var(--text2)" }}>{t("Production")}:</div>
                           {todayProd.map(p => (
-                            <div key={p.id} style={{ fontSize: 12, color: "var(--text)", paddingLeft: 8 }}>
+                            <div key={p.id} className="frm-font-12" style={{ color: "var(--text)", paddingLeft: 8 }}>
                               {"\u2022"} {p.trade}: {p.qtyInstalled} {p.unit} {t("in")} {(areas || []).find(a => a.id === p.areaId)?.name || "\u2014"}
                             </div>
                           ))}
@@ -3452,10 +3452,10 @@ export function ForemanView({ app }) {
                       )}
 
                       {todayTm.length > 0 && (
-                        <div style={{ marginBottom: 6 }}>
-                          <div style={{ fontSize: 12, color: "var(--text2)", fontWeight: 600 }}>{t("T&M")} {t("Tickets")}:</div>
+                        <div className="frm-mb-6">
+                          <div className="frm-font-12" style={{ color: "var(--text2)" }}>{t("T&M")} {t("Tickets")}:</div>
                           {todayTm.map(tk => (
-                            <div key={tk.id} style={{ fontSize: 12, color: "var(--text)", paddingLeft: 8 }}>
+                            <div key={tk.id} className="frm-font-12" style={{ color: "var(--text)", paddingLeft: 8 }}>
                               {"\u2022"} {tk.ticketNumber}: {(tk.description || "").slice(0, 60)}
                             </div>
                           ))}
@@ -3464,8 +3464,8 @@ export function ForemanView({ app }) {
 
                       {todayPunch.length > 0 && (
                         <div>
-                          <div style={{ fontSize: 12, color: "var(--text2)", fontWeight: 600 }}>{t("Punch List")}:</div>
-                          <div style={{ fontSize: 12, color: "var(--text)", paddingLeft: 8 }}>
+                          <div className="frm-font-12" style={{ color: "var(--text2)" }}>{t("Punch List")}:</div>
+                          <div className="frm-font-12" style={{ color: "var(--text)", paddingLeft: 8 }}>
                             {todayPunch.length} {t("new")} {t("item")}{todayPunch.length !== 1 ? "s" : ""} {t("logged")}
                           </div>
                         </div>
@@ -3476,11 +3476,11 @@ export function ForemanView({ app }) {
 
                 {/* ── Report Creation / Edit Form ── */}
                 {showReportForm && (
-                  <div className="card" style={{ padding: 16, marginTop: 12, background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 10 }}>
+                  <div className="card" className="frm-report-card frm-mt-12 frm-p-16">
 
                     {/* Quick-fill from yesterday */}
                     {!editingReportId && (
-                      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                      <div className="frm-flex-row frm-mb-12">
                         <button className="btn btn-sm" style={{ fontSize: 11, background: "var(--surface2)", color: "var(--text2)", border: "1px solid var(--border)" }}
                           onClick={fillFromYesterday}>
                           {t("Quick-fill from yesterday")}
@@ -3489,7 +3489,7 @@ export function ForemanView({ app }) {
                     )}
 
                     {/* Date + Project */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div className="frm-grid-2-10">
                       <div>
                         <label className="form-label">{t("Date")}</label>
                         <input type="date" className="form-input" value={reportForm.date}
@@ -3502,7 +3502,7 @@ export function ForemanView({ app }) {
                     </div>
 
                     {/* Weather: Temperature + Conditions */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
+                    <div className="frm-grid-2-10 frm-mt-10">
                       <div>
                         <label className="form-label">{t("Temperature")} (°F)</label>
                         <input type="number" className="form-input" placeholder="e.g. 85" value={reportForm.temperature}
@@ -3520,11 +3520,11 @@ export function ForemanView({ app }) {
                     </div>
 
                     {/* Crew on Site — checkboxes */}
-                    <div style={{ marginTop: "var(--space-3)" }}>
+                    <div className="frm-mt-12">
                       <label className="form-label">{t("Crew on Site")} ({(reportForm.teamPresent || []).length})</label>
-                      <div style={{ maxHeight: 140, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 8, padding: 8, background: "var(--surface1)" }}>
+                      <div className="frm-report-crew-list">
                         {teamForProject.length > 0 ? teamForProject.map(c => (
-                          <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", fontSize: 13, cursor: "pointer" }}>
+                          <label key={c.id} className="frm-report-crew-label">
                             <input type="checkbox"
                               checked={(reportForm.teamPresent || []).some(cp => (typeof cp === "string" ? cp : cp.id) === c.id)}
                               onChange={e => {
@@ -3547,9 +3547,9 @@ export function ForemanView({ app }) {
                     </div>
 
                     {/* Work Performed — quick-add tasks + textarea */}
-                    <div style={{ marginTop: "var(--space-3)" }}>
+                    <div className="frm-mt-12">
                       <label className="form-label">{t("Work Performed Today")} *</label>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                      <div className="frm-flex-wrap frm-mb-8" style={{ gap: 6 }}>
                         {QUICK_TASKS.map(task => {
                           const isActive = (reportForm.quickTasks || []).includes(task);
                           return (
@@ -3578,34 +3578,34 @@ export function ForemanView({ app }) {
                       <textarea className="form-input" rows={4} placeholder={t("Describe work completed...")}
                         value={reportForm.workPerformed}
                         onChange={e => setReportForm(f => ({ ...f, workPerformed: e.target.value }))}
-                        style={{ resize: "vertical" }} />
+                        className="frm-resize-v" />
                     </div>
 
                     {/* Materials Received */}
-                    <div style={{ marginTop: "var(--space-3)" }}>
+                    <div className="frm-mt-12">
                       <label className="form-label">{t("Materials Received")}</label>
                       <textarea className="form-input" rows={2} placeholder={t("Materials delivered/received today...")}
                         value={reportForm.materialsReceived}
                         onChange={e => setReportForm(f => ({ ...f, materialsReceived: e.target.value }))}
-                        style={{ resize: "vertical" }} />
+                        className="frm-resize-v" />
                     </div>
 
                     {/* Equipment on Site */}
-                    <div style={{ marginTop: "var(--space-3)" }}>
+                    <div className="frm-mt-12">
                       <label className="form-label">{t("Equipment on Site")}</label>
                       <textarea className="form-input" rows={2} placeholder={t("Lifts, scaffolding, tools...")}
                         value={reportForm.equipmentOnSite}
                         onChange={e => setReportForm(f => ({ ...f, equipmentOnSite: e.target.value }))}
-                        style={{ resize: "vertical" }} />
+                        className="frm-resize-v" />
                     </div>
 
                     {/* Visitors / Inspections */}
-                    <div style={{ marginTop: "var(--space-3)" }}>
+                    <div className="frm-mt-12">
                       <label className="form-label">{t("Visitors / Inspections")}</label>
                       <textarea className="form-input" rows={2} placeholder={t("GC walkthroughs, inspector visits...")}
                         value={reportForm.visitors}
                         onChange={e => setReportForm(f => ({ ...f, visitors: e.target.value }))}
-                        style={{ resize: "vertical" }} />
+                        className="frm-resize-v" />
                     </div>
 
                     {/* Safety Incidents */}
@@ -3638,7 +3638,7 @@ export function ForemanView({ app }) {
                     </div>
 
                     {/* Photos — uses PhotoCapture for direct camera access */}
-                    <div style={{ marginTop: "var(--space-3)" }}>
+                    <div className="frm-mt-12">
                       <label className="form-label">{t("Photos")} ({(reportForm.photos || []).length})</label>
                       <PhotoCapture
                         photos={reportForm.photos || []}
@@ -3649,31 +3649,31 @@ export function ForemanView({ app }) {
                     </div>
 
                     {/* Issues / Delays */}
-                    <div style={{ marginTop: "var(--space-3)" }}>
+                    <div className="frm-mt-12">
                       <label className="form-label">{t("Issues / Delays")}</label>
                       <textarea className="form-input" rows={2} placeholder={t("Any issues or delays...")}
                         value={reportForm.issues}
                         onChange={e => setReportForm(f => ({ ...f, issues: e.target.value }))}
-                        style={{ resize: "vertical" }} />
+                        className="frm-resize-v" />
                     </div>
 
                     {/* Tomorrow's Plan */}
-                    <div style={{ marginTop: "var(--space-3)" }}>
+                    <div className="frm-mt-12">
                       <label className="form-label">{t("Tomorrow's Plan")}</label>
                       <textarea className="form-input" rows={2} placeholder={t("Planned work for tomorrow...")}
                         value={reportForm.tomorrowPlan}
                         onChange={e => setReportForm(f => ({ ...f, tomorrowPlan: e.target.value }))}
-                        style={{ resize: "vertical" }} />
+                        className="frm-resize-v" />
                     </div>
 
                     {/* Hours Worked (auto-calculated) */}
-                    <div style={{ marginTop: 10, padding: 10, background: "var(--surface1)", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div className="frm-report-hours-row frm-mt-10">
                       <span className="form-label" style={{ margin: 0 }}>{t("Hours Worked (from time entries)")}</span>
-                      <span style={{ fontWeight: 700, fontSize: 16, color: "var(--accent)" }}>{todayHoursForProject.toFixed(1)} hrs</span>
+                      <span className="frm-report-hours-value">{todayHoursForProject.toFixed(1)} hrs</span>
                     </div>
 
                     {/* Submit / Update */}
-                    <button className="btn btn-primary" style={{ width: "100%", marginTop: 14 }}
+                    <button className="btn btn-primary frm-w-full" style={{ marginTop: 14 }}
                       onClick={() => {
                         if (!reportForm.workPerformed.trim()) { show(t("Describe work performed"), "warn"); return; }
                         const report = {
@@ -3720,7 +3720,7 @@ export function ForemanView({ app }) {
                 )}
 
                 {/* ── Report List ── */}
-                <div style={{ marginTop: 16 }}>
+                <div className="frm-mt-16">
                   {(dailyReports || [])
                     .filter(r => myProjectIds.has(r.projectId) && r.status !== "deleted")
                     .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || ""))
@@ -3729,37 +3729,37 @@ export function ForemanView({ app }) {
                       const weatherIcon = { Clear: "Clear", Cloudy: "Cloudy", Rain: "Rain", Storm: "Storm", Wind: "Windy", Snow: "Snow", Hot: "Hot", Cold: "Cold" }[r.weatherCondition || r.weather] || (r.weatherCondition || r.weather || "");
                       const teamN = (r.teamPresent || []).length || r.teamSize || 0;
                       return (
-                        <div key={r.id} className="card" style={{ padding: "12px 14px", marginBottom: 8, cursor: "pointer", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 10 }}
+                        <div key={r.id} className="card" className="frm-report-card" style={{ cursor: "pointer" }}
                           onClick={() => setExpandedReportId(isExpanded ? null : r.id)}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div className="frm-flex-between">
                             <div>
                               <div className="text-sm font-semi">{r.date} {weatherIcon} {r.temperature ? `${r.temperature}°F` : ""}</div>
                               <div className="text-xs text-muted">{r.projectName || t("Project")} · {teamN} {t("team")} · {r.foremanName || ""}</div>
                               {r.hoursWorked && <div className="text-xs text-muted">{r.hoursWorked} hrs logged</div>}
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <div className="frm-flex-row-center" style={{ gap: 6 }}>
                               {r.safetyIncident && <span style={{ fontSize: 10, background: "var(--red)", color: "#fff", padding: "1px 6px", borderRadius: 8 }}>Safety</span>}
                               {r.photos && r.photos.length > 0 && <span className="text-xs text-muted">{r.photos.length} pic</span>}
-                              <span style={{ fontSize: 12, color: "var(--text3)" }}>{isExpanded ? "\u25BE" : "\u25B8"}</span>
+                              <span className="frm-font-12" style={{ color: "var(--text3)" }}>{isExpanded ? "\u25BE" : "\u25B8"}</span>
                             </div>
                           </div>
                           {!isExpanded && (
-                            <div className="text-xs text-muted" style={{ marginTop: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            <div className="text-xs text-muted" className="frm-mt-4 frm-truncate">
                               {(r.quickTasks || []).length > 0 && <span style={{ color: "var(--accent)", marginRight: 4 }}>{r.quickTasks.join(", ")}</span>}
                               {r.workPerformed?.replace(/^Tasks: [^\n]*\n?/, "").slice(0, 80)}
                             </div>
                           )}
                           {isExpanded && (
-                            <div style={{ marginTop: 10, borderTop: "1px solid var(--glass-border)", paddingTop: 10 }}
+                            <div className="frm-mt-10" style={{ borderTop: "1px solid var(--glass-border)", paddingTop: 10 }}
                               onClick={e => e.stopPropagation()}>
 
                               {/* Crew Present */}
                               {(r.teamPresent || []).length > 0 && (
                                 <div className="mb-8">
                                   <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 2 }}>{t("Crew on Site")}</div>
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                  <div className="frm-flex-wrap">
                                     {r.teamPresent.map((c, i) => (
-                                      <span key={i} className="badge badge-blue" style={{ fontSize: 10 }}>{typeof c === "string" ? c : c.name}</span>
+                                      <span key={i} className="badge badge-blue" className="frm-font-10">{typeof c === "string" ? c : c.name}</span>
                                     ))}
                                   </div>
                                 </div>
@@ -3769,7 +3769,7 @@ export function ForemanView({ app }) {
                               {(r.quickTasks || []).length > 0 && (
                                 <div className="mb-8">
                                   <div className="text-xs font-semi" style={{ color: "var(--accent)", marginBottom: 2 }}>{t("Tasks")}</div>
-                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                  <div className="frm-flex-wrap">
                                     {r.quickTasks.map((tk, i) => (
                                       <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "var(--accent)", color: "#fff" }}>{tk}</span>
                                     ))}
@@ -3779,25 +3779,25 @@ export function ForemanView({ app }) {
 
                               <div className="mb-8">
                                 <div className="text-xs font-semi" style={{ color: "var(--accent)", marginBottom: 2 }}>{t("Work Performed")}</div>
-                                <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.workPerformed}</div>
+                                <div className="text-sm frm-pre-wrap">{r.workPerformed}</div>
                               </div>
 
                               {r.materialsReceived && (
                                 <div className="mb-8">
                                   <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 2 }}>{t("Materials Received")}</div>
-                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.materialsReceived}</div>
+                                  <div className="text-sm frm-pre-wrap">{r.materialsReceived}</div>
                                 </div>
                               )}
                               {r.equipmentOnSite && (
                                 <div className="mb-8">
                                   <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 2 }}>{t("Equipment on Site")}</div>
-                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.equipmentOnSite}</div>
+                                  <div className="text-sm frm-pre-wrap">{r.equipmentOnSite}</div>
                                 </div>
                               )}
                               {r.visitors && (
                                 <div className="mb-8">
                                   <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 2 }}>{t("Visitors / Inspections")}</div>
-                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.visitors}</div>
+                                  <div className="text-sm frm-pre-wrap">{r.visitors}</div>
                                 </div>
                               )}
 
@@ -3807,20 +3807,20 @@ export function ForemanView({ app }) {
                                   {r.safetyIncident ? t("SAFETY INCIDENT") : t("No Safety Incidents")}
                                 </div>
                                 {r.safetyIncident && r.safetyDescription && (
-                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.safetyDescription}</div>
+                                  <div className="text-sm frm-pre-wrap">{r.safetyDescription}</div>
                                 )}
                               </div>
 
                               {r.issues && (
                                 <div className="mb-8">
                                   <div className="text-xs font-semi" style={{ color: "var(--amber)", marginBottom: 2 }}>{t("Issues / Delays")}</div>
-                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.issues}</div>
+                                  <div className="text-sm frm-pre-wrap">{r.issues}</div>
                                 </div>
                               )}
                               {r.tomorrowPlan && (
                                 <div className="mb-8">
                                   <div className="text-xs font-semi" style={{ color: "var(--accent)", marginBottom: 2 }}>{t("Tomorrow's Plan")}</div>
-                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.tomorrowPlan}</div>
+                                  <div className="text-sm frm-pre-wrap">{r.tomorrowPlan}</div>
                                 </div>
                               )}
 
@@ -3828,24 +3828,24 @@ export function ForemanView({ app }) {
                               {r.photos && r.photos.length > 0 && (
                                 <div className="mb-8">
                                   <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: 4 }}>{t("Photos")} ({r.photos.length})</div>
-                                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                  <div className="frm-flex-wrap" style={{ gap: 6 }}>
                                     {r.photos.map((p, i) => (
                                       <img key={i} src={p.data || p} alt={`Photo ${i + 1}`}
-                                        style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid var(--border)", cursor: "pointer" }}
+                                        className="frm-report-photo" style={{ cursor: "pointer" }}
                                         onClick={() => window.open(p.data || p, "_blank")} />
                                     ))}
                                   </div>
                                 </div>
                               )}
 
-                              <div className="text-xs text-muted" style={{ marginTop: 6 }}>
+                              <div className="text-xs text-muted frm-mt-6">
                                 {t("Submitted")}: {new Date(r.createdAt).toLocaleString()}
                                 {r.updatedAt && r.updatedAt !== r.createdAt && ` · ${t("Updated")}: ${new Date(r.updatedAt).toLocaleString()}`}
                               </div>
 
                               {/* Action Buttons */}
-                              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                                <button className="btn btn-sm" style={{ fontSize: 11 }}
+                              <div className="frm-flex-row frm-mt-10">
+                                <button className="btn btn-sm" className="frm-font-11"
                                   onClick={() => {
                                     setEditingReportId(r.id);
                                     setReportForm({
@@ -3869,7 +3869,7 @@ export function ForemanView({ app }) {
                                   }}>
                                   {t("Edit")}
                                 </button>
-                                <button className="btn btn-sm" style={{ fontSize: 11 }}
+                                <button className="btn btn-sm" className="frm-font-11"
                                   onClick={async () => {
                                     try {
                                       const { generateDailyReportPdf } = await import("../utils/dailyReportPdf.js");
@@ -3882,7 +3882,7 @@ export function ForemanView({ app }) {
                                   }}>
                                   {t("Export PDF")}
                                 </button>
-                                <button className="btn btn-sm" style={{ fontSize: 11 }}
+                                <button className="btn btn-sm" className="frm-font-11"
                                   onClick={() => {
                                     const proj = projects.find(p => p.id === r.projectId);
                                     const report = [
@@ -3935,16 +3935,16 @@ export function ForemanView({ app }) {
             {/* ═══ DOCUMENTS TAB ═══ */}
             {foremanTab === "documents" && (
               <div className="emp-content">
-                <div className="section-header" style={{ alignItems: "center" }}>
-                  <div className="section-title" style={{ fontSize: "var(--text-md)" }}>{t("Documents")}</div>
-                  <button className="btn btn-sm" style={{ background: "var(--accent)", color: "#fff", borderRadius: 8, border: "none", display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}
+                <div className="section-header">
+                  <div className="section-title frm-section-title-md">{t("Documents")}</div>
+                  <button className="btn btn-sm" className="frm-new-rfi-btn"
                     onClick={() => setShowRfiModal(true)}>
                     <FileQuestion size={14} /> {t("New RFI")}
                   </button>
                 </div>
 
                 {/* My RFIs */}
-                <div className="project-section" style={{ marginBottom: "var(--space-3)" }}>
+                <div className="project-section frm-mb-12">
                   <div className="project-section-header" onClick={() => toggleSection("myRfis")}>
                     <span>{t("My RFIs")} ({(rfis || []).filter(r => String(r.projectId) === String(selectedProjectId)).length})</span>
                     <span>{openSections.myRfis ? "▾" : "▸"}</span>
@@ -3955,13 +3955,13 @@ export function ForemanView({ app }) {
                       ? <div className="text-xs text-muted" style={{ padding: "8px 0" }}>{t("No RFIs submitted")}</div>
                       : myRfis.map(r => (
                         <div key={r.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)", fontSize: 12 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div className="frm-flex-between">
                             <span className="font-bold">{r.number}</span>
-                            <span className={`badge ${r.status === "open" || r.status === "submitted" ? "badge-amber" : r.status === "Answered" ? "badge-green" : "badge-muted"}`} style={{ fontSize: 10 }}>{r.status}</span>
+                            <span className={`badge ${r.status === "open" || r.status === "submitted" ? "badge-amber" : r.status === "Answered" ? "badge-green" : "badge-muted"}`} className="frm-font-10">{r.status}</span>
                           </div>
-                          <div className="text-muted" style={{ marginTop: 2 }}>{r.subject}</div>
+                          <div className="text-muted frm-mt-2">{r.subject}</div>
                           {r.response && <div style={{ marginTop: 4, padding: "4px 8px", background: "var(--green-dim, rgba(16,185,129,0.1))", borderRadius: 4, color: "var(--green)", fontSize: 11 }}>{t("Answer")}: {r.response}</div>}
-                          {r.daysOut > 0 && !r.response && <div className="text-dim" style={{ marginTop: 2 }}>{r.daysOut}d {t("outstanding")}</div>}
+                          {r.daysOut > 0 && !r.response && <div className="text-dim frm-mt-2">{r.daysOut}d {t("outstanding")}</div>}
                         </div>
                       ));
                   })()}
@@ -3977,7 +3977,7 @@ export function ForemanView({ app }) {
                     projectSubmittals.length === 0
                       ? <div className="text-xs text-muted" style={{ padding: "8px 0" }}>{t("No submittals")}</div>
                       : projectSubmittals.map(s => (
-                        <div key={s.id} className="card" style={{ padding: 10, marginTop: 6 }}>
+                        <div key={s.id} className="card" className="frm-mt-6" style={{ padding: 10 }}>
                           <div className="flex-between">
                             <span className="text-sm font-semi">{s.name || s.title}</span>
                             <span className={`badge ${s.status === "approved" ? "badge-green" : "badge-amber"}`}>{s.status}</span>
@@ -3998,10 +3998,10 @@ export function ForemanView({ app }) {
                     projectCOs.length === 0
                       ? <div className="text-xs text-muted" style={{ padding: "8px 0" }}>{t("No change orders")}</div>
                       : projectCOs.map(c => (
-                        <div key={c.id} className="card" style={{ padding: 10, marginTop: 6 }}>
+                        <div key={c.id} className="card" className="frm-mt-6" style={{ padding: 10 }}>
                           <div className="flex-between">
                             <span className="text-sm font-semi">{c.title || c.description}</span>
-                            <span className="text-sm font-mono" style={{ color: "var(--amber)" }}>{fmt(c.amount)}</span>
+                            <span className="text-sm font-mono" className="frm-amber">{fmt(c.amount)}</span>
                           </div>
                           <div className="text-xs text-muted mt-4">{c.status}</div>
                         </div>
@@ -4011,14 +4011,14 @@ export function ForemanView({ app }) {
 
                 {/* RFIs */}
                 <div className="project-section">
-                  <div className="project-section-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flex: 1 }} onClick={() => toggleSection("rfis")}>
+                  <div className="project-section-header" className="frm-flex-between">
+                    <div className="frm-flex-row-center frm-flex-1" style={{ cursor: "pointer" }} onClick={() => toggleSection("rfis")}>
                       <span>{t("RFIs")} ({projectRFIs.length})</span>
                       <span>{openSections.rfis ? "▾" : "▸"}</span>
                     </div>
                     <button
                       className="btn btn-sm"
-                      style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, background: "var(--accent)", color: "#fff", padding: "6px 12px", borderRadius: 7 }}
+                      className="frm-new-rfi-btn"
                       onClick={() => { setShowRfiModal(true); setRfiFormData({ subject: "", description: "", drawingRef: "" }); }}
                     >
                       <FileQuestion size={13} />
@@ -4029,7 +4029,7 @@ export function ForemanView({ app }) {
                     projectRFIs.length === 0
                       ? <div className="text-xs text-muted" style={{ padding: "8px 0" }}>{t("No RFIs")}</div>
                       : projectRFIs.map(r => (
-                        <div key={r.id} className="card" style={{ padding: 10, marginTop: 6 }}>
+                        <div key={r.id} className="card" className="frm-mt-6" style={{ padding: 10 }}>
                           <div className="flex-between">
                             <span className="text-sm font-semi">{r.subject || r.title || r.question}</span>
                             <span className={`badge ${r.status === "answered" ? "badge-green" : r.status === "submitted" ? "badge-blue" : "badge-amber"}`}>{r.status}</span>
@@ -4046,15 +4046,15 @@ export function ForemanView({ app }) {
             {/* ═══ SITE LOGISTICS TAB ═══ */}
             {foremanTab === "site" && (
               <div className="emp-content">
-                <div className="section-header" style={{ marginBottom: "var(--space-3)" }}>
+                <div className="section-header frm-mb-12">
                   <div className="flex gap-8" style={{ alignItems: "center" }}>
-                    <HardHat size={18} style={{ color: "var(--amber)" }} />
+                    <HardHat size={18} className="frm-amber" />
                     <div>
-                      <div className="section-title" style={{ fontSize: "var(--text-md)" }}>{t("Site Logistics")}</div>
+                      <div className="section-title frm-section-title-md">{t("Site Logistics")}</div>
                       <div className="text-xs text-muted">{t("Daily checklist")} · {today}</div>
                     </div>
                   </div>
-                  <span className={`badge ${logCheckedCount === LOGISTICS_ITEMS.length ? "badge-green" : logCheckedCount > 0 ? "badge-amber" : "badge-red"}`} style={{ fontSize: 11 }}>
+                  <span className={`badge ${logCheckedCount === LOGISTICS_ITEMS.length ? "badge-green" : logCheckedCount > 0 ? "badge-amber" : "badge-red"}`} className="frm-font-11">
                     {logCheckedCount}/{LOGISTICS_ITEMS.length}
                   </span>
                 </div>
@@ -4090,14 +4090,14 @@ export function ForemanView({ app }) {
                         }}
                       >
                         {checked ? <CheckSquare size={20} style={{ color: "var(--green)", flexShrink: 0 }} /> : <Square size={20} style={{ color: "var(--text3)", flexShrink: 0 }} />}
-                        <span style={{ fontSize: 20 }}>{item.icon}</span>
-                        <div style={{ flex: 1 }}>
+                        <span className="frm-font-20">{item.icon}</span>
+                        <div className="frm-flex-1">
                           <span className="text-sm" style={{ textDecoration: checked ? "line-through" : "none", opacity: checked ? 0.7 : 1 }}>{item.label}</span>
                           {item.critical && !checked && (
                             <span className="badge badge-red" style={{ fontSize: 9, marginLeft: 8 }}>Critical</span>
                           )}
                         </div>
-                        <span className={`badge ${checked ? "badge-green" : item.critical ? "badge-red" : "badge-muted"}`} style={{ fontSize: 10 }}>
+                        <span className={`badge ${checked ? "badge-green" : item.critical ? "badge-red" : "badge-muted"}`} className="frm-font-10">
                           {checked ? "OK" : item.critical ? "Needed" : "Pending"}
                         </span>
                       </div>
@@ -4110,11 +4110,11 @@ export function ForemanView({ app }) {
             {/* ═══ NOTES TAB ═══ */}
             {foremanTab === "notes" && (
               <div className="emp-content">
-                <div className="section-header" style={{ marginBottom: "var(--space-3)" }}>
+                <div className="section-header frm-mb-12">
                   <div className="flex gap-8" style={{ alignItems: "center" }}>
-                    <MessageSquare size={18} style={{ color: "var(--accent)" }} />
+                    <MessageSquare size={18} className="frm-amber" />
                     <div>
-                      <div className="section-title" style={{ fontSize: "var(--text-md)" }}>{t("Team Notes")}</div>
+                      <div className="section-title frm-section-title-md">{t("Team Notes")}</div>
                       <div className="text-xs text-muted">{t("Visible to all project team members")}</div>
                     </div>
                   </div>
@@ -4188,9 +4188,9 @@ export function ForemanView({ app }) {
                     <div className="flex-col gap-8">
                       {visible.map(note => (
                         <div key={note.id} style={{ background: note.pinned ? "rgba(245,158,11,0.05)" : "var(--card)", border: `1px solid ${note.pinned ? "var(--amber)" : "var(--border)"}`, borderRadius: 10, padding: 14 }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                          <div className="frm-flex-between frm-mb-8">
                             <div className="flex gap-8" style={{ alignItems: "center" }}>
-                              {note.pinned && <Pin size={11} style={{ color: "var(--amber)" }} />}
+                              {note.pinned && <Pin size={11} className="frm-amber" />}
                               <span className="font-semi text-sm">{note.author}</span>
                               <span className={`badge ${catBadge(note.category)}`} style={{ fontSize: 9 }}>{catLabel(note.category)}</span>
                             </div>
@@ -4202,7 +4202,7 @@ export function ForemanView({ app }) {
                               </button>
                               {note.author === activeForeman.name && (
                                 <button onClick={() => saveProjectNotes(projectNotes.filter(n => n.id !== note.id))}
-                                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 12, padding: "2px 4px" }}>✕</button>
+                                  className="frm-btn-unstyled--text3">✕</button>
                               )}
                             </div>
                           </div>
@@ -4223,12 +4223,12 @@ export function ForemanView({ app }) {
               const resolvedProblems = projProblems.filter(p => p.status === "resolved");
               return (
                 <div className="emp-content">
-                  <div className="section-header" style={{ alignItems: "center" }}>
+                  <div className="section-header">
                     <div>
-                      <div className="section-title" style={{ fontSize: "var(--text-md)" }}>{t("Issues & Blockers")}</div>
+                      <div className="section-title frm-section-title-md">{t("Issues & Blockers")}</div>
                       <div className="text-xs text-muted">{openProblems.length} {t("open")} · {resolvedProblems.length} {t("resolved")}</div>
                     </div>
-                    <button className="btn btn-sm" style={{ background: "var(--amber)", color: "#fff", borderRadius: 8, border: "none", display: "flex", alignItems: "center", gap: 6 }}
+                    <button className="btn btn-sm" className="frm-report-problem-btn"
                       onClick={() => setShowReportProblem(true)}>
                       <AlertTriangle size={14} /> {t("Report Problem")}
                     </button>
@@ -4236,7 +4236,7 @@ export function ForemanView({ app }) {
                   {openProblems.length === 0 && resolvedProblems.length === 0 ? (
                     <EmptyState icon={AlertTriangle} heading={t("No issues reported")} message={t("Tap Report Problem to log an issue")} t={t} />
                   ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div className="frm-flex-col-8">
                       {openProblems.map(p => (
                         <PremiumCard key={p.id} variant="info" style={{ borderLeft: `3px solid ${p.priority === "high" || p.priority === "critical" ? "var(--red)" : "var(--amber)"}` }}>
                           <div className="flex-between mb-4">
@@ -4253,19 +4253,19 @@ export function ForemanView({ app }) {
                             </button>
                           </div>
                           {p.photos?.length > 0 && (
-                            <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
+                            <div className="frm-photo-thumb-row">
                               {p.photos.slice(0, 3).map((ph, i) => (
-                                <img key={i} src={ph} alt="" style={{ width: 48, height: 48, borderRadius: 6, objectFit: "cover" }} />
+                                <img key={i} src={ph} alt="" className="frm-photo-thumb-sm" />
                               ))}
                             </div>
                           )}
                         </PremiumCard>
                       ))}
                       {resolvedProblems.length > 0 && (
-                        <div style={{ marginTop: 8 }}>
+                        <div className="frm-mt-8">
                           <div className="text-xs font-bold text-muted mb-4">{t("Resolved")} ({resolvedProblems.length})</div>
                           {resolvedProblems.slice(0, 5).map(p => (
-                            <div key={p.id} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", opacity: 0.6, fontSize: 12 }}>
+                            <div key={p.id} className="frm-resolved-row">
                               <span style={{ textDecoration: "line-through" }}>{p.category}: {(p.description || "").slice(0, 50)}</span>
                               <span className="text-xs text-dim" style={{ marginLeft: 8 }}>{new Date(p.resolvedAt).toLocaleDateString()}</span>
                             </div>
@@ -4325,24 +4325,24 @@ export function ForemanView({ app }) {
       {/* ═══ SUBMIT RFI MODAL ═══ */}
       {showRfiModal && (
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowRfiModal(false); }}>
-          <div className="modal-content" style={{ maxWidth: 480, width: "100%", padding: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <FileQuestion size={20} style={{ color: "var(--accent)" }} />
-                <span style={{ fontSize: 17, fontWeight: 700 }}>{t("Submit RFI")}</span>
+          <div className="modal-content" className="frm-rfi-modal">
+            <div className="frm-flex-between frm-mb-20">
+              <div className="frm-flex-row-center" style={{ gap: 10 }}>
+                <FileQuestion size={20} className="frm-amber" />
+                <span className="frm-font-16" style={{ fontSize: 17 }}>{t("Submit RFI")}</span>
               </div>
               <button onClick={() => setShowRfiModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: 4 }}>
                 <X size={18} />
               </button>
             </div>
 
-            <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 16 }}>
+            <div className="frm-font-12" style={{ color: "var(--text3)", marginBottom: 16 }}>
               {selectedProject?.name} · {t("Assigned to PM")}: {selectedProject?.pm || "PM"}
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div className="frm-flex-col-14">
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text2)", display: "block", marginBottom: 6 }}>
+                <label className="frm-form-label-upper">
                   {t("Subject")} *
                 </label>
                 <input
@@ -4351,12 +4351,12 @@ export function ForemanView({ app }) {
                   placeholder={t("e.g., Clarification needed on wall type at Grid A")}
                   value={rfiFormData.subject}
                   onChange={e => setRfiFormData(f => ({ ...f, subject: e.target.value }))}
-                  style={{ width: "100%", fontSize: 14 }}
+                  className="frm-w-full" style={{ fontSize: 14 }}
                 />
               </div>
 
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text2)", display: "block", marginBottom: 6 }}>
+                <label className="frm-form-label-upper">
                   {t("Description")} *
                 </label>
                 <textarea
@@ -4365,12 +4365,12 @@ export function ForemanView({ app }) {
                   value={rfiFormData.description}
                   onChange={e => setRfiFormData(f => ({ ...f, description: e.target.value }))}
                   rows={4}
-                  style={{ width: "100%", fontSize: 14, resize: "vertical", fontFamily: "inherit" }}
+                  className="frm-w-full frm-resize-v" style={{ fontSize: 14, fontFamily: "inherit" }}
                 />
               </div>
 
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text2)", display: "block", marginBottom: 6 }}>
+                <label className="frm-form-label-upper">
                   {t("Drawing / Spec Reference")} ({t("optional")})
                 </label>
                 <input
@@ -4379,13 +4379,13 @@ export function ForemanView({ app }) {
                   placeholder={t("e.g., A-201, Spec 09 21 16")}
                   value={rfiFormData.drawingRef}
                   onChange={e => setRfiFormData(f => ({ ...f, drawingRef: e.target.value }))}
-                  style={{ width: "100%", fontSize: 14 }}
+                  className="frm-w-full" style={{ fontSize: 14 }}
                 />
               </div>
 
               {/* Photo attachment for RFI */}
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text2)", display: "block", marginBottom: 6 }}>
+                <label className="frm-form-label-upper">
                   {t("Photos")} ({t("optional")})
                 </label>
                 <PhotoCapture
@@ -4397,7 +4397,7 @@ export function ForemanView({ app }) {
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
+            <div className="frm-flex-row" style={{ gap: 10, marginTop: 22 }}>
               <button className="btn" style={{ flex: 1, fontSize: 14 }} onClick={() => setShowRfiModal(false)}>
                 {t("Cancel")}
               </button>
@@ -4472,9 +4472,9 @@ export function ForemanView({ app }) {
                 return null;
               })()}
             </div>
-            <canvas ref={photoCanvasRef} style={{ display: "none" }} />
-            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-              <button className="btn btn-ghost" onClick={() => skipPhoto("skipped")} style={{ color: "var(--amber)" }}>
+            <canvas ref={photoCanvasRef} className="frm-hidden" />
+            <div className="frm-flex-row" style={{ gap: 10, justifyContent: "center" }}>
+              <button className="btn btn-ghost" onClick={() => skipPhoto("skipped")} className="frm-amber">
                 {t("Skip")}
               </button>
               <button className="btn btn-primary" onClick={captureAndClockIn}

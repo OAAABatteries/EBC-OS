@@ -943,7 +943,7 @@ function App({ auth, onLogout }) {
       {/* ── Header — action-oriented ── */}
       <div className="section-header">
         <div>
-          <div className="section-title font-head" style={{ fontSize: 20 }}>{t("Command Center")}</div>
+          <div className="section-title font-head" className="fs-20">{t("Command Center")}</div>
           <div className="section-sub" style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span>{auth?.name || "EBC"} — {new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</span>
             {(auth?.role === "owner" || auth?.role === "admin") && (
@@ -957,7 +957,7 @@ function App({ auth, onLogout }) {
                 ))}
               </select>
             )}
-            {dashActions.urgentCount > 0 && <span style={{ color: "var(--red)", fontWeight: 700 }}>{dashActions.urgentCount} items need attention</span>}
+            {dashActions.urgentCount > 0 && <span className="text-red fw-700">{dashActions.urgentCount} items need attention</span>}
             <span style={{ fontSize: 10, color: "var(--text3)", marginLeft: 8 }}>
               {t("Data")}: {new Date().toLocaleTimeString([], {hour: "numeric", minute: "2-digit"})} ({t("local")})
             </span>
@@ -986,8 +986,8 @@ function App({ auth, onLogout }) {
 
           {/* Urgent Alerts */}
           {briefResult.urgentAlerts?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>{t("Urgent Alerts")}</div>
+            <div className="mb-12">
+              <div className="text-sm font-semi mb-8" className="text-red">{t("Urgent Alerts")}</div>
               {briefResult.urgentAlerts.map((a, i) => (
                 <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", cursor: a.project ? "pointer" : undefined }}
                   onClick={a.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); } : undefined}>
@@ -995,7 +995,7 @@ function App({ auth, onLogout }) {
                     <span className="text-sm">{a.alert}</span>
                     <span className="badge badge-red">{a.type}</span>
                   </div>
-                  <div className="text-xs mt-2" style={{ color: "var(--green)" }}>{a.action}</div>
+                  <div className="text-xs mt-2" className="text-green">{a.action}</div>
                 </div>
               ))}
             </div>
@@ -1003,8 +1003,8 @@ function App({ auth, onLogout }) {
 
           {/* Today's Focus */}
           {briefResult.todaysFocus?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>{t("Today's Focus")}</div>
+            <div className="mb-12">
+              <div className="text-sm font-semi mb-8" className="text-amber">{t("Today's Focus")}</div>
               {briefResult.todaysFocus.map((f, i) => (
                 <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", cursor: f.project ? "pointer" : undefined }}
                   onClick={f.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(f.project.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); } : undefined}>
@@ -1012,7 +1012,7 @@ function App({ auth, onLogout }) {
                     <span className="text-sm">{f.item}</span>
                     <span className={`badge ${f.priority === "critical" ? "badge-red" : f.priority === "high" ? "badge-amber" : "badge-muted"}`}>{f.priority}</span>
                   </div>
-                  {f.project && <div className="text-xs text-dim mt-2" style={{ color: "var(--blue)", textDecoration: "underline" }}>{f.project}</div>}
+                  {f.project && <div className="text-xs text-dim mt-2" className="text-blue" style={{ textDecoration: "underline" }}>{f.project}</div>}
                 </div>
               ))}
             </div>
@@ -1020,13 +1020,13 @@ function App({ auth, onLogout }) {
 
           {/* Money Moves */}
           {briefResult.moneyMoves?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
+            <div className="mb-12">
               <div className="text-sm font-semi mb-8">{t("Money Moves")}</div>
               {briefResult.moneyMoves.map((m, i) => (
-                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} className="queue-row">
                   <div className="flex-between">
                     <span className="text-sm">{m.item}</span>
-                    <span className="font-semi text-sm" style={{ color: "var(--green)" }}>{m.amount}</span>
+                    <span className="font-semi text-sm" className="text-green">{m.amount}</span>
                   </div>
                   <div className="text-xs text-muted mt-2">{m.action} — {m.deadline}</div>
                 </div>
@@ -1052,53 +1052,53 @@ function App({ auth, onLogout }) {
         const hasActivity = todayProd.length > 0 || todayTm.length > 0 || todayPunch.length > 0 || todayProblems.length > 0 || todayReports.length > 0;
         if (!hasActivity) return null;
         return (
-          <div className="card" style={{ padding: "14px 16px", marginBottom: 16, borderLeft: "3px solid var(--green)" }}>
-            <div className="text-sm font-semi mb-8" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div className="card" className="dash-card dash-card--green">
+            <div className="text-sm font-semi mb-8" className="flex-center-gap-6">
               <ClipboardList size={15} /> {t("Today's Field Activity")}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 8 }}>
+            <div className="grid-auto-180">
               {todayProd.length > 0 && (
-                <div style={{ padding: "8px 10px", borderRadius: 6, background: "var(--bg3)" }}>
-                  <div className="text-lg font-bold" style={{ color: "var(--green)" }}>{todayProd.length}</div>
+                <div className="activity-tile">
+                  <div className="text-lg font-bold" className="text-green">{todayProd.length}</div>
                   <div className="text-xs text-muted">{t("Production logged")}</div>
                   <div className="text-xs text-dim">{todayProd.length} {t("entries today")}</div>
                 </div>
               )}
               {todayTm.length > 0 && (
-                <div style={{ padding: "8px 10px", borderRadius: 6, background: "var(--bg3)" }}>
-                  <div className="text-lg font-bold" style={{ color: "var(--amber)" }}>{todayTm.length}</div>
+                <div className="activity-tile">
+                  <div className="text-lg font-bold" className="text-amber">{todayTm.length}</div>
                   <div className="text-xs text-muted">{t("T&M tickets")}</div>
                   <div className="text-xs text-dim">{todayTm.length} {t("created today")}</div>
                 </div>
               )}
               {(punchCreated > 0 || punchResolved > 0) && (
-                <div style={{ padding: "8px 10px", borderRadius: 6, background: "var(--bg3)" }}>
-                  <div className="text-lg font-bold" style={{ color: "var(--red)" }}>{punchCreated}</div>
+                <div className="activity-tile">
+                  <div className="text-lg font-bold" className="text-red">{punchCreated}</div>
                   <div className="text-xs text-muted">{t("Punch items")}</div>
                   <div className="text-xs text-dim">{punchResolved} {t("resolved today")}</div>
                 </div>
               )}
               {todayProblems.length > 0 && (
-                <div style={{ padding: "8px 10px", borderRadius: 6, background: "var(--bg3)" }}>
-                  <div className="text-lg font-bold" style={{ color: "var(--red)" }}>{todayProblems.length}</div>
+                <div className="activity-tile">
+                  <div className="text-lg font-bold" className="text-red">{todayProblems.length}</div>
                   <div className="text-xs text-muted">{t("Problems reported")}</div>
                 </div>
               )}
               {todayReports.length > 0 && (
-                <div style={{ padding: "8px 10px", borderRadius: 6, background: "var(--bg3)" }}>
-                  <div className="text-lg font-bold" style={{ color: "var(--blue)" }}>{todayReports.length}</div>
+                <div className="activity-tile">
+                  <div className="text-lg font-bold" className="text-blue">{todayReports.length}</div>
                   <div className="text-xs text-muted">{t("Daily reports")}</div>
-                  {unreviewed > 0 && <div className="text-xs" style={{ color: "var(--amber)", fontWeight: 700 }}>{unreviewed} {t("un-reviewed")}</div>}
+                  {unreviewed > 0 && <div className="text-xs" className="text-amber fw-700">{unreviewed} {t("un-reviewed")}</div>}
                 </div>
               )}
             </div>
             {/* Per-project breakdown */}
-            <div style={{ marginTop: 10 }}>
+            <div className="mt-10">
               {[...new Set(todayProd.map(p => p.projectId))].map(pid => {
                 const proj = projects.find(p => String(p.id) === String(pid));
                 const count = todayProd.filter(p => p.projectId === pid).length;
                 return proj ? (
-                  <div key={pid} className="text-xs" style={{ padding: "3px 0", cursor: "pointer", color: "var(--blue)" }}
+                  <div key={pid} className="text-xs" className="py-3 cursor-pointer text-blue"
                     onClick={() => setModal({ type: "editProject", data: proj })}>
                     {proj.name}: {count} {t("entries today")}
                   </div>
@@ -1142,11 +1142,11 @@ function App({ auth, onLogout }) {
         if (!hasData) return null;
 
         return (
-          <div className="card" style={{ padding: "14px 16px", marginBottom: 16, borderLeft: "3px solid var(--amber)" }}>
-            <div className="text-sm font-semi mb-8" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div className="card" className="dash-card dash-card--amber">
+            <div className="text-sm font-semi mb-8" className="flex-between">
+              <span className="flex-center-gap-6">
                 <Calendar size={15} /> {t("Look-Ahead")}
-                <span style={{ display: "flex", gap: 2, marginLeft: 8 }}>
+                <span className="flex gap-2 ml-8">
                   {[7, 14, 21].map(d => (
                     <button key={d} className={`btn btn-sm ${lookAheadDays === d ? "btn-primary" : "btn-ghost"}`}
                       style={{ fontSize: 10, padding: "2px 6px", minHeight: 0 }}
@@ -1162,14 +1162,14 @@ function App({ auth, onLogout }) {
                   <div style={{ fontWeight: 700, fontSize: 10, color: i === 0 ? "var(--green)" : "var(--text3)", marginBottom: 4 }}>
                     {d.label.split(",")[0]}
                   </div>
-                  {d.crew > 0 && <div style={{ color: "var(--blue)" }}>{d.crew} <span style={{fontSize: 9}}>crew</span></div>}
-                  {d.deliveries > 0 && <div style={{ color: "var(--amber)" }}>{d.deliveries} <span style={{fontSize: 9}}>del</span></div>}
+                  {d.crew > 0 && <div className="text-blue">{d.crew} <span className="fs-9">crew</span></div>}
+                  {d.deliveries > 0 && <div className="text-amber">{d.deliveries} <span className="fs-9">del</span></div>}
                   {d.events.map((ev, ei) => (
                     <div key={ei} style={{ fontSize: 9, color: "var(--text3)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {ev.title || ev.type}
                     </div>
                   ))}
-                  {d.crew === 0 && d.deliveries === 0 && d.events.length === 0 && <div style={{ color: "var(--text3)", fontSize: 9 }}>—</div>}
+                  {d.crew === 0 && d.deliveries === 0 && d.events.length === 0 && <div className="text-dim fs-9">—</div>}
                 </div>
               ))}
             </div>
@@ -1199,17 +1199,17 @@ function App({ auth, onLogout }) {
         if (entries.length === 0) return null;
         const totalCrew = new Set(entries.flatMap(([, v]) => [...v.crew])).size;
         return (
-          <div className="card" style={{ padding: "14px 16px", marginBottom: 16, borderLeft: "3px solid var(--blue)" }}>
-            <div className="text-sm font-semi mb-8" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div className="card" className="card dash-card dash-card--blue">
+            <div className="text-sm font-semi mb-8" className="flex-center-gap-6">
               <HardHat size={15} /> {t("Today's Manpower")} — {totalCrew} {t("crew")} {t("across")} {entries.length} {t("sites")}
             </div>
             {entries.map(([pid, data]) => {
               const proj = projects.find(p => String(p.id) === String(pid));
               if (!proj) return null;
               return (
-                <div key={pid} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid var(--border)", fontSize: 12, cursor: "pointer" }}
+                <div key={pid} className="flex-between queue-row fs-12 cursor-pointer"
                   onClick={() => setModal({ type: "editProject", data: proj })}>
-                  <span style={{ color: "var(--blue)", fontWeight: 600 }}>{proj.name}</span>
+                  <span className="text-blue font-semi">{proj.name}</span>
                   <span><strong>{data.crew.size}</strong> crew · {data.hours.toFixed(0)}h</span>
                 </div>
               );
@@ -1224,12 +1224,12 @@ function App({ auth, onLogout }) {
         if (mySites.length === 0) return null;
         const PROXIMITY_M = 200;
         return (
-          <div className="card" style={{ padding: "14px 16px", marginBottom: 16, borderLeft: "3px solid var(--blue)" }}>
-            <div className="text-sm font-semi mb-8" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div className="card" className="card dash-card dash-card--blue">
+            <div className="text-sm font-semi mb-8" className="flex-center-gap-6">
               <MapPin size={15} /> Today's Sites
-              <span className="text-xs text-muted" style={{ fontWeight: 400 }}>({mySites.length} active)</span>
+              <span className="text-xs text-muted" className="fw-400">({mySites.length} active)</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 8 }}>
+            <div className="grid-auto-260">
               {mySites.slice(0, 6).map(p => {
                 const dist = userLocation ? getDistanceM(userLocation.lat, userLocation.lng, p.lat, p.lng) : null;
                 const isOnSite = dist !== null && dist < PROXIMITY_M;
@@ -1237,22 +1237,22 @@ function App({ auth, onLogout }) {
                   ? dist < 1000 ? `${Math.round(dist)}m away` : `${(dist / 1609.34).toFixed(1)} mi away`
                   : null;
                 return (
-                  <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderRadius: 6, background: "var(--bg3)", gap: 8 }}>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div className="text-sm font-semi" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", color: "var(--blue)" }}
+                  <div key={p.id} className="activity-tile flex-between flex-center-gap-8">
+                    <div className="flex-1" style={{ minWidth: 0 }}>
+                      <div className="text-sm font-semi" className="text-ellipsis cursor-pointer text-blue"
                         onClick={() => setModal({ type: "editProject", data: p })}>{p.name}</div>
-                      <div className="text-xs text-muted" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div className="text-xs text-muted" className="text-ellipsis">
                         {p.address}{p.suite ? ` — ${p.suite}` : ""}
                       </div>
                       {distLabel && <div className="text-xs" style={{ color: isOnSite ? "var(--green)" : "var(--text-muted)", marginTop: 2 }}>{isOnSite ? "On site" : distLabel}</div>}
                     </div>
                     {isOnSite ? (
-                      <button className="btn btn-primary btn-sm" style={{ whiteSpace: "nowrap", flexShrink: 0 }}
+                      <button className="btn btn-primary btn-sm" className="ws-nowrap flex-shrink-0"
                         onClick={() => handleTabClick("timeclock")}>
                         Clock In
                       </button>
                     ) : (
-                      <button className="btn btn-ghost btn-sm" style={{ whiteSpace: "nowrap", flexShrink: 0 }}
+                      <button className="btn btn-ghost btn-sm" className="ws-nowrap flex-shrink-0"
                         onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`, "_blank")}>
                         Directions
                       </button>
@@ -1262,7 +1262,7 @@ function App({ auth, onLogout }) {
               })}
             </div>
             {mySites.length > 6 && (
-              <div className="text-xs text-muted" style={{ marginTop: 6, cursor: "pointer", color: "var(--blue)" }}
+              <div className="text-xs text-muted" className="mt-6 cursor-pointer text-blue"
                 onClick={() => handleTabClick("projects")}>View all {mySites.length} sites →</div>
             )}
           </div>
@@ -1279,60 +1279,60 @@ function App({ auth, onLogout }) {
         const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length;
         if (queueTotal === 0) return null;
         return (
-          <div className="card" style={{ padding: "14px 16px", marginBottom: 16, borderLeft: "3px solid var(--amber)", background: "var(--bg2)" }}>
+          <div className="card" className="dash-card dash-card--amber" className="bg-2">
             <div className="flex-between mb-8">
-              <div className="text-sm font-semi" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div className="text-sm font-semi" className="flex-center-gap-6">
                 <span>⚡</span> PM Action Queue
                 <span className="badge badge-amber" style={{ fontSize: 11, padding: "1px 8px" }}>{queueTotal}</span>
               </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div className="flex-col-gap-6">
               {pendingMat.length > 0 && (
-                <div className="flex-between" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div className="flex-between" className="queue-row">
+                  <div className="flex-center-gap-8">
                     <span>📦</span>
                     <span className="text-sm">Material Requests</span>
                     {urgentMat.length > 0 && <span className="badge badge-red" style={{ fontSize: 9, padding: "0 5px" }}>{urgentMat.length} urgent</span>}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span className="text-sm font-semi" style={{ color: "var(--amber)" }}>{pendingMat.length}</span>
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => handleTabClick("materials")}>Review</button>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi" className="text-amber">{pendingMat.length}</span>
+                    <button className="btn btn-ghost btn-sm" className="btn-inline" onClick={() => handleTabClick("materials")}>Review</button>
                   </div>
                 </div>
               )}
               {awaitingConfirm.length > 0 && (
-                <div className="flex-between" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div className="flex-between" className="queue-row">
+                  <div className="flex-center-gap-8">
                     <span>✓</span>
                     <span className="text-sm">Deliveries Awaiting Confirmation</span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span className="text-sm font-semi" style={{ color: "var(--green)" }}>{awaitingConfirm.length}</span>
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => handleTabClick("materials")}>View</button>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi" className="text-green">{awaitingConfirm.length}</span>
+                    <button className="btn btn-ghost btn-sm" className="btn-inline" onClick={() => handleTabClick("materials")}>View</button>
                   </div>
                 </div>
               )}
               {pendingReviews.length > 0 && (
-                <div className="flex-between" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div className="flex-between" className="queue-row">
+                  <div className="flex-center-gap-8">
                     <span>📋</span>
                     <span className="text-sm">Daily Reports</span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div className="flex-center-gap-8">
                     <span className="text-sm font-semi">{pendingReviews.length}</span>
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => handleTabClick("reports")}>Review</button>
+                    <button className="btn btn-ghost btn-sm" className="btn-inline" onClick={() => handleTabClick("reports")}>Review</button>
                   </div>
                 </div>
               )}
               {openProblems.length > 0 && (
-                <div className="flex-between" style={{ padding: "6px 0" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div className="flex-between" className="py-6">
+                  <div className="flex-center-gap-8">
                     <span>⚠️</span>
                     <span className="text-sm">Unassigned Problems</span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span className="text-sm font-semi" style={{ color: "var(--red)" }}>{openProblems.length}</span>
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => handleTabClick("reports")}>Assign</button>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi" className="text-red">{openProblems.length}</span>
+                    <button className="btn btn-ghost btn-sm" className="btn-inline" onClick={() => handleTabClick("reports")}>Assign</button>
                   </div>
                 </div>
               )}
@@ -1348,11 +1348,11 @@ function App({ auth, onLogout }) {
         const counts = {};
         staged.forEach(p => { counts[p.constructionStage] = (counts[p.constructionStage] || 0) + 1; });
         return (
-          <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+          <div className="flex gap-6 mb-12 flex-wrap">
             {CONSTRUCTION_STAGES.map(s => counts[s.key] ? (
               <div key={s.key} style={{ padding: "4px 10px", borderRadius: 6, background: s.color + "18", border: `1px solid ${s.color}33`, fontSize: 11, color: s.color, fontWeight: 600, cursor: "pointer" }}
                 onClick={() => handleTabClick("projects")}>
-                {s.label} <span style={{ fontWeight: 800 }}>{counts[s.key]}</span>
+                {s.label} <span className="fw-800">{counts[s.key]}</span>
               </div>
             ) : null)}
           </div>
@@ -1361,19 +1361,19 @@ function App({ auth, onLogout }) {
 
       {/* ── Section 1: Action Items — what needs attention NOW ── */}
       {dashCfg.showKPIs && (dashActions.bidsDueSoon.length > 0 || dashActions.cosPending.length > 0 || dashActions.rfisOpen.length > 0 || dashActions.subsDueSoon.length > 0 || dashActions.overdueInv.length > 0 || dashActions.tmPending.length > 0 || dashActions.profitAlerts.length > 0) && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 16 }}>
+        <div className="grid-auto-200 mb-16">
           {dashActions.bidsDueSoon.length > 0 && (
-            <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--red)" }} onClick={() => handleTabClick("bids")}>
+            <div className="card" className="action-card action-card--red" onClick={() => handleTabClick("bids")}>
               <div className="text-xs text-muted">Bids Due This Week</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: "var(--red)" }}>{dashActions.bidsDueSoon.length}</div>
-              <div className="text-xs text-muted" style={{ marginTop: 2 }}>{dashActions.bidsDueSoon.slice(0, 2).map(b => b.name?.slice(0, 20) || "Untitled").join(", ")}{dashActions.bidsDueSoon.length > 2 ? "..." : ""}</div>
+              <div className="action-value text-red">{dashActions.bidsDueSoon.length}</div>
+              <div className="text-xs text-muted" className="mt-2">{dashActions.bidsDueSoon.slice(0, 2).map(b => b.name?.slice(0, 20) || "Untitled").join(", ")}{dashActions.bidsDueSoon.length > 2 ? "..." : ""}</div>
             </div>
           )}
           {dashActions.cosPending.length > 0 && (
-            <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--amber)" }} onClick={() => handleTabClick("projects")}>
+            <div className="card" className="action-card action-card--amber" onClick={() => handleTabClick("projects")}>
               <div className="text-xs text-muted">COs Pending</div>
               <div style={{ fontSize: 22, fontWeight: 700, color: "var(--amber)" }}>{dashActions.cosPending.length}</div>
-              <div className="text-xs text-muted" style={{ marginTop: 2 }}>{fmtK(dashActions.cosPendingTotal)} awaiting approval</div>
+              <div className="text-xs text-muted" className="mt-2">{fmtK(dashActions.cosPendingTotal)} awaiting approval</div>
             </div>
           )}
           {dashActions.rfisOpen.length > 0 && (() => {
@@ -1382,36 +1382,36 @@ function App({ auth, onLogout }) {
               <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: `3px solid ${overdueRfis.length > 0 ? "var(--red)" : "var(--blue)"}` }} onClick={() => handleTabClick("projects")}>
                 <div className="text-xs text-muted">Open RFIs</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: overdueRfis.length > 0 ? "var(--red)" : "var(--blue)" }}>{dashActions.rfisOpen.length}</div>
-                {overdueRfis.length > 0 && <div className="text-xs" style={{ color: "var(--red)", fontWeight: 700, marginTop: 2 }}>{overdueRfis.length} overdue (oldest: {dashActions.rfisOpen[0].age}d)</div>}
+                {overdueRfis.length > 0 && <div className="text-xs" className="text-red fw-700 mt-2">{overdueRfis.length} overdue (oldest: {dashActions.rfisOpen[0].age}d)</div>}
               </div>
             );
           })()}
           {dashActions.subsDueSoon.length > 0 && (
-            <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--amber)" }} onClick={() => handleTabClick("projects")}>
+            <div className="card" className="action-card action-card--amber" onClick={() => handleTabClick("projects")}>
               <div className="text-xs text-muted">Submittals Due</div>
-              <div style={{ fontSize: 22, fontWeight: 700 }}>{dashActions.subsDueSoon.length}</div>
-              <div className="text-xs text-muted" style={{ marginTop: 2 }}>within 14 days</div>
+              <div className="action-value">{dashActions.subsDueSoon.length}</div>
+              <div className="text-xs text-muted" className="mt-2">within 14 days</div>
             </div>
           )}
           {dashActions.overdueInv.length > 0 && (
-            <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--red)" }} onClick={() => handleTabClick("financials")}>
+            <div className="card" className="action-card action-card--red" onClick={() => handleTabClick("financials")}>
               <div className="text-xs text-muted">Overdue Invoices</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: "var(--red)" }}>{dashActions.overdueInv.length}</div>
-              <div className="text-xs text-muted" style={{ marginTop: 2 }}>{fmtK(dashActions.overdueTotal)} outstanding</div>
+              <div className="action-value text-red">{dashActions.overdueInv.length}</div>
+              <div className="text-xs text-muted" className="mt-2">{fmtK(dashActions.overdueTotal)} outstanding</div>
             </div>
           )}
           {dashActions.tmPending.length > 0 && (
-            <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--amber)" }} onClick={() => handleTabClick("financials")}>
+            <div className="card" className="action-card action-card--amber" onClick={() => handleTabClick("financials")}>
               <div className="text-xs text-muted">T&M Pending</div>
-              <div style={{ fontSize: 22, fontWeight: 700 }}>{dashActions.tmPending.length}</div>
-              <div className="text-xs text-muted" style={{ marginTop: 2 }}>tickets to review</div>
+              <div className="action-value">{dashActions.tmPending.length}</div>
+              <div className="text-xs text-muted" className="mt-2">tickets to review</div>
             </div>
           )}
           {dashActions.profitAlerts.length > 0 && (
-            <div className="card" style={{ padding: "12px 14px", cursor: "pointer", borderLeft: "3px solid var(--red)" }} onClick={() => handleTabClick("projects")}>
+            <div className="card" className="action-card action-card--red" onClick={() => handleTabClick("projects")}>
               <div className="text-xs text-muted">Low Margin</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: "var(--red)" }}>{dashActions.profitAlerts.length}</div>
-              <div className="text-xs text-muted" style={{ marginTop: 2 }}>projects below 30%</div>
+              <div className="action-value text-red">{dashActions.profitAlerts.length}</div>
+              <div className="text-xs text-muted" className="mt-2">projects below 30%</div>
             </div>
           )}
         </div>
@@ -1419,7 +1419,7 @@ function App({ auth, onLogout }) {
 
       {/* ── Section 2: Compact KPI row — context, not decoration ── */}
       {dashCfg.showKPIs && (
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16, padding: "10px 0", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
+        <div className="kpi-compact-row">
           {[
             { label: "Backlog", val: backlog > 0 ? fmtK(backlog) : null, click: "projects" },
             { label: "Pipeline", val: pipeline > 0 ? fmtK(pipeline) : null, click: "bids" },
@@ -1428,7 +1428,7 @@ function App({ auth, onLogout }) {
             { label: "Labor", val: laborUtil !== null ? `${laborUtil}%` : null, color: laborUtil !== null ? (laborUtil >= 70 ? "var(--green)" : laborUtil >= 50 ? "var(--amber)" : "var(--red)") : undefined, click: "timeclock" },
             { label: "Open Bids", val: openBids > 0 ? String(openBids) : null, click: "bids" },
           ].filter(k => k.val).map((k, i) => (
-            <div key={i} style={{ padding: "6px 14px", cursor: "pointer", borderRadius: 6, background: "var(--bg3)", minWidth: 80, textAlign: "center" }}
+            <div key={i} className="kpi-compact"
               onClick={() => handleTabClick(k.click)}>
               <div className="text-xs text-muted">{k.label}</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: k.color || "var(--text)" }}>{k.val}</div>
@@ -1438,12 +1438,12 @@ function App({ auth, onLogout }) {
           {dashActions.profitAlerts.length > 0 && (
             <div style={{ padding: "6px 14px", cursor: "pointer", borderRadius: 6, background: "rgba(239,68,68,0.10)", border: "1px solid rgba(239,68,68,0.25)", minWidth: 80, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}
               onClick={() => document.getElementById("profit-analysis-section")?.scrollIntoView({ behavior: "smooth" })}>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <TrendingDown size={12} style={{ color: "var(--red)" }} />
-                <span className="text-xs" style={{ color: "var(--red)", textTransform: "uppercase", letterSpacing: "0.6px" }}>Profit Alert</span>
+              <div className="flex-center-gap-4">
+                <TrendingDown size={12} className="text-red" />
+                <span className="text-xs" className="text-red text-uppercase" style={{ letterSpacing: "0.6px" }}>Profit Alert</span>
               </div>
               <div style={{ fontSize: 16, fontWeight: 700, color: "var(--red)" }}>{dashActions.profitAlerts.length}</div>
-              <div className="text-xs" style={{ color: "var(--red)", opacity: 0.8 }}>{dashActions.profitAlerts.filter(p => p.margin < 15).length > 0 ? `${dashActions.profitAlerts.filter(p => p.margin < 15).length} critical` : "below 30%"}</div>
+              <div className="text-xs" className="text-red" style={{ opacity: 0.8 }}>{dashActions.profitAlerts.filter(p => p.margin < 15).length > 0 ? `${dashActions.profitAlerts.filter(p => p.margin < 15).length} critical` : "below 30%"}</div>
             </div>
           )}
         </div>
@@ -1451,13 +1451,13 @@ function App({ auth, onLogout }) {
 
       {/* ── Section 3: Project Health — behind schedule / no billing ── */}
       {dashCfg.showKPIs && (dashActions.projAtRisk.length > 0 || dashActions.projNoBilling.length > 0) && (
-        <div className="card" style={{ padding: "12px 16px", marginBottom: 16 }}>
+        <div className="card" className="dash-card">
           <div className="text-sm font-semi mb-8">Project Health</div>
           {dashActions.projAtRisk.length > 0 && (
             <div style={{ marginBottom: dashActions.projNoBilling.length > 0 ? 10 : 0 }}>
-              <div className="text-xs" style={{ color: "var(--red)", marginBottom: 4 }}>Behind Schedule ({dashActions.projAtRisk.length})</div>
+              <div className="text-xs" className="text-red mb-4">Behind Schedule ({dashActions.projAtRisk.length})</div>
               {dashActions.projAtRisk.slice(0, 4).map(p => (
-                <div key={p.id} className="text-sm" style={{ padding: "3px 0", cursor: "pointer", color: "var(--blue)" }}
+                <div key={p.id} className="text-sm" className="py-3 cursor-pointer text-blue"
                   onClick={() => setModal({ type: "editProject", data: p })}>{p.name} — {p.progress || 0}%</div>
               ))}
               {dashActions.projAtRisk.length > 4 && <div className="text-xs text-muted">+{dashActions.projAtRisk.length - 4} more</div>}
@@ -1465,9 +1465,9 @@ function App({ auth, onLogout }) {
           )}
           {dashActions.projNoBilling.length > 0 && (
             <div>
-              <div className="text-xs" style={{ color: "var(--amber)", marginBottom: 4 }}>No Billing 30+ Days ({dashActions.projNoBilling.length})</div>
+              <div className="text-xs" className="text-amber mb-4">No Billing 30+ Days ({dashActions.projNoBilling.length})</div>
               {dashActions.projNoBilling.slice(0, 4).map(p => (
-                <div key={p.id} className="text-sm" style={{ padding: "3px 0", cursor: "pointer", color: "var(--blue)" }}
+                <div key={p.id} className="text-sm" className="py-3 cursor-pointer text-blue"
                   onClick={() => setModal({ type: "editProject", data: p })}>{p.name}</div>
               ))}
               {dashActions.projNoBilling.length > 4 && <div className="text-xs text-muted">+{dashActions.projNoBilling.length - 4} more</div>}
@@ -1498,15 +1498,15 @@ function App({ auth, onLogout }) {
         const criticalCount = dashActions.profitAlerts.filter(p => p.margin < 15).length;
         const warnCount = dashActions.profitAlerts.filter(p => p.margin >= 15).length;
         return (
-          <div id="profit-analysis-section" className="card" style={{ padding: "16px 18px", marginBottom: 16, borderLeft: "3px solid var(--red)" }}>
+          <div id="profit-analysis-section" className="card" className="dash-card dash-card--red">
             <div className="flex-between mb-12">
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <TrendingDown size={16} style={{ color: "var(--red)" }} />
-                <span className="text-sm font-semi" style={{ color: "var(--text)" }}>Profit Analysis</span>
+              <div className="flex-center-gap-8">
+                <TrendingDown size={16} className="text-red" />
+                <span className="text-sm font-semi" className="text-default">Profit Analysis</span>
                 <span className="text-xs text-muted">— projects below 30% margin</span>
               </div>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                {criticalCount > 0 && <span className="badge badge-red" style={{ display: "flex", alignItems: "center", gap: 4 }}><AlertTriangle size={10} /> {criticalCount} critical</span>}
+              <div className="flex-center-gap-6">
+                {criticalCount > 0 && <span className="badge badge-red" className="flex-center-gap-4"><AlertTriangle size={10} /> {criticalCount} critical</span>}
                 {warnCount > 0 && <span className="badge badge-amber">{warnCount} warning</span>}
               </div>
             </div>
@@ -1527,23 +1527,23 @@ function App({ auth, onLogout }) {
                     const diagnosis = getProfitDiagnosis(p);
                     const badgeClass = p.margin < 0 ? "badge-red" : p.margin < 15 ? "badge-red" : "badge-amber";
                     return (
-                      <tr key={p.id} style={{ cursor: "pointer" }} onClick={() => setModal({ type: "editProject", data: p })}>
+                      <tr key={p.id} className="cursor-pointer" onClick={() => setModal({ type: "editProject", data: p })}>
                         <td>
-                          <div className="text-sm" style={{ color: "var(--blue)", fontWeight: 500 }}>{p.name}</div>
+                          <div className="text-sm" className="text-blue fw-500">{p.name}</div>
                           <div className="text-xs text-muted">{p.phase}</div>
                         </td>
                         <td className="text-sm text-muted">{p.gc}</td>
                         <td className="num">{fmt(p.contract)}</td>
-                        <td className="num" style={{ color: "var(--text2)" }}>{fmt(p.totalCost)}</td>
+                        <td className="num" className="text-muted">{fmt(p.totalCost)}</td>
                         <td className="num">
-                          <span className={`badge ${badgeClass}`} style={{ minWidth: 48, textAlign: "center", display: "inline-block" }}>
+                          <span className={`badge ${badgeClass}`} className="inline-block text-center" style={{ minWidth: 48 }}>
                             {p.margin < 0 ? `${p.margin}%` : `${p.margin}%`}
                           </span>
                         </td>
                         <td>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                          <div className="flex-col-gap-3">
                             {diagnosis.map((d, i) => (
-                              <div key={i} style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--text2)", fontSize: 12 }}>
+                              <div key={i} className="diagnosis-item">
                                 <span style={{ color: p.margin < 15 ? "var(--red)" : "var(--amber)", flexShrink: 0 }}>{d.icon}</span>
                                 <span>{d.text}</span>
                               </div>
@@ -1566,9 +1566,9 @@ function App({ auth, onLogout }) {
 
       {/* ── Section 4: Charts — only if data exists, compact ── */}
       {dashCfg.showCharts && gcWinRates.length > 0 && (
-        <div className="flex gap-16 mt-8" style={{ flexWrap: "wrap" }}>
+        <div className="flex gap-16 mt-8" className="flex-wrap">
           <div className="card" style={{ flex: "1 1 480px", minWidth: 320 }}>
-            <div className="card-header"><div className="card-title font-head" style={{ fontSize: 13 }}>{t("Win Rate by GC")}</div></div>
+            <div className="card-header"><div className="card-title font-head" className="fs-13">{t("Win Rate by GC")}</div></div>
             <ResponsiveContainer width="100%" height={Math.max(140, gcWinRates.length * 28 + 32)}>
               <BarChart data={gcWinRates.map(g => ({ name: g.gc.length > 18 ? g.gc.slice(0, 16) + "..." : g.gc, Awarded: g.awarded, Lost: g.lost, Pending: g.pending }))} layout="vertical" margin={{ left: 10, right: 20 }}>
                 <XAxis type="number" tick={{ fill: "var(--text2)", fontSize: 11 }} />
@@ -1583,7 +1583,7 @@ function App({ auth, onLogout }) {
           </div>
           {(cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90) > 0 && (
             <div className="card" style={{ flex: "1 1 260px", minWidth: 240 }}>
-              <div className="card-header"><div className="card-title font-head" style={{ fontSize: 13 }}>{t("Receivables Aging")}</div></div>
+              <div className="card-header"><div className="card-title font-head" className="fs-13">{t("Receivables Aging")}</div></div>
               <ResponsiveContainer width="100%" height={170}>
                 <BarChart data={[
                   { name: "Current", value: cashFlow.current },
@@ -1610,15 +1610,15 @@ function App({ auth, onLogout }) {
       )}
 
       {/* ── Section 5: Follow-ups & Recent Activity side by side ── */}
-      <div className="flex gap-16 mt-16" style={{ flexWrap: "wrap" }}>
+      <div className="flex gap-16 mt-16" className="flex-wrap">
         {dashActions.followUps.length > 0 && (
-          <div className="card" style={{ flex: "1 1 300px", minWidth: 280, padding: "12px 16px" }}>
+          <div className="card" className="chart-card-half">
             <div className="text-sm font-semi mb-8">Follow-ups</div>
             {dashActions.followUps.slice(0, 5).map((c, i) => (
-              <div key={i} className="flex gap-8" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+              <div key={i} className="flex gap-8" className="log-item--clickable"
                 onClick={() => { handleTabClick("contacts"); setTimeout(() => setContactSearch(c.contact || ""), 0); }}>
-                <div style={{ width: 4, borderRadius: 2, background: "var(--amber)", flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
+                <div className="log-accent-bar" className="bg-amber" />
+                <div className="flex-1">
                   <div className="flex-between">
                     <span className="text-sm font-semi">{c.contact}</span>
                     <span className="text-xs text-dim">{c.time}</span>
@@ -1629,13 +1629,13 @@ function App({ auth, onLogout }) {
             ))}
           </div>
         )}
-        <div className="card" style={{ flex: "1 1 300px", minWidth: 280, padding: "12px 16px" }}>
+        <div className="card" className="chart-card-half">
           <div className="text-sm font-semi mb-8">Recent Activity</div>
           {callLog.slice(0, 5).map(c => (
-            <div key={c.id} className="flex gap-8" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+            <div key={c.id} className="flex gap-8" className="log-item--clickable"
               onClick={() => { handleTabClick("contacts"); setTimeout(() => setContactSearch(c.contact || ""), 0); }}>
-              <div style={{ width: 4, borderRadius: 2, background: "var(--blue)", flexShrink: 0 }} />
-              <div style={{ flex: 1 }}>
+              <div className="log-accent-bar" className="bg-blue" />
+              <div className="flex-1">
                 <div className="flex-between">
                   <span className="text-sm font-semi">{c.contact}</span>
                   <span className="text-xs text-dim">{c.time}</span>
@@ -1644,7 +1644,7 @@ function App({ auth, onLogout }) {
               </div>
             </div>
           ))}
-          {callLog.length === 0 && <div className="text-sm text-muted" style={{ padding: 8 }}>No recent activity</div>}
+          {callLog.length === 0 && <div className="text-sm text-muted" className="p-8">No recent activity</div>}
         </div>
       </div>
 
@@ -1652,14 +1652,14 @@ function App({ auth, onLogout }) {
       {dashCfg.showDigest && <div className="card mt-16" style={{ padding: "12px 16px" }}>
         <div className="flex-between mb-8">
           <div className="text-sm font-semi">Weekly Digest</div>
-          <button className="btn btn-ghost btn-sm" onClick={runWeeklyDigest} disabled={digestLoading} style={{ fontSize: 11 }}>
+          <button className="btn btn-ghost btn-sm" onClick={runWeeklyDigest} disabled={digestLoading} className="fs-11">
             {digestLoading ? "Analyzing..." : "Generate"}
           </button>
         </div>
         {!digestResult && !digestLoading && (
           <div className="text-xs text-muted">AI-powered portfolio summary — health, alerts, and recommendations.</div>
         )}
-        {digestLoading && <div className="text-xs text-muted" style={{ textAlign: "center", padding: 8 }}>Analyzing {projects.length} projects...</div>}
+        {digestLoading && <div className="text-xs text-muted" className="text-center p-8">Analyzing {projects.length} projects...</div>}
         {digestResult && (
           <div>
             <div className="text-sm" style={{ padding: "8px 10px", borderRadius: 6, background: "var(--bg3)", marginBottom: 8 }}>{digestResult.healthSummary}</div>
@@ -1670,11 +1670,11 @@ function App({ auth, onLogout }) {
               </div>
             ))}
             {digestResult.recommendations?.length > 0 && (
-              <div style={{ marginTop: 8 }}>
+              <div className="mt-8">
                 <div className="text-xs font-semi mb-4">Recommendations</div>
                 {digestResult.recommendations.slice(0, 3).map((r, i) => (
-                  <div key={i} className="text-xs" style={{ padding: "3px 0" }}>
-                    <span className={`badge ${r.urgency === "now" ? "badge-red" : "badge-amber"}`} style={{ fontSize: 10 }}>{r.urgency}</span>{" "}
+                  <div key={i} className="text-xs" className="py-3">
+                    <span className={`badge ${r.urgency === "now" ? "badge-red" : "badge-amber"}`} className="fs-10">{r.urgency}</span>{" "}
                     {r.action}
                   </div>
                 ))}
@@ -1746,12 +1746,12 @@ function App({ auth, onLogout }) {
           <div className="section-title font-head">{t("Bid Manager")}</div>
           <div className="section-sub">
             {filteredBids.length} {filteredBids.length !== 1 ? t("bids") : t("bid")}
-            {(() => { const active = bids.filter(b => BID_ACTIVE_STATUSES.includes(b.status)).length; const dueSoon = bids.filter(b => { const d = b.due ? new Date(b.due) : null; return d && !isNaN(d) && d >= new Date() && d <= new Date(Date.now() + 7 * 86400000) && BID_ACTIVE_STATUSES.includes(b.status); }).length; return <>{active > 0 && <span style={{ marginLeft: 8 }}>{active} active</span>}{dueSoon > 0 && <span style={{ color: "var(--red)", marginLeft: 8, fontWeight: 600 }}>{dueSoon} due this week</span>}</>; })()}
+            {(() => { const active = bids.filter(b => BID_ACTIVE_STATUSES.includes(b.status)).length; const dueSoon = bids.filter(b => { const d = b.due ? new Date(b.due) : null; return d && !isNaN(d) && d >= new Date() && d <= new Date(Date.now() + 7 * 86400000) && BID_ACTIVE_STATUSES.includes(b.status); }).length; return <>{active > 0 && <span className="ml-8">{active} active</span>}{dueSoon > 0 && <span className="text-red ml-8 font-semi">{dueSoon} due this week</span>}</>; })()}
           </div>
         </div>
         <div className="flex gap-8">
           <div className="search-wrap">
-            <Search style={{ width: 16, height: 16 }} className="search-icon" />
+            <Search className="w-4 h-4" className="search-icon" />
             <input
               className="search-input"
               placeholder={t("Search bids...")}
@@ -1785,7 +1785,7 @@ function App({ auth, onLogout }) {
 
       {/* Email-to-Bid Scanner */}
       {showEmailScanner && (
-        <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+        <div className="card" className="p-16 mb-16">
           <div className="flex-between mb-8">
             <div>
               <div className="text-sm font-semi">{t("Email-to-Bid Scanner")}</div>
@@ -1796,7 +1796,7 @@ function App({ auth, onLogout }) {
             value={emailText} onChange={e => setEmailText(e.target.value)}
             style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13, marginBottom: 8, minHeight: 120 }} />
           <div className="flex-between">
-            <div className="flex gap-8" style={{ alignItems: "center" }}>
+            <div className="flex gap-8" className="flex-center">
               <span className="text-xs text-dim">{emailText.length} chars</span>
               {emailText.length > 0 && <button className="btn btn-ghost btn-sm" onClick={() => { setEmailText(""); setEmailResults(null); setEditingEmailBid(null); }}>Clear</button>}
             </div>
@@ -1819,7 +1819,7 @@ function App({ auth, onLogout }) {
                   <span className="font-semi text-sm">Edit Extracted Bid</span>
                   <button className="btn btn-ghost btn-sm" onClick={() => setEditingEmailBid(null)}>Done Editing</button>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <div className="grid-2col">
                   <div>
                     <label className="text-xs text-muted">Project Name *</label>
                     <input className="form-input" value={bid.name || ""} onChange={e => updateField("name", e.target.value)} />
@@ -1864,7 +1864,7 @@ function App({ auth, onLogout }) {
                     <input className="form-input" value={bid.prebidDate || ""} onChange={e => updateField("prebidDate", e.target.value)} />
                   </div>
                 </div>
-                <div style={{ marginTop: 8 }}>
+                <div className="mt-8">
                   <label className="text-xs text-muted">Scope Tags</label>
                   <div className="flex gap-4 flex-wrap mt-4">
                     {SCOPE_OPTIONS.map(tag => (
@@ -1877,21 +1877,21 @@ function App({ auth, onLogout }) {
                   </div>
                 </div>
                 {bid.planLinks && bid.planLinks.length > 0 && (
-                  <div style={{ marginTop: 8 }}>
+                  <div className="mt-8">
                     <label className="text-xs text-muted">Plan / Spec Links</label>
                     {bid.planLinks.map((link, li) => (
-                      <div key={li} className="text-xs mt-2" style={{ wordBreak: "break-all" }}>
-                        <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>{link}</a>
+                      <div key={li} className="text-xs mt-2" className="word-break-all">
+                        <a href={link} target="_blank" rel="noopener noreferrer" className="text-amber">{link}</a>
                       </div>
                     ))}
                   </div>
                 )}
-                <div style={{ marginTop: 8 }}>
+                <div className="mt-8">
                   <label className="text-xs text-muted">Notes</label>
                   <textarea className="form-input" rows={3} value={bid.notes || ""} onChange={e => updateField("notes", e.target.value)}
-                    style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
+                    className="form-textarea-flex" />
                 </div>
-                <div className="flex gap-8 mt-8" style={{ justifyContent: "flex-end" }}>
+                <div className="flex gap-8 mt-8" className="justify-end">
                   <button className="btn btn-ghost btn-sm" onClick={() => setEditingEmailBid(null)}>Cancel</button>
                   <button className="btn btn-primary btn-sm" onClick={() => { importEmailBid(bid); setEditingEmailBid(null); }}>Create Bid</button>
                 </div>
@@ -1901,7 +1901,7 @@ function App({ auth, onLogout }) {
 
           {/* Results list */}
           {editingEmailBid === null && emailResults && emailResults.length > 0 && (
-            <div style={{ marginTop: 12 }}>
+            <div className="mt-12">
               <div className="flex-between mb-8">
                 <div className="text-sm font-semi">Found {emailResults.length} bid{emailResults.length > 1 ? "s" : ""}</div>
                 {emailResults.length > 1 && (
@@ -1934,7 +1934,7 @@ function App({ auth, onLogout }) {
                   {bid.address && <div className="text-xs text-dim mt-4">Address: {bid.address}</div>}
                   {(bid.scope || []).length > 0 && (
                     <div className="flex gap-4 flex-wrap mt-4">
-                      {bid.scope.map(tag => <span key={tag} className="badge badge-blue" style={{ fontSize: 10 }}>{tag}</span>)}
+                      {bid.scope.map(tag => <span key={tag} className="badge badge-blue" className="fs-10">{tag}</span>)}
                     </div>
                   )}
                   {(bid.contactName || bid.contactEmail) && (
@@ -1946,11 +1946,11 @@ function App({ auth, onLogout }) {
                   {bid.planLinks && bid.planLinks.length > 0 && (
                     <div className="text-xs text-dim mt-4">
                       Plans: {bid.planLinks.map((link, li) => (
-                        <a key={li} href={link} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", marginRight: 8, wordBreak: "break-all" }}>{link.length > 60 ? link.slice(0, 60) + "..." : link}</a>
+                        <a key={li} href={link} target="_blank" rel="noopener noreferrer" className="text-amber word-break-all" style={{ marginRight: 8 }}>{link.length > 60 ? link.slice(0, 60) + "..." : link}</a>
                       ))}
                     </div>
                   )}
-                  {bid.notes && <div className="text-xs text-dim mt-4" style={{ fontStyle: "italic" }}>{bid.notes}</div>}
+                  {bid.notes && <div className="text-xs text-dim mt-4" className="text-italic">{bid.notes}</div>}
                 </div>
               ))}
             </div>
@@ -1974,9 +1974,9 @@ function App({ auth, onLogout }) {
           ))}
         </div>
         <div className="flex gap-4">
-          <button className={`btn btn-sm ${bidViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("list")} style={{ display: "flex", alignItems: "center", gap: 4 }}><List style={{ width: 14, height: 14 }} /> List</button>
-          <button className={`btn btn-sm ${bidViewMode === "pipeline" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("pipeline")} style={{ display: "flex", alignItems: "center", gap: 4 }}><Columns style={{ width: 14, height: 14 }} /> Pipeline</button>
-          <button className={`btn btn-sm ${bidViewMode === "calendar" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("calendar")} style={{ display: "flex", alignItems: "center", gap: 4 }}><Calendar style={{ width: 14, height: 14 }} /> Calendar</button>
+          <button className={`btn btn-sm ${bidViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("list")} className="flex-center-gap-4"><List className="w-4 h-4" /> List</button>
+          <button className={`btn btn-sm ${bidViewMode === "pipeline" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("pipeline")} className="flex-center-gap-4"><Columns className="w-4 h-4" /> Pipeline</button>
+          <button className={`btn btn-sm ${bidViewMode === "calendar" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("calendar")} className="flex-center-gap-4"><Calendar className="w-4 h-4" /> Calendar</button>
         </div>
       </div>
 
@@ -2028,7 +2028,7 @@ function App({ auth, onLogout }) {
             <option value="no_bid">No Bid</option>
           </select>
           <button className="btn btn-ghost btn-sm" onClick={() => setSelectedBids(new Set())}>{t("Clear")}</button>
-          <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }} onClick={() => {
+          <button className="btn btn-ghost btn-sm" className="text-red" onClick={() => {
             if (!confirm(`Delete ${selectedBids.size} bids?`)) return;
             setBids(prev => prev.filter(b => !selectedBids.has(b.id)));
             setSelectedBids(new Set());
@@ -2039,8 +2039,8 @@ function App({ auth, onLogout }) {
 
       {/* ═══ PIPELINE KANBAN VIEW ═══ */}
       {bidViewMode === "pipeline" && (
-        <div style={{ overflowX: "auto", paddingBottom: 16 }}>
-          <div style={{ display: "flex", gap: 12, minWidth: "fit-content" }}>
+        <div className="overflow-x-auto pb-16">
+          <div className="flex gap-12" style={{ minWidth: "fit-content" }}>
             {[
               { key: "estimating", label: "Estimating", statuses: ["invite_received", "reviewing", "assigned", "takeoff", "awaiting_quotes", "pricing", "draft_ready", "estimating"] },
               { key: "submitted", label: "Submitted", statuses: ["submitted", "clarifications", "negotiating"] },
@@ -2050,34 +2050,34 @@ function App({ auth, onLogout }) {
               const colBids = bids.filter(b => col.statuses.includes(b.status));
               const colValue = colBids.reduce((s, b) => s + (b.value || 0), 0);
               return (
-                <div key={col.key} style={{ flex: "0 0 260px", background: "var(--bg2)", borderRadius: 12, padding: 12, maxHeight: "70vh", overflowY: "auto" }}>
+                <div key={col.key} className="pipeline-col">
                   <div className="flex-between mb-8">
                     <span className="text-sm font-semi">{col.label}</span>
                     <span className="text-xs text-muted">{colBids.length} · {fmtK(colValue)}</span>
                   </div>
                   {colBids.length === 0 ? (
-                    <div className="text-xs text-dim" style={{ padding: 16, textAlign: "center" }}>Empty</div>
+                    <div className="text-xs text-dim" className="p-16 text-center">Empty</div>
                   ) : colBids.map(b => {
                     const linkedProject = b.convertedToProject ? projects.find(p => p.bidId === b.id) : null;
                     return (
                     <div key={b.id} className="bid-card" style={{ marginBottom: 8, padding: "10px 12px", cursor: "pointer", opacity: b.convertedToProject ? 0.7 : 1 }}
                       onClick={() => b.convertedToProject && linkedProject ? setModal({ type: "editProject", data: linkedProject }) : setModal({ type: "editBid", data: b })}>
-                      <div className="text-xs font-semi" style={{ lineHeight: 1.3, marginBottom: 4 }}>{b.name}</div>
+                      <div className="text-xs font-semi" className="lh-13 mb-4">{b.name}</div>
                       <div className="flex-between">
                         <span className="text-xs text-muted">{b.gc}</span>
                         <span className="text-xs font-mono text-amber">{b.value ? fmt(b.value) : "—"}</span>
                       </div>
                       <div className="flex gap-4 mt-4">
-                        <span className={`badge ${STATUS_BADGE[b.status] || "badge-muted"}`} style={{ fontSize: 9 }}>{STATUS_LABEL[b.status] || b.status}</span>
+                        <span className={`badge ${STATUS_BADGE[b.status] || "badge-muted"}`} className="fs-9">{STATUS_LABEL[b.status] || b.status}</span>
                         {b.contact && <span className="text-xs text-dim">{b.contact}</span>}
                       </div>
                       {b.estimatingBy && !b.convertedToProject && (
-                        <div className="text-xs mt-4" style={{ color: "var(--blue)", fontWeight: 600 }}>
+                        <div className="text-xs mt-4" className="text-blue font-semi">
                           {b.estimatingBy.split(" ")[0]}
                         </div>
                       )}
                       {b.convertedToProject && (
-                        <div className="text-xs mt-4" style={{ color: "var(--green)", fontStyle: "italic" }}>
+                        <div className="text-xs mt-4" className="text-green text-italic">
                           → Moved to Projects
                         </div>
                       )}
@@ -2151,7 +2151,7 @@ function App({ auth, onLogout }) {
                   <button onClick={() => setBidCalMonth(p => { let m2 = p.month + 1, y2 = p.year; if (m2 > 11) { m2 = 0; y2++; } return { year: y2, month: m2 }; })}>&#9654;</button>
                 </div>
                 <button className="bidcal-today-btn" onClick={() => { const tn = new Date(); setBidCalMonth({ year: tn.getFullYear(), month: tn.getMonth() }); setBidCalSelected(todayStr); }}>Today</button>
-                <button className="btn btn-sm btn-ghost" style={{ marginLeft: "auto" }} onClick={() => { setBidCalAddOpen(true); setBidCalEventForm(f => ({ ...f, date: bidCalSelected || todayStr })); }}>+ Add Event</button>
+                <button className="btn btn-sm btn-ghost" className="ml-auto" onClick={() => { setBidCalAddOpen(true); setBidCalEventForm(f => ({ ...f, date: bidCalSelected || todayStr })); }}>+ Add Event</button>
               </div>
               <div className="bidcal-grid">
                 {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(dw => <div key={dw} className="bidcal-hdr">{dw}</div>)}
@@ -2167,7 +2167,7 @@ function App({ auth, onLogout }) {
                         <div key={j} className={`bidcal-evt ${ev.statusClass || "bid-due"}`}
                           onClick={e => { e.stopPropagation(); if (ev.bid) setModal({ type: "editBid", data: ev.bid }); }}
                           title={ev.label + (ev.gc ? " \u2014 " + ev.gc : "") + (ev.value ? " \u2014 " + fmt(ev.value) : "")}>
-                          {ev.type !== "Bid Due" && <span style={{ fontWeight: 600 }}>{ev.type}: </span>}{ev.label}
+                          {ev.type !== "Bid Due" && <span className="font-semi">{ev.type}: </span>}{ev.label}
                         </div>
                       ))}
                       {dayEvts.length > 3 && <div className="bidcal-more">+{dayEvts.length - 3} more</div>}
@@ -2179,27 +2179,27 @@ function App({ auth, onLogout }) {
                 <div className="bidcal-day-detail">
                   <div className="bidcal-day-detail-title">
                     {new Date(bidCalSelected + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
-                    <span className="text-xs text-muted" style={{ marginLeft: 8 }}>{selectedEvts.length} event{selectedEvts.length !== 1 ? "s" : ""}</span>
+                    <span className="text-xs text-muted" className="ml-8">{selectedEvts.length} event{selectedEvts.length !== 1 ? "s" : ""}</span>
                   </div>
                   {selectedEvts.map((ev, si) => (
                     <div key={si} className="bidcal-detail-item" onClick={() => { if (ev.bid) setModal({ type: "editBid", data: ev.bid }); }}>
                       <div className="flex-between mb-4">
-                        <span className={`badge ${ev.status === "awarded" ? "badge-green" : ev.status === "lost" ? "badge-red" : ev.status === "no_bid" ? "badge-muted" : ev.type === "Site Walk" ? "badge-blue" : ev.type === "Pre-Bid Meeting" ? "badge-green" : ev.type === "Plan Review" ? "badge-blue" : ev.type === "Follow Up" ? "badge-red" : "badge-amber"}`} style={{ fontSize: 10 }}>{ev.type}</span>
+                        <span className={`badge ${ev.status === "awarded" ? "badge-green" : ev.status === "lost" ? "badge-red" : ev.status === "no_bid" ? "badge-muted" : ev.type === "Site Walk" ? "badge-blue" : ev.type === "Pre-Bid Meeting" ? "badge-green" : ev.type === "Plan Review" ? "badge-blue" : ev.type === "Follow Up" ? "badge-red" : "badge-amber"}`} className="fs-10">{ev.type}</span>
                         {ev.value > 0 && <span className="text-xs font-mono text-amber">{fmt(ev.value)}</span>}
                       </div>
                       <div className="text-sm font-semi">{ev.label}</div>
                       {ev.gc && <div className="text-xs text-muted">{ev.gc}</div>}
                       {ev.time && <div className="text-xs text-dim">Time: {ev.time}</div>}
                       {ev.location && <div className="text-xs text-dim">Location: {ev.location}</div>}
-                      {ev.notes && ev.type !== "Bid Due" && <div className="text-xs text-dim" style={{ marginTop: 4 }}>{ev.notes}</div>}
+                      {ev.notes && ev.type !== "Bid Due" && <div className="text-xs text-dim" className="mt-4">{ev.notes}</div>}
                     </div>
                   ))}
                 </div>
               )}
               {bidCalSelected && selectedEvts.length === 0 && (
-                <div className="bidcal-day-detail" style={{ textAlign: "center", padding: 24 }}>
+                <div className="bidcal-day-detail" className="text-center p-24">
                   <div className="text-sm text-muted">No events on {new Date(bidCalSelected + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric" })}</div>
-                  <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={() => { setBidCalAddOpen(true); setBidCalEventForm(f => ({ ...f, date: bidCalSelected })); }}>+ Add Event</button>
+                  <button className="btn btn-ghost btn-sm" className="mt-8" onClick={() => { setBidCalAddOpen(true); setBidCalEventForm(f => ({ ...f, date: bidCalSelected })); }}>+ Add Event</button>
                 </div>
               )}
             </div>
@@ -2211,19 +2211,19 @@ function App({ auth, onLogout }) {
                 ) : upcoming.slice(0, 10).map((ev, ui) => (
                   <div key={ui} className="bidcal-upcoming-item" onClick={() => { setBidCalSelected(ev.dateStr); if (ev.bid) setModal({ type: "editBid", data: ev.bid }); }}>
                     <div className="flex-between">
-                      <span className={`badge ${ev.status === "awarded" ? "badge-green" : ev.status === "lost" ? "badge-red" : ev.type === "Site Walk" ? "badge-blue" : ev.type === "Pre-Bid Meeting" ? "badge-green" : "badge-amber"}`} style={{ fontSize: 9 }}>{ev.type}</span>
+                      <span className={`badge ${ev.status === "awarded" ? "badge-green" : ev.status === "lost" ? "badge-red" : ev.type === "Site Walk" ? "badge-blue" : ev.type === "Pre-Bid Meeting" ? "badge-green" : "badge-amber"}`} className="fs-9">{ev.type}</span>
                       <span className="text-xs text-dim">{new Date(ev.dateStr + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
                     </div>
-                    <div className="text-xs font-semi" style={{ marginTop: 4 }}>{ev.label}</div>
+                    <div className="text-xs font-semi" className="mt-4">{ev.label}</div>
                     {ev.gc && <div className="text-xs text-muted">{ev.gc}</div>}
                     {ev.value > 0 && <div className="text-xs font-mono text-amber">{fmt(ev.value)}</div>}
                   </div>
                 ))}
-                {upcoming.length > 10 && <div className="text-xs text-dim" style={{ textAlign: "center", padding: 4 }}>+{upcoming.length - 10} more</div>}
+                {upcoming.length > 10 && <div className="text-xs text-dim" className="text-center" style={{ padding: 4 }}>+{upcoming.length - 10} more</div>}
               </div>
               <div className="bidcal-sidebar-card">
                 <div className="bidcal-sidebar-title">Legend</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div className="flex-col-gap-6">
                   {[
                     { label: "Bid Due (Active/Submitted)", color: "var(--amber)" },
                     { label: "Awarded", color: "var(--green)" },
@@ -2234,7 +2234,7 @@ function App({ auth, onLogout }) {
                     { label: "Plan Review", color: "#8b5cf6" },
                     { label: "Follow Up", color: "var(--red)" },
                   ].map((lg, li) => (
-                    <div key={li} className="flex gap-8" style={{ alignItems: "center" }}>
+                    <div key={li} className="flex gap-8" className="flex-center">
                       <span className="bidcal-dot" style={{ background: lg.color }} />
                       <span className="text-xs text-muted">{lg.label}</span>
                     </div>
@@ -2249,10 +2249,10 @@ function App({ auth, onLogout }) {
                   const awdCt = moBids.filter(b => b.status === "awarded").length;
                   const totVal = moBids.reduce((s, b) => s + (b.value || 0), 0);
                   return (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div className="flex-col-gap-6">
                       <div className="flex-between"><span className="text-xs text-muted">Total Bids</span><span className="text-xs font-semi">{moBids.length}</span></div>
-                      <div className="flex-between"><span className="text-xs text-muted">Active</span><span className="text-xs font-semi" style={{ color: "var(--amber)" }}>{actCt}</span></div>
-                      <div className="flex-between"><span className="text-xs text-muted">Awarded</span><span className="text-xs font-semi" style={{ color: "var(--green)" }}>{awdCt}</span></div>
+                      <div className="flex-between"><span className="text-xs text-muted">Active</span><span className="text-xs font-semi" className="text-amber">{actCt}</span></div>
+                      <div className="flex-between"><span className="text-xs text-muted">Awarded</span><span className="text-xs font-semi" className="text-green">{awdCt}</span></div>
                       <div className="flex-between"><span className="text-xs text-muted">Total Value</span><span className="text-xs font-mono text-amber">{fmtK(totVal)}</span></div>
                     </div>
                   );
@@ -2261,12 +2261,12 @@ function App({ auth, onLogout }) {
             </div>
             {bidCalAddOpen && (
               <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setBidCalAddOpen(false); }}>
-                <div className="modal-content" style={{ maxWidth: 480 }}>
+                <div className="modal-content" className="modal-sm">
                   <div className="modal-header flex-between">
                     <div className="modal-title">Add Bid Calendar Event</div>
                     <button className="btn btn-ghost btn-sm" onClick={() => setBidCalAddOpen(false)}>Close</button>
                   </div>
-                  <div style={{ padding: 16 }}>
+                  <div className="p-16">
                     <div className="form-grid">
                       <div className="form-group">
                         <label className="form-label">Event Type</label>
@@ -2298,7 +2298,7 @@ function App({ auth, onLogout }) {
                         <textarea className="form-textarea" rows={3} placeholder="Additional details..." value={bidCalEventForm.notes} onChange={e => setBidCalEventForm(f => ({ ...f, notes: e.target.value }))} />
                       </div>
                     </div>
-                    <div className="flex-between" style={{ marginTop: 16 }}>
+                    <div className="flex-between" className="mt-16">
                       <button className="btn btn-ghost" onClick={() => setBidCalAddOpen(false)}>Cancel</button>
                       <button className="btn btn-primary" onClick={() => {
                         const relBid = bidCalEventForm.bidId ? bids.find(b => String(b.id) === String(bidCalEventForm.bidId)) : null;
@@ -2343,33 +2343,33 @@ function App({ auth, onLogout }) {
             const readiness = [hasPlans, hasScope, hasEstimator, hasValue].filter(Boolean).length;
             const readinessMax = 4;
             return (
-            <div key={b.id} className="bid-card" onClick={() => setModal({ type: "editBid", data: b })} style={{ position: "relative" }}>
+            <div key={b.id} className="bid-card" onClick={() => setModal({ type: "editBid", data: b })} className="pos-relative">
               {/* Top row: status + risk + due countdown */}
               <div className="flex-between mb-4">
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span className="flex-center-gap-6">
                   <input type="checkbox" checked={selectedBids.has(b.id)} onClick={e => e.stopPropagation()} onChange={e => {
                     setSelectedBids(prev => { const n = new Set(prev); e.target.checked ? n.add(b.id) : n.delete(b.id); return n; });
-                  }} style={{ cursor: "pointer" }} />
+                  }} className="cursor-pointer" />
                   <span className={`badge ${STATUS_BADGE[b.status] || "badge-muted"}`}>{STATUS_LABEL[b.status] || b.status}</span>
-                  {b.risk === "High" && <span className="badge badge-red" style={{ fontSize: 10 }}>High</span>}
+                  {b.risk === "High" && <span className="badge badge-red" className="fs-10">High</span>}
                 </span>
                 <span style={{ fontSize: 11, fontWeight: 600, color: dueColor }}>{dueLabel}</span>
               </div>
               {/* Name + GC */}
-              <div className="card-title font-head" style={{ fontSize: 14, marginBottom: 2, lineHeight: 1.3 }}>{b.name}</div>
+              <div className="card-title font-head" className="fs-14 mb-2 lh-13">{b.name}</div>
               <div className="text-xs text-muted">{b.gc}</div>
               {b.convertedToProject && (
-                <div className="text-xs mt-4" style={{ color: "var(--green)", fontStyle: "italic", fontWeight: 500 }}>→ Moved to Projects</div>
+                <div className="text-xs mt-4" className="text-green text-italic fw-500">→ Moved to Projects</div>
               )}
               {b.estimatingBy && !b.convertedToProject && (
-                <div className="text-xs mt-4" style={{ color: "var(--blue)", fontWeight: 600 }}>
+                <div className="text-xs mt-4" className="text-blue font-semi">
                   In progress: {b.estimatingBy.split(" ")[0]}{b.estimatingStarted ? ` · ${b.estimatingStarted}` : ""}
                 </div>
               )}
               {/* Value + Owner row */}
-              <div className="flex-between mt-6" style={{ alignItems: "flex-end" }}>
-                {hasValue ? <span className="font-mono font-bold text-amber" style={{ fontSize: 14 }}>{fmt(b.value)}</span> : <span className="text-xs text-muted" style={{ fontStyle: "italic" }}>No estimate</span>}
-                {b.estimator && <span className="text-xs" style={{ color: "var(--blue)" }}>{b.estimator}</span>}
+              <div className="flex-between mt-6" className="items-end">
+                {hasValue ? <span className="font-mono font-bold text-amber" style={{ fontSize: 14 }}>{fmt(b.value)}</span> : <span className="text-xs text-muted" className="text-italic">No estimate</span>}
+                {b.estimator && <span className="text-xs" className="text-blue">{b.estimator}</span>}
               </div>
               {/* Readiness bar */}
               <div style={{ marginTop: 8, display: "flex", gap: 3, alignItems: "center" }}>
@@ -2379,23 +2379,23 @@ function App({ auth, onLogout }) {
                 <span className="text-xs text-muted" style={{ marginLeft: 4, fontSize: 10 }}>{readiness}/{readinessMax}</span>
               </div>
               {/* Quick indicators row */}
-              <div className="flex gap-6 mt-6" style={{ flexWrap: "wrap", fontSize: 10, color: "var(--text2)" }}>
+              <div className="flex gap-6 mt-6" className="flex-wrap fs-10 text-muted">
                 <span style={{ color: hasPlans ? "var(--green)" : "var(--text3)" }}>{hasPlans ? "Plans" : "No plans"}</span>
-                {(b.addendaCount || 0) > 0 && <span style={{ color: "var(--amber)" }}>{b.addendaCount} addenda</span>}
+                {(b.addendaCount || 0) > 0 && <span className="text-amber">{b.addendaCount} addenda</span>}
                 {hasScope && <span>{(b.scope || []).slice(0, 3).join(", ")}{(b.scope || []).length > 3 ? "..." : ""}</span>}
                 {b.contact && <span>{b.contact}</span>}
               </div>
               {/* Action row */}
               <div className="flex gap-4 mt-6 flex-wrap">
                 {b.status === "submitted" && (
-                  <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 8px" }}
+                  <button className="btn btn-ghost btn-sm" className="btn-xs"
                     onClick={(e) => { e.stopPropagation(); runFollowUp(b); }}
                     disabled={followUpLoading && followUpBid?.id === b.id}>
                     {followUpLoading && followUpBid?.id === b.id ? "Drafting..." : "Follow-Up"}
                   </button>
                 )}
                 {b.status === "awarded" && !projects.some(p => p.bidId === b.id) && (
-                  <button className="btn btn-primary btn-sm" style={{ fontSize: 10, padding: "2px 8px" }}
+                  <button className="btn btn-primary btn-sm" className="btn-xs"
                     onClick={(e) => {
                       e.stopPropagation();
                       const newProj = {
@@ -2431,7 +2431,7 @@ function App({ auth, onLogout }) {
         </div>
       ) : null}
       {bidViewMode === "list" && filteredBids.length > bidPageSize && (
-        <div className="flex-between" style={{ marginTop: 16, padding: "8px 0" }}>
+        <div className="flex-between" className="mt-16 py-8">
           <span className="text-xs text-muted">Showing {Math.min(bidPageSize, filteredBids.length)} of {filteredBids.length}</span>
           <div className="flex gap-8">
             <button className="btn btn-ghost btn-sm" onClick={() => setBidPageSize(s => s + 24)}>
@@ -2447,14 +2447,14 @@ function App({ auth, onLogout }) {
       {/* Follow-Up Email Modal */}
       {followUpBid && followUpText && (
         <div className="modal-overlay" onMouseDown={onOverlayDown} onMouseUp={onOverlayUp(() => setFollowUpBid(null))}>
-          <div className="modal-content" style={{ maxWidth: 600 }}>
+          <div className="modal-content" className="modal-md">
             <div className="modal-header flex-between">
               <div className="modal-title">Follow-Up: {followUpBid.name}</div>
               <button className="btn btn-ghost btn-sm" onClick={() => setFollowUpBid(null)}>{t("Close")}</button>
             </div>
-            <div style={{ padding: 16 }}>
+            <div className="p-16">
               <div className="text-xs text-muted mb-8">To: {followUpBid.contact || followUpBid.gc} · Re: {followUpBid.name}</div>
-              <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 14, lineHeight: 1.6, background: "var(--bg3)", padding: 16, borderRadius: 8, maxHeight: 400, overflow: "auto" }}>
+              <pre className="pre-wrap-content">
                 {followUpText}
               </pre>
               <div className="flex gap-8 mt-12">
@@ -2472,14 +2472,14 @@ function App({ auth, onLogout }) {
       {/* Win Predictor Modal */}
       {winPredBid && winPredResult && (
         <div className="modal-overlay" onMouseDown={onOverlayDown} onMouseUp={onOverlayUp(() => setWinPredBid(null))}>
-          <div className="modal-content" style={{ maxWidth: 700 }}>
+          <div className="modal-content" className="modal-xl">
             <div className="modal-header flex-between">
               <div className="modal-title">Win Prediction: {winPredBid.name}</div>
               <button className="btn btn-ghost btn-sm" onClick={() => setWinPredBid(null)}>{t("Close")}</button>
             </div>
-            <div style={{ padding: 16, maxHeight: 500, overflow: "auto" }}>
+            <div className="p-16 max-h-500 overflow-auto">
               {/* Win Probability */}
-              <div className="card" style={{ padding: 16, marginBottom: 12, textAlign: "center" }}>
+              <div className="card" className="p-16 mb-12 text-center">
                 <div className="text-xs text-muted mb-4">{t("Win Probability")}</div>
                 <div style={{ fontSize: 48, fontWeight: 800, color: winPredResult.winProbability >= 70 ? "var(--green)" : winPredResult.winProbability >= 40 ? "var(--amber)" : "var(--red)" }}>
                   {winPredResult.winProbability}%
@@ -2491,7 +2491,7 @@ function App({ auth, onLogout }) {
 
               {/* GC History */}
               {winPredResult.gcHistory && (
-                <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+                <div className="card" className="p-16 mb-12">
                   <div className="text-sm font-semi mb-8">GC Relationship: {winPredBid.gc}</div>
                   <div className="flex gap-16 flex-wrap">
                     <div><span className="text-xs text-muted">Bids:</span> <span className="font-semi">{winPredResult.gcHistory.totalBids}</span></div>
@@ -2504,10 +2504,10 @@ function App({ auth, onLogout }) {
 
               {/* Key Factors */}
               {winPredResult.factors?.length > 0 && (
-                <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+                <div className="card" className="p-16 mb-12">
                   <div className="text-sm font-semi mb-8">{t("Key Factors")}</div>
                   {winPredResult.factors.map((f, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div key={i} className="queue-row">
                       <div className="flex-between">
                         <span className="text-sm">{f.factor}</span>
                         <span className={`badge ${f.impact === "positive" ? "badge-green" : f.impact === "negative" ? "badge-red" : "badge-muted"}`}>{f.impact}</span>
@@ -2520,10 +2520,10 @@ function App({ auth, onLogout }) {
 
               {/* Improvements */}
               {winPredResult.improvements?.length > 0 && (
-                <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>{t("Improve Win Chances")}</div>
+                <div className="card" className="p-16 mb-12">
+                  <div className="text-sm font-semi mb-8" className="text-amber">{t("Improve Win Chances")}</div>
                   {winPredResult.improvements.map((imp, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div key={i} className="queue-row">
                       <div className="flex-between">
                         <span className="text-sm font-semi">{imp.suggestion}</span>
                         <span className={`badge ${imp.effort === "easy" ? "badge-green" : imp.effort === "medium" ? "badge-amber" : "badge-red"}`}>{imp.effort}</span>
@@ -2536,14 +2536,14 @@ function App({ auth, onLogout }) {
 
               {/* Pricing Insight */}
               {winPredResult.pricingInsight && (
-                <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+                <div className="card" className="p-16 mb-12">
                   <div className="text-sm font-semi mb-4">{t("Pricing Insight")}</div>
                   <div className="text-sm text-muted">{winPredResult.pricingInsight}</div>
                 </div>
               )}
 
               {/* Summary */}
-              <div className="text-sm text-muted" style={{ padding: 8 }}>{winPredResult.summary}</div>
+              <div className="text-sm text-muted" className="p-8">{winPredResult.summary}</div>
             </div>
           </div>
         </div>
@@ -2574,7 +2574,7 @@ function App({ auth, onLogout }) {
               }).length;
               const openRfis = rfis.filter(r => r.status !== "Answered" && r.status !== "Closed").length;
               const pendingCOs = changeOrders.filter(c => c.status === "pending").length;
-              return <>{active > 0 && <span style={{ marginLeft: 8 }}>{active} active</span>}{atRisk > 0 && <span style={{ color: "var(--red)", fontWeight: 600, marginLeft: 8 }}>{atRisk} at risk</span>}{openRfis > 0 && <span style={{ marginLeft: 8 }}>{openRfis} open RFIs</span>}{pendingCOs > 0 && <span style={{ marginLeft: 8 }}>{pendingCOs} pending COs</span>}</>;
+              return <>{active > 0 && <span className="ml-8">{active} active</span>}{atRisk > 0 && <span className="text-red font-semi ml-8">{atRisk} at risk</span>}{openRfis > 0 && <span className="ml-8">{openRfis} open RFIs</span>}{pendingCOs > 0 && <span className="ml-8">{pendingCOs} pending COs</span>}</>;
             })()}
           </div>
         </div>
@@ -2602,10 +2602,10 @@ function App({ auth, onLogout }) {
       </div>
 
       {/* View Toggle: List | Summary | Schedule */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
-        <button className={`btn btn-sm ${projectViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("list")} style={{ display: "flex", alignItems: "center", gap: 4 }}><List style={{ width: 14, height: 14 }} /> List</button>
-        <button className={`btn btn-sm ${projectViewMode === "summary" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("summary")} style={{ display: "flex", alignItems: "center", gap: 4 }}><Columns style={{ width: 14, height: 14 }} /> Summary</button>
-        <button className={`btn btn-sm ${projectViewMode === "schedule" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("schedule")} style={{ display: "flex", alignItems: "center", gap: 4 }}><BarChart2 style={{ width: 14, height: 14 }} /> Schedule</button>
+      <div className="flex gap-4 mb-16">
+        <button className={`btn btn-sm ${projectViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("list")} className="flex-center-gap-4"><List className="w-4 h-4" /> List</button>
+        <button className={`btn btn-sm ${projectViewMode === "summary" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("summary")} className="flex-center-gap-4"><Columns className="w-4 h-4" /> Summary</button>
+        <button className={`btn btn-sm ${projectViewMode === "schedule" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("schedule")} className="flex-center-gap-4"><BarChart2 className="w-4 h-4" /> Schedule</button>
       </div>
 
       {/* Cross-Project Summary Table */}
@@ -2613,15 +2613,15 @@ function App({ auth, onLogout }) {
         <div style={{ overflowX: "auto", marginBottom: 16 }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
-              <tr style={{ borderBottom: "2px solid var(--border)", textAlign: "left" }}>
+              <tr className="border-b" style={{ borderBottomWidth: 2, textAlign: "left" }}>
                 <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700 }}>Project</th>
-                <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700, textAlign: "right" }}>Progress</th>
-                <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700, textAlign: "right" }}>Contract</th>
-                <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700, textAlign: "right" }}>RFIs</th>
-                <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700, textAlign: "right" }}>COs</th>
-                <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700, textAlign: "right" }}>T&M</th>
-                <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700, textAlign: "right" }}>Punch</th>
-                <th style={{ padding: "8px 6px", color: "var(--text3)", fontWeight: 700, textAlign: "right" }}>Hours</th>
+                <th className="table-th-right">Progress</th>
+                <th className="table-th-right">Contract</th>
+                <th className="table-th-right">RFIs</th>
+                <th className="table-th-right">COs</th>
+                <th className="table-th-right">T&M</th>
+                <th className="table-th-right">Punch</th>
+                <th className="table-th-right">Hours</th>
               </tr>
             </thead>
             <tbody>
@@ -2632,23 +2632,23 @@ function App({ auth, onLogout }) {
                 const pPunch = (punchItems || []).filter(pi => String(pi.projectId) === String(p.id) && pi.status !== "resolved" && pi.status !== "complete").length;
                 const pHours = timeEntries.filter(te => String(te.projectId) === String(p.id) && te.totalHours).reduce((s, te) => s + te.totalHours, 0);
                 return (
-                  <tr key={p.id} style={{ borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+                  <tr key={p.id} className="border-b cursor-pointer"
                     onClick={() => { setProjects(prev => prev.map(proj => proj.id === p.id ? { ...proj, lastAccessed: new Date().toISOString() } : proj)); setModal({ type: "editProject", data: p }); }}>
                     <td style={{ padding: "8px 6px", fontWeight: 600, color: "var(--blue)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</td>
                     <td style={{ padding: "8px 6px", textAlign: "right" }}>
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      <div className="flex-center-gap-4 inline-flex">
                         <div style={{ width: 40, height: 6, background: "var(--bg3)", borderRadius: 3, overflow: "hidden" }}>
                           <div style={{ width: `${p.progress || 0}%`, height: "100%", background: (p.progress || 0) >= 80 ? "var(--green)" : "var(--amber)", borderRadius: 3 }} />
                         </div>
                         <span>{p.progress || 0}%</span>
                       </div>
                     </td>
-                    <td style={{ padding: "8px 6px", textAlign: "right", fontFamily: "monospace" }}>${((p.contract || 0) / 1000).toFixed(0)}k</td>
+                    <td className="table-td-mono-right">${((p.contract || 0) / 1000).toFixed(0)}k</td>
                     <td style={{ padding: "8px 6px", textAlign: "right", color: pRfis > 0 ? "var(--red)" : "var(--text3)", fontWeight: pRfis > 0 ? 700 : 400 }}>{pRfis}</td>
                     <td style={{ padding: "8px 6px", textAlign: "right", color: pCOs > 0 ? "var(--amber)" : "var(--text3)", fontWeight: pCOs > 0 ? 700 : 400 }}>{pCOs}</td>
                     <td style={{ padding: "8px 6px", textAlign: "right", color: pTm > 0 ? "var(--amber)" : "var(--text3)" }}>{pTm}</td>
                     <td style={{ padding: "8px 6px", textAlign: "right", color: pPunch > 0 ? "var(--red)" : "var(--text3)" }}>{pPunch}</td>
-                    <td style={{ padding: "8px 6px", textAlign: "right", fontFamily: "monospace" }}>{pHours.toFixed(0)}h</td>
+                    <td className="table-td-mono-right">{pHours.toFixed(0)}h</td>
                   </tr>
                 );
               })}
@@ -2683,15 +2683,15 @@ function App({ auth, onLogout }) {
 
       {/* Risk Radar Panel */}
       {showRiskRadar && (
-        <div className="card" style={{ padding: 16, marginBottom: 16 }}>
+        <div className="card" className="p-16 mb-16">
           <div className="flex-between mb-12">
             <div className="text-sm font-semi">{t("Project Risk Radar")}</div>
             <button className="btn btn-ghost btn-sm" onClick={() => { setShowRiskRadar(false); setRiskResult(null); }}>{t("Close")}</button>
           </div>
-          {riskLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Analyzing {projects.length} projects for risks...</div>}
+          {riskLoading && <div className="text-sm text-muted" className="p-16 text-center">Analyzing {projects.length} projects for risks...</div>}
           {riskResult && (
             <div>
-              <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12, fontSize: 14 }}>
+              <div className="info-panel">
                 {riskResult.portfolioRisk}
               </div>
 
@@ -2703,13 +2703,13 @@ function App({ auth, onLogout }) {
                     onClick={() => { const p = projects.find(p => p.name?.toLowerCase().includes(r.project?.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); }}>
                     <div className="flex-between mb-4">
                       <span className="font-semi text-sm">{r.project}</span>
-                      <div className="flex gap-8" style={{ alignItems: "center" }}>
+                      <div className="flex gap-8" className="flex-center">
                         <span style={{ fontSize: 20, fontWeight: 800, color: riskColor }}>{r.riskScore}</span>
                         <span className={`badge ${r.riskLevel === "critical" ? "badge-red" : r.riskLevel === "high" ? "badge-amber" : r.riskLevel === "medium" ? "badge-blue" : "badge-green"}`}>{r.riskLevel}</span>
                       </div>
                     </div>
                     <div className="flex gap-4 flex-wrap mb-4">
-                      {r.factors?.map((f, j) => <span key={j} className="badge badge-muted" style={{ fontSize: 10 }}>{f}</span>)}
+                      {r.factors?.map((f, j) => <span key={j} className="badge badge-muted" className="fs-10">{f}</span>)}
                     </div>
                     <div className="text-xs text-muted">{r.recommendation}</div>
                   </div>
@@ -2718,7 +2718,7 @@ function App({ auth, onLogout }) {
 
               {/* Immediate Actions */}
               {riskResult.immediateActions?.length > 0 && (
-                <div style={{ marginTop: 12 }}>
+                <div className="mt-12">
                   <div className="text-sm font-semi mb-8">{t("Immediate Actions")}</div>
                   {riskResult.immediateActions.map((a, i) => (
                     <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13, cursor: a.project ? "pointer" : undefined }}
@@ -2778,31 +2778,31 @@ function App({ auth, onLogout }) {
             }}>
               {/* Top: phase + PM + foreman + health dot */}
               <div className="flex-between mb-4">
-                <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <span className="flex-center-gap-6">
                   {p.constructionStage && STAGE_MAP[p.constructionStage] && (
                     <span className="badge" style={{ fontSize: 10, background: STAGE_MAP[p.constructionStage].color + "22", color: STAGE_MAP[p.constructionStage].color, border: `1px solid ${STAGE_MAP[p.constructionStage].color}44` }}>
                       {STAGE_MAP[p.constructionStage].label}
                     </span>
                   )}
-                  <span className="badge badge-blue" style={{ fontSize: 10 }}>{p.phase || "—"}</span>
-                  {scheduleRisk && <span className="badge badge-red" style={{ fontSize: 9 }}>{scheduleRisk === "overdue" ? "OVERDUE" : "BEHIND"}</span>}
+                  <span className="badge badge-blue" className="fs-10">{p.phase || "—"}</span>
+                  {scheduleRisk && <span className="badge badge-red" className="fs-9">{scheduleRisk === "overdue" ? "OVERDUE" : "BEHIND"}</span>}
                 </span>
-                <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  {p.pm && <span className="text-xs" style={{ color: "var(--blue)" }}>{p.pm.split(" ")[0]}</span>}
+                <span className="flex-center-gap-6">
+                  {p.pm && <span className="text-xs" className="text-blue">{p.pm.split(" ")[0]}</span>}
                   {p.assignedForeman != null && (() => {
                     const fm = employees.find(e => String(e.id) === String(p.assignedForeman));
-                    return fm ? <span className="text-xs" style={{ color: "var(--text2)" }}>· {fm.name.split(" ")[0]}</span> : null;
+                    return fm ? <span className="text-xs" className="text-muted">· {fm.name.split(" ")[0]}</span> : null;
                   })()}
                 </span>
               </div>
               {/* Name + GC */}
-              <div className="card-title font-head" style={{ fontSize: 14, marginBottom: 2, lineHeight: 1.3 }}>{p.name}</div>
+              <div className="card-title font-head" className="fs-14 mb-2 lh-13">{p.name}</div>
               <div className="text-xs text-muted mb-4">{p.gc}</div>
               {/* Contract + Billed (hide $0) */}
               <div className="flex-between text-sm mb-4">
                 {(p.contract || 0) > 0 ? (
                   <span>Contract: <span className="font-mono text-amber">{fmt(p.contract)}</span></span>
-                ) : <span className="text-xs text-muted" style={{ fontStyle: "italic" }}>No contract value</span>}
+                ) : <span className="text-xs text-muted" className="text-italic">No contract value</span>}
                 {(p.billed || 0) > 0 && <span className="text-xs">Billed: <span className="font-mono">{fmt(p.billed)}</span></span>}
               </div>
               {/* Progress bar — colored by health */}
@@ -2818,17 +2818,17 @@ function App({ auth, onLogout }) {
                 )}
               </div>
               {/* Document counts row */}
-              <div className="flex gap-6 mt-6" style={{ flexWrap: "wrap", fontSize: 10, color: "var(--text2)" }}>
+              <div className="flex gap-6 mt-6" className="flex-wrap fs-10 text-muted">
                 {pRfis.length > 0 && <span style={{ color: overdueRfis > 0 ? "var(--red)" : "var(--amber)" }}>RFI: {pRfis.length}{overdueRfis > 0 ? ` (${overdueRfis} aging)` : ""}</span>}
-                {pSubs.length > 0 && <span style={{ color: "var(--amber)" }}>Sub: {pSubs.length}</span>}
-                {pCOs.length > 0 && <span style={{ color: "var(--amber)" }}>CO: {pCOs.length}</span>}
-                {billingLag && <span style={{ color: "var(--red)" }}>Billing lag</span>}
+                {pSubs.length > 0 && <span className="text-amber">Sub: {pSubs.length}</span>}
+                {pCOs.length > 0 && <span className="text-amber">CO: {pCOs.length}</span>}
+                {billingLag && <span className="text-red">Billing lag</span>}
                 {(() => { const tc = (p.laborCost || 0) + (p.materialCost || 0); const c = p.contract || 0; if (tc > 0 && c > 0) { const m = Math.round(((c - tc) / c) * 100); if (m < 30) return <span style={{ color: m < 0 ? "#dc2626" : "var(--red)", fontWeight: 600 }}>Margin: {m}%</span>; } return null; })()}
-                {pRfis.length === 0 && pSubs.length === 0 && pCOs.length === 0 && !billingLag && <span style={{ color: "var(--green)" }}>On track</span>}
+                {pRfis.length === 0 && pSubs.length === 0 && pCOs.length === 0 && !billingLag && <span className="text-green">On track</span>}
               </div>
               {/* Closeout button for near-complete */}
               {(p.progress || 0) >= 75 && (
-                <div style={{ marginTop: 6 }}>
+                <div className="mt-6">
                   <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 8px", color: "var(--amber)" }}
                     onClick={(e) => { e.stopPropagation(); runCloseout(p); }}
                     disabled={closeoutLoading && closeoutProj?.id === p.id}>
@@ -2842,7 +2842,7 @@ function App({ auth, onLogout }) {
         </div>
       )}
       {filteredProjects.length > projPageSize && (
-        <div className="flex-between" style={{ marginTop: 16, padding: "8px 0" }}>
+        <div className="flex-between" className="mt-16 py-8">
           <span className="text-xs text-muted">Showing {Math.min(projPageSize, filteredProjects.length)} of {filteredProjects.length}</span>
           <div className="flex gap-8">
             <button className="btn btn-ghost btn-sm" onClick={() => setProjPageSize(s => s + 24)}>
@@ -2860,7 +2860,7 @@ function App({ auth, onLogout }) {
       {/* Closeout Modal */}
       {closeoutProj && closeoutResult && (
         <div className="modal-overlay" onMouseDown={onOverlayDown} onMouseUp={onOverlayUp(() => setCloseoutProj(null))}>
-          <div className="modal-content" style={{ maxWidth: 700 }}>
+          <div className="modal-content" className="modal-xl">
             <div className="modal-header flex-between">
               <div className="modal-title">Closeout: {closeoutProj.name}</div>
               <div className="flex gap-8">
@@ -2883,20 +2883,20 @@ function App({ auth, onLogout }) {
                 <button className="btn btn-ghost btn-sm" onClick={() => setCloseoutProj(null)}>{t("Close")}</button>
               </div>
             </div>
-            <div style={{ padding: 16, maxHeight: 500, overflow: "auto" }}>
+            <div className="p-16 max-h-500 overflow-auto">
               {/* Readiness Score */}
-              <div className="flex gap-16 mb-16" style={{ alignItems: "center" }}>
-                <div style={{ textAlign: "center" }}>
+              <div className="flex gap-16 mb-16" className="flex-center">
+                <div className="text-center">
                   <div className="text-xs text-muted">{t("Readiness")}</div>
                   <div style={{ fontSize: 36, fontWeight: 800, color: closeoutResult.readinessScore >= 70 ? "var(--green)" : closeoutResult.readinessScore >= 40 ? "var(--amber)" : "var(--red)" }}>
                     {closeoutResult.readinessScore}/100
                   </div>
                 </div>
-                <div style={{ textAlign: "center" }}>
+                <div className="text-center">
                   <div className="text-xs text-muted">{t("Grade")}</div>
-                  <div style={{ fontSize: 36, fontWeight: 800, color: "var(--amber)" }}>{closeoutResult.grade}</div>
+                  <div className="kpi-hero-value">{closeoutResult.grade}</div>
                 </div>
-                <div style={{ flex: 1 }}>
+                <div className="flex-1">
                   <div className="text-sm text-muted">{closeoutResult.summary}</div>
                 </div>
               </div>
@@ -2905,7 +2905,7 @@ function App({ auth, onLogout }) {
               {closeoutResult.financialStatus && (
                 <div className="flex gap-12 mb-12 flex-wrap" style={{ padding: 12, borderRadius: 8, background: "var(--bg3)" }}>
                   <div><span className="text-xs text-muted">Billed:</span> <span className="font-semi">${(closeoutResult.financialStatus.totalBilled || 0).toLocaleString()}</span></div>
-                  <div><span className="text-xs text-muted">Remaining:</span> <span className="font-semi" style={{ color: "var(--amber)" }}>${(closeoutResult.financialStatus.remaining || 0).toLocaleString()}</span></div>
+                  <div><span className="text-xs text-muted">Remaining:</span> <span className="font-semi" className="text-amber">${(closeoutResult.financialStatus.remaining || 0).toLocaleString()}</span></div>
                   <div><span className="text-xs text-muted">Open COs:</span> <span className="font-semi">{closeoutResult.financialStatus.openCOs}</span></div>
                   <div><span className="text-xs text-muted">Margin:</span> <span className="font-semi">{closeoutResult.financialStatus.margin}</span></div>
                 </div>
@@ -2913,10 +2913,10 @@ function App({ auth, onLogout }) {
 
               {/* Checklist */}
               {closeoutResult.checklist?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-8">{t("Closeout Checklist")}</div>
                   {closeoutResult.checklist.map((c, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div key={i} className="queue-row">
                       <div className="flex-between">
                         <span className="text-sm">{c.status === "complete" ? "✓" : c.status === "pending" ? "–" : "○"} {c.item}</span>
                         <div className="flex gap-4">
@@ -2932,10 +2932,10 @@ function App({ auth, onLogout }) {
 
               {/* Outstanding Items */}
               {closeoutResult.outstandingItems?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>{t("Outstanding Items")}</div>
+                <div className="mb-12">
+                  <div className="text-sm font-semi mb-8" className="text-red">{t("Outstanding Items")}</div>
                   {closeoutResult.outstandingItems.map((o, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div key={i} className="queue-row">
                       <div className="flex-between">
                         <span className="text-sm font-semi">{o.item}</span>
                         {o.amount && <span className="font-mono text-amber">${o.amount.toLocaleString()}</span>}
@@ -2948,10 +2948,10 @@ function App({ auth, onLogout }) {
 
               {/* Risk of Loss */}
               {closeoutResult.riskOfLoss?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>{t("Risk of Loss")}</div>
+                <div className="mb-12">
+                  <div className="text-sm font-semi mb-8" className="text-amber">{t("Risk of Loss")}</div>
                   {closeoutResult.riskOfLoss.map((r, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div key={i} className="queue-row">
                       <div className="flex-between">
                         <span className="text-sm">{r.item}</span>
                         <div className="flex gap-8">
@@ -3301,39 +3301,39 @@ function App({ auth, onLogout }) {
 
       {/* Scope Risk Panel */}
       {showScopeRisk && scopeRiskResult && (
-        <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+        <div className="card" className="p-20 mb-16">
           <div className="flex-between mb-12">
             <div className="text-sm font-semi">{t("Scope Risk Analysis")}</div>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowScopeRisk(false)}>{t("Close")}</button>
           </div>
 
           {/* Score + Grade */}
-          <div className="flex gap-16 mb-16" style={{ alignItems: "center" }}>
-            <div style={{ textAlign: "center" }}>
+          <div className="flex gap-16 mb-16" className="flex-center">
+            <div className="text-center">
               <div className="text-xs text-muted">{t("Risk Score")}</div>
               <div style={{ fontSize: 36, fontWeight: 800, color: scopeRiskResult.overallRisk <= 30 ? "var(--green)" : scopeRiskResult.overallRisk <= 60 ? "var(--amber)" : "var(--red)" }}>
                 {scopeRiskResult.overallRisk}/100
               </div>
             </div>
-            <div style={{ textAlign: "center" }}>
+            <div className="text-center">
               <div className="text-xs text-muted">{t("Grade")}</div>
-              <div style={{ fontSize: 36, fontWeight: 800, color: "var(--amber)" }}>{scopeRiskResult.grade}</div>
+              <div className="kpi-hero-value">{scopeRiskResult.grade}</div>
             </div>
-            <div style={{ flex: 1 }}>
+            <div className="flex-1">
               <div className="text-sm text-muted">{scopeRiskResult.summary}</div>
             </div>
           </div>
 
           {/* Red Flags */}
           {scopeRiskResult.redFlags?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>{t("Red Flags")} ({scopeRiskResult.redFlags.length})</div>
+            <div className="mb-12">
+              <div className="text-sm font-semi mb-8" className="text-red">{t("Red Flags")} ({scopeRiskResult.redFlags.length})</div>
               {scopeRiskResult.redFlags.map((f, i) => (
                 <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
                   <div className="text-sm font-semi">{f.item}</div>
                   <div className="text-xs text-muted mt-2">{f.risk}</div>
-                  <div className="text-xs mt-2"><span style={{ color: "var(--amber)" }}>Exposure:</span> {f.financialExposure}</div>
-                  <div className="text-xs mt-2"><span style={{ color: "var(--green)" }}>Mitigation:</span> {f.mitigation}</div>
+                  <div className="text-xs mt-2"><span className="text-amber">Exposure:</span> {f.financialExposure}</div>
+                  <div className="text-xs mt-2"><span className="text-green">Mitigation:</span> {f.mitigation}</div>
                 </div>
               ))}
             </div>
@@ -3341,8 +3341,8 @@ function App({ auth, onLogout }) {
 
           {/* Negotiation Points */}
           {scopeRiskResult.negotiationPoints?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>{t("Negotiation Points")}</div>
+            <div className="mb-12">
+              <div className="text-sm font-semi mb-8" className="text-amber">{t("Negotiation Points")}</div>
               {scopeRiskResult.negotiationPoints.map((n, i) => (
                 <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "var(--bg3)", border: "1px solid var(--border)" }}>
                   <div className="flex-between">
@@ -3358,10 +3358,10 @@ function App({ auth, onLogout }) {
 
           {/* Hidden Costs */}
           {scopeRiskResult.hiddenCosts?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
+            <div className="mb-12">
               <div className="text-sm font-semi mb-8">{t("Hidden Cost Risks")}</div>
               {scopeRiskResult.hiddenCosts.map((h, i) => (
-                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} className="queue-row">
                   <div className="flex-between">
                     <span className="text-sm">{h.item}</span>
                     <span className={`badge ${h.likelihood === "high" ? "badge-red" : h.likelihood === "medium" ? "badge-amber" : "badge-muted"}`}>{h.likelihood}</span>
@@ -3374,11 +3374,11 @@ function App({ auth, onLogout }) {
 
           {/* Exclusions */}
           {scopeRiskResult.exclusions?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div className="text-sm font-semi mb-8" style={{ color: "var(--blue)" }}>{t("Recommended Exclusions")}</div>
+            <div className="mb-12">
+              <div className="text-sm font-semi mb-8" className="text-blue">{t("Recommended Exclusions")}</div>
               <ul style={{ margin: 0, paddingLeft: 20 }}>
                 {scopeRiskResult.exclusions.map((e, i) => (
-                  <li key={i} className="text-sm text-muted" style={{ marginBottom: 4 }}>{e}</li>
+                  <li key={i} className="text-sm text-muted" className="mb-4">{e}</li>
                 ))}
               </ul>
             </div>
@@ -3394,7 +3394,7 @@ function App({ auth, onLogout }) {
       </div>
 
       {scopeSubTab === "checklist" && (<>
-        <div className="flex gap-8 mb-16 flex-wrap" style={{ alignItems: "center" }}>
+        <div className="flex gap-8 mb-16 flex-wrap" className="flex-center">
           <div className="form-group" style={{ minWidth: 200 }}>
             <label className="form-label">{t("Linked Bid")}</label>
             <select className="form-select" value={scopeBidId || ""} onChange={e => setScopeBidId(e.target.value || null)}>
@@ -3430,19 +3430,19 @@ function App({ auth, onLogout }) {
 
       {scopeSubTab === "gapchecker" && (
         <div>
-          <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+          <div className="card" className="p-20 mb-16">
             <div className="text-sm font-semi mb-8">Paste your bid scope and contract/spec scope below. AI will identify gaps, extras, and risks.</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="grid-2col" style={{ gap: 12 }}>
               <div className="form-group">
                 <label className="form-label">{t("Bid Scope (what EBC priced)")}</label>
                 <textarea className="form-input" rows={8} placeholder="Paste your bid scope, line items, or proposal scope description..."
-                  value={gapBidScope} onChange={e => setGapBidScope(e.target.value)} style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
+                  value={gapBidScope} onChange={e => setGapBidScope(e.target.value)} className="form-textarea-flex" />
                 <div className="text-xs text-dim mt-4">{gapBidScope.length} chars</div>
               </div>
               <div className="form-group">
                 <label className="form-label">{t("Contract Scope (specs / drawings notes)")}</label>
                 <textarea className="form-input" rows={8} placeholder="Paste contract scope, spec sections, or drawing notes..."
-                  value={gapContractScope} onChange={e => setGapContractScope(e.target.value)} style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
+                  value={gapContractScope} onChange={e => setGapContractScope(e.target.value)} className="form-textarea-flex" />
                 <div className="text-xs text-dim mt-4">{gapContractScope.length} chars</div>
               </div>
             </div>
@@ -3454,7 +3454,7 @@ function App({ auth, onLogout }) {
           {gapResult && (
             <div>
               {/* Score + Summary */}
-              <div className="card" style={{ padding: 16, marginBottom: 12 }}>
+              <div className="card" className="p-16 mb-12">
                 <div className="flex-between mb-8">
                   <div className="text-sm font-semi">{t("Coverage Score")}</div>
                   <div style={{ fontSize: 28, fontWeight: 800, color: gapResult.score >= 80 ? "var(--green)" : gapResult.score >= 50 ? "var(--amber)" : "var(--red)" }}>
@@ -3466,12 +3466,12 @@ function App({ auth, onLogout }) {
 
               {/* Gaps */}
               {gapResult.gaps?.length > 0 && (
-                <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>
+                <div className="card" className="p-16 mb-12">
+                  <div className="text-sm font-semi mb-8" className="text-red">
                     {t("Missing from Bid")} ({gapResult.gaps.length})
                   </div>
                   {gapResult.gaps.map((g, i) => (
-                    <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div key={i} className="queue-row">
                       <div className="flex-between">
                         <span className="text-sm font-semi">{g.item}</span>
                         <span className={`badge ${SEV_BADGE[g.severity] || "badge-muted"}`}>{g.severity}</span>
@@ -3484,12 +3484,12 @@ function App({ auth, onLogout }) {
 
               {/* Extras */}
               {gapResult.extras?.length > 0 && (
-                <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>
+                <div className="card" className="p-16 mb-12">
+                  <div className="text-sm font-semi mb-8" className="text-amber">
                     {t("In Bid but Not in Contract")} ({gapResult.extras.length})
                   </div>
                   {gapResult.extras.map((g, i) => (
-                    <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div key={i} className="queue-row">
                       <span className="text-sm font-semi">{g.item}</span>
                       <div className="text-xs text-muted mt-4">{g.detail}</div>
                     </div>
@@ -3499,12 +3499,12 @@ function App({ auth, onLogout }) {
 
               {/* Risks */}
               {gapResult.risks?.length > 0 && (
-                <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-                  <div className="text-sm font-semi mb-8" style={{ color: "var(--blue)" }}>
+                <div className="card" className="p-16 mb-12">
+                  <div className="text-sm font-semi mb-8" className="text-blue">
                     {t("Risks & Ambiguities")} ({gapResult.risks.length})
                   </div>
                   {gapResult.risks.map((g, i) => (
-                    <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div key={i} className="queue-row">
                       <div className="flex-between">
                         <span className="text-sm font-semi">{g.item}</span>
                         <span className={`badge ${SEV_BADGE[g.severity] || "badge-muted"}`}>{g.severity}</span>
@@ -3540,7 +3540,7 @@ function App({ auth, onLogout }) {
         </div>
         <div className="flex gap-8">
           <div className="search-wrap">
-            <Search style={{ width: 16, height: 16 }} className="search-icon" />
+            <Search className="w-4 h-4" className="search-icon" />
             <input
               className="search-input"
               placeholder={t("Search contacts...")}
@@ -3576,26 +3576,26 @@ function App({ auth, onLogout }) {
             <div className="card-header"><div className="card-title font-head">{t("AI GC Relationship Intelligence")}</div></div>
             <button className="btn btn-ghost btn-sm" onClick={() => { setShowGcIntel(false); setGcIntelResult(null); }}>{t("Close")}</button>
           </div>
-          {gcIntelLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Analyzing {contacts.length} contacts and {bids.length} bids...</div>}
+          {gcIntelLoading && <div className="text-sm text-muted" className="p-16 text-center">Analyzing {contacts.length} contacts and {bids.length} bids...</div>}
           {gcIntelResult && (
-            <div style={{ marginTop: 8 }}>
+            <div className="mt-8">
               {/* Summary */}
-              <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12, fontSize: 14 }}>{gcIntelResult.summary}</div>
+              <div className="info-panel">{gcIntelResult.summary}</div>
 
               {/* GC Rankings */}
               {gcIntelResult.gcRankings?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-8">{t("GC Rankings by Relationship Value")}</div>
                   {gcIntelResult.gcRankings.map((gc, i) => (
                     <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, borderLeft: `3px solid ${gc.score >= 70 ? "var(--green)" : gc.score >= 40 ? "var(--amber)" : "var(--red)"}`, background: "var(--card)", fontSize: 13 }}>
                       <div className="flex-between">
                         <span className="font-semi">{gc.gc}</span>
-                        <span style={{ fontWeight: 700, color: "var(--amber)" }}>{gc.score}/100</span>
+                        <span className="fw-700 text-amber">{gc.score}/100</span>
                       </div>
                       <div className="text-xs text-muted mt-2">
                         {gc.totalBids} bids • {gc.wins}W ({gc.winRate}%) • {gc.activeProjects} active • {gc.trend}
                       </div>
-                      <div className="text-xs mt-2" style={{ color: "var(--blue)" }}>{gc.recommendation}</div>
+                      <div className="text-xs mt-2" className="text-blue">{gc.recommendation}</div>
                     </div>
                   ))}
                 </div>
@@ -3603,10 +3603,10 @@ function App({ auth, onLogout }) {
 
               {/* Top Opportunities */}
               {gcIntelResult.topOpportunities?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-8">{t("Top BD Opportunities")}</div>
                   {gcIntelResult.topOpportunities.map((opp, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                    <div key={i} className="queue-row fs-13">
                       <div className="flex-between">
                         <span><span className="font-semi">{opp.gc}</span> — {opp.action}</span>
                         <span className={opp.priority === "high" ? "badge-red" : opp.priority === "medium" ? "badge-amber" : "badge-blue"}>{opp.priority}</span>
@@ -3619,13 +3619,13 @@ function App({ auth, onLogout }) {
 
               {/* At-Risk Relationships */}
               {gcIntelResult.atRiskRelationships?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-8">{t("At-Risk Relationships")}</div>
                   {gcIntelResult.atRiskRelationships.map((r, i) => (
                     <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, background: "rgba(239,68,68,0.06)", borderLeft: "3px solid var(--red)", fontSize: 13 }}>
                       <span className="font-semi">{r.gc}</span>
                       <div className="text-xs text-muted mt-2">{r.concern}</div>
-                      <div className="text-xs mt-2" style={{ color: "var(--blue)" }}>{r.recommendation}</div>
+                      <div className="text-xs mt-2" className="text-blue">{r.recommendation}</div>
                     </div>
                   ))}
                 </div>
@@ -3633,10 +3633,10 @@ function App({ auth, onLogout }) {
 
               {/* Follow-Up Needed */}
               {gcIntelResult.followUpNeeded?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-8">{t("Follow-Up Needed")}</div>
                   {gcIntelResult.followUpNeeded.map((f, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                    <div key={i} className="queue-row fs-13">
                       <div className="flex-between">
                         <span>{f.contact} ({f.gc})</span>
                         <span className={f.urgency === "this_week" ? "badge-red" : f.urgency === "next_week" ? "badge-amber" : "badge-blue"}>{f.urgency}</span>
@@ -3664,11 +3664,11 @@ function App({ auth, onLogout }) {
       <div className="contact-grid">
         {filteredContacts.map(c => (
           <div key={c.id} className="contact-card" onClick={() => setModal({ type: "editContact", data: c })}>
-            <div className="flex gap-12" style={{ alignItems: "center" }}>
+            <div className="flex gap-12" className="flex-center">
               <div className="contact-avatar" style={{ background: c.color || "var(--amber)" }}>
                 {(c.name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
               </div>
-              <div className="flex-col" style={{ flex: 1 }}>
+              <div className="flex-col" className="flex-1">
                 <div className="font-semi text-sm">{c.name}</div>
                 <div className="text-xs text-muted">{c.company}</div>
                 <div className="text-xs text-dim">{c.role}</div>
@@ -3690,8 +3690,8 @@ function App({ auth, onLogout }) {
           </div>
           {callLog.slice(0, 8).map(c => (
             <div key={c.id} className="flex gap-12 border-b" style={{ padding: "10px 0" }}>
-              <div style={{ width: 4, borderRadius: 2, background: "var(--blue)", flexShrink: 0 }} />
-              <div className="flex-col gap-4" style={{ flex: 1 }}>
+              <div className="log-accent-bar" className="bg-blue" />
+              <div className="flex-col gap-4" className="flex-1">
                 <div className="flex-between">
                   <span className="font-semi text-sm">{c.contact} <span className="text-dim">({c.company})</span></span>
                   <span className="text-xs text-dim">{c.time}</span>
@@ -3753,7 +3753,7 @@ function App({ auth, onLogout }) {
       {isCyber && <div className="cyber-scanlines" />}
 
       <header className="header">
-        <div className="logo" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div className="logo" className="flex-center-gap-6">
           <img src={theme === "daylight" ? "/eagle-blue.png" : "/ebc-eagle-white.png"} alt="Eagles Brothers Constructors" style={{ height: 32, width: "auto", objectFit: "contain", transition: "opacity 0.3s" }} onError={(e) => e.target.style.display = "none"} />
         </div>
         <button className="hamburger" onClick={() => setMobileNav(!mobileNav)} aria-label="Menu">
@@ -3767,7 +3767,7 @@ function App({ auth, onLogout }) {
           onClick={() => setLang(lang === "en" ? "es" : "en")}
           title={lang === "en" ? "Cambiar a Español" : "Switch to English"}
         >
-          <Globe style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle", marginRight: 4 }} />{lang === "en" ? "ES" : "EN"}
+          <Globe className="icon-inline" />{lang === "en" ? "ES" : "EN"}
         </button>
         <div style={{ position: "relative", marginRight: 4 }}>
           <button
@@ -3961,7 +3961,7 @@ function App({ auth, onLogout }) {
           zIndex: 10000, boxShadow: "0 8px 32px rgba(0,0,0,0.5)", maxWidth: 420, width: "calc(100% - 32px)",
         }}>
           <div style={{ fontSize: 28, lineHeight: 1 }}>&#9881;</div>
-          <div style={{ flex: 1 }}>
+          <div className="flex-1">
             <div style={{ fontWeight: 700, fontSize: 14, color: "var(--gold, #e09422)" }}>{t("Install EBC")}</div>
             <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>
               {t("Works offline, launches instantly — like a real app")}
@@ -4404,16 +4404,16 @@ const ModalHub = ({ type, data, app }) => {
             {draft.notes && <div><span className="text-dim text-xs">NOTES</span><div className="text-sm">{draft.notes}</div></div>}
             {draft.contact && <div><span className="text-dim text-xs">CONTACT</span><div className="text-sm">{draft.contact}</div></div>}
           </div>
-          <div className="modal-actions" style={{ justifyContent: "space-between" }}>
-            <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>
+          <div className="modal-actions" className="flex-between">
+            <button className="btn" className="badge-red-outlined" onClick={handleDelete}>Delete</button>
             <div className="flex gap-8">
               {draft.status !== "awarded" && (
-                <button className="btn" style={{ background: "rgba(16,185,129,0.12)", color: "var(--green)", border: "1px solid var(--green)", fontWeight: 600 }} onClick={handleAwardBid}>
+                <button className="btn" className="badge-green-outlined" onClick={handleAwardBid}>
                   Award Bid
                 </button>
               )}
               {draft.status === "awarded" && (
-                <button className="btn" style={{ background: "rgba(234,179,8,0.12)", color: "var(--yellow)", border: "1px solid var(--yellow)", fontSize: 11 }} onClick={handleUnAwardBid}>
+                <button className="btn" className="badge-yellow-outlined" onClick={handleUnAwardBid}>
                   Un-award
                 </button>
               )}
@@ -4617,7 +4617,7 @@ const ModalHub = ({ type, data, app }) => {
           </div>
 
           {/* Sub-tabs */}
-          <div className="flex gap-4 mb-12" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8, overflowX: "auto" }}>
+          <div className="flex gap-4 mb-12" className="border-b overflow-x-auto" style={{ paddingBottom: 8 }}>
             {projTabs.map(tab => (
               <button key={tab} className={`btn btn-sm ${projTab === tab ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjTab(tab)}
                 style={{ whiteSpace: "nowrap", fontSize: 11, textTransform: "capitalize" }}>{tab}</button>
@@ -4654,15 +4654,15 @@ const ModalHub = ({ type, data, app }) => {
                     <div><span className="text-dim text-xs">END</span><div>{draft.end || "TBD"}</div></div>
                   </div>
                   <div><span className="text-dim text-xs">SCOPE</span>
-                    <div className="flex gap-4 flex-wrap mt-4">{(draft.scope || []).map(s => <span key={s} className="badge badge-amber" style={{ fontSize: 10 }}>{s}</span>)}</div>
+                    <div className="flex gap-4 flex-wrap mt-4">{(draft.scope || []).map(s => <span key={s} className="badge badge-amber" className="fs-10">{s}</span>)}</div>
                   </div>
 
                   {/* ── Phase Tracker ── */}
                   <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "14px 16px" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <div className="flex-between mb-12">
                       <div>
                         <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.7px", color: "var(--text3)", fontWeight: 600 }}>Construction Phases</div>
-                        <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 2 }}>
+                        <div className="fs-11 text-muted mt-2">
                           {completedCount} of {projPhases.length} complete
                           {activePhase ? ` · Active: ${activePhase.name}` : ""}
                         </div>
@@ -4676,7 +4676,7 @@ const ModalHub = ({ type, data, app }) => {
                     />
                   </div>
 
-                  <div className="flex gap-16 flex-wrap" style={{ marginTop: 4 }}>
+                  <div className="flex gap-16 flex-wrap" className="mt-4">
                     <div><span className="text-dim text-xs">LABOR HOURS</span><div className="font-mono">{totalHrs.toFixed(1)}h</div></div>
                     <div><span className="text-dim text-xs">CHANGE ORDERS</span><div className="font-mono">{projCOs.length}</div></div>
                     <div><span className="text-dim text-xs">RFIs</span><div className="font-mono">{projRFIs.length}</div></div>
@@ -4691,10 +4691,10 @@ const ModalHub = ({ type, data, app }) => {
                     if (projTm.length === 0) return null;
                     return (
                       <div style={{ padding: "12px 16px", background: "var(--bg3)", borderRadius: 8, marginTop: 12 }}>
-                        <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>T&M Exposure</div>
-                        <div style={{ display: "flex", gap: 16 }}>
-                          <div><span style={{ color: "var(--amber)", fontWeight: 700 }}>${pending.toLocaleString()}</span> <span style={{ fontSize: 11, color: "var(--text3)" }}>pending</span></div>
-                          <div><span style={{ color: "var(--green)", fontWeight: 700 }}>${approved.toLocaleString()}</span> <span style={{ fontSize: 11, color: "var(--text3)" }}>approved</span></div>
+                        <div className="fs-11 text-dim text-uppercase fw-700 mb-8">T&M Exposure</div>
+                        <div className="flex gap-16">
+                          <div><span className="text-amber fw-700">${pending.toLocaleString()}</span> <span className="fs-11 text-dim">pending</span></div>
+                          <div><span className="text-green fw-700">${approved.toLocaleString()}</span> <span className="fs-11 text-dim">approved</span></div>
                         </div>
                       </div>
                     );
@@ -4709,21 +4709,21 @@ const ModalHub = ({ type, data, app }) => {
                     const totalInstalled = projAreas.reduce((s, a) => s + (a.scopeItems || []).reduce((si, i) => si + (i.installedQty || 0), 0), 0);
                     const pct = totalBudget > 0 ? Math.round((totalInstalled / totalBudget) * 100) : 0;
                     return (
-                      <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
-                        <div style={{ flex: 1, padding: "12px 16px", background: "var(--bg3)", borderRadius: 8, textAlign: "center" }}>
-                          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--amber)" }}>{complete}/{projAreas.length}</div>
-                          <div style={{ fontSize: 11, color: "var(--text3)" }}>Areas Complete</div>
+                      <div className="flex gap-12 mt-12">
+                        <div className="stat-panel-center">
+                          <div className="kpi-large-value">{complete}/{projAreas.length}</div>
+                          <div className="fs-11 text-dim">Areas Complete</div>
                         </div>
-                        <div style={{ flex: 1, padding: "12px 16px", background: "var(--bg3)", borderRadius: 8, textAlign: "center" }}>
-                          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--amber)" }}>{pct}%</div>
-                          <div style={{ fontSize: 11, color: "var(--text3)" }}>Production</div>
+                        <div className="stat-panel-center">
+                          <div className="kpi-large-value">{pct}%</div>
+                          <div className="fs-11 text-dim">Production</div>
                         </div>
                       </div>
                     );
                   })()}
 
                   {/* ── Generate Project Status Report ── */}
-                  <div style={{ marginTop: 16 }}>
+                  <div className="mt-16">
                     <button className="btn btn-primary" style={{ width: "100%", height: 44, fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
                       onClick={() => {
                         const projAreas = (app.areas || []).filter(a => String(a.projectId) === String(draft.id));
@@ -4772,7 +4772,7 @@ const ModalHub = ({ type, data, app }) => {
             {projTab === "change orders" && (
               <div className="flex-col gap-12">
                 {/* Summary bar */}
-                <div className="flex gap-16 flex-wrap" style={{ padding: "10px 12px", background: "var(--bg3)", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)" }}>
+                <div className="flex gap-16 flex-wrap" className="field-card-compact">
                   <div><span className="text-dim text-xs">ORIGINAL CONTRACT</span><div className="font-mono text-sm">{fmt(draft.contract)}</div></div>
                   <div><span className="text-dim text-xs">NET CO VALUE</span><div className="font-mono text-sm" style={{ color: coNetTotal >= 0 ? "var(--green)" : "var(--red)" }}>{coNetTotal >= 0 ? "+" : ""}{fmt(coNetTotal)}</div></div>
                   <div><span className="text-dim text-xs">ADJUSTED CONTRACT</span><div className="font-mono text-sm font-bold text-amber">{fmt(coAdjustedContract)}</div></div>
@@ -4787,23 +4787,23 @@ const ModalHub = ({ type, data, app }) => {
 
                 {/* CO Form (add/edit) */}
                 {coFormOpen && (
-                  <div className="card" style={{ padding: 16, border: "1px solid var(--amber-dim)", background: "var(--bg3)" }}>
+                  <div className="card" className="card-amber-accent">
                     <div className="flex-between mb-8">
                       <span className="font-semi text-sm">{coEditId ? "Edit Change Order" : "New Change Order"}</span>
                       <button className="btn btn-sm btn-ghost" onClick={() => { setCoFormOpen(false); resetCoForm(); }}>Cancel</button>
                     </div>
                     <div className="flex gap-8 flex-wrap mb-8">
-                      <div style={{ flex: "0 0 100px" }}>
+                      <div className="flex-0-100">
                         <label className="text-xs text-dim">CO Number</label>
                         <input className="input input-sm" placeholder={`CO-${String(coNextNum).padStart(3, "0")}`} value={coForm.number} onChange={e => setCoForm(p => ({ ...p, number: e.target.value }))} />
                       </div>
-                      <div style={{ flex: 1, minWidth: 200 }}>
+                      <div className="flex-1 min-w-200">
                         <label className="text-xs text-dim">Description</label>
                         <input className="input input-sm" placeholder="Describe the change..." value={coForm.description} onChange={e => setCoForm(p => ({ ...p, description: e.target.value }))} />
                       </div>
                     </div>
                     <div className="flex gap-8 flex-wrap mb-8">
-                      <div style={{ flex: "0 0 120px" }}>
+                      <div className="flex-0-120">
                         <label className="text-xs text-dim">Type</label>
                         <select className="input input-sm" value={coForm.type} onChange={e => setCoForm(p => ({ ...p, type: e.target.value }))}>
                           <option value="add">Add</option>
@@ -4811,11 +4811,11 @@ const ModalHub = ({ type, data, app }) => {
                           <option value="no cost">No Cost</option>
                         </select>
                       </div>
-                      <div style={{ flex: "0 0 120px" }}>
+                      <div className="flex-0-120">
                         <label className="text-xs text-dim">Amount ($)</label>
                         <input className="input input-sm" type="number" step="0.01" placeholder="0.00" value={coForm.amount} onChange={e => setCoForm(p => ({ ...p, amount: e.target.value }))} disabled={coForm.type === "no cost"} />
                       </div>
-                      <div style={{ flex: "0 0 140px" }}>
+                      <div className="flex-0-140">
                         <label className="text-xs text-dim">Status</label>
                         <select className="input input-sm" value={coForm.status} onChange={e => setCoForm(p => ({ ...p, status: e.target.value }))}>
                           <option value="draft">Draft</option>
@@ -4824,14 +4824,14 @@ const ModalHub = ({ type, data, app }) => {
                           <option value="rejected">Rejected</option>
                         </select>
                       </div>
-                      <div style={{ flex: "0 0 140px" }}>
+                      <div className="flex-0-140">
                         <label className="text-xs text-dim">Date</label>
                         <input className="input input-sm" type="date" value={coForm.date} onChange={e => setCoForm(p => ({ ...p, date: e.target.value }))} />
                       </div>
                     </div>
                     <div className="mb-8">
                       <label className="text-xs text-dim">Notes</label>
-                      <textarea className="input input-sm" rows={2} placeholder="Additional notes..." value={coForm.notes} onChange={e => setCoForm(p => ({ ...p, notes: e.target.value }))} style={{ resize: "vertical" }} />
+                      <textarea className="input input-sm" rows={2} placeholder="Additional notes..." value={coForm.notes} onChange={e => setCoForm(p => ({ ...p, notes: e.target.value }))} className="resize-v" />
                     </div>
                     {/* T&M Backup Selection */}
                     {(() => {
@@ -4848,14 +4848,14 @@ const ModalHub = ({ type, data, app }) => {
                       const tmMatTotal = selectedTm.reduce((s, t) => s + (t.materialEntries || []).reduce((ms, m) => ms + (m.qty * m.unitCost * (1 + (m.markup || 0) / 100)), 0), 0);
                       return (
                         <div className="mb-8" style={{ padding: 10, background: "var(--bg2)", borderRadius: 8, border: "1px solid var(--border)" }}>
-                          <label className="text-xs text-dim" style={{ textTransform: "uppercase", fontWeight: 700 }}>T&M Backup</label>
+                          <label className="text-xs text-dim" className="text-uppercase fw-700">T&M Backup</label>
                           <div style={{ maxHeight: 160, overflowY: "auto", marginTop: 6 }}>
                             {availableTm.map(t => {
                               const checked = coForm.tmTicketIds.includes(t.id);
                               const tLabor = (t.laborEntries || []).reduce((s, l) => s + l.hours * l.rate, 0);
                               const tMat = (t.materialEntries || []).reduce((s, m) => s + m.qty * m.unitCost * (1 + (m.markup || 0) / 100), 0);
                               return (
-                                <label key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", cursor: "pointer", fontSize: 13 }}>
+                                <label key={t.id} className="flex-center-gap-8 cursor-pointer fs-13" style={{ padding: "4px 0" }}>
                                   <input type="checkbox" checked={checked} onChange={() => {
                                     const newIds = checked ? coForm.tmTicketIds.filter(id => id !== t.id) : [...coForm.tmTicketIds, t.id];
                                     const newSelected = projTm.filter(tm => newIds.includes(tm.id));
@@ -4872,7 +4872,7 @@ const ModalHub = ({ type, data, app }) => {
                           {selectedTm.length > 0 && (
                             <div style={{ marginTop: 8, paddingTop: 6, borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", fontSize: 12 }}>
                               <span>{selectedTm.length} ticket{selectedTm.length !== 1 ? "s" : ""} selected</span>
-                              <span style={{ fontWeight: 700, color: "var(--amber)" }}>T&M Total: ${(tmLaborTotal + tmMatTotal).toLocaleString()}</span>
+                              <span className="fw-700 text-amber">T&M Total: ${(tmLaborTotal + tmMatTotal).toLocaleString()}</span>
                             </div>
                           )}
                         </div>
@@ -4887,7 +4887,7 @@ const ModalHub = ({ type, data, app }) => {
 
                 {/* CO List */}
                 {projCOs.length === 0 && !coFormOpen ? (
-                  <div className="text-sm text-dim" style={{ textAlign: "center", padding: 32 }}>No change orders yet. Click "+ Add Change Order" to create one.</div>
+                  <div className="text-sm text-dim" className="text-center p-32">No change orders yet. Click "+ Add Change Order" to create one.</div>
                 ) : (
                   projCOs.map(co => {
                     const isExpanded = coExpandedId === co.id;
@@ -4919,7 +4919,7 @@ const ModalHub = ({ type, data, app }) => {
                           <div style={{ padding: "8px 12px 12px", borderTop: "1px solid var(--border)", background: "var(--bg3)" }}>
                             <div className="flex gap-16 flex-wrap mb-8">
                               <div><span className="text-dim text-xs">TYPE</span><div className="text-sm">{coTypeLabel(co.type || "add")}</div></div>
-                              <div><span className="text-dim text-xs">STATUS</span><div className="text-sm" style={{ textTransform: "capitalize" }}>{coStatus}</div></div>
+                              <div><span className="text-dim text-xs">STATUS</span><div className="text-sm" className="text-capitalize">{coStatus}</div></div>
                               <div><span className="text-dim text-xs">DATE</span><div className="text-sm">{co.date || co.submitted || "—"}</div></div>
                               <div><span className="text-dim text-xs">AMOUNT</span><div className="font-mono text-sm">{fmt(co.amount || 0)}</div></div>
                               {co.approved && <div><span className="text-dim text-xs">APPROVED</span><div className="text-sm">{co.approved}</div></div>}
@@ -4928,7 +4928,7 @@ const ModalHub = ({ type, data, app }) => {
                             {(co.notes || co.description || co.desc) && (
                               <div className="mb-8">
                                 <span className="text-dim text-xs">DESCRIPTION / NOTES</span>
-                                <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{co.description || co.desc}{co.notes ? `\n\nNotes: ${co.notes}` : ""}</div>
+                                <div className="text-sm" className="ws-pre-wrap">{co.description || co.desc}{co.notes ? `\n\nNotes: ${co.notes}` : ""}</div>
                               </div>
                             )}
                             {/* Linked T&M Backup */}
@@ -4939,18 +4939,18 @@ const ModalHub = ({ type, data, app }) => {
                               const totalMat = linked.reduce((s, t) => s + (t.materialEntries || []).reduce((ms, m) => ms + (m.qty * m.unitCost * (1 + (m.markup || 0) / 100)), 0), 0);
                               return (
                                 <div style={{ marginTop: 4, marginBottom: 8, padding: 12, background: "var(--bg2)", borderRadius: 8, border: "1px solid var(--border)" }}>
-                                  <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>Linked T&M Backup</div>
+                                  <div className="fs-11 text-dim text-uppercase fw-700 mb-8">Linked T&M Backup</div>
                                   {linked.map(t => {
                                     const tLabor = (t.laborEntries || []).reduce((s, l) => s + l.hours * l.rate, 0);
                                     const tMat = (t.materialEntries || []).reduce((s, m) => s + m.qty * m.unitCost * (1 + (m.markup || 0) / 100), 0);
                                     return (
-                                      <div key={t.id} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
-                                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                          <span style={{ fontWeight: 600 }}>{t.ticketNumber || t.id}</span>
-                                          <span style={{ color: "var(--text2)" }}>{t.date || "—"}</span>
+                                      <div key={t.id} className="queue-row fs-13">
+                                        <div className="flex-between">
+                                          <span className="font-semi">{t.ticketNumber || t.id}</span>
+                                          <span className="text-muted">{t.date || "—"}</span>
                                         </div>
-                                        <div style={{ color: "var(--text2)", fontSize: 12, marginTop: 2 }}>{t.description || "—"}</div>
-                                        <div style={{ display: "flex", gap: 12, marginTop: 4, fontSize: 12 }}>
+                                        <div className="text-muted fs-12 mt-2">{t.description || "—"}</div>
+                                        <div className="flex gap-12 mt-4 fs-12">
                                           <span>Labor: <strong>${tLabor.toLocaleString()}</strong></span>
                                           <span>Material: <strong>${tMat.toLocaleString()}</strong></span>
                                         </div>
@@ -4959,7 +4959,7 @@ const ModalHub = ({ type, data, app }) => {
                                   })}
                                   <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 13 }}>
                                     <span>T&M Total</span>
-                                    <span style={{ color: "var(--amber)" }}>${(totalLabor + totalMat).toLocaleString()}</span>
+                                    <span className="text-amber">${(totalLabor + totalMat).toLocaleString()}</span>
                                   </div>
                                 </div>
                               );
@@ -4967,7 +4967,7 @@ const ModalHub = ({ type, data, app }) => {
                             <div className="flex gap-8">
                               <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); editCo(co); }}>Edit</button>
                               <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); exportCoPdf(co); }}>Export PDF</button>
-                              <button className="btn btn-sm btn-ghost" style={{ color: "var(--red)" }} onClick={(e) => { e.stopPropagation(); deleteCo(co.id); }}>Delete</button>
+                              <button className="btn btn-sm btn-ghost" className="text-red" onClick={(e) => { e.stopPropagation(); deleteCo(co.id); }}>Delete</button>
                             </div>
                           </div>
                         )}
@@ -4983,13 +4983,13 @@ const ModalHub = ({ type, data, app }) => {
               <div>
                 {/* Header + Add button */}
                 <div className="flex-between mb-8">
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <div className="flex-center-gap-6">
                     <span className="font-semi text-sm">Submittal Log</span>
-                    <span className="badge badge-blue" style={{ fontSize: 9 }}>{projSubmittals.length}</span>
+                    <span className="badge badge-blue" className="fs-9">{projSubmittals.length}</span>
                   </div>
-                  <div style={{ display: "flex", gap: 6 }}>
+                  <div className="flex gap-6">
                     {projSubmittals.length > 0 && (
-                      <button className="btn btn-ghost btn-sm" onClick={generateSubPackage} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <button className="btn btn-ghost btn-sm" onClick={generateSubPackage} className="flex-center-gap-4">
                         <FileDown size={13} /> Generate Package
                       </button>
                     )}
@@ -4998,9 +4998,9 @@ const ModalHub = ({ type, data, app }) => {
                 </div>
 
                 {/* Quick Filters */}
-                <div className="flex gap-4 mb-8" style={{ flexWrap: "wrap" }}>
+                <div className="flex gap-4 mb-8" className="flex-wrap">
                   {[["all", "All"], ["pending", "Pending"], ["approved", "Approved"], ["action", "Action Required"]].map(([key, label]) => (
-                    <button key={key} className={`btn btn-sm ${subFilter === key ? "btn-primary" : "btn-ghost"}`} style={{ fontSize: 10 }} onClick={() => setSubFilter(key)}>
+                    <button key={key} className={`btn btn-sm ${subFilter === key ? "btn-primary" : "btn-ghost"}`} className="fs-10" onClick={() => setSubFilter(key)}>
                       {label}
                       {key === "action" && projSubmittals.filter(s => ["revise & resubmit", "rejected"].includes(s.status)).length > 0 && (
                         <span style={{ marginLeft: 4, background: "var(--red)", color: "#fff", borderRadius: 99, padding: "0 5px", fontSize: 9 }}>
@@ -5023,11 +5023,11 @@ const ModalHub = ({ type, data, app }) => {
                         <label className="text-xs text-dim">Number</label>
                         <input className="input input-sm" placeholder={String(subNextNum)} value={subForm.number} onChange={e => setSubForm(p => ({ ...p, number: e.target.value }))} />
                       </div>
-                      <div style={{ flex: 1, minWidth: 200 }}>
+                      <div className="flex-1 min-w-200">
                         <label className="text-xs text-dim">Description</label>
                         <input className="input input-sm" placeholder="e.g. Metal stud framing — 20ga 3-5/8&quot; studs" value={subForm.description} onChange={e => setSubForm(p => ({ ...p, description: e.target.value }))} />
                       </div>
-                      <div style={{ flex: "0 0 100px" }}>
+                      <div className="flex-0-100">
                         <label className="text-xs text-dim">Spec Section</label>
                         <input className="input input-sm" placeholder="09 21 16" value={subForm.specSection} onChange={e => setSubForm(p => ({ ...p, specSection: e.target.value }))} />
                       </div>
@@ -5045,20 +5045,20 @@ const ModalHub = ({ type, data, app }) => {
                           {SUB_STATUSES.map(st => <option key={st} value={st}>{st.replace(/\b\w/g, c => c.toUpperCase())}</option>)}
                         </select>
                       </div>
-                      <div style={{ flex: "0 0 140px" }}>
+                      <div className="flex-0-140">
                         <label className="text-xs text-dim">Date Submitted</label>
                         <input className="input input-sm" type="date" value={subForm.dateSubmitted} onChange={e => setSubForm(p => ({ ...p, dateSubmitted: e.target.value }))} />
                       </div>
-                      <div style={{ flex: "0 0 140px" }}>
+                      <div className="flex-0-140">
                         <label className="text-xs text-dim">Date Returned</label>
                         <input className="input input-sm" type="date" value={subForm.dateReturned} onChange={e => setSubForm(p => ({ ...p, dateReturned: e.target.value }))} />
                       </div>
                     </div>
                     <div className="mb-8">
                       <label className="text-xs text-dim">Notes</label>
-                      <textarea className="input input-sm" rows={2} placeholder="Additional notes..." value={subForm.notes} onChange={e => setSubForm(p => ({ ...p, notes: e.target.value }))} style={{ resize: "vertical" }} />
+                      <textarea className="input input-sm" rows={2} placeholder="Additional notes..." value={subForm.notes} onChange={e => setSubForm(p => ({ ...p, notes: e.target.value }))} className="resize-v" />
                     </div>
-                    <div className="flex gap-8" style={{ justifyContent: "flex-end" }}>
+                    <div className="flex gap-8" className="justify-end">
                       <button className="btn btn-ghost btn-sm" onClick={() => { setSubFormOpen(false); resetSubForm(); }}>Cancel</button>
                       <button className="btn btn-primary btn-sm" onClick={saveSub}>{subEditId ? "Update" : "Add"} Submittal</button>
                     </div>
@@ -5067,7 +5067,7 @@ const ModalHub = ({ type, data, app }) => {
 
                 {/* Submittal Table */}
                 {filteredSubmittals.length === 0 ? (
-                  <div className="text-sm text-dim" style={{ textAlign: "center", padding: 24 }}>
+                  <div className="text-sm text-dim" className="text-center p-24">
                     {projSubmittals.length === 0 ? "No submittals — click \"+ Add Submittal\" to create one" : "No submittals match this filter"}
                   </div>
                 ) : (
@@ -5092,11 +5092,11 @@ const ModalHub = ({ type, data, app }) => {
                           const stBadge = SUB_STATUS_BADGE(s.status);
                           return (
                             <Fragment key={s.id}>
-                              <tr style={{ cursor: "pointer" }} onClick={() => setSubExpandedId(expanded ? null : s.id)}>
+                              <tr className="cursor-pointer" onClick={() => setSubExpandedId(expanded ? null : s.id)}>
                                 <td className="num">{s.number}</td>
                                 <td className="font-semi" style={{ fontSize: 12 }}>{s.description || s.name || "—"}</td>
                                 <td className="text-xs" style={{ fontFamily: "var(--font-mono)" }}>{s.specSection || s.spec || "—"}</td>
-                                <td className="text-xs" style={{ textTransform: "capitalize" }}>{s.type || "—"}</td>
+                                <td className="text-xs" className="text-capitalize">{s.type || "—"}</td>
                                 <td>
                                   <span className="badge" style={{ background: stBadge.bg, color: stBadge.color, fontSize: 10, textTransform: "capitalize" }}>{s.status}</span>
                                 </td>
@@ -5109,20 +5109,20 @@ const ModalHub = ({ type, data, app }) => {
                               {expanded && (
                                 <tr>
                                   <td colSpan={8} style={{ padding: 0, background: "var(--bg3)" }}>
-                                    <div style={{ padding: 16 }}>
+                                    <div className="p-16">
                                       <div className="flex gap-16 flex-wrap mb-8">
-                                        <div><span className="text-dim text-xs">TYPE</span><div className="text-sm" style={{ textTransform: "capitalize" }}>{s.type || "—"}</div></div>
+                                        <div><span className="text-dim text-xs">TYPE</span><div className="text-sm" className="text-capitalize">{s.type || "—"}</div></div>
                                         <div><span className="text-dim text-xs">SPEC SECTION</span><div className="text-sm font-mono">{s.specSection || s.spec || "—"}</div></div>
                                         <div><span className="text-dim text-xs">STATUS</span><div><span className="badge" style={{ background: stBadge.bg, color: stBadge.color, fontSize: 10, textTransform: "capitalize" }}>{s.status}</span></div></div>
                                         <div><span className="text-dim text-xs">DATE SUBMITTED</span><div className="text-sm">{s.dateSubmitted || s.date || "—"}</div></div>
                                         <div><span className="text-dim text-xs">DATE RETURNED</span><div className="text-sm">{s.dateReturned || "—"}</div></div>
                                         {days !== null && <div><span className="text-dim text-xs">DAYS OUT</span><div className="text-sm" style={{ color: days > 14 ? "var(--red)" : "var(--amber)", fontWeight: 700 }}>{days} days{days > 14 ? " ⚠" : ""}</div></div>}
                                       </div>
-                                      {s.notes && <div style={{ marginBottom: 8 }}><span className="text-dim text-xs">NOTES</span><div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{s.notes}</div></div>}
+                                      {s.notes && <div className="mb-8"><span className="text-dim text-xs">NOTES</span><div className="text-sm" className="ws-pre-wrap">{s.notes}</div></div>}
                                       <div className="text-xs text-muted mb-8">Created: {s.created ? new Date(s.created).toLocaleDateString() : "—"}</div>
                                       <div className="flex gap-8">
                                         <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); editSub(s); }}>Edit</button>
-                                        <button className="btn btn-sm btn-ghost" style={{ color: "var(--red)" }} onClick={(e) => { e.stopPropagation(); deleteSub(s.id); }}>Delete</button>
+                                        <button className="btn btn-sm btn-ghost" className="text-red" onClick={(e) => { e.stopPropagation(); deleteSub(s.id); }}>Delete</button>
                                       </div>
                                     </div>
                                   </td>
@@ -5140,11 +5140,11 @@ const ModalHub = ({ type, data, app }) => {
                 {projSubmittals.length > 0 && (
                   <div className="flex gap-16 flex-wrap" style={{ marginTop: 12, padding: "8px 0", borderTop: "1px solid var(--border)" }}>
                     <div className="text-xs"><span className="text-dim">Total:</span> <span className="font-mono">{projSubmittals.length}</span></div>
-                    <div className="text-xs"><span style={{ color: "var(--green)" }}>Approved:</span> <span className="font-mono">{projSubmittals.filter(s => s.status === "approved").length}</span></div>
-                    <div className="text-xs"><span style={{ color: "var(--amber)" }}>Submitted:</span> <span className="font-mono">{projSubmittals.filter(s => s.status === "submitted").length}</span></div>
-                    <div className="text-xs"><span style={{ color: "var(--red)" }}>Action Req:</span> <span className="font-mono">{projSubmittals.filter(s => ["revise & resubmit", "rejected"].includes(s.status)).length}</span></div>
+                    <div className="text-xs"><span className="text-green">Approved:</span> <span className="font-mono">{projSubmittals.filter(s => s.status === "approved").length}</span></div>
+                    <div className="text-xs"><span className="text-amber">Submitted:</span> <span className="font-mono">{projSubmittals.filter(s => s.status === "submitted").length}</span></div>
+                    <div className="text-xs"><span className="text-red">Action Req:</span> <span className="font-mono">{projSubmittals.filter(s => ["revise & resubmit", "rejected"].includes(s.status)).length}</span></div>
                     {projSubmittals.some(s => { const d = subDaysOut(s); return d !== null && d > 14; }) && (
-                      <div className="text-xs" style={{ color: "var(--red)", fontWeight: 700 }}>Overdue: {projSubmittals.filter(s => { const d = subDaysOut(s); return d !== null && d > 14; }).length}</div>
+                      <div className="text-xs" className="text-red fw-700">Overdue: {projSubmittals.filter(s => { const d = subDaysOut(s); return d !== null && d > 14; }).length}</div>
                     )}
                   </div>
                 )}
@@ -5155,7 +5155,7 @@ const ModalHub = ({ type, data, app }) => {
             {projTab === "rfis" && (
               <div className="flex-col gap-12">
                 {/* Summary stats */}
-                <div className="flex gap-16 flex-wrap" style={{ padding: "10px 12px", background: "var(--bg3)", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)" }}>
+                <div className="flex gap-16 flex-wrap" className="field-card-compact">
                   <div><span className="text-dim text-xs">TOTAL RFIs</span><div className="font-mono text-sm">{projRFIs.length}</div></div>
                   <div><span className="text-dim text-xs">OPEN</span><div className="font-mono text-sm" style={{ color: rfiOpenCount > 0 ? "var(--amber)" : "var(--green)" }}>{rfiOpenCount}</div></div>
                   <div><span className="text-dim text-xs">OVERDUE (&gt;7d)</span><div className="font-mono text-sm" style={{ color: rfiOverdueCount > 0 ? "var(--red)" : "var(--green)" }}>{rfiOverdueCount}</div></div>
@@ -5175,37 +5175,37 @@ const ModalHub = ({ type, data, app }) => {
 
                 {/* RFI Form (add/edit) */}
                 {rfiFormOpen && (
-                  <div className="card" style={{ padding: 16, border: "1px solid var(--amber-dim)", background: "var(--bg3)" }}>
+                  <div className="card" className="card-amber-accent">
                     <div className="flex-between mb-8">
                       <span className="font-semi text-sm">{rfiEditId ? "Edit RFI" : "New RFI"}</span>
                       <button className="btn btn-sm btn-ghost" onClick={() => { setRfiFormOpen(false); resetRfiForm(); }}>Cancel</button>
                     </div>
                     <div className="flex gap-8 flex-wrap mb-8">
-                      <div style={{ flex: "0 0 120px" }}>
+                      <div className="flex-0-120">
                         <label className="text-xs text-dim">RFI #</label>
                         <input className="input input-sm" placeholder={`RFI-${String(rfiNextNum).padStart(3, "0")}`} value={rfiForm.number} onChange={e => setRfiForm(p => ({ ...p, number: e.target.value }))} />
                       </div>
-                      <div style={{ flex: 1, minWidth: 200 }}>
+                      <div className="flex-1 min-w-200">
                         <label className="text-xs text-dim">Subject *</label>
                         <input className="input input-sm" placeholder="RFI subject/title" value={rfiForm.subject} onChange={e => setRfiForm(p => ({ ...p, subject: e.target.value }))} />
                       </div>
                     </div>
                     <div className="mb-8">
                       <label className="text-xs text-dim">Question / Description</label>
-                      <textarea className="input" rows={3} placeholder="Describe the question or information needed..." value={rfiForm.question} onChange={e => setRfiForm(p => ({ ...p, question: e.target.value }))} style={{ width: "100%", fontSize: 12 }} />
+                      <textarea className="input" rows={3} placeholder="Describe the question or information needed..." value={rfiForm.question} onChange={e => setRfiForm(p => ({ ...p, question: e.target.value }))} className="w-full fs-12" />
                     </div>
                     <div className="flex gap-8 flex-wrap mb-8">
-                      <div style={{ flex: 1, minWidth: 150 }}>
+                      <div className="flex-1 min-w-150">
                         <label className="text-xs text-dim">Spec / Drawing Reference</label>
                         <input className="input input-sm" placeholder="e.g. Section 09 29 00, Dwg A-201" value={rfiForm.specRef} onChange={e => setRfiForm(p => ({ ...p, specRef: e.target.value }))} />
                       </div>
-                      <div style={{ flex: "0 0 120px" }}>
+                      <div className="flex-0-120">
                         <label className="text-xs text-dim">Priority</label>
                         <select className="input input-sm" value={rfiForm.priority} onChange={e => setRfiForm(p => ({ ...p, priority: e.target.value }))}>
                           {RFI_PRIORITIES.map(pr => <option key={pr} value={pr}>{pr}</option>)}
                         </select>
                       </div>
-                      <div style={{ flex: "0 0 120px" }}>
+                      <div className="flex-0-120">
                         <label className="text-xs text-dim">Status</label>
                         <select className="input input-sm" value={rfiForm.status} onChange={e => setRfiForm(p => ({ ...p, status: e.target.value }))}>
                           {RFI_STATUSES.map(st => <option key={st} value={st}>{st}</option>)}
@@ -5213,25 +5213,25 @@ const ModalHub = ({ type, data, app }) => {
                       </div>
                     </div>
                     <div className="flex gap-8 flex-wrap mb-8">
-                      <div style={{ flex: "0 0 140px" }}>
+                      <div className="flex-0-140">
                         <label className="text-xs text-dim">Date Submitted</label>
                         <input type="date" className="input input-sm" value={rfiForm.dateSubmitted} onChange={e => setRfiForm(p => ({ ...p, dateSubmitted: e.target.value }))} />
                       </div>
-                      <div style={{ flex: "0 0 140px" }}>
+                      <div className="flex-0-140">
                         <label className="text-xs text-dim">Date Answered</label>
                         <input type="date" className="input input-sm" value={rfiForm.dateAnswered} onChange={e => setRfiForm(p => ({ ...p, dateAnswered: e.target.value }))} />
                       </div>
-                      <div style={{ flex: 1, minWidth: 150 }}>
+                      <div className="flex-1 min-w-150">
                         <label className="text-xs text-dim">Submitted To</label>
                         <input className="input input-sm" placeholder="GC / Architect name" value={rfiForm.submittedTo} onChange={e => setRfiForm(p => ({ ...p, submittedTo: e.target.value }))} />
                       </div>
                     </div>
                     <div className="mb-8">
                       <label className="text-xs text-dim">Answer / Response</label>
-                      <textarea className="input" rows={2} placeholder="Response received..." value={rfiForm.answer} onChange={e => setRfiForm(p => ({ ...p, answer: e.target.value }))} style={{ width: "100%", fontSize: 12 }} />
+                      <textarea className="input" rows={2} placeholder="Response received..." value={rfiForm.answer} onChange={e => setRfiForm(p => ({ ...p, answer: e.target.value }))} className="w-full fs-12" />
                     </div>
                     <div className="flex gap-8 flex-wrap mb-8">
-                      <div style={{ flex: "0 0 140px" }}>
+                      <div className="flex-0-140">
                         <label className="text-xs text-dim">Cost Impact</label>
                         <select className="input input-sm" value={rfiForm.costImpact} onChange={e => setRfiForm(p => ({ ...p, costImpact: e.target.value }))}>
                           <option value="None">None</option>
@@ -5240,12 +5240,12 @@ const ModalHub = ({ type, data, app }) => {
                         </select>
                       </div>
                       {rfiForm.costImpact === "Yes" && (
-                        <div style={{ flex: "0 0 140px" }}>
+                        <div className="flex-0-140">
                           <label className="text-xs text-dim">Cost Amount ($)</label>
                           <input type="number" className="input input-sm" placeholder="0" value={rfiForm.costAmount} onChange={e => setRfiForm(p => ({ ...p, costAmount: e.target.value }))} />
                         </div>
                       )}
-                      <div style={{ flex: "0 0 140px" }}>
+                      <div className="flex-0-140">
                         <label className="text-xs text-dim">Schedule Impact</label>
                         <select className="input input-sm" value={rfiForm.scheduleImpact} onChange={e => setRfiForm(p => ({ ...p, scheduleImpact: e.target.value }))}>
                           <option value="None">None</option>
@@ -5254,7 +5254,7 @@ const ModalHub = ({ type, data, app }) => {
                         </select>
                       </div>
                       {rfiForm.scheduleImpact === "Yes" && (
-                        <div style={{ flex: "0 0 140px" }}>
+                        <div className="flex-0-140">
                           <label className="text-xs text-dim">Days Delayed</label>
                           <input type="number" className="input input-sm" placeholder="0" value={rfiForm.scheduleDays} onChange={e => setRfiForm(p => ({ ...p, scheduleDays: e.target.value }))} />
                         </div>
@@ -5269,7 +5269,7 @@ const ModalHub = ({ type, data, app }) => {
 
                 {/* RFI List */}
                 {filteredRFIs.length === 0 ? (
-                  <div className="text-center text-muted" style={{ padding: 32 }}>
+                  <div className="text-center text-muted" className="p-32">
                     <div style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}><ClipboardList style={{ width: 32, height: 32, opacity: 0.4 }} /></div>
                     <div className="text-sm">{rfiFilter === "all" ? "No RFIs yet" : `No ${rfiFilter} RFIs`}</div>
                     <div className="text-xs text-dim mt-4">Click "+ Add RFI" to create one</div>
@@ -5292,15 +5292,15 @@ const ModalHub = ({ type, data, app }) => {
                           cursor: "pointer",
                           background: isOverdue ? "rgba(239,68,68,0.06)" : undefined,
                         }} onClick={() => setRfiExpandedId(isExpanded ? null : r.id)}>
-                          <div className="flex-between" style={{ alignItems: "flex-start" }}>
-                            <div style={{ flex: 1 }}>
+                          <div className="flex-between" className="items-start">
+                            <div className="flex-1">
                               <div className="flex gap-8 items-center flex-wrap">
-                                <span className="font-mono text-xs font-bold" style={{ color: "var(--amber)" }}>{r.number}</span>
+                                <span className="font-mono text-xs font-bold" className="text-amber">{r.number}</span>
                                 <span className="text-sm font-semi">{r.subject}</span>
                               </div>
-                              <div className="flex gap-6 mt-4 flex-wrap" style={{ alignItems: "center" }}>
+                              <div className="flex gap-6 mt-4 flex-wrap" className="flex-center">
                                 <span style={{ display: "inline-block", padding: "1px 8px", borderRadius: 4, fontSize: 10, fontWeight: 600, background: stBadge.bg, color: stBadge.color }}>{r.status}</span>
-                                <span className={`badge ${RFI_PRIORITY_BADGE(r.priority)}`} style={{ fontSize: 9 }}>{r.priority}</span>
+                                <span className={`badge ${RFI_PRIORITY_BADGE(r.priority)}`} className="fs-9">{r.priority}</span>
                                 {r.submittedTo && <span className="text-xs text-muted">To: {r.submittedTo}</span>}
                                 {r.specRef && <span className="text-xs text-muted">Ref: {r.specRef}</span>}
                                 {days !== null && (
@@ -5309,19 +5309,19 @@ const ModalHub = ({ type, data, app }) => {
                                   </span>
                                 )}
                                 {r.costImpact && r.costImpact !== "None" && (
-                                  <span className="text-xs" style={{ color: "var(--amber)" }}>
+                                  <span className="text-xs" className="text-amber">
                                     Cost: {r.costImpact === "Yes" ? fmt(r.costAmount || 0) : "TBD"}
                                   </span>
                                 )}
                                 {r.scheduleImpact && r.scheduleImpact !== "None" && (
-                                  <span className="text-xs" style={{ color: "var(--amber)" }}>
+                                  <span className="text-xs" className="text-amber">
                                     Sched: {r.scheduleImpact === "Yes" ? `${r.scheduleDays || 0}d` : "TBD"}
                                   </span>
                                 )}
                               </div>
                             </div>
                             <div className="flex gap-4" style={{ flexShrink: 0 }}>
-                              <button className="btn btn-sm btn-ghost" style={{ fontSize: 10 }} onClick={e => { e.stopPropagation(); editRfi(r); }}>Edit</button>
+                              <button className="btn btn-sm btn-ghost" className="fs-10" onClick={e => { e.stopPropagation(); editRfi(r); }}>Edit</button>
                               <button className="btn btn-sm btn-ghost" style={{ fontSize: 10, color: "var(--red)" }} onClick={e => { e.stopPropagation(); deleteRfi(r.id); }}>Del</button>
                             </div>
                           </div>
@@ -5331,13 +5331,13 @@ const ModalHub = ({ type, data, app }) => {
                               {r.question && (
                                 <div className="mb-8">
                                   <div className="text-xs text-dim font-semi">QUESTION</div>
-                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap" }}>{r.question}</div>
+                                  <div className="text-sm" className="ws-pre-wrap">{r.question}</div>
                                 </div>
                               )}
                               {r.answer && (
                                 <div className="mb-8">
                                   <div className="text-xs text-dim font-semi">ANSWER</div>
-                                  <div className="text-sm" style={{ whiteSpace: "pre-wrap", color: "var(--green)" }}>{r.answer}</div>
+                                  <div className="text-sm" className="ws-pre-wrap text-green">{r.answer}</div>
                                 </div>
                               )}
                               <div className="flex gap-16 flex-wrap text-xs text-muted">
@@ -5360,7 +5360,7 @@ const ModalHub = ({ type, data, app }) => {
             {/* ── Crew ── */}
             {projTab === "team" && (
               <div>
-                {projCrew.length === 0 ? <div className="text-sm text-dim" style={{ textAlign: "center", padding: 24 }}>No team assigned</div> : (
+                {projCrew.length === 0 ? <div className="text-sm text-dim" className="text-center p-24">No team assigned</div> : (
                   <table className="data-table">
                     <thead><tr><th>Employee</th><th>Days</th><th>Hours</th></tr></thead>
                     <tbody>
@@ -5390,7 +5390,7 @@ const ModalHub = ({ type, data, app }) => {
               <div>
                 <div className="flex gap-16 mb-16 flex-wrap">
                   <div><span className="text-dim text-xs">CONTRACT</span><div className="font-mono text-amber">{fmt(draft.contract)}</div></div>
-                  <div><span className="text-dim text-xs">APPROVED COs</span><div className="font-mono" style={{color: "var(--green)"}}>{fmt(approvedCOTotal)}</div></div>
+                  <div><span className="text-dim text-xs">APPROVED COs</span><div className="font-mono" className="text-green">{fmt(approvedCOTotal)}</div></div>
                   <div><span className="text-dim text-xs">PENDING COs</span><div className="font-mono" style={{color: pendingCOTotal > 0 ? "var(--red)" : "var(--text3)"}}>{fmt(pendingCOTotal)}</div></div>
                   <div><span className="text-dim text-xs">REVISED</span><div className="font-mono font-bold">{fmt((draft.contract || 0) + approvedCOTotal)}</div></div>
                   <div><span className="text-dim text-xs">INVOICED</span><div className="font-mono">{fmt(totalBilled)}</div></div>
@@ -5398,7 +5398,7 @@ const ModalHub = ({ type, data, app }) => {
                 </div>
                 {/* Labor budget vs actual */}
                 {(draft.laborBudget > 0 || draft.laborCost > 0) && (
-                  <div style={{ display: "flex", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
+                  <div className="flex gap-16 mb-16 flex-wrap">
                     <div><span className="text-dim text-xs">LABOR BUDGET</span><div className="font-mono">{fmt(draft.laborBudget || 0)}</div></div>
                     <div><span className="text-dim text-xs">LABOR SPENT</span><div className="font-mono" style={{ color: (draft.laborCost || 0) > (draft.laborBudget || 0) ? "var(--red)" : "var(--text)" }}>{fmt(draft.laborCost || 0)}</div></div>
                     <div><span className="text-dim text-xs">LABOR REMAINING</span><div className="font-mono" style={{ color: ((draft.laborBudget || 0) - (draft.laborCost || 0)) > 0 ? "var(--green)" : "var(--red)" }}>{fmt((draft.laborBudget || 0) - (draft.laborCost || 0))}</div></div>
@@ -5495,7 +5495,7 @@ const ModalHub = ({ type, data, app }) => {
                     <span className="text-xs font-semi" style={{ color: pct === 100 ? "var(--green)" : pct >= 50 ? "var(--amber)" : "var(--text-muted)" }}>
                       Closeout Progress: {pct}% ({completedCount}/{CLOSEOUT_ITEMS.length})
                     </span>
-                    {closeout.completedDate && <span className="badge badge-green" style={{ fontSize: 10 }}>Closed {closeout.completedDate}</span>}
+                    {closeout.completedDate && <span className="badge badge-green" className="fs-10">Closed {closeout.completedDate}</span>}
                   </div>
                   <div className="progress-bar" style={{ height: 10, borderRadius: 5 }}>
                     <div className="progress-fill" style={{ width: `${pct}%`, background: pct === 100 ? "var(--green)" : pct >= 50 ? "var(--amber)" : "var(--red)", borderRadius: 5, transition: "width 0.3s" }} />
@@ -5503,16 +5503,16 @@ const ModalHub = ({ type, data, app }) => {
                 </div>
 
                 {/* Financial Summary */}
-                <div className="card" style={{ padding: 12 }}>
-                  <div className="text-xs font-semi mb-8" style={{ color: "var(--amber)" }}>FINANCIAL SUMMARY</div>
+                <div className="card" className="p-12">
+                  <div className="text-xs font-semi mb-8" className="text-amber">FINANCIAL SUMMARY</div>
                   <div className="flex gap-16 flex-wrap">
                     <div><span className="text-dim text-xs">ORIGINAL CONTRACT</span><div className="font-mono">{fmt(draft.contract)}</div></div>
                     <div><span className="text-dim text-xs">CHANGE ORDERS</span><div className="font-mono">{fmt(coTotal)} ({projCOs.length})</div></div>
                     <div><span className="text-dim text-xs">REVISED CONTRACT</span><div className="font-mono font-bold text-amber">{fmt(revisedContract)}</div></div>
                     <div><span className="text-dim text-xs">TOTAL BILLED</span><div className="font-mono">{fmt(totalBilled)}</div></div>
                     <div><span className="text-dim text-xs">REMAINING</span><div className="font-mono" style={{ color: remainingBalance > 0 ? "var(--amber)" : "var(--green)" }}>{fmt(remainingBalance)}</div></div>
-                    <div><span className="text-dim text-xs">RETAINAGE (EST 10%)</span><div className="font-mono" style={{ color: "var(--red)" }}>{fmt(retainageHeld)}</div></div>
-                    <div><span className="text-dim text-xs">PAID</span><div className="font-mono" style={{ color: "var(--green)" }}>{fmt(paidInvoices)}</div></div>
+                    <div><span className="text-dim text-xs">RETAINAGE (EST 10%)</span><div className="font-mono" className="text-red">{fmt(retainageHeld)}</div></div>
+                    <div><span className="text-dim text-xs">PAID</span><div className="font-mono" className="text-green">{fmt(paidInvoices)}</div></div>
                   </div>
                 </div>
 
@@ -5528,18 +5528,18 @@ const ModalHub = ({ type, data, app }) => {
                       const borderColor = isDone ? "var(--green)" : itemOverdue ? "var(--red)" : "var(--border)";
                       return (
                         <div key={ci.id} className="card" style={{ padding: "8px 12px", borderLeft: `3px solid ${borderColor}`, background: bgColor }}>
-                          <div className="flex-between" style={{ alignItems: "flex-start" }}>
-                            <div className="flex gap-8" style={{ alignItems: "flex-start", flex: 1 }}>
+                          <div className="flex-between" className="items-start">
+                            <div className="flex gap-8" className="items-start flex-1">
                               <button onClick={() => toggleItem(ci.id)}
-                                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 0, lineHeight: 1, marginTop: 1, flexShrink: 0 }}>
-                                {isDone ? <CheckSquare size={16} style={{ color: "#10b981" }} /> : <Square size={16} style={{ color: "var(--text3)" }} />}
+                                className="btn-bare fs-16 flex-shrink-0" style={{ padding: 0, lineHeight: 1, marginTop: 1 }}>
+                                {isDone ? <CheckSquare size={16} className="text-green" /> : <Square size={16} className="text-dim" />}
                               </button>
-                              <div style={{ flex: 1 }}>
+                              <div className="flex-1">
                                 <div className="text-sm" style={{ textDecoration: isDone ? "line-through" : "none", opacity: isDone ? 0.7 : 1 }}>
-                                  <span style={{ fontWeight: 500 }}>{idx + 1}. {ci.label}</span>
+                                  <span className="fw-500">{idx + 1}. {ci.label}</span>
                                 </div>
-                                <div className="flex gap-8 mt-4 flex-wrap" style={{ alignItems: "center" }}>
-                                  <span className={`badge ${isDone ? "badge-green" : itemOverdue ? "badge-red" : "badge-amber"}`} style={{ fontSize: 9 }}>
+                                <div className="flex gap-8 mt-4 flex-wrap" className="flex-center">
+                                  <span className={`badge ${isDone ? "badge-green" : itemOverdue ? "badge-red" : "badge-amber"}`} className="fs-9">
                                     {isDone ? "Complete" : itemOverdue ? "Overdue" : "Pending"}
                                   </span>
                                   <span className="text-xs text-muted">Resp: {item.responsible || ci.responsible}</span>
@@ -5576,7 +5576,7 @@ const ModalHub = ({ type, data, app }) => {
                 <div>
                   <div className="text-xs font-semi mb-4">CLOSEOUT NOTES</div>
                   <textarea className="input" rows={3} placeholder="General closeout notes..." value={closeout.notes || ""}
-                    style={{ width: "100%", fontSize: 12 }}
+                    className="w-full fs-12"
                     onChange={e => {
                       const newCloseout = { ...closeout, notes: e.target.value };
                       const updated = { ...draft, closeout: newCloseout };
@@ -5587,7 +5587,7 @@ const ModalHub = ({ type, data, app }) => {
 
                 {/* Generate Report Button */}
                 <div className="flex gap-8">
-                  <button className="btn btn-primary" style={{ fontSize: 11 }} onClick={async () => {
+                  <button className="btn btn-primary" className="fs-11" onClick={async () => {
                     try {
                       const { generateCloseoutPdf } = await import("./utils/closeoutPdf.js");
                       generateCloseoutPdf(draft, {
@@ -5669,10 +5669,10 @@ const ModalHub = ({ type, data, app }) => {
                           <div className="flex-between mb-4">
                             <div>
                               <span className="text-sm font-bold">{r.date}</span>
-                              <span className="text-xs text-muted" style={{ marginLeft: 8 }}>{r.foremanName} · {r.crewCount || (r.teamPresent || []).length} crew · {r.totalHours || 0}h</span>
+                              <span className="text-xs text-muted" className="ml-8">{r.foremanName} · {r.crewCount || (r.teamPresent || []).length} crew · {r.totalHours || 0}h</span>
                             </div>
                             {r.reviewedBy ? (
-                              <span className="badge badge-green" style={{ fontSize: 10 }}>{t("Reviewed")}</span>
+                              <span className="badge badge-green" className="fs-10">{t("Reviewed")}</span>
                             ) : (
                               <button className="btn btn-sm btn-primary" style={{ fontSize: 10, padding: "3px 8px" }}
                                 onClick={() => {
@@ -5683,14 +5683,14 @@ const ModalHub = ({ type, data, app }) => {
                               </button>
                             )}
                           </div>
-                          <div className="text-sm mb-4" style={{ whiteSpace: "pre-wrap" }}>{r.workPerformed}</div>
+                          <div className="text-sm mb-4" className="ws-pre-wrap">{r.workPerformed}</div>
                           {r.materialsReceived && <div className="text-xs text-muted mb-2"><strong>{t("Materials")}:</strong> {r.materialsReceived}</div>}
-                          {r.issues && <div className="text-xs mb-2" style={{ color: "var(--amber)" }}><strong>{t("Issues")}:</strong> {r.issues}</div>}
+                          {r.issues && <div className="text-xs mb-2" className="text-amber"><strong>{t("Issues")}:</strong> {r.issues}</div>}
                           {r.tomorrowPlan && <div className="text-xs text-dim mb-2"><strong>{t("Tomorrow")}:</strong> {r.tomorrowPlan}</div>}
                           {r.safetyIncident && r.safetyIncident !== "None" && (
-                            <div className="text-xs" style={{ color: "var(--red)", fontWeight: 700 }}>{t("SAFETY INCIDENT")}: {r.safetyDescription || r.safetyIncident}</div>
+                            <div className="text-xs" className="text-red fw-700">{t("SAFETY INCIDENT")}: {r.safetyDescription || r.safetyIncident}</div>
                           )}
-                          <div className="text-xs text-dim" style={{ marginTop: 6 }}>
+                          <div className="text-xs text-dim" className="mt-6">
                             {r.conditions || r.weatherCondition} {r.temperature} · {t("Submitted")} {new Date(r.submittedAt || r.createdAt).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"})}
                             {r.reviewedBy && ` · ${t("Reviewed by")} ${r.reviewedBy}`}
                           </div>
@@ -5744,8 +5744,8 @@ const ModalHub = ({ type, data, app }) => {
               return (
                 <div className="flex-col gap-12">
                   <div className="flex-between">
-                    <div className="flex gap-8" style={{ alignItems: "center" }}>
-                      <Volume2 size={16} style={{ color: "var(--blue)" }} />
+                    <div className="flex gap-8" className="flex-center">
+                      <Volume2 size={16} className="text-blue" />
                       <div>
                         <div className="font-semi text-sm">Sound Quality Testing</div>
                         <div className="text-xs text-muted">STC-based acoustic recommendations by room type</div>
@@ -5758,7 +5758,7 @@ const ModalHub = ({ type, data, app }) => {
 
                   {showSoundForm && (
                     <div className="card" style={{ padding: 16, border: "1px solid var(--blue-dim)" }}>
-                      <div className="text-xs font-semi mb-8" style={{ color: "var(--blue)" }}>NEW ACOUSTIC RECOMMENDATION</div>
+                      <div className="text-xs font-semi mb-8" className="text-blue">NEW ACOUSTIC RECOMMENDATION</div>
                       <div className="flex gap-8 flex-wrap mb-8">
                         <div style={{ flex: "0 0 180px" }}>
                           <label className="text-xs text-dim">Room Label / Name</label>
@@ -5770,37 +5770,37 @@ const ModalHub = ({ type, data, app }) => {
                             {ROOM_TYPES.map(r => <option key={r.key} value={r.key}>{r.label} (STC {r.stc})</option>)}
                           </select>
                         </div>
-                        <div style={{ flex: "0 0 120px" }}>
+                        <div className="flex-0-120">
                           <label className="text-xs text-dim">Wall Linear Feet</label>
                           <input className="input input-sm" type="number" min="0" placeholder="LF" value={soundForm.wallLF} onChange={e => setSoundForm(p => ({ ...p, wallLF: e.target.value }))} />
                         </div>
                       </div>
                       <div className="mb-8">
                         <label className="text-xs text-dim">Existing Wall Details / Notes</label>
-                        <textarea className="input input-sm" rows={2} placeholder="Stud size, height, special conditions..." value={soundForm.wallDetails} onChange={e => setSoundForm(p => ({ ...p, wallDetails: e.target.value }))} style={{ resize: "vertical" }} />
+                        <textarea className="input input-sm" rows={2} placeholder="Stud size, height, special conditions..." value={soundForm.wallDetails} onChange={e => setSoundForm(p => ({ ...p, wallDetails: e.target.value }))} className="resize-v" />
                       </div>
 
                       {/* Live recommendation preview */}
                       <div style={{ background: "rgba(59,130,246,0.07)", border: "1px solid var(--blue-dim)", borderRadius: 8, padding: 12, marginBottom: 12 }}>
                         <div className="flex-between mb-6">
-                          <span className="text-xs font-semi" style={{ color: "var(--blue)" }}>RECOMMENDED ASSEMBLY</span>
-                          <span className="badge badge-blue" style={{ fontSize: 10 }}>STC {selRT.stc}</span>
+                          <span className="text-xs font-semi" className="text-blue">RECOMMENDED ASSEMBLY</span>
+                          <span className="badge badge-blue" className="fs-10">STC {selRT.stc}</span>
                         </div>
                         <div className="font-semi text-sm mb-4">{selRT.label} — {selRT.stcDesc}</div>
-                        <div className="text-xs mb-6" style={{ color: "var(--text2)", lineHeight: 1.5 }}>{selRT.assembly}</div>
-                        <div className="text-xs text-muted mb-8" style={{ fontStyle: "italic" }}>{selRT.note}</div>
-                        <div className="text-xs font-semi mb-4" style={{ color: "var(--text3)" }}>MATERIALS NEEDED:</div>
+                        <div className="text-xs mb-6" className="text-muted" style={{ lineHeight: 1.5 }}>{selRT.assembly}</div>
+                        <div className="text-xs text-muted mb-8" className="text-italic">{selRT.note}</div>
+                        <div className="text-xs font-semi mb-4" className="text-dim">MATERIALS NEEDED:</div>
                         <div className="flex-col gap-2 mb-8">
                           {selRT.materials.map((m, i) => (
-                            <div key={i} className="text-xs" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                              <span style={{ color: "var(--green)", fontSize: 14 }}>✓</span> {m}
+                            <div key={i} className="text-xs" className="flex-center-gap-6">
+                              <span className="text-green fs-14">✓</span> {m}
                             </div>
                           ))}
                         </div>
                         {estSF > 0 && (
                           <div className="flex gap-12">
                             <div><span className="text-xs text-dim">EST. WALL SF</span><div className="font-mono text-sm">{estSF.toLocaleString()} SF</div></div>
-                            <div><span className="text-xs text-dim">EST. ADDITIONAL COST</span><div className="font-mono text-sm" style={{ color: "var(--amber)" }}>{fmt(estCost)}</div></div>
+                            <div><span className="text-xs text-dim">EST. ADDITIONAL COST</span><div className="font-mono text-sm" className="text-amber">{fmt(estCost)}</div></div>
                             <div><span className="text-xs text-dim">UNIT RATE</span><div className="font-mono text-sm">${selRT.costSF.toFixed(2)}/SF</div></div>
                           </div>
                         )}
@@ -5811,39 +5811,39 @@ const ModalHub = ({ type, data, app }) => {
                   )}
 
                   {soundTests.length === 0 && !showSoundForm ? (
-                    <div className="text-sm text-dim" style={{ textAlign: "center", padding: 32 }}>No acoustic tests added. Click "+ Add Room" to generate a recommendation.</div>
+                    <div className="text-sm text-dim" className="text-center p-32">No acoustic tests added. Click "+ Add Room" to generate a recommendation.</div>
                   ) : (
                     soundTests.map((test, i) => {
                       const rt = ROOM_TYPES.find(r => r.key === test.roomType);
                       return (
-                        <div key={test.id || i} className="card" style={{ padding: 12 }}>
+                        <div key={test.id || i} className="card" className="p-12">
                           <div className="flex-between mb-4">
-                            <div className="flex gap-8" style={{ alignItems: "center" }}>
-                              <Volume2 size={13} style={{ color: "var(--blue)" }} />
+                            <div className="flex gap-8" className="flex-center">
+                              <Volume2 size={13} className="text-blue" />
                               <span className="font-semi text-sm">{test.roomLabel}</span>
                               <span className="text-xs text-muted">{rt?.label || test.roomType}</span>
                             </div>
-                            <div className="flex gap-8" style={{ alignItems: "center" }}>
-                              <span className="badge badge-blue" style={{ fontSize: 10 }}>STC {test.stc}</span>
+                            <div className="flex gap-8" className="flex-center">
+                              <span className="badge badge-blue" className="fs-10">STC {test.stc}</span>
                               <span className="text-xs text-muted">{test.date}</span>
-                              <button className="btn btn-sm btn-ghost" style={{ color: "var(--red)", padding: "2px 6px", fontSize: 10 }} onClick={() => {
+                              <button className="btn btn-sm btn-ghost" className="text-red btn-link" onClick={() => {
                                 const updated = { ...draft, soundTests: soundTests.filter((_, j) => j !== i) };
                                 app.setProjects(prev => prev.map(p => String(p.id) === String(draft.id) ? updated : p));
                                 setDraft(updated);
                               }}>✕</button>
                             </div>
                           </div>
-                          <div className="text-xs" style={{ color: "var(--text2)", marginBottom: 4 }}>{test.assembly}</div>
+                          <div className="text-xs" className="text-muted mb-4">{test.assembly}</div>
                           {test.wallDetails && <div className="text-xs text-muted mb-4">Notes: {test.wallDetails}</div>}
                           <div className="flex gap-8 flex-wrap">
                             {test.materials?.map((m, j) => (
-                              <span key={j} className="badge badge-muted" style={{ fontSize: 9 }}>{m}</span>
+                              <span key={j} className="badge badge-muted" className="fs-9">{m}</span>
                             ))}
                           </div>
                           {(test.estimatedCost > 0 || test.estimatedSF > 0) && (
                             <div className="flex gap-12 mt-8">
                               {test.estimatedSF > 0 && <div><span className="text-xs text-dim">WALL SF</span><div className="font-mono text-xs">{test.estimatedSF.toLocaleString()} SF</div></div>}
-                              {test.estimatedCost > 0 && <div><span className="text-xs text-dim">EST. COST</span><div className="font-mono text-xs" style={{ color: "var(--amber)" }}>{fmt(test.estimatedCost)}</div></div>}
+                              {test.estimatedCost > 0 && <div><span className="text-xs text-dim">EST. COST</span><div className="font-mono text-xs" className="text-amber">{fmt(test.estimatedCost)}</div></div>}
                             </div>
                           )}
                         </div>
@@ -5896,14 +5896,14 @@ const ModalHub = ({ type, data, app }) => {
 
               return (
                 <div className="flex-col gap-12">
-                  <div className="flex gap-8" style={{ alignItems: "center" }}>
-                    <HardHat size={16} style={{ color: "var(--amber)" }} />
+                  <div className="flex gap-8" className="flex-center">
+                    <HardHat size={16} className="text-amber" />
                     <div>
                       <div className="font-semi text-sm">Site Logistics</div>
                       <div className="text-xs text-muted">Daily site readiness checklist · {today}</div>
                     </div>
                     <div className="ml-auto">
-                      <span className={`badge ${checkedCount === LOGISTICS_ITEMS.length ? "badge-green" : checkedCount > 0 ? "badge-amber" : "badge-muted"}`} style={{ fontSize: 10 }}>
+                      <span className={`badge ${checkedCount === LOGISTICS_ITEMS.length ? "badge-green" : checkedCount > 0 ? "badge-amber" : "badge-muted"}`} className="fs-10">
                         {checkedCount}/{LOGISTICS_ITEMS.length} checked
                       </span>
                     </div>
@@ -5911,9 +5911,9 @@ const ModalHub = ({ type, data, app }) => {
 
                   {criticalUnchecked.length > 0 && (
                     <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid var(--red)", borderRadius: 8, padding: "10px 12px" }}>
-                      <div className="flex gap-8 mb-4" style={{ alignItems: "center" }}>
-                        <AlertTriangle size={14} style={{ color: "var(--red)" }} />
-                        <span className="text-xs font-semi" style={{ color: "var(--red)" }}>PM ALERT — Critical items unchecked:</span>
+                      <div className="flex gap-8 mb-4" className="flex-center">
+                        <AlertTriangle size={14} className="text-red" />
+                        <span className="text-xs font-semi" className="text-red">PM ALERT — Critical items unchecked:</span>
                       </div>
                       {criticalUnchecked.map(i => (
                         <div key={i.id} className="text-xs text-muted" style={{ marginLeft: 22 }}>• {i.label}</div>
@@ -5926,18 +5926,18 @@ const ModalHub = ({ type, data, app }) => {
                       const checked = !!todayLog[item.id];
                       return (
                         <div key={item.id} className="card" style={{ padding: "10px 12px", borderLeft: `3px solid ${checked ? "var(--green)" : item.critical ? "var(--red)" : "var(--border)"}`, background: checked ? "rgba(16,185,129,0.05)" : item.critical && !checked ? "rgba(239,68,68,0.04)" : undefined }}>
-                          <div className="flex gap-10" style={{ alignItems: "center" }}>
-                            <button onClick={() => toggleLogItem(item.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1, flexShrink: 0 }}>
-                              {checked ? <CheckSquare size={16} style={{ color: "var(--green)" }} /> : <Square size={16} style={{ color: "var(--text3)" }} />}
+                          <div className="flex gap-10" className="flex-center">
+                            <button onClick={() => toggleLogItem(item.id)} className="btn-bare flex-shrink-0" style={{ padding: 0, lineHeight: 1 }}>
+                              {checked ? <CheckSquare size={16} className="text-green" /> : <Square size={16} className="text-dim" />}
                             </button>
                             <span style={{ fontSize: 16 }}>{item.icon}</span>
-                            <div style={{ flex: 1 }}>
+                            <div className="flex-1">
                               <span className="text-sm" style={{ textDecoration: checked ? "line-through" : "none", opacity: checked ? 0.7 : 1 }}>{item.label}</span>
                               {item.critical && !checked && (
                                 <span className="badge badge-red" style={{ fontSize: 9, marginLeft: 6 }}>Critical</span>
                               )}
                             </div>
-                            <span className={`badge ${checked ? "badge-green" : item.critical ? "badge-red" : "badge-muted"}`} style={{ fontSize: 9 }}>
+                            <span className={`badge ${checked ? "badge-green" : item.critical ? "badge-red" : "badge-muted"}`} className="fs-9">
                               {checked ? "OK" : item.critical ? "Action Needed" : "Pending"}
                             </span>
                           </div>
@@ -5949,12 +5949,12 @@ const ModalHub = ({ type, data, app }) => {
                   {/* History */}
                   {history.length > 0 && (
                     <div>
-                      <div className="text-xs font-semi mb-8" style={{ color: "var(--text3)" }}>RECENT HISTORY (Last 7 Days)</div>
+                      <div className="text-xs font-semi mb-8" className="text-dim">RECENT HISTORY (Last 7 Days)</div>
                       <div className="flex-col gap-4">
                         {history.map(({ date, log }) => {
                           const cnt = LOGISTICS_ITEMS.filter(i => log[i.id]).length;
                           return (
-                            <div key={date} style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 10px", background: "var(--bg3)", borderRadius: 6 }}>
+                            <div key={date} className="flex-center-gap-12 activity-tile">
                               <span className="text-xs text-muted" style={{ minWidth: 80 }}>{date}</span>
                               <div className="progress-bar" style={{ flex: 1, height: 6 }}>
                                 <div className="progress-fill" style={{ width: `${(cnt / LOGISTICS_ITEMS.length) * 100}%`, background: cnt === LOGISTICS_ITEMS.length ? "var(--green)" : cnt >= 4 ? "var(--amber)" : "var(--red)", borderRadius: 3 }} />
@@ -6015,8 +6015,8 @@ const ModalHub = ({ type, data, app }) => {
 
               return (
                 <div className="flex-col gap-12">
-                  <div className="flex gap-8" style={{ alignItems: "center" }}>
-                    <MessageSquare size={16} style={{ color: "var(--green)" }} />
+                  <div className="flex gap-8" className="flex-center">
+                    <MessageSquare size={16} className="text-green" />
                     <div>
                       <div className="font-semi text-sm">Team Notes</div>
                       <div className="text-xs text-muted">{allNotes.length} note{allNotes.length !== 1 ? "s" : ""} · visible to all project team</div>
@@ -6043,33 +6043,33 @@ const ModalHub = ({ type, data, app }) => {
                   {/* Filters */}
                   <div className="flex gap-4">
                     {["all", "pm", "field", "office"].map(f => (
-                      <button key={f} className={`btn btn-sm ${notesFilter === f ? "btn-primary" : "btn-ghost"}`} onClick={() => setNotesFilter(f)} style={{ textTransform: "capitalize" }}>
+                      <button key={f} className={`btn btn-sm ${notesFilter === f ? "btn-primary" : "btn-ghost"}`} onClick={() => setNotesFilter(f)} className="text-capitalize">
                         {f === "all" ? `All (${allNotes.length})` : `${catLabel(f)} (${filterMap[f]?.length || 0})`}
                       </button>
                     ))}
                   </div>
 
                   {visibleNotes.length === 0 ? (
-                    <div className="text-sm text-dim" style={{ textAlign: "center", padding: 32 }}>No notes yet. Post the first note above.</div>
+                    <div className="text-sm text-dim" className="text-center p-32">No notes yet. Post the first note above.</div>
                   ) : (
                     <div className="flex-col gap-8">
                       {visibleNotes.map(note => (
                         <div key={note.id} className="card" style={{ padding: 12, borderLeft: `3px solid ${note.pinned ? "var(--amber)" : "var(--border)"}`, background: note.pinned ? "rgba(245,158,11,0.04)" : undefined }}>
                           <div className="flex-between mb-6">
-                            <div className="flex gap-8" style={{ alignItems: "center" }}>
-                              {note.pinned && <Pin size={12} style={{ color: "var(--amber)" }} />}
+                            <div className="flex gap-8" className="flex-center">
+                              {note.pinned && <Pin size={12} className="text-amber" />}
                               <span className="font-semi text-sm">{note.author}</span>
-                              <span className={`badge ${catBadge(note.category)}`} style={{ fontSize: 9 }}>{catLabel(note.category)} Note</span>
+                              <span className={`badge ${catBadge(note.category)}`} className="fs-9">{catLabel(note.category)} Note</span>
                             </div>
-                            <div className="flex gap-6" style={{ alignItems: "center" }}>
+                            <div className="flex gap-6" className="flex-center">
                               <span className="text-xs text-muted">{fmtTime(note.timestamp)}</span>
                               <button onClick={() => togglePin(note.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: note.pinned ? "var(--amber)" : "var(--text3)" }} title={note.pinned ? "Unpin" : "Pin"}>
                                 {note.pinned ? <PinOff size={12} /> : <Pin size={12} />}
                               </button>
-                              <button onClick={() => deleteNote(note.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px", color: "var(--text3)", fontSize: 11 }}>✕</button>
+                              <button onClick={() => deleteNote(note.id)} className="btn-bare fs-11" style={{ padding: "2px 4px" }}>✕</button>
                             </div>
                           </div>
-                          <div className="text-sm" style={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{note.text}</div>
+                          <div className="text-sm" className="ws-pre-wrap" style={{ lineHeight: 1.5 }}>{note.text}</div>
                         </div>
                       ))}
                     </div>
@@ -6079,8 +6079,8 @@ const ModalHub = ({ type, data, app }) => {
             })()}
           </div>
 
-          <div className="modal-actions" style={{ justifyContent: "space-between" }}>
-            <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>
+          <div className="modal-actions" className="flex-between">
+            <button className="btn" className="badge-red-outlined" onClick={handleDelete}>Delete</button>
             <div className="flex gap-8">
               <button className="btn btn-ghost" onClick={close}>Close</button>
               <button className="btn btn-primary" onClick={() => setModal({ type: "editProject", data: draft })}>Edit</button>
@@ -6130,7 +6130,7 @@ const ModalHub = ({ type, data, app }) => {
         <div className="modal modal-lg">
           <div className="modal-header">
             <div className="modal-title">{isNew ? "Add Bid" : "Edit Bid"}</div>
-            <div className="flex gap-8" style={{ alignItems: "center" }}>
+            <div className="flex gap-8" className="flex-center">
               <label className="btn btn-sm" style={{ background: "var(--blue-dim)", color: "var(--blue)", border: "1px solid var(--blue)", fontSize: 11, cursor: "pointer", position: "relative" }}>
                 {pdfScanning ? "Scanning..." : "Scan Proposal PDF"}
                 <input type="file" accept=".pdf" style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} onChange={(e) => { if (e.target.files?.[0]) handlePdfScan(e.target.files[0]); e.target.value = ""; }} disabled={pdfScanning} />
@@ -6147,10 +6147,10 @@ const ModalHub = ({ type, data, app }) => {
               <div style={{ fontSize: 11, color: "var(--text2)", marginBottom: 8 }}>Paste the full email body from Procore, BuildingConnected, or any bid invite. Regex patterns will extract project name, GC, address, due date, and scope tags.</div>
               <textarea className="form-textarea" value={emailImportText} onChange={e => setEmailImportText(e.target.value)} placeholder={"Paste bid invite email here...\n\nExample:\nFrom: ABC Construction\nProject: Houston Medical Center Renovation\nBid Due: April 15, 2026\nProject Address: 1234 Main St, Houston, TX 77002\nScope of Work: Metal Framing, Drywall, ACT\n\nThe AI parser will extract key fields automatically."} style={{ minHeight: 130, fontSize: 12 }} />
               <div className="flex-between mt-8">
-                <span className="text2" style={{ fontSize: 11 }}>{emailImportText.length > 0 ? `${emailImportText.length} characters` : "Paste email text above"}</span>
+                <span className="text2" className="fs-11">{emailImportText.length > 0 ? `${emailImportText.length} characters` : "Paste email text above"}</span>
                 <div className="flex gap-8">
                   <button className="btn btn-ghost btn-sm" onClick={() => { setEmailImportText(""); setShowEmailImport(false); }}>Cancel</button>
-                  <button className="btn btn-sm" style={{ background: "var(--green)", color: "#fff" }} onClick={parseEmailBid}>Import Fields</button>
+                  <button className="btn btn-sm" className="bg-green text-white" onClick={parseEmailBid}>Import Fields</button>
                 </div>
               </div>
             </div>
@@ -6161,7 +6161,7 @@ const ModalHub = ({ type, data, app }) => {
               <div style={{ fontSize: 12, color: "var(--amber)", fontWeight: 600, marginBottom: 8 }}>PASTE BID INVITE, SPEC EXCERPT, OR EMAIL</div>
               <textarea className="form-textarea" value={aiText} onChange={e => setAiText(e.target.value)} placeholder={"Paste the bid invite email, spec section, or project description here...\n\nThe AI will extract: project name, GC, due date, scope tags, risk level, phase, and key notes."} style={{ minHeight: 120, fontSize: 12 }} />
               <div className="flex-between mt-8">
-                <span className="text2" style={{ fontSize: 11 }}>{aiText.length > 0 ? `${aiText.length} characters` : "Paste text to analyze"}</span>
+                <span className="text2" className="fs-11">{aiText.length > 0 ? `${aiText.length} characters` : "Paste text to analyze"}</span>
                 <button className="btn btn-primary btn-sm" onClick={runAnalysis} disabled={aiLoading} style={{ minWidth: 140 }}>
                   {aiLoading ? "Analyzing..." : "Extract Fields"}
                 </button>
@@ -6171,7 +6171,7 @@ const ModalHub = ({ type, data, app }) => {
 
           {aiWarnings.length > 0 && (
             <div style={{ marginBottom: 12, padding: 10, background: "rgba(255,80,80,0.08)", border: "1px solid rgba(255,80,80,0.2)", borderRadius: "var(--radius)", fontSize: 12 }}>
-              <strong style={{ color: "var(--red)", fontSize: 11 }}>WARNINGS</strong>
+              <strong className="text-red fs-11">WARNINGS</strong>
               <ul style={{ margin: "4px 0 0 16px", color: "var(--text2)" }}>
                 {aiWarnings.map((w, i) => <li key={i}>{w}</li>)}
               </ul>
@@ -6198,7 +6198,7 @@ const ModalHub = ({ type, data, app }) => {
             </div>
             <div className="form-group">
               <label className="form-label">General Contractor</label>
-              <div style={{ position: "relative" }}>
+              <div className="pos-relative">
                 <input
                   className="form-input"
                   placeholder="Search or type GC name..."
@@ -6208,7 +6208,7 @@ const ModalHub = ({ type, data, app }) => {
                   onBlur={() => setTimeout(() => setGcDropOpen(false), 200)}
                 />
                 {draft.gc && !gcDropOpen && (
-                  <button type="button" style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text2)", cursor: "pointer", fontSize: 14, padding: "2px 4px" }}
+                  <button type="button" className="input-clear-btn"
                     onClick={() => { upd("gc", ""); setGcFilter(""); }}>&#10005;</button>
                 )}
                 {gcDropOpen && (() => {
@@ -6220,16 +6220,16 @@ const ModalHub = ({ type, data, app }) => {
                   const filtered = allGcs.filter(name => name.toLowerCase().includes(q));
                   if (filtered.length === 0) return null;
                   return (
-                    <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, maxHeight: 200, overflowY: "auto", background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "0 0 var(--radius) var(--radius)", boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}>
+                    <div className="autocomplete-dropdown">
                       {filtered.map(name => (
                         <div key={name}
-                          style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid var(--border)" }}
+                          className="queue-row fs-13 cursor-pointer px-12"
                           onMouseDown={e => { e.preventDefault(); upd("gc", name); setGcDropOpen(false); setGcFilter(""); }}
                           onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
                           onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                         >
-                          <span style={{ fontWeight: 500 }}>{name}</span>
-                          <span style={{ color: "var(--text2)", marginLeft: 8, fontSize: 11 }}>
+                          <span className="fw-500">{name}</span>
+                          <span className="text-muted ml-8 fs-11">
                             {app.contacts.filter(c => c.company === name).length} contact{app.contacts.filter(c => c.company === name).length !== 1 ? "s" : ""}
                           </span>
                         </div>
@@ -6334,7 +6334,7 @@ const ModalHub = ({ type, data, app }) => {
             </div>
             <div className="form-group">
               <label className="form-label">Contact</label>
-              <div className="flex gap-4" style={{ alignItems: "center" }}>
+              <div className="flex gap-4" className="flex-center">
                 <div style={{ flex: 1, position: "relative" }}>
                   <input
                     className="form-input"
@@ -6345,7 +6345,7 @@ const ModalHub = ({ type, data, app }) => {
                     onBlur={() => setTimeout(() => setContactDropOpen(false), 200)}
                   />
                   {draft.contact && !contactDropOpen && (
-                    <button type="button" style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text2)", cursor: "pointer", fontSize: 14, padding: "2px 4px" }}
+                    <button type="button" className="input-clear-btn"
                       onClick={() => { upd("contact", ""); setContactFilter(""); }}>✕</button>
                   )}
                   {contactDropOpen && (() => {
@@ -6354,18 +6354,18 @@ const ModalHub = ({ type, data, app }) => {
                       c.name.toLowerCase().includes(q) || (c.company || "").toLowerCase().includes(q)
                     );
                     return (
-                      <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, maxHeight: 200, overflowY: "auto", background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "0 0 var(--radius) var(--radius)", boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}>
+                      <div className="autocomplete-dropdown">
                         {filtered.length === 0 ? (
                           <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--text2)" }}>No contacts found</div>
                         ) : filtered.map(c => (
                           <div key={c.id}
-                            style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid var(--border)" }}
+                            className="queue-row fs-13 cursor-pointer px-12"
                             onMouseDown={e => { e.preventDefault(); upd("contact", c.name); setContactDropOpen(false); setContactFilter(""); }}
                             onMouseEnter={e => e.currentTarget.style.background = "var(--bg3)"}
                             onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                           >
-                            <span style={{ fontWeight: 500 }}>{c.name}</span>
-                            <span style={{ color: "var(--text2)", marginLeft: 8, fontSize: 11 }}>{c.company}{c.role ? ` · ${c.role}` : ""}</span>
+                            <span className="fw-500">{c.name}</span>
+                            <span className="text-muted ml-8 fs-11">{c.company}{c.role ? ` · ${c.role}` : ""}</span>
                           </div>
                         ))}
                       </div>
@@ -6378,16 +6378,16 @@ const ModalHub = ({ type, data, app }) => {
               {quickContact && (
                 <div style={{ marginTop: 8, padding: 12, background: "var(--bg3)", borderRadius: "var(--radius)", border: "1px solid var(--border2)" }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "var(--amber)", marginBottom: 8 }}>QUICK ADD CONTACT</div>
-                  <div className="flex gap-8 mb-8" style={{ flexWrap: "wrap" }}>
-                    <input className="form-input" style={{ flex: "1 1 140px" }} placeholder="Name *" value={quickContact.name}
+                  <div className="flex gap-8 mb-8" className="flex-wrap">
+                    <input className="form-input" className="flex-1-140" placeholder="Name *" value={quickContact.name}
                       onChange={e => setQuickContact(prev => ({ ...prev, name: e.target.value }))} />
-                    <input className="form-input" style={{ flex: "1 1 140px" }} placeholder="Company" value={quickContact.company}
+                    <input className="form-input" className="flex-1-140" placeholder="Company" value={quickContact.company}
                       onChange={e => setQuickContact(prev => ({ ...prev, company: e.target.value }))} />
                   </div>
-                  <div className="flex gap-8 mb-8" style={{ flexWrap: "wrap" }}>
-                    <input className="form-input" style={{ flex: "1 1 120px" }} placeholder="Role" value={quickContact.role}
+                  <div className="flex gap-8 mb-8" className="flex-wrap">
+                    <input className="form-input" className="flex-1-120" placeholder="Role" value={quickContact.role}
                       onChange={e => setQuickContact(prev => ({ ...prev, role: e.target.value }))} />
-                    <input className="form-input" style={{ flex: "1 1 120px" }} placeholder="Phone" value={quickContact.phone}
+                    <input className="form-input" className="flex-1-120" placeholder="Phone" value={quickContact.phone}
                       onChange={e => setQuickContact(prev => ({ ...prev, phone: e.target.value }))} />
                     <input className="form-input" style={{ flex: "1 1 160px" }} placeholder="Email" value={quickContact.email}
                       onChange={e => setQuickContact(prev => ({ ...prev, email: e.target.value }))} />
@@ -6440,14 +6440,14 @@ const ModalHub = ({ type, data, app }) => {
 
             {/* ── File Attachments ── */}
             <div className="form-group full">
-              <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <label className="form-label" className="flex-center-gap-8">
                 Plans, Specs & Documents
                 {(draft.attachments || []).length === 0 && <span style={{ fontSize: 10, color: "var(--red)", fontWeight: 600 }}>NO PLANS UPLOADED</span>}
                 {(draft.attachments || []).length > 0 && <span style={{ fontSize: 10, color: "var(--green)", fontWeight: 600 }}>{(draft.attachments || []).length} file{(draft.attachments || []).length !== 1 ? "s" : ""}</span>}
               </label>
               <div style={{ border: `2px dashed ${(draft.attachments || []).length === 0 ? "var(--amber)" : "var(--border2)"}`, borderRadius: "var(--radius)", padding: 16, background: "var(--bg2)" }}>
-                <div style={{ textAlign: "center", padding: "8px 0" }}>
-                  <label style={{ cursor: "pointer", color: "var(--blue)", fontWeight: 600, fontSize: 13 }}>
+                <div className="text-center py-8">
+                  <label className="cursor-pointer text-blue font-semi fs-13">
                     Click to upload or drag files
                     <input
                       type="file"
@@ -6477,7 +6477,7 @@ const ModalHub = ({ type, data, app }) => {
                         });
                         e.target.value = "";
                       }}
-                      style={{ display: "none" }}
+                      className="hidden"
                     />
                   </label>
                   <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>
@@ -6485,29 +6485,29 @@ const ModalHub = ({ type, data, app }) => {
                   </div>
                 </div>
                 {(draft.attachments || []).length > 0 && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div className="flex-col-gap-6">
                     {(draft.attachments || []).map((att, i) => (
                       <div key={att.id || i} style={{
                         display: "flex", alignItems: "center", justifyContent: "space-between",
                         background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)",
                         padding: "8px 12px", fontSize: 12
                       }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
-                          <span style={{ display: "flex", alignItems: "center" }}>
-                            {att.type?.includes("pdf") ? <FileText style={{ width: 16, height: 16 }} /> : att.type?.includes("image") ? <Image style={{ width: 16, height: 16 }} /> : att.type?.includes("sheet") || att.type?.includes("excel") ? <BarChart2 style={{ width: 16, height: 16 }} /> : <Paperclip style={{ width: 16, height: 16 }} />}
+                        <div className="flex-center-gap-8 flex-1" style={{ minWidth: 0 }}>
+                          <span className="flex-center">
+                            {att.type?.includes("pdf") ? <FileText className="w-4 h-4" /> : att.type?.includes("image") ? <Image className="w-4 h-4" /> : att.type?.includes("sheet") || att.type?.includes("excel") ? <BarChart2 className="w-4 h-4" /> : <Paperclip className="w-4 h-4" />}
                           </span>
-                          <span style={{ color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <span className="text-default fw-500 text-ellipsis">
                             {att.name}
                           </span>
-                          <span style={{ color: "var(--text3)", flexShrink: 0 }}>
+                          <span className="text-dim flex-shrink-0">
                             {att.size < 1024 ? att.size + "B" : att.size < 1048576 ? (att.size / 1024).toFixed(1) + "KB" : (att.size / 1048576).toFixed(1) + "MB"}
                           </span>
                         </div>
-                        <div style={{ display: "flex", gap: 4 }}>
+                        <div className="flex gap-4">
                           {att.data && (
                             <button
                               className="btn btn-ghost btn-sm"
-                              style={{ fontSize: 10, padding: "2px 6px" }}
+                              className="btn-link"
                               onClick={() => { const w = window.open(); w.document.write(`<iframe src="${att.data}" style="width:100%;height:100%;border:none"></iframe>`); }}
                               title="View"
                             >View</button>
@@ -6526,16 +6526,16 @@ const ModalHub = ({ type, data, app }) => {
               </div>
             </div>
           </div>
-          <div className="modal-actions" style={{ justifyContent: "space-between" }}>
-            {!isNew && <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>}
-            <div className="flex gap-8" style={{ marginLeft: "auto" }}>
+          <div className="modal-actions" className="flex-between">
+            {!isNew && <button className="btn" className="badge-red-outlined" onClick={handleDelete}>Delete</button>}
+            <div className="flex gap-8" className="ml-auto">
               {!isNew && draft.status !== "awarded" && (
-                <button className="btn" style={{ background: "rgba(16,185,129,0.12)", color: "var(--green)", border: "1px solid var(--green)", fontWeight: 600 }} onClick={handleAwardBid}>
+                <button className="btn" className="badge-green-outlined" onClick={handleAwardBid}>
                   Award Bid
                 </button>
               )}
               {!isNew && draft.status === "awarded" && (
-                <button className="btn" style={{ background: "rgba(234,179,8,0.12)", color: "var(--yellow)", border: "1px solid var(--yellow)", fontSize: 11 }} onClick={handleUnAwardBid}>
+                <button className="btn" className="badge-yellow-outlined" onClick={handleUnAwardBid}>
                   Un-award
                 </button>
               )}
@@ -6633,10 +6633,10 @@ const ModalHub = ({ type, data, app }) => {
                 {CONSTRUCTION_STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
               </select>
               {draft.stageHistory?.length > 0 && (
-                <details style={{ marginTop: 6 }}>
-                  <summary className="text-xs text-dim" style={{ cursor: "pointer" }}>Stage history ({draft.stageHistory.length})</summary>
+                <details className="mt-6">
+                  <summary className="text-xs text-dim" className="cursor-pointer">Stage history ({draft.stageHistory.length})</summary>
                   {draft.stageHistory.map((h, i) => (
-                    <div key={i} className="text-xs text-dim" style={{ padding: "2px 0" }}>
+                    <div key={i} className="text-xs text-dim" className="py-2">
                       {h.changedAt ? new Date(h.changedAt).toLocaleDateString() : ""} · {h.changedBy} · {STAGE_MAP[h.from]?.label || h.from || "—"} → {STAGE_MAP[h.to]?.label || h.to || "—"}
                     </div>
                   ))}
@@ -6693,25 +6693,25 @@ const ModalHub = ({ type, data, app }) => {
             {/* ── Polygon Perimeter ── */}
             <div className="form-group full">
               <label className="form-label">Job Site Perimeter</label>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <div className="flex-center-gap-12 flex-wrap">
                 <button
                   type="button"
                   className="btn btn-ghost"
-                  style={{ fontSize: 13 }}
+                  className="fs-13"
                   onClick={() => setShowPerimeterMap(true)}
                   disabled={!draft.lat || !draft.lng}
                   title={!draft.lat || !draft.lng ? "Set Lat/Lng first" : "Draw polygon boundary on map"}
                 >
-                  <MapPin style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle", marginRight: 4 }} />{draft.perimeter && draft.perimeter.length >= 3 ? "Edit Perimeter" : "Set Perimeter"}
+                  <MapPin className="icon-inline" />{draft.perimeter && draft.perimeter.length >= 3 ? "Edit Perimeter" : "Set Perimeter"}
                 </button>
                 {draft.perimeter && draft.perimeter.length >= 3 ? (
-                  <span style={{ fontSize: 12, color: "var(--green, #10b981)" }}>
+                  <span className="fs-12 text-green">
                     ✓ {draft.perimeter.length} points · {polygonAreaSqFt(draft.perimeter) > 43560
                       ? `${(polygonAreaSqFt(draft.perimeter) / 43560).toFixed(2)} acres`
                       : `${Math.round(polygonAreaSqFt(draft.perimeter)).toLocaleString()} sq ft`}
                   </span>
                 ) : (
-                  <span style={{ fontSize: 12, color: "var(--text-muted, #9ca3af)" }}>
+                  <span className="fs-12 text-muted">
                     {!draft.lat || !draft.lng ? "Enter Lat/Lng above first" : "No polygon — using radius geofence"}
                   </span>
                 )}
@@ -6719,7 +6719,7 @@ const ModalHub = ({ type, data, app }) => {
                   <button
                     type="button"
                     className="btn btn-ghost btn-sm"
-                    style={{ fontSize: 11, color: "var(--red, #ef4444)" }}
+                    className="fs-11 text-red"
                     onClick={() => upd("perimeter", [])}
                   >
                     Remove
@@ -6736,12 +6736,12 @@ const ModalHub = ({ type, data, app }) => {
             {/* ── Proposal Attachments ── */}
             <div className="form-group full">
               <label className="form-label">Proposal / Attachments</label>
-              <div style={{ border: "1px dashed var(--border)", borderRadius: 8, padding: 16, textAlign: "center" }}>
+              <div className="upload-zone">
                 <input
                   type="file"
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
                   multiple
-                  style={{ display: "none" }}
+                  className="hidden"
                   id="proposal-upload"
                   onChange={(e) => {
                     const files = Array.from(e.target.files);
@@ -6766,26 +6766,26 @@ const ModalHub = ({ type, data, app }) => {
                     e.target.value = "";
                   }}
                 />
-                <label htmlFor="proposal-upload" className="btn btn-ghost" style={{ cursor: "pointer" }}>
-                  <Paperclip style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle", marginRight: 4 }} />Upload Proposal / Files
+                <label htmlFor="proposal-upload" className="btn btn-ghost" className="cursor-pointer">
+                  <Paperclip className="icon-inline" />Upload Proposal / Files
                 </label>
-                <div className="text-xs text-dim" style={{ marginTop: 6 }}>PDF, Word, Excel, Images</div>
+                <div className="text-xs text-dim" className="mt-6">PDF, Word, Excel, Images</div>
               </div>
 
               {/* List attached files */}
               {(draft.attachments || []).length > 0 && (
-                <div style={{ marginTop: 12 }}>
+                <div className="mt-12">
                   {draft.attachments.map((att, i) => (
                     <div key={att.id || i} className="flex-between" style={{ padding: "8px 12px", background: "var(--bg3)", borderRadius: 6, marginBottom: 4 }}>
-                      <div className="flex gap-8" style={{ alignItems: "center" }}>
-                        <span style={{ display: "flex", alignItems: "center" }}>{att.type?.includes("pdf") ? <FileText style={{ width: 16, height: 16 }} /> : att.type?.includes("image") ? <Image style={{ width: 16, height: 16 }} /> : att.type?.includes("sheet") || att.type?.includes("excel") ? <BarChart2 style={{ width: 16, height: 16 }} /> : <FolderOpen style={{ width: 16, height: 16 }} />}</span>
+                      <div className="flex gap-8" className="flex-center">
+                        <span className="flex-center">{att.type?.includes("pdf") ? <FileText className="w-4 h-4" /> : att.type?.includes("image") ? <Image className="w-4 h-4" /> : att.type?.includes("sheet") || att.type?.includes("excel") ? <BarChart2 className="w-4 h-4" /> : <FolderOpen className="w-4 h-4" />}</span>
                         <div>
                           <div className="text-sm font-semi">{att.name}</div>
                           <div className="text-xs text-dim">{(att.size / 1024).toFixed(0)} KB · {new Date(att.uploadedAt || att.uploaded || Date.now()).toLocaleDateString()}</div>
                         </div>
                       </div>
                       <div className="flex gap-4">
-                        <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }}
+                        <button className="btn btn-ghost btn-sm" className="fs-11"
                           onClick={() => {
                             const link = document.createElement("a");
                             link.href = att.data;
@@ -6836,27 +6836,27 @@ const ModalHub = ({ type, data, app }) => {
             const totalDocs = sections.reduce((s, sec) => s + sec.items.length, 0);
 
             return (
-              <div style={{ marginTop: 16, borderTop: "2px solid var(--border)", paddingTop: 16 }}>
+              <div className="mt-16 border-t-2 pt-16">
                 {/* Health Summary Bar */}
                 {hasIssues && (
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12, padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}>
-                    {agingRfis.length > 0 && <span style={{ fontSize: 11, color: "var(--red)", fontWeight: 600 }}>{agingRfis.length} RFI{agingRfis.length > 1 ? "s" : ""} aging 7+ days</span>}
+                    {agingRfis.length > 0 && <span className="fs-11 text-red font-semi">{agingRfis.length} RFI{agingRfis.length > 1 ? "s" : ""} aging 7+ days</span>}
                     {pendingCOs.length > 0 && <span style={{ fontSize: 11, color: "var(--amber)", fontWeight: 600 }}>{pendingCOs.length} CO{pendingCOs.length > 1 ? "s" : ""} pending ({fmt(pendingCOs.reduce((s, c) => s + (c.amount || 0), 0))})</span>}
-                    {overdueInvs.length > 0 && <span style={{ fontSize: 11, color: "var(--red)", fontWeight: 600 }}>{overdueInvs.length} overdue invoice{overdueInvs.length > 1 ? "s" : ""}</span>}
+                    {overdueInvs.length > 0 && <span className="fs-11 text-red font-semi">{overdueInvs.length} overdue invoice{overdueInvs.length > 1 ? "s" : ""}</span>}
                     {pendingTM.length > 0 && <span style={{ fontSize: 11, color: "var(--amber)" }}>{pendingTM.length} T&M pending</span>}
                   </div>
                 )}
-                <div className="flex-between" style={{ marginBottom: 12 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>Project Documents ({totalDocs})</div>
+                <div className="flex-between" className="mb-12">
+                  <div className="fw-700 fs-14">Project Documents ({totalDocs})</div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 8 }}>
+                <div className="grid-auto-280">
                   {sections.map(sec => (
                     <div key={sec.label} style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", border: "1px solid var(--border)" }}>
-                      <div className="flex-between" style={{ marginBottom: 6 }}>
-                        <div style={{ fontWeight: 600, fontSize: 12 }}>{sec.label}</div>
-                        <span style={{ display: "flex", gap: 4 }}>
-                          {sec.urgent > 0 && <span className="badge badge-red" style={{ fontSize: 9 }}>{sec.urgent} open</span>}
-                          <span className="badge badge-blue" style={{ fontSize: 9 }}>{sec.items.length}</span>
+                      <div className="flex-between" className="mb-6">
+                        <div className="font-semi fs-12">{sec.label}</div>
+                        <span className="flex gap-4">
+                          {sec.urgent > 0 && <span className="badge badge-red" className="fs-9">{sec.urgent} open</span>}
+                          <span className="badge badge-blue" className="fs-9">{sec.items.length}</span>
                         </span>
                       </div>
                       {sec.items.length === 0 ? (
@@ -6870,10 +6870,10 @@ const ModalHub = ({ type, data, app }) => {
                           </div>
                         ))
                       )}
-                      {sec.items.length > 5 && <div className="text-xs" style={{ marginTop: 4, cursor: "pointer", color: "var(--blue)" }}
+                      {sec.items.length > 5 && <div className="text-xs" className="mt-4 cursor-pointer text-blue"
                         onClick={() => { setModal(null); app.setSearch(draft.name || ""); app.setTab(sec.tab); }}>+{sec.items.length - 5} more →</div>}
-                      <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
-                        <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px" }} onClick={() => { setModal(null); app.setSearch(draft.name || ""); app.setTab(sec.tab); }}>
+                      <div className="flex gap-4 mt-6">
+                        <button className="btn btn-ghost" className="btn-link" onClick={() => { setModal(null); app.setSearch(draft.name || ""); app.setTab(sec.tab); }}>
                           View All →
                         </button>
                         {sec.label === "Submittals" && sec.items.length > 0 && (
@@ -6950,30 +6950,30 @@ const ModalHub = ({ type, data, app }) => {
             const STATUS_BADGE = { open: "badge-red", "in-progress": "badge-amber", complete: "badge-green" };
 
             return (
-              <div style={{ marginTop: 16, borderTop: "2px solid var(--border)", paddingTop: 16 }}>
-                <div className="flex-between" style={{ marginBottom: 12 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>Punch List ({items.length})</div>
+              <div className="mt-16 border-t-2 pt-16">
+                <div className="flex-between" className="mb-12">
+                  <div className="fw-700 fs-14">Punch List ({items.length})</div>
                   <div className="flex gap-8">
                     {items.length > 0 && doneItems === items.length && !items[0]?.signedOffBy && (
-                      <button className="btn btn-ghost btn-sm" style={{ color: "var(--green)" }} onClick={signOffPunch}>Sign Off</button>
+                      <button className="btn btn-ghost btn-sm" className="text-green" onClick={signOffPunch}>Sign Off</button>
                     )}
                     <button className="btn btn-primary btn-sm" onClick={() => setPunchAdding(!punchAdding)}>+ Add Item</button>
                   </div>
                 </div>
 
                 {items.length > 0 && (
-                  <div className="flex gap-8" style={{ marginBottom: 12 }}>
-                    <div style={{ padding: "4px 10px", borderRadius: 6, background: "var(--bg3)", fontSize: 11 }}>Open: <strong style={{ color: "var(--red)" }}>{openItems}</strong></div>
-                    <div style={{ padding: "4px 10px", borderRadius: 6, background: "var(--bg3)", fontSize: 11 }}>In Progress: <strong style={{ color: "var(--amber)" }}>{ipItems}</strong></div>
-                    <div style={{ padding: "4px 10px", borderRadius: 6, background: "var(--bg3)", fontSize: 11 }}>Complete: <strong style={{ color: "var(--green)" }}>{doneItems}</strong></div>
-                    <div style={{ padding: "4px 10px", borderRadius: 6, background: "var(--bg3)", fontSize: 11 }}>{pctDone}% done</div>
+                  <div className="flex gap-8" className="mb-12">
+                    <div className="activity-tile fs-11">Open: <strong className="text-red">{openItems}</strong></div>
+                    <div className="activity-tile fs-11">In Progress: <strong className="text-amber">{ipItems}</strong></div>
+                    <div className="activity-tile fs-11">Complete: <strong className="text-green">{doneItems}</strong></div>
+                    <div className="activity-tile fs-11">{pctDone}% done</div>
                   </div>
                 )}
 
                 {punchAdding && (
                   <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                      <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                    <div className="grid-2col">
+                      <div className="form-group" className="full">
                         <label className="form-label">Description *</label>
                         <input className="form-input" value={punchForm.description} onChange={e => setPunchForm(f => ({ ...f, description: e.target.value }))} placeholder="e.g. Touch up tape joint at room 201 north wall" />
                       </div>
@@ -6997,7 +6997,7 @@ const ModalHub = ({ type, data, app }) => {
                         </select>
                       </div>
                     </div>
-                    <div className="flex gap-8" style={{ marginTop: 8 }}>
+                    <div className="flex gap-8" className="mt-8">
                       <button className="btn btn-primary btn-sm" onClick={addPunch}>Add</button>
                       <button className="btn btn-ghost btn-sm" onClick={() => setPunchAdding(false)}>Cancel</button>
                     </div>
@@ -7007,26 +7007,26 @@ const ModalHub = ({ type, data, app }) => {
                 {items.sort((a, b) => { const o = { open: 0, "in-progress": 1, complete: 2 }; return (o[a.status] ?? 0) - (o[b.status] ?? 0); }).map(item => (
                   <div key={item.id} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, background: "var(--bg3)", border: "1px solid var(--border)" }}>
                     <div className="flex-between">
-                      <div style={{ flex: 1 }}>
+                      <div className="flex-1">
                         <span style={{ fontWeight: 500, fontSize: 12, textDecoration: item.status === "complete" ? "line-through" : "none" }}>{item.description}</span>
-                        {item.location && <span className="text-xs text-muted" style={{ marginLeft: 8 }}>{item.location}</span>}
+                        {item.location && <span className="text-xs text-muted" className="ml-8">{item.location}</span>}
                       </div>
-                      <div className="flex gap-4" style={{ alignItems: "center" }}>
-                        <span className={`badge ${PRIORITY_BADGE[item.priority]}`} style={{ fontSize: 9 }}>{item.priority}</span>
+                      <div className="flex gap-4" className="flex-center">
+                        <span className={`badge ${PRIORITY_BADGE[item.priority]}`} className="fs-9">{item.priority}</span>
                         <button className={`badge ${STATUS_BADGE[item.status]}`} style={{ fontSize: 9, cursor: "pointer", border: "none" }} onClick={() => cyclePunchStatus(item)} title="Click to advance status">{item.status}</button>
-                        <label style={{ cursor: "pointer", fontSize: 12 }} title="Attach photo">
-                          <Camera style={{ width: 16, height: 16 }} /><input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e) => addPunchPhoto(item.id, e)} />
+                        <label className="cursor-pointer fs-12" title="Attach photo">
+                          <Camera className="w-4 h-4" /><input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => addPunchPhoto(item.id, e)} />
                         </label>
                         <button className="btn btn-ghost" style={{ fontSize: 10, padding: "1px 4px", color: "var(--red)" }} onClick={() => deletePunch(item)}>✕</button>
                       </div>
                     </div>
                     {item.assignedTo && <div className="text-xs text-muted">Assigned: {item.assignedTo}</div>}
                     {(item.photos || []).length > 0 && (
-                      <div className="flex gap-4" style={{ marginTop: 4 }}>
+                      <div className="flex gap-4" className="mt-4">
                         {item.photos.map((p, i) => <img key={i} src={p.data} alt={p.name} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, border: "1px solid var(--border)" }} />)}
                       </div>
                     )}
-                    {item.signedOffBy && <div className="text-xs" style={{ color: "var(--green)", marginTop: 4 }}>Signed off by {item.signedOffBy} on {new Date(item.signedOffAt).toLocaleDateString()}</div>}
+                    {item.signedOffBy && <div className="text-xs" className="text-green mt-4">Signed off by {item.signedOffBy} on {new Date(item.signedOffAt).toLocaleDateString()}</div>}
                   </div>
                 ))}
 
@@ -7046,17 +7046,17 @@ const ModalHub = ({ type, data, app }) => {
             const activePhaseEdit = editPhases.find(p => p.status === "in progress");
             const completedEditCount = editPhases.filter(p => p.status === "completed").length;
             return (
-              <div style={{ marginTop: 16, borderTop: "2px solid var(--border)", paddingTop: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div className="mt-16 border-t-2 pt-16">
+                <div className="flex-between mb-12">
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>Construction Phases</div>
-                    <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 2 }}>
+                    <div className="fw-700 fs-14">Construction Phases</div>
+                    <div className="fs-11 text-muted mt-2">
                       {completedEditCount}/{editPhases.length} complete
                       {activePhaseEdit ? ` · Active: ${activePhaseEdit.name}` : ""}
                     </div>
                   </div>
                   {activePhaseEdit && (
-                    <span className="badge badge-amber" style={{ fontSize: 10 }}>{activePhaseEdit.name}</span>
+                    <span className="badge badge-amber" className="fs-10">{activePhaseEdit.name}</span>
                   )}
                 </div>
                 <PhaseTracker
@@ -7077,38 +7077,38 @@ const ModalHub = ({ type, data, app }) => {
             const PRIORITY_COLOR_MAP = { Low: "var(--green)", Medium: "var(--amber)", High: "var(--red)", Urgent: "#dc2626" };
             const PRIORITY_BADGE_MAP = { Low: "badge-green", Medium: "badge-amber", High: "badge-red", Urgent: "badge-red" };
             return (
-              <div style={{ marginTop: 16, borderTop: "2px solid var(--border)", paddingTop: 16 }}>
-                <div className="flex-between" style={{ marginBottom: 10 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+              <div className="mt-16 border-t-2 pt-16">
+                <div className="flex-between" className="mb-10">
+                  <div className="fw-700 fs-14 flex-center-gap-8">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                     </svg>
                     Reported Problems ({projProblems.length})
-                    {openProblems.length > 0 && <span className="badge badge-red" style={{ fontSize: 10 }}>{openProblems.length} open</span>}
+                    {openProblems.length > 0 && <span className="badge badge-red" className="fs-10">{openProblems.length} open</span>}
                   </div>
                 </div>
                 {projProblems.length === 0 ? (
-                  <div className="text-xs text-muted" style={{ padding: "8px 0" }}>No problems reported for this project.</div>
+                  <div className="text-xs text-muted" className="py-8">No problems reported for this project.</div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 280, overflowY: "auto" }}>
                     {projProblems.map(prob => (
                       <div key={prob.id} style={{ padding: "10px 12px", borderRadius: 8, background: "var(--bg3)", border: `1px solid ${prob.status === "resolved" ? "var(--border)" : "rgba(245,158,11,0.2)"}`, opacity: prob.status === "resolved" ? 0.65 : 1 }}>
-                        <div className="flex-between" style={{ marginBottom: 4 }}>
-                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                            <span className={`badge ${PRIORITY_BADGE_MAP[prob.priority] || "badge-amber"}`} style={{ fontSize: 9 }}>{prob.priority}</span>
-                            <span className="text-xs font-semi" style={{ color: "var(--text1)" }}>{prob.category}</span>
+                        <div className="flex-between" className="mb-4">
+                          <div className="flex-center-gap-6">
+                            <span className={`badge ${PRIORITY_BADGE_MAP[prob.priority] || "badge-amber"}`} className="fs-9">{prob.priority}</span>
+                            <span className="text-xs font-semi" className="text-default">{prob.category}</span>
                           </div>
-                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                            <span className={`badge ${prob.status === "resolved" ? "badge-green" : "badge-amber"}`} style={{ fontSize: 9 }}>{prob.status}</span>
+                          <div className="flex-center-gap-6">
+                            <span className={`badge ${prob.status === "resolved" ? "badge-green" : "badge-amber"}`} className="fs-9">{prob.status}</span>
                             {prob.status === "open" && (
-                              <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px" }}
+                              <button className="btn btn-ghost" className="btn-link"
                                 onClick={() => app.setProblems(prev => prev.map(p => p.id === prob.id ? { ...p, status: "resolved", resolvedAt: new Date().toISOString(), resolvedBy: app.auth?.name } : p))}>
                                 Resolve
                               </button>
                             )}
                           </div>
                         </div>
-                        <div className="text-sm" style={{ marginBottom: 4 }}>{prob.description}</div>
+                        <div className="text-sm" className="mb-4">{prob.description}</div>
                         <div className="text-xs text-muted">
                           {prob.reporter} · {new Date(prob.reportedAt).toLocaleDateString()} {new Date(prob.reportedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           {prob.gps && <span style={{ marginLeft: 6, display: "inline-flex", alignItems: "center", gap: 2 }}><MapPin style={{ width: 12, height: 12 }} />{prob.gps.lat?.toFixed(4)}, {prob.gps.lng?.toFixed(4)}</span>}
@@ -7147,10 +7147,10 @@ const ModalHub = ({ type, data, app }) => {
               show("Acoustic recommendation saved", "ok");
             };
             return (
-              <div style={{ marginTop: 16, borderTop: "2px solid var(--border)", paddingTop: 16 }}>
-                <div className="flex-between" style={{ marginBottom: 10 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
-                    <Volume2 size={16} style={{ color: "var(--blue)" }} />
+              <div className="mt-16 border-t-2 pt-16">
+                <div className="flex-between" className="mb-10">
+                  <div className="fw-700 fs-14 flex-center-gap-8">
+                    <Volume2 size={16} className="text-blue" />
                     Sound Testing ({soundTests.length})
                   </div>
                   <button className="btn btn-sm btn-ghost" onClick={() => setShowSoundForm(v => !v)}>{showSoundForm ? "Cancel" : "+ Add Room"}</button>
@@ -7168,7 +7168,7 @@ const ModalHub = ({ type, data, app }) => {
                           {ROOM_TYPES.map(r => <option key={r.key} value={r.key}>{r.label} (STC {r.stc})</option>)}
                         </select>
                       </div>
-                      <div style={{ flex: "0 0 100px" }}>
+                      <div className="flex-0-100">
                         <label className="text-xs text-dim">Wall LF</label>
                         <input className="input input-sm" type="number" min="0" placeholder="LF" value={soundForm.wallLF} onChange={e => setSoundForm(p => ({ ...p, wallLF: e.target.value }))} />
                       </div>
@@ -7178,8 +7178,8 @@ const ModalHub = ({ type, data, app }) => {
                       <input className="input input-sm" placeholder="Stud size, height, special conditions..." value={soundForm.wallDetails} onChange={e => setSoundForm(p => ({ ...p, wallDetails: e.target.value }))} />
                     </div>
                     <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 8 }}>
-                      <strong>Assembly:</strong> {selRT.assembly} &nbsp;·&nbsp; <span style={{ color: "var(--amber)" }}>STC {selRT.stc}</span>
-                      {estCost > 0 && <span style={{ marginLeft: 8 }}>· Est. cost: <strong>{fmt(estCost)}</strong></span>}
+                      <strong>Assembly:</strong> {selRT.assembly} &nbsp;·&nbsp; <span className="text-amber">STC {selRT.stc}</span>
+                      {estCost > 0 && <span className="ml-8">· Est. cost: <strong>{fmt(estCost)}</strong></span>}
                     </div>
                     <button className="btn btn-sm btn-primary" onClick={saveTest}>Save</button>
                   </div>
@@ -7188,11 +7188,11 @@ const ModalHub = ({ type, data, app }) => {
                 {soundTests.map((test, i) => (
                   <div key={test.id || i} style={{ fontSize: 12, padding: "6px 10px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <strong>{test.roomLabel}</strong> <span className="badge badge-blue" style={{ fontSize: 9 }}>STC {test.stc}</span>
-                      <div style={{ color: "var(--text3)", marginTop: 2 }}>{test.assembly}</div>
-                      {test.estimatedCost > 0 && <span style={{ color: "var(--amber)" }}>Est. {fmt(test.estimatedCost)}</span>}
+                      <strong>{test.roomLabel}</strong> <span className="badge badge-blue" className="fs-9">STC {test.stc}</span>
+                      <div className="text-dim mt-2">{test.assembly}</div>
+                      {test.estimatedCost > 0 && <span className="text-amber">Est. {fmt(test.estimatedCost)}</span>}
                     </div>
-                    <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 12 }} onClick={() => {
+                    <button className="btn-bare fs-12" onClick={() => {
                       const updated = { ...draft, soundTests: soundTests.filter((_, j) => j !== i) };
                       app.setProjects(prev => prev.map(p => String(p.id) === String(draft.id) ? updated : p));
                       setDraft(updated);
@@ -7221,21 +7221,21 @@ const ModalHub = ({ type, data, app }) => {
             const checkedCount = LOGISTICS_ITEMS.filter(i => todayLog[i.id]).length;
             const critUnchecked = LOGISTICS_ITEMS.filter(i => i.critical && !todayLog[i.id]);
             return (
-              <div style={{ marginTop: 16, borderTop: "2px solid var(--border)", paddingTop: 16 }}>
-                <div className="flex-between" style={{ marginBottom: 10 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
-                    <HardHat size={16} style={{ color: "var(--amber)" }} />
+              <div className="mt-16 border-t-2 pt-16">
+                <div className="flex-between" className="mb-10">
+                  <div className="fw-700 fs-14 flex-center-gap-8">
+                    <HardHat size={16} className="text-amber" />
                     Site Logistics · {todayStr}
-                    {critUnchecked.length > 0 && <span className="badge badge-red" style={{ fontSize: 9 }}>{critUnchecked.length} critical</span>}
+                    {critUnchecked.length > 0 && <span className="badge badge-red" className="fs-9">{critUnchecked.length} critical</span>}
                   </div>
-                  <span className={`badge ${checkedCount === LOGISTICS_ITEMS.length ? "badge-green" : checkedCount > 0 ? "badge-amber" : "badge-muted"}`} style={{ fontSize: 10 }}>{checkedCount}/{LOGISTICS_ITEMS.length}</span>
+                  <span className={`badge ${checkedCount === LOGISTICS_ITEMS.length ? "badge-green" : checkedCount > 0 ? "badge-amber" : "badge-muted"}`} className="fs-10">{checkedCount}/{LOGISTICS_ITEMS.length}</span>
                 </div>
                 {critUnchecked.length > 0 && (
                   <div style={{ padding: "6px 10px", borderRadius: 6, background: "rgba(239,68,68,0.07)", border: "1px solid var(--red)", marginBottom: 8, fontSize: 11, color: "var(--red)" }}>
                     ⚠️ Critical unchecked: {critUnchecked.map(i => i.label).join(" · ")}
                   </div>
                 )}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 4 }}>
+                <div className="grid-auto-260" style={{ gap: 4 }}>
                   {LOGISTICS_ITEMS.map(item => {
                     const checked = !!todayLog[item.id];
                     return (
@@ -7245,8 +7245,8 @@ const ModalHub = ({ type, data, app }) => {
                           saveSiteLogistics(updated);
                           if (item.critical && checked) show(`⚠️ ${item.label} — unchecked`, "warn");
                         }}>
-                        {checked ? <CheckSquare size={14} style={{ color: "var(--green)", flexShrink: 0 }} /> : <Square size={14} style={{ color: "var(--text3)", flexShrink: 0 }} />}
-                        <span style={{ fontSize: 11 }}>{item.icon} {item.label}</span>
+                        {checked ? <CheckSquare size={14} className="text-green flex-shrink-0" /> : <Square size={14} className="text-dim flex-shrink-0" />}
+                        <span className="fs-11">{item.icon} {item.label}</span>
                       </div>
                     );
                   })}
@@ -7272,10 +7272,10 @@ const ModalHub = ({ type, data, app }) => {
               show("Note posted", "ok");
             };
             return (
-              <div style={{ marginTop: 16, borderTop: "2px solid var(--border)", paddingTop: 16 }}>
-                <div className="flex-between" style={{ marginBottom: 10 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
-                    <MessageSquare size={16} style={{ color: "var(--green)" }} />
+              <div className="mt-16 border-t-2 pt-16">
+                <div className="flex-between" className="mb-10">
+                  <div className="fw-700 fs-14 flex-center-gap-8">
+                    <MessageSquare size={16} className="text-green" />
                     Team Notes ({allNotes.length})
                   </div>
                 </div>
@@ -7284,7 +7284,7 @@ const ModalHub = ({ type, data, app }) => {
                   <button className="btn btn-sm btn-primary" onClick={() => addNote("pm")} disabled={!noteText.trim()}>PM Note</button>
                   <button className="btn btn-sm btn-ghost" onClick={() => addNote("field")} disabled={!noteText.trim()}>Field Note</button>
                   <button className="btn btn-sm btn-ghost" onClick={() => addNote("office")} disabled={!noteText.trim()}>Office Note</button>
-                  <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+                  <div className="ml-auto flex gap-4">
                     {["all", "pm", "field", "office"].map(f => (
                       <button key={f} className={`btn btn-sm ${notesFilter === f ? "btn-primary" : "btn-ghost"}`} onClick={() => setNotesFilter(f)} style={{ fontSize: 10, textTransform: "capitalize", padding: "2px 8px" }}>
                         {f === "all" ? `All (${allNotes.length})` : `${catLabel(f)} (${filterMap[f]?.length || 0})`}
@@ -7298,21 +7298,21 @@ const ModalHub = ({ type, data, app }) => {
                   <div style={{ maxHeight: 240, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
                     {visibleNotes.map(note => (
                       <div key={note.id} style={{ padding: "8px 10px", borderRadius: 7, background: note.pinned ? "rgba(245,158,11,0.05)" : "var(--bg3)", border: `1px solid ${note.pinned ? "var(--amber)" : "var(--border)"}` }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                            {note.pinned && <Pin size={10} style={{ color: "var(--amber)" }} />}
-                            <span style={{ fontWeight: 600, fontSize: 12 }}>{note.author}</span>
-                            <span className={`badge ${catBadge(note.category)}`} style={{ fontSize: 8 }}>{catLabel(note.category)}</span>
+                        <div className="flex-between mb-4">
+                          <div className="flex-center-gap-6">
+                            {note.pinned && <Pin size={10} className="text-amber" />}
+                            <span className="font-semi fs-12">{note.author}</span>
+                            <span className={`badge ${catBadge(note.category)}`} className="fs-8">{catLabel(note.category)}</span>
                           </div>
-                          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                          <div className="flex-center-gap-4">
                             <span style={{ fontSize: 10, color: "var(--text3)" }}>{fmtTime(note.timestamp)}</span>
                             <button onClick={() => saveProjectNotes(projectNotes.map(n => n.id === note.id ? { ...n, pinned: !n.pinned } : n))} style={{ background: "none", border: "none", cursor: "pointer", color: note.pinned ? "var(--amber)" : "var(--text3)", padding: "1px 3px" }}>
                               {note.pinned ? <PinOff size={11} /> : <Pin size={11} />}
                             </button>
-                            <button onClick={() => saveProjectNotes(projectNotes.filter(n => n.id !== note.id))} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 11, padding: "1px 3px" }}>✕</button>
+                            <button onClick={() => saveProjectNotes(projectNotes.filter(n => n.id !== note.id))} className="btn-bare fs-11">✕</button>
                           </div>
                         </div>
-                        <div style={{ fontSize: 12, whiteSpace: "pre-wrap", lineHeight: 1.4 }}>{note.text}</div>
+                        <div className="fs-12 ws-pre-wrap" style={{ lineHeight: 1.4 }}>{note.text}</div>
                       </div>
                     ))}
                   </div>
@@ -7321,9 +7321,9 @@ const ModalHub = ({ type, data, app }) => {
             );
           })()}
 
-          <div className="modal-actions" style={{ justifyContent: "space-between" }}>
-            {!isNew && <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>}
-            <div className="flex gap-8" style={{ marginLeft: "auto" }}>
+          <div className="modal-actions" className="flex-between">
+            {!isNew && <button className="btn" className="badge-red-outlined" onClick={handleDelete}>Delete</button>}
+            <div className="flex gap-8" className="ml-auto">
               <button className="btn btn-ghost" onClick={close}>Cancel</button>
               <button className="btn btn-primary" onClick={handleSave}>{isNew ? "Add Project" : "Save Changes"}</button>
             </div>
@@ -7386,7 +7386,7 @@ const ModalHub = ({ type, data, app }) => {
                 app.callLog.filter(c => c.contact === draft.name).map(c => (
                   <div key={c.id} className="flex gap-8 border-b" style={{ padding: "8px 0", alignItems: "center" }}>
                     <div className="text-xs text-dim" style={{ width: 130, flexShrink: 0 }}>{c.time}</div>
-                    <div className="text-sm" style={{ flex: 1 }}>{c.note}</div>
+                    <div className="text-sm" className="flex-1">{c.note}</div>
                     <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "1px 5px", color: "var(--red)", flexShrink: 0 }}
                       onClick={() => { if (confirm("Delete this call log?")) { app.setCallLog(prev => prev.filter(cl => cl.id !== c.id)); app.show("Call deleted"); } }}>✕</button>
                   </div>
@@ -7394,9 +7394,9 @@ const ModalHub = ({ type, data, app }) => {
               )}
             </div>
           )}
-          <div className="modal-actions" style={{ justifyContent: "space-between" }}>
-            {!isNew && <button className="btn" style={{ color: "var(--red)", border: "1px solid var(--red-dim)", background: "var(--red-dim)" }} onClick={handleDelete}>Delete</button>}
-            <div className="flex gap-8" style={{ marginLeft: "auto" }}>
+          <div className="modal-actions" className="flex-between">
+            {!isNew && <button className="btn" className="badge-red-outlined" onClick={handleDelete}>Delete</button>}
+            <div className="flex gap-8" className="ml-auto">
               <button className="btn btn-ghost" onClick={close}>Cancel</button>
               <button className="btn btn-primary" onClick={handleSave}>{isNew ? "Add Contact" : "Save Changes"}</button>
             </div>

@@ -31,14 +31,14 @@ function addAudit(item, field, oldVal, newVal, user) {
 function AuditHistory({ audit }) {
   if (!audit || audit.length === 0) return null;
   return (
-    <div style={{ marginTop: 8, padding: 8, borderRadius: 6, background: "var(--bg3)", fontSize: 10 }}>
-      <div style={{ fontWeight: 600, marginBottom: 4 }}>Change History ({audit.length})</div>
+    <div className="mt-8 p-8 fs-10" style={{ borderRadius: 6, background: "var(--bg3)" }}>
+      <div className="fw-600 mb-3">Change History ({audit.length})</div>
       {audit.slice().reverse().slice(0, 10).map((a, i) => (
-        <div key={i} style={{ padding: "2px 0", borderBottom: "1px solid var(--border)" }}>
+        <div key={i} className="more-list-row">
           <span className="text-muted">{new Date(a.timestamp).toLocaleString()}</span>
           {" — "}<strong>{a.userName}</strong> changed <em>{a.field}</em>
-          {a.oldValue && <> from <span style={{ color: "var(--red)" }}>{a.oldValue}</span></>}
-          {" → "}<span style={{ color: "var(--green)" }}>{a.newValue}</span>
+          {a.oldValue && <> from <span className="text-red">{a.oldValue}</span></>}
+          {" → "}<span className="text-green">{a.newValue}</span>
         </div>
       ))}
     </div>
@@ -241,7 +241,7 @@ function InvoicesTab({ app }) {
         <table className="data-table">
           <thead><tr><th>Invoice #</th><th>Project</th><th>Date</th><th>Amount</th><th>Status</th><th>Paid Date</th><th></th></tr></thead>
           <tbody>
-            {invFiltered.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: "32px 16px", color: "var(--text-muted)" }}>{app.search ? "No matching invoices" : <>No invoices yet<br/><span style={{ fontSize: 12, opacity: 0.7 }}>Create your first invoice from an awarded project to start tracking payments</span></>}</td></tr>}
+            {invFiltered.length === 0 && <tr><td colSpan={7} className="more-empty-cell">{app.search ? "No matching invoices" : <>No invoices yet<br/><span className="more-empty-hint">Create your first invoice from an awarded project to start tracking payments</span></>}</td></tr>}
             {invFiltered.map(inv => (
               <Fragment key={inv.id}>
                 <tr>
@@ -254,7 +254,7 @@ function InvoicesTab({ app }) {
                   <td>
                     <div className="flex gap-4">
                     {(inv.status === "pending" || inv.status === "overdue") && (
-                      <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px", color: "var(--green)" }}
+                      <button className="btn btn-ghost btn-sm" className="btn-table-green"
                         onClick={() => {
                           const paidDate = prompt("Payment date (YYYY-MM-DD):", new Date().toISOString().slice(0, 10));
                           if (!paidDate) return;
@@ -266,28 +266,28 @@ function InvoicesTab({ app }) {
                       </button>
                     )}
                     {(inv.status === "pending" || inv.status === "overdue") && (
-                      <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }}
+                      <button className="btn btn-ghost btn-sm" className="btn-table-action"
                         onClick={() => collectId === inv.id && collectText ? setCollectId(null) : runCollection(inv)}
                         disabled={collectLoading && collectId === inv.id}>
                         {collectLoading && collectId === inv.id ? "..." : collectId === inv.id && collectText ? "Hide" : "Collect"}
                       </button>
                     )}
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 6px", color: "var(--red)" }}
+                    <button className="btn btn-ghost btn-sm" className="btn-table-delete"
                       onClick={() => { if (confirm("Delete this invoice?")) { app.setInvoices(prev => prev.filter(i => i.id !== inv.id)); app.show("Invoice deleted"); } }}>✕</button>
                     </div>
                   </td>
                 </tr>
                 {collectId === inv.id && collectText && (
-                  <tr><td colSpan={7} style={{ padding: 0 }}>
-                    <div style={{ padding: 16, background: "var(--bg3)", borderTop: "1px solid var(--border)" }}>
+                  <tr><td colSpan={7} className="more-expand-cell">
+                    <div className="more-detail-panel">
                       <div className="flex-between mb-8">
                         <span className="font-semi text-sm">AI Collection Email</span>
-                        <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }} onClick={() => {
+                        <button className="btn btn-ghost btn-sm" className="btn-table-action" onClick={() => {
                           navigator.clipboard.writeText(collectText);
                           app.show("Email copied to clipboard", "ok");
                         }}>Copy</button>
                       </div>
-                      <div style={{ whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 1.6, padding: 12, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)" }}>
+                      <div className="more-ai-text">
                         {collectText}
                       </div>
                       <div className="flex gap-8 mt-8">
@@ -446,18 +446,18 @@ function ChangeOrdersTab({ app }) {
           <div className="form-group mt-8">
             <label className="form-label">Scope Items</label>
             {form.scope_items.map((item, i) => (
-              <div key={i} className="flex gap-8 mb-4" style={{ alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{i + 1}.</span>
-                <input className="form-input" style={{ flex: 1 }} value={typeof item === "string" ? item : item.description} onChange={e => {
+              <div key={i} className="flex gap-8 mb-4" className="items-center">
+                <span className="fs-12 text-muted">{i + 1}.</span>
+                <input className="form-input" className="flex-1" value={typeof item === "string" ? item : item.description} onChange={e => {
                   const updated = [...form.scope_items];
                   updated[i] = { description: e.target.value, amount: null };
                   setForm({ ...form, scope_items: updated });
                 }} />
-                <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)", padding: "2px 6px", fontSize: 11 }} onClick={() => setForm({ ...form, scope_items: form.scope_items.filter((_, j) => j !== i) })}>X</button>
+                <button className="btn btn-ghost btn-sm" className="btn-table-delete" onClick={() => setForm({ ...form, scope_items: form.scope_items.filter((_, j) => j !== i) })}>X</button>
               </div>
             ))}
             <div className="flex gap-8">
-              <input className="form-input" style={{ flex: 1 }} placeholder="Add scope item (e.g. Wall Demo)..." value={scopeInput} onChange={e => setScopeInput(e.target.value)} onKeyDown={e => {
+              <input className="form-input" className="flex-1" placeholder="Add scope item (e.g. Wall Demo)..." value={scopeInput} onChange={e => setScopeInput(e.target.value)} onKeyDown={e => {
                 if (e.key === "Enter" && scopeInput.trim()) {
                   setForm({ ...form, scope_items: [...form.scope_items, { description: scopeInput.trim(), amount: null }] });
                   setScopeInput("");
@@ -501,7 +501,7 @@ function ChangeOrdersTab({ app }) {
         <table className="data-table">
           <thead><tr><th>CO #</th><th>Project</th><th>Description</th><th>Amount</th><th>Status</th><th>Submitted</th><th>Approved</th><th></th></tr></thead>
           <tbody>
-            {coFiltered.length === 0 && <tr><td colSpan={8} style={{ textAlign: "center", padding: "32px 16px", color: "var(--text-muted)" }}>{app.search ? "No matching change orders" : <>No change orders yet<br/><span style={{ fontSize: 12, opacity: 0.7 }}>Change orders track scope changes on active projects — add one when a GC approves extra work</span></>}</td></tr>}
+            {coFiltered.length === 0 && <tr><td colSpan={8} className="more-empty-cell">{app.search ? "No matching change orders" : <>No change orders yet<br/><span className="more-empty-hint">Change orders track scope changes on active projects — add one when a GC approves extra work</span></>}</td></tr>}
             {coFiltered.map(co => (
               <Fragment key={co.id}>
                 <tr>
@@ -509,7 +509,7 @@ function ChangeOrdersTab({ app }) {
                   <td>{pName(co.projectId)}</td>
                   <td>{co.desc}</td>
                   <td>{app.fmt(co.amount)}</td>
-                  <td><span className={badge(co.status)} style={{ cursor: "pointer" }} title="Click to change status" onClick={() => {
+                  <td><span className={badge(co.status)} className="more-cursor-pointer" title="Click to change status" onClick={() => {
                     const next = co.status === "pending" ? "approved" : co.status === "approved" ? "rejected" : "pending";
                     app.setChangeOrders(prev => prev.map(c => c.id === co.id ? {
                       ...c, status: next,
@@ -522,7 +522,7 @@ function ChangeOrdersTab({ app }) {
                   <td>{co.approved || "—"}</td>
                   <td>
                     <div className="flex gap-4">
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }}
+                    <button className="btn btn-ghost btn-sm" className="btn-table-action"
                       onClick={async () => {
                         const { generateChangeOrderPdf } = await import("../utils/changeOrderPdf.js");
                         const project = app.projects.find(p => p.id === co.projectId) || { name: "Unknown" };
@@ -530,34 +530,34 @@ function ChangeOrdersTab({ app }) {
                         await generateChangeOrderPdf(project, { ...co, description: co.description || co.desc }, app.company || {}, projectCOs);
                         app.show("CO PDF exported", "ok");
                       }}>PDF</button>
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }}
+                    <button className="btn btn-ghost btn-sm" className="btn-table-action"
                       onClick={() => impactId === co.id && impactResult ? setImpactId(null) : runImpact(co)}
                       disabled={impactLoading && impactId === co.id}>
                       {impactLoading && impactId === co.id ? "..." : impactId === co.id && impactResult ? "Hide" : "Analyze"}
                     </button>
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 6px", color: "var(--red)" }}
+                    <button className="btn btn-ghost btn-sm" className="btn-table-delete"
                       onClick={() => { if (confirm("Delete this change order?")) { app.setChangeOrders(prev => prev.filter(c => c.id !== co.id)); app.show("Change order deleted"); } }}>✕</button>
                     </div>
                   </td>
                 </tr>
                 {impactId === co.id && impactResult && (
-                  <tr><td colSpan={8} style={{ padding: 0 }}>
-                    <div style={{ padding: 16, background: "var(--bg3)", borderTop: "1px solid var(--border)" }}>
+                  <tr><td colSpan={8} className="more-expand-cell">
+                    <div className="more-detail-panel">
                       {/* Summary */}
                       <div className="text-sm mb-12">{impactResult.summary}</div>
 
                       {/* Margin Impact */}
                       {impactResult.marginImpact && (
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
-                          <div style={{ padding: 8, borderRadius: 6, background: "var(--card)", textAlign: "center" }}>
+                        <div className="more-grid-3">
+                          <div className="more-metric-card">
                             <div className="text-xs text-muted">Before CO</div>
-                            <div style={{ fontSize: 18, fontWeight: 700 }}>{impactResult.marginImpact.before}%</div>
+                            <div className="more-metric-value">{impactResult.marginImpact.before}%</div>
                           </div>
-                          <div style={{ padding: 8, borderRadius: 6, background: "var(--card)", textAlign: "center" }}>
+                          <div className="more-metric-card">
                             <div className="text-xs text-muted">After CO</div>
                             <div style={{ fontSize: 18, fontWeight: 700, color: impactResult.marginImpact.change >= 0 ? "var(--green)" : "var(--red)" }}>{impactResult.marginImpact.after}%</div>
                           </div>
-                          <div style={{ padding: 8, borderRadius: 6, background: "var(--card)", textAlign: "center" }}>
+                          <div className="more-metric-card">
                             <div className="text-xs text-muted">Change</div>
                             <div style={{ fontSize: 18, fontWeight: 700, color: impactResult.marginImpact.change >= 0 ? "var(--green)" : "var(--red)" }}>
                               {impactResult.marginImpact.change >= 0 ? "+" : ""}{impactResult.marginImpact.change}%
@@ -568,7 +568,7 @@ function ChangeOrdersTab({ app }) {
 
                       {/* Cumulative */}
                       {impactResult.cumulativeImpact && (
-                        <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", marginBottom: 12, fontSize: 13 }}>
+                        <div className="more-info-card">
                           <div className="flex-between mb-4">
                             <span className="font-semi">Total CO Exposure</span>
                             <span className="font-mono font-bold text-amber">{app.fmt(impactResult.cumulativeImpact.totalCOValue)}</span>
@@ -583,21 +583,21 @@ function ChangeOrdersTab({ app }) {
 
                       {/* Cash Flow + Recommendation */}
                       {impactResult.cashFlowNote && (
-                        <div style={{ padding: 8, marginBottom: 8, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", fontSize: 13 }}>
+                        <div className="more-info-card">
                           <span className="font-semi">Cash Flow: </span>{impactResult.cashFlowNote}
                         </div>
                       )}
                       {impactResult.recommendation && (
-                        <div style={{ padding: 8, marginBottom: 8, borderRadius: 6, background: "rgba(59,130,246,0.1)", border: "1px solid var(--blue)", fontSize: 13 }}>
+                        <div className="more-info-card--blue">
                           <span className="font-semi">Recommendation: </span>{impactResult.recommendation}
                         </div>
                       )}
 
                       {/* Risk Flags */}
                       {impactResult.riskFlags?.length > 0 && (
-                        <div style={{ marginTop: 8 }}>
+                        <div className="mt-8">
                           {impactResult.riskFlags.map((f, i) => (
-                            <div key={i} style={{ padding: "4px 8px", fontSize: 12, color: "var(--red)" }}>{f}</div>
+                            <div key={i} className="more-risk-flag">{f}</div>
                           ))}
                         </div>
                       )}
@@ -777,15 +777,15 @@ function TmTicketsTab({ app }) {
   return (
     <div>
       <div className="flex-between mt-16">
-        <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
-          <div className="kpi-card" style={{ minWidth: 100 }}><span className="text2">Total T&M</span><strong>{app.fmt(totalValue)}</strong></div>
-          <div className="kpi-card" style={{ minWidth: 100 }}><span className="text2">Pending</span><strong>{app.fmt(pendingValue)}</strong></div>
-          <div className="kpi-card" style={{ minWidth: 100 }}><span className="text2">Approved</span><strong>{app.fmt(approvedValue)}</strong></div>
+        <div className="flex gap-8" className="flex-wrap">
+          <div className="kpi-card" className="kpi-min"><span className="text2">Total T&M</span><strong>{app.fmt(totalValue)}</strong></div>
+          <div className="kpi-card" className="kpi-min"><span className="text2">Pending</span><strong>{app.fmt(pendingValue)}</strong></div>
+          <div className="kpi-card" className="kpi-min"><span className="text2">Approved</span><strong>{app.fmt(approvedValue)}</strong></div>
         </div>
         <div className="flex gap-8">
-          <button className="btn btn-ghost btn-sm" onClick={() => setGenOpen(!genOpen)} style={{ position: "relative" }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => setGenOpen(!genOpen)} className="pos-relative">
             Generate from Clock
-            {totalTmFlagged > 0 && <span className="badge badge-amber" style={{ fontSize: 9, marginLeft: 4 }}>{totalTmFlagged}</span>}
+            {totalTmFlagged > 0 && <span className="badge badge-amber" className="fs-9 ml-4">{totalTmFlagged}</span>}
           </button>
           <button className="btn btn-primary btn-sm" onClick={() => setAdding(!adding)}>+ New T&M Ticket</button>
         </div>
@@ -793,7 +793,7 @@ function TmTicketsTab({ app }) {
 
       {/* Generate from Clock Panel */}
       {genOpen && (
-        <div className="card mt-16" style={{ borderLeft: "4px solid var(--amber)" }}>
+        <div className="card mt-16" className="border-left-amber">
           <div className="card-header"><div className="card-title">Generate T&M Ticket from Time Clock</div></div>
           <div className="text-xs text-muted mb-12">Flag time entries as T&M in Time Clock &gt; Time Log, then generate a ticket here. Flagged entries will be linked to prevent double-billing.</div>
           <div className="form-grid">
@@ -872,49 +872,49 @@ function TmTicketsTab({ app }) {
           </div>
 
           {/* Labor entries */}
-          <div style={{ marginTop: 16 }}>
+          <div className="mt-16">
             <div className="flex-between">
-              <strong className="text2" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 1 }}>Labor</strong>
-              <button className="btn btn-ghost btn-sm" onClick={addLaborRow} style={{ fontSize: 11 }}>+ Add Row</button>
+              <strong className="text2" className="more-section-label">Labor</strong>
+              <button className="btn btn-ghost btn-sm" onClick={addLaborRow} className="btn-table-action">+ Add Row</button>
             </div>
             {form.laborEntries.map(e => (
-              <div key={e.id} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 2fr auto", gap: 8, marginTop: 6, alignItems: "end" }}>
+              <div key={e.id} className="more-labor-grid">
                 <input className="form-input" placeholder="Employee" value={e.employeeName} onChange={ev => updateLabor(e.id, "employeeName", ev.target.value)} />
                 <input className="form-input" type="number" placeholder="Hours" value={e.hours} onChange={ev => updateLabor(e.id, "hours", ev.target.value)} />
                 <input className="form-input" type="number" placeholder="Rate" value={e.rate} onChange={ev => updateLabor(e.id, "rate", ev.target.value)} />
                 <input className="form-input" placeholder="Work performed" value={e.description} onChange={ev => updateLabor(e.id, "description", ev.target.value)} />
-                <button className="btn btn-ghost btn-sm" onClick={() => removeLabor(e.id)} style={{ color: "var(--red)", padding: "4px 8px" }}>x</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => removeLabor(e.id)} className="btn-remove-row">x</button>
               </div>
             ))}
-            <div className="text2 mt-8" style={{ fontSize: 11 }}>Labor subtotal: {app.fmt(calcLaborTotal(form.laborEntries))}</div>
+            <div className="text2 mt-8" className="btn-table-action">Labor subtotal: {app.fmt(calcLaborTotal(form.laborEntries))}</div>
           </div>
 
           {/* Material entries */}
-          <div style={{ marginTop: 16 }}>
+          <div className="mt-16">
             <div className="flex-between">
-              <strong className="text2" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 1 }}>Materials</strong>
-              <button className="btn btn-ghost btn-sm" onClick={addMatRow} style={{ fontSize: 11 }}>+ Add Row</button>
+              <strong className="text2" className="more-section-label">Materials</strong>
+              <button className="btn btn-ghost btn-sm" onClick={addMatRow} className="btn-table-action">+ Add Row</button>
             </div>
             {form.materialEntries.map(e => (
-              <div key={e.id} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr auto", gap: 8, marginTop: 6, alignItems: "end" }}>
+              <div key={e.id} className="more-mat-grid">
                 <input className="form-input" placeholder="Material" value={e.item} onChange={ev => updateMat(e.id, "item", ev.target.value)} />
                 <input className="form-input" type="number" placeholder="Qty" value={e.qty} onChange={ev => updateMat(e.id, "qty", ev.target.value)} />
                 <input className="form-input" placeholder="Unit" value={e.unit} onChange={ev => updateMat(e.id, "unit", ev.target.value)} />
                 <input className="form-input" type="number" placeholder="$/Unit" value={e.unitCost} onChange={ev => updateMat(e.id, "unitCost", ev.target.value)} />
                 <input className="form-input" type="number" placeholder="Markup%" value={e.markup} onChange={ev => updateMat(e.id, "markup", ev.target.value)} />
-                <button className="btn btn-ghost btn-sm" onClick={() => removeMat(e.id)} style={{ color: "var(--red)", padding: "4px 8px" }}>x</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => removeMat(e.id)} className="btn-remove-row">x</button>
               </div>
             ))}
-            <div className="text2 mt-8" style={{ fontSize: 11 }}>Materials subtotal: {app.fmt(calcMatTotal(form.materialEntries))}</div>
+            <div className="text2 mt-8" className="btn-table-action">Materials subtotal: {app.fmt(calcMatTotal(form.materialEntries))}</div>
           </div>
 
-          <div className="form-group" style={{ marginTop: 12 }}>
+          <div className="form-group" className="mt-12">
             <label className="form-label">Notes</label>
             <input className="form-input" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Internal notes, approval references..." />
           </div>
 
           <div className="flex-between mt-16">
-            <div style={{ fontSize: 14, fontWeight: 700 }}>Ticket Total: {app.fmt(calcLaborTotal(form.laborEntries) + calcMatTotal(form.materialEntries))}</div>
+            <div className="more-ticket-total">Ticket Total: {app.fmt(calcLaborTotal(form.laborEntries) + calcMatTotal(form.materialEntries))}</div>
             <div className="flex gap-8">
               <button className="btn btn-primary btn-sm" onClick={save}>Save Draft</button>
               <button className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
@@ -925,32 +925,32 @@ function TmTicketsTab({ app }) {
 
       {/* Tickets list */}
       <div className="mt-16">
-        {allTickets.length === 0 && <div className="card" style={{ textAlign: "center", padding: "32px 16px", color: "var(--text-muted)" }}>No T&M tickets yet<br/><span style={{ fontSize: 12, opacity: 0.7 }}>Track time & material work outside the original contract — add labor hours and materials per ticket</span></div>}
+        {allTickets.length === 0 && <div className="card" className="more-empty-cell">No T&M tickets yet<br/><span className="more-empty-hint">Track time & material work outside the original contract — add labor hours and materials per ticket</span></div>}
         {allTickets.map(t => {
           const total = calcTicketTotal(t);
           const isExpanded = expandedId === t.id;
           return (
-            <div className="card mt-8" key={t.id} style={{ cursor: "pointer" }} onClick={() => setExpandedId(isExpanded ? null : t.id)}>
+            <div className="card mt-8" key={t.id} className="more-cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : t.id)}>
               <div className="flex-between">
                 <div>
                   <strong>{t.ticketNumber}</strong>
-                  <span className="text2" style={{ marginLeft: 8 }}>{pName(t.projectId)}</span>
+                  <span className="text2" className="ml-8">{pName(t.projectId)}</span>
                 </div>
-                <div className="flex gap-8" style={{ alignItems: "center" }}>
+                <div className="flex gap-8" className="items-center">
                   <strong>{app.fmt(total)}</strong>
                   <span className={badge(t.status)}>{t.status}</span>
                 </div>
               </div>
-              <div className="text2" style={{ fontSize: 12, marginTop: 4 }}>{t.date} — {t.description}</div>
+              <div className="text2" className="fs-12 mt-4">{t.date} — {t.description}</div>
 
               {isExpanded && (
-                <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 12 }} onClick={e => e.stopPropagation()}>
+                <div className="more-ticket-expanded" onClick={e => e.stopPropagation()}>
                   {/* Labor breakdown */}
                   {t.laborEntries.length > 0 && (
-                    <div style={{ marginBottom: 12 }}>
-                      <strong className="text2" style={{ fontSize: 11, textTransform: "uppercase" }}>Labor</strong>
-                      <table className="data-table" style={{ marginTop: 4 }}>
-                        <thead><tr><th>Employee</th><th>Hours</th><th>Rate</th><th>Description</th><th style={{ textAlign: "right" }}>Total</th></tr></thead>
+                    <div className="mb-12">
+                      <strong className="text2" className="more-section-label">Labor</strong>
+                      <table className="data-table" className="mt-4">
+                        <thead><tr><th>Employee</th><th>Hours</th><th>Rate</th><th>Description</th><th className="num">Total</th></tr></thead>
                         <tbody>
                           {t.laborEntries.map(e => (
                             <tr key={e.id}>
@@ -958,21 +958,21 @@ function TmTicketsTab({ app }) {
                               <td>{e.hours}</td>
                               <td>{app.fmt(e.rate)}/hr</td>
                               <td>{e.description}</td>
-                              <td style={{ textAlign: "right" }}>{app.fmt(e.hours * e.rate)}</td>
+                              <td className="num">{app.fmt(e.hours * e.rate)}</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
-                      <div className="text2" style={{ textAlign: "right", fontSize: 11, marginTop: 4 }}>Labor: {app.fmt(calcLaborTotal(t.laborEntries))}</div>
+                      <div className="text2" className="more-ticket-subtotal">Labor: {app.fmt(calcLaborTotal(t.laborEntries))}</div>
                     </div>
                   )}
 
                   {/* Materials breakdown */}
                   {t.materialEntries.length > 0 && (
-                    <div style={{ marginBottom: 12 }}>
-                      <strong className="text2" style={{ fontSize: 11, textTransform: "uppercase" }}>Materials</strong>
-                      <table className="data-table" style={{ marginTop: 4 }}>
-                        <thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Unit Cost</th><th>Markup</th><th style={{ textAlign: "right" }}>Total</th></tr></thead>
+                    <div className="mb-12">
+                      <strong className="text2" className="more-section-label">Materials</strong>
+                      <table className="data-table" className="mt-4">
+                        <thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Unit Cost</th><th>Markup</th><th className="num">Total</th></tr></thead>
                         <tbody>
                           {t.materialEntries.map(e => {
                             const base = e.qty * e.unitCost;
@@ -984,19 +984,19 @@ function TmTicketsTab({ app }) {
                                 <td>{e.unit}</td>
                                 <td>{app.fmt(e.unitCost)}</td>
                                 <td>{e.markup}%</td>
-                                <td style={{ textAlign: "right" }}>{app.fmt(withMarkup)}</td>
+                                <td className="num">{app.fmt(withMarkup)}</td>
                               </tr>
                             );
                           })}
                         </tbody>
                       </table>
-                      <div className="text2" style={{ textAlign: "right", fontSize: 11, marginTop: 4 }}>Materials: {app.fmt(calcMatTotal(t.materialEntries))}</div>
+                      <div className="text2" className="more-ticket-subtotal">Materials: {app.fmt(calcMatTotal(t.materialEntries))}</div>
                     </div>
                   )}
 
-                  {t.notes && <div className="text2" style={{ fontSize: 12, fontStyle: "italic", marginBottom: 8 }}>{t.notes}</div>}
+                  {t.notes && <div className="text2" className="more-ticket-notes">{t.notes}</div>}
 
-                  <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap", fontSize: 11 }}>
+                  <div className="more-ticket-meta">
                     {t.submittedDate && <span className="text2">Submitted: {t.submittedDate}</span>}
                     {t.approvedDate && <span className="text2">Approved: {t.approvedDate}</span>}
                     {t.billedDate && <span className="text2">Billed: {t.billedDate}</span>}
@@ -1009,7 +1009,7 @@ function TmTicketsTab({ app }) {
                     {t.status === "submitted" && <button className="btn btn-primary btn-sm" onClick={() => updateStatus(t.id, "approved")}>Mark Approved</button>}
                     {t.status === "approved" && <button className="btn btn-primary btn-sm" onClick={() => updateStatus(t.id, "billed")}>Mark Billed</button>}
                     {t.status === "approved" && (
-                      <button className="btn btn-ghost btn-sm" style={{ color: "var(--green)" }} onClick={() => {
+                      <button className="btn btn-ghost btn-sm" className="text-green" onClick={() => {
                         const labTotal = (t.laborEntries || []).reduce((s, e) => s + e.hours * e.rate, 0);
                         const matTotal = (t.materialEntries || []).reduce((s, e) => { const b = e.qty * e.unitCost; return s + b + b * e.markup / 100; }, 0);
                         const total = labTotal + matTotal;
@@ -1065,20 +1065,20 @@ function TmTicketsTab({ app }) {
                       w.document.close();
                       w.setTimeout(() => w.print(), 300);
                     }}>Print PDF</button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => deleteTicket(t.id)} style={{ color: "var(--red)" }}>Delete</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => deleteTicket(t.id)} className="text-red">Delete</button>
                   </div>
 
                   {/* AI Justification */}
                   {justifyId === t.id && justifyText && (
-                    <div style={{ marginTop: 12, padding: 12, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)" }}>
+                    <div className="more-info-card mt-12">
                       <div className="flex-between mb-8">
                         <span className="font-semi text-sm">AI Justification Narrative</span>
-                        <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }} onClick={() => {
+                        <button className="btn btn-ghost btn-sm" className="btn-table-action" onClick={() => {
                           navigator.clipboard.writeText(justifyText);
                           app.show("Justification copied to clipboard", "ok");
                         }}>Copy</button>
                       </div>
-                      <div style={{ whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 1.6 }}>{justifyText}</div>
+                      <div className="more-ai-text--plain">{justifyText}</div>
                       <div className="flex gap-8 mt-8">
                         <button className="btn btn-ghost btn-sm" onClick={() => runJustify(t)}>Regenerate</button>
                       </div>
@@ -1151,22 +1151,22 @@ function JobCostingTab({ app }) {
             <div className="card-header"><div className="card-title">AI Cost Variance Analysis</div></div>
             <button className="btn btn-ghost btn-sm" onClick={() => { setShowVariance(false); setVarianceResult(null); }}>Close</button>
           </div>
-          {varianceLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Analyzing cost data across {app.projects.length} projects...</div>}
+          {varianceLoading && <div className="text-sm text-muted" className="more-empty-cell">Analyzing cost data across {app.projects.length} projects...</div>}
           {varianceResult && (
-            <div style={{ marginTop: 8 }}>
+            <div className="mt-8">
               {/* Summary */}
-              <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12, fontSize: 14 }}>{varianceResult.summary}</div>
+              <div className="more-detail-summary">{varianceResult.summary}</div>
 
               {/* Portfolio Summary */}
               {varianceResult.portfolioSummary && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 12 }}>
+                <div className="more-grid-4">
                   {[
                     { label: "Total Contract", val: app.fmt(varianceResult.portfolioSummary.totalContract) },
                     { label: "Total Billed", val: app.fmt(varianceResult.portfolioSummary.totalBilled) },
                     { label: "Remaining", val: app.fmt(varianceResult.portfolioSummary.totalRemaining) },
                     { label: "At-Risk Value", val: app.fmt(varianceResult.portfolioSummary.atRiskValue), color: "var(--red)" },
                   ].map((kpi, i) => (
-                    <div key={i} style={{ padding: 10, borderRadius: 6, background: "var(--card)", textAlign: "center" }}>
+                    <div key={i} className="more-metric-card--p10">
                       <div className="text-xs text-muted">{kpi.label}</div>
                       <div style={{ fontSize: 16, fontWeight: 700, color: kpi.color || "var(--amber)", marginTop: 4 }}>{kpi.val}</div>
                     </div>
@@ -1176,7 +1176,7 @@ function JobCostingTab({ app }) {
 
               {/* Project Rankings */}
               {varianceResult.rankings?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-8">Project Health Rankings</div>
                   {varianceResult.rankings.map((r, i) => (
                     <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, borderLeft: `3px solid ${r.healthScore >= 70 ? "var(--green)" : r.healthScore >= 40 ? "var(--amber)" : "var(--red)"}`, background: "var(--card)", fontSize: 13 }}>
@@ -1185,7 +1185,7 @@ function JobCostingTab({ app }) {
                         <span style={{ fontWeight: 700, color: r.healthScore >= 70 ? "var(--green)" : r.healthScore >= 40 ? "var(--amber)" : "var(--red)" }}>{r.healthScore}/100</span>
                       </div>
                       <div className="text-xs text-muted mt-2">{r.billedPct}% billed • {r.marginStatus}</div>
-                      {r.alert && <div style={{ fontSize: 12, color: "var(--red)", marginTop: 4 }}>{r.alert}</div>}
+                      {r.alert && <div className="fs-12 text-red mt-4">{r.alert}</div>}
                     </div>
                   ))}
                 </div>
@@ -1193,10 +1193,10 @@ function JobCostingTab({ app }) {
 
               {/* Cash Flow Risks */}
               {varianceResult.cashFlowRisk?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-8">Cash Flow Risks</div>
                   {varianceResult.cashFlowRisk.filter(r => r.risk !== "low").map((r, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                    <div key={i} className="more-list-row">
                       <div className="flex-between">
                         <span>{r.project}</span>
                         <span className={r.risk === "high" ? "badge-red" : "badge-amber"}>{r.risk}</span>
@@ -1212,7 +1212,7 @@ function JobCostingTab({ app }) {
                 <div>
                   <div className="text-sm font-semi mb-8">Recommendations</div>
                   {varianceResult.recommendations.map((r, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                    <div key={i} className="more-list-row">
                       <div className="flex-between">
                         <span>{r.action}</span>
                         <span className={r.priority === "high" ? "badge-red" : r.priority === "medium" ? "badge-amber" : "badge-blue"}>{r.priority}</span>
@@ -1226,7 +1226,7 @@ function JobCostingTab({ app }) {
           )}
         </div>
       )}
-      {app.projects.length === 0 && <div className="card mt-16" style={{ textAlign: "center", padding: "32px 16px", color: "var(--text-muted)" }}>No projects yet<br/><span style={{ fontSize: 12, opacity: 0.7 }}>Convert awarded bids to projects to track job costing, labor, and profitability</span></div>}
+      {app.projects.length === 0 && <div className="card mt-16" className="more-empty-cell">No projects yet<br/><span className="more-empty-hint">Convert awarded bids to projects to track job costing, labor, and profitability</span></div>}
       {app.projects.map(proj => {
         const billed = app.invoices.filter(i => i.projectId === proj.id).reduce((s, i) => s + i.amount, 0);
         const cos = app.changeOrders.filter(c => c.projectId === proj.id && c.status === "approved").reduce((s, c) => s + c.amount, 0);
@@ -1248,27 +1248,27 @@ function JobCostingTab({ app }) {
               <strong>{proj.name}</strong>
               <span className="text2">{pct}% Billed</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginTop: 12 }}>
+            <div className="more-cost-grid">
               <div><span className="text2">Contract</span><br />{app.fmt(proj.contract)}</div>
               <div><span className="text2">Approved COs</span><br />{app.fmt(cos)}</div>
               <div><span className="text2">Total Billed</span><br />{app.fmt(billed)}</div>
               <div><span className="text2">Remaining</span><br />{app.fmt(remaining)}</div>
             </div>
             {/* Labor Cost Rollup */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border)" }}>
+            <div className="more-cost-grid--border">
               <div><span className="text2">Labor Hours</span><br /><span className="font-mono">{laborHours.toFixed(1)}h</span></div>
-              <div><span className="text2">Labor Cost</span><br /><span className="font-mono" style={{ color: "var(--amber)" }}>{app.fmt(laborCost)}</span></div>
+              <div><span className="text2">Labor Cost</span><br /><span className="font-mono" className="text-amber">{app.fmt(laborCost)}</span></div>
               <div><span className="text2">Budget Remaining</span><br /><span className="font-mono" style={{ color: laborVariance >= 0 ? "var(--green)" : "var(--red)" }}>{app.fmt(laborVariance)}</span></div>
               <div><span className="text2">Labor Margin</span><br /><span className="font-mono" style={{ color: adjustedContract > 0 && laborCost / adjustedContract < 0.7 ? "var(--green)" : "var(--amber)" }}>{adjustedContract > 0 ? Math.round((1 - laborCost / adjustedContract) * 100) : 0}%</span></div>
             </div>
             {(tmApproved > 0 || tmPending > 0) && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border)" }}>
-                <div><span className="text2">T&M Approved</span><br /><span style={{ color: "var(--green)" }}>{app.fmt(tmApproved)}</span></div>
-                <div><span className="text2">T&M Pending</span><br /><span style={{ color: "var(--amber)" }}>{app.fmt(tmPending)}</span></div>
+              <div className="more-cost-grid--3">
+                <div><span className="text2">T&M Approved</span><br /><span className="text-green">{app.fmt(tmApproved)}</span></div>
+                <div><span className="text2">T&M Pending</span><br /><span className="text-amber">{app.fmt(tmPending)}</span></div>
                 <div><span className="text2">T&M Tickets</span><br />{tmTickets.length}</div>
               </div>
             )}
-            <div style={{ background: "var(--bg4)", borderRadius: 4, height: 8, marginTop: 12 }}>
+            <div className="more-progress-track">
               <div style={{ background: "var(--amber)", height: "100%", borderRadius: 4, width: `${Math.min(pct, 100)}%`, transition: "width 0.3s" }} />
             </div>
           </div>
@@ -1336,7 +1336,7 @@ function PayrollSummaryTab({ app }) {
       <div className="flex-between">
         <div className="section-title">Payroll Summary</div>
         <div className="flex gap-8">
-          <select className="form-select" style={{ fontSize: 12, padding: "4px 8px" }} value={period} onChange={e => setPeriod(e.target.value)}>
+          <select className="form-select" className="more-edit-select" value={period} onChange={e => setPeriod(e.target.value)}>
             <option value="week">This Week</option>
             <option value="biweekly">Last 2 Weeks</option>
             <option value="month">This Month</option>
@@ -1360,7 +1360,7 @@ function PayrollSummaryTab({ app }) {
       </div>
 
       <div className="flex gap-8 mt-16">
-        <div className="kpi-card"><span className="text2">Total Payroll</span><strong style={{ color: "var(--amber)" }}>{app.fmt(totalPayroll)}</strong></div>
+        <div className="kpi-card"><span className="text2">Total Payroll</span><strong className="text-amber">{app.fmt(totalPayroll)}</strong></div>
         <div className="kpi-card"><span className="text2">Total Hours</span><strong>{totalHours.toFixed(1)}h</strong></div>
         <div className="kpi-card"><span className="text2">Overtime Hours</span><strong style={{ color: totalOT > 0 ? "var(--red)" : "var(--green)" }}>{totalOT.toFixed(1)}h</strong></div>
         <div className="kpi-card"><span className="text2">Employees</span><strong>{byEmployee.filter(e => e.totalHours > 0).length}</strong></div>
@@ -1372,39 +1372,39 @@ function PayrollSummaryTab({ app }) {
             <tr>
               <th>Employee</th>
               <th>Role</th>
-              <th style={{ textAlign: "right" }}>Rate</th>
-              <th style={{ textAlign: "right" }}>Regular</th>
-              <th style={{ textAlign: "right" }}>OT</th>
-              <th style={{ textAlign: "right" }}>Total Hrs</th>
-              <th style={{ textAlign: "right" }}>Gross Pay</th>
+              <th className="num">Rate</th>
+              <th className="num">Regular</th>
+              <th className="num">OT</th>
+              <th className="num">Total Hrs</th>
+              <th className="num">Gross Pay</th>
             </tr>
           </thead>
           <tbody>
             {byEmployee.map(e => (
               <tr key={e.id}>
-                <td style={{ fontWeight: 500 }}>{e.name}</td>
-                <td><span className="badge badge-blue" style={{ fontSize: 10 }}>{e.role}</span></td>
-                <td style={{ textAlign: "right", fontFamily: "var(--font-mono)" }}>${e.rate}/hr</td>
-                <td style={{ textAlign: "right", fontFamily: "var(--font-mono)" }}>{e.regularHours.toFixed(1)}</td>
+                <td className="fw-500">{e.name}</td>
+                <td><span className="badge badge-blue" className="fs-10">{e.role}</span></td>
+                <td className="td-right-mono">${e.rate}/hr</td>
+                <td className="td-right-mono">{e.regularHours.toFixed(1)}</td>
                 <td style={{ textAlign: "right", fontFamily: "var(--font-mono)", color: e.otHours > 0 ? "var(--red)" : "inherit" }}>{e.otHours.toFixed(1)}</td>
-                <td style={{ textAlign: "right", fontFamily: "var(--font-mono)" }}>{e.totalHours.toFixed(1)}</td>
-                <td style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 600, color: "var(--amber)" }}>{app.fmt(e.grossPay)}</td>
+                <td className="td-right-mono">{e.totalHours.toFixed(1)}</td>
+                <td className="td-right-mono--amber">{app.fmt(e.grossPay)}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
-            <tr style={{ borderTop: "2px solid var(--border)", fontWeight: 700 }}>
+            <tr className="tfoot-total">
               <td colSpan={3}>TOTAL</td>
-              <td style={{ textAlign: "right", fontFamily: "var(--font-mono)" }}>{byEmployee.reduce((s, e) => s + e.regularHours, 0).toFixed(1)}</td>
-              <td style={{ textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--red)" }}>{totalOT.toFixed(1)}</td>
-              <td style={{ textAlign: "right", fontFamily: "var(--font-mono)" }}>{totalHours.toFixed(1)}</td>
-              <td style={{ textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--amber)" }}>{app.fmt(totalPayroll)}</td>
+              <td className="td-right-mono">{byEmployee.reduce((s, e) => s + e.regularHours, 0).toFixed(1)}</td>
+              <td className="td-right-mono text-red">{totalOT.toFixed(1)}</td>
+              <td className="td-right-mono">{totalHours.toFixed(1)}</td>
+              <td className="td-right-mono--amber">{app.fmt(totalPayroll)}</td>
             </tr>
           </tfoot>
         </table>
       </div>
 
-      <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 12 }}>
+      <div className="more-period-note">
         Period: {periodStart.toLocaleDateString()} — {now.toLocaleDateString()} | OT calculated at 1.5x after 40hrs/week | Default rate: $35/hr
       </div>
     </div>
@@ -1440,21 +1440,21 @@ function AgingReportTab({ app }) {
         <div style={{ fontWeight: 700, fontSize: 16, color }}>{app.fmt(sum(items))}</div>
       </div>
       {items.length > 0 ? (
-        <table className="data-table" style={{ marginTop: 8 }}>
-          <thead><tr><th>Invoice #</th><th>Project</th><th>Date</th><th>Age</th><th style={{ textAlign: "right" }}>Amount</th></tr></thead>
+        <table className="data-table" className="mt-8">
+          <thead><tr><th>Invoice #</th><th>Project</th><th>Date</th><th>Age</th><th className="num">Amount</th></tr></thead>
           <tbody>
             {items.sort((a, b) => b.age - a.age).map(inv => (
               <tr key={inv.id}>
-                <td style={{ fontWeight: 500 }}>{inv.number}</td>
+                <td className="fw-500">{inv.number}</td>
                 <td>{pName(inv.projectId)}</td>
                 <td>{inv.date}</td>
                 <td><span className="badge" style={{ background: color + "22", color }}>{inv.age}d</span></td>
-                <td style={{ textAlign: "right", fontFamily: "var(--font-mono)" }}>{app.fmt(inv.amount)}</td>
+                <td className="td-right-mono">{app.fmt(inv.amount)}</td>
               </tr>
             ))}
           </tbody>
         </table>
-      ) : <div className="text-sm text-muted" style={{ marginTop: 8 }}>No invoices in this bucket</div>}
+      ) : <div className="text-sm text-muted" className="mt-8">No invoices in this bucket</div>}
     </div>
   );
 
@@ -1462,10 +1462,10 @@ function AgingReportTab({ app }) {
     <div className="mt-16">
       <div className="section-title">Accounts Receivable Aging</div>
       <div className="flex gap-8 mt-16">
-        <div className="kpi-card"><span className="text2">Current (0-30d)</span><strong style={{ color: "var(--green)" }}>{app.fmt(sum(buckets.current))}</strong></div>
-        <div className="kpi-card"><span className="text2">31-60 Days</span><strong style={{ color: "var(--amber)" }}>{app.fmt(sum(buckets.over30))}</strong></div>
-        <div className="kpi-card"><span className="text2">61-90 Days</span><strong style={{ color: "var(--red)" }}>{app.fmt(sum(buckets.over60))}</strong></div>
-        <div className="kpi-card"><span className="text2">90+ Days</span><strong style={{ color: "var(--red)" }}>{app.fmt(sum(buckets.over90))}</strong></div>
+        <div className="kpi-card"><span className="text2">Current (0-30d)</span><strong className="text-green">{app.fmt(sum(buckets.current))}</strong></div>
+        <div className="kpi-card"><span className="text2">31-60 Days</span><strong className="text-amber">{app.fmt(sum(buckets.over30))}</strong></div>
+        <div className="kpi-card"><span className="text2">61-90 Days</span><strong className="text-red">{app.fmt(sum(buckets.over60))}</strong></div>
+        <div className="kpi-card"><span className="text2">90+ Days</span><strong className="text-red">{app.fmt(sum(buckets.over90))}</strong></div>
       </div>
       {renderBucket("90+ Days Overdue", buckets.over90, "var(--red)")}
       {renderBucket("61-90 Days", buckets.over60, "var(--red)")}
@@ -1611,13 +1611,13 @@ function RfisTab({ app }) {
               Promise.all(readers).then(results => {
                 setForm(f => ({ ...f, attachments: [...f.attachments, ...results] }));
               });
-            }} style={{ fontSize: 12 }} />
+            }} className="fs-12" />
             {form.attachments.length > 0 && (
               <div className="flex gap-4 flex-wrap mt-8">
                 {form.attachments.map((a, i) => (
-                  <span key={i} style={{ fontSize: 11, padding: "2px 8px", background: "var(--bg3)", borderRadius: 6, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <span key={i} className="more-attach-pill">
                     {a.name} ({(a.size / 1024).toFixed(0)} KB)
-                    <span style={{ cursor: "pointer", color: "var(--red)", fontWeight: 700 }} onClick={() => setForm(f => ({ ...f, attachments: f.attachments.filter((_, j) => j !== i) }))}>x</span>
+                    <span className="more-attach-remove" onClick={() => setForm(f => ({ ...f, attachments: f.attachments.filter((_, j) => j !== i) }))}>x</span>
                   </span>
                 ))}
               </div>
@@ -1634,7 +1634,7 @@ function RfisTab({ app }) {
         <table className="data-table">
           <thead><tr><th>RFI #</th><th>Project</th><th>Subject</th><th>Status</th><th>Submitted</th><th>Assigned</th><th>Response Date</th><th></th></tr></thead>
           <tbody>
-            {rfiFiltered.length === 0 && <tr><td colSpan={8} style={{ textAlign: "center" }}>{app.search ? "No matching RFIs" : "No RFIs"}</td></tr>}
+            {rfiFiltered.length === 0 && <tr><td colSpan={8} className="more-text-center">{app.search ? "No matching RFIs" : "No RFIs"}</td></tr>}
             {rfiFiltered.map(rfi => (
               <Fragment key={rfi.id}>
                 <tr>
@@ -1643,9 +1643,9 @@ function RfisTab({ app }) {
                   <td>
                     {rfi.subject}
                     {(rfi.attachments || []).length > 0 && (
-                      <div className="flex gap-4 flex-wrap" style={{ marginTop: 4 }}>
+                      <div className="flex gap-4 flex-wrap" className="mt-4">
                         {rfi.attachments.map((a, ai) => (
-                          <a key={ai} href={a.dataUrl} download={a.name} style={{ fontSize: 10, color: "var(--blue)", textDecoration: "underline", cursor: "pointer" }} onClick={e => e.stopPropagation()}>
+                          <a key={ai} href={a.dataUrl} download={a.name} className="more-attach-link" onClick={e => e.stopPropagation()}>
                             {a.name}
                           </a>
                         ))}
@@ -1659,28 +1659,28 @@ function RfisTab({ app }) {
                   <td>
                     <div className="flex gap-4">
                     {rfi.status === "open" && (
-                      <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }}
+                      <button className="btn btn-ghost btn-sm" className="btn-table-action"
                         onClick={() => draftId === rfi.id && draftText ? setDraftId(null) : runDraftResponse(rfi)}
                         disabled={draftLoading && draftId === rfi.id}>
                         {draftLoading && draftId === rfi.id ? "..." : draftId === rfi.id && draftText ? "Hide" : "Draft Response"}
                       </button>
                     )}
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 6px", color: "var(--red)" }}
+                    <button className="btn btn-ghost btn-sm" className="btn-table-delete"
                       onClick={() => { if (confirm("Delete this RFI?")) { app.setRfis(prev => prev.filter(r => r.id !== rfi.id)); app.show("RFI deleted"); } }}>✕</button>
                     </div>
                   </td>
                 </tr>
                 {draftId === rfi.id && draftText && (
-                  <tr><td colSpan={8} style={{ padding: 0 }}>
-                    <div style={{ padding: 16, background: "var(--bg3)", borderTop: "1px solid var(--border)" }}>
+                  <tr><td colSpan={8} className="more-expand-cell">
+                    <div className="more-detail-panel">
                       <div className="flex-between mb-8">
                         <span className="font-semi text-sm">AI-Drafted Response</span>
-                        <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }} onClick={() => {
+                        <button className="btn btn-ghost btn-sm" className="btn-table-action" onClick={() => {
                           navigator.clipboard.writeText(draftText);
                           app.show("Response copied to clipboard", "ok");
                         }}>Copy</button>
                       </div>
-                      <div style={{ whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 1.6, padding: 12, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)" }}>
+                      <div className="more-ai-text">
                         {draftText}
                       </div>
                       <div className="flex gap-8 mt-8">
@@ -1848,14 +1848,14 @@ function SubmittalsTab({ app }) {
   const renderLinked = (sub) => {
     const mats = sub.linkedMaterialIds || [];
     const asms = sub.linkedAssemblyCodes || [];
-    if (mats.length === 0 && asms.length === 0) return <span style={{ fontSize: 11, color: "var(--text3)" }}>None</span>;
+    if (mats.length === 0 && asms.length === 0) return <span className="text-xs text-muted">None</span>;
     return (
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+      <div className="more-linked-wrap">
         {asms.map(code => (
-          <span key={code} style={{ fontSize: 10, padding: "1px 6px", background: "rgba(59,130,246,0.15)", color: "#3b82f6", borderRadius: 8 }}>{code}</span>
+          <span key={code} className="more-link-pill--blue">{code}</span>
         ))}
         {mats.map(id => (
-          <span key={id} style={{ fontSize: 10, padding: "1px 6px", background: "rgba(16,185,129,0.15)", color: "#10b981", borderRadius: 8 }}>{id}</span>
+          <span key={id} className="more-link-pill--green">{id}</span>
         ))}
       </div>
     );
@@ -1869,17 +1869,17 @@ function SubmittalsTab({ app }) {
       ? items.filter(item => getLabel(item).toLowerCase().includes(search.toLowerCase()))
       : items.slice(0, 10);
     return (
-      <div className="form-group full" style={{ position: "relative" }}>
+      <div className="form-group full" className="pos-relative">
         <label className="form-label">{label}</label>
         {/* Selected pills */}
         {selectedIds.length > 0 && (
-          <div className="flex gap-4 flex-wrap" style={{ marginBottom: 6 }}>
+          <div className="flex gap-4 flex-wrap" className="mb-6">
             {selectedIds.map(id => {
               const item = items.find(i => getKey(i) === id);
               return (
-                <span key={id} style={{ fontSize: 11, padding: "2px 8px", background: badgeColor || "rgba(59,130,246,0.15)", color: badgeColor ? "#fff" : "#3b82f6", borderRadius: 8, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <span key={id} className="more-attach-pill">
                   {item ? (getLabel(item).length > 30 ? getLabel(item).slice(0, 27) + "..." : getLabel(item)) : id}
-                  <span style={{ cursor: "pointer", fontWeight: 700 }} onClick={() => onToggle(id)}>x</span>
+                  <span className="more-attach-remove" onClick={() => onToggle(id)}>x</span>
                 </span>
               );
             })}
@@ -1893,11 +1893,11 @@ function SubmittalsTab({ app }) {
           onChange={e => { setSearch(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 200)}
-          style={{ fontSize: 12 }}
+          className="fs-12"
         />
         {/* Dropdown */}
         {open && filtered.length > 0 && (
-          <div style={{ position: "absolute", left: 0, right: 0, top: "100%", zIndex: 50, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 6, maxHeight: 180, overflowY: "auto", boxShadow: "var(--shadow)" }}>
+          <div className="more-picker-dropdown">
             {filtered.map(item => {
               const key = getKey(item);
               const isSelected = selectedIds.includes(key);
@@ -1911,7 +1911,7 @@ function SubmittalsTab({ app }) {
               );
             })}
             {search.trim() && filtered.length === 0 && (
-              <div style={{ padding: "8px 10px", fontSize: 12, color: "var(--text3)" }}>No matches</div>
+              <div className="more-picker-empty">No matches</div>
             )}
           </div>
         )}
@@ -2009,8 +2009,8 @@ function SubmittalsTab({ app }) {
           </div>
           {/* ── Frames & Hardware extra fields ── */}
           {form.category === "Frames & Hardware" && (
-            <div style={{ padding: "12px 0", borderTop: "1px solid var(--border)", marginTop: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--amber)", letterSpacing: "0.05em", marginBottom: 10 }}>FRAME DETAILS</div>
+            <div className="more-frame-header">
+              <div className="more-frame-label">FRAME DETAILS</div>
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">Frame Type</label>
@@ -2065,7 +2065,7 @@ function SubmittalsTab({ app }) {
           const count = c === "All" ? app.submittals.length : app.submittals.filter(s => (s.category || "General") === c).length;
           return (
             <button key={c} className={`btn btn-sm ${catFilter === c ? "btn-primary" : "btn-ghost"}`} onClick={() => setCatFilter(c)}>
-              {c} {count > 0 && <span style={{ marginLeft: 4, opacity: 0.7, fontSize: 10 }}>({count})</span>}
+              {c} {count > 0 && <span className="ml-4 fs-10">({count})</span>}
             </button>
           );
         })}
@@ -2078,14 +2078,14 @@ function SubmittalsTab({ app }) {
             <tr><th>Sub #</th><th>Project</th><th>Category</th><th>Description</th><th>Spec</th><th>Status</th><th>PDF</th><th>Linked</th><th>Due / Delivery</th><th></th></tr>
           </thead>
           <tbody>
-            {subFiltered.length === 0 && <tr><td colSpan={10} style={{ textAlign: "center" }}>{app.search ? "No matching submittals" : "No submittals"}</td></tr>}
+            {subFiltered.length === 0 && <tr><td colSpan={10} className="more-text-center">{app.search ? "No matching submittals" : "No submittals"}</td></tr>}
             {subFiltered.map(sub => {
               const isFrame = (sub.category || "General") === "Frames & Hardware";
               return (
               <Fragment key={sub.id}>
-                <tr onClick={() => openEdit(sub)} style={{ cursor: "pointer" }}>
-                  <td style={{ fontWeight: 600 }}>{sub.number}</td>
-                  <td style={{ fontSize: 12 }}>{pName(sub.projectId)}</td>
+                <tr onClick={() => openEdit(sub)} className="more-cursor-pointer">
+                  <td className="fw-600">{sub.number}</td>
+                  <td className="fs-12">{pName(sub.projectId)}</td>
                   <td>
                     <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: isFrame ? "rgba(245,158,11,0.15)" : "var(--bg3)", color: isFrame ? "var(--amber)" : "var(--text2)" }}>
                       {sub.category || "General"}
@@ -2094,49 +2094,49 @@ function SubmittalsTab({ app }) {
                   <td>
                     <div>{sub.desc}</div>
                     {isFrame && sub.frameType && (
-                      <div style={{ fontSize: 10, color: "var(--text2)", marginTop: 2 }}>
+                      <div className="more-sub-detail">
                         {[sub.frameType, sub.frameMaterial, sub.frameSize, sub.fireRating].filter(Boolean).join(" · ")}
                       </div>
                     )}
                   </td>
-                  <td style={{ fontSize: 12 }}>{sub.specSection}</td>
+                  <td className="fs-12">{sub.specSection}</td>
                   <td><span className={`badge ${badge(sub.status)}`}>{sub.status}</span></td>
                   <td>
                     {sub.pdfKey ? (
-                      <button className="btn btn-sm btn-ghost" style={{ fontSize: 11 }} onClick={e => { e.stopPropagation(); viewPdf(sub.pdfKey); }}>
+                      <button className="btn btn-sm btn-ghost" className="btn-table-action" onClick={e => { e.stopPropagation(); viewPdf(sub.pdfKey); }}>
                         {sub.pdfName || "View PDF"}
                       </button>
-                    ) : <span style={{ fontSize: 11, color: "var(--text3)" }}>—</span>}
+                    ) : <span className="text-xs text-muted">—</span>}
                   </td>
                   <td>{renderLinked(sub)}</td>
-                  <td style={{ fontSize: 12 }}>
+                  <td className="fs-12">
                     <div>{sub.due}</div>
                     {isFrame && sub.scheduledDelivery && (
-                      <div style={{ fontSize: 10, color: "var(--text2)", marginTop: 2 }}>Del: {sub.scheduledDelivery}</div>
+                      <div className="more-sub-detail">Del: {sub.scheduledDelivery}</div>
                     )}
                   </td>
                   <td>
                     <div className="flex gap-4">
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }}
+                    <button className="btn btn-ghost btn-sm" className="btn-table-action"
                       onClick={e => { e.stopPropagation(); reviewId === sub.id && reviewResult ? setReviewId(null) : runReview(sub); }}
                       disabled={reviewLoading && reviewId === sub.id}>
                       {reviewLoading && reviewId === sub.id ? "..." : reviewId === sub.id && reviewResult ? "Hide" : "AI Review"}
                     </button>
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 6px", color: "var(--red)" }}
+                    <button className="btn btn-ghost btn-sm" className="btn-table-delete"
                       onClick={e => { e.stopPropagation(); if (confirm("Delete this submittal?")) { app.setSubmittals(prev => prev.filter(s => s.id !== sub.id)); app.show("Submittal deleted"); } }}>✕</button>
                     </div>
                   </td>
                 </tr>
                 {reviewId === sub.id && reviewResult && (
-                  <tr><td colSpan={10} style={{ padding: 0 }}>
-                    <div style={{ padding: 16, background: "var(--bg3)", borderTop: "1px solid var(--border)" }}>
+                  <tr><td colSpan={10} className="more-expand-cell">
+                    <div className="more-detail-panel">
                       {/* Score + Status */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-                        <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", textAlign: "center" }}>
+                      <div className="more-grid-2">
+                        <div className="more-metric-card--p10">
                           <div className="text-xs text-muted">Readiness Score</div>
                           <div style={{ fontSize: 24, fontWeight: 700, color: reviewResult.score >= 80 ? "var(--green)" : reviewResult.score >= 50 ? "var(--amber)" : "var(--red)" }}>{reviewResult.score}/100</div>
                         </div>
-                        <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", textAlign: "center" }}>
+                        <div className="more-metric-card--p10">
                           <div className="text-xs text-muted">Status</div>
                           <div style={{ fontSize: 14, fontWeight: 600, marginTop: 4, color: reviewResult.status === "ready" ? "var(--green)" : reviewResult.status === "needs_work" ? "var(--amber)" : "var(--red)" }}>
                             {reviewResult.status === "ready" ? "Ready to Submit" : reviewResult.status === "needs_work" ? "Needs Work" : "Critical Issues"}
@@ -2149,7 +2149,7 @@ function SubmittalsTab({ app }) {
 
                       {/* Issues */}
                       {reviewResult.issues?.length > 0 && (
-                        <div style={{ marginBottom: 12 }}>
+                        <div className="mb-12">
                           <div className="text-sm font-semi mb-8">Issues Found</div>
                           {reviewResult.issues.map((iss, i) => (
                             <div key={i} style={{ padding: "6px 10px", marginBottom: 4, borderRadius: 6, borderLeft: `3px solid ${iss.severity === "critical" ? "var(--red)" : iss.severity === "warning" ? "var(--amber)" : "var(--blue)"}`, background: "var(--card)", fontSize: 13 }}>
@@ -2157,7 +2157,7 @@ function SubmittalsTab({ app }) {
                                 <span className="font-semi">{iss.item}</span>
                                 <span className={iss.severity === "critical" ? "badge-red" : iss.severity === "warning" ? "badge-amber" : "badge-blue"}>{iss.severity}</span>
                               </div>
-                              <div className="text-muted mt-4" style={{ fontSize: 12 }}>{iss.detail}</div>
+                              <div className="text-muted mt-4" className="fs-12">{iss.detail}</div>
                             </div>
                           ))}
                         </div>
@@ -2165,7 +2165,7 @@ function SubmittalsTab({ app }) {
 
                       {/* Recommendations */}
                       {reviewResult.recommendations?.length > 0 && (
-                        <div style={{ marginBottom: 12 }}>
+                        <div className="mb-12">
                           <div className="text-sm font-semi mb-8">Recommendations</div>
                           {reviewResult.recommendations.map((r, i) => (
                             <div key={i} style={{ padding: "4px 0", fontSize: 13, borderBottom: "1px solid var(--border)" }}>{r}</div>
@@ -2178,7 +2178,7 @@ function SubmittalsTab({ app }) {
                         <div>
                           <div className="text-sm font-semi mb-8">Material Notes</div>
                           {reviewResult.materialNotes.map((n, i) => (
-                            <div key={i} style={{ padding: "4px 0", fontSize: 12, color: "var(--text2)" }}>{n}</div>
+                            <div key={i} className="more-list-row--plain text-muted">{n}</div>
                           ))}
                         </div>
                       )}
@@ -2246,8 +2246,8 @@ function SubmittalsTab({ app }) {
             </div>
             {/* ── Frames & Hardware extra fields (edit) ── */}
             {(editSub.category || "General") === "Frames & Hardware" && (
-              <div style={{ padding: "12px 0", borderTop: "1px solid var(--border)", marginTop: 8 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--amber)", letterSpacing: "0.05em", marginBottom: 10 }}>FRAME DETAILS</div>
+              <div className="more-frame-header">
+                <div className="more-frame-label">FRAME DETAILS</div>
                 <div className="form-grid">
                   <div className="form-group">
                     <label className="form-label">Frame Type</label>
@@ -2287,10 +2287,10 @@ function SubmittalsTab({ app }) {
               <label className="form-label">PDF Attachment</label>
               {editSub.pdfKey && !editSub._newPdfFile ? (
                 <div className="sub-pdf-attached">
-                  <span style={{ fontSize: 13 }}>{editSub.pdfName}</span>
+                  <span className="fs-13">{editSub.pdfName}</span>
                   <span className="text-xs text-dim">{fmtSize(editSub.pdfSize)}</span>
                   <button className="btn btn-sm btn-ghost" onClick={() => viewPdf(editSub.pdfKey)}>View</button>
-                  <button className="btn btn-sm btn-ghost" style={{ color: "var(--red)" }} onClick={() => removePdf(editSub)}>Remove</button>
+                  <button className="btn btn-sm btn-ghost" className="text-red" onClick={() => removePdf(editSub)}>Remove</button>
                 </div>
               ) : (
                 <div className="sub-pdf-upload">
@@ -2437,9 +2437,9 @@ function Schedule({ app }) {
   return (
     <div className="mt-16">
       <div className="flex-between">
-        <div className="flex gap-8" style={{ alignItems: "center" }}>
+        <div className="flex gap-8" className="items-center">
           <div className="section-title">Project Schedule</div>
-          <select className="form-select" value={filter} onChange={e => setFilter(e.target.value)} style={{ width: "auto" }}>
+          <select className="form-select" value={filter} onChange={e => setFilter(e.target.value)} className="w-auto">
             <option value="all">All Projects</option>
             {app.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
@@ -2478,19 +2478,19 @@ function Schedule({ app }) {
             <div className="card-header"><div className="card-title">AI Labor Forecast</div></div>
             <button className="btn btn-ghost btn-sm" onClick={() => { setShowLabor(false); setLaborResult(null); }}>Close</button>
           </div>
-          {laborLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Analyzing schedule and team data...</div>}
+          {laborLoading && <div className="text-sm text-muted" className="more-empty-cell">Analyzing schedule and team data...</div>}
           {laborResult && (
-            <div style={{ marginTop: 8 }}>
+            <div className="mt-8">
               {/* Summary */}
-              <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12, fontSize: 14 }}>
+              <div className="more-detail-summary">
                 {laborResult.summary}
               </div>
 
               {/* Weekly Forecast Table */}
               {laborResult.weeklyForecast?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-8">4-Week Outlook</div>
-                  <table className="data-table" style={{ fontSize: 13 }}>
+                  <table className="data-table" className="fs-13">
                     <thead><tr><th>Week</th><th>Crews</th><th>Hours</th><th>Projects</th><th>Bottleneck</th></tr></thead>
                     <tbody>
                       {laborResult.weeklyForecast.map((w, i) => (
@@ -2498,7 +2498,7 @@ function Schedule({ app }) {
                           <td className="font-semi">{w.week}</td>
                           <td style={{ fontWeight: 700, color: "var(--amber)" }}>{w.teamsNeeded}</td>
                           <td>{w.hoursEstimate}h</td>
-                          <td style={{ fontSize: 12 }}>{(w.projects || []).join(", ")}</td>
+                          <td className="fs-12">{(w.projects || []).join(", ")}</td>
                           <td style={{ fontSize: 12, color: w.bottleneck ? "var(--red)" : "var(--text3)" }}>{w.bottleneck || "None"}</td>
                         </tr>
                       ))}
@@ -2509,10 +2509,10 @@ function Schedule({ app }) {
 
               {/* Crew Gaps */}
               {laborResult.teamGaps?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-8">Crew Gaps</div>
                   {laborResult.teamGaps.map((g, i) => (
-                    <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, background: "rgba(239,68,68,0.08)", borderLeft: "3px solid var(--red)", fontSize: 13 }}>
+                    <div key={i} className="more-ranking-item more-ranking-item--red">
                       <div className="flex-between">
                         <span className="font-semi">{g.week}</span>
                         <span className="badge-red">-{g.shortfall} {g.trade}</span>
@@ -2525,7 +2525,7 @@ function Schedule({ app }) {
 
               {/* Peak Week */}
               {laborResult.peakWeek && (
-                <div style={{ padding: 10, borderRadius: 6, background: "rgba(245,158,11,0.1)", border: "1px solid var(--amber)", marginBottom: 12, fontSize: 13 }}>
+                <div className="more-info-card--amber">
                   <span className="font-semi">Peak Week: </span>{laborResult.peakWeek.week} — {laborResult.peakWeek.teamsNeeded} teams needed
                   <div className="text-xs text-muted mt-4">{laborResult.peakWeek.reason}</div>
                 </div>
@@ -2533,7 +2533,7 @@ function Schedule({ app }) {
 
               {/* Overtime */}
               {laborResult.overtime && (
-                <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", marginBottom: 12, fontSize: 13 }}>
+                <div className="more-info-card">
                   <span className="font-semi">Overtime Likelihood: </span>{laborResult.overtime.likelihood}
                   {laborResult.overtime.estimatedHours > 0 && <span> — ~{laborResult.overtime.estimatedHours}h estimated</span>}
                 </div>
@@ -2544,7 +2544,7 @@ function Schedule({ app }) {
                 <div>
                   <div className="text-sm font-semi mb-8">Recommendations</div>
                   {laborResult.recommendations.map((r, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                    <div key={i} className="more-list-row">
                       <div className="flex-between">
                         <span>{r.action}</span>
                         <span className={r.priority === "high" ? "badge-red" : r.priority === "medium" ? "badge-amber" : "badge-blue"}>{r.priority}</span>
@@ -2566,13 +2566,13 @@ function Schedule({ app }) {
             <div className="card-header"><div className="card-title">AI Schedule Conflict Scan</div></div>
             <button className="btn btn-ghost btn-sm" onClick={() => { setShowConflict(false); setConflictResult(null); }}>Close</button>
           </div>
-          {conflictLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Scanning schedule for conflicts...</div>}
+          {conflictLoading && <div className="text-sm text-muted" className="more-empty-cell">Scanning schedule for conflicts...</div>}
           {conflictResult && (
-            <div style={{ marginTop: 8 }}>
-              <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12, fontSize: 14 }}>{conflictResult.summary}</div>
+            <div className="mt-8">
+              <div className="more-detail-summary">{conflictResult.summary}</div>
 
               {conflictResult.conflicts?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-8">Conflicts Detected</div>
                   {conflictResult.conflicts.map((c, i) => (
                     <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, borderLeft: `3px solid ${c.severity === "critical" ? "var(--red)" : c.severity === "warning" ? "var(--amber)" : "var(--blue)"}`, background: "var(--card)", fontSize: 13 }}>
@@ -2580,18 +2580,18 @@ function Schedule({ app }) {
                         <span className="font-semi">{c.type} — {(c.projects || []).join(", ")}</span>
                         <span className={c.severity === "critical" ? "badge-red" : c.severity === "warning" ? "badge-amber" : "badge-blue"}>{c.severity}</span>
                       </div>
-                      <div className="text-muted mt-4" style={{ fontSize: 12 }}>{c.detail}</div>
-                      <div className="text-xs mt-2" style={{ color: "var(--blue)" }}>Fix: {c.resolution}</div>
+                      <div className="text-muted mt-4" className="fs-12">{c.detail}</div>
+                      <div className="text-xs mt-2" className="text-blue">Fix: {c.resolution}</div>
                     </div>
                   ))}
                 </div>
               )}
 
               {conflictResult.sequenceIssues?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-8">Sequence Issues</div>
                   {conflictResult.sequenceIssues.map((s, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                    <div key={i} className="more-list-row">
                       <span className="font-semi">{s.project}</span>: {s.issue}
                       <div className="text-xs text-muted mt-2">Correct: {s.correctSequence}</div>
                     </div>
@@ -2600,10 +2600,10 @@ function Schedule({ app }) {
               )}
 
               {conflictResult.criticalPath?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-8">Critical Path</div>
                   {conflictResult.criticalPath.map((c, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                    <div key={i} className="more-list-row">
                       <div className="flex-between">
                         <span className="font-semi">{c.project}</span>
                         <span style={{ color: c.slackDays <= 3 ? "var(--red)" : "var(--amber)", fontWeight: 600 }}>{c.slackDays}d slack</span>
@@ -2618,7 +2618,7 @@ function Schedule({ app }) {
                 <div>
                   <div className="text-sm font-semi mb-8">Optimizations</div>
                   {conflictResult.optimizations.map((o, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                    <div key={i} className="more-list-row">
                       <div className="flex-between">
                         <span>{o.suggestion}</span>
                         <span className={o.priority === "high" ? "badge-red" : o.priority === "medium" ? "badge-amber" : "badge-blue"}>{o.priority}</span>
@@ -2676,7 +2676,7 @@ function Schedule({ app }) {
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label className="form-label" className="flex-center-gap-8">
               <input type="checkbox" checked={form.milestone} onChange={e => setForm({ ...form, milestone: e.target.checked })} />
               Milestone
             </label>
@@ -2689,25 +2689,25 @@ function Schedule({ app }) {
       )}
 
       {/* Gantt Chart */}
-      <div className="gantt-wrap mt-16" style={{ overflowX: "auto" }}>
-        <div className="gantt-header" style={{ display: "flex", borderBottom: "1px solid var(--border)" }}>
-          <div style={{ width: 200, minWidth: 200, padding: "8px 12px", fontWeight: 600 }}>Task</div>
-          <div style={{ flex: 1, display: "flex" }}>
+      <div className="gantt-wrap mt-16" className="overflow-x-auto">
+        <div className="gantt-header" className="more-gantt-header">
+          <div className="more-gantt-task-col">Task</div>
+          <div className="more-gantt-months">
             {months.map(m => (
-              <div key={m} style={{ flex: 1, textAlign: "center", padding: "8px 0", borderLeft: "1px solid var(--border)", fontSize: 12, color: "var(--text2)" }}>{m}</div>
+              <div key={m} className="more-gantt-month">{m}</div>
             ))}
           </div>
         </div>
-        {filtered.length === 0 && <div style={{ padding: 24, textAlign: "center", color: "var(--text3)" }}>No tasks</div>}
+        {filtered.length === 0 && <div className="more-gantt-empty">No tasks</div>}
         {filtered.map(task => {
           const leftPct = (new Date(task.start) - ganttStart) / 86400000 / totalDays * 100;
           const widthPct = (new Date(task.end) - new Date(task.start)) / 86400000 / totalDays * 100;
           return (
-            <div className="gantt-row" key={task.id} style={{ display: "flex", borderBottom: "1px solid var(--border)", minHeight: 36, alignItems: "center" }}>
-              <div className="gantt-label" style={{ width: 200, minWidth: 200, padding: "4px 12px", fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div className="gantt-row" key={task.id} className="more-gantt-row">
+              <div className="gantt-label" className="more-gantt-label">
                 {task.task}
               </div>
-              <div className="gantt-track" style={{ flex: 1, position: "relative", height: 24 }}>
+              <div className="gantt-track" className="more-gantt-track">
                 {task.milestone ? (
                   <div className="gantt-milestone" style={{
                     position: "absolute",
@@ -2746,30 +2746,30 @@ function Schedule({ app }) {
               const pred = task.predecessorId ? app.schedule.find(s => s.id === task.predecessorId) : null;
               if (editTaskId === task.id) {
                 return (
-                  <tr key={task.id} style={{ background: "var(--bg3)" }}>
-                    <td><input className="form-input" value={editTask.task} onChange={e => setEditTask({ ...editTask, task: e.target.value })} style={{ fontSize: 12, padding: "2px 6px" }} /></td>
+                  <tr key={task.id} className="bg-bg3">
+                    <td><input className="form-input" value={editTask.task} onChange={e => setEditTask({ ...editTask, task: e.target.value })} className="more-edit-input" /></td>
                     <td>
-                      <select className="form-select" value={editTask.projectId} onChange={e => setEditTask({ ...editTask, projectId: e.target.value })} style={{ fontSize: 12, padding: "2px 4px" }}>
+                      <select className="form-select" value={editTask.projectId} onChange={e => setEditTask({ ...editTask, projectId: e.target.value })} className="more-edit-select">
                         {app.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                     </td>
-                    <td><input className="form-input" value={editTask.team} onChange={e => setEditTask({ ...editTask, team: e.target.value })} style={{ fontSize: 12, padding: "2px 6px" }} /></td>
-                    <td><input className="form-input" type="date" value={editTask.start} onChange={e => setEditTask({ ...editTask, start: e.target.value })} style={{ fontSize: 12, padding: "2px 4px" }} /></td>
-                    <td><input className="form-input" type="date" value={editTask.end} onChange={e => setEditTask({ ...editTask, end: e.target.value })} style={{ fontSize: 12, padding: "2px 4px" }} /></td>
+                    <td><input className="form-input" value={editTask.team} onChange={e => setEditTask({ ...editTask, team: e.target.value })} className="more-edit-input" /></td>
+                    <td><input className="form-input" type="date" value={editTask.start} onChange={e => setEditTask({ ...editTask, start: e.target.value })} className="more-edit-select" /></td>
+                    <td><input className="form-input" type="date" value={editTask.end} onChange={e => setEditTask({ ...editTask, end: e.target.value })} className="more-edit-select" /></td>
                     <td>
-                      <select className="form-select" value={editTask.predecessorId || ""} onChange={e => setEditTask({ ...editTask, predecessorId: e.target.value ? Number(e.target.value) : null })} style={{ fontSize: 12, padding: "2px 4px" }}>
+                      <select className="form-select" value={editTask.predecessorId || ""} onChange={e => setEditTask({ ...editTask, predecessorId: e.target.value ? Number(e.target.value) : null })} className="more-edit-select">
                         <option value="">None</option>
                         {app.schedule.filter(s => s.id !== task.id).map(s => <option key={s.id} value={s.id}>{s.task}</option>)}
                       </select>
                     </td>
                     <td>
-                      <select className="form-select" value={editTask.status} onChange={e => setEditTask({ ...editTask, status: e.target.value })} style={{ fontSize: 12, padding: "2px 4px" }}>
+                      <select className="form-select" value={editTask.status} onChange={e => setEditTask({ ...editTask, status: e.target.value })} className="more-edit-select">
                         <option value="not-started">Not Started</option><option value="in-progress">In Progress</option><option value="complete">Complete</option>
                       </select>
                     </td>
-                    <td style={{ display: "flex", gap: 4 }}>
-                      <button className="btn btn-primary btn-sm" style={{ fontSize: 10, padding: "2px 6px" }} onClick={() => { app.setSchedule(prev => prev.map(t => t.id === task.id ? { ...t, ...editTask, projectId: Number(editTask.projectId) } : t)); setEditTaskId(null); app.show("Task updated"); }}>Save</button>
-                      <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 6px" }} onClick={() => setEditTaskId(null)}>Cancel</button>
+                    <td className="more-edit-actions">
+                      <button className="btn btn-primary btn-sm" className="btn-table-save" onClick={() => { app.setSchedule(prev => prev.map(t => t.id === task.id ? { ...t, ...editTask, projectId: Number(editTask.projectId) } : t)); setEditTaskId(null); app.show("Task updated"); }}>Save</button>
+                      <button className="btn btn-ghost btn-sm" className="btn-table-save" onClick={() => setEditTaskId(null)}>Cancel</button>
                     </td>
                   </tr>
                 );
@@ -2783,10 +2783,10 @@ function Schedule({ app }) {
                   <td>{task.end}</td>
                   <td style={{ fontSize: 11, color: "var(--text2)" }}>{pred ? pred.task : "—"}</td>
                   <td><span className={task.status === "complete" ? "badge-green" : task.status === "in-progress" ? "badge-amber" : "badge-muted"}>{task.status}</span></td>
-                  <td style={{ display: "flex", gap: 4 }}>
+                  <td className="more-edit-actions">
                     <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 6px" }}
                       onClick={() => { setEditTaskId(task.id); setEditTask({ task: task.task, projectId: task.projectId, team: task.team || "", start: task.start, end: task.end, status: task.status, predecessorId: task.predecessorId || "" }); }}>✎</button>
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 6px", color: "var(--red)" }}
+                    <button className="btn btn-ghost btn-sm" className="btn-table-delete"
                       onClick={() => { if (confirm("Delete this task?")) { app.setSchedule(prev => prev.filter(t => t.id !== task.id)); app.show("Task deleted"); } }}>✕</button>
                   </td>
                 </tr>
@@ -2930,11 +2930,11 @@ function Reports({ app }) {
     <div className="mt-16">
       {/* KPI Summary */}
       <div className="section-title">KPI Summary</div>
-      <div className="flex gap-8 mt-16" style={{ flexWrap: "wrap" }}>
+      <div className="flex gap-8 mt-16" className="flex-wrap">
         <div className="kpi-card"><span className="text2">Total Pipeline</span><strong>{app.fmtK(totalPipeline)}</strong></div>
         <div className="kpi-card"><span className="text2">Avg Bid Size</span><strong>{app.fmtK(avgBidSize)}</strong></div>
         <div className="kpi-card"><span className="text2">Total Bids</span><strong>{bids.length}</strong></div>
-        <div className="kpi-card"><span className="text2">Most Active GC</span><strong style={{ fontSize: 14 }}>{mostActiveGC}</strong></div>
+        <div className="kpi-card"><span className="text2">Most Active GC</span><strong className="fs-14">{mostActiveGC}</strong></div>
         <div className="kpi-card"><span className="text2">Win Rate</span><strong>{winRate !== null ? `${winRate}%` : "—"}</strong></div>
         <div className="kpi-card"><span className="text2">Projects In Progress</span><strong>{inProgress}</strong></div>
       </div>
@@ -2943,29 +2943,29 @@ function Reports({ app }) {
       <div className="card mt-16">
         <div className="card-header flex-between">
           <div className="card-title font-head">AI Business Forecast</div>
-          <button className="btn btn-ghost btn-sm" style={{ color: "var(--amber)" }} onClick={() => { showForecast ? setShowForecast(false) : runForecast(); }} disabled={forecastLoading}>
+          <button className="btn btn-ghost btn-sm" className="text-amber" onClick={() => { showForecast ? setShowForecast(false) : runForecast(); }} disabled={forecastLoading}>
             {forecastLoading ? "Forecasting..." : "AI Forecast"}
           </button>
         </div>
         {!showForecast && !forecastLoading && (
-          <div className="text-sm text-muted" style={{ padding: "8px 0" }}>AI-powered quarterly forecast — revenue projections, market trends, and growth opportunities.</div>
+          <div className="text-sm text-muted" className="py-8">AI-powered quarterly forecast — revenue projections, market trends, and growth opportunities.</div>
         )}
         {showForecast && forecastResult && (
-          <div style={{ maxHeight: 450, overflow: "auto" }}>
+          <div className="max-h-500 overflow-auto">
             <div className="text-sm text-muted mb-12">{forecastResult.summary}</div>
 
             {/* KPI Forecasts */}
             {forecastResult.kpiForecasts && (
               <div className="flex gap-12 mb-16 flex-wrap">
-                <div className="kpi-card" style={{ minWidth: 120 }}>
+                <div className="kpi-card" className="kpi-min-lg">
                   <span className="text2">Win Rate</span>
                   <strong>{forecastResult.kpiForecasts.winRate?.current}% → {forecastResult.kpiForecasts.winRate?.projected}%</strong>
                 </div>
-                <div className="kpi-card" style={{ minWidth: 120 }}>
+                <div className="kpi-card" className="kpi-min-lg">
                   <span className="text2">Avg Margin</span>
                   <strong>{forecastResult.kpiForecasts.avgMargin?.current}% → {forecastResult.kpiForecasts.avgMargin?.projected}%</strong>
                 </div>
-                <div className="kpi-card" style={{ minWidth: 120 }}>
+                <div className="kpi-card" className="kpi-min-lg">
                   <span className="text2">Backlog</span>
                   <strong>{forecastResult.kpiForecasts.backlog?.projected}</strong>
                 </div>
@@ -2974,7 +2974,7 @@ function Reports({ app }) {
 
             {/* Revenue Forecast */}
             {forecastResult.revenueforecast && (
-              <div style={{ padding: 12, borderRadius: 6, background: "var(--bg3)", marginBottom: 12 }}>
+              <div className="more-detail-summary">
                 <div className="text-sm font-semi mb-4">Revenue Forecast</div>
                 <div className="flex gap-16">
                   <div><span className="text-xs text-muted">This Quarter:</span> <span className="font-semi">${(forecastResult.revenueforecast.currentQuarter || 0).toLocaleString()}</span></div>
@@ -2987,16 +2987,16 @@ function Reports({ app }) {
 
             {/* Cash Flow */}
             {forecastResult.cashFlowProjection?.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
+              <div className="mb-12">
                 <div className="text-sm font-semi mb-8">Cash Flow Projection</div>
-                <table className="data-table" style={{ fontSize: 12 }}>
+                <table className="data-table" className="fs-12">
                   <thead><tr><th>Month</th><th>Inflow</th><th>Outflow</th><th>Net</th><th>Risk</th></tr></thead>
                   <tbody>
                     {forecastResult.cashFlowProjection.map((c, i) => (
                       <tr key={i}>
                         <td className="font-semi">{c.month}</td>
-                        <td style={{ color: "var(--green)" }}>${(c.expectedInflow || 0).toLocaleString()}</td>
-                        <td style={{ color: "var(--red)" }}>${(c.expectedOutflow || 0).toLocaleString()}</td>
+                        <td className="text-green">${(c.expectedInflow || 0).toLocaleString()}</td>
+                        <td className="text-red">${(c.expectedOutflow || 0).toLocaleString()}</td>
                         <td className="font-semi">{c.netPosition}</td>
                         <td className="text-muted">{c.risk}</td>
                       </tr>
@@ -3008,10 +3008,10 @@ function Reports({ app }) {
 
             {/* Growth Opportunities */}
             {forecastResult.growthOpportunities?.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
-                <div className="text-sm font-semi mb-8" style={{ color: "var(--green)" }}>Growth Opportunities</div>
+              <div className="mb-12">
+                <div className="text-sm font-semi mb-8" className="text-green">Growth Opportunities</div>
                 {forecastResult.growthOpportunities.map((g, i) => (
-                  <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                  <div key={i} className="more-list-row">
                     <div className="flex-between">
                       <span className="text-sm">{g.opportunity}</span>
                       <span className={`badge ${g.probability === "high" ? "badge-green" : g.probability === "medium" ? "badge-amber" : "badge-muted"}`}>{g.probability}</span>
@@ -3024,10 +3024,10 @@ function Reports({ app }) {
 
             {/* Market Trends */}
             {forecastResult.marketTrends?.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
+              <div className="mb-12">
                 <div className="text-sm font-semi mb-8">Market Trends</div>
                 {forecastResult.marketTrends.map((t, i) => (
-                  <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                  <div key={i} className="more-list-row">
                     <div className="flex-between">
                       <span className="text-sm">{t.trend}</span>
                       <span className={`badge ${t.impact === "positive" ? "badge-green" : t.impact === "negative" ? "badge-red" : "badge-muted"}`}>{t.impact}</span>
@@ -3041,9 +3041,9 @@ function Reports({ app }) {
             {/* Quarterly Goals */}
             {forecastResult.quarterlyGoals?.length > 0 && (
               <div>
-                <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Quarterly Goals</div>
+                <div className="text-sm font-semi mb-8" className="text-amber">Quarterly Goals</div>
                 {forecastResult.quarterlyGoals.map((g, i) => (
-                  <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                  <div key={i} className="more-list-row">
                     <div className="text-sm font-semi">{g.goal}</div>
                     <div className="text-xs text-muted mt-2">{g.metric}: Target {g.target} · Current pace: {g.currentPace}</div>
                   </div>
@@ -3063,27 +3063,27 @@ function Reports({ app }) {
           </button>
         </div>
         {!reportSummary && !reportLoading && (
-          <div className="text-sm text-muted" style={{ padding: "8px 0" }}>AI-powered executive brief of your business performance, GC relationships, and growth opportunities.</div>
+          <div className="text-sm text-muted" className="py-8">AI-powered executive brief of your business performance, GC relationships, and growth opportunities.</div>
         )}
-        {reportLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Analyzing {bids.length} bids and {projects.length} projects...</div>}
+        {reportLoading && <div className="text-sm text-muted" className="more-empty-cell">Analyzing {bids.length} bids and {projects.length} projects...</div>}
         {reportSummary && (
-          <div style={{ marginTop: 8 }}>
+          <div className="mt-8">
             {/* Executive Overview */}
-            <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12, fontSize: 14, lineHeight: 1.6 }}>
+            <div className="more-detail-summary--lg">
               {reportSummary.executive}
             </div>
 
             {/* Strengths + Concerns */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <div className="more-grid-2-gap12">
               {reportSummary.strengths?.length > 0 && (
-                <div style={{ padding: 12, borderRadius: 8, border: "1px solid var(--green)", background: "rgba(16,185,129,0.05)" }}>
-                  <div className="text-sm font-semi mb-8" style={{ color: "var(--green)" }}>Strengths</div>
+                <div className="more-info-card--green">
+                  <div className="text-sm font-semi mb-8" className="text-green">Strengths</div>
                   {reportSummary.strengths.map((s, i) => <div key={i} style={{ fontSize: 13, padding: "3px 0" }}>{s}</div>)}
                 </div>
               )}
               {reportSummary.concerns?.length > 0 && (
-                <div style={{ padding: 12, borderRadius: 8, border: "1px solid var(--red)", background: "rgba(239,68,68,0.05)" }}>
-                  <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Concerns</div>
+                <div className="more-info-card--red">
+                  <div className="text-sm font-semi mb-8" className="text-red">Concerns</div>
                   {reportSummary.concerns.map((c, i) => <div key={i} style={{ fontSize: 13, padding: "3px 0" }}>{c}</div>)}
                 </div>
               )}
@@ -3091,18 +3091,18 @@ function Reports({ app }) {
 
             {/* GC Analysis */}
             {reportSummary.gcAnalysis && (
-              <div style={{ padding: 12, borderRadius: 8, background: "var(--card)", border: "1px solid var(--border)", marginBottom: 12, fontSize: 13 }}>
-                <div className="font-semi mb-4" style={{ color: "var(--blue)" }}>GC Relationship Analysis</div>
+              <div className="more-info-card">
+                <div className="font-semi mb-4" className="text-blue">GC Relationship Analysis</div>
                 {reportSummary.gcAnalysis}
               </div>
             )}
 
             {/* Opportunities */}
             {reportSummary.opportunities?.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
-                <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Growth Opportunities</div>
+              <div className="mb-12">
+                <div className="text-sm font-semi mb-8" className="text-amber">Growth Opportunities</div>
                 {reportSummary.opportunities.map((o, i) => (
-                  <div key={i} style={{ padding: "4px 0", fontSize: 13 }}>{o}</div>
+                  <div key={i} className="more-list-row--plain">{o}</div>
                 ))}
               </div>
             )}
@@ -3120,7 +3120,7 @@ function Reports({ app }) {
               <div>
                 <div className="text-sm font-semi mb-8">Action Items</div>
                 {reportSummary.actionItems.map((a, i) => (
-                  <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                  <div key={i} className="more-list-row">
                     <div className="flex-between">
                       <span>{a.action}</span>
                       <span className={`badge ${a.priority === "high" ? "badge-red" : a.priority === "medium" ? "badge-amber" : "badge-blue"}`}>{a.priority}</span>
@@ -3135,7 +3135,7 @@ function Reports({ app }) {
       </div>
 
       {/* Charts Row */}
-      <div className="flex gap-16 mt-24" style={{ flexWrap: "wrap" }}>
+      <div className="flex gap-16 mt-24" className="flex-wrap">
         {/* Pipeline by Status Pie */}
         <div className="card" style={{ flex: "1 1 280px", minWidth: 280 }}>
           <div className="card-header"><div className="card-title font-head">Pipeline by Status</div></div>
@@ -3206,8 +3206,8 @@ function Reports({ app }) {
           const remaining = proj.contract - billed;
           const pct = proj.contract > 0 ? Math.round((billed / proj.contract) * 100) : 0;
           return (
-            <div key={proj.id} className="bar-row" style={{ marginBottom: 16 }}>
-              <div className="flex-between" style={{ fontSize: 13 }}>
+            <div key={proj.id} className="bar-row" className="mb-16">
+              <div className="flex-between" className="fs-13">
                 <span className="bar-label">{proj.name}</span>
                 <span className="bar-value text2">{app.fmt(billed)} / {app.fmt(proj.contract)} ({app.fmt(remaining)} remaining)</span>
               </div>
@@ -3352,11 +3352,11 @@ function IncidentsTab({ app }) {
               });
             }} />
             {(form.photos || []).length > 0 && (
-              <div className="flex gap-4" style={{ marginTop: 6 }}>
+              <div className="flex gap-4" className="mt-6">
                 {form.photos.map((p, i) => (
-                  <div key={i} style={{ position: "relative" }}>
+                  <div key={i} className="pos-relative">
                     <img src={p.data} alt={p.name} style={{ width: 50, height: 50, objectFit: "cover", borderRadius: 4 }} />
-                    <button style={{ position: "absolute", top: -4, right: -4, background: "var(--red)", color: "#fff", border: "none", borderRadius: "50%", width: 16, height: 16, fontSize: 10, cursor: "pointer", lineHeight: 1 }}
+                    <button className="more-photo-remove"
                       onClick={() => setForm(prev => ({ ...prev, photos: prev.photos.filter((_, j) => j !== i) }))}>✕</button>
                   </div>
                 ))}
@@ -3374,7 +3374,7 @@ function IncidentsTab({ app }) {
         <table className="data-table">
           <thead><tr><th>Date</th><th>Project</th><th>Type</th><th>Description</th><th>Corrective Action</th><th>Reported By</th><th></th></tr></thead>
           <tbody>
-            {app.incidents.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center" }}>No incidents</td></tr>}
+            {app.incidents.length === 0 && <tr><td colSpan={7} className="more-text-center">No incidents</td></tr>}
             {app.incidents.map(inc => (
               <Fragment key={inc.id}>
                 <tr>
@@ -3385,7 +3385,7 @@ function IncidentsTab({ app }) {
                   <td>{inc.corrective}</td>
                   <td>{inc.reportedBy}</td>
                   <td>
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }}
+                    <button className="btn btn-ghost btn-sm" className="btn-table-action"
                       onClick={() => rcaId === inc.id && rcaResult ? setRcaId(null) : runRCA(inc)}
                       disabled={rcaLoading && rcaId === inc.id}>
                       {rcaLoading && rcaId === inc.id ? "..." : rcaId === inc.id && rcaResult ? "Hide" : "RCA"}
@@ -3393,8 +3393,8 @@ function IncidentsTab({ app }) {
                   </td>
                 </tr>
                 {rcaId === inc.id && rcaResult && (
-                  <tr><td colSpan={7} style={{ padding: 0 }}>
-                    <div style={{ padding: 16, background: "var(--bg3)", borderTop: "1px solid var(--border)" }}>
+                  <tr><td colSpan={7} className="more-expand-cell">
+                    <div className="more-detail-panel">
                       {/* Summary + Risk */}
                       <div className="flex-between mb-12">
                         <div className="text-sm">{rcaResult.summary}</div>
@@ -3402,13 +3402,13 @@ function IncidentsTab({ app }) {
                       </div>
 
                       {/* Root Cause */}
-                      <div style={{ padding: 10, borderRadius: 6, background: "rgba(239,68,68,0.08)", border: "1px solid var(--red)", marginBottom: 12, fontSize: 13 }}>
+                      <div className="more-info-card--red">
                         <span className="font-semi">Root Cause: </span>{rcaResult.rootCause}
                       </div>
 
                       {/* Contributing Factors */}
                       {rcaResult.contributingFactors?.length > 0 && (
-                        <div style={{ marginBottom: 12 }}>
+                        <div className="mb-12">
                           <div className="text-sm font-semi mb-4">Contributing Factors</div>
                           {rcaResult.contributingFactors.map((f, i) => (
                             <div key={i} style={{ padding: "4px 10px", marginBottom: 4, borderRadius: 6, background: "var(--card)", fontSize: 13, borderLeft: "3px solid var(--amber)" }}>
@@ -3422,10 +3422,10 @@ function IncidentsTab({ app }) {
 
                       {/* Corrective Actions */}
                       {rcaResult.correctiveActions?.length > 0 && (
-                        <div style={{ marginBottom: 12 }}>
+                        <div className="mb-12">
                           <div className="text-sm font-semi mb-4">Corrective Actions</div>
                           {rcaResult.correctiveActions.map((a, i) => (
-                            <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                            <div key={i} className="more-list-row">
                               <div className="flex-between">
                                 <span>{a.action}</span>
                                 <span className={a.type === "immediate" ? "badge-red" : a.type === "short_term" ? "badge-amber" : "badge-blue"}>{a.type}</span>
@@ -3443,7 +3443,7 @@ function IncidentsTab({ app }) {
                         </div>
                       )}
                       {rcaResult.patternAlert && (
-                        <div style={{ padding: 8, borderRadius: 6, background: "rgba(245,158,11,0.1)", border: "1px solid var(--amber)", fontSize: 12 }}>
+                        <div className="more-info-card--amber">
                           <span className="font-semi">Pattern Alert: </span>{rcaResult.patternAlert}
                         </div>
                       )}
@@ -3523,8 +3523,8 @@ function ToolboxTalksTab({ app }) {
       {showGen && (
         <div className="card mt-16">
           <div className="card-header"><div className="card-title">AI Toolbox Talk Generator</div></div>
-          <div className="flex gap-8" style={{ marginBottom: 12, alignItems: "end" }}>
-            <div style={{ flex: 1 }}>
+          <div className="flex gap-8" className="mb-12 items-end">
+            <div className="flex-1">
               <label className="form-label">Topic</label>
               <input className="form-input" placeholder="e.g. Silica dust exposure, Scaffold safety, Heat illness prevention..." value={genTopic} onChange={e => setGenTopic(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter") runGenerate(); }} />
@@ -3535,20 +3535,20 @@ function ToolboxTalksTab({ app }) {
           </div>
           <div className="flex gap-4 flex-wrap mb-12">
             {["Silica Dust Control", "Fall Protection", "Scaffold Safety", "Heat Illness", "Power Tool Safety", "Material Handling", "PPE Compliance", "Knife Safety"].map(t => (
-              <button key={t} className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => { setGenTopic(t); }}>{t}</button>
+              <button key={t} className="btn btn-ghost btn-sm" className="btn-table-action" onClick={() => { setGenTopic(t); }}>{t}</button>
             ))}
           </div>
 
-          {genLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Generating talk on "{genTopic}"...</div>}
+          {genLoading && <div className="text-sm text-muted" className="more-empty-cell">Generating talk on "{genTopic}"...</div>}
 
           {genResult && (
-            <div style={{ marginTop: 8 }}>
+            <div className="mt-8">
               <div className="flex-between mb-8">
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 700 }}>{genResult.title}</div>
+                  <div className="more-metric-value--md">{genResult.title}</div>
                   <div className="text-xs text-muted">{genResult.duration} • {genResult.complianceRef || "General safety"}</div>
                 </div>
-                <button className="btn btn-ghost btn-sm" style={{ fontSize: 11 }} onClick={() => {
+                <button className="btn btn-ghost btn-sm" className="btn-table-action" onClick={() => {
                   let text = `TOOLBOX TALK: ${genResult.title}\n`;
                   text += `Duration: ${genResult.duration}\n`;
                   if (genResult.complianceRef) text += `OSHA Ref: ${genResult.complianceRef}\n`;
@@ -3562,31 +3562,31 @@ function ToolboxTalksTab({ app }) {
               </div>
 
               {/* Summary */}
-              <div style={{ padding: 10, borderRadius: 6, background: "var(--bg3)", marginBottom: 12, fontSize: 13 }}>{genResult.summary}</div>
+              <div className="more-info-card">{genResult.summary}</div>
 
               {/* Objectives */}
               {genResult.objectives?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-4">Learning Objectives</div>
                   {genResult.objectives.map((o, i) => (
-                    <div key={i} style={{ padding: "3px 0", fontSize: 13 }}>{i + 1}. {o}</div>
+                    <div key={i} className="more-list-row--italic">{i + 1}. {o}</div>
                   ))}
                 </div>
               )}
 
               {/* Content Sections */}
               {genResult.content?.map((section, i) => (
-                <div key={i} style={{ marginBottom: 12, padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)" }}>
+                <div key={i} className="more-talk-section">
                   <div className="font-semi" style={{ marginBottom: 6, color: "var(--amber)" }}>{section.heading}</div>
                   {section.points.map((p, j) => (
-                    <div key={j} style={{ padding: "2px 0 2px 12px", fontSize: 13 }}>• {p}</div>
+                    <div key={j} className="more-talk-point">• {p}</div>
                   ))}
                 </div>
               ))}
 
               {/* Discussion Questions */}
               {genResult.discussion?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-4">Discussion Questions</div>
                   {genResult.discussion.map((q, i) => (
                     <div key={i} style={{ padding: "3px 0", fontSize: 13, fontStyle: "italic" }}>{i + 1}. {q}</div>
@@ -3596,10 +3596,10 @@ function ToolboxTalksTab({ app }) {
 
               {/* Key Takeaways */}
               {genResult.keyTakeaways?.length > 0 && (
-                <div style={{ padding: 10, borderRadius: 6, background: "rgba(16,185,129,0.08)", border: "1px solid var(--green)" }}>
-                  <div className="font-semi mb-4" style={{ color: "var(--green)" }}>Key Takeaways</div>
+                <div className="more-info-card--green">
+                  <div className="font-semi mb-4" className="text-green">Key Takeaways</div>
                   {genResult.keyTakeaways.map((k, i) => (
-                    <div key={i} style={{ padding: "2px 0", fontSize: 13 }}>✓ {k}</div>
+                    <div key={i} className="more-talk-point">✓ {k}</div>
                   ))}
                 </div>
               )}
@@ -3667,24 +3667,24 @@ function ToolboxTalksTab({ app }) {
         <table className="data-table">
           <thead><tr><th>Date</th><th>Project</th><th>Topic</th><th>Attendees</th><th>Conductor</th><th></th></tr></thead>
           <tbody>
-            {app.toolboxTalks.length === 0 && <tr><td colSpan={6} style={{ textAlign: "center" }}>No toolbox talks</td></tr>}
+            {app.toolboxTalks.length === 0 && <tr><td colSpan={6} className="more-text-center">No toolbox talks</td></tr>}
             {app.toolboxTalks.map(talk => (
               <tr key={talk.id}>
                 {editId === talk.id ? (
                   <>
-                    <td><input className="form-input" type="date" defaultValue={talk.date} style={{ fontSize: 12, padding: "2px 4px", width: 120 }} onChange={e => talk._date = e.target.value} /></td>
-                    <td><select className="form-select" defaultValue={talk.projectId} style={{ fontSize: 12, padding: "2px 4px" }} onChange={e => talk._projectId = Number(e.target.value)}>
+                    <td><input className="form-input" type="date" defaultValue={talk.date} className="more-edit-select" onChange={e => talk._date = e.target.value} /></td>
+                    <td><select className="form-select" defaultValue={talk.projectId} className="more-edit-select" onChange={e => talk._projectId = Number(e.target.value)}>
                       <option value="">Select...</option>{app.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select></td>
-                    <td><input className="form-input" defaultValue={talk.topic} style={{ fontSize: 12, padding: "2px 4px" }} onChange={e => talk._topic = e.target.value} /></td>
-                    <td><input className="form-input" type="number" defaultValue={talk.attendees} style={{ fontSize: 12, padding: "2px 4px", width: 60 }} onChange={e => talk._attendees = Number(e.target.value)} /></td>
-                    <td><input className="form-input" defaultValue={talk.conductor} style={{ fontSize: 12, padding: "2px 4px" }} onChange={e => talk._conductor = e.target.value} /></td>
+                    <td><input className="form-input" defaultValue={talk.topic} className="more-edit-select" onChange={e => talk._topic = e.target.value} /></td>
+                    <td><input className="form-input" type="number" defaultValue={talk.attendees} className="more-edit-select" onChange={e => talk._attendees = Number(e.target.value)} /></td>
+                    <td><input className="form-input" defaultValue={talk.conductor} className="more-edit-select" onChange={e => talk._conductor = e.target.value} /></td>
                     <td><div className="flex gap-4">
-                      <button className="btn btn-primary btn-sm" style={{ fontSize: 10, padding: "2px 6px" }} onClick={() => {
+                      <button className="btn btn-primary btn-sm" className="btn-table-save" onClick={() => {
                         app.setToolboxTalks(prev => prev.map(t => t.id === talk.id ? { ...t, date: talk._date ?? t.date, projectId: talk._projectId ?? t.projectId, topic: talk._topic ?? t.topic, attendees: talk._attendees ?? t.attendees, conductor: talk._conductor ?? t.conductor } : t));
                         setEditId(null); app.show("Talk updated");
                       }}>Save</button>
-                      <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 6px" }} onClick={() => setEditId(null)}>Cancel</button>
+                      <button className="btn btn-ghost btn-sm" className="btn-table-save" onClick={() => setEditId(null)}>Cancel</button>
                     </div></td>
                   </>
                 ) : (
@@ -3695,7 +3695,7 @@ function ToolboxTalksTab({ app }) {
                     <td>{talk.attendees}</td>
                     <td>{talk.conductor}</td>
                     <td><div className="flex gap-4">
-                      <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 6px" }} onClick={() => setEditId(talk.id)}>Edit</button>
+                      <button className="btn btn-ghost btn-sm" className="btn-table-save" onClick={() => setEditId(talk.id)}>Edit</button>
                       <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 6px", color: "var(--red)" }} onClick={() => { if (confirm("Delete this talk?")) { app.setToolboxTalks(prev => prev.filter(t => t.id !== talk.id)); app.show("Talk deleted"); } }}>✕</button>
                     </div></td>
                   </>
@@ -3796,62 +3796,62 @@ function DailyReportsTab({ app }) {
 
       {/* AI Digest Results */}
       {digestResult && (
-        <div className="card mt-16" style={{ padding: 16 }}>
+        <div className="card mt-16" className="p-16">
           <div className="flex-between mb-12">
             <div className="text-sm font-semi">Field Operations Digest</div>
-            <button className="btn btn-ghost btn-sm" onClick={() => setDigestResult(null)} style={{ fontSize: 11 }}>Close</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setDigestResult(null)} className="btn-table-action">Close</button>
           </div>
 
-          <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12, fontSize: 14, lineHeight: 1.6 }}>
+          <div className="more-detail-summary--lg">
             {digestResult.summary}
           </div>
 
           {/* By Project */}
           {digestResult.byProject?.map((p, i) => (
-            <div key={i} style={{ padding: 12, marginBottom: 8, borderRadius: 8, background: "var(--card)", border: "1px solid var(--border)" }}>
+            <div key={i} className="more-info-card">
               <div className="flex-between mb-4">
                 <span className="font-semi text-sm">{p.project}</span>
                 <span className="text-xs text-muted">{p.status}</span>
               </div>
-              {p.highlights?.map((h, j) => <div key={j} style={{ fontSize: 12, color: "var(--green)", padding: "2px 0" }}>{h}</div>)}
-              {p.concerns?.map((c, j) => <div key={j} style={{ fontSize: 12, color: "var(--red)", padding: "2px 0" }}>{c}</div>)}
+              {p.highlights?.map((h, j) => <div key={j} className="fs-12 text-green">{h}</div>)}
+              {p.concerns?.map((c, j) => <div key={j} className="fs-12 text-red">{c}</div>)}
             </div>
           ))}
 
           {/* Notes Row */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
+          <div className="more-dr-detail-grid">
             {digestResult.laborNotes && (
               <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", fontSize: 13 }}>
-                <div className="font-semi mb-4" style={{ fontSize: 12 }}>Labor</div>
+                <div className="font-semi mb-4" className="fs-12">Labor</div>
                 {digestResult.laborNotes}
               </div>
             )}
             {digestResult.materialNotes && (
               <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", fontSize: 13 }}>
-                <div className="font-semi mb-4" style={{ fontSize: 12 }}>Materials</div>
+                <div className="font-semi mb-4" className="fs-12">Materials</div>
                 {digestResult.materialNotes}
               </div>
             )}
           </div>
 
           {digestResult.weatherImpact && (
-            <div style={{ padding: 8, marginTop: 8, borderRadius: 6, background: "rgba(59,130,246,0.08)", border: "1px solid var(--blue)", fontSize: 13 }}>
+            <div className="more-info-card--blue mt-8">
               <span className="font-semi">Weather: </span>{digestResult.weatherImpact}
             </div>
           )}
 
           {digestResult.safetyNotes?.length > 0 && (
-            <div style={{ marginTop: 8 }}>
+            <div className="mt-8">
               <div className="font-semi mb-4" style={{ fontSize: 12, color: "var(--red)" }}>Safety</div>
-              {digestResult.safetyNotes.map((s, i) => <div key={i} style={{ fontSize: 12, padding: "2px 0" }}>{s}</div>)}
+              {digestResult.safetyNotes.map((s, i) => <div key={i} className="fs-12">{s}</div>)}
             </div>
           )}
 
           {digestResult.actionItems?.length > 0 && (
-            <div style={{ marginTop: 12 }}>
+            <div className="mt-12">
               <div className="text-sm font-semi mb-8">Action Items</div>
               {digestResult.actionItems.map((a, i) => (
-                <div key={i} style={{ padding: "4px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                <div key={i} className="more-list-row">
                   <div className="flex-between">
                     <span>{a.item}</span>
                     <span className={`badge ${a.priority === "high" ? "badge-red" : a.priority === "medium" ? "badge-amber" : "badge-blue"}`}>{a.priority}</span>
@@ -3914,11 +3914,11 @@ function DailyReportsTab({ app }) {
               });
             }} />
             {form.photos?.length > 0 && (
-              <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+              <div className="more-photo-grid">
                 {form.photos.map((p, i) => (
-                  <div key={i} style={{ position: "relative" }}>
+                  <div key={i} className="pos-relative">
                     <img src={p.data} alt={p.name} style={{ height: 60, borderRadius: 4, objectFit: "cover" }} />
-                    <button style={{ position: "absolute", top: -4, right: -4, background: "var(--red)", color: "#fff", border: "none", borderRadius: "50%", width: 16, height: 16, fontSize: 10, cursor: "pointer", lineHeight: 1 }}
+                    <button className="more-photo-remove"
                       onClick={() => setForm(prev => ({ ...prev, photos: prev.photos.filter((_, j) => j !== i) }))}>✕</button>
                   </div>
                 ))}
@@ -3932,12 +3932,12 @@ function DailyReportsTab({ app }) {
         </div>
       )}
 
-      {drFiltered.length === 0 && <div className="card mt-16" style={{ textAlign: "center" }}>{app.search ? "No matching reports" : "No daily reports"}</div>}
+      {drFiltered.length === 0 && <div className="card mt-16" className="more-text-center">{app.search ? "No matching reports" : "No daily reports"}</div>}
       {drFiltered.map(rpt => (
         <div className="card mt-16" key={rpt.id}>
           {editDr?.id === rpt.id ? (
             <>
-              <div className="form-grid" style={{ marginBottom: 12 }}>
+              <div className="form-grid" className="mb-12">
                 <div className="form-group"><label className="form-label">Date</label><input className="form-input" type="date" value={editDr.date} onChange={e => setEditDr(d => ({ ...d, date: e.target.value }))} /></div>
                 <div className="form-group"><label className="form-label">Project</label><select className="form-select" value={editDr.projectId} onChange={e => setEditDr(d => ({ ...d, projectId: Number(e.target.value) }))}><option value="">Select...</option>{app.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
                 <div className="form-group"><label className="form-label">Crew Size</label><input className="form-input" type="number" value={editDr.teamSize} onChange={e => setEditDr(d => ({ ...d, teamSize: Number(e.target.value) }))} /></div>
@@ -3959,19 +3959,19 @@ function DailyReportsTab({ app }) {
                 <div className="flex gap-8">
                   <span className="text2">{rpt.weather}</span>
                   <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 6px" }} onClick={() => setEditDr({ ...rpt })}>Edit</button>
-                  <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 6px", color: "var(--red)" }}
+                  <button className="btn btn-ghost btn-sm" className="btn-table-delete"
                     onClick={() => { if (confirm("Delete this daily report?")) { app.setDailyReports(prev => prev.filter(r => r.id !== rpt.id)); app.show("Report deleted"); } }}>✕</button>
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+              <div className="more-dr-detail-grid">
                 <div><span className="text2">Crew Size:</span> {rpt.teamSize}</div>
                 <div><span className="text2">Hours:</span> {rpt.hours}</div>
               </div>
-              <div style={{ marginTop: 8 }}><span className="text2">Work:</span> {rpt.work}</div>
-              <div style={{ marginTop: 4 }}><span className="text2">Issues:</span> {rpt.issues || "None"}</div>
-              <div style={{ marginTop: 4 }}><span className="text2">Safety:</span> {rpt.safety}</div>
+              <div className="mt-8"><span className="text2">Work:</span> {rpt.work}</div>
+              <div className="mt-4"><span className="text2">Issues:</span> {rpt.issues || "None"}</div>
+              <div className="mt-4"><span className="text2">Safety:</span> {rpt.safety}</div>
               {rpt.photos?.length > 0 && (
-                <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                <div className="more-photo-grid">
                   {rpt.photos.map((p, i) => (
                     <img key={i} src={p.data} alt={p.name || "photo"} style={{ height: 80, borderRadius: 4, objectFit: "cover", cursor: "pointer", border: "1px solid var(--border)" }}
                       onClick={() => window.open(p.data, "_blank")} title="Click to view full size" />
@@ -4025,7 +4025,7 @@ function OshaChecklistTab({ app }) {
     <div className="mt-16">
       <div className="flex-between">
         <div className="section-title">OSHA Compliance Checklist</div>
-        <div className="flex gap-8" style={{ alignItems: "center" }}>
+        <div className="flex gap-8" className="items-center">
           <button className="btn btn-ghost btn-sm" onClick={runAudit} disabled={auditLoading}>
             {auditLoading ? "Analyzing..." : "AI Audit Readiness"}
           </button>
@@ -4040,11 +4040,11 @@ function OshaChecklistTab({ app }) {
             <div className="card-header"><div className="card-title">AI OSHA Audit Readiness Report</div></div>
             <button className="btn btn-ghost btn-sm" onClick={() => { setShowAudit(false); setAuditResult(null); }}>Close</button>
           </div>
-          {auditLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Analyzing compliance checklist and incident history...</div>}
+          {auditLoading && <div className="text-sm text-muted" className="more-empty-cell">Analyzing compliance checklist and incident history...</div>}
           {auditResult && (
-            <div style={{ marginTop: 8 }}>
+            <div className="mt-8">
               {/* Score + Grade */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+              <div className="more-grid-2">
                 <div style={{ padding: 12, borderRadius: 6, background: "var(--card)", textAlign: "center" }}>
                   <div className="text-xs text-muted">Readiness Score</div>
                   <div style={{ fontSize: 28, fontWeight: 700, color: auditResult.readinessScore >= 80 ? "var(--green)" : auditResult.readinessScore >= 60 ? "var(--amber)" : "var(--red)" }}>{auditResult.readinessScore}/100</div>
@@ -4055,20 +4055,20 @@ function OshaChecklistTab({ app }) {
                 </div>
               </div>
 
-              <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12, fontSize: 14 }}>{auditResult.summary}</div>
+              <div className="more-detail-summary">{auditResult.summary}</div>
 
               {/* Critical Gaps */}
               {auditResult.criticalGaps?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-8">Critical Gaps</div>
                   {auditResult.criticalGaps.map((g, i) => (
-                    <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, borderLeft: "3px solid var(--red)", background: "rgba(239,68,68,0.06)", fontSize: 13 }}>
+                    <div key={i} className="more-ranking-item more-ranking-item--red">
                       <div className="flex-between">
                         <span className="font-semi">{g.item}</span>
                         <span className="badge-red">{g.risk}</span>
                       </div>
                       <div className="text-xs text-muted mt-2">OSHA: {g.oshaRef}</div>
-                      <div className="text-xs mt-2" style={{ color: "var(--blue)" }}>Fix: {g.remediation} (by {g.deadline})</div>
+                      <div className="text-xs mt-2" className="text-blue">Fix: {g.remediation} (by {g.deadline})</div>
                     </div>
                   ))}
                 </div>
@@ -4076,10 +4076,10 @@ function OshaChecklistTab({ app }) {
 
               {/* Priority Actions */}
               {auditResult.priorityActions?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div className="mb-12">
                   <div className="text-sm font-semi mb-8">Priority Actions</div>
                   {auditResult.priorityActions.map((a, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                    <div key={i} className="more-list-row">
                       <div className="flex-between">
                         <span>{a.action}</span>
                         <span className={a.priority === "immediate" ? "badge-red" : a.priority === "this_week" ? "badge-amber" : "badge-blue"}>{a.priority}</span>
@@ -4093,8 +4093,8 @@ function OshaChecklistTab({ app }) {
               {/* Strengths */}
               {auditResult.strengths?.length > 0 && (
                 <div style={{ padding: 10, borderRadius: 6, background: "rgba(16,185,129,0.08)", border: "1px solid var(--green)", marginBottom: 12 }}>
-                  <div className="font-semi mb-4" style={{ color: "var(--green)" }}>Strengths</div>
-                  {auditResult.strengths.map((s, i) => <div key={i} style={{ padding: "2px 0", fontSize: 13 }}>✓ {s}</div>)}
+                  <div className="font-semi mb-4" className="text-green">Strengths</div>
+                  {auditResult.strengths.map((s, i) => <div key={i} className="more-talk-point">✓ {s}</div>)}
                 </div>
               )}
 
@@ -4103,7 +4103,7 @@ function OshaChecklistTab({ app }) {
                 <div>
                   <div className="text-sm font-semi mb-8">Training Gaps</div>
                   {auditResult.trainingGaps.map((t, i) => (
-                    <div key={i} style={{ padding: "4px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                    <div key={i} className="more-list-row">
                       <span className="font-semi">{t.topic}</span> <span className="text-xs text-muted">({t.frequency}) — OSHA {t.oshaRef}</span>
                     </div>
                   ))}
@@ -4115,7 +4115,7 @@ function OshaChecklistTab({ app }) {
       )}
       <div className="mt-16">
         {checks.map(item => (
-          <div className="scope-item" key={item.id} onClick={() => toggle(item.id)} style={{ cursor: "pointer" }}>
+          <div className="scope-item" key={item.id} onClick={() => toggle(item.id)} className="more-cursor-pointer">
             <div className="scope-check">
               <input type="checkbox" checked={item.status === "checked"} readOnly />
             </div>
@@ -4222,9 +4222,9 @@ function CertificationsTab({ app }) {
       {/* KPIs */}
       <div className="flex gap-8 mt-16">
         <div className="kpi-card"><span className="text2">Total Certs</span><strong>{certs.length}</strong></div>
-        <div className="kpi-card"><span className="text2">Valid</span><strong style={{ color: "var(--green)" }}>{totalValid}</strong></div>
-        <div className="kpi-card"><span className="text2">Expiring (&lt;30d)</span><strong style={{ color: "var(--amber)" }}>{totalExpiring}</strong></div>
-        <div className="kpi-card"><span className="text2">Expired</span><strong style={{ color: "var(--red)" }}>{totalExpired}</strong></div>
+        <div className="kpi-card"><span className="text2">Valid</span><strong className="text-green">{totalValid}</strong></div>
+        <div className="kpi-card"><span className="text2">Expiring (&lt;30d)</span><strong className="text-amber">{totalExpiring}</strong></div>
+        <div className="kpi-card"><span className="text2">Expired</span><strong className="text-red">{totalExpired}</strong></div>
       </div>
 
       {/* Add/Edit Form */}
@@ -4270,24 +4270,24 @@ function CertificationsTab({ app }) {
       <div className="card mt-16">
         <div className="card-header"><div className="card-title">Compliance Matrix</div></div>
         <div className="table-wrap">
-          <table className="data-table" style={{ fontSize: 11 }}>
+          <table className="data-table" className="btn-table-action">
             <thead>
               <tr>
-                <th style={{ position: "sticky", left: 0, background: "var(--bg2)", zIndex: 1 }}>Employee</th>
-                {CERT_TYPES.slice(0, 8).map(ct => <th key={ct} style={{ textAlign: "center", whiteSpace: "nowrap", fontSize: 10 }}>{ct}</th>)}
+                <th className="td-sticky">Employee</th>
+                {CERT_TYPES.slice(0, 8).map(ct => <th key={ct} className="more-text-center ws-nowrap fs-10">{ct}</th>)}
               </tr>
             </thead>
             <tbody>
               {matrixEmps.map(emp => (
                 <tr key={emp.id}>
-                  <td style={{ fontWeight: 500, position: "sticky", left: 0, background: "var(--bg2)", zIndex: 1 }}>{emp.name}</td>
+                  <td className="td-sticky fw-500">{emp.name}</td>
                   {CERT_TYPES.slice(0, 8).map(ct => {
                     const cert = enriched.find(c => c.employeeId === emp.id && c.name === ct);
-                    if (!cert) return <td key={ct} style={{ textAlign: "center", color: "var(--text3)" }}>—</td>;
+                    if (!cert) return <td key={ct} className="more-text-center text-muted">—</td>;
                     const s = cert.computedStatus;
                     return (
-                      <td key={ct} style={{ textAlign: "center" }}>
-                        <span className={`badge ${statusBadge(s)}`} style={{ fontSize: 9, cursor: "pointer" }} onClick={() => startEdit(cert)} title={`${cert.expiryDate || "No expiry"} — click to edit`}>
+                      <td key={ct} className="more-text-center">
+                        <span className={`badge ${statusBadge(s)}`} className="fs-9 more-cursor-pointer" onClick={() => startEdit(cert)} title={`${cert.expiryDate || "No expiry"} — click to edit`}>
                           {statusIcon(s)}
                         </span>
                       </td>
@@ -4302,13 +4302,13 @@ function CertificationsTab({ app }) {
 
       {/* Filters */}
       <div className="flex gap-8 mt-16">
-        <select className="form-select" style={{ maxWidth: 180 }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+        <select className="form-select" className="min-w-150" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
           <option value="all">All Status</option>
           <option value="valid">Valid</option>
           <option value="expiring">Expiring Soon</option>
           <option value="expired">Expired</option>
         </select>
-        <select className="form-select" style={{ maxWidth: 200 }} value={empFilter} onChange={e => setEmpFilter(e.target.value)}>
+        <select className="form-select" className="min-w-150" value={empFilter} onChange={e => setEmpFilter(e.target.value)}>
           <option value="all">All Employees</option>
           {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
@@ -4317,8 +4317,8 @@ function CertificationsTab({ app }) {
       {/* Cert List */}
       <div className="mt-16">
         {filtered.length === 0 ? (
-          <div className="card" style={{ textAlign: "center", padding: 40 }}>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><ClipboardList style={{ width: 40, height: 40, opacity: 0.4 }} /></div>
+          <div className="card" className="more-empty-card">
+            <div className="more-empty-icon"><ClipboardList className="more-empty-icon" /></div>
             <div className="text-sm text-muted mt-8">No certifications match your filters.</div>
           </div>
         ) : (
@@ -4330,15 +4330,15 @@ function CertificationsTab({ app }) {
                 return (order[a.computedStatus] ?? 2) - (order[b.computedStatus] ?? 2);
               }).map(c => (
                 <tr key={c.id}>
-                  <td style={{ fontWeight: 500 }}>{c.empName}</td>
+                  <td className="fw-500">{c.empName}</td>
                   <td>{c.name}</td>
                   <td className="font-mono text-sm">{c.issueDate || "—"}</td>
                   <td className="font-mono text-sm">{c.expiryDate || "No expiry"}</td>
-                  <td><span className={`badge ${statusBadge(c.computedStatus)}`} style={{ fontSize: 10 }}>{c.computedStatus}</span></td>
+                  <td><span className={`badge ${statusBadge(c.computedStatus)}`} className="fs-10">{c.computedStatus}</span></td>
                   <td>
                     <div className="flex gap-4">
-                      <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 8px", color: "var(--amber)" }} onClick={() => startEdit(c)}>Edit</button>
-                      <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 8px", color: "var(--red)" }} onClick={() => deleteCert(c)}>Remove</button>
+                      <button className="btn btn-ghost" className="btn-table-edit--amber" onClick={() => startEdit(c)}>Edit</button>
+                      <button className="btn btn-ghost" className="btn-table-edit--red" onClick={() => deleteCert(c)}>Remove</button>
                     </div>
                   </td>
                 </tr>
@@ -4480,11 +4480,11 @@ function SDSBinder({ app }) {
 
       <div className="form-group mt-16">
         <label className="form-label">GHS Pictograms</label>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <div className="flex gap-6 flex-wrap">
           {GHS_PICTOGRAMS.map(p => (
             <button key={p.id} type="button"
               className={`btn btn-sm ${form.ghsPictograms.includes(p.id) ? "btn-primary" : "btn-ghost"}`}
-              style={{ fontSize: 12 }} onClick={() => togglePictogram(p.id)}>
+              className="fs-12" onClick={() => togglePictogram(p.id)}>
               {p.icon} {p.label}
             </button>
           ))}
@@ -4493,11 +4493,11 @@ function SDSBinder({ app }) {
 
       <div className="form-group mt-16">
         <label className="form-label">Assign to Projects</label>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <div className="flex gap-6 flex-wrap">
           {app.projects.map(p => (
             <button key={p.id} type="button"
               className={`btn btn-sm ${form.projectIds.includes(p.id) ? "btn-primary" : "btn-ghost"}`}
-              style={{ fontSize: 11 }} onClick={() => toggleProject(p.id)}>
+              className="btn-table-action" onClick={() => toggleProject(p.id)}>
               {p.name || p.project}
             </button>
           ))}
@@ -4515,7 +4515,7 @@ function SDSBinder({ app }) {
         <textarea className="form-textarea" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="PPE requirements, storage instructions, etc." />
       </div>
 
-      <div className="mt-16" style={{ display: "flex", gap: 8 }}>
+      <div className="mt-16" className="flex gap-8">
         <button className="btn btn-primary btn-sm" onClick={save}>{editId ? "Update" : "Add SDS"}</button>
         <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setEditId(null); setFileData(null); }}>Cancel</button>
       </div>
@@ -4528,40 +4528,40 @@ function SDSBinder({ app }) {
     const isExpiringSoon = sheet.expiresAt && !isExpired && (new Date(sheet.expiresAt) - new Date()) < 30 * 86400000;
 
     return (
-      <div key={sheet.id} className="card" style={{ marginBottom: 8 }}>
+      <div key={sheet.id} className="card" className="mb-8">
         <div className="flex-between">
           <div>
-            <div style={{ fontWeight: 600, fontSize: 14 }}>{sheet.productName}</div>
+            <div className="font-semi fs-14">{sheet.productName}</div>
             <div className="text-xs text-muted">{sheet.manufacturer}</div>
           </div>
-          <div className="flex gap-4" style={{ alignItems: "center" }}>
-            {sheet.hazardClass && <span className="badge badge-amber" style={{ fontSize: 10 }}>{sheet.hazardClass}</span>}
-            {isExpired && <span className="badge badge-red" style={{ fontSize: 10 }}>EXPIRED</span>}
-            {isExpiringSoon && <span className="badge badge-amber" style={{ fontSize: 10 }}>Expiring Soon</span>}
+          <div className="flex gap-4" className="items-center">
+            {sheet.hazardClass && <span className="badge badge-amber" className="fs-10">{sheet.hazardClass}</span>}
+            {isExpired && <span className="badge badge-red" className="fs-10">EXPIRED</span>}
+            {isExpiringSoon && <span className="badge badge-amber" className="fs-10">Expiring Soon</span>}
           </div>
         </div>
-        {pictoIcons && <div style={{ fontSize: 18, marginTop: 6 }}>{pictoIcons}</div>}
+        {pictoIcons && <div className="fs-18 mt-6">{pictoIcons}</div>}
         {(sheet.projectIds || []).length > 0 && (
-          <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 4 }}>
-            {sheet.projectIds.map(pid => <span key={pid} className="badge badge-blue" style={{ fontSize: 9 }}>{pName(pid)}</span>)}
+          <div className="flex gap-4 flex-wrap mt-6">
+            {sheet.projectIds.map(pid => <span key={pid} className="badge badge-blue" className="fs-9">{pName(pid)}</span>)}
           </div>
         )}
-        {sheet.notes && <div className="text-xs text-muted" style={{ marginTop: 6 }}>{sheet.notes}</div>}
-        <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        {sheet.notes && <div className="text-xs text-muted" className="mt-6">{sheet.notes}</div>}
+        <div className="flex-between mt-8">
           <div className="text-xs text-muted">
             Uploaded by {sheet.uploadedBy} on {new Date(sheet.uploadedAt).toLocaleDateString()}
             {sheet.expiresAt && ` | Expires: ${sheet.expiresAt}`}
           </div>
           <div className="flex gap-4">
             {sheet.file && (
-              <button className="btn btn-ghost btn-sm" style={{ fontSize: 10 }} onClick={() => {
+              <button className="btn btn-ghost btn-sm" className="fs-10" onClick={() => {
                 const a = document.createElement("a"); a.href = sheet.file.dataUrl; a.download = sheet.file.name; a.click();
               }}>View PDF</button>
             )}
             {canEdit && (
               <>
-                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, color: "var(--amber)" }} onClick={() => startEdit(sheet)}>Edit</button>
-                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, color: "var(--red)" }} onClick={() => deleteSheet(sheet)}>Remove</button>
+                <button className="btn btn-ghost btn-sm" className="btn-table-edit--amber" onClick={() => startEdit(sheet)}>Edit</button>
+                <button className="btn btn-ghost btn-sm" className="btn-table-edit--red" onClick={() => deleteSheet(sheet)}>Remove</button>
               </>
             )}
           </div>
@@ -4592,13 +4592,13 @@ function SDSBinder({ app }) {
         <div className="mt-16">
           <div className="flex gap-8 mb-16">
             <div className="kpi-card"><span className="text2">Total Sheets</span><strong>{sheets.length}</strong></div>
-            <div className="kpi-card"><span className="text2">Expired</span><strong style={{ color: "var(--red)" }}>{sheets.filter(s => s.expiresAt && new Date(s.expiresAt) < new Date()).length}</strong></div>
+            <div className="kpi-card"><span className="text2">Expired</span><strong className="text-red">{sheets.filter(s => s.expiresAt && new Date(s.expiresAt) < new Date()).length}</strong></div>
             <div className="kpi-card"><span className="text2">Projects Covered</span><strong>{new Set(sheets.flatMap(s => s.projectIds || [])).size}</strong></div>
           </div>
           <input className="form-input mb-16" placeholder="Search by product, manufacturer, or hazard class..." value={search} onChange={e => setSearch(e.target.value)} />
           {filtered.length === 0 ? (
-            <div className="card" style={{ textAlign: "center", padding: 40 }}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><ClipboardList style={{ width: 40, height: 40, opacity: 0.4 }} /></div>
+            <div className="card" className="more-empty-card">
+              <div className="more-empty-icon"><ClipboardList className="more-empty-icon" /></div>
               <div className="text-sm text-muted mt-8">No SDS sheets yet. Click "+ Add SDS" to upload your first safety data sheet.</div>
             </div>
           ) : filtered.map(renderSheetCard)}
@@ -4608,8 +4608,8 @@ function SDSBinder({ app }) {
       {sub === "By Project" && (
         <div className="mt-16">
           {projectsWithSDS.length === 0 && unassigned.length === sheets.length ? (
-            <div className="card" style={{ textAlign: "center", padding: 40 }}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Folder style={{ width: 40, height: 40, opacity: 0.4 }} /></div>
+            <div className="card" className="more-empty-card">
+              <div className="more-empty-icon"><Folder className="more-empty-icon" /></div>
               <div className="text-sm text-muted mt-8">No SDS sheets assigned to projects yet. Edit an SDS sheet to assign it to a project.</div>
             </div>
           ) : (
@@ -4618,14 +4618,14 @@ function SDSBinder({ app }) {
                 const projSheets = sheets.filter(s => (s.projectIds || []).includes(proj.id));
                 return (
                   <div key={proj.id} className="mt-16">
-                    <div className="section-title" style={{ fontSize: 14, marginBottom: 8 }}>{proj.name || proj.project} ({projSheets.length} sheets)</div>
+                    <div className="section-title" className="fs-14 mb-8">{proj.name || proj.project} ({projSheets.length} sheets)</div>
                     {projSheets.map(renderSheetCard)}
                   </div>
                 );
               })}
               {unassigned.length > 0 && (
                 <div className="mt-16">
-                  <div className="section-title" style={{ fontSize: 14, marginBottom: 8, color: "var(--text2)" }}>Unassigned ({unassigned.length})</div>
+                  <div className="section-title" className="fs-14 mb-8 text-muted">Unassigned ({unassigned.length})</div>
                   {unassigned.map(renderSheetCard)}
                 </div>
               )}
@@ -4636,7 +4636,7 @@ function SDSBinder({ app }) {
 
       {sub === "Quick Lookup" && (
         <div className="mt-16">
-          <div style={{ marginBottom: 16 }}>
+          <div className="mb-16">
             <input
               className="form-input"
               style={{ fontSize: 18, padding: "14px 16px", textAlign: "center" }}
@@ -4647,14 +4647,14 @@ function SDSBinder({ app }) {
           </div>
           {search.length > 0 ? (
             filtered.length > 0 ? filtered.map(renderSheetCard) : (
-              <div className="card" style={{ textAlign: "center", padding: 40 }}>
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Search style={{ width: 40, height: 40, opacity: 0.4 }} /></div>
+              <div className="card" className="more-empty-card">
+                <div className="more-empty-icon"><Search className="more-empty-icon" /></div>
                 <div className="text-sm text-muted mt-8">No SDS sheets match "{search}"</div>
               </div>
             )
           ) : (
-            <div className="card" style={{ textAlign: "center", padding: 40 }}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Smartphone style={{ width: 40, height: 40, opacity: 0.4 }} /></div>
+            <div className="card" className="more-empty-card">
+              <div className="more-empty-icon"><Smartphone className="more-empty-icon" /></div>
               <div className="text-sm text-muted mt-8">Start typing to search SDS sheets. Designed for quick field access.</div>
             </div>
           )}
@@ -4699,18 +4699,18 @@ function Settings({ app }) {
       {sub === "Team" && isForeman && <ForemanTeamTab app={app} />}
 
       {/* ── Account / Logout ── */}
-      <div className="card mt-16" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+      <div className="card mt-16" className="more-account-card">
         <div>
-          <div style={{ fontWeight: 600, color: "var(--text)" }}>
+          <div className="more-account-name">
             {app.auth?.name || "User"}
           </div>
-          <div style={{ fontSize: 12, color: "var(--text2)" }}>
+          <div className="more-account-email">
             {app.auth?.email} &middot; {app.auth?.role?.toUpperCase()}
           </div>
         </div>
         <button
           className="btn btn-ghost"
-          style={{ color: "var(--red)", borderColor: "var(--red)" }}
+          className="more-btn-logout"
           onClick={() => {
             if (confirm("Are you sure you want to log out?")) {
               app.onLogout();
@@ -4841,9 +4841,9 @@ function EquipmentTab({ app }) {
 
       {/* Add / Edit Form */}
       {form && (
-        <div className="card" style={{ padding: 20, marginBottom: 20 }}>
+        <div className="card" className="p-20 mb-20">
           <div className="text-sm font-semi mb-12">{adding ? "Add Equipment" : "Edit Equipment"}</div>
-          <div className="form-grid" style={{ gap: 12 }}>
+          <div className="form-grid" className="gap-12">
             <div className="form-group">
               <label className="form-label">Name</label>
               <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Scissor Lift (26ft)" />
@@ -4879,9 +4879,9 @@ function EquipmentTab({ app }) {
                 {(app.projects || []).map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
               </select>
             </div>
-            <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+            <div className="form-group" className="full">
               <label className="form-label">Notes</label>
-              <textarea className="form-input" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Serial number, condition, rental company..." style={{ resize: "vertical" }} />
+              <textarea className="form-input" rows={2} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Serial number, condition, rental company..." className="resize-v" />
             </div>
           </div>
           <div className="flex gap-8 mt-16">
@@ -4892,40 +4892,40 @@ function EquipmentTab({ app }) {
       )}
 
       {/* Equipment Table */}
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+      <div className="overflow-x-auto">
+        <table className="more-eq-table">
           <thead>
-            <tr style={{ borderBottom: "2px solid var(--border)", textAlign: "left" }}>
-              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Name</th>
-              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Type</th>
-              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Daily</th>
-              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Weekly</th>
-              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Monthly</th>
-              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Status</th>
-              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Project</th>
-              <th style={{ padding: "8px 12px", color: "var(--text2)" }}>Actions</th>
+            <tr className="more-eq-thead">
+              <th className="more-eq-th">Name</th>
+              <th className="more-eq-th">Type</th>
+              <th className="more-eq-th">Daily</th>
+              <th className="more-eq-th">Weekly</th>
+              <th className="more-eq-th">Monthly</th>
+              <th className="more-eq-th">Status</th>
+              <th className="more-eq-th">Project</th>
+              <th className="more-eq-th">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map(eq => (
-              <tr key={eq.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                <td style={{ padding: "8px 12px", fontWeight: 600 }}>{eq.name}</td>
-                <td style={{ padding: "8px 12px" }}>
+              <tr key={eq.id} className="more-eq-row">
+                <td className="more-eq-td fw-600">{eq.name}</td>
+                <td className="more-eq-td">
                   <span className={`badge ${eq.type === "Owned" ? "badge-blue" : "badge-amber"}`}>{eq.type}</span>
                 </td>
-                <td style={{ padding: "8px 12px", fontFamily: "var(--font-mono)" }}>${eq.dailyRate}</td>
-                <td style={{ padding: "8px 12px", fontFamily: "var(--font-mono)" }}>${eq.weeklyRate}</td>
-                <td style={{ padding: "8px 12px", fontFamily: "var(--font-mono)" }}>${eq.monthlyRate}</td>
-                <td style={{ padding: "8px 12px" }}>
+                <td className="more-eq-td font-mono">${eq.dailyRate}</td>
+                <td className="more-eq-td font-mono">${eq.weeklyRate}</td>
+                <td className="more-eq-td font-mono">${eq.monthlyRate}</td>
+                <td className="more-eq-td">
                   <span style={{ color: statusColor(eq.status), fontWeight: 600 }}>{eq.status}</span>
                 </td>
                 <td style={{ padding: "8px 12px", color: eq.assignedProject ? "var(--text)" : "var(--text3)" }}>
                   {eq.assignedProject || "--"}
                 </td>
-                <td style={{ padding: "8px 12px" }}>
+                <td className="more-eq-td">
                   <div className="flex gap-4">
-                    <button className="btn btn-ghost btn-sm" onClick={() => startEdit(eq)} style={{ fontSize: 11, padding: "2px 8px" }}>Edit</button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => deleteItem(eq.id)} style={{ fontSize: 11, padding: "2px 8px", color: "var(--red)" }}>Del</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => startEdit(eq)} className="btn-table-action">Edit</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => deleteItem(eq.id)} className="btn-table-delete">Del</button>
                   </div>
                 </td>
               </tr>
@@ -4936,7 +4936,7 @@ function EquipmentTab({ app }) {
 
       {filtered.length === 0 && (
         <div className="empty-state mt-16">
-          <div className="empty-icon"><Wrench style={{ width: 40, height: 40 }} /></div>
+          <div className="empty-icon"><Wrench className="more-empty-icon" /></div>
           <div className="empty-text">No equipment matches this filter</div>
         </div>
       )}
@@ -4996,14 +4996,14 @@ function MarginTiersTab({ app }) {
         <button className="btn btn-ghost btn-sm" onClick={resetDefaults}>Reset Defaults</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+      <div className="more-tier-grid">
         {TIER_CONFIG.map(tc => (
           <div key={tc.key} className="card" style={{ padding: 20, borderLeft: `4px solid ${tc.color}`, background: tc.bg }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <div className="flex-center-gap-8 mb-12">
               <div style={{ width: 12, height: 12, borderRadius: "50%", background: tc.color }} />
               <div style={{ fontWeight: 700, fontSize: 16, color: tc.color }}>{tc.label}</div>
             </div>
-            <div className="form-group" style={{ marginBottom: 12 }}>
+            <div className="form-group" className="mb-12">
               <label className="form-label">Minimum Margin (%)</label>
               <input
                 className="form-input"
@@ -5013,28 +5013,28 @@ function MarginTiersTab({ app }) {
                 max="100"
                 value={tiers[tc.key]}
                 onChange={e => handleChange(tc.key, e.target.value)}
-                style={{ fontWeight: 700, fontSize: 18, textAlign: "center", maxWidth: 120 }}
+                className="more-metric-value more-text-center"
               />
             </div>
             <div className="text-xs text-dim">
-              <span style={{ fontWeight: 600 }}>Perks:</span> {tc.perks}
+              <span className="fw-600">Perks:</span> {tc.perks}
             </div>
           </div>
         ))}
       </div>
 
-      <div className="card mt-16" style={{ padding: 16 }}>
+      <div className="card mt-16" className="p-16">
         <div className="text-sm font-semi mb-8">How It Works</div>
         <div className="text-sm text-dim">
           When a project is completed, its profit margin determines the appreciation tier.
           Projects with a margin at or above the threshold qualify for that tier's perks.
           These rates are used by the Incentive & Appreciation system.
         </div>
-        <div className="mt-12" style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+        <div className="mt-12" className="flex gap-16 flex-wrap">
           {TIER_CONFIG.map(tc => (
-            <div key={tc.key} style={{ fontSize: 13 }}>
+            <div key={tc.key} className="fs-13">
               <span style={{ color: tc.color, fontWeight: 700 }}>{tc.label}:</span>{" "}
-              <span style={{ fontFamily: "var(--font-mono)" }}>{tiers[tc.key]}%+</span>
+              <span className="font-mono">{tiers[tc.key]}%+</span>
             </div>
           ))}
         </div>
@@ -5260,11 +5260,11 @@ function NotificationSettings({ userId }) {
   return (
     <div className="mt-16">
       <div className="section-title">Notifications</div>
-      <div className="card mt-8" style={{ padding: 16 }}>
+      <div className="card mt-8" className="p-16">
         {permission !== "granted" && permission !== "unsupported" && (
           <div style={{ marginBottom: 12, padding: "8px 12px", borderRadius: 6, background: "rgba(224,148,34,0.1)", border: "1px solid rgba(224,148,34,0.3)", fontSize: 13 }}>
             Notifications are {permission === "denied" ? "blocked" : "not enabled"}.
-            {permission === "default" && <button className="btn btn-sm" style={{ marginLeft: 8 }} onClick={requestPerm}>Enable</button>}
+            {permission === "default" && <button className="btn btn-sm" className="ml-8" onClick={requestPerm}>Enable</button>}
           </div>
         )}
         {[
@@ -5273,26 +5273,26 @@ function NotificationSettings({ userId }) {
           { key: "scheduleChanges", label: "Schedule change alerts" },
           { key: "dailyReportReminder", label: "Daily report reminder" },
         ].map(({ key, label }) => (
-          <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <span style={{ fontSize: 14, color: "var(--text-primary)" }}>{label}</span>
+          <div key={key} className="more-toggle-row">
+            <span className="fs-14">{label}</span>
             <button style={toggleStyle(prefs[key])} onClick={() => toggle(key)}>
               <div style={dotStyle(prefs[key])} />
             </button>
           </div>
         ))}
         {prefs.dailyReportReminder && (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
-            <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Reminder time</span>
+          <div className="more-toggle-row">
+            <span className="fs-13 text-muted">Reminder time</span>
             <input type="time" value={prefs.dailyReportTime} onChange={e => setTime(e.target.value)}
               style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "4px 8px", color: "var(--text-primary)", fontSize: 13 }} />
           </div>
         )}
         {"PushManager" in window && (
-          <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0" }}>
+          <div className="mt-12 pt-12">
+            <div className="more-toggle-row">
               <div>
-                <span style={{ fontSize: 14, color: "var(--text-primary)" }}>Background push</span>
-                <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2 }}>Receive alerts even when app is closed</div>
+                <span className="fs-14">Background push</span>
+                <div className="fs-11 text-muted mt-2">Receive alerts even when app is closed</div>
               </div>
               <button style={toggleStyle(pushSubscribed)} onClick={togglePush} disabled={pushLoading}>
                 <div style={dotStyle(pushSubscribed)} />
@@ -5377,9 +5377,9 @@ function InsuranceTab({ app }) {
 
       <div className="flex gap-8 mt-16">
         <div className="kpi-card"><span className="text2">Total Policies</span><strong>{policies.length}</strong></div>
-        <div className="kpi-card"><span className="text2">Active</span><strong style={{ color: "var(--green)" }}>{activeCount}</strong></div>
-        <div className="kpi-card"><span className="text2">Expiring (&lt;30d)</span><strong style={{ color: "var(--amber)" }}>{expiringCount}</strong></div>
-        <div className="kpi-card"><span className="text2">Expired</span><strong style={{ color: "var(--red)" }}>{expiredCount}</strong></div>
+        <div className="kpi-card"><span className="text2">Active</span><strong className="text-green">{activeCount}</strong></div>
+        <div className="kpi-card"><span className="text2">Expiring (&lt;30d)</span><strong className="text-amber">{expiringCount}</strong></div>
+        <div className="kpi-card"><span className="text2">Expired</span><strong className="text-red">{expiredCount}</strong></div>
       </div>
 
       {adding && (
@@ -5431,8 +5431,8 @@ function InsuranceTab({ app }) {
 
       <div className="mt-16">
         {policies.length === 0 ? (
-          <div className="card" style={{ textAlign: "center", padding: 40 }}>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Shield style={{ width: 40, height: 40, opacity: 0.4 }} /></div>
+          <div className="card" className="more-empty-card">
+            <div className="more-empty-icon"><Shield className="more-empty-icon" /></div>
             <div className="text-sm text-muted mt-8">No insurance policies on file. Add your GL, WC, Auto, and Umbrella policies.</div>
           </div>
         ) : policies.map(pol => {
@@ -5441,22 +5441,22 @@ function InsuranceTab({ app }) {
             <div key={pol.id} className="card" style={{ marginBottom: 8, borderLeft: `4px solid var(--${status === "active" ? "green" : status === "expiring" ? "amber" : "red"})` }}>
               <div className="flex-between">
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{pol.type}</div>
+                  <div className="font-semi fs-14">{pol.type}</div>
                   <div className="text-xs text-muted">{pol.carrier} — Policy #{pol.policyNumber}</div>
                 </div>
-                <span className={`badge ${STATUS_BADGE[status]}`} style={{ fontSize: 10 }}>{status}</span>
+                <span className={`badge ${STATUS_BADGE[status]}`} className="fs-10">{status}</span>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 8, fontSize: 11 }}>
+              <div className="more-policy-grid">
                 <div><span className="text2">Coverage</span><br />{pol.coverageLimit || "—"}</div>
                 <div><span className="text2">Effective</span><br />{pol.effectiveDate || "—"}</div>
                 <div><span className="text2">Expires</span><br />{pol.expiryDate || "—"}</div>
               </div>
-              {pol.notes && <div className="text-xs text-muted" style={{ marginTop: 6 }}>{pol.notes}</div>}
-              <div className="flex gap-4" style={{ marginTop: 8 }}>
-                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, display: "flex", alignItems: "center", gap: 4 }} onClick={() => shareCOI(pol)}><ClipboardCopy style={{ width: 12, height: 12 }} /> Copy COI Info</button>
-                {pol.file && <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, display: "flex", alignItems: "center", gap: 4 }} onClick={() => { const a = document.createElement("a"); a.href = pol.file.dataUrl; a.download = pol.file.name; a.click(); }}><Download style={{ width: 12, height: 12 }} /> Download</button>}
-                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, color: "var(--amber)" }} onClick={() => startEdit(pol)}>Edit</button>
-                <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, color: "var(--red)" }} onClick={() => deletePol(pol)}>Remove</button>
+              {pol.notes && <div className="text-xs text-muted" className="mt-6">{pol.notes}</div>}
+              <div className="flex gap-4" className="mt-8">
+                <button className="btn btn-ghost btn-sm" className="fs-10 flex-center-gap-4" onClick={() => shareCOI(pol)}><ClipboardCopy className="icon-12" /> Copy COI Info</button>
+                {pol.file && <button className="btn btn-ghost btn-sm" className="fs-10 flex-center-gap-4" onClick={() => { const a = document.createElement("a"); a.href = pol.file.dataUrl; a.download = pol.file.name; a.click(); }}><Download className="icon-12" /> Download</button>}
+                <button className="btn btn-ghost btn-sm" className="btn-table-edit--amber" onClick={() => startEdit(pol)}>Edit</button>
+                <button className="btn btn-ghost btn-sm" className="btn-table-edit--red" onClick={() => deletePol(pol)}>Remove</button>
               </div>
             </div>
           );
@@ -5542,11 +5542,11 @@ function ForemanTeamTab({ app }) {
               <input className="form-input" maxLength={6} value={form.pin} onChange={e => setForm({ ...form, pin: e.target.value.replace(/\D/g, "") })} placeholder="Auto-generated" />
             </div>
           </div>
-          <div className="mt-16" style={{ display: "flex", gap: 8 }}>
+          <div className="mt-16" className="flex gap-8">
             <button className="btn btn-primary btn-sm" onClick={addCrewMember}>Add to Team</button>
             <button className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
           </div>
-          <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 8 }}>
+          <div className="more-temp-hint">
             Temp password will be: [FirstName]123! — user will be prompted to change on first login.
           </div>
         </div>
@@ -5564,10 +5564,10 @@ function ForemanTeamTab({ app }) {
             <tbody>
               {teamMembers.map(u => (
                 <tr key={u.id} style={{ opacity: u.active === false ? 0.5 : 1 }}>
-                  <td style={{ fontWeight: 500 }}>{u.name}</td>
-                  <td style={{ fontSize: 12 }}>{u.email}</td>
-                  <td><span className="badge badge-blue" style={{ fontSize: 10 }}>{FOREMAN_INVITE_ROLES[u.role] || u.role}</span></td>
-                  <td><span className={`badge ${u.active === false ? "badge-red" : "badge-green"}`} style={{ fontSize: 10 }}>{u.active === false ? "Inactive" : "Active"}</span></td>
+                  <td className="fw-500">{u.name}</td>
+                  <td className="fs-12">{u.email}</td>
+                  <td><span className="badge badge-blue" className="fs-10">{FOREMAN_INVITE_ROLES[u.role] || u.role}</span></td>
+                  <td><span className={`badge ${u.active === false ? "badge-red" : "badge-green"}`} className="fs-10">{u.active === false ? "Inactive" : "Active"}</span></td>
                 </tr>
               ))}
             </tbody>
@@ -5705,16 +5705,16 @@ function UsersTab({ app }) {
 
       {/* KPI row */}
       <div className="flex gap-8 mt-16">
-        <div className="kpi-card"><span className="text2">Active</span><strong style={{ color: "var(--green)" }}>{activeCount}</strong></div>
+        <div className="kpi-card"><span className="text2">Active</span><strong className="text-green">{activeCount}</strong></div>
         <div className="kpi-card"><span className="text2">Inactive</span><strong style={{ color: inactiveCount > 0 ? "var(--red)" : "var(--text2)" }}>{inactiveCount}</strong></div>
         <div className="kpi-card"><span className="text2">Roles</span><strong>{Object.keys(roleCounts).length}</strong></div>
-        <div className="kpi-card"><span className="text2">Temp Passwords</span><strong style={{ color: "var(--amber)" }}>{users.filter(u => u.mustChangePassword).length}</strong></div>
+        <div className="kpi-card"><span className="text2">Temp Passwords</span><strong className="text-amber">{users.filter(u => u.mustChangePassword).length}</strong></div>
       </div>
 
       {/* Filters */}
       <div className="flex gap-8 mt-16">
-        <input className="form-input" style={{ maxWidth: 240 }} placeholder="Search by name or email..." value={searchQ} onChange={e => setSearchQ(e.target.value)} />
-        <select className="form-select" style={{ maxWidth: 180 }} value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
+        <input className="form-input" className="min-w-150" placeholder="Search by name or email..." value={searchQ} onChange={e => setSearchQ(e.target.value)} />
+        <select className="form-select" className="min-w-150" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
           <option value="all">All Roles</option>
           {Object.entries(ROLES_IMPORT).map(([k, v]) => <option key={k} value={k}>{v} ({roleCounts[k] || 0})</option>)}
         </select>
@@ -5746,11 +5746,11 @@ function UsersTab({ app }) {
               <input className="form-input" type="number" value={form.hourlyRate} onChange={e => setForm({ ...form, hourlyRate: e.target.value })} placeholder="35" />
             </div>
           </div>
-          <div className="mt-16" style={{ display: "flex", gap: 8 }}>
+          <div className="mt-16" className="flex gap-8">
             <button className="btn btn-primary btn-sm" onClick={addUser}>Create User</button>
             <button className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
           </div>
-          <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 8 }}>
+          <div className="more-temp-hint">
             Temp password will be: [FirstName]123! — user will be prompted to change on first login.
           </div>
         </div>
@@ -5776,24 +5776,24 @@ function UsersTab({ app }) {
                 <Fragment key={u.id}>
                 <tr style={{ opacity: u.active === false ? 0.5 : 1 }}>
                   <td>
-                    <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 4px" }} onClick={() => setExpandedId(isExpanded ? null : u.id)}>
+                    <button className="btn btn-ghost" className="btn-table-save" onClick={() => setExpandedId(isExpanded ? null : u.id)}>
                       {isExpanded ? "▼" : "▶"}
                     </button>
                   </td>
-                  <td style={{ fontWeight: 500 }}>
+                  <td className="fw-500">
                     {u.name}
-                    {u.id === app.auth.id && <span style={{ fontSize: 10, color: "var(--amber)", marginLeft: 6 }}>(you)</span>}
-                    {u.mustChangePassword && <span style={{ fontSize: 10, color: "var(--red)", marginLeft: 6 }}>temp pw</span>}
+                    {u.id === app.auth.id && <span className="fs-10 text-amber ml-4">(you)</span>}
+                    {u.mustChangePassword && <span className="fs-10 text-red ml-4">temp pw</span>}
                   </td>
-                  <td style={{ fontSize: 12 }}>{u.email}</td>
+                  <td className="fs-12">{u.email}</td>
                   <td>
                     {editId === u.id ? (
-                      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                        <select className="form-select" style={{ fontSize: 11, padding: "2px 4px" }} value={editRole} onChange={e => setEditRole(e.target.value)}>
+                      <div className="flex-center-gap-4">
+                        <select className="form-select" className="more-edit-select" value={editRole} onChange={e => setEditRole(e.target.value)}>
                           {Object.entries(ROLES_IMPORT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                         </select>
-                        <button className="btn btn-primary" style={{ fontSize: 10, padding: "2px 8px" }} onClick={() => updateRole(u.id)}>Save</button>
-                        <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 6px" }} onClick={() => setEditId(null)}>{"\u2715"}</button>
+                        <button className="btn btn-primary" className="btn-table-edit" onClick={() => updateRole(u.id)}>Save</button>
+                        <button className="btn btn-ghost" className="btn-table-save" onClick={() => setEditId(null)}>{"\u2715"}</button>
                       </div>
                     ) : (
                       <span className="badge badge-blue" style={{ cursor: "pointer", fontSize: 10 }}
@@ -5803,17 +5803,17 @@ function UsersTab({ app }) {
                     )}
                   </td>
                   <td>
-                    <span className={`badge ${u.active === false ? "badge-red" : "badge-green"}`} style={{ fontSize: 10, cursor: "pointer" }}
+                    <span className={`badge ${u.active === false ? "badge-red" : "badge-green"}`} className="fs-10 more-cursor-pointer"
                       onClick={() => toggleActive(u)} title="Click to toggle">
                       {u.active === false ? "Inactive" : "Active"}
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: "flex", gap: 4 }}>
-                      <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 8px", color: "var(--amber)" }}
+                    <div className="more-edit-actions">
+                      <button className="btn btn-ghost" className="btn-table-edit--amber"
                         onClick={() => resetPassword(u)} title="Reset to temp password">Reset PW</button>
                       {u.id !== app.auth.id && (
-                        <button className="btn btn-ghost" style={{ fontSize: 10, padding: "2px 8px", color: "var(--red)" }}
+                        <button className="btn btn-ghost" className="btn-table-edit--red"
                           onClick={() => deleteUser(u)}>Remove</button>
                       )}
                     </div>
@@ -5821,33 +5821,33 @@ function UsersTab({ app }) {
                 </tr>
                 {isExpanded && details && (
                   <tr>
-                    <td colSpan={6} style={{ padding: "12px 16px", background: "var(--bg3)" }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+                    <td colSpan={6} className="px-12 py-8 bg-bg3">
+                      <div className="more-grid-3">
                         <div>
-                          <div className="text-xs text-muted" style={{ fontWeight: 600, marginBottom: 6 }}>Certifications</div>
+                          <div className="text-xs text-muted" className="fw-600 mb-6">Certifications</div>
                           {details.certs.length === 0 ? <div className="text-xs text-muted">None on file</div> : (
                             details.certs.map(c => {
                               const expired = c.expiryDate && new Date(c.expiryDate) < new Date();
                               return (
-                                <div key={c.id} style={{ fontSize: 11, marginBottom: 4 }}>
-                                  <span className={`badge ${expired ? "badge-red" : "badge-green"}`} style={{ fontSize: 9 }}>{c.name}</span>
-                                  {c.expiryDate && <span className="text-xs text-muted" style={{ marginLeft: 4 }}>exp {c.expiryDate}</span>}
+                                <div key={c.id} className="fs-11 mb-3">
+                                  <span className={`badge ${expired ? "badge-red" : "badge-green"}`} className="fs-9">{c.name}</span>
+                                  {c.expiryDate && <span className="text-xs text-muted" className="ml-4">exp {c.expiryDate}</span>}
                                 </div>
                               );
                             })
                           )}
                         </div>
                         <div>
-                          <div className="text-xs text-muted" style={{ fontWeight: 600, marginBottom: 6 }}>Time Summary</div>
-                          <div style={{ fontSize: 11 }}>Total hours logged: <strong>{details.totalHours.toFixed(1)}h</strong></div>
-                          <div style={{ fontSize: 11, marginTop: 2 }}>Rate: <strong>${u.hourlyRate || 35}/hr</strong></div>
-                          <div style={{ fontSize: 11, marginTop: 2, color: "var(--text2)" }}>Created: {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}</div>
+                          <div className="text-xs text-muted" className="fw-600 mb-6">Time Summary</div>
+                          <div className="btn-table-action">Total hours logged: <strong>{details.totalHours.toFixed(1)}h</strong></div>
+                          <div className="fs-11 mt-2">Rate: <strong>${u.hourlyRate || 35}/hr</strong></div>
+                          <div className="fs-11 mt-2 text-muted">Created: {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}</div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted" style={{ fontWeight: 600, marginBottom: 6 }}>Assigned Projects</div>
+                          <div className="text-xs text-muted" className="fw-600 mb-6">Assigned Projects</div>
                           {details.assignedProjects.length === 0 ? <div className="text-xs text-muted">None currently</div> : (
                             details.assignedProjects.map((p, i) => (
-                              <div key={i} className="badge badge-blue" style={{ fontSize: 9, marginBottom: 2, marginRight: 4 }}>{p}</div>
+                              <div key={i} className="badge badge-blue" className="fs-9 mb-2">{p}</div>
                             ))
                           )}
                         </div>
@@ -5903,7 +5903,7 @@ function CompanyTab({ app }) {
       </div>
 
       <div className="section-title mt-16">Company Logo</div>
-      <div className="card mt-16" style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div className="card mt-16" className="flex-center-gap-12">
         {form.logoUrl && <img src={form.logoUrl} alt="Logo" style={{ maxHeight: 64, maxWidth: 200, borderRadius: 4, objectFit: "contain" }} />}
         <div>
           <input type="file" accept="image/*" onChange={e => {
@@ -5914,7 +5914,7 @@ function CompanyTab({ app }) {
             reader.readAsDataURL(file);
           }} />
           <div className="text-xs text-muted mt-4">PNG or JPG recommended. Stored locally.</div>
-          {form.logoUrl && <button className="btn btn-ghost btn-sm mt-8" style={{ color: "var(--red)", fontSize: 11 }} onClick={() => setForm(f => ({ ...f, logoUrl: "" }))}>Remove Logo</button>}
+          {form.logoUrl && <button className="btn btn-ghost btn-sm mt-8" className="text-red fs-11" onClick={() => setForm(f => ({ ...f, logoUrl: "" }))}>Remove Logo</button>}
         </div>
       </div>
 
@@ -6002,7 +6002,7 @@ function AssembliesTab({ app }) {
               <input className="form-input" type="number" step="0.01" value={form.labRate} onChange={e => setForm({ ...form, labRate: e.target.value })} />
             </div>
             <div className="form-group">
-              <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <label className="form-label" className="flex-center-gap-8">
                 <input type="checkbox" checked={form.verified} onChange={e => setForm({ ...form, verified: e.target.checked })} />
                 Verified
               </label>
@@ -6019,7 +6019,7 @@ function AssembliesTab({ app }) {
         <table className="data-table">
           <thead><tr><th>Code</th><th>Name</th><th>Unit</th><th>Mat Rate</th><th>Lab Rate</th><th>Verified</th><th></th></tr></thead>
           <tbody>
-            {app.assemblies.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center" }}>No assemblies</td></tr>}
+            {app.assemblies.length === 0 && <tr><td colSpan={7} className="more-text-center">No assemblies</td></tr>}
             {app.assemblies.map(asm => (
               <tr key={asm.code}>
                 <td>{asm.code}</td>
@@ -6136,25 +6136,25 @@ function DataTab({ app }) {
     <div className="mt-16">
       <div className="section-title">Data Management</div>
       <div className="card mt-16">
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="flex-col gap-16">
           <div>
             <strong>Export Data</strong>
-            <p className="text2" style={{ margin: "4px 0 8px" }}>Download all app data as a JSON backup file.</p>
+            <p className="text2" className="mt-4 mb-8">Download all app data as a JSON backup file.</p>
             <button className="btn btn-primary btn-sm" onClick={doExport}>Export JSON</button>
           </div>
-          <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+          <div className="border-top pt-16">
             <strong>Import Data</strong>
-            <p className="text2" style={{ margin: "4px 0 8px" }}>Restore data from a previously exported JSON file.</p>
-            <input type="file" accept=".json" onChange={doImport} style={{ fontSize: 13 }} />
+            <p className="text2" className="mt-4 mb-8">Restore data from a previously exported JSON file.</p>
+            <input type="file" accept=".json" onChange={doImport} className="fs-13" />
           </div>
-          <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+          <div className="border-top pt-16">
             <strong>Feature Guides</strong>
-            <p className="text2" style={{ margin: "4px 0 8px" }}>Re-enable step-by-step guides for all sections. Guides will auto-trigger on your next visit to each section.</p>
+            <p className="text2" className="mt-4 mb-8">Re-enable step-by-step guides for all sections. Guides will auto-trigger on your next visit to each section.</p>
             <button className="btn btn-ghost btn-sm" onClick={() => { resetAllGuides(); app.show("Guides reset — they will show on next visit to each section", "ok"); }}>Reset All Guides</button>
           </div>
-          <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+          <div className="border-top pt-16">
             <strong>Reset All Data</strong>
-            <p className="text2" style={{ margin: "4px 0 8px" }}>Clear all data and restore factory defaults. This cannot be undone.</p>
+            <p className="text2" className="mt-4 mb-8">Clear all data and restore factory defaults. This cannot be undone.</p>
             <button className="btn btn-danger btn-sm" onClick={doReset}>Reset to Defaults</button>
           </div>
         </div>
@@ -6225,13 +6225,13 @@ function QuickBooksTab({ app }) {
     const mapped = (mappings[type] || {})[name];
     return (
       <tr>
-        <td style={{ padding: "6px 12px", fontSize: 13, color: "var(--text)", whiteSpace: "nowrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <td className="px-12 py-6 fs-13 ws-nowrap">
+          <div className="flex-center-gap-8">
             <StatusDot mapped={!!mapped} />
             {name}
           </div>
         </td>
-        <td style={{ padding: "6px 12px", fontSize: 13 }}>
+        <td className="px-12 py-6 fs-13">
           <input
             className="form-input"
             style={{ fontSize: 12, padding: "4px 8px", width: "100%", maxWidth: 300, background: mapped ? "var(--bg3)" : "var(--bg2)" }}
@@ -6306,7 +6306,7 @@ function QuickBooksTab({ app }) {
         {employeeNames.length === 0 ? (
           <p style={{ fontSize: 13, color: "var(--text2)", fontStyle: "italic" }}>No employees found. Add employees in the team roster.</p>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <div className="overflow-x-auto">
             <table className="data-table" style={{ width: "100%" }}>
               <thead><tr>
                 <th style={{ padding: "6px 12px", fontSize: 12, textAlign: "left" }}>EBC-OS Name</th>
@@ -6334,7 +6334,7 @@ function QuickBooksTab({ app }) {
         {projectNames.length === 0 ? (
           <p style={{ fontSize: 13, color: "var(--text2)", fontStyle: "italic" }}>No projects yet.</p>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <div className="overflow-x-auto">
             <table className="data-table" style={{ width: "100%" }}>
               <thead><tr>
                 <th style={{ padding: "6px 12px", fontSize: 12, textAlign: "left" }}>EBC-OS Name</th>
@@ -6398,12 +6398,12 @@ function QuickBooksTab({ app }) {
       </div>
 
       {/* Reset */}
-      <div className="card mt-16" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="card mt-16" className="flex-between">
         <div>
           <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}>Reset All Mappings</div>
-          <div style={{ fontSize: 12, color: "var(--text2)" }}>Clear all QB name mappings and defaults. Start fresh.</div>
+          <div className="more-account-email">Clear all QB name mappings and defaults. Start fresh.</div>
         </div>
-        <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)", borderColor: "var(--red)" }}
+        <button className="btn btn-ghost btn-sm" className="more-btn-logout"
           onClick={() => { if (confirm("Reset all QB mappings and defaults?")) { save({}); app.show("QB mappings cleared"); } }}>
           Reset
         </button>
@@ -6435,7 +6435,7 @@ function ThemeTab({ app }) {
             >
               <div style={{ fontSize: 32 }}>{theme.icon}</div>
               <div style={{ marginTop: 8, fontWeight: 600 }}>{theme.name}</div>
-              {isActive && <div className="badge-green" style={{ marginTop: 8 }}>Active</div>}
+              {isActive && <div className="badge-green" className="mt-8">Active</div>}
             </div>
           );
         })}
@@ -6499,12 +6499,12 @@ function ApiTab({ app }) {
             />
           </div>
         </div>
-        <div className="flex gap-8 mt-16" style={{ alignItems: "center" }}>
+        <div className="flex gap-8 mt-16" className="items-center">
           <button className="btn btn-primary btn-sm" onClick={saveKey}>Save Key</button>
           <button className="btn btn-ghost btn-sm" onClick={testConnection} disabled={testing}>
             {testing ? "Testing..." : "Test Connection"}
           </button>
-          {key && <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)" }} onClick={() => { setKey(""); app.setApiKey(""); app.show("API key cleared"); }}>Clear Key</button>}
+          {key && <button className="btn btn-ghost btn-sm" className="text-red" onClick={() => { setKey(""); app.setApiKey(""); app.show("API key cleared"); }}>Clear Key</button>}
           {status === "ok" && <span className="badge badge-green">Connected</span>}
           {status === "err" && <span className="badge badge-red">Failed</span>}
           {app.apiKey && !status && <span className="text-xs text-muted">Key set: sk-ant-...{app.apiKey.slice(-4)}</span>}
@@ -6513,14 +6513,14 @@ function ApiTab({ app }) {
 
       <div className="section-title mt-16">Features</div>
       <div className="card mt-16">
-        <div style={{ fontSize: 13 }}>
+        <div className="fs-13">
           <div style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
             <strong>Gmail Bid Sync</strong> — Analyze emails for bid information and auto-populate bid tracker
           </div>
           <div style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
             <strong>AI Appreciation Emails</strong> — Draft thank-you emails based on project performance tiers
           </div>
-          <div style={{ padding: "8px 0" }}>
+          <div className="py-8">
             <strong>Bid Analysis</strong> — Get AI insights on bid patterns and win rate optimization
           </div>
         </div>
