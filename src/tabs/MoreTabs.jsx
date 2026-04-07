@@ -875,7 +875,7 @@ function TmTicketsTab({ app }) {
           <div className="mt-16">
             <div className="flex-between">
               <strong className="text2 more-section-label">Labor</strong>
-              <button className="btn btn-ghost btn-sm" onClick={addLaborRow} className="btn-table-action">+ Add Row</button>
+              <button className="btn btn-ghost btn-sm btn-table-action" onClick={addLaborRow} >+ Add Row</button>
             </div>
             {form.laborEntries.map(e => (
               <div key={e.id} className="more-labor-grid">
@@ -893,7 +893,7 @@ function TmTicketsTab({ app }) {
           <div className="mt-16">
             <div className="flex-between">
               <strong className="text2 more-section-label">Materials</strong>
-              <button className="btn btn-ghost btn-sm" onClick={addMatRow} className="btn-table-action">+ Add Row</button>
+              <button className="btn btn-ghost btn-sm btn-table-action" onClick={addMatRow} >+ Add Row</button>
             </div>
             {form.materialEntries.map(e => (
               <div key={e.id} className="more-mat-grid">
@@ -930,7 +930,7 @@ function TmTicketsTab({ app }) {
           const total = calcTicketTotal(t);
           const isExpanded = expandedId === t.id;
           return (
-            <div className="card mt-8" key={t.id} className="more-cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : t.id)}>
+            <div className="card mt-8 more-cursor-pointer" key={t.id}  onClick={() => setExpandedId(isExpanded ? null : t.id)}>
               <div className="flex-between">
                 <div>
                   <strong>{t.ticketNumber}</strong>
@@ -2703,7 +2703,7 @@ function Schedule({ app }) {
           const leftPct = (new Date(task.start) - ganttStart) / 86400000 / totalDays * 100;
           const widthPct = (new Date(task.end) - new Date(task.start)) / 86400000 / totalDays * 100;
           return (
-            <div className="gantt-row" key={task.id} className="more-gantt-row">
+            <div className="gantt-row more-gantt-row" key={task.id} >
               <div className="gantt-label more-gantt-label">
                 {task.task}
               </div>
@@ -3672,13 +3672,13 @@ function ToolboxTalksTab({ app }) {
               <tr key={talk.id}>
                 {editId === talk.id ? (
                   <>
-                    <td><input className="form-input" type="date" defaultValue={talk.date} className="more-edit-select" onChange={e => talk._date = e.target.value} /></td>
-                    <td><select className="form-select" defaultValue={talk.projectId} className="more-edit-select" onChange={e => talk._projectId = Number(e.target.value)}>
+                    <td><input className="form-input more-edit-select" type="date" defaultValue={talk.date}  onChange={e => talk._date = e.target.value} /></td>
+                    <td><select className="form-select more-edit-select" defaultValue={talk.projectId}  onChange={e => talk._projectId = Number(e.target.value)}>
                       <option value="">Select...</option>{app.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select></td>
-                    <td><input className="form-input" defaultValue={talk.topic} className="more-edit-select" onChange={e => talk._topic = e.target.value} /></td>
-                    <td><input className="form-input" type="number" defaultValue={talk.attendees} className="more-edit-select" onChange={e => talk._attendees = Number(e.target.value)} /></td>
-                    <td><input className="form-input" defaultValue={talk.conductor} className="more-edit-select" onChange={e => talk._conductor = e.target.value} /></td>
+                    <td><input className="form-input more-edit-select" defaultValue={talk.topic}  onChange={e => talk._topic = e.target.value} /></td>
+                    <td><input className="form-input more-edit-select" type="number" defaultValue={talk.attendees}  onChange={e => talk._attendees = Number(e.target.value)} /></td>
+                    <td><input className="form-input more-edit-select" defaultValue={talk.conductor}  onChange={e => talk._conductor = e.target.value} /></td>
                     <td><div className="flex gap-4">
                       <button className="btn btn-primary btn-sm btn-table-save" onClick={() => {
                         app.setToolboxTalks(prev => prev.map(t => t.id === talk.id ? { ...t, date: talk._date ?? t.date, projectId: talk._projectId ?? t.projectId, topic: talk._topic ?? t.topic, attendees: talk._attendees ?? t.attendees, conductor: talk._conductor ?? t.conductor } : t));

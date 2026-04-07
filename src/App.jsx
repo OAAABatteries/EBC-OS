@@ -1652,7 +1652,7 @@ function App({ auth, onLogout }) {
       {dashCfg.showDigest && <div className="card mt-16" style={{ padding: "12px 16px" }}>
         <div className="flex-between mb-8">
           <div className="text-sm font-semi">Weekly Digest</div>
-          <button className="btn btn-ghost btn-sm" onClick={runWeeklyDigest} disabled={digestLoading} className="fs-11">
+          <button className="btn btn-ghost btn-sm fs-11" onClick={runWeeklyDigest} disabled={digestLoading} >
             {digestLoading ? "Analyzing..." : "Generate"}
           </button>
         </div>
@@ -4989,7 +4989,7 @@ const ModalHub = ({ type, data, app }) => {
                   </div>
                   <div className="flex gap-6">
                     {projSubmittals.length > 0 && (
-                      <button className="btn btn-ghost btn-sm" onClick={generateSubPackage} className="flex-center-gap-4">
+                      <button className="btn btn-ghost btn-sm flex-center-gap-4" onClick={generateSubPackage} >
                         <FileDown size={13} /> Generate Package
                       </button>
                     )}
@@ -5575,8 +5575,8 @@ const ModalHub = ({ type, data, app }) => {
                 {/* Closeout Notes */}
                 <div>
                   <div className="text-xs font-semi mb-4">CLOSEOUT NOTES</div>
-                  <textarea className="input" rows={3} placeholder="General closeout notes..." value={closeout.notes || ""}
-                    className="w-full fs-12"
+                  <textarea className="input w-full fs-12" rows={3} placeholder="General closeout notes..." value={closeout.notes || ""}
+                    
                     onChange={e => {
                       const newCloseout = { ...closeout, notes: e.target.value };
                       const updated = { ...draft, closeout: newCloseout };
