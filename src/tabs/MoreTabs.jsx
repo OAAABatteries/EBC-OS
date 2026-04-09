@@ -3,7 +3,7 @@ import { resetAllGuides } from "../components/FeatureGuide";
 import { ClipboardList, Folder, Search, Smartphone, Wrench, Shield, Download, ClipboardCopy, CheckCircle, AlertTriangle, AlertOctagon, Flame, Droplets, Heart, Globe, Wind, Zap, CheckSquare, Square } from "lucide-react";
 import { THEMES, OSHA_CHECKLIST, COMPANY_DEFAULTS, ASSEMBLIES } from "../data/constants";
 import { storePdf, getPdfUrl, deletePdf, fmtSize } from "../hooks/useSubmittalPdf";
-import { softDelete, filterActive, auditDiff, CRITICAL_FIELDS, validateInvoice, findDuplicateInvoice, validateChangeOrder, findDuplicateCO, computeProjectLaborCost } from "../utils/financialValidation";
+import { softDelete, filterActive, auditDiff, CRITICAL_FIELDS, validateInvoice, findDuplicateInvoice, validateChangeOrder, findDuplicateCO, validateAPBill, findDuplicateAPBill, computeProjectLaborCost } from "../utils/financialValidation";
 import { TimeClockAdmin } from "./TimeClockAdmin";
 import { MapView } from "./MapView";
 
@@ -83,13 +83,15 @@ function Financials({ app }) {
   const [sub, setSub] = useState("Invoices");
   return (
     <div>
-      <SubTabs tabs={["Invoices", "Change Orders", "T&M Tickets", "Job Costing", "Payroll Summary", "Aging Report"]} active={sub} onChange={setSub} />
+      <SubTabs tabs={["Invoices", "Change Orders", "T&M Tickets", "Job Costing", "Payroll Summary", "Aging Report", "AP Bills", "Vendors"]} active={sub} onChange={setSub} />
       {sub === "Invoices" && <InvoicesTab app={app} />}
       {sub === "Change Orders" && <ChangeOrdersTab app={app} />}
       {sub === "T&M Tickets" && <TmTicketsTab app={app} />}
       {sub === "Job Costing" && <JobCostingTab app={app} />}
       {sub === "Payroll Summary" && <PayrollSummaryTab app={app} />}
       {sub === "Aging Report" && <AgingReportTab app={app} />}
+      {sub === "AP Bills" && <APBillsTab app={app} />}
+      {sub === "Vendors" && <VendorsTab app={app} />}
     </div>
   );
 }
@@ -241,6 +243,7 @@ function InvoicesTab({ app }) {
             <div className="form-group">
               <label className="form-label">Date</label>
               <input className="form-input" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+              <PeriodWarning date={form.date} periods={app.periods} />
             </div>
             <div className="form-group">
               <label className="form-label">Amount</label>
@@ -1633,6 +1636,528 @@ function AgingReportTab({ app }) {
       {renderBucket("61-90 Days", buckets.over60, "var(--red)")}
       {renderBucket("31-60 Days", buckets.over30, "var(--amber)")}
       {renderBucket("Current (0-30 Days)", buckets.current, "var(--green)")}
+    </div>
+  );
+}
+
+/* ── Period Warning Helper ──────────────────────────────────── */
+function PeriodWarning({ date, periods }) {
+  if (!date || !periods || periods.length === 0) return null;
+  const derivedMonth = date.slice(0, 7); // YYYY-MM
+  const period = periods.find(p => p.period === derivedMonth);
+  if (period && period.status === "closed") {
+    return (
+      <div className="mt-4" style={{ color: "var(--amber)", fontSize: "var(--fs-11)" }}>
+        ⚠ This date falls in a closed period ({derivedMonth}). Entry will require override.
+      </div>
+    );
+  }
+  return null;
+}
+
+/* ── AP Bills ───────────────────────────────────────────────── */
+function APBillsTab({ app }) {
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({
+    vendorId: "", projectId: "", costType: "", invoiceNumber: "", date: "",
+    dueDate: "", amount: "", description: "", retainageRate: "0",
+    lienWaiverStatus: "not_required",
+  });
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [billErrors, setBillErrors] = useState([]);
+  const [editingBillId, setEditingBillId] = useState(null);
+
+  const COST_TYPES = app.COST_TYPES || ["labor", "material", "subcontractor", "equipment", "other"];
+  const vendors = app.vendors || [];
+  const apBills = app.apBills || [];
+
+  const vName = (vid) => vendors.find(v => String(v.id) === String(vid))?.name || "Unknown";
+  const pName = (pid) => app.projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
+  const badge = (s) => s === "paid" ? "badge-green" : s === "approved" ? "badge-blue" : s === "entered" ? "badge-amber" : s === "void" ? "badge-muted" : "badge-red";
+  const lienBadge = (s) => s === "unconditional_received" ? "badge-green" : s === "conditional_received" ? "badge-amber" : s === "missing" ? "badge-red" : "badge-muted";
+
+  // Auto-compute due date from vendor payment terms when vendor changes
+  const onVendorChange = (vendorId) => {
+    const vendor = vendors.find(v => String(v.id) === String(vendorId));
+    const paymentTermsDays = vendor?.paymentTermsDays || 30;
+    let dueDate = form.dueDate;
+    if (form.date && !editingBillId) {
+      const d = new Date(form.date);
+      d.setDate(d.getDate() + paymentTermsDays);
+      dueDate = d.toISOString().slice(0, 10);
+    }
+    setForm({ ...form, vendorId, dueDate });
+  };
+
+  const onDateChange = (date) => {
+    const vendor = vendors.find(v => String(v.id) === String(form.vendorId));
+    const paymentTermsDays = vendor?.paymentTermsDays || 30;
+    let dueDate = form.dueDate;
+    if (date && !editingBillId) {
+      const d = new Date(date);
+      d.setDate(d.getDate() + paymentTermsDays);
+      dueDate = d.toISOString().slice(0, 10);
+    }
+    setForm({ ...form, date, dueDate });
+  };
+
+  const billsFiltered = (showDeleted ? apBills : filterActive(apBills)).filter(bill => {
+    if (!app.search) return true;
+    const q = app.search.toLowerCase();
+    return vName(bill.vendorId).toLowerCase().includes(q) || pName(bill.projectId).toLowerCase().includes(q) || (bill.invoiceNumber || "").toLowerCase().includes(q) || (bill.description || "").toLowerCase().includes(q);
+  });
+
+  const totalAP = billsFiltered.filter(b => b.status !== "void" && b.status !== "paid").reduce((s, b) => s + (b.amount || 0), 0);
+  const pendingApproval = billsFiltered.filter(b => b.status === "entered").reduce((s, b) => s + (b.amount || 0), 0);
+  const today = new Date();
+  const overdue = billsFiltered.filter(b => b.status !== "paid" && b.status !== "void" && b.dueDate && new Date(b.dueDate) < today).reduce((s, b) => s + (b.amount || 0), 0);
+
+  const save = () => {
+    const errors = validateAPBill({
+      vendorId: form.vendorId, projectId: form.projectId, amount: Number(form.amount),
+      invoiceNumber: form.invoiceNumber, date: form.date, costType: form.costType,
+      description: form.description,
+    });
+    if (errors.length > 0) { setBillErrors(errors); return; }
+    setBillErrors([]);
+
+    if (editingBillId) {
+      app.setAPBills(prev => prev.map(b => {
+        if (b.id !== editingBillId) return b;
+        const updated = {
+          ...b, vendorId: Number(form.vendorId), projectId: Number(form.projectId),
+          costType: form.costType, invoiceNumber: form.invoiceNumber, date: form.date,
+          dueDate: form.dueDate, amount: Number(form.amount), description: form.description,
+          retainageRate: Number(form.retainageRate) || 0, lienWaiverStatus: form.lienWaiverStatus,
+        };
+        updated.audit = auditDiff(b, updated, CRITICAL_FIELDS.apBill, app.auth);
+        return updated;
+      }));
+      app.show("AP Bill updated", "ok");
+      setEditingBillId(null);
+    } else {
+      const duplicate = findDuplicateAPBill({ invoiceNumber: form.invoiceNumber, vendorId: Number(form.vendorId) }, apBills);
+      if (duplicate) {
+        const proceed = confirm(`Warning: Vendor invoice #${form.invoiceNumber} already exists for this vendor (${app.fmt(duplicate.amount)}). Save anyway?`);
+        if (!proceed) return;
+      }
+      // Check closed period
+      const derivedMonth = form.date ? form.date.slice(0, 7) : null;
+      const closedPeriod = derivedMonth && app.periods?.find(p => p.period === derivedMonth && p.status === "closed");
+
+      const newItem = {
+        id: app.nextId(), vendorId: Number(form.vendorId), projectId: Number(form.projectId),
+        costType: form.costType, invoiceNumber: form.invoiceNumber, date: form.date,
+        dueDate: form.dueDate, amount: Number(form.amount), description: form.description,
+        retainageRate: Number(form.retainageRate) || 0, lienWaiverStatus: form.lienWaiverStatus,
+        status: "entered",
+        audit: closedPeriod ? [{ timestamp: new Date().toISOString(), userName: app.auth?.name || "System", field: "period_override", oldValue: "", newValue: `Entered in closed period ${derivedMonth}` }] : [],
+      };
+      app.setAPBills(prev => [...prev, newItem]);
+      app.show("AP Bill added", "ok");
+    }
+    setAdding(false);
+    setForm({ vendorId: "", projectId: "", costType: "", invoiceNumber: "", date: "", dueDate: "", amount: "", description: "", retainageRate: "0", lienWaiverStatus: "not_required" });
+  };
+
+  // AP Aging buckets (payables)
+  const daysSince = (dateStr) => {
+    if (!dateStr) return 0;
+    return Math.floor((today - new Date(dateStr)) / 86400000);
+  };
+  const unpaidBills = filterActive(apBills).filter(b => b.status !== "paid" && b.status !== "void");
+  const apBuckets = { current: [], over30: [], over60: [], over90: [] };
+  unpaidBills.forEach(bill => {
+    const age = bill.dueDate ? daysSince(bill.dueDate) : 0;
+    if (age > 90) apBuckets.over90.push({ ...bill, age });
+    else if (age > 60) apBuckets.over60.push({ ...bill, age });
+    else if (age > 30) apBuckets.over30.push({ ...bill, age });
+    else apBuckets.current.push({ ...bill, age });
+  });
+  const sum = (arr) => arr.reduce((s, b) => s + (b.amount || 0), 0);
+
+  return (
+    <div>
+      <div className="flex-between mt-16">
+        <div className="flex gap-8">
+          <div className="kpi-card"><span className="text2">Total AP</span><strong>{app.fmt(totalAP)}</strong></div>
+          <div className="kpi-card"><span className="text2">Pending Approval</span><strong>{app.fmt(pendingApproval)}</strong></div>
+          <div className="kpi-card"><span className="text2">Overdue</span><strong className="text-red">{app.fmt(overdue)}</strong></div>
+        </div>
+        <div className="flex gap-8">
+          <button className="btn btn-ghost btn-sm" onClick={() => {
+            const headers = ["Vendor","Project","Invoice #","Date","Due","Amount","Retainage","Net","Status","Lien Waiver","Cost Type"];
+            const rows = billsFiltered.map(b => [`"${vName(b.vendorId)}"`, `"${pName(b.projectId)}"`, b.invoiceNumber, b.date, b.dueDate||'', b.amount, (b.amount*(b.retainageRate||0)/100).toFixed(2), (b.amount*(1-(b.retainageRate||0)/100)).toFixed(2), b.status, b.lienWaiverStatus||'', b.costType||'']);
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'ebc_ap_bills.csv'; a.click(); URL.revokeObjectURL(url);
+            app.show("AP Bills CSV exported");
+          }}>Export CSV</button>
+          <button className="btn btn-primary btn-sm" onClick={() => { if (!adding) { setEditingBillId(null); setForm(f => ({ ...f, date: new Date().toISOString().slice(0, 10) })); } setAdding(!adding); }}>+ Add AP Bill</button>
+        </div>
+      </div>
+
+      {adding && (
+        <div className="card mt-16">
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Vendor</label>
+              <select className="form-select" value={form.vendorId} onChange={e => onVendorChange(e.target.value)}>
+                <option value="">Select...</option>
+                {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Project</label>
+              <select className="form-select" value={form.projectId} onChange={e => setForm({ ...form, projectId: e.target.value })}>
+                <option value="">Select...</option>
+                {app.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Cost Type</label>
+              <select className="form-select" value={form.costType} onChange={e => setForm({ ...form, costType: e.target.value })}>
+                <option value="">Select...</option>
+                {COST_TYPES.map(ct => <option key={ct} value={ct}>{ct.charAt(0).toUpperCase() + ct.slice(1)}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Vendor Invoice #</label>
+              <input className="form-input" value={form.invoiceNumber} onChange={e => setForm({ ...form, invoiceNumber: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Date</label>
+              <input className="form-input" type="date" value={form.date} onChange={e => onDateChange(e.target.value)} />
+              <PeriodWarning date={form.date} periods={app.periods} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Due Date</label>
+              <input className="form-input" type="date" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Amount</label>
+              <input className="form-input" type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Retainage Rate (%)</label>
+              <input className="form-input" type="number" min="0" max="100" value={form.retainageRate} onChange={e => setForm({ ...form, retainageRate: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Lien Waiver Status</label>
+              <select className="form-select" value={form.lienWaiverStatus} onChange={e => setForm({ ...form, lienWaiverStatus: e.target.value })}>
+                <option value="not_required">Not Required</option>
+                <option value="conditional_received">Conditional Received</option>
+                <option value="unconditional_received">Unconditional Received</option>
+                <option value="missing">Missing</option>
+              </select>
+            </div>
+          </div>
+          <div className="form-group mt-8">
+            <label className="form-label">Description</label>
+            <textarea className="form-input" rows={2} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+          </div>
+          {billErrors.length > 0 && (
+            <div className="mt-8" style={{ color: "var(--red)", fontSize: "var(--fs-11)" }}>
+              {billErrors.map((err, i) => <div key={i}>• {err}</div>)}
+            </div>
+          )}
+          <div className="flex gap-8 mt-16">
+            <button className="btn btn-primary btn-sm" onClick={save}>{editingBillId ? "Update AP Bill" : "Save"}</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setEditingBillId(null); setBillErrors([]); }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex-between mt-16">
+        <button className={`btn btn-ghost btn-sm ${showDeleted ? "btn-active" : ""}`} onClick={() => setShowDeleted(v => !v)}>
+          {showDeleted ? "Hide Voided" : "Show Voided"}
+        </button>
+      </div>
+      <div className="table-wrap mt-8">
+        <table className="data-table">
+          <thead><tr><th>Vendor</th><th>Project</th><th>Invoice #</th><th>Date</th><th>Due</th><th>Amount</th><th>Retainage</th><th>Net</th><th>Status</th><th>Lien Waiver</th><th></th></tr></thead>
+          <tbody>
+            {billsFiltered.length === 0 && <tr><td colSpan={11} className="more-empty-cell">{app.search ? "No matching AP bills" : <>No AP bills yet<br/><span className="more-empty-hint">Add your first vendor bill to start tracking payables</span></>}</td></tr>}
+            {billsFiltered.map(bill => {
+              const retAmt = bill.amount * (bill.retainageRate || 0) / 100;
+              const netAmt = bill.amount - retAmt;
+              return (
+                <Fragment key={bill.id}>
+                  <tr style={bill.status === "deleted" ? { opacity: 0.5, textDecoration: "line-through" } : {}}>
+                    <td>{vName(bill.vendorId)}</td>
+                    <td>{pName(bill.projectId)}</td>
+                    <td className="fw-500">{bill.invoiceNumber}</td>
+                    <td>{bill.date}</td>
+                    <td>{bill.dueDate || "—"}</td>
+                    <td className="td-right-mono">{app.fmt(bill.amount)}</td>
+                    <td className="td-right-mono">{app.fmt(retAmt)}</td>
+                    <td className="td-right-mono">{app.fmt(netAmt)}</td>
+                    <td><span className={badge(bill.status)}>{bill.status}</span></td>
+                    <td><span className={lienBadge(bill.lienWaiverStatus)}>{(bill.lienWaiverStatus || "n/a").replace(/_/g, " ")}</span></td>
+                    <td>
+                      <div className="flex gap-4">
+                        {bill.status === "entered" && (
+                          <button className="btn btn-ghost btn-sm btn-table-action" onClick={() => {
+                            if (!confirm("Approve this AP bill?")) return;
+                            app.setAPBills(prev => prev.map(b => {
+                              if (b.id !== bill.id) return b;
+                              const updated = { ...b, status: "approved" };
+                              updated.audit = auditDiff(b, updated, CRITICAL_FIELDS.apBill, app.auth);
+                              return updated;
+                            }));
+                            app.show(`AP Bill ${bill.invoiceNumber} approved`);
+                          }}>Approve</button>
+                        )}
+                        {bill.status === "approved" && (
+                          <button className="btn btn-ghost btn-sm btn-table-green" onClick={() => {
+                            const paidDate = prompt("Payment date (YYYY-MM-DD):", new Date().toISOString().slice(0, 10));
+                            if (!paidDate) return;
+                            const checkNum = prompt("Check/Reference # (optional):", "");
+                            const payMethod = prompt("Payment method (check/ach/wire/credit_card):", "check");
+                            app.setAPBills(prev => prev.map(b => {
+                              if (b.id !== bill.id) return b;
+                              const updated = { ...b, status: "paid", paidDate, checkNum: checkNum || null, paymentMethod: payMethod || "check" };
+                              updated.audit = auditDiff(b, updated, CRITICAL_FIELDS.apBill, app.auth);
+                              return updated;
+                            }));
+                            app.show(`AP Bill ${bill.invoiceNumber} marked paid`);
+                          }}>Mark Paid</button>
+                        )}
+                        {bill.status !== "deleted" && bill.status !== "void" && bill.status !== "paid" && (
+                          <button className="btn btn-ghost btn-sm btn-table-action" onClick={() => {
+                            setForm({
+                              vendorId: String(bill.vendorId), projectId: String(bill.projectId),
+                              costType: bill.costType || "", invoiceNumber: bill.invoiceNumber || "",
+                              date: bill.date || "", dueDate: bill.dueDate || "",
+                              amount: String(bill.amount), description: bill.description || "",
+                              retainageRate: String(bill.retainageRate || 0),
+                              lienWaiverStatus: bill.lienWaiverStatus || "not_required",
+                            });
+                            setEditingBillId(bill.id);
+                            setAdding(true);
+                            setBillErrors([]);
+                          }}>Edit</button>
+                        )}
+                        {bill.status !== "deleted" && bill.status !== "void" && (
+                          <button className="btn btn-ghost btn-sm btn-table-delete" onClick={() => {
+                            const reason = prompt("Reason for voiding this AP bill:");
+                            if (reason !== null) {
+                              app.setAPBills(prev => prev.map(b => b.id === bill.id ? softDelete(b, app.auth?.name, reason) : b));
+                              app.show("AP Bill voided");
+                            }
+                          }}>Void</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                  {bill.audit && bill.audit.length > 0 && (
+                    <tr><td colSpan={11}><AuditHistory audit={bill.audit} /></td></tr>
+                  )}
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* AP Aging Section */}
+      <div className="mt-24">
+        <div className="section-title">Accounts Payable Aging</div>
+        <div className="flex gap-8 mt-16">
+          <div className="kpi-card"><span className="text2">Current (0-30d)</span><strong className="text-green">{app.fmt(sum(apBuckets.current))}</strong></div>
+          <div className="kpi-card"><span className="text2">31-60 Days</span><strong className="text-amber">{app.fmt(sum(apBuckets.over30))}</strong></div>
+          <div className="kpi-card"><span className="text2">61-90 Days</span><strong className="text-red">{app.fmt(sum(apBuckets.over60))}</strong></div>
+          <div className="kpi-card"><span className="text2">90+ Days</span><strong className="text-red">{app.fmt(sum(apBuckets.over90))}</strong></div>
+        </div>
+        {[
+          { label: "90+ Days Overdue", items: apBuckets.over90, color: "var(--red)" },
+          { label: "61-90 Days", items: apBuckets.over60, color: "var(--red)" },
+          { label: "31-60 Days", items: apBuckets.over30, color: "var(--amber)" },
+          { label: "Current (0-30 Days)", items: apBuckets.current, color: "var(--green)" },
+        ].map(({ label, items, color }) => (
+          <div key={label} className="card mt-16">
+            <div className="flex-between">
+              <div className="card-title" style={{ color }}>{label} ({items.length})</div>
+              <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", color }}>{app.fmt(sum(items))}</div>
+            </div>
+            {items.length > 0 ? (
+              <table className="data-table mt-8">
+                <thead><tr><th>Vendor</th><th>Invoice #</th><th>Due Date</th><th>Age</th><th className="num">Amount</th></tr></thead>
+                <tbody>
+                  {items.sort((a, b) => b.age - a.age).map(bill => (
+                    <tr key={bill.id}>
+                      <td>{vName(bill.vendorId)}</td>
+                      <td className="fw-500">{bill.invoiceNumber}</td>
+                      <td>{bill.dueDate}</td>
+                      <td><span className="badge" style={{ background: color + "22", color }}>{bill.age}d</span></td>
+                      <td className="td-right-mono">{app.fmt(bill.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : <div className="text-sm text-muted mt-8">No bills in this bucket</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Vendors ────────────────────────────────────────────────── */
+function VendorsTab({ app }) {
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({
+    name: "", address: "", phone: "", email: "", paymentTermsDays: "30",
+    defaultCostType: "", w9Status: "missing", is1099: false,
+  });
+  const [editingVendorId, setEditingVendorId] = useState(null);
+  const [vendorSearch, setVendorSearch] = useState("");
+
+  const vendors = app.vendors || [];
+  const apBills = app.apBills || [];
+
+  const vendorsFiltered = vendors.filter(v => {
+    if (v.status === "deleted") return false;
+    if (!vendorSearch && !app.search) return true;
+    const q = (vendorSearch || app.search || "").toLowerCase();
+    return v.name.toLowerCase().includes(q) || (v.email || "").toLowerCase().includes(q) || (v.phone || "").toLowerCase().includes(q);
+  });
+
+  const totalPaidToVendor = (vendorId) => {
+    return filterActive(apBills).filter(b => String(b.vendorId) === String(vendorId) && b.status === "paid").reduce((s, b) => s + (b.amount || 0), 0);
+  };
+
+  const w9Badge = (status) => {
+    if (status === "received") return { cls: "badge-green", text: "W-9 Received" };
+    if (status === "requested") return { cls: "badge-amber", text: "W-9 Requested" };
+    return { cls: "badge-red", text: "W-9 Missing" };
+  };
+
+  const save = () => {
+    if (!form.name.trim()) { app.show("Vendor name is required", "err"); return; }
+
+    if (editingVendorId) {
+      app.setVendors(prev => prev.map(v => {
+        if (v.id !== editingVendorId) return v;
+        return {
+          ...v, name: form.name.trim(), address: form.address, phone: form.phone,
+          email: form.email, paymentTermsDays: Number(form.paymentTermsDays) || 30,
+          defaultCostType: form.defaultCostType, w9Status: form.w9Status, is1099: form.is1099,
+        };
+      }));
+      app.show("Vendor updated", "ok");
+      setEditingVendorId(null);
+    } else {
+      const newVendor = {
+        id: app.nextId(), name: form.name.trim(), address: form.address, phone: form.phone,
+        email: form.email, paymentTermsDays: Number(form.paymentTermsDays) || 30,
+        defaultCostType: form.defaultCostType, w9Status: form.w9Status, is1099: form.is1099,
+        status: "active", audit: [],
+      };
+      app.setVendors(prev => [...prev, newVendor]);
+      app.show("Vendor added", "ok");
+    }
+    setAdding(false);
+    setForm({ name: "", address: "", phone: "", email: "", paymentTermsDays: "30", defaultCostType: "", w9Status: "missing", is1099: false });
+  };
+
+  const COST_TYPES = app.COST_TYPES || ["labor", "material", "subcontractor", "equipment", "other"];
+
+  return (
+    <div>
+      <div className="flex-between mt-16">
+        <div className="flex gap-8 items-center">
+          <div className="section-title">Vendors ({vendorsFiltered.length})</div>
+          <input className="form-input" style={{ width: 200 }} placeholder="Search vendors..." value={vendorSearch} onChange={e => setVendorSearch(e.target.value)} />
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={() => { if (!adding) { setEditingVendorId(null); } setAdding(!adding); }}>+ Add Vendor</button>
+      </div>
+
+      {adding && (
+        <div className="card mt-16">
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Vendor Name *</label>
+              <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Address</label>
+              <input className="form-input" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Phone</label>
+              <input className="form-input" type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Email</label>
+              <input className="form-input" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Payment Terms (days)</label>
+              <input className="form-input" type="number" value={form.paymentTermsDays} onChange={e => setForm({ ...form, paymentTermsDays: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Default Cost Type</label>
+              <select className="form-select" value={form.defaultCostType} onChange={e => setForm({ ...form, defaultCostType: e.target.value })}>
+                <option value="">None</option>
+                {COST_TYPES.map(ct => <option key={ct} value={ct}>{ct.charAt(0).toUpperCase() + ct.slice(1)}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">W-9 Status</label>
+              <select className="form-select" value={form.w9Status} onChange={e => setForm({ ...form, w9Status: e.target.value })}>
+                <option value="received">Received</option>
+                <option value="requested">Requested</option>
+                <option value="missing">Missing</option>
+              </select>
+            </div>
+            <div className="form-group flex items-center gap-8" style={{ paddingTop: 24 }}>
+              <input type="checkbox" checked={form.is1099} onChange={e => setForm({ ...form, is1099: e.target.checked })} />
+              <label className="form-label" style={{ margin: 0 }}>1099 Eligible</label>
+            </div>
+          </div>
+          <div className="flex gap-8 mt-16">
+            <button className="btn btn-primary btn-sm" onClick={save}>{editingVendorId ? "Update Vendor" : "Save"}</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setEditingVendorId(null); }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className="table-wrap mt-16">
+        <table className="data-table">
+          <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Terms</th><th>Default Cost Type</th><th>W-9</th><th>1099</th><th>Total Paid</th><th></th></tr></thead>
+          <tbody>
+            {vendorsFiltered.length === 0 && <tr><td colSpan={9} className="more-empty-cell">{vendorSearch || app.search ? "No matching vendors" : <>No vendors yet<br/><span className="more-empty-hint">Add your first vendor to start tracking payables</span></>}</td></tr>}
+            {vendorsFiltered.map(v => {
+              const w9 = w9Badge(v.w9Status);
+              return (
+                <tr key={v.id}>
+                  <td className="fw-500">{v.name}</td>
+                  <td>{v.phone || "—"}</td>
+                  <td>{v.email || "—"}</td>
+                  <td>Net {v.paymentTermsDays || 30}</td>
+                  <td>{v.defaultCostType ? v.defaultCostType.charAt(0).toUpperCase() + v.defaultCostType.slice(1) : "—"}</td>
+                  <td><span className={w9.cls}>{w9.text}</span></td>
+                  <td>{v.is1099 ? "Yes" : "No"}</td>
+                  <td className="td-right-mono">{app.fmt(totalPaidToVendor(v.id))}</td>
+                  <td>
+                    <button className="btn btn-ghost btn-sm btn-table-action" onClick={() => {
+                      setForm({
+                        name: v.name, address: v.address || "", phone: v.phone || "",
+                        email: v.email || "", paymentTermsDays: String(v.paymentTermsDays || 30),
+                        defaultCostType: v.defaultCostType || "", w9Status: v.w9Status || "missing",
+                        is1099: v.is1099 || false,
+                      });
+                      setEditingVendorId(v.id);
+                      setAdding(true);
+                    }}>Edit</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
