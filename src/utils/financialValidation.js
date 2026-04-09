@@ -115,6 +115,74 @@ export function findDuplicateAPBill(bill, existingBills) {
   ) || null;
 }
 
+// ── Vendor Validation ──
+
+export function validateVendor(vendor) {
+  const errors = [];
+  if (!vendor.name || !vendor.name.trim()) errors.push("Vendor name is required");
+  if (!vendor.status) errors.push("Status is required (active/inactive)");
+  return errors;
+}
+
+export function findDuplicateVendor(vendor, existingVendors) {
+  if (!vendor.name) return null;
+  const normalize = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const targetName = normalize(vendor.name);
+  return existingVendors.find(
+    v => v.id !== vendor.id
+      && v.status !== "deleted"
+      && normalize(v.name) === targetName
+  ) || null;
+}
+
+// ── Period Discipline ──
+
+export function validatePeriod(date, periods) {
+  if (!date) return { allowed: false, warning: "Date is required", period: null };
+  const d = typeof date === "string" ? date : new Date(date).toISOString().slice(0, 10);
+  const period = d.slice(0, 7); // "YYYY-MM"
+  const match = periods.find(p => p.period === period);
+  if (!match) return { allowed: true, warning: null, period };
+  if (match.status === "closed") {
+    return { allowed: false, warning: `Period ${period} is closed (closed by ${match.closedBy || "unknown"} on ${match.closedAt ? match.closedAt.slice(0, 10) : "unknown date"})`, period };
+  }
+  return { allowed: true, warning: null, period };
+}
+
+// ── AP Bill Cost Aggregations ──
+
+export function computeProjectMaterialCost(projectId, apBills) {
+  return apBills
+    .filter(b => String(b.projectId) === String(projectId) && b.costType === "material" && b.status !== "deleted")
+    .reduce((sum, b) => sum + (b.amount || 0), 0);
+}
+
+export function computeProjectSubCost(projectId, apBills) {
+  return apBills
+    .filter(b => String(b.projectId) === String(projectId) && b.costType === "subcontractor" && b.status !== "deleted")
+    .reduce((sum, b) => sum + (b.amount || 0), 0);
+}
+
+export function computeProjectTotalCost(projectId, projectName, timeEntries, employees, apBills, burdenMultiplier = 1.0) {
+  const labor = computeProjectLaborCost(projectId, projectName, timeEntries, employees, burdenMultiplier);
+  const materialCost = computeProjectMaterialCost(projectId, apBills);
+  const subCost = computeProjectSubCost(projectId, apBills);
+  const otherAPCost = apBills
+    .filter(b => String(b.projectId) === String(projectId) && b.costType !== "material" && b.costType !== "subcontractor" && b.status !== "deleted")
+    .reduce((sum, b) => sum + (b.amount || 0), 0);
+  const totalAPCost = materialCost + subCost + otherAPCost;
+  return {
+    labor: labor.burdenedCost,
+    laborHours: labor.hours,
+    laborRaw: labor.rawCost,
+    material: materialCost,
+    subcontractor: subCost,
+    otherAP: otherAPCost,
+    totalAP: totalAPCost,
+    total: labor.burdenedCost + totalAPCost,
+  };
+}
+
 // ── Labor Cost Computation ──
 
 export function computeProjectLaborCost(projectId, projectName, timeEntries, employees, burdenMultiplier = 1.0) {

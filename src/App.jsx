@@ -11,7 +11,8 @@ import {
   initEmployees, initCompanyLocations, initTimeEntries, initCrewSchedule, initMaterialRequests,
   initTmTickets, DATA_VERSION,
   initAreas, initProductionLogs, initDecisionLog,
-  initCompanySettings
+  initCompanySettings,
+  initVendors, initAPBills, initPeriods, COST_TYPES, COST_CODES
 } from "./data/constants";
 import { softDelete, filterActive, computeProjectLaborCost, computeProjectLaborByCode } from "./utils/financialValidation";
 import { AreasTab } from "./tabs/AreasTab";
@@ -416,6 +417,9 @@ function App({ auth, onLogout }) {
   const [companySettings, setCompanySettings, _syncCompanySettings] = useSyncedState("companySettings", initCompanySettings);
   const [insurancePolicies, setInsurancePolicies, _syncInsurance] = useSyncedState("insurancePolicies", []);
   const [problems, setProblems, _syncProblems] = useSyncedState("problems", []);
+  const [vendors, setVendors, _syncVendors] = useSyncedState("vendors", initVendors);
+  const [apBills, setAPBills, _syncAPBills] = useSyncedState("apBills", initAPBills);
+  const [periods, setPeriods, _syncPeriods] = useSyncedState("periods", initPeriods);
 
   // ── User GPS location for proximity features ──
   const [userLocation, setUserLocation] = useState(null);
@@ -499,6 +503,9 @@ function App({ auth, onLogout }) {
         setDailyReports(initDailyReports); // []
         setTakeoffs(initTakeoffs);         // []
         setPunchItems(initPunchItems);
+        setVendors(initVendors);
+        setAPBills(initAPBills);
+        setPeriods(initPeriods);
         localStorage.setItem("ebc_data_version", String(DATA_VERSION));
         console.info("[EBC] Data version upgraded to", DATA_VERSION, "— re-seeded all data from constants.js");
       }
@@ -660,6 +667,8 @@ function App({ auth, onLogout }) {
     companySettings, setCompanySettings,
     insurancePolicies, setInsurancePolicies,
     problems, setProblems,
+    vendors, setVendors, apBills, setAPBills, periods, setPeriods,
+    COST_TYPES, COST_CODES,
     show, setModal, modal, search, setSearch, tab, setTab, subTab, setSubTab, fmt, fmtK, nextId,
     lang, setLang, t,
     auth, onLogout,

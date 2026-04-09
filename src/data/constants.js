@@ -7,7 +7,7 @@ import { isDemoMode } from "./defaults";
 const _demo = isDemoMode();
 
 // Bump this when seed data changes to bust stale localStorage caches
-export const DATA_VERSION = 18;
+export const DATA_VERSION = 19;
 
 // ── THEMES ────────────────────────────────────────────────────
 export const THEMES = {
@@ -867,3 +867,30 @@ export const initCompanySettings = {
   defaultRetainageRate: 10,     // percent
   marginAlertThreshold: 25,     // percent — flag projects below this margin
 };
+
+// ── COST TYPES & COST CODES ─────────────────────────────────
+export const COST_TYPES = ["labor", "material", "subcontractor", "equipment", "other"];
+export const COST_CODES = ["framing", "board", "tape", "finish", "ACT", "insulation", "demo", "misc"];
+
+// ── VENDOR MASTER ───────────────────────────────────────────
+export const initVendors = [
+  { id: 1, name: "ABC Supply Co", address: "4521 Dacoma St, Houston, TX 77092", phone: "713-555-0101", email: "orders@abcsupply.com", paymentTerms: "Net 30", defaultCostType: "material", w9Status: "received", is1099Eligible: false, status: "active", audit: [] },
+  { id: 2, name: "L&W Supply", address: "8900 Westpark Dr, Houston, TX 77063", phone: "713-555-0202", email: "sales@lwsupply.com", paymentTerms: "Net 30", defaultCostType: "material", w9Status: "received", is1099Eligible: false, status: "active", audit: [] },
+  { id: 3, name: "Tape & Texture Inc", dba: "T&T Drywall Services", phone: "281-555-0303", paymentTerms: "Net 15", defaultCostType: "subcontractor", w9Status: "received", is1099Eligible: true, status: "active", audit: [] },
+  { id: 4, name: "Metro Scaffold Rental", phone: "832-555-0404", paymentTerms: "Due on Receipt", defaultCostType: "equipment", w9Status: "missing", is1099Eligible: true, status: "active", audit: [] },
+  { id: 5, name: "Houston Steel Studs", address: "2200 Navigation Blvd, Houston, TX 77003", phone: "713-555-0505", email: "info@houstonsteel.com", paymentTerms: "Net 30", defaultCostType: "material", w9Status: "received", is1099Eligible: false, status: "active", audit: [] },
+];
+
+// ── AP BILLS (ACCOUNTS PAYABLE) ─────────────────────────────
+export const initAPBills = [
+  { id: 1, vendorId: 1, projectId: 2, costType: "material", invoiceNumber: "INV-88421", date: "2026-03-15", dueDate: "2026-04-14", amount: 8450, description: "Drywall board delivery - Brunello Cucinelli", status: "approved", approvedBy: "Emmanuel Aguilar", approvedAt: "2026-03-16", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", audit: [] },
+  { id: 2, vendorId: 5, projectId: 3, costType: "material", invoiceNumber: "HSS-2026-0312", date: "2026-03-12", dueDate: "2026-04-11", amount: 6200, description: "Steel studs and track - BSLMC Cath Labs", status: "entered", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", audit: [] },
+  { id: 3, vendorId: 3, projectId: 2, costType: "subcontractor", invoiceNumber: "TT-2026-041", date: "2026-03-28", dueDate: "2026-04-12", amount: 12500, description: "Tape and texture scope - Brunello Cucinelli", status: "entered", retainageRate: 10, retainageAmount: 1250, netPayable: 11250, attachments: [], lienWaiverStatus: "conditional_received", lienWaiverDate: "2026-03-30", audit: [] },
+];
+
+// ── ACCOUNTING PERIODS ──────────────────────────────────────
+export const initPeriods = [
+  { period: "2026-01", status: "closed", closedAt: "2026-02-05T17:00:00Z", closedBy: "Emmanuel Aguilar" },
+  { period: "2026-02", status: "closed", closedAt: "2026-03-04T16:30:00Z", closedBy: "Emmanuel Aguilar" },
+  { period: "2026-03", status: "open" },
+];
