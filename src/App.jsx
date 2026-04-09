@@ -13,7 +13,7 @@ import {
   initAreas, initProductionLogs, initDecisionLog,
   initCompanySettings
 } from "./data/constants";
-import { softDelete, filterActive, computeProjectLaborCost } from "./utils/financialValidation";
+import { softDelete, filterActive, computeProjectLaborCost, computeProjectLaborByCode } from "./utils/financialValidation";
 import { AreasTab } from "./tabs/AreasTab";
 import { PunchListTab } from "./tabs/PunchListTab";
 import { DecisionLogTab } from "./tabs/DecisionLogTab";
@@ -711,14 +711,23 @@ function App({ auth, onLogout }) {
     return buckets;
   }, [invoices]);
 
-  // Labor % = weighted average of (laborCost / contract) across in-progress projects with cost data
+  // Labor % = weighted average of (burdened labor cost / contract) across in-progress projects with time data
   const laborUtil = useMemo(() => {
-    const activeProjWithLabor = projects.filter(p => p.status === "in-progress" && (p.laborCost || 0) > 0 && (p.contract || 0) > 0);
-    if (activeProjWithLabor.length === 0) return null;
-    const totalLabor = activeProjWithLabor.reduce((s, p) => s + p.laborCost, 0);
-    const totalContract = activeProjWithLabor.reduce((s, p) => s + p.contract, 0);
+    const burden = companySettings?.laborBurdenMultiplier || 1.35;
+    const activeProj = projects.filter(p => p.status === "in-progress" && (p.contract || 0) > 0);
+    if (activeProj.length === 0) return null;
+    let totalLabor = 0;
+    let totalContract = 0;
+    for (const p of activeProj) {
+      const lc = computeProjectLaborCost(p.id, p.name, timeEntries, employees, burden);
+      if (lc.burdenedCost > 0) {
+        totalLabor += lc.burdenedCost;
+        totalContract += p.contract;
+      }
+    }
+    if (totalContract === 0) return null;
     return Math.round((totalLabor / totalContract) * 100);
-  }, [projects]);
+  }, [projects, timeEntries, employees, companySettings]);
 
   // ── filtered bids ──
   const filteredBids = useMemo(() => {
@@ -923,28 +932,36 @@ function App({ auth, onLogout }) {
     // Follow-ups from call log
     const followUps = callLog.filter(c => c.next && c.next.trim());
 
-    // Profit margin alerts — flag active projects below 30% margin
-    // profit% = (contract - laborCost - materialCost) / contract * 100
+    // Profit margin alerts — flag active projects below threshold
+    // Uses actual burdened labor from time entries + estimated material as fallback
+    const marginThreshold = companySettings?.marginAlertThreshold || 25;
+    const burden = companySettings?.laborBurdenMultiplier || 1.35;
     const profitAlerts = projects.filter(p => {
       if ((p.progress || 0) >= 100) return false; // skip completed
       const contract = p.contract || 0;
       if (contract <= 0) return false; // can't calculate without contract
-      const totalCost = (p.laborCost || 0) + (p.materialCost || 0);
-      if (totalCost <= 0) return false; // no costs entered yet — not alertable
+      const lc = computeProjectLaborCost(p.id, p.name, timeEntries, employees, burden);
+      const laborActual = lc.burdenedCost;
+      const materialEst = p.materialCost || 0; // estimate until AP bills exist
+      const totalCost = laborActual + materialEst;
+      if (totalCost <= 0) return false; // no costs yet — not alertable
       const margin = ((contract - totalCost) / contract) * 100;
-      return margin < 30;
+      return margin < marginThreshold;
     }).map(p => {
       const contract = p.contract || 0;
-      const totalCost = (p.laborCost || 0) + (p.materialCost || 0);
+      const lc = computeProjectLaborCost(p.id, p.name, timeEntries, employees, burden);
+      const laborActual = lc.burdenedCost;
+      const materialEst = p.materialCost || 0;
+      const totalCost = laborActual + materialEst;
       const margin = Math.round(((contract - totalCost) / contract) * 100);
-      return { ...p, margin, totalCost };
+      return { ...p, margin, totalCost, laborActual, materialEst, laborHours: lc.hours };
     }).sort((a, b) => a.margin - b.margin);
 
     // Total urgency count
     const urgentCount = bidsDueSoon.length + cosPending.length + rfisOpen.filter(r => r.age > 7).length + subsDueSoon.length + overdueInv.length + profitAlerts.length;
 
     return { bidsDueSoon, cosPending, cosPendingTotal, rfisOpen, subsDueSoon, overdueInv, overdueTotal, tmPending, projNoBilling, projAtRisk, followUps, profitAlerts, urgentCount };
-  }, [bids, changeOrders, rfis, submittals, invoices, tmTickets, projects, callLog]);
+  }, [bids, changeOrders, rfis, submittals, invoices, tmTickets, projects, callLog, timeEntries, employees, companySettings]);
 
   const pName = (pid) => projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
 
@@ -1421,7 +1438,7 @@ function App({ auth, onLogout }) {
             <div className="card action-card action-card--red" onClick={() => handleTabClick("projects")}>
               <div className="text-xs text-muted">Low Margin</div>
               <div className="action-value text-red">{dashActions.profitAlerts.length}</div>
-              <div className="text-xs text-muted mt-2">projects below 30%</div>
+              <div className="text-xs text-muted mt-2">projects below {companySettings?.marginAlertThreshold || 25}%</div>
             </div>
           )}
         </div>
@@ -1453,7 +1470,7 @@ function App({ auth, onLogout }) {
                 <span className="text-xs text-red text-uppercase" style={{ letterSpacing: "0.6px" }}>Profit Alert</span>
               </div>
               <div style={{ fontSize: "var(--text-card)", fontWeight: "var(--weight-bold)", color: "var(--red)" }}>{dashActions.profitAlerts.length}</div>
-              <div className="text-xs text-red" style={{ opacity: 0.8 }}>{dashActions.profitAlerts.filter(p => p.margin < 15).length > 0 ? `${dashActions.profitAlerts.filter(p => p.margin < 15).length} critical` : "below 30%"}</div>
+              <div className="text-xs text-red" style={{ opacity: 0.8 }}>{dashActions.profitAlerts.filter(p => p.margin < 15).length > 0 ? `${dashActions.profitAlerts.filter(p => p.margin < 15).length} critical` : `below ${companySettings?.marginAlertThreshold || 25}%`}</div>
             </div>
           )}
         </div>
@@ -1488,20 +1505,21 @@ function App({ auth, onLogout }) {
 
       {/* ── Profit Analysis — projects below 30% margin ── */}
       {dashCfg.showKPIs && dashActions.profitAlerts.length > 0 && (() => {
+        const marginThr = companySettings?.marginAlertThreshold || 25;
         const getProfitDiagnosis = (p) => {
-          const laborRatio = p.laborCost ? p.laborCost / p.contract : null;
-          const matRatio = p.materialCost ? p.materialCost / p.contract : null;
+          const laborRatio = p.laborActual ? p.laborActual / p.contract : null;
+          const matRatio = p.materialEst ? p.materialEst / p.contract : null;
           const issues = [];
           // Labor is primary profit driver — healthy labor ratio is ~50% of contract (100% markup)
           if (laborRatio !== null && laborRatio > 0.55) issues.push({ icon: <Wrench size={11} />, text: "Labor overrun" });
-          if (matRatio !== null && matRatio > 0.28) issues.push({ icon: <Package size={11} />, text: "Material overage" });
+          if (matRatio !== null && matRatio > 0.28) issues.push({ icon: <Package size={11} />, text: "Material overage (est.)" });
           // Check negative COs
           const projCOs = changeOrders.filter(co => String(co.projectId) === String(p.id) && co.amount < 0 && co.status === "approved");
           if (projCOs.length > 0) issues.push({ icon: <FileX size={11} />, text: "CO reduced margin" });
           if (issues.length === 0) {
             if (p.margin < 0) return [{ icon: <AlertTriangle size={11} />, text: "Contract underwater" }];
             if (p.margin < 15) return [{ icon: <AlertTriangle size={11} />, text: "Critical — review estimate vs actuals" }];
-            return [{ icon: <TrendingDown size={11} />, text: "Below 30% target" }];
+            return [{ icon: <TrendingDown size={11} />, text: `Below ${marginThr}% target` }];
           }
           return issues;
         };
@@ -1513,7 +1531,7 @@ function App({ auth, onLogout }) {
               <div className="flex-center-gap-8">
                 <TrendingDown size={16} className="text-red" />
                 <span className="text-sm font-semi text-default">Profit Analysis</span>
-                <span className="text-xs text-muted">— projects below 30% margin</span>
+                <span className="text-xs text-muted">— projects below {marginThr}% margin</span>
               </div>
               <div className="flex-center-gap-6">
                 {criticalCount > 0 && <span className="badge badge-red flex-center-gap-4"><AlertTriangle size={10} /> {criticalCount} critical</span>}
@@ -2833,7 +2851,7 @@ function App({ auth, onLogout }) {
                 {pSubs.length > 0 && <span className="text-amber">Sub: {pSubs.length}</span>}
                 {pCOs.length > 0 && <span className="text-amber">CO: {pCOs.length}</span>}
                 {billingLag && <span className="text-red">Billing lag</span>}
-                {(() => { const tc = (p.laborCost || 0) + (p.materialCost || 0); const c = p.contract || 0; if (tc > 0 && c > 0) { const m = Math.round(((c - tc) / c) * 100); if (m < 30) return <span style={{ color: m < 0 ? "#dc2626" : "var(--red)", fontWeight: "var(--weight-semi)" }}>Margin: {m}%</span>; } return null; })()}
+                {(() => { const lc = computeProjectLaborCost(p.id, p.name, timeEntries, employees, companySettings?.laborBurdenMultiplier || 1.35); const tc = lc.burdenedCost + (p.materialCost || 0); const c = p.contract || 0; const thr = companySettings?.marginAlertThreshold || 25; if (tc > 0 && c > 0) { const m = Math.round(((c - tc) / c) * 100); if (m < thr) return <span style={{ color: m < 0 ? "#dc2626" : "var(--red)", fontWeight: "var(--weight-semi)" }}>Margin: {m}%</span>; } return null; })()}
                 {pRfis.length === 0 && pSubs.length === 0 && pCOs.length === 0 && !billingLag && <span className="text-green">On track</span>}
               </div>
               {/* Closeout button for near-complete */}
@@ -6601,21 +6619,22 @@ const ModalHub = ({ type, data, app }) => {
               <input className="form-input" type="number" value={draft.billed} onChange={e => upd("billed", Number(e.target.value))} />
             </div>
             <div className="form-group">
-              <label className="form-label">Labor Cost ($)</label>
+              <label className="form-label">Est. Labor Cost ($)</label>
               <input className="form-input" type="number" value={draft.laborCost || 0} onChange={e => upd("laborCost", Number(e.target.value))} />
             </div>
             <div className="form-group">
-              <label className="form-label">Material Cost ($)</label>
+              <label className="form-label">Est. Material Cost ($)</label>
               <input className="form-input" type="number" value={draft.materialCost || 0} onChange={e => upd("materialCost", Number(e.target.value))} />
             </div>
             {(draft.contract || 0) > 0 && ((draft.laborCost || 0) + (draft.materialCost || 0)) > 0 && (() => {
               const totalCost = (draft.laborCost || 0) + (draft.materialCost || 0);
               const margin = Math.round(((draft.contract - totalCost) / draft.contract) * 100);
+              const mThr = app.companySettings?.marginAlertThreshold || 25;
               return (
                 <div className="form-group">
-                  <label className="form-label">Profit Margin</label>
-                  <div style={{ padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", background: margin < 30 ? "rgba(239,68,68,0.1)" : "rgba(34,197,94,0.1)", border: `1px solid ${margin < 30 ? "var(--red)" : "var(--green)"}`, fontWeight: "var(--weight-bold)", color: margin < 0 ? "#dc2626" : margin < 30 ? "var(--red)" : "var(--green)" }}>
-                    {margin}% {margin < 30 ? " — Below 30% target" : ""}
+                  <label className="form-label">Profit Margin (Est.)</label>
+                  <div style={{ padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", background: margin < mThr ? "rgba(239,68,68,0.1)" : "rgba(34,197,94,0.1)", border: `1px solid ${margin < mThr ? "var(--red)" : "var(--green)"}`, fontWeight: "var(--weight-bold)", color: margin < 0 ? "#dc2626" : margin < mThr ? "var(--red)" : "var(--green)" }}>
+                    {margin}% {margin < mThr ? ` — Below ${mThr}% target` : ""}
                   </div>
                 </div>
               );

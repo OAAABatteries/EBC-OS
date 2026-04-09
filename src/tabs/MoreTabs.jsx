@@ -103,6 +103,7 @@ function InvoicesTab({ app }) {
   const [collectLoading, setCollectLoading] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
   const [invoiceErrors, setInvoiceErrors] = useState([]);
+  const [editingInvId, setEditingInvId] = useState(null);
 
   const runCollection = async (inv) => {
     if (!app.apiKey) { app.show("Set API key in Settings first", "err"); return; }
@@ -140,24 +141,46 @@ function InvoicesTab({ app }) {
     const errors = validateInvoice({ projectId: form.projectId, amount: Number(form.amount), date: form.date, desc: form.desc });
     if (errors.length > 0) { setInvoiceErrors(errors); return; }
     setInvoiceErrors([]);
-    const duplicate = findDuplicateInvoice({ number: form.number, projectId: Number(form.projectId) }, app.invoices);
-    if (duplicate) {
-      const proceed = confirm(`Warning: Invoice #${form.number} already exists for this project (${app.fmt(duplicate.amount)}). Save anyway?`);
-      if (!proceed) return;
+    if (editingInvId) {
+      // Edit existing invoice
+      app.setInvoices(prev => prev.map(i => {
+        if (i.id !== editingInvId) return i;
+        const updated = {
+          ...i,
+          projectId: Number(form.projectId),
+          number: form.number,
+          date: form.date,
+          amount: Number(form.amount),
+          status: form.status,
+          desc: form.desc,
+          paidDate: form.paidDate || null,
+        };
+        updated.audit = auditDiff(i, updated, CRITICAL_FIELDS.invoice, app.auth);
+        return updated;
+      }));
+      app.show("Invoice updated", "ok");
+      setEditingInvId(null);
+    } else {
+      // Create new invoice
+      const duplicate = findDuplicateInvoice({ number: form.number, projectId: Number(form.projectId) }, app.invoices);
+      if (duplicate) {
+        const proceed = confirm(`Warning: Invoice #${form.number} already exists for this project (${app.fmt(duplicate.amount)}). Save anyway?`);
+        if (!proceed) return;
+      }
+      const newItem = {
+        id: app.nextId(),
+        projectId: Number(form.projectId),
+        number: form.number,
+        date: form.date,
+        amount: Number(form.amount),
+        status: form.status,
+        desc: form.desc,
+        paidDate: form.paidDate || null,
+        audit: [],
+      };
+      app.setInvoices(prev => [...prev, newItem]);
+      app.show("Invoice added", "ok");
     }
-    const newItem = {
-      id: app.nextId(),
-      projectId: Number(form.projectId),
-      number: form.number,
-      date: form.date,
-      amount: Number(form.amount),
-      status: form.status,
-      desc: form.desc,
-      paidDate: form.paidDate || null,
-      audit: [],
-    };
-    app.setInvoices(prev => [...prev, newItem]);
-    app.show("Invoice added", "ok");
     setAdding(false);
     setForm({ projectId: "", number: "", date: "", amount: "", status: "pending", desc: "", paidDate: "" });
   };
@@ -197,7 +220,7 @@ function InvoicesTab({ app }) {
               app.show("QuickBooks IIF exported", "ok");
             });
           }}>Export to QB</button>
-          <button className="btn btn-primary btn-sm" onClick={() => { if (!adding) { const nums = app.invoices.map(i => parseInt(i.number)).filter(n => !isNaN(n)); setForm(f => ({ ...f, number: String((nums.length ? Math.max(...nums) : 0) + 1).padStart(4, "0"), date: new Date().toISOString().slice(0, 10) })); } setAdding(!adding); }}>+ Add Invoice</button>
+          <button className="btn btn-primary btn-sm" onClick={() => { if (!adding) { setEditingInvId(null); const nums = app.invoices.map(i => parseInt(i.number)).filter(n => !isNaN(n)); setForm(f => ({ ...f, number: String((nums.length ? Math.max(...nums) : 0) + 1).padStart(4, "0"), date: new Date().toISOString().slice(0, 10) })); } setAdding(!adding); }}>+ Add Invoice</button>
         </div>
       </div>
 
@@ -247,8 +270,8 @@ function InvoicesTab({ app }) {
             </div>
           )}
           <div className="flex gap-8 mt-16">
-            <button className="btn btn-primary btn-sm" onClick={save}>Save</button>
-            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setInvoiceErrors([]); }}>Cancel</button>
+            <button className="btn btn-primary btn-sm" onClick={save}>{editingInvId ? "Update Invoice" : "Save"}</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setEditingInvId(null); setInvoiceErrors([]); }}>Cancel</button>
           </div>
         </div>
       )}
@@ -298,6 +321,23 @@ function InvoicesTab({ app }) {
                         disabled={collectLoading && collectId === inv.id}>
                         {collectLoading && collectId === inv.id ? "..." : collectId === inv.id && collectText ? "Hide" : "Collect"}
                       </button>
+                    )}
+                    {inv.status !== "deleted" && inv.status !== "paid" && (
+                      <button className="btn btn-ghost btn-sm btn-table-action"
+                        onClick={() => {
+                          setForm({
+                            projectId: String(inv.projectId),
+                            number: inv.number,
+                            date: inv.date,
+                            amount: String(inv.amount),
+                            status: inv.status,
+                            desc: inv.desc || "",
+                            paidDate: inv.paidDate || "",
+                          });
+                          setEditingInvId(inv.id);
+                          setAdding(true);
+                          setInvoiceErrors([]);
+                        }}>Edit</button>
                     )}
                     <button className="btn btn-ghost btn-sm btn-table-delete"
                       onClick={() => {
@@ -566,6 +606,7 @@ function ChangeOrdersTab({ app }) {
                   <td>{app.fmt(co.amount)}</td>
                   <td><span className={`${badge(co.status)} more-cursor-pointer`} title="Click to change status" onClick={() => {
                     const next = co.status === "pending" ? "approved" : co.status === "approved" ? "rejected" : "pending";
+                    if (next === "approved" && !confirm(`Approve CO #${co.number} for ${app.fmt(co.amount)}?`)) return;
                     app.setChangeOrders(prev => prev.map(c => c.id === co.id ? {
                       ...c, status: next,
                       approved: next === "approved" ? new Date().toISOString().slice(0, 10) : c.approved,
@@ -1166,6 +1207,33 @@ function JobCostingTab({ app }) {
   const [varianceResult, setVarianceResult] = useState(null);
   const [varianceLoading, setVarianceLoading] = useState(false);
   const [showVariance, setShowVariance] = useState(false);
+  const [expandedCostCodes, setExpandedCostCodes] = useState({});
+  const marginThreshold = (app.companySettings?.marginAlertThreshold || 25) / 100;
+
+  const getCostCodeBreakdown = (projectId, projectName) => {
+    const burden = app.companySettings?.laborBurdenMultiplier || 1.0;
+    const employeeMap = new Map((app.employees || []).map(e => [e.id, e]));
+    const employeeNameMap = new Map((app.employees || []).map(e => [e.name, e]));
+    const entries = (app.timeEntries || []).filter(te => {
+      if (te.status === "deleted") return false;
+      if (!te.clockIn || !te.clockOut) return false;
+      if (te.isTM) return false;
+      if (te.projectId && String(te.projectId) === String(projectId)) return true;
+      if (te.projectName && te.projectName === projectName) return true;
+      return false;
+    });
+    const codes = {};
+    for (const te of entries) {
+      const code = te.costCode || "misc";
+      const hours = (new Date(te.clockOut) - new Date(te.clockIn)) / 3600000;
+      const emp = employeeMap.get(te.employeeId) || employeeNameMap.get(te.employeeName);
+      const rate = emp?.hourlyRate || 0;
+      if (!codes[code]) codes[code] = { hours: 0, cost: 0 };
+      codes[code].hours += hours;
+      codes[code].cost += hours * rate * burden;
+    }
+    return Object.entries(codes).sort((a, b) => b[1].cost - a[1].cost);
+  };
 
   const runVarianceAnalysis = async () => {
     if (!app.apiKey) { app.show("Set API key in Settings first", "err"); return; }
@@ -1305,11 +1373,16 @@ function JobCostingTab({ app }) {
         const laborHours = laborData.hours;
         const laborCost = laborData.burdenedCost;
         const laborVariance = adjustedContract > 0 ? adjustedContract - laborCost : 0;
+        const laborMarginPct = adjustedContract > 0 ? (1 - laborCost / adjustedContract) : 0;
+        const belowThreshold = adjustedContract > 0 && laborMarginPct < marginThreshold;
         return (
           <div className="card mt-16" key={proj.id}>
             <div className="flex-between">
               <strong>{proj.name}</strong>
-              <span className="text2">{pct}% Billed</span>
+              <div className="flex gap-8" style={{ alignItems: "center" }}>
+                {belowThreshold && <span className="badge-red" style={{ fontSize: "var(--fs-10)" }}>Low Margin</span>}
+                <span className="text2">{pct}% Billed</span>
+              </div>
             </div>
             <div className="more-cost-grid">
               <div><span className="text2">Contract</span><br />{app.fmt(proj.contract)}</div>
@@ -1322,8 +1395,34 @@ function JobCostingTab({ app }) {
               <div><span className="text2">Labor Hours</span><br /><span className="font-mono">{laborHours.toFixed(1)}h</span></div>
               <div><span className="text2">Labor Cost{(app.companySettings?.laborBurdenMultiplier || 1) > 1 ? " (burdened)" : ""}</span><br /><span className="font-mono text-amber">{app.fmt(laborCost)}</span></div>
               <div><span className="text2">Budget Remaining</span><br /><span className="font-mono" style={{ color: laborVariance >= 0 ? "var(--green)" : "var(--red)" }}>{app.fmt(laborVariance)}</span></div>
-              <div><span className="text2">Labor Margin</span><br /><span className="font-mono" style={{ color: adjustedContract > 0 && laborCost / adjustedContract < 0.7 ? "var(--green)" : "var(--amber)" }}>{adjustedContract > 0 ? Math.round((1 - laborCost / adjustedContract) * 100) : 0}%</span></div>
+              <div><span className="text2">Labor Margin</span><br /><span className="font-mono" style={{ color: belowThreshold ? "var(--red)" : adjustedContract > 0 && laborCost / adjustedContract < 0.7 ? "var(--green)" : "var(--amber)" }}>{adjustedContract > 0 ? Math.round(laborMarginPct * 100) : 0}%</span></div>
             </div>
+            {/* Cost Code Breakdown */}
+            {laborHours > 0 && (
+              <div style={{ marginTop: "var(--space-2)" }}>
+                <button className="btn btn-ghost btn-sm" style={{ fontSize: "var(--fs-10)" }}
+                  onClick={() => setExpandedCostCodes(prev => ({ ...prev, [proj.id]: !prev[proj.id] }))}>
+                  {expandedCostCodes[proj.id] ? "Hide" : "Show"} Cost Code Breakdown
+                </button>
+                {expandedCostCodes[proj.id] && (() => {
+                  const codes = getCostCodeBreakdown(proj.id, proj.name);
+                  return codes.length > 0 ? (
+                    <table className="data-table mt-8" style={{ fontSize: "var(--fs-11)" }}>
+                      <thead><tr><th>Cost Code</th><th className="num">Hours</th><th className="num">Cost</th></tr></thead>
+                      <tbody>
+                        {codes.map(([code, data]) => (
+                          <tr key={code}>
+                            <td className="fw-500">{code}</td>
+                            <td className="td-right-mono">{data.hours.toFixed(1)}h</td>
+                            <td className="td-right-mono">{app.fmt(data.cost)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : <div className="text-sm text-muted mt-4">No cost code data on time entries</div>;
+                })()}
+              </div>
+            )}
             {(tmApproved > 0 || tmPending > 0) && (
               <div className="more-cost-grid--3">
                 <div><span className="text2">T&M Approved</span><br /><span className="text-green">{app.fmt(tmApproved)}</span></div>
@@ -1482,7 +1581,7 @@ function AgingReportTab({ app }) {
     return Math.floor((today - new Date(dateStr)) / 86400000);
   };
 
-  const unpaid = app.invoices.filter(i => i.status === "pending" || i.status === "overdue");
+  const unpaid = filterActive(app.invoices).filter(i => i.status === "pending" || i.status === "overdue");
   const buckets = { current: [], over30: [], over60: [], over90: [] };
 
   unpaid.forEach(inv => {

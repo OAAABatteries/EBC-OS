@@ -143,3 +143,45 @@ export function computeProjectLaborCost(projectId, projectName, timeEntries, emp
 
   return { hours: totalHours, rawCost, burdenedCost: rawCost * burdenMultiplier };
 }
+
+// ── Labor Cost Breakdown by Cost Code ──
+
+export function computeProjectLaborByCode(projectId, projectName, timeEntries, employees, burdenMultiplier = 1.0) {
+  const employeeMap = new Map(employees.map(e => [e.id, e]));
+  const employeeNameMap = new Map(employees.map(e => [e.name, e]));
+
+  const projEntries = timeEntries.filter(te => {
+    if (te.status === "deleted") return false;
+    if (!te.clockIn || !te.clockOut) return false;
+    if (te.isTM) return false;
+    if (te.projectId && String(te.projectId) === String(projectId)) return true;
+    if (te.projectName && te.projectName === projectName) return true;
+    return false;
+  });
+
+  const byCode = new Map();
+  let totalHours = 0;
+  let totalRaw = 0;
+
+  for (const te of projEntries) {
+    const hours = (new Date(te.clockOut) - new Date(te.clockIn)) / 3600000;
+    const emp = employeeMap.get(te.employeeId) || employeeNameMap.get(te.employeeName);
+    const rate = emp?.hourlyRate || 0;
+    const cost = hours * rate;
+    const code = te.costCode || "unassigned";
+
+    totalHours += hours;
+    totalRaw += cost;
+
+    const existing = byCode.get(code) || { hours: 0, rawCost: 0, burdenedCost: 0 };
+    existing.hours += hours;
+    existing.rawCost += cost;
+    existing.burdenedCost += cost * burdenMultiplier;
+    byCode.set(code, existing);
+  }
+
+  return {
+    byCode,
+    total: { hours: totalHours, rawCost: totalRaw, burdenedCost: totalRaw * burdenMultiplier },
+  };
+}

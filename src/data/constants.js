@@ -863,7 +863,7 @@ export const initDecisionLog = _demoDecisionLog; // always load — PM decision/
 
 // ── COMPANY SETTINGS ──
 export const initCompanySettings = {
-  laborBurdenMultiplier: 1.0,  // Set to 1.30-1.40 for burdened labor (taxes/insurance/benefits)
+  laborBurdenMultiplier: 1.35,  // FICA 7.65% + SUTA ~2.5% + WC ~12% + GL ~5% + benefits ~8%
   defaultRetainageRate: 10,     // percent
   marginAlertThreshold: 25,     // percent — flag projects below this margin
 };
