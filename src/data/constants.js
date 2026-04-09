@@ -22,13 +22,14 @@ export const THEMES = {
       "--green":"#10b981","--green-dim":"rgba(16,185,129,0.10)",
       "--red":"#ef4444","--red-dim":"rgba(239,68,68,0.10)",
       "--yellow":"#eab308",
+      "--purple":"#8b5cf6","--purple-dim":"rgba(139,92,246,0.10)","--cyan":"#22d3ee","--cyan-dim":"rgba(34,211,238,0.10)",
       "--text":"#d4dae6","--text2":"#8494ad","--text3":"#455068",
       "--bg2-rgb":"12,15,22",
       "--glass-border":"rgba(255,255,255,0.06)","--glass-bg":"rgba(12,15,22,0.72)",
-      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, Roboto, sans-serif",
-      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, Roboto, sans-serif",
+      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
+      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
       "--font-mono":"'IBM Plex Mono', monospace",
-      "--radius-control":"12px","--radius-card":"16px","--radius-sheet":"24px",
+      
       "--shadow":"0 2px 12px rgba(0,0,0,0.3)","--card-shadow":"0 1px 8px rgba(0,0,0,0.2)",
       "--shadow-sm":"0 1px 4px rgba(0,0,0,0.12)","--shadow-md":"0 2px 12px rgba(0,0,0,0.28)","--shadow-lg":"0 4px 32px rgba(0,0,0,0.45)",
       "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
@@ -46,13 +47,14 @@ export const THEMES = {
       "--green":"#00e89a","--green-dim":"rgba(0,232,154,0.08)",
       "--red":"#ff4f7b","--red-dim":"rgba(255,79,123,0.10)",
       "--yellow":"#ffd866",
+      "--purple":"#a78bfa","--purple-dim":"rgba(167,139,250,0.10)","--cyan":"#67e8f9","--cyan-dim":"rgba(103,232,249,0.10)",
       "--text":"#bdddf0","--text2":"#5d98b8","--text3":"#2a5570",
       "--bg2-rgb":"4,18,32",
       "--glass-border":"rgba(0,191,239,0.08)","--glass-bg":"rgba(4,18,32,0.72)",
-      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, Roboto, sans-serif",
-      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, Roboto, sans-serif",
+      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
+      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
       "--font-mono":"'IBM Plex Mono', monospace",
-      "--radius-control":"12px","--radius-card":"16px","--radius-sheet":"24px",
+      
       "--shadow":"0 0 0 1px rgba(0,191,239,0.06)","--card-shadow":"0 0 12px rgba(0,191,239,0.04)",
       "--shadow-sm":"0 0 0 1px rgba(0,191,239,0.06)","--shadow-md":"0 0 12px rgba(0,191,239,0.08)","--shadow-lg":"0 0 24px rgba(0,191,239,0.12)",
       "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
@@ -69,14 +71,14 @@ export const THEMES = {
       "--blue":"#2563eb","--blue-dim":"rgba(37,99,235,0.07)",
       "--green":"#059669","--green-dim":"rgba(5,150,105,0.07)",
       "--red":"#dc2626","--red-dim":"rgba(220,38,38,0.07)",
-      "--yellow":"#b45309",
+      "--yellow":"#b45309","--purple":"#7c3aed","--purple-dim":"rgba(124,58,237,0.10)","--cyan":"#0891b2","--cyan-dim":"rgba(8,145,178,0.10)",
       "--text":"#1a1d28","--text2":"#555d6e","--text3":"#9aa0b0",
       "--bg2-rgb":"255,255,255",
       "--glass-border":"rgba(0,0,0,0.06)","--glass-bg":"rgba(255,255,255,0.78)",
-      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, Roboto, sans-serif",
-      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, Roboto, sans-serif",
+      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
+      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
       "--font-mono":"'IBM Plex Mono', monospace",
-      "--radius-control":"12px","--radius-card":"16px","--radius-sheet":"24px",
+      
       "--shadow":"0 1px 4px rgba(0,0,0,0.06)","--card-shadow":"0 1px 6px rgba(0,0,0,0.05)",
       "--shadow-sm":"0 1px 4px rgba(0,0,0,0.06)","--shadow-md":"0 2px 8px rgba(0,0,0,0.12)","--shadow-lg":"0 4px 20px rgba(0,0,0,0.18)",
       "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
@@ -93,14 +95,14 @@ export const THEMES = {
       "--blue":"#00ff41","--blue-dim":"rgba(0,255,65,0.06)",
       "--green":"#00ff41","--green-dim":"rgba(0,255,65,0.08)",
       "--red":"#ff3c00","--red-dim":"rgba(255,60,0,0.08)",
-      "--yellow":"#aaff00",
+      "--yellow":"#aaff00","--purple":"#bf7fff","--purple-dim":"rgba(191,127,255,0.10)","--cyan":"#00ffcc","--cyan-dim":"rgba(0,255,204,0.10)",
       "--text":"#00ff41","--text2":"#009928","--text3":"#005216",
       "--bg2-rgb":"1,10,1",
       "--glass-border":"rgba(0,255,65,0.08)","--glass-bg":"rgba(1,10,1,0.85)",
       "--font-head":"'IBM Plex Mono', monospace",
       "--font-body":"'IBM Plex Mono', monospace",
       "--font-mono":"'IBM Plex Mono', monospace",
-      "--radius-control":"12px","--radius-card":"16px","--radius-sheet":"24px",
+      
       "--shadow":"none","--card-shadow":"0 0 10px rgba(0,255,65,0.04)",
       "--shadow-sm":"none","--shadow-md":"0 0 10px rgba(0,255,65,0.04)","--shadow-lg":"0 0 20px rgba(0,255,65,0.08)",
       "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
@@ -117,14 +119,14 @@ export const THEMES = {
       "--blue":"#00e5ff","--blue-dim":"rgba(0,229,255,0.10)",
       "--green":"#80ff60","--green-dim":"rgba(128,255,96,0.10)",
       "--red":"#ff3070","--red-dim":"rgba(255,48,112,0.12)",
-      "--yellow":"#ffe44d",
+      "--yellow":"#ffe44d","--purple":"#c084fc","--purple-dim":"rgba(192,132,252,0.10)","--cyan":"#67e8f9","--cyan-dim":"rgba(103,232,249,0.10)",
       "--text":"#f0e4ff","--text2":"#b498d8","--text3":"#604890",
       "--bg2-rgb":"14,8,32",
       "--glass-border":"rgba(255,45,160,0.12)","--glass-bg":"rgba(14,8,32,0.68)",
-      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, Roboto, sans-serif",
-      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, Roboto, sans-serif",
+      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
+      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
       "--font-mono":"'IBM Plex Mono', monospace",
-      "--radius-control":"12px","--radius-card":"16px","--radius-sheet":"24px",
+      
       "--shadow":"0 0 20px rgba(255,45,160,0.08)","--card-shadow":"0 0 16px rgba(255,45,160,0.06)",
       "--shadow-sm":"0 0 8px rgba(255,45,160,0.06)","--shadow-md":"0 0 16px rgba(255,45,160,0.10)","--shadow-lg":"0 0 28px rgba(255,45,160,0.16)",
       "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
@@ -142,13 +144,14 @@ export const THEMES = {
       "--green":"#10b981","--green-dim":"rgba(16,185,129,0.10)",
       "--red":"#ef4444","--red-dim":"rgba(239,68,68,0.10)",
       "--yellow":"#eab308",
+      "--purple":"#8b5cf6","--purple-dim":"rgba(139,92,246,0.10)","--cyan":"#22d3ee","--cyan-dim":"rgba(34,211,238,0.10)",
       "--text":"#e8ecf2","--text2":"#8fa4ba","--text3":"#4d6478",
       "--bg2-rgb":"21,35,50",
       "--glass-border":"rgba(255,255,255,0.06)","--glass-bg":"rgba(21,35,50,0.78)",
-      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, Roboto, sans-serif",
-      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, Roboto, sans-serif",
+      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
+      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
       "--font-mono":"'SF Mono', 'IBM Plex Mono', monospace",
-      "--radius-control":"12px","--radius-card":"16px","--radius-sheet":"24px",
+      
       "--shadow":"0 2px 12px rgba(0,0,0,0.3)","--card-shadow":"0 2px 10px rgba(0,0,0,0.2)",
       "--shadow-sm":"0 1px 4px rgba(0,0,0,0.14)","--shadow-md":"0 2px 12px rgba(0,0,0,0.30)","--shadow-lg":"0 4px 32px rgba(0,0,0,0.45)",
       "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
@@ -166,13 +169,14 @@ export const THEMES = {
       "--green":"#30d158","--green-dim":"rgba(48,209,88,0.10)",
       "--red":"#ff453a","--red-dim":"rgba(255,69,58,0.10)",
       "--yellow":"#ffd60a",
+      "--purple":"#a78bfa","--purple-dim":"rgba(167,139,250,0.10)","--cyan":"#22d3ee","--cyan-dim":"rgba(34,211,238,0.10)",
       "--text":"#f5f5f7","--text2":"#98989d","--text3":"#636366",
       "--bg2-rgb":"28,28,30",
       "--glass-border":"rgba(255,255,255,0.08)","--glass-bg":"rgba(28,28,30,0.82)",
-      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, Roboto, sans-serif",
-      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, Roboto, sans-serif",
+      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
+      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
       "--font-mono":"'SF Mono', 'Menlo', monospace",
-      "--radius-control":"12px","--radius-card":"16px","--radius-sheet":"24px",
+      
       "--shadow":"0 2px 10px rgba(0,0,0,0.4)","--card-shadow":"0 1px 8px rgba(0,0,0,0.3)",
       "--shadow-sm":"0 1px 4px rgba(0,0,0,0.20)","--shadow-md":"0 2px 10px rgba(0,0,0,0.35)","--shadow-lg":"0 4px 24px rgba(0,0,0,0.50)",
       "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
@@ -189,14 +193,14 @@ export const THEMES = {
       "--blue":"#0088ff","--blue-dim":"rgba(0,136,255,0.10)",
       "--green":"#00ff88","--green-dim":"rgba(0,255,136,0.10)",
       "--red":"#ff0055","--red-dim":"rgba(255,0,85,0.12)",
-      "--yellow":"#ffe100",
+      "--yellow":"#ffe100","--purple":"#c084fc","--purple-dim":"rgba(192,132,252,0.10)","--cyan":"#22d3ee","--cyan-dim":"rgba(34,211,238,0.10)",
       "--text":"#e0f0ff","--text2":"#7090b8","--text3":"#384868",
       "--bg2-rgb":"14,16,32",
       "--glass-border":"rgba(0,240,255,0.10)","--glass-bg":"rgba(10,10,18,0.80)",
-      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, Roboto, sans-serif",
-      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, Roboto, sans-serif",
+      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
+      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
       "--font-mono":"'IBM Plex Mono', monospace",
-      "--radius-control":"12px","--radius-card":"16px","--radius-sheet":"24px",
+      
       "--shadow":"0 0 20px rgba(0,240,255,0.06)","--card-shadow":"0 0 12px rgba(0,240,255,0.05)",
       "--shadow-sm":"0 0 6px rgba(0,240,255,0.05)","--shadow-md":"0 0 14px rgba(0,240,255,0.08)","--shadow-lg":"0 0 24px rgba(0,240,255,0.14)",
       "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
@@ -360,6 +364,8 @@ export const SCOPE_TEMPLATES = {
 const _demoBids = [
   // ── REAL EBC BIDS (from estimating system) ──
   // 2026
+  {id:214,name:"Forney - Spring Branch Presbyterian",gc:"Forney Construction",value:168700,due:"Apr 8, 2026",status:"submitted",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Religious",risk:"",notes:"Demo $44.3K, Drywall/Build Back $61.6K, ACT $62.8K. Alt: +$31.2K FRP-1 & FRP-2. Armstrong Fine Fissured on 15/16 grid. Deck height 12' or less. Level 4 finish. 20 or 25 ga. framing. Phasing included.",contact:"",month:"Apr",closeOut:null,bidDate:"Apr 8, 2026",address:"1215 Campbell Rd, Houston, TX 77055"},
+  {id:213,name:"Meridian - FMG",gc:"FMG",value:113600,due:"Apr 8, 2026",status:"submitted",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Commercial",risk:"",notes:"Demo $15.8K, Drywall/Build Back $56.7K, ACT $41.1K. ACT assuming Fine Fissured on 15/16 grid. Deck height 14' or less. Level 4 finish. 20 or 25 ga. framing.",contact:"",month:"Apr",closeOut:null,bidDate:"Apr 8, 2026",address:"3 Riverway, Suite 1000, Houston, TX 77056"},
   {id:212,name:"Texas Mutual Insurance",gc:"Multiple GCs",value:104800,due:"Apr 6, 2026",status:"submitted",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Commercial",risk:"",notes:"Bidding to multiple GCs. Demo $12.9K, Drywall/Build Back $72.2K, ACT $19.7K. ACT match existing Armstrong Ultima. Deck height 16' or less.",contact:"",month:"Apr",closeOut:null,bidDate:"Apr 6, 2026",address:"9811 Katy Fwy, Suite 800, Houston, TX 77024"},
   {id:211,name:"OSC - EQT Corp Budget",gc:"O'Donnell/Snider",value:425000,due:"Apr 6, 2026",status:"submitted",scope:["Metal Framing","Drywall","Tape & Finish","Insulation","Doors & Hardware"],phase:"Commercial",risk:"",notes:"Drywall/Build Back. 3712 Autry Pk Dr Suite 200. Deck height 16' or less. Level 5 at wallcovering walls. Fire-rated blocking. Pricing good 30 days from bid date.",contact:"Jim Suh",month:"Apr",closeOut:null,bidDate:"Apr 6, 2026",address:"3712 Autry Pk Dr, Suite 200, Houston, TX 77019"},
   {id:101,name:"Endurance Builders - Woodside Laboratory",gc:"Endurance Builders",value:74800,due:"Mar 13, 2026",status:"awarded",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Commercial",risk:"",notes:"",contact:"Christina Zube Volkers",month:"Mar",closeOut:null,bidDate:"Mar 13, 2026"},
@@ -491,16 +497,16 @@ const _demoContacts = [
   {id:11,name:"Monica Waller",company:"Forney Construction",role:"Project Coordinator",bids:0,wins:0,color:"#f59e0b",last:"Mar 4",priority:"med",phone:"713-367-3501",email:"monica.waller@forneyconstruction.com",notes:"Subcontracts, COI coordination."},
   {id:12,name:"Mariana Fumero",company:"Forney Construction",role:"Asst. PM",bids:0,wins:0,color:"#f59e0b",last:"Feb 23",priority:"med",phone:"713-628-3445",email:"mariana.fumero@forneyconstruction.com",notes:"MH Pearland MEIC-CT. COI requested."},
   // O'Donnell/Snider
-  {id:13,name:"Kim Bullard",company:"O'Donnell/Snider",role:"Sr. Project Coordinator",bids:0,wins:0,color:"#8b5cf6",last:"Mar 16",priority:"med",phone:"713-554-4614",email:"kbullard@odonnellsnider.com",notes:"MH MC Hospital Single Plane IR NTP. Billing via Procore, due 20th."},
-  {id:14,name:"Ethan Alvarez",company:"O'Donnell/Snider",role:"Project Manager",bids:0,wins:0,color:"#8b5cf6",last:"Mar 16",priority:"med",phone:"",email:"",notes:"PM on MH MC Hospital Single Plane IR & Neuro IR."},
-  {id:15,name:"Jim Suh",company:"O'Donnell/Snider",role:"Estimator",bids:0,wins:0,color:"#8b5cf6",last:"Apr 6",priority:"high",phone:"281-404-7673",email:"jsuh@odonnellsnider.com",notes:"EQT Corp Budget, A5 Steakhouse, Kannon, HM Katy Emergency Care Center. Very active — multiple ITBs in March/April 2026."},
+  {id:13,name:"Kim Bullard",company:"O'Donnell/Snider",role:"Sr. Project Coordinator",bids:0,wins:0,color: "var(--purple)",last:"Mar 16",priority:"med",phone:"713-554-4614",email:"kbullard@odonnellsnider.com",notes:"MH MC Hospital Single Plane IR NTP. Billing via Procore, due 20th."},
+  {id:14,name:"Ethan Alvarez",company:"O'Donnell/Snider",role:"Project Manager",bids:0,wins:0,color: "var(--purple)",last:"Mar 16",priority:"med",phone:"",email:"",notes:"PM on MH MC Hospital Single Plane IR & Neuro IR."},
+  {id:15,name:"Jim Suh",company:"O'Donnell/Snider",role:"Estimator",bids:0,wins:0,color: "var(--purple)",last:"Apr 6",priority:"high",phone:"281-404-7673",email:"jsuh@odonnellsnider.com",notes:"EQT Corp Budget, A5 Steakhouse, Kannon, HM Katy Emergency Care Center. Very active — multiple ITBs in March/April 2026."},
   // United Constructors
   {id:15,name:"Justin Gayford",company:"United Constructors",role:"Project Manager",bids:0,wins:0,color:"#ef4444",last:"Mar 11",priority:"high",phone:"",email:"justin@unitedconstructors.com",notes:"Brunello Cucinelli PM. Active schedule coordination."},
   {id:16,name:"Steve Williams",company:"United Constructors",role:"VP Interior Construction",bids:0,wins:0,color:"#ef4444",last:"Mar 12",priority:"high",phone:"713-579-9738",email:"swilliams@unitedconstructors.com",notes:"Heart Care Clinic. CO #2 approved 3/12. Escapology Sugar Land PM."},
   {id:17,name:"Mistie Williams",company:"United Constructors",role:"Project Coordinator",bids:0,wins:0,color:"#ef4444",last:"Mar 2",priority:"med",phone:"713-579-9742",email:"mwilliams@unitedconstructors.com",notes:"Subcontracts and COs. Dotson, Escapology, Heart Care."},
   // Harvey Cleary
-  {id:18,name:"Kristen Gallegos",company:"Harvey Cleary",role:"Senior PM",bids:0,wins:0,color:"#06b6d4",last:"Jan 29",priority:"med",phone:"713-783-8710",email:"kgallegos@harveycleary.com",notes:"MH Pearland L4 Renovation. AD System submittal approved 1/29."},
-  {id:44,name:"Brandon Farrell",company:"Harvey Cleary",role:"Superintendent",bids:0,wins:0,color:"#06b6d4",last:"",priority:"med",phone:"832-471-9965",email:"BFarrell@harveycleary.com",notes:"MH Pearland L4 Renovation superintendent."},
+  {id:18,name:"Kristen Gallegos",company:"Harvey Cleary",role:"Senior PM",bids:0,wins:0,color: "var(--cyan)",last:"Jan 29",priority:"med",phone:"713-783-8710",email:"kgallegos@harveycleary.com",notes:"MH Pearland L4 Renovation. AD System submittal approved 1/29."},
+  {id:44,name:"Brandon Farrell",company:"Harvey Cleary",role:"Superintendent",bids:0,wins:0,color: "var(--cyan)",last:"",priority:"med",phone:"832-471-9965",email:"BFarrell@harveycleary.com",notes:"MH Pearland L4 Renovation superintendent."},
   // Bayshore
   {id:19,name:"Josh",company:"Bayshore",role:"",bids:0,wins:0,color:"#a855f7",last:"Mar 19",priority:"med",phone:"",email:"josh@bayshoretex.com",notes:"THC Baytown. CO for ticket work sent 3/19."},
   // Wier CC
@@ -522,13 +528,13 @@ const _demoContacts = [
   {id:30,name:"Sona Francis",company:"Anchor Construction",role:"Estimator",bids:1,wins:0,color:"#d946ef",last:"Dec 3",priority:"med",phone:"858-245-7020",email:"sona.f@anchorcm.net",notes:"Khango Gym estimator."},
   {id:31,name:"David Garcia",company:"Anchor Construction",role:"",bids:0,wins:0,color:"#d946ef",last:"Mar 20",priority:"med",phone:"",email:"",notes:"Shake Shack, Chick-Fil-A bid invites. Via BuildingConnected."},
   // Brodson Construction
-  {id:32,name:"Philippe Faucher",company:"Brodson Construction",role:"Senior PM",bids:1,wins:0,color:"#0ea5e9",last:"Mar 9",priority:"high",phone:"",email:"pfaucher@brodsonconstruction.com",notes:"Brunello Cucinelli Store Buildout - River Oaks District."},
+  {id:32,name:"Philippe Faucher",company:"Brodson Construction",role:"Senior PM",bids:1,wins:0,color: "var(--cyan)",last:"Mar 9",priority:"high",phone:"",email:"pfaucher@brodsonconstruction.com",notes:"Brunello Cucinelli Store Buildout - River Oaks District."},
   // Hirsch Construction
   {id:33,name:"Angelica Baez",company:"Hirsch Construction",role:"",bids:1,wins:0,color:"#fb923c",last:"Nov 19",priority:"med",phone:"",email:"abaez@hirschcorp.com",notes:"Hermes Houston Temp Store. Also Princess Polly."},
   // Garrison Construction
   {id:34,name:"Melanie Itzel",company:"Garrison Construction",role:"Senior Project Coordinator",bids:1,wins:0,color:"#a3e635",last:"Feb 16",priority:"med",phone:"",email:"melanie@garrisonconstructiongroup.com",notes:"Montgomery Roth Office Suite 7029."},
   // York Construction
-  {id:35,name:"Yarelys Hernandez",company:"York Construction",role:"",bids:1,wins:0,color:"#22d3ee",last:"Jan 9",priority:"med",phone:"",email:"yhernandez@yorkconstruction.com",notes:"UTMB M87 PCP Cancer Services Clinic. Galveston."},
+  {id:35,name:"Yarelys Hernandez",company:"York Construction",role:"",bids:1,wins:0,color: "var(--cyan)",last:"Jan 9",priority:"med",phone:"",email:"yhernandez@yorkconstruction.com",notes:"UTMB M87 PCP Cancer Services Clinic. Galveston."},
   // ProConstruct / ATH
   {id:36,name:"Emilio Alaniz",company:"ProConstruct",role:"",bids:1,wins:0,color:"#818cf8",last:"Jan 27",priority:"med",phone:"281-799-9731",email:"e.alaniz@att.net",notes:"UT Orthopedics Cypress Buildout. Fry reglet revision."},
   // Gullo Commercial
@@ -854,3 +860,10 @@ export const initTimeEntries = _demoTimeEntries; // always load — foreman port
 export const initAreas = _demoAreas; // always load — area-based work model
 export const initProductionLogs = _demoProductionLogs; // always load — production tracking
 export const initDecisionLog = _demoDecisionLog; // always load — PM decision/communication log
+
+// ── COMPANY SETTINGS ──
+export const initCompanySettings = {
+  laborBurdenMultiplier: 1.0,  // Set to 1.30-1.40 for burdened labor (taxes/insurance/benefits)
+  defaultRetainageRate: 10,     // percent
+  marginAlertThreshold: 25,     // percent — flag projects below this margin
+};

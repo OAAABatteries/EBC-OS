@@ -3,6 +3,7 @@ import { resetAllGuides } from "../components/FeatureGuide";
 import { ClipboardList, Folder, Search, Smartphone, Wrench, Shield, Download, ClipboardCopy, CheckCircle, AlertTriangle, AlertOctagon, Flame, Droplets, Heart, Globe, Wind, Zap, CheckSquare, Square } from "lucide-react";
 import { THEMES, OSHA_CHECKLIST, COMPANY_DEFAULTS, ASSEMBLIES } from "../data/constants";
 import { storePdf, getPdfUrl, deletePdf, fmtSize } from "../hooks/useSubmittalPdf";
+import { softDelete, filterActive, auditDiff, CRITICAL_FIELDS, validateInvoice, findDuplicateInvoice, validateChangeOrder, findDuplicateCO, computeProjectLaborCost } from "../utils/financialValidation";
 import { TimeClockAdmin } from "./TimeClockAdmin";
 import { MapView } from "./MapView";
 
@@ -31,7 +32,7 @@ function addAudit(item, field, oldVal, newVal, user) {
 function AuditHistory({ audit }) {
   if (!audit || audit.length === 0) return null;
   return (
-    <div className="mt-8 p-8 fs-10" style={{ borderRadius: 6, background: "var(--bg3)" }}>
+    <div className="mt-8 p-8 fs-10" style={{ borderRadius: "var(--radius-control)", background: "var(--bg3)" }}>
       <div className="fw-600 mb-3">Change History ({audit.length})</div>
       {audit.slice().reverse().slice(0, 10).map((a, i) => (
         <div key={i} className="more-list-row">
@@ -100,6 +101,8 @@ function InvoicesTab({ app }) {
   const [collectId, setCollectId] = useState(null);
   const [collectText, setCollectText] = useState("");
   const [collectLoading, setCollectLoading] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [invoiceErrors, setInvoiceErrors] = useState([]);
 
   const runCollection = async (inv) => {
     if (!app.apiKey) { app.show("Set API key in Settings first", "err"); return; }
@@ -124,7 +127,7 @@ function InvoicesTab({ app }) {
   const pName = (pid) => app.projects.find(p => p.id === pid)?.name || "Unknown";
   const badge = (s) => s === "paid" ? "badge-green" : s === "pending" ? "badge-amber" : s === "draft" ? "badge-muted" : "badge-red";
 
-  const invFiltered = app.invoices.filter(inv => {
+  const invFiltered = (showDeleted ? app.invoices : filterActive(app.invoices)).filter(inv => {
     if (!app.search) return true;
     const q = app.search.toLowerCase();
     return inv.number.toLowerCase().includes(q) || pName(inv.projectId).toLowerCase().includes(q) || (inv.desc || "").toLowerCase().includes(q);
@@ -134,7 +137,14 @@ function InvoicesTab({ app }) {
   const overdue = invFiltered.filter(i => i.status === "overdue").reduce((s, i) => s + i.amount, 0);
 
   const save = () => {
-    if (!form.number || !form.amount) return app.show("Fill required fields", "err");
+    const errors = validateInvoice({ projectId: form.projectId, amount: Number(form.amount), date: form.date, desc: form.desc });
+    if (errors.length > 0) { setInvoiceErrors(errors); return; }
+    setInvoiceErrors([]);
+    const duplicate = findDuplicateInvoice({ number: form.number, projectId: Number(form.projectId) }, app.invoices);
+    if (duplicate) {
+      const proceed = confirm(`Warning: Invoice #${form.number} already exists for this project (${app.fmt(duplicate.amount)}). Save anyway?`);
+      if (!proceed) return;
+    }
     const newItem = {
       id: app.nextId(),
       projectId: Number(form.projectId),
@@ -144,6 +154,7 @@ function InvoicesTab({ app }) {
       status: form.status,
       desc: form.desc,
       paidDate: form.paidDate || null,
+      audit: [],
     };
     app.setInvoices(prev => [...prev, newItem]);
     app.show("Invoice added", "ok");
@@ -230,21 +241,32 @@ function InvoicesTab({ app }) {
             <label className="form-label">Description</label>
             <input className="form-input" value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} />
           </div>
+          {invoiceErrors.length > 0 && (
+            <div className="mt-8" style={{ color: "var(--red)", fontSize: "var(--fs-11)" }}>
+              {invoiceErrors.map((err, i) => <div key={i}>• {err}</div>)}
+            </div>
+          )}
           <div className="flex gap-8 mt-16">
             <button className="btn btn-primary btn-sm" onClick={save}>Save</button>
-            <button className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setInvoiceErrors([]); }}>Cancel</button>
           </div>
         </div>
       )}
 
-      <div className="table-wrap mt-16">
+      <div className="flex-between mt-16">
+        <button className={`btn btn-ghost btn-sm ${showDeleted ? "btn-active" : ""}`}
+          onClick={() => setShowDeleted(v => !v)}>
+          {showDeleted ? "Hide Voided" : "Show Voided"}
+        </button>
+      </div>
+      <div className="table-wrap mt-8">
         <table className="data-table">
           <thead><tr><th>Invoice #</th><th>Project</th><th>Date</th><th>Amount</th><th>Status</th><th>Paid Date</th><th></th></tr></thead>
           <tbody>
             {invFiltered.length === 0 && <tr><td colSpan={7} className="more-empty-cell">{app.search ? "No matching invoices" : <>No invoices yet<br/><span className="more-empty-hint">Create your first invoice from an awarded project to start tracking payments</span></>}</td></tr>}
             {invFiltered.map(inv => (
               <Fragment key={inv.id}>
-                <tr>
+                <tr style={inv.status === "deleted" ? { opacity: 0.5, textDecoration: "line-through" } : {}}>
                   <td>{inv.number}</td>
                   <td>{pName(inv.projectId)}</td>
                   <td>{inv.date}</td>
@@ -259,7 +281,12 @@ function InvoicesTab({ app }) {
                           const paidDate = prompt("Payment date (YYYY-MM-DD):", new Date().toISOString().slice(0, 10));
                           if (!paidDate) return;
                           const checkNum = prompt("Check/Reference # (optional):", "");
-                          app.setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, status: "paid", paidDate, checkNum: checkNum || null, audit: addAudit(i, "status", inv.status, "paid", app.auth) } : i));
+                          app.setInvoices(prev => prev.map(i => {
+                            if (i.id !== inv.id) return i;
+                            const updated = { ...i, status: "paid", paidDate, checkNum: checkNum || null };
+                            updated.audit = auditDiff(i, updated, CRITICAL_FIELDS.invoice, app.auth);
+                            return updated;
+                          }));
                           app.show(`Invoice ${inv.number} marked paid`);
                         }}>
                         Mark Paid
@@ -273,7 +300,13 @@ function InvoicesTab({ app }) {
                       </button>
                     )}
                     <button className="btn btn-ghost btn-sm btn-table-delete"
-                      onClick={() => { if (confirm("Delete this invoice?")) { app.setInvoices(prev => prev.filter(i => i.id !== inv.id)); app.show("Invoice deleted"); } }}>✕</button>
+                      onClick={() => {
+                        const reason = prompt("Reason for voiding this invoice:");
+                        if (reason !== null) {
+                          app.setInvoices(prev => prev.map(i => i.id === inv.id ? softDelete(i, app.auth?.name, reason) : i));
+                          app.show("Invoice voided");
+                        }
+                      }}>✕</button>
                     </div>
                   </td>
                 </tr>
@@ -314,11 +347,13 @@ function ChangeOrdersTab({ app }) {
   const [impactId, setImpactId] = useState(null);
   const [impactResult, setImpactResult] = useState(null);
   const [impactLoading, setImpactLoading] = useState(false);
+  const [showDeletedCO, setShowDeletedCO] = useState(false);
+  const [coErrors, setCoErrors] = useState([]);
 
   const pName = (pid) => app.projects.find(p => p.id === pid)?.name || "Unknown";
   const badge = (s) => s === "approved" ? "badge-green" : s === "pending" ? "badge-amber" : "badge-red";
 
-  const coFiltered = app.changeOrders.filter(co => {
+  const coFiltered = (showDeletedCO ? app.changeOrders : filterActive(app.changeOrders)).filter(co => {
     if (!app.search) return true;
     const q = app.search.toLowerCase();
     return co.number.toLowerCase().includes(q) || pName(co.projectId).toLowerCase().includes(q) || (co.desc || "").toLowerCase().includes(q);
@@ -344,7 +379,14 @@ function ChangeOrdersTab({ app }) {
   };
 
   const save = () => {
-    if (!form.number || !form.amount) return app.show("Fill required fields", "err");
+    const errors = validateChangeOrder({ projectId: form.projectId, description: form.desc, amount: form.amount, type: form.type, number: form.number });
+    if (errors.length > 0) { setCoErrors(errors); return; }
+    setCoErrors([]);
+    const duplicate = findDuplicateCO({ number: form.number, projectId: Number(form.projectId) }, app.changeOrders);
+    if (duplicate) {
+      const proceed = confirm(`Warning: CO #${form.number} already exists for this project (${app.fmt(duplicate.amount)}). Save anyway?`);
+      if (!proceed) return;
+    }
     const newItem = {
       id: app.nextId(),
       projectId: Number(form.projectId),
@@ -360,11 +402,13 @@ function ChangeOrdersTab({ app }) {
       scope_items: form.scope_items || [],
       gc_name: form.gc_name || "",
       gc_company: form.gc_company || "",
+      audit: [],
     };
     app.setChangeOrders(prev => [...prev, newItem]);
     app.show("Change order added", "ok");
     setAdding(false);
     setScopeInput("");
+    setCoErrors([]);
     setForm({ projectId: "", number: "", desc: "", amount: "", status: "pending", submitted: "", approved: "", type: "add", reference: "", notes: "", scope_items: [], gc_name: "", gc_company: "" });
   };
 
@@ -490,21 +534,32 @@ function ChangeOrdersTab({ app }) {
             </div>
           </div>
 
+          {coErrors.length > 0 && (
+            <div className="mt-8" style={{ color: "var(--red)", fontSize: "var(--fs-11)" }}>
+              {coErrors.map((err, i) => <div key={i}>• {err}</div>)}
+            </div>
+          )}
           <div className="flex gap-8 mt-16">
             <button className="btn btn-primary btn-sm" onClick={save}>Save</button>
-            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setScopeInput(""); }}>Cancel</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setScopeInput(""); setCoErrors([]); }}>Cancel</button>
           </div>
         </div>
       )}
 
-      <div className="table-wrap mt-16">
+      <div className="flex-between mt-16">
+        <button className={`btn btn-ghost btn-sm ${showDeletedCO ? "btn-active" : ""}`}
+          onClick={() => setShowDeletedCO(v => !v)}>
+          {showDeletedCO ? "Hide Voided" : "Show Voided"}
+        </button>
+      </div>
+      <div className="table-wrap mt-8">
         <table className="data-table">
           <thead><tr><th>CO #</th><th>Project</th><th>Description</th><th>Amount</th><th>Status</th><th>Submitted</th><th>Approved</th><th></th></tr></thead>
           <tbody>
             {coFiltered.length === 0 && <tr><td colSpan={8} className="more-empty-cell">{app.search ? "No matching change orders" : <>No change orders yet<br/><span className="more-empty-hint">Change orders track scope changes on active projects — add one when a GC approves extra work</span></>}</td></tr>}
             {coFiltered.map(co => (
               <Fragment key={co.id}>
-                <tr>
+                <tr style={co.status === "deleted" ? { opacity: 0.5, textDecoration: "line-through" } : {}}>
                   <td>{co.number}</td>
                   <td>{pName(co.projectId)}</td>
                   <td>{co.desc}</td>
@@ -536,7 +591,13 @@ function ChangeOrdersTab({ app }) {
                       {impactLoading && impactId === co.id ? "..." : impactId === co.id && impactResult ? "Hide" : "Analyze"}
                     </button>
                     <button className="btn btn-ghost btn-sm btn-table-delete"
-                      onClick={() => { if (confirm("Delete this change order?")) { app.setChangeOrders(prev => prev.filter(c => c.id !== co.id)); app.show("Change order deleted"); } }}>✕</button>
+                      onClick={() => {
+                        const reason = prompt("Reason for voiding this change order:");
+                        if (reason !== null) {
+                          app.setChangeOrders(prev => prev.map(c => c.id === co.id ? softDelete(c, app.auth?.name, reason) : c));
+                          app.show("Change order voided");
+                        }
+                      }}>✕</button>
                     </div>
                   </td>
                 </tr>
@@ -555,11 +616,11 @@ function ChangeOrdersTab({ app }) {
                           </div>
                           <div className="more-metric-card">
                             <div className="text-xs text-muted">After CO</div>
-                            <div style={{ fontSize: 18, fontWeight: 700, color: impactResult.marginImpact.change >= 0 ? "var(--green)" : "var(--red)" }}>{impactResult.marginImpact.after}%</div>
+                            <div style={{ fontSize: "var(--text-section)", fontWeight: "var(--weight-bold)", color: impactResult.marginImpact.change >= 0 ? "var(--green)" : "var(--red)" }}>{impactResult.marginImpact.after}%</div>
                           </div>
                           <div className="more-metric-card">
                             <div className="text-xs text-muted">Change</div>
-                            <div style={{ fontSize: 18, fontWeight: 700, color: impactResult.marginImpact.change >= 0 ? "var(--green)" : "var(--red)" }}>
+                            <div style={{ fontSize: "var(--text-section)", fontWeight: "var(--weight-bold)", color: impactResult.marginImpact.change >= 0 ? "var(--green)" : "var(--red)" }}>
                               {impactResult.marginImpact.change >= 0 ? "+" : ""}{impactResult.marginImpact.change}%
                             </div>
                           </div>
@@ -832,7 +893,7 @@ function TmTicketsTab({ app }) {
               </table>
             </div>
           ) : (
-            <div className="text-sm text-muted mt-16" style={{ textAlign: "center", padding: 16 }}>
+            <div className="text-sm text-muted mt-16" style={{ textAlign: "center", padding: "var(--space-4)" }}>
               {genProject ? "No T&M-flagged entries for this project and date range. Flag entries in Time Clock > Time Log first." : "Select a project to see flagged entries."}
             </div>
           )}
@@ -1035,15 +1096,15 @@ function TmTicketsTab({ app }) {
                       const grandTotal = labTotal + matTotal;
                       const projN = pName(t.projectId);
                       const html = `<!DOCTYPE html><html><head><title>T&M Ticket ${t.ticketNumber}</title><style>
-                        body{font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:24px;color:#111}
-                        h1{font-size:22px;margin:0 0 4px} .header{border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:16px}
-                        .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;margin-bottom:16px}
-                        .meta span{color:#666} table{width:100%;border-collapse:collapse;margin:8px 0 16px}
+                        body{font-family:Arial,sans-serif;max-width:800px;margin: "0" auto;padding:24px;color:#111}
+                        h1{font-size:22px;margin: "0" 0 4px} .header{border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:16px}
+                        .meta{display:grid;grid-template-columns:1fr 1fr;gap: "var(--space-2)"px;font-size:13px;margin-bottom:16px}
+                        .meta span{color:#666} table{width:100%;border-collapse:collapse;margin: "var(--space-2)"px 0 16px}
                         th,td{border:1px solid #ccc;padding:6px 10px;font-size:12px;text-align:left}
                         th{background:#f5f5f5;font-weight:600}
-                        .subtotal{text-align:right;font-size:12px;margin:4px 0 12px;color:#444}
+                        .subtotal{text-align:right;font-size:12px;margin: "var(--space-1)"px 0 12px;color:#444}
                         .grand-total{font-size:16px;font-weight:700;text-align:right;border-top:2px solid #333;padding-top:8px;margin-top:8px}
-                        .sig-line{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:48px}
+                        .sig-line{display:grid;grid-template-columns:1fr 1fr;gap: "var(--space-8)"px;margin-top:48px}
                         .sig-line div{border-top:1px solid #666;padding-top:4px;font-size:11px;color:#666}
                         .company{font-size:18px;font-weight:700;color:#b45309} @media print{body{padding:12px}}
                       </style></head><body>
@@ -1114,7 +1175,7 @@ function JobCostingTab({ app }) {
     try {
       const { analyzeJobCostVariance } = await import("../utils/api.js");
       const projectData = app.projects.map(proj => {
-        const billed = app.invoices.filter(i => i.projectId === proj.id).reduce((s, i) => s + i.amount, 0);
+        const billed = filterActive(app.invoices).filter(i => i.projectId === proj.id).reduce((s, i) => s + i.amount, 0);
         const cos = app.changeOrders.filter(c => c.projectId === proj.id && c.status === "approved").reduce((s, c) => s + c.amount, 0);
         const tmTickets = (app.tmTickets || []).filter(t => t.projectId === proj.id);
         const tmApproved = tmTickets.filter(t => t.status === "approved" || t.status === "billed").reduce((s, t) => s + calcTicketTotal(t), 0);
@@ -1168,7 +1229,7 @@ function JobCostingTab({ app }) {
                   ].map((kpi, i) => (
                     <div key={i} className="more-metric-card--p10">
                       <div className="text-xs text-muted">{kpi.label}</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: kpi.color || "var(--amber)", marginTop: 4 }}>{kpi.val}</div>
+                      <div style={{ fontSize: "var(--text-card)", fontWeight: "var(--weight-bold)", color: kpi.color || "var(--amber)", marginTop: "var(--space-1)" }}>{kpi.val}</div>
                     </div>
                   ))}
                 </div>
@@ -1179,10 +1240,10 @@ function JobCostingTab({ app }) {
                 <div className="mb-12">
                   <div className="text-sm font-semi mb-8">Project Health Rankings</div>
                   {varianceResult.rankings.map((r, i) => (
-                    <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, borderLeft: `3px solid ${r.healthScore >= 70 ? "var(--green)" : r.healthScore >= 40 ? "var(--amber)" : "var(--red)"}`, background: "var(--card)", fontSize: 13 }}>
+                    <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", borderRadius: "var(--radius-control)", borderLeft: `3px solid ${r.healthScore >= 70 ? "var(--green)" : r.healthScore >= 40 ? "var(--amber)" : "var(--red)"}`, background: "var(--card)", fontSize: "var(--text-label)" }}>
                       <div className="flex-between">
                         <span className="font-semi">{r.project}</span>
-                        <span style={{ fontWeight: 700, color: r.healthScore >= 70 ? "var(--green)" : r.healthScore >= 40 ? "var(--amber)" : "var(--red)" }}>{r.healthScore}/100</span>
+                        <span style={{ fontWeight: "var(--weight-bold)", color: r.healthScore >= 70 ? "var(--green)" : r.healthScore >= 40 ? "var(--amber)" : "var(--red)" }}>{r.healthScore}/100</span>
                       </div>
                       <div className="text-xs text-muted mt-2">{r.billedPct}% billed • {r.marginStatus}</div>
                       {r.alert && <div className="fs-12 text-red mt-4">{r.alert}</div>}
@@ -1228,7 +1289,7 @@ function JobCostingTab({ app }) {
       )}
       {app.projects.length === 0 && <div className="card mt-16 more-empty-cell">No projects yet<br/><span className="more-empty-hint">Convert awarded bids to projects to track job costing, labor, and profitability</span></div>}
       {app.projects.map(proj => {
-        const billed = app.invoices.filter(i => i.projectId === proj.id).reduce((s, i) => s + i.amount, 0);
+        const billed = filterActive(app.invoices).filter(i => i.projectId === proj.id).reduce((s, i) => s + i.amount, 0);
         const cos = app.changeOrders.filter(c => c.projectId === proj.id && c.status === "approved").reduce((s, c) => s + c.amount, 0);
         const tmTickets = (app.tmTickets || []).filter(t => t.projectId === proj.id);
         const tmApproved = tmTickets.filter(t => t.status === "approved" || t.status === "billed").reduce((s, t) => s + calcTicketTotal(t), 0);
@@ -1236,11 +1297,13 @@ function JobCostingTab({ app }) {
         const adjustedContract = proj.contract + cos;
         const remaining = adjustedContract - billed;
         const pct = adjustedContract > 0 ? Math.round((billed / adjustedContract) * 100) : 0;
-        // Labor cost rollup from time entries
-        const BLENDED_RATE = 45;
-        const projEntries = (app.timeEntries || []).filter(te => te.projectName === proj.name && te.clockIn && te.clockOut && !te.isTM);
-        const laborHours = projEntries.reduce((s, te) => s + (new Date(te.clockOut) - new Date(te.clockIn)) / 3600000, 0);
-        const laborCost = laborHours * BLENDED_RATE;
+        // Labor cost rollup from time entries — actual employee rates
+        const laborData = computeProjectLaborCost(
+          proj.id, proj.name, app.timeEntries || [], app.employees || [],
+          app.companySettings?.laborBurdenMultiplier || 1.0
+        );
+        const laborHours = laborData.hours;
+        const laborCost = laborData.burdenedCost;
         const laborVariance = adjustedContract > 0 ? adjustedContract - laborCost : 0;
         return (
           <div className="card mt-16" key={proj.id}>
@@ -1257,7 +1320,7 @@ function JobCostingTab({ app }) {
             {/* Labor Cost Rollup */}
             <div className="more-cost-grid--border">
               <div><span className="text2">Labor Hours</span><br /><span className="font-mono">{laborHours.toFixed(1)}h</span></div>
-              <div><span className="text2">Labor Cost</span><br /><span className="font-mono text-amber">{app.fmt(laborCost)}</span></div>
+              <div><span className="text2">Labor Cost{(app.companySettings?.laborBurdenMultiplier || 1) > 1 ? " (burdened)" : ""}</span><br /><span className="font-mono text-amber">{app.fmt(laborCost)}</span></div>
               <div><span className="text2">Budget Remaining</span><br /><span className="font-mono" style={{ color: laborVariance >= 0 ? "var(--green)" : "var(--red)" }}>{app.fmt(laborVariance)}</span></div>
               <div><span className="text2">Labor Margin</span><br /><span className="font-mono" style={{ color: adjustedContract > 0 && laborCost / adjustedContract < 0.7 ? "var(--green)" : "var(--amber)" }}>{adjustedContract > 0 ? Math.round((1 - laborCost / adjustedContract) * 100) : 0}%</span></div>
             </div>
@@ -1269,7 +1332,7 @@ function JobCostingTab({ app }) {
               </div>
             )}
             <div className="more-progress-track">
-              <div style={{ background: "var(--amber)", height: "100%", borderRadius: 4, width: `${Math.min(pct, 100)}%`, transition: "width 0.3s" }} />
+              <div style={{ background: "var(--amber)", height: "100%", borderRadius: "var(--radius-control)", width: `${Math.min(pct, 100)}%`, transition: "width 0.3s" }} />
             </div>
           </div>
         );
@@ -1437,7 +1500,7 @@ function AgingReportTab({ app }) {
     <div className="card mt-16">
       <div className="flex-between">
         <div className="card-title" style={{ color }}>{label} ({items.length})</div>
-        <div style={{ fontWeight: 700, fontSize: 16, color }}>{app.fmt(sum(items))}</div>
+        <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", color }}>{app.fmt(sum(items))}</div>
       </div>
       {items.length > 0 ? (
         <table className="data-table mt-8">
@@ -1903,7 +1966,7 @@ function SubmittalsTab({ app }) {
               const isSelected = selectedIds.includes(key);
               return (
                 <div key={key}
-                  style={{ padding: "6px 10px", fontSize: 12, cursor: "pointer", background: isSelected ? "var(--amber-dim)" : "transparent", borderBottom: "1px solid var(--border)" }}
+                  style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-label)", cursor: "pointer", background: isSelected ? "var(--amber-dim)" : "transparent", borderBottom: "1px solid var(--border)" }}
                   onMouseDown={e => { e.preventDefault(); onToggle(key); setSearch(""); }}
                 >
                   {isSelected ? "✓ " : ""}{getLabel(item)}
@@ -2087,7 +2150,7 @@ function SubmittalsTab({ app }) {
                   <td className="fw-600">{sub.number}</td>
                   <td className="fs-12">{pName(sub.projectId)}</td>
                   <td>
-                    <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: isFrame ? "rgba(245,158,11,0.15)" : "var(--bg3)", color: isFrame ? "var(--amber)" : "var(--text2)" }}>
+                    <span style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", background: isFrame ? "rgba(245,158,11,0.15)" : "var(--bg3)", color: isFrame ? "var(--amber)" : "var(--text2)" }}>
                       {sub.category || "General"}
                     </span>
                   </td>
@@ -2134,11 +2197,11 @@ function SubmittalsTab({ app }) {
                       <div className="more-grid-2">
                         <div className="more-metric-card--p10">
                           <div className="text-xs text-muted">Readiness Score</div>
-                          <div style={{ fontSize: 24, fontWeight: 700, color: reviewResult.score >= 80 ? "var(--green)" : reviewResult.score >= 50 ? "var(--amber)" : "var(--red)" }}>{reviewResult.score}/100</div>
+                          <div style={{ fontSize: "var(--text-title)", fontWeight: "var(--weight-bold)", color: reviewResult.score >= 80 ? "var(--green)" : reviewResult.score >= 50 ? "var(--amber)" : "var(--red)" }}>{reviewResult.score}/100</div>
                         </div>
                         <div className="more-metric-card--p10">
                           <div className="text-xs text-muted">Status</div>
-                          <div style={{ fontSize: 14, fontWeight: 600, marginTop: 4, color: reviewResult.status === "ready" ? "var(--green)" : reviewResult.status === "needs_work" ? "var(--amber)" : "var(--red)" }}>
+                          <div style={{ fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)", marginTop: "var(--space-1)", color: reviewResult.status === "ready" ? "var(--green)" : reviewResult.status === "needs_work" ? "var(--amber)" : "var(--red)" }}>
                             {reviewResult.status === "ready" ? "Ready to Submit" : reviewResult.status === "needs_work" ? "Needs Work" : "Critical Issues"}
                           </div>
                         </div>
@@ -2152,7 +2215,7 @@ function SubmittalsTab({ app }) {
                         <div className="mb-12">
                           <div className="text-sm font-semi mb-8">Issues Found</div>
                           {reviewResult.issues.map((iss, i) => (
-                            <div key={i} style={{ padding: "6px 10px", marginBottom: 4, borderRadius: 6, borderLeft: `3px solid ${iss.severity === "critical" ? "var(--red)" : iss.severity === "warning" ? "var(--amber)" : "var(--blue)"}`, background: "var(--card)", fontSize: 13 }}>
+                            <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", borderRadius: "var(--radius-control)", borderLeft: `3px solid ${iss.severity === "critical" ? "var(--red)" : iss.severity === "warning" ? "var(--amber)" : "var(--blue)"}`, background: "var(--card)", fontSize: "var(--text-label)" }}>
                               <div className="flex-between">
                                 <span className="font-semi">{iss.item}</span>
                                 <span className={iss.severity === "critical" ? "badge-red" : iss.severity === "warning" ? "badge-amber" : "badge-blue"}>{iss.severity}</span>
@@ -2168,7 +2231,7 @@ function SubmittalsTab({ app }) {
                         <div className="mb-12">
                           <div className="text-sm font-semi mb-8">Recommendations</div>
                           {reviewResult.recommendations.map((r, i) => (
-                            <div key={i} style={{ padding: "4px 0", fontSize: 13, borderBottom: "1px solid var(--border)" }}>{r}</div>
+                            <div key={i} style={{ padding: "var(--space-1) 0", fontSize: "var(--text-label)", borderBottom: "1px solid var(--border)" }}>{r}</div>
                           ))}
                         </div>
                       )}
@@ -2496,10 +2559,10 @@ function Schedule({ app }) {
                       {laborResult.weeklyForecast.map((w, i) => (
                         <tr key={i}>
                           <td className="font-semi">{w.week}</td>
-                          <td style={{ fontWeight: 700, color: "var(--amber)" }}>{w.teamsNeeded}</td>
+                          <td style={{ fontWeight: "var(--weight-bold)", color: "var(--amber)" }}>{w.teamsNeeded}</td>
                           <td>{w.hoursEstimate}h</td>
                           <td className="fs-12">{(w.projects || []).join(", ")}</td>
-                          <td style={{ fontSize: 12, color: w.bottleneck ? "var(--red)" : "var(--text3)" }}>{w.bottleneck || "None"}</td>
+                          <td style={{ fontSize: "var(--text-label)", color: w.bottleneck ? "var(--red)" : "var(--text3)" }}>{w.bottleneck || "None"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2575,7 +2638,7 @@ function Schedule({ app }) {
                 <div className="mb-12">
                   <div className="text-sm font-semi mb-8">Conflicts Detected</div>
                   {conflictResult.conflicts.map((c, i) => (
-                    <div key={i} style={{ padding: "8px 12px", marginBottom: 4, borderRadius: 6, borderLeft: `3px solid ${c.severity === "critical" ? "var(--red)" : c.severity === "warning" ? "var(--amber)" : "var(--blue)"}`, background: "var(--card)", fontSize: 13 }}>
+                    <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", borderRadius: "var(--radius-control)", borderLeft: `3px solid ${c.severity === "critical" ? "var(--red)" : c.severity === "warning" ? "var(--amber)" : "var(--blue)"}`, background: "var(--card)", fontSize: "var(--text-label)" }}>
                       <div className="flex-between">
                         <span className="font-semi">{c.type} — {(c.projects || []).join(", ")}</span>
                         <span className={c.severity === "critical" ? "badge-red" : c.severity === "warning" ? "badge-amber" : "badge-blue"}>{c.severity}</span>
@@ -2606,7 +2669,7 @@ function Schedule({ app }) {
                     <div key={i} className="more-list-row">
                       <div className="flex-between">
                         <span className="font-semi">{c.project}</span>
-                        <span style={{ color: c.slackDays <= 3 ? "var(--red)" : "var(--amber)", fontWeight: 600 }}>{c.slackDays}d slack</span>
+                        <span style={{ color: c.slackDays <= 3 ? "var(--red)" : "var(--amber)", fontWeight: "var(--weight-semi)" }}>{c.slackDays}d slack</span>
                       </div>
                       <div className="text-xs text-muted mt-2">{c.bottleneck} — {c.recommendation}</div>
                     </div>
@@ -2726,7 +2789,7 @@ function Schedule({ app }) {
                     width: `${Math.max(widthPct, 0.5)}%`,
                     height: 16,
                     top: 4,
-                    borderRadius: 3,
+                    borderRadius: "var(--radius-control)",
                     background: barColor(task.status),
                     opacity: task.status === "not-started" ? 0.5 : 1,
                   }} />
@@ -2781,10 +2844,10 @@ function Schedule({ app }) {
                   <td>{task.team || "—"}</td>
                   <td>{task.start}</td>
                   <td>{task.end}</td>
-                  <td style={{ fontSize: 11, color: "var(--text2)" }}>{pred ? pred.task : "—"}</td>
+                  <td style={{ fontSize: "var(--text-tab)", color: "var(--text2)" }}>{pred ? pred.task : "—"}</td>
                   <td><span className={task.status === "complete" ? "badge-green" : task.status === "in-progress" ? "badge-amber" : "badge-muted"}>{task.status}</span></td>
                   <td className="more-edit-actions">
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 6px" }}
+                    <button className="btn btn-ghost btn-sm" style={{ fontSize: "var(--text-tab)", padding: "var(--space-1) var(--space-2)" }}
                       onClick={() => { setEditTaskId(task.id); setEditTask({ task: task.task, projectId: task.projectId, team: task.team || "", start: task.start, end: task.end, status: task.status, predecessorId: task.predecessorId || "" }); }}>✎</button>
                     <button className="btn btn-ghost btn-sm btn-table-delete"
                       onClick={() => { if (confirm("Delete this task?")) { app.setSchedule(prev => prev.filter(t => t.id !== task.id)); app.show("Task deleted"); } }}>✕</button>
@@ -2906,7 +2969,7 @@ function Reports({ app }) {
   const phaseData = Object.entries(phaseMap).sort((a, b) => b[1] - a[1]).map(([name, value]) => ({ name, value }));
   const PHASE_COLORS = ["#3b82f6", "#10b981", "#e09422", "#8b5cf6", "#ef4444", "#06b6d4", "#f59e0b", "#ec4899"];
 
-  const tooltipStyle = { background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)" };
+  const tooltipStyle = { background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text)" };
 
   // Non-business roles (safety, foreman, etc.) see a simplified reports view
   if (!isBizRole) {
@@ -3078,13 +3141,13 @@ function Reports({ app }) {
               {reportSummary.strengths?.length > 0 && (
                 <div className="more-info-card--green">
                   <div className="text-sm font-semi mb-8 text-green">Strengths</div>
-                  {reportSummary.strengths.map((s, i) => <div key={i} style={{ fontSize: 13, padding: "3px 0" }}>{s}</div>)}
+                  {reportSummary.strengths.map((s, i) => <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-1) 0" }}>{s}</div>)}
                 </div>
               )}
               {reportSummary.concerns?.length > 0 && (
                 <div className="more-info-card--red">
                   <div className="text-sm font-semi mb-8 text-red">Concerns</div>
-                  {reportSummary.concerns.map((c, i) => <div key={i} style={{ fontSize: 13, padding: "3px 0" }}>{c}</div>)}
+                  {reportSummary.concerns.map((c, i) => <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-1) 0" }}>{c}</div>)}
                 </div>
               )}
             </div>
@@ -3109,7 +3172,7 @@ function Reports({ app }) {
 
             {/* Forecast */}
             {reportSummary.forecast && (
-              <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12, fontSize: 13 }}>
+              <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "var(--bg3)", marginBottom: "var(--space-3)", fontSize: "var(--text-label)" }}>
                 <div className="font-semi mb-4">Near-Term Forecast</div>
                 {reportSummary.forecast}
               </div>
@@ -3174,8 +3237,8 @@ function Reports({ app }) {
         )}
         <ResponsiveContainer width="100%" height={Math.max(gcWinData.length * 32, 160)}>
           <BarChart data={gcWinData} layout="vertical" margin={{ left: 10, right: 20 }}>
-            <XAxis type="number" domain={[0, 100]} tick={{ fill: "var(--text2)", fontSize: 11 }} unit="%" />
-            <YAxis type="category" dataKey="name" width={130} tick={{ fill: "var(--text2)", fontSize: 11 }} />
+            <XAxis type="number" domain={[0, 100]} tick={{ fill: "var(--text2)", fontSize: "var(--text-tab)" }} unit="%" />
+            <YAxis type="category" dataKey="name" width={130} tick={{ fill: "var(--text2)", fontSize: "var(--text-tab)" }} />
             <Tooltip contentStyle={tooltipStyle} formatter={(val, name, props) => [`${val}% (${props.payload.awarded}/${props.payload.bids})`, "Win Rate"]} />
             <Bar dataKey="rate" fill="var(--green)" radius={[0, 4, 4, 0]} />
           </BarChart>
@@ -3187,8 +3250,8 @@ function Reports({ app }) {
         <div className="card-header"><div className="card-title font-head">Pipeline Value by Status</div></div>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={pipelineData} margin={{ left: 0, right: 20 }}>
-            <XAxis dataKey="name" tick={{ fill: "var(--text2)", fontSize: 12, textTransform: "capitalize" }} />
-            <YAxis tick={{ fill: "var(--text2)", fontSize: 11 }} tickFormatter={v => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >= 1000 ? `$${(v/1000).toFixed(0)}K` : `$${v}`} />
+            <XAxis dataKey="name" tick={{ fill: "var(--text2)", fontSize: "var(--text-label)", textTransform: "capitalize" }} />
+            <YAxis tick={{ fill: "var(--text2)", fontSize: "var(--text-tab)" }} tickFormatter={v => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >= 1000 ? `$${(v/1000).toFixed(0)}K` : `$${v}`} />
             <Tooltip contentStyle={tooltipStyle} formatter={(val) => [`$${Number(val).toLocaleString()}`, "Value"]} />
             <Bar dataKey="value" radius={[4, 4, 0, 0]}>
               {pipelineData.map((d) => <Cell key={d.name} fill={REPORT_COLORS[d.name] || "#888"} />)}
@@ -3202,7 +3265,7 @@ function Reports({ app }) {
       <div className="card mt-16">
         {projects.length === 0 && <div className="text2">No projects</div>}
         {projects.map(proj => {
-          const billed = app.invoices.filter(i => i.projectId === proj.id).reduce((s, i) => s + i.amount, 0);
+          const billed = filterActive(app.invoices).filter(i => i.projectId === proj.id).reduce((s, i) => s + i.amount, 0);
           const remaining = proj.contract - billed;
           const pct = proj.contract > 0 ? Math.round((billed / proj.contract) * 100) : 0;
           return (
@@ -3211,8 +3274,8 @@ function Reports({ app }) {
                 <span className="bar-label">{proj.name}</span>
                 <span className="bar-value text2">{app.fmt(billed)} / {app.fmt(proj.contract)} ({app.fmt(remaining)} remaining)</span>
               </div>
-              <div className="bar-track" style={{ height: 14, background: "var(--bg4)", borderRadius: 4, marginTop: 4 }}>
-                <div className="bar-fill" style={{ width: `${Math.min(pct, 100)}%`, height: "100%", background: "var(--amber)", borderRadius: 4 }} />
+              <div className="bar-track" style={{ height: 14, background: "var(--bg4)", borderRadius: "var(--radius-control)", marginTop: "var(--space-1)" }}>
+                <div className="bar-fill" style={{ width: `${Math.min(pct, 100)}%`, height: "100%", background: "var(--amber)", borderRadius: "var(--radius-control)" }} />
               </div>
             </div>
           );
@@ -3355,7 +3418,7 @@ function IncidentsTab({ app }) {
               <div className="flex gap-4 mt-6">
                 {form.photos.map((p, i) => (
                   <div key={i} className="pos-relative">
-                    <img src={p.data} alt={p.name} style={{ width: 50, height: 50, objectFit: "cover", borderRadius: 4 }} />
+                    <img src={p.data} alt={p.name} style={{ width: 50, height: 50, objectFit: "cover", borderRadius: "var(--radius-control)" }} />
                     <button className="more-photo-remove"
                       onClick={() => setForm(prev => ({ ...prev, photos: prev.photos.filter((_, j) => j !== i) }))}>✕</button>
                   </div>
@@ -3411,9 +3474,9 @@ function IncidentsTab({ app }) {
                         <div className="mb-12">
                           <div className="text-sm font-semi mb-4">Contributing Factors</div>
                           {rcaResult.contributingFactors.map((f, i) => (
-                            <div key={i} style={{ padding: "4px 10px", marginBottom: 4, borderRadius: 6, background: "var(--card)", fontSize: 13, borderLeft: "3px solid var(--amber)" }}>
+                            <div key={i} style={{ padding: "var(--space-1) var(--space-3)", marginBottom: "var(--space-1)", borderRadius: "var(--radius-control)", background: "var(--card)", fontSize: "var(--text-label)", borderLeft: "3px solid var(--amber)" }}>
                               <span className="font-semi">{f.factor}</span>
-                              <span className="badge-muted" style={{ marginLeft: 8, fontSize: 10 }}>{f.category}</span>
+                              <span className="badge-muted" style={{ marginLeft: "var(--space-2)", fontSize: "var(--text-xs)" }}>{f.category}</span>
                               <div className="text-xs text-muted mt-2">{f.detail}</div>
                             </div>
                           ))}
@@ -3438,7 +3501,7 @@ function IncidentsTab({ app }) {
 
                       {/* OSHA + Pattern */}
                       {rcaResult.oshaRelevance && (
-                        <div style={{ padding: 8, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", marginBottom: 8, fontSize: 12 }}>
+                        <div style={{ padding: "var(--space-2)", borderRadius: "var(--radius-control)", background: "var(--card)", border: "1px solid var(--border)", marginBottom: "var(--space-2)", fontSize: "var(--text-label)" }}>
                           <span className="font-semi">OSHA: </span>{rcaResult.oshaRelevance}
                         </div>
                       )}
@@ -3577,7 +3640,7 @@ function ToolboxTalksTab({ app }) {
               {/* Content Sections */}
               {genResult.content?.map((section, i) => (
                 <div key={i} className="more-talk-section">
-                  <div className="font-semi" style={{ marginBottom: 6, color: "var(--amber)" }}>{section.heading}</div>
+                  <div className="font-semi" style={{ marginBottom: "var(--space-2)", color: "var(--amber)" }}>{section.heading}</div>
                   {section.points.map((p, j) => (
                     <div key={j} className="more-talk-point">• {p}</div>
                   ))}
@@ -3589,7 +3652,7 @@ function ToolboxTalksTab({ app }) {
                 <div className="mb-12">
                   <div className="text-sm font-semi mb-4">Discussion Questions</div>
                   {genResult.discussion.map((q, i) => (
-                    <div key={i} style={{ padding: "3px 0", fontSize: 13, fontStyle: "italic" }}>{i + 1}. {q}</div>
+                    <div key={i} style={{ padding: "var(--space-1) 0", fontSize: "var(--text-label)", fontStyle: "italic" }}>{i + 1}. {q}</div>
                   ))}
                 </div>
               )}
@@ -3696,7 +3759,7 @@ function ToolboxTalksTab({ app }) {
                     <td>{talk.conductor}</td>
                     <td><div className="flex gap-4">
                       <button className="btn btn-ghost btn-sm btn-table-save" onClick={() => setEditId(talk.id)}>Edit</button>
-                      <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: "2px 6px", color: "var(--red)" }} onClick={() => { if (confirm("Delete this talk?")) { app.setToolboxTalks(prev => prev.filter(t => t.id !== talk.id)); app.show("Talk deleted"); } }}>✕</button>
+                      <button className="btn btn-ghost btn-sm" style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", color: "var(--red)" }} onClick={() => { if (confirm("Delete this talk?")) { app.setToolboxTalks(prev => prev.filter(t => t.id !== talk.id)); app.show("Talk deleted"); } }}>✕</button>
                     </div></td>
                   </>
                 )}
@@ -3821,13 +3884,13 @@ function DailyReportsTab({ app }) {
           {/* Notes Row */}
           <div className="more-dr-detail-grid">
             {digestResult.laborNotes && (
-              <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", fontSize: 13 }}>
+              <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "var(--card)", border: "1px solid var(--border)", fontSize: "var(--text-label)" }}>
                 <div className="font-semi mb-4 fs-12">Labor</div>
                 {digestResult.laborNotes}
               </div>
             )}
             {digestResult.materialNotes && (
-              <div style={{ padding: 10, borderRadius: 6, background: "var(--card)", border: "1px solid var(--border)", fontSize: 13 }}>
+              <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "var(--card)", border: "1px solid var(--border)", fontSize: "var(--text-label)" }}>
                 <div className="font-semi mb-4 fs-12">Materials</div>
                 {digestResult.materialNotes}
               </div>
@@ -3842,7 +3905,7 @@ function DailyReportsTab({ app }) {
 
           {digestResult.safetyNotes?.length > 0 && (
             <div className="mt-8">
-              <div className="font-semi mb-4" style={{ fontSize: 12, color: "var(--red)" }}>Safety</div>
+              <div className="font-semi mb-4" style={{ fontSize: "var(--text-label)", color: "var(--red)" }}>Safety</div>
               {digestResult.safetyNotes.map((s, i) => <div key={i} className="fs-12">{s}</div>)}
             </div>
           )}
@@ -3917,7 +3980,7 @@ function DailyReportsTab({ app }) {
               <div className="more-photo-grid">
                 {form.photos.map((p, i) => (
                   <div key={i} className="pos-relative">
-                    <img src={p.data} alt={p.name} style={{ height: 60, borderRadius: 4, objectFit: "cover" }} />
+                    <img src={p.data} alt={p.name} style={{ height: 60, borderRadius: "var(--radius-control)", objectFit: "cover" }} />
                     <button className="more-photo-remove"
                       onClick={() => setForm(prev => ({ ...prev, photos: prev.photos.filter((_, j) => j !== i) }))}>✕</button>
                   </div>
@@ -3958,7 +4021,7 @@ function DailyReportsTab({ app }) {
                 <strong>{rpt.date} — {pName(rpt.projectId)}</strong>
                 <div className="flex gap-8">
                   <span className="text2">{rpt.weather}</span>
-                  <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: "2px 6px" }} onClick={() => setEditDr({ ...rpt })}>Edit</button>
+                  <button className="btn btn-ghost btn-sm" style={{ fontSize: "var(--text-tab)", padding: "var(--space-1) var(--space-2)" }} onClick={() => setEditDr({ ...rpt })}>Edit</button>
                   <button className="btn btn-ghost btn-sm btn-table-delete"
                     onClick={() => { if (confirm("Delete this daily report?")) { app.setDailyReports(prev => prev.filter(r => r.id !== rpt.id)); app.show("Report deleted"); } }}>✕</button>
                 </div>
@@ -3973,7 +4036,7 @@ function DailyReportsTab({ app }) {
               {rpt.photos?.length > 0 && (
                 <div className="more-photo-grid">
                   {rpt.photos.map((p, i) => (
-                    <img key={i} src={p.data} alt={p.name || "photo"} style={{ height: 80, borderRadius: 4, objectFit: "cover", cursor: "pointer", border: "1px solid var(--border)" }}
+                    <img key={i} src={p.data} alt={p.name || "photo"} style={{ height: 80, borderRadius: "var(--radius-control)", objectFit: "cover", cursor: "pointer", border: "1px solid var(--border)" }}
                       onClick={() => window.open(p.data, "_blank")} title="Click to view full size" />
                   ))}
                 </div>
@@ -4045,13 +4108,13 @@ function OshaChecklistTab({ app }) {
             <div className="mt-8">
               {/* Score + Grade */}
               <div className="more-grid-2">
-                <div style={{ padding: 12, borderRadius: 6, background: "var(--card)", textAlign: "center" }}>
+                <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "var(--card)", textAlign: "center" }}>
                   <div className="text-xs text-muted">Readiness Score</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: auditResult.readinessScore >= 80 ? "var(--green)" : auditResult.readinessScore >= 60 ? "var(--amber)" : "var(--red)" }}>{auditResult.readinessScore}/100</div>
+                  <div style={{ fontSize: "var(--text-title)", fontWeight: "var(--weight-bold)", color: auditResult.readinessScore >= 80 ? "var(--green)" : auditResult.readinessScore >= 60 ? "var(--amber)" : "var(--red)" }}>{auditResult.readinessScore}/100</div>
                 </div>
-                <div style={{ padding: 12, borderRadius: 6, background: "var(--card)", textAlign: "center" }}>
+                <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "var(--card)", textAlign: "center" }}>
                   <div className="text-xs text-muted">Grade</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: auditResult.grade === "A" || auditResult.grade === "B" ? "var(--green)" : auditResult.grade === "C" ? "var(--amber)" : "var(--red)" }}>{auditResult.grade}</div>
+                  <div style={{ fontSize: "var(--text-title)", fontWeight: "var(--weight-bold)", color: auditResult.grade === "A" || auditResult.grade === "B" ? "var(--green)" : auditResult.grade === "C" ? "var(--amber)" : "var(--red)" }}>{auditResult.grade}</div>
                 </div>
               </div>
 
@@ -4092,7 +4155,7 @@ function OshaChecklistTab({ app }) {
 
               {/* Strengths */}
               {auditResult.strengths?.length > 0 && (
-                <div style={{ padding: 10, borderRadius: 6, background: "rgba(16,185,129,0.08)", border: "1px solid var(--green)", marginBottom: 12 }}>
+                <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "rgba(16,185,129,0.08)", border: "1px solid var(--green)", marginBottom: "var(--space-3)" }}>
                   <div className="font-semi mb-4 text-green">Strengths</div>
                   {auditResult.strengths.map((s, i) => <div key={i} className="more-talk-point">✓ {s}</div>)}
                 </div>
@@ -4207,7 +4270,7 @@ function CertificationsTab({ app }) {
   const matrixEmps = users.filter(u => !["driver"].includes(u.role)); // field-relevant roles
 
   const statusBadge = (s) => s === "valid" ? "badge-green" : s === "expiring" ? "badge-amber" : "badge-red";
-  const statusIcon = (s) => s === "valid" ? <CheckCircle size={14} style={{ color: "#10b981" }} /> : s === "expiring" ? <AlertTriangle size={14} style={{ color: "#f59e0b" }} /> : <AlertOctagon size={14} style={{ color: "#ef4444" }} />;
+  const statusIcon = (s) => s === "valid" ? <CheckCircle size={14} style={{ color: "var(--green)" }} /> : s === "expiring" ? <AlertTriangle size={14} style={{ color: "var(--amber)" }} /> : <AlertOctagon size={14} style={{ color: "var(--red)" }} />;
 
   return (
     <div className="mt-16">
@@ -4637,7 +4700,7 @@ function SDSBinder({ app }) {
           <div className="mb-16">
             <input
               className="form-input"
-              style={{ fontSize: 18, padding: "14px 16px", textAlign: "center" }}
+              style={{ fontSize: "var(--text-section)", padding: "var(--space-4) var(--space-4)", textAlign: "center" }}
               placeholder="Type product name or manufacturer..."
               value={search} onChange={e => setSearch(e.target.value)}
               autoFocus
@@ -4914,9 +4977,9 @@ function EquipmentTab({ app }) {
                 <td className="more-eq-td font-mono">${eq.weeklyRate}</td>
                 <td className="more-eq-td font-mono">${eq.monthlyRate}</td>
                 <td className="more-eq-td">
-                  <span style={{ color: statusColor(eq.status), fontWeight: 600 }}>{eq.status}</span>
+                  <span style={{ color: statusColor(eq.status), fontWeight: "var(--weight-semi)" }}>{eq.status}</span>
                 </td>
-                <td style={{ padding: "8px 12px", color: eq.assignedProject ? "var(--text)" : "var(--text3)" }}>
+                <td style={{ padding: "var(--space-2) var(--space-3)", color: eq.assignedProject ? "var(--text)" : "var(--text3)" }}>
                   {eq.assignedProject || "--"}
                 </td>
                 <td className="more-eq-td">
@@ -4978,9 +5041,9 @@ function MarginTiersTab({ app }) {
 
   const TIER_CONFIG = [
     { key: "bronze", label: "Bronze", color: "#cd7f32", bg: "rgba(205,127,50,0.10)", perks: "Thank-you email, referrals, priority scheduling" },
-    { key: "silver", label: "Silver", color: "#94a3b8", bg: "rgba(148,163,184,0.10)", perks: "Lunch on EBC, preferred pricing on next bid" },
-    { key: "gold", label: "Gold", color: "#eab308", bg: "rgba(234,179,8,0.10)", perks: "Gift card ($100), first-call on new projects" },
-    { key: "platinum", label: "Platinum", color: "#a78bfa", bg: "rgba(167,139,250,0.10)", perks: "Annual dinner, exclusive partnership status" },
+    { key: "silver", label: "Silver", color: "var(--text2)", bg: "rgba(148,163,184,0.10)", perks: "Lunch on EBC, preferred pricing on next bid" },
+    { key: "gold", label: "Gold", color: "var(--yellow)", bg: "rgba(234,179,8,0.10)", perks: "Gift card ($100), first-call on new projects" },
+    { key: "platinum", label: "Platinum", color: "var(--purple)", bg: "rgba(167,139,250,0.10)", perks: "Annual dinner, exclusive partnership status" },
   ];
 
   return (
@@ -4995,10 +5058,10 @@ function MarginTiersTab({ app }) {
 
       <div className="more-tier-grid">
         {TIER_CONFIG.map(tc => (
-          <div key={tc.key} className="card" style={{ padding: 20, borderLeft: `4px solid ${tc.color}`, background: tc.bg }}>
+          <div key={tc.key} className="card" style={{ padding: "var(--space-5)", borderLeft: `4px solid ${tc.color}`, background: tc.bg }}>
             <div className="flex-center-gap-8 mb-12">
               <div style={{ width: 12, height: 12, borderRadius: "50%", background: tc.color }} />
-              <div style={{ fontWeight: 700, fontSize: 16, color: tc.color }}>{tc.label}</div>
+              <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", color: tc.color }}>{tc.label}</div>
             </div>
             <div className="form-group mb-12">
               <label className="form-label">Minimum Margin (%)</label>
@@ -5030,7 +5093,7 @@ function MarginTiersTab({ app }) {
         <div className="mt-12 flex gap-16 flex-wrap">
           {TIER_CONFIG.map(tc => (
             <div key={tc.key} className="fs-13">
-              <span style={{ color: tc.color, fontWeight: 700 }}>{tc.label}:</span>{" "}
+              <span style={{ color: tc.color, fontWeight: "var(--weight-bold)" }}>{tc.label}:</span>{" "}
               <span className="font-mono">{tiers[tc.key]}%+</span>
             </div>
           ))}
@@ -5140,7 +5203,7 @@ function AccountTab({ app }) {
         </div>
         {msg && (
           <div className="mt-8" style={{
-            padding: "8px 12px", borderRadius: 6, fontSize: 13,
+            padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", fontSize: "var(--text-label)",
             background: msgType === "ok" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
             color: msgType === "ok" ? "var(--green)" : "var(--red)",
             border: `1px solid ${msgType === "ok" ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`,
@@ -5245,7 +5308,7 @@ function NotificationSettings({ userId }) {
   };
 
   const toggleStyle = (on) => ({
-    width: 44, height: 24, borderRadius: 12, cursor: "pointer", border: "none",
+    width: 44, height: 24, borderRadius: "var(--radius-control)", cursor: "pointer", border: "none",
     background: on ? "var(--ebc-gold, #e09422)" : "rgba(255,255,255,0.15)",
     position: "relative", transition: "background 0.2s",
   });
@@ -5259,7 +5322,7 @@ function NotificationSettings({ userId }) {
       <div className="section-title">Notifications</div>
       <div className="card mt-8 p-16">
         {permission !== "granted" && permission !== "unsupported" && (
-          <div style={{ marginBottom: 12, padding: "8px 12px", borderRadius: 6, background: "rgba(224,148,34,0.1)", border: "1px solid rgba(224,148,34,0.3)", fontSize: 13 }}>
+          <div style={{ marginBottom: "var(--space-3)", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", background: "rgba(224,148,34,0.1)", border: "1px solid rgba(224,148,34,0.3)", fontSize: "var(--text-label)" }}>
             Notifications are {permission === "denied" ? "blocked" : "not enabled"}.
             {permission === "default" && <button className="btn btn-sm ml-8" onClick={requestPerm}>Enable</button>}
           </div>
@@ -5281,7 +5344,7 @@ function NotificationSettings({ userId }) {
           <div className="more-toggle-row">
             <span className="fs-13 text-muted">Reminder time</span>
             <input type="time" value={prefs.dailyReportTime} onChange={e => setTime(e.target.value)}
-              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "4px 8px", color: "var(--text-primary)", fontSize: 13 }} />
+              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "var(--radius-control)", padding: "var(--space-1) var(--space-2)", color: "var(--text-primary)", fontSize: "var(--text-label)" }} />
           </div>
         )}
         {"PushManager" in window && (
@@ -5435,7 +5498,7 @@ function InsuranceTab({ app }) {
         ) : policies.map(pol => {
           const status = getStatus(pol);
           return (
-            <div key={pol.id} className="card" style={{ marginBottom: 8, borderLeft: `4px solid var(--${status === "active" ? "green" : status === "expiring" ? "amber" : "red"})` }}>
+            <div key={pol.id} className="card" style={{ marginBottom: "var(--space-2)", borderLeft: `4px solid var(--${status === "active" ? "green" : status === "expiring" ? "amber" : "red"})` }}>
               <div className="flex-between">
                 <div>
                   <div className="font-semi fs-14">{pol.type}</div>
@@ -5793,7 +5856,7 @@ function UsersTab({ app }) {
                         <button className="btn btn-ghost btn-table-save" onClick={() => setEditId(null)}>{"\u2715"}</button>
                       </div>
                     ) : (
-                      <span className="badge badge-blue" style={{ cursor: "pointer", fontSize: 10 }}
+                      <span className="badge badge-blue" style={{ cursor: "pointer", fontSize: "var(--text-xs)" }}
                         onClick={() => { setEditId(u.id); setEditRole(u.role); }} title="Click to change role">
                         {ROLES_IMPORT[u.role] || u.role}
                       </span>
@@ -5901,7 +5964,7 @@ function CompanyTab({ app }) {
 
       <div className="section-title mt-16">Company Logo</div>
       <div className="card mt-16 flex-center-gap-12">
-        {form.logoUrl && <img src={form.logoUrl} alt="Logo" style={{ maxHeight: 64, maxWidth: 200, borderRadius: 4, objectFit: "contain" }} />}
+        {form.logoUrl && <img src={form.logoUrl} alt="Logo" style={{ maxHeight: 64, maxWidth: 200, borderRadius: "var(--radius-control)", objectFit: "contain" }} />}
         <div>
           <input type="file" accept="image/*" onChange={e => {
             const file = e.target.files?.[0];
@@ -6231,7 +6294,7 @@ function QuickBooksTab({ app }) {
         <td className="px-12 py-6 fs-13">
           <input
             className="form-input"
-            style={{ fontSize: 12, padding: "4px 8px", width: "100%", maxWidth: 300, background: mapped ? "var(--bg3)" : "var(--bg2)" }}
+            style={{ fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-2)", width: "100%", maxWidth: 300, background: mapped ? "var(--bg3)" : "var(--bg2)" }}
             value={mapped || ""}
             placeholder={name}
             onChange={e => updateMapping(type, name, e.target.value)}
@@ -6277,37 +6340,37 @@ function QuickBooksTab({ app }) {
 
       {/* Instructions Panel */}
       <div className="card" style={{ borderLeft: "3px solid var(--blue)" }}>
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8, color: "var(--text)" }}>How It Works</div>
-        <ol style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.8, paddingLeft: 20, margin: 0 }}>
+        <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-secondary)", marginBottom: "var(--space-2)", color: "var(--text)" }}>How It Works</div>
+        <ol style={{ fontSize: "var(--text-label)", color: "var(--text2)", lineHeight: 1.8, paddingLeft: "var(--space-5)", margin: "0" }}>
           <li>Map EBC-OS employee and project names to their <strong>exact</strong> QuickBooks Desktop names below.</li>
           <li>Export IIF files from <strong>Time Clock Admin</strong> (payroll) or <strong>Financials &gt; Invoices</strong>.</li>
           <li>Transfer the <code>.iif</code> file to Anna's computer.</li>
           <li>In QB Desktop: <em>File &gt; Utilities &gt; Import &gt; IIF Files</em> and select the file.</li>
         </ol>
-        <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 6, background: "var(--amber-dim)", fontSize: 12, color: "var(--amber)" }}>
+        <div style={{ marginTop: "var(--space-3)", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", background: "var(--amber-dim)", fontSize: "var(--text-label)", color: "var(--amber)" }}>
           QB imports fail silently if names don't match exactly (case-sensitive). Use the Test Export button below to verify.
         </div>
       </div>
 
       {/* Employee Mappings */}
       <div className="card mt-16">
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4, color: "var(--text)", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-secondary)", marginBottom: "var(--space-1)", color: "var(--text)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
           Employee Name Mapping
-          <span style={{ fontWeight: 400, fontSize: 12, color: empMappedCount === employeeNames.length && employeeNames.length > 0 ? "var(--green)" : "var(--text2)" }}>
+          <span style={{ fontWeight: "var(--weight-normal)", fontSize: "var(--text-label)", color: empMappedCount === employeeNames.length && employeeNames.length > 0 ? "var(--green)" : "var(--text2)" }}>
             {empMappedCount}/{employeeNames.length} mapped
           </span>
         </div>
-        <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 12 }}>
+        <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-3)" }}>
           Leave blank if the EBC name matches QB exactly. Only fill in names that differ.
         </p>
         {employeeNames.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text2)", fontStyle: "italic" }}>No employees found. Add employees in the team roster.</p>
+          <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", fontStyle: "italic" }}>No employees found. Add employees in the team roster.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table" style={{ width: "100%" }}>
               <thead><tr>
-                <th style={{ padding: "6px 12px", fontSize: 12, textAlign: "left" }}>EBC-OS Name</th>
-                <th style={{ padding: "6px 12px", fontSize: 12, textAlign: "left" }}>QB Desktop Name</th>
+                <th style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-label)", textAlign: "left" }}>EBC-OS Name</th>
+                <th style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-label)", textAlign: "left" }}>QB Desktop Name</th>
               </tr></thead>
               <tbody>
                 {employeeNames.map(name => <MappingRow key={name} type="employees" name={name} />)}
@@ -6319,23 +6382,23 @@ function QuickBooksTab({ app }) {
 
       {/* Project/Job Mappings */}
       <div className="card mt-16">
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4, color: "var(--text)", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-secondary)", marginBottom: "var(--space-1)", color: "var(--text)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
           Project / Job Mapping
-          <span style={{ fontWeight: 400, fontSize: 12, color: jobMappedCount === projectNames.length && projectNames.length > 0 ? "var(--green)" : "var(--text2)" }}>
+          <span style={{ fontWeight: "var(--weight-normal)", fontSize: "var(--text-label)", color: jobMappedCount === projectNames.length && projectNames.length > 0 ? "var(--green)" : "var(--text2)" }}>
             {jobMappedCount}/{projectNames.length} mapped
           </span>
         </div>
-        <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 12 }}>
+        <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-3)" }}>
           Use the QB <code>Customer:Job</code> format (e.g. "Satterfield Properties:Memorial Heights Ph2").
         </p>
         {projectNames.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text2)", fontStyle: "italic" }}>No projects yet.</p>
+          <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", fontStyle: "italic" }}>No projects yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table" style={{ width: "100%" }}>
               <thead><tr>
-                <th style={{ padding: "6px 12px", fontSize: 12, textAlign: "left" }}>EBC-OS Name</th>
-                <th style={{ padding: "6px 12px", fontSize: 12, textAlign: "left" }}>QB Desktop Name (Customer:Job)</th>
+                <th style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-label)", textAlign: "left" }}>EBC-OS Name</th>
+                <th style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-label)", textAlign: "left" }}>QB Desktop Name (Customer:Job)</th>
               </tr></thead>
               <tbody>
                 {projectNames.map(name => <MappingRow key={name} type="jobs" name={name} />)}
@@ -6347,33 +6410,33 @@ function QuickBooksTab({ app }) {
 
       {/* QB Export Defaults */}
       <div className="card mt-16">
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8, color: "var(--text)" }}>QB Export Defaults</div>
-        <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 12 }}>Default service and payroll item names used when generating IIF exports.</p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
+        <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-secondary)", marginBottom: "var(--space-2)", color: "var(--text)" }}>QB Export Defaults</div>
+        <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-3)" }}>Default service and payroll item names used when generating IIF exports.</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "var(--space-4)" }}>
           <div>
-            <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>Payroll Item Name</label>
-            <input className="form-input" style={{ fontSize: 12, padding: "4px 8px", width: "100%" }}
+            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>Payroll Item Name</label>
+            <input className="form-input" style={{ fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-2)", width: "100%" }}
               value={mappings.payrollItem || ""}
               placeholder="Hourly Rate"
               onChange={e => save({ ...mappings, payrollItem: e.target.value || undefined })} />
           </div>
           <div>
-            <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>Service Item (Invoices)</label>
-            <input className="form-input" style={{ fontSize: 12, padding: "4px 8px", width: "100%" }}
+            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>Service Item (Invoices)</label>
+            <input className="form-input" style={{ fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-2)", width: "100%" }}
               value={mappings.serviceItem || ""}
               placeholder="Drywall Labor"
               onChange={e => save({ ...mappings, serviceItem: e.target.value || undefined })} />
           </div>
           <div>
-            <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>Income Account</label>
-            <input className="form-input" style={{ fontSize: 12, padding: "4px 8px", width: "100%" }}
+            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>Income Account</label>
+            <input className="form-input" style={{ fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-2)", width: "100%" }}
               value={mappings.incomeAccount || ""}
               placeholder="Construction Income"
               onChange={e => save({ ...mappings, incomeAccount: e.target.value || undefined })} />
           </div>
           <div>
-            <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>A/R Account</label>
-            <input className="form-input" style={{ fontSize: 12, padding: "4px 8px", width: "100%" }}
+            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>A/R Account</label>
+            <input className="form-input" style={{ fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-2)", width: "100%" }}
               value={mappings.arAccount || ""}
               placeholder="Accounts Receivable"
               onChange={e => save({ ...mappings, arAccount: e.target.value || undefined })} />
@@ -6382,10 +6445,10 @@ function QuickBooksTab({ app }) {
       </div>
 
       {/* Test Export */}
-      <div className="card mt-16" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+      <div className="card mt-16" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-3)" }}>
         <div>
-          <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text)" }}>Test Export</div>
-          <div style={{ fontSize: 12, color: "var(--text2)", maxWidth: 480 }}>
+          <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-secondary)", color: "var(--text)" }}>Test Export</div>
+          <div style={{ fontSize: "var(--text-label)", color: "var(--text2)", maxWidth: 480 }}>
             Generate a sample IIF file with dummy time entries to verify the format imports correctly into QB Desktop.
           </div>
         </div>
@@ -6397,7 +6460,7 @@ function QuickBooksTab({ app }) {
       {/* Reset */}
       <div className="card mt-16 flex-between">
         <div>
-          <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}>Reset All Mappings</div>
+          <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)", color: "var(--text)" }}>Reset All Mappings</div>
           <div className="more-account-email">Clear all QB name mappings and defaults. Start fresh.</div>
         </div>
         <button className="btn btn-ghost btn-sm more-btn-logout"
@@ -6414,7 +6477,7 @@ function ThemeTab({ app }) {
   return (
     <div className="mt-16">
       <div className="section-title">Theme</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16, marginTop: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "var(--space-4)", marginTop: "var(--space-4)" }}>
         {Object.entries(THEMES).map(([key, theme]) => {
           const isActive = app.theme === key;
           return (
@@ -6426,12 +6489,12 @@ function ThemeTab({ app }) {
                 cursor: "pointer",
                 border: isActive ? "2px solid var(--amber)" : "2px solid transparent",
                 textAlign: "center",
-                padding: 24,
+                padding: "var(--space-6)",
                 transition: "border-color 0.2s",
               }}
             >
-              <div style={{ fontSize: 32 }}>{theme.icon}</div>
-              <div style={{ marginTop: 8, fontWeight: 600 }}>{theme.name}</div>
+              <div style={{ fontSize: "var(--text-stat)" }}>{theme.icon}</div>
+              <div style={{ marginTop: "var(--space-2)", fontWeight: "var(--weight-semi)" }}>{theme.name}</div>
               {isActive && <div className="badge-green mt-8">Active</div>}
             </div>
           );
@@ -6511,10 +6574,10 @@ function ApiTab({ app }) {
       <div className="section-title mt-16">Features</div>
       <div className="card mt-16">
         <div className="fs-13">
-          <div style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+          <div style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
             <strong>Gmail Bid Sync</strong> — Analyze emails for bid information and auto-populate bid tracker
           </div>
-          <div style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+          <div style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
             <strong>AI Appreciation Emails</strong> — Draft thank-you emails based on project performance tiers
           </div>
           <div className="py-8">
