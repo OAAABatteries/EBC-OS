@@ -253,3 +253,90 @@ export function computeProjectLaborByCode(projectId, projectName, timeEntries, e
     total: { hours: totalHours, rawCost: totalRaw, burdenedCost: totalRaw * burdenMultiplier },
   };
 }
+
+// ── Accrual Validation ──
+
+export function validateAccrual(accrual) {
+  const errors = [];
+  if (!accrual.projectId) errors.push("Project is required");
+  if (!accrual.amount || accrual.amount <= 0) errors.push("Amount must be greater than $0");
+  if (!accrual.period) errors.push("Period is required (YYYY-MM)");
+  if (!accrual.accrualType) errors.push("Accrual type is required (labor_stub/sub_accrual/material_receipt)");
+  if (!accrual.description) errors.push("Description is required");
+  return errors;
+}
+
+// ── Commitment Validation ──
+
+export function validateCommitment(commitment) {
+  const errors = [];
+  if (!commitment.projectId) errors.push("Project is required");
+  if (!commitment.vendorId) errors.push("Vendor is required");
+  if (!commitment.costType) errors.push("Cost type is required");
+  if (!commitment.originalAmount || commitment.originalAmount <= 0) errors.push("Original amount must be greater than $0");
+  if (!commitment.description) errors.push("Description is required");
+  return errors;
+}
+
+// ── Committed Cost Aggregation ──
+
+export function computeProjectCommittedCost(projectId, commitments) {
+  return commitments
+    .filter(c => String(c.projectId) === String(projectId) && c.status === "active")
+    .reduce((sum, c) => sum + (c.remainingCommitment || 0), 0);
+}
+
+// ── Budget vs Actual ──
+
+export function computeBudgetVsActual(projectId, projectName, budgets, timeEntries, employees, apBills, commitments, burdenMultiplier = 1.0) {
+  const budgetLines = budgets[projectId] || [];
+  if (budgetLines.length === 0) return [];
+
+  // Pre-compute labor by cost code
+  const laborByCode = computeProjectLaborByCode(projectId, projectName, timeEntries, employees, burdenMultiplier);
+
+  return budgetLines.map(line => {
+    const { phase, costType, budgetAmount } = line;
+    let actual = 0;
+
+    if (costType === "labor") {
+      // Labor actual from time entries filtered by costCode matching phase
+      const codeData = laborByCode.byCode.get(phase);
+      actual = codeData ? codeData.burdenedCost : 0;
+    } else {
+      // Material / subcontractor / other from AP bills matching phase + costType
+      actual = apBills
+        .filter(b =>
+          String(b.projectId) === String(projectId)
+          && b.costType === costType
+          && b.status !== "deleted"
+          && (b.phase === phase || b.costCode === phase)
+        )
+        .reduce((sum, b) => sum + (b.amount || 0), 0);
+    }
+
+    // Committed = remaining commitment from active commitments matching phase + costType
+    const committed = commitments
+      .filter(c =>
+        String(c.projectId) === String(projectId)
+        && c.phase === phase
+        && c.costType === costType
+        && c.status === "active"
+      )
+      .reduce((sum, c) => sum + (c.remainingCommitment || 0), 0);
+
+    const projectedFinal = actual + committed;
+    const variance = budgetAmount - projectedFinal;
+
+    return {
+      phase,
+      costType,
+      budget: budgetAmount,
+      actual,
+      committed,
+      projectedFinal,
+      variance,
+      overBudget: projectedFinal > budgetAmount,
+    };
+  });
+}

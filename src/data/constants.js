@@ -7,7 +7,7 @@ import { isDemoMode } from "./defaults";
 const _demo = isDemoMode();
 
 // Bump this when seed data changes to bust stale localStorage caches
-export const DATA_VERSION = 19;
+export const DATA_VERSION = 20;
 
 // ── THEMES ────────────────────────────────────────────────────
 export const THEMES = {
@@ -894,3 +894,37 @@ export const initPeriods = [
   { period: "2026-02", status: "closed", closedAt: "2026-03-04T16:30:00Z", closedBy: "Emmanuel Aguilar" },
   { period: "2026-03", status: "open" },
 ];
+
+// ── ACCRUALS ──────────────────────────────────────────────────
+export const initAccruals = [
+  { id: 1, type: "accrual", accrualType: "labor_stub", projectId: 2, costType: "labor", amount: 3200, period: "2026-03", description: "Labor accrual — last 3 days of March (pay period crosses into April)", autoReverse: true, reversalPeriod: "2026-04", status: "posted", createdAt: "2026-03-31T17:00:00Z", createdBy: "Emmanuel Aguilar", audit: [] },
+  { id: 2, type: "accrual", accrualType: "sub_accrual", projectId: 2, costType: "subcontractor", amount: 5000, period: "2026-03", description: "T&T Drywall tape/texture — work complete, invoice expected April", autoReverse: true, reversalPeriod: "2026-04", status: "posted", createdAt: "2026-03-31T17:00:00Z", createdBy: "Emmanuel Aguilar", audit: [] },
+];
+
+// ── COMMITMENTS (SUBCONTRACTS & PURCHASE ORDERS) ──────────────
+export const initCommitments = [
+  { id: 1, type: "subcontract", projectId: 2, vendorId: 3, phase: "tape", costType: "subcontractor", originalAmount: 18000, changeOrders: 0, revisedAmount: 18000, invoicedToDate: 12500, remainingCommitment: 5500, description: "Tape & Texture scope — Brunello Cucinelli", status: "active", audit: [] },
+  { id: 2, type: "purchase_order", projectId: 3, vendorId: 5, phase: "framing", costType: "material", originalAmount: 14000, changeOrders: 0, revisedAmount: 14000, invoicedToDate: 6200, remainingCommitment: 7800, description: "Steel studs and track — BSLMC Cath Labs", status: "active", audit: [] },
+  { id: 3, type: "purchase_order", projectId: 2, vendorId: 1, phase: "board", costType: "material", originalAmount: 22000, changeOrders: 2500, revisedAmount: 24500, invoicedToDate: 8450, remainingCommitment: 16050, description: "Drywall board supply — Brunello Cucinelli", status: "active", audit: [] },
+];
+
+// ── PROJECT BUDGETS (by phase + cost type) ────────────────────
+export const initBudgets = {
+  2: [ // Brunello Cucinelli
+    { phase: "framing", costType: "labor", budgetAmount: 45000 },
+    { phase: "framing", costType: "material", budgetAmount: 28000 },
+    { phase: "board", costType: "labor", budgetAmount: 35000 },
+    { phase: "board", costType: "material", budgetAmount: 24000 },
+    { phase: "tape", costType: "subcontractor", budgetAmount: 20000 },
+    { phase: "finish", costType: "labor", budgetAmount: 42000 },
+    { phase: "ACT", costType: "labor", budgetAmount: 18000 },
+    { phase: "ACT", costType: "material", budgetAmount: 15000 },
+  ],
+  3: [ // BSLMC Cath Labs
+    { phase: "framing", costType: "labor", budgetAmount: 22000 },
+    { phase: "framing", costType: "material", budgetAmount: 14000 },
+    { phase: "board", costType: "labor", budgetAmount: 18000 },
+    { phase: "board", costType: "material", budgetAmount: 12000 },
+    { phase: "finish", costType: "labor", budgetAmount: 15000 },
+  ],
+};
