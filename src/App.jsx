@@ -240,13 +240,19 @@ const CyberRain = () => {
 
 // ── AUTH WRAPPER (defined after App below, exported as default) ──
 function AuthGate() {
+  // DEV_BYPASS_LOGIN: skip login/onboarding during development — auto-login as Abner (admin)
+  // Set to false to re-enable login screen
+  const DEV_BYPASS_LOGIN = true;
+  const DEV_DEFAULT_USER = { id: 999, name: "Abner Aguilar", email: "abner@ebconstructors.com", role: "admin", pin: "1234" };
+
   const [auth, setAuth] = useState(() => {
+    if (DEV_BYPASS_LOGIN) return DEV_DEFAULT_USER;
     try {
       const stored = localStorage.getItem("ebc_auth");
       return stored ? JSON.parse(stored) : null;
     } catch { return null; }
   });
-  const [onboardingDone, setOnboardingDone] = useState(false);
+  const [onboardingDone, setOnboardingDone] = useState(DEV_BYPASS_LOGIN);
 
   // Recompute whenever auth changes — check role-specific key first, then legacy key
   useEffect(() => {
