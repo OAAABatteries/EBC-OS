@@ -5,6 +5,10 @@
  * Provides: validation, audit-diff, soft-delete, duplicate detection, labor cost computation.
  */
 
+// ── Burden Constants ──
+
+export const DEFAULT_BURDEN = 1.35; // FICA + SUTA + WC + GL + benefits
+
 // ── Validation Rules ──
 
 export function validateInvoice(inv) {
@@ -153,39 +157,129 @@ export function validatePeriod(date, periods) {
 
 export function computeProjectMaterialCost(projectId, apBills) {
   return apBills
-    .filter(b => String(b.projectId) === String(projectId) && b.costType === "material" && b.status !== "deleted")
+    .filter(b => String(b.projectId) === String(projectId) && b.costType === "material" && b.status !== "deleted" && b.status !== "void")
     .reduce((sum, b) => sum + (b.amount || 0), 0);
 }
 
 export function computeProjectSubCost(projectId, apBills) {
   return apBills
-    .filter(b => String(b.projectId) === String(projectId) && b.costType === "subcontractor" && b.status !== "deleted")
+    .filter(b => String(b.projectId) === String(projectId) && b.costType === "subcontractor" && b.status !== "deleted" && b.status !== "void")
     .reduce((sum, b) => sum + (b.amount || 0), 0);
 }
 
-export function computeProjectTotalCost(projectId, projectName, timeEntries, employees, apBills, burdenMultiplier = 1.0) {
+export function computeProjectTotalCost(projectId, projectName, timeEntries, employees, apBills, burdenMultiplier = DEFAULT_BURDEN, accruals = [], period = null) {
   const labor = computeProjectLaborCost(projectId, projectName, timeEntries, employees, burdenMultiplier);
   const materialCost = computeProjectMaterialCost(projectId, apBills);
   const subCost = computeProjectSubCost(projectId, apBills);
   const otherAPCost = apBills
-    .filter(b => String(b.projectId) === String(projectId) && b.costType !== "material" && b.costType !== "subcontractor" && b.status !== "deleted")
+    .filter(b => String(b.projectId) === String(projectId) && b.costType !== "material" && b.costType !== "subcontractor" && b.status !== "deleted" && b.status !== "void")
     .reduce((sum, b) => sum + (b.amount || 0), 0);
   const totalAPCost = materialCost + subCost + otherAPCost;
+
+  // ── Accrual handling ──
+  // Active accruals = posted accruals for this project (optionally filtered by period)
+  // Reversals = accruals where autoReverse === true AND reversalPeriod === period
+  //   These SUBTRACT from cost because they reverse a prior-period accrual INTO the current period
+  const projectAccruals = accruals.filter(a => {
+    if (a.status !== "posted") return false;
+    if (String(a.projectId) !== String(projectId)) return false;
+    return true;
+  });
+
+  let accrualLabor = 0;
+  let accrualMaterial = 0;
+  let accrualSub = 0;
+  let accrualOther = 0;
+
+  for (const a of projectAccruals) {
+    // Determine if this accrual should be included
+    let include = false;
+    let sign = 1;
+
+    if (period === null) {
+      // All-time: include ALL posted accruals
+      include = true;
+    } else {
+      // Period-scoped: include if posted to this period
+      if (a.period === period) {
+        include = true;
+      }
+      // Subtract reversals that land in this period (they offset a prior-period accrual)
+      if (a.autoReverse === true && a.reversalPeriod === period) {
+        include = true;
+        sign = -1;
+      }
+    }
+
+    if (!include) continue;
+
+    const amt = (a.amount || 0) * sign;
+    switch (a.costType) {
+      case "labor":
+        accrualLabor += amt;
+        break;
+      case "material":
+        accrualMaterial += amt;
+        break;
+      case "subcontractor":
+        accrualSub += amt;
+        break;
+      default:
+        accrualOther += amt;
+        break;
+    }
+  }
+
+  const accrualTotal = accrualLabor + accrualMaterial + accrualSub + accrualOther;
+
   return {
-    labor: labor.burdenedCost,
+    labor: labor.burdenedCost + accrualLabor,
     laborHours: labor.hours,
     laborRaw: labor.rawCost,
-    material: materialCost,
-    subcontractor: subCost,
-    otherAP: otherAPCost,
+    material: materialCost + accrualMaterial,
+    subcontractor: subCost + accrualSub,
+    otherAP: otherAPCost + accrualOther,
     totalAP: totalAPCost,
-    total: labor.burdenedCost + totalAPCost,
+    accruals: accrualTotal,
+    total: labor.burdenedCost + totalAPCost + accrualTotal,
   };
+}
+
+// ── Period-Scoped Cost Computation (G10) ──
+
+export function computeProjectCostForPeriod(projectId, projectName, period, timeEntries, employees, apBills, accruals = [], burdenMultiplier = DEFAULT_BURDEN) {
+  // Filter time entries to only those clocked-in during this period
+  const periodTimeEntries = timeEntries.filter(te => {
+    if (te.status === "deleted") return false;
+    if (te.isTM) return false;
+    if (!te.clockIn) return false;
+    const clockInPeriod = String(te.clockIn).slice(0, 7); // "YYYY-MM"
+    return clockInPeriod === period;
+  });
+
+  // Filter AP bills to only those dated within this period
+  const periodApBills = apBills.filter(b => {
+    if (b.status === "deleted" || b.status === "void") return false;
+    if (!b.date) return false;
+    const billPeriod = String(b.date).slice(0, 7); // "YYYY-MM"
+    return billPeriod === period;
+  });
+
+  return computeProjectTotalCost(
+    projectId,
+    projectName,
+    periodTimeEntries,
+    employees,
+    periodApBills,
+    burdenMultiplier,
+    accruals,
+    period
+  );
 }
 
 // ── Labor Cost Computation ──
 
-export function computeProjectLaborCost(projectId, projectName, timeEntries, employees, burdenMultiplier = 1.0) {
+export function computeProjectLaborCost(projectId, projectName, timeEntries, employees, burdenMultiplier = DEFAULT_BURDEN) {
   const employeeMap = new Map(employees.map(e => [e.id, e]));
   const employeeNameMap = new Map(employees.map(e => [e.name, e]));
 
@@ -214,7 +308,7 @@ export function computeProjectLaborCost(projectId, projectName, timeEntries, emp
 
 // ── Labor Cost Breakdown by Cost Code ──
 
-export function computeProjectLaborByCode(projectId, projectName, timeEntries, employees, burdenMultiplier = 1.0) {
+export function computeProjectLaborByCode(projectId, projectName, timeEntries, employees, burdenMultiplier = DEFAULT_BURDEN) {
   const employeeMap = new Map(employees.map(e => [e.id, e]));
   const employeeNameMap = new Map(employees.map(e => [e.name, e]));
 
@@ -288,7 +382,7 @@ export function computeProjectCommittedCost(projectId, commitments) {
 
 // ── Budget vs Actual ──
 
-export function computeBudgetVsActual(projectId, projectName, budgets, timeEntries, employees, apBills, commitments, burdenMultiplier = 1.0) {
+export function computeBudgetVsActual(projectId, projectName, budgets, timeEntries, employees, apBills, commitments, burdenMultiplier = DEFAULT_BURDEN) {
   const budgetLines = budgets[projectId] || [];
   if (budgetLines.length === 0) return [];
 
@@ -310,6 +404,7 @@ export function computeBudgetVsActual(projectId, projectName, budgets, timeEntri
           String(b.projectId) === String(projectId)
           && b.costType === costType
           && b.status !== "deleted"
+          && b.status !== "void"
           && (b.phase === phase || b.costCode === phase)
         )
         .reduce((sum, b) => sum + (b.amount || 0), 0);
@@ -339,4 +434,51 @@ export function computeBudgetVsActual(projectId, projectName, budgets, timeEntri
       overBudget: projectedFinal > budgetAmount,
     };
   });
+}
+
+// ── Estimated Total Cost (G1) ──
+// Used for % complete calculations: cost / totalEstimatedCost (NOT cost / adjustedContract)
+
+export function computeProjectEstimatedTotalCost(projectId, budgets) {
+  const lines = budgets?.[projectId] || [];
+  return lines.reduce((sum, line) => sum + (line.budgetAmount || 0), 0);
+}
+
+// ── Accrual Period Helpers (G11) ──
+
+// Returns accruals that are active (posted) in the given period
+export function getActiveAccrualsForPeriod(projectId, period, accruals) {
+  return accruals.filter(a => {
+    if (a.status !== "posted") return false;
+    if (String(a.projectId) !== String(projectId)) return false;
+    return a.period === period;
+  });
+}
+
+// Returns accruals that are reversing INTO the given period
+// (prior-period accruals with autoReverse=true and reversalPeriod=this period)
+export function getReversingAccrualsForPeriod(projectId, period, accruals) {
+  return accruals.filter(a => {
+    if (a.status !== "posted") return false;
+    if (String(a.projectId) !== String(projectId)) return false;
+    return a.autoReverse === true && a.reversalPeriod === period;
+  });
+}
+
+// Sum accruals for a project (optionally scoped to a period)
+// If period is null: sum all posted accruals for the project
+// If period is given: posted accruals matching period MINUS accruals reversing INTO that period
+export function sumProjectAccruals(projectId, accruals, period = null) {
+  if (period === null) {
+    return accruals
+      .filter(a => a.status === "posted" && String(a.projectId) === String(projectId))
+      .reduce((sum, a) => sum + (a.amount || 0), 0);
+  }
+
+  const posted = getActiveAccrualsForPeriod(projectId, period, accruals)
+    .reduce((sum, a) => sum + (a.amount || 0), 0);
+  const reversed = getReversingAccrualsForPeriod(projectId, period, accruals)
+    .reduce((sum, a) => sum + (a.amount || 0), 0);
+
+  return posted - reversed;
 }
