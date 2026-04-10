@@ -7,7 +7,7 @@ import { isDemoMode } from "./defaults";
 const _demo = isDemoMode();
 
 // Bump this when seed data changes to bust stale localStorage caches
-export const DATA_VERSION = 20;
+export const DATA_VERSION = 22;
 
 // ── THEMES ────────────────────────────────────────────────────
 export const THEMES = {
@@ -364,6 +364,7 @@ export const SCOPE_TEMPLATES = {
 const _demoBids = [
   // ── REAL EBC BIDS (from estimating system) ──
   // 2026
+  {id:215,name:"OSC - 1CPPO Level 2-8 RR",gc:"O'Donnell/Snider",value:156700,due:"Apr 10, 2026",status:"submitted",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Commercial",risk:"",notes:"Levels 2-8 restroom renovations at 1 Post Oak Central. Demo $30.8K, Drywall/Build Back $109.9K, ACT $16K. Armstrong Fine Fissured on 15/16 Prelude XL grid. Deck height 14' or less. Level 4 finish. 20 or 25 ga. framing. Doors/frames/hardware install only (materials by GC). Pricing good 30 days from bid date.",contact:"",month:"Apr",closeOut:null,bidDate:"Apr 10, 2026",address:"2000 Post Oak Blvd, Houston, TX 77056"},
   {id:214,name:"Forney - Spring Branch Presbyterian",gc:"Forney Construction",value:168700,due:"Apr 8, 2026",status:"submitted",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Religious",risk:"",notes:"Demo $44.3K, Drywall/Build Back $61.6K, ACT $62.8K. Alt: +$31.2K FRP-1 & FRP-2. Armstrong Fine Fissured on 15/16 grid. Deck height 12' or less. Level 4 finish. 20 or 25 ga. framing. Phasing included.",contact:"",month:"Apr",closeOut:null,bidDate:"Apr 8, 2026",address:"1215 Campbell Rd, Houston, TX 77055"},
   {id:213,name:"Meridian - FMG",gc:"FMG",value:113600,due:"Apr 8, 2026",status:"submitted",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Commercial",risk:"",notes:"Demo $15.8K, Drywall/Build Back $56.7K, ACT $41.1K. ACT assuming Fine Fissured on 15/16 grid. Deck height 14' or less. Level 4 finish. 20 or 25 ga. framing.",contact:"",month:"Apr",closeOut:null,bidDate:"Apr 8, 2026",address:"3 Riverway, Suite 1000, Houston, TX 77056"},
   {id:212,name:"Texas Mutual Insurance",gc:"Multiple GCs",value:104800,due:"Apr 6, 2026",status:"submitted",scope:["Demo","Metal Framing","Drywall","ACT Ceilings","Tape & Finish","Doors & Hardware"],phase:"Commercial",risk:"",notes:"Bidding to multiple GCs. Demo $12.9K, Drywall/Build Back $72.2K, ACT $19.7K. ACT match existing Armstrong Ultima. Deck height 16' or less.",contact:"",month:"Apr",closeOut:null,bidDate:"Apr 6, 2026",address:"9811 Katy Fwy, Suite 800, Houston, TX 77024"},
@@ -883,9 +884,12 @@ export const initVendors = [
 
 // ── AP BILLS (ACCOUNTS PAYABLE) ─────────────────────────────
 export const initAPBills = [
-  { id: 1, vendorId: 1, projectId: 2, costType: "material", invoiceNumber: "INV-88421", date: "2026-03-15", dueDate: "2026-04-14", amount: 8450, description: "Drywall board delivery - Brunello Cucinelli", status: "approved", approvedBy: "Emmanuel Aguilar", approvedAt: "2026-03-16", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", audit: [] },
-  { id: 2, vendorId: 5, projectId: 3, costType: "material", invoiceNumber: "HSS-2026-0312", date: "2026-03-12", dueDate: "2026-04-11", amount: 6200, description: "Steel studs and track - BSLMC Cath Labs", status: "entered", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", audit: [] },
-  { id: 3, vendorId: 3, projectId: 2, costType: "subcontractor", invoiceNumber: "TT-2026-041", date: "2026-03-28", dueDate: "2026-04-12", amount: 12500, description: "Tape and texture scope - Brunello Cucinelli", status: "entered", retainageRate: 10, retainageAmount: 1250, netPayable: 11250, attachments: [], lienWaiverStatus: "conditional_received", lienWaiverDate: "2026-03-30", audit: [] },
+  { id: 1, vendorId: 1, projectId: 2, costType: "material", invoiceNumber: "INV-88421", date: "2026-03-15", dueDate: "2026-04-14", amount: 8450, description: "Drywall board delivery - Brunello Cucinelli", status: "approved", approvedBy: "Emmanuel Aguilar", approvedAt: "2026-03-16", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-15T13:45:00Z", audit: [] },
+  { id: 2, vendorId: 5, projectId: 3, costType: "material", invoiceNumber: "HSS-2026-0312", date: "2026-03-12", dueDate: "2026-04-11", amount: 6200, description: "Steel studs and track - BSLMC Cath Labs", status: "entered", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-12T10:20:00Z", audit: [] },
+  { id: 3, vendorId: 3, projectId: 2, costType: "subcontractor", invoiceNumber: "TT-2026-041", date: "2026-03-28", dueDate: "2026-04-12", amount: 12500, description: "Tape and texture scope - Brunello Cucinelli", status: "entered", retainageRate: 10, retainageAmount: 1250, netPayable: 11250, attachments: [], lienWaiverStatus: "conditional_received", lienWaiverDate: "2026-03-30", createdAt: "2026-03-28T15:10:00Z", audit: [] },
+  { id: 4, vendorId: 5, projectId: 1, costType: "material", invoiceNumber: "HSS-2026-0320", date: "2026-03-20", dueDate: "2026-04-19", amount: 4200, description: "Metal studs and track - Woodside Lab framing", status: "approved", approvedBy: "Emmanuel Aguilar", approvedAt: "2026-03-21T10:00:00Z", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-20T14:30:00Z", audit: [] },
+  { id: 5, vendorId: 1, projectId: 1, costType: "material", invoiceNumber: "ABC-48821", date: "2026-03-25", dueDate: "2026-04-24", amount: 3850, description: "Drywall board - Woodside Lab", status: "approved", approvedBy: "Emmanuel Aguilar", approvedAt: "2026-03-26T09:15:00Z", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-25T11:00:00Z", audit: [] },
+  { id: 6, vendorId: 3, projectId: 1, costType: "subcontractor", invoiceNumber: "TT-2026-055", date: "2026-04-02", dueDate: "2026-04-17", amount: 6500, description: "Tape and finish scope - Woodside Lab", status: "entered", retainageRate: 10, retainageAmount: 650, netPayable: 5850, attachments: [], lienWaiverStatus: "missing", createdAt: "2026-04-02T16:00:00Z", audit: [] },
 ];
 
 // ── ACCOUNTING PERIODS ──────────────────────────────────────
@@ -899,6 +903,7 @@ export const initPeriods = [
 export const initAccruals = [
   { id: 1, type: "accrual", accrualType: "labor_stub", projectId: 2, costType: "labor", amount: 3200, period: "2026-03", description: "Labor accrual — last 3 days of March (pay period crosses into April)", autoReverse: true, reversalPeriod: "2026-04", status: "posted", createdAt: "2026-03-31T17:00:00Z", createdBy: "Emmanuel Aguilar", audit: [] },
   { id: 2, type: "accrual", accrualType: "sub_accrual", projectId: 2, costType: "subcontractor", amount: 5000, period: "2026-03", description: "T&T Drywall tape/texture — work complete, invoice expected April", autoReverse: true, reversalPeriod: "2026-04", status: "posted", createdAt: "2026-03-31T17:00:00Z", createdBy: "Emmanuel Aguilar", audit: [] },
+  { id: 3, type: "accrual", accrualType: "labor_stub", projectId: 1, costType: "labor", amount: 2100, period: "2026-03", description: "Labor accrual — last 2 days of March for Woodside Lab crew", autoReverse: true, reversalPeriod: "2026-04", status: "posted", createdAt: "2026-03-31T16:00:00Z", createdBy: "Emmanuel Aguilar", audit: [] },
 ];
 
 // ── COMMITMENTS (SUBCONTRACTS & PURCHASE ORDERS) ──────────────
@@ -906,10 +911,23 @@ export const initCommitments = [
   { id: 1, type: "subcontract", projectId: 2, vendorId: 3, phase: "tape", costType: "subcontractor", originalAmount: 18000, changeOrders: 0, revisedAmount: 18000, invoicedToDate: 12500, remainingCommitment: 5500, description: "Tape & Texture scope — Brunello Cucinelli", status: "active", audit: [] },
   { id: 2, type: "purchase_order", projectId: 3, vendorId: 5, phase: "framing", costType: "material", originalAmount: 14000, changeOrders: 0, revisedAmount: 14000, invoicedToDate: 6200, remainingCommitment: 7800, description: "Steel studs and track — BSLMC Cath Labs", status: "active", audit: [] },
   { id: 3, type: "purchase_order", projectId: 2, vendorId: 1, phase: "board", costType: "material", originalAmount: 22000, changeOrders: 2500, revisedAmount: 24500, invoicedToDate: 8450, remainingCommitment: 16050, description: "Drywall board supply — Brunello Cucinelli", status: "active", audit: [] },
+  { id: 4, type: "purchase_order", projectId: 1, vendorId: 5, phase: "framing", costType: "material", originalAmount: 12000, changeOrders: 0, revisedAmount: 12000, invoicedToDate: 4200, remainingCommitment: 7800, description: "Metal framing material - Woodside Lab", status: "active", audit: [] },
+  { id: 5, type: "subcontract", projectId: 1, vendorId: 3, phase: "tape", costType: "subcontractor", originalAmount: 14000, changeOrders: 0, revisedAmount: 14000, invoicedToDate: 6500, remainingCommitment: 7500, description: "Tape, finish, texture scope - Woodside Lab", status: "active", audit: [] },
 ];
 
 // ── PROJECT BUDGETS (by phase + cost type) ────────────────────
 export const initBudgets = {
+  1: [ // Endurance Woodside Laboratory — $74,800 contract
+    { phase: "demo", costType: "labor", budgetAmount: 4500 },
+    { phase: "framing", costType: "labor", budgetAmount: 12000 },
+    { phase: "framing", costType: "material", budgetAmount: 8500 },
+    { phase: "board", costType: "labor", budgetAmount: 10500 },
+    { phase: "board", costType: "material", budgetAmount: 9200 },
+    { phase: "tape", costType: "labor", budgetAmount: 8000 },
+    { phase: "finish", costType: "labor", budgetAmount: 5200 },
+    { phase: "ACT", costType: "labor", budgetAmount: 3800 },
+    { phase: "ACT", costType: "material", budgetAmount: 4500 },
+  ],
   2: [ // Brunello Cucinelli
     { phase: "framing", costType: "labor", budgetAmount: 45000 },
     { phase: "framing", costType: "material", budgetAmount: 28000 },
@@ -926,5 +944,93 @@ export const initBudgets = {
     { phase: "board", costType: "labor", budgetAmount: 18000 },
     { phase: "board", costType: "material", budgetAmount: 12000 },
     { phase: "finish", costType: "labor", budgetAmount: 15000 },
+  ],
+  // Auto-budget for Texas Heart Center Baytown — $54,200 contract → ~70% cost target
+  5: [
+    { phase: "framing", costType: "labor", budgetAmount: 8130 },
+    { phase: "framing", costType: "material", budgetAmount: 4336 },
+    { phase: "board", costType: "labor", budgetAmount: 9756 },
+    { phase: "board", costType: "material", budgetAmount: 5420 },
+    { phase: "tape", costType: "labor", budgetAmount: 6504 },
+    { phase: "finish", costType: "labor", budgetAmount: 2710 },
+    { phase: "ACT", costType: "labor", budgetAmount: 2168 },
+    { phase: "ACT", costType: "material", budgetAmount: 1626 },
+  ],
+  // Auto-budget for MH MC Single Plane IR — $33,000 contract → ~70% cost target
+  7: [
+    { phase: "framing", costType: "labor", budgetAmount: 4950 },
+    { phase: "framing", costType: "material", budgetAmount: 2640 },
+    { phase: "board", costType: "labor", budgetAmount: 5940 },
+    { phase: "board", costType: "material", budgetAmount: 3300 },
+    { phase: "tape", costType: "labor", budgetAmount: 3960 },
+    { phase: "finish", costType: "labor", budgetAmount: 1650 },
+    { phase: "ACT", costType: "labor", budgetAmount: 1320 },
+    { phase: "ACT", costType: "material", budgetAmount: 990 },
+  ],
+  // Auto-budget for Our Lady of Guadalupe Restroom — $34,700 contract → ~70% cost target
+  11: [
+    { phase: "framing", costType: "labor", budgetAmount: 5205 },
+    { phase: "framing", costType: "material", budgetAmount: 2776 },
+    { phase: "board", costType: "labor", budgetAmount: 6246 },
+    { phase: "board", costType: "material", budgetAmount: 3470 },
+    { phase: "tape", costType: "labor", budgetAmount: 4164 },
+    { phase: "finish", costType: "labor", budgetAmount: 1735 },
+    { phase: "ACT", costType: "labor", budgetAmount: 1388 },
+    { phase: "ACT", costType: "material", budgetAmount: 1041 },
+  ],
+  // Auto-budget for Arch-Con Sprouts Farmers Market — $215,100 contract → ~70% cost target
+  12: [
+    { phase: "framing", costType: "labor", budgetAmount: 32265 },
+    { phase: "framing", costType: "material", budgetAmount: 17208 },
+    { phase: "board", costType: "labor", budgetAmount: 38718 },
+    { phase: "board", costType: "material", budgetAmount: 21510 },
+    { phase: "tape", costType: "labor", budgetAmount: 25812 },
+    { phase: "finish", costType: "labor", budgetAmount: 10755 },
+    { phase: "ACT", costType: "labor", budgetAmount: 8604 },
+    { phase: "ACT", costType: "material", budgetAmount: 6453 },
+  ],
+  // Auto-budget for ROD Brunello Cucinelli Expansion (Landlord) — $49,900 contract → ~70% cost target
+  16: [
+    { phase: "framing", costType: "labor", budgetAmount: 7485 },
+    { phase: "framing", costType: "material", budgetAmount: 3992 },
+    { phase: "board", costType: "labor", budgetAmount: 8982 },
+    { phase: "board", costType: "material", budgetAmount: 4990 },
+    { phase: "tape", costType: "labor", budgetAmount: 5988 },
+    { phase: "finish", costType: "labor", budgetAmount: 2495 },
+    { phase: "ACT", costType: "labor", budgetAmount: 1996 },
+    { phase: "ACT", costType: "material", budgetAmount: 1497 },
+  ],
+  // Auto-budget for Escapology Sugar Land — $116,800 contract → ~70% cost target
+  17: [
+    { phase: "framing", costType: "labor", budgetAmount: 17520 },
+    { phase: "framing", costType: "material", budgetAmount: 9344 },
+    { phase: "board", costType: "labor", budgetAmount: 21024 },
+    { phase: "board", costType: "material", budgetAmount: 11680 },
+    { phase: "tape", costType: "labor", budgetAmount: 14016 },
+    { phase: "finish", costType: "labor", budgetAmount: 5840 },
+    { phase: "ACT", costType: "labor", budgetAmount: 4672 },
+    { phase: "ACT", costType: "material", budgetAmount: 3504 },
+  ],
+  // Auto-budget for Spring Cypress Oral Surgeons — $155,100 contract → ~70% cost target
+  18: [
+    { phase: "framing", costType: "labor", budgetAmount: 23265 },
+    { phase: "framing", costType: "material", budgetAmount: 12408 },
+    { phase: "board", costType: "labor", budgetAmount: 27918 },
+    { phase: "board", costType: "material", budgetAmount: 15510 },
+    { phase: "tape", costType: "labor", budgetAmount: 18612 },
+    { phase: "finish", costType: "labor", budgetAmount: 7755 },
+    { phase: "ACT", costType: "labor", budgetAmount: 6204 },
+    { phase: "ACT", costType: "material", budgetAmount: 4653 },
+  ],
+  // Auto-budget for PPER Missouri City — $22,800 contract → ~70% cost target
+  19: [
+    { phase: "framing", costType: "labor", budgetAmount: 3420 },
+    { phase: "framing", costType: "material", budgetAmount: 1824 },
+    { phase: "board", costType: "labor", budgetAmount: 4104 },
+    { phase: "board", costType: "material", budgetAmount: 2280 },
+    { phase: "tape", costType: "labor", budgetAmount: 2736 },
+    { phase: "finish", costType: "labor", budgetAmount: 1140 },
+    { phase: "ACT", costType: "labor", budgetAmount: 912 },
+    { phase: "ACT", costType: "material", budgetAmount: 684 },
   ],
 };
