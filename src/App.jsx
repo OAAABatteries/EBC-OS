@@ -12,9 +12,10 @@ import {
   initTmTickets, DATA_VERSION,
   initAreas, initProductionLogs, initDecisionLog,
   initCompanySettings,
-  initVendors, initAPBills, initPeriods, COST_TYPES, COST_CODES
+  initVendors, initAPBills, initPeriods, COST_TYPES, COST_CODES,
+  initAccruals, initCommitments, initBudgets
 } from "./data/constants";
-import { softDelete, filterActive, computeProjectLaborCost, computeProjectLaborByCode } from "./utils/financialValidation";
+import { softDelete, filterActive, computeProjectLaborCost, computeProjectLaborByCode, computeProjectTotalCost } from "./utils/financialValidation";
 import { AreasTab } from "./tabs/AreasTab";
 import { PunchListTab } from "./tabs/PunchListTab";
 import { DecisionLogTab } from "./tabs/DecisionLogTab";
@@ -420,6 +421,9 @@ function App({ auth, onLogout }) {
   const [vendors, setVendors, _syncVendors] = useSyncedState("vendors", initVendors);
   const [apBills, setAPBills, _syncAPBills] = useSyncedState("apBills", initAPBills);
   const [periods, setPeriods, _syncPeriods] = useSyncedState("periods", initPeriods);
+  const [accruals, setAccruals, _syncAccruals] = useSyncedState("accruals", initAccruals);
+  const [commitments, setCommitments, _syncCommitments] = useSyncedState("commitments", initCommitments);
+  const [budgets, setBudgets, _syncBudgets] = useSyncedState("budgets", initBudgets);
 
   // ── User GPS location for proximity features ──
   const [userLocation, setUserLocation] = useState(null);
@@ -668,6 +672,7 @@ function App({ auth, onLogout }) {
     insurancePolicies, setInsurancePolicies,
     problems, setProblems,
     vendors, setVendors, apBills, setAPBills, periods, setPeriods,
+    accruals, setAccruals, commitments, setCommitments, budgets, setBudgets,
     COST_TYPES, COST_CODES,
     show, setModal, modal, search, setSearch, tab, setTab, subTab, setSubTab, fmt, fmtK, nextId,
     lang, setLang, t,
@@ -942,35 +947,29 @@ function App({ auth, onLogout }) {
     const followUps = callLog.filter(c => c.next && c.next.trim());
 
     // Profit margin alerts — flag active projects below threshold
-    // Uses actual burdened labor from time entries + estimated material as fallback
+    // Uses computeProjectTotalCost for full cost breakdown (labor + material + sub + other AP)
     const marginThreshold = companySettings?.marginAlertThreshold || 25;
     const burden = companySettings?.laborBurdenMultiplier || 1.35;
     const profitAlerts = projects.filter(p => {
       if ((p.progress || 0) >= 100) return false; // skip completed
       const contract = p.contract || 0;
       if (contract <= 0) return false; // can't calculate without contract
-      const lc = computeProjectLaborCost(p.id, p.name, timeEntries, employees, burden);
-      const laborActual = lc.burdenedCost;
-      const materialEst = p.materialCost || 0; // estimate until AP bills exist
-      const totalCost = laborActual + materialEst;
-      if (totalCost <= 0) return false; // no costs yet — not alertable
-      const margin = ((contract - totalCost) / contract) * 100;
+      const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden);
+      if (costs.total <= 0) return false; // no costs yet — not alertable
+      const margin = ((contract - costs.total) / contract) * 100;
       return margin < marginThreshold;
     }).map(p => {
       const contract = p.contract || 0;
-      const lc = computeProjectLaborCost(p.id, p.name, timeEntries, employees, burden);
-      const laborActual = lc.burdenedCost;
-      const materialEst = p.materialCost || 0;
-      const totalCost = laborActual + materialEst;
-      const margin = Math.round(((contract - totalCost) / contract) * 100);
-      return { ...p, margin, totalCost, laborActual, materialEst, laborHours: lc.hours };
+      const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden);
+      const margin = Math.round(((contract - costs.total) / contract) * 100);
+      return { ...p, margin, totalCost: costs.total, laborActual: costs.labor, materialEst: costs.material, laborHours: costs.laborHours, subCost: costs.subcontractor, otherAP: costs.otherAP };
     }).sort((a, b) => a.margin - b.margin);
 
     // Total urgency count
     const urgentCount = bidsDueSoon.length + cosPending.length + rfisOpen.filter(r => r.age > 7).length + subsDueSoon.length + overdueInv.length + profitAlerts.length;
 
     return { bidsDueSoon, cosPending, cosPendingTotal, rfisOpen, subsDueSoon, overdueInv, overdueTotal, tmPending, projNoBilling, projAtRisk, followUps, profitAlerts, urgentCount };
-  }, [bids, changeOrders, rfis, submittals, invoices, tmTickets, projects, callLog, timeEntries, employees, companySettings]);
+  }, [bids, changeOrders, rfis, submittals, invoices, tmTickets, projects, callLog, timeEntries, employees, companySettings, apBills]);
 
   const pName = (pid) => projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
 
@@ -2860,7 +2859,7 @@ function App({ auth, onLogout }) {
                 {pSubs.length > 0 && <span className="text-amber">Sub: {pSubs.length}</span>}
                 {pCOs.length > 0 && <span className="text-amber">CO: {pCOs.length}</span>}
                 {billingLag && <span className="text-red">Billing lag</span>}
-                {(() => { const lc = computeProjectLaborCost(p.id, p.name, timeEntries, employees, companySettings?.laborBurdenMultiplier || 1.35); const tc = lc.burdenedCost + (p.materialCost || 0); const c = p.contract || 0; const thr = companySettings?.marginAlertThreshold || 25; if (tc > 0 && c > 0) { const m = Math.round(((c - tc) / c) * 100); if (m < thr) return <span style={{ color: m < 0 ? "#dc2626" : "var(--red)", fontWeight: "var(--weight-semi)" }}>Margin: {m}%</span>; } return null; })()}
+                {(() => { const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, companySettings?.laborBurdenMultiplier || 1.35); const c = p.contract || 0; const thr = companySettings?.marginAlertThreshold || 25; if (costs.total > 0 && c > 0) { const m = Math.round(((c - costs.total) / c) * 100); if (m < thr) return <span style={{ color: m < 0 ? "#dc2626" : "var(--red)", fontWeight: "var(--weight-semi)" }}>Margin: {m}%</span>; } return null; })()}
                 {pRfis.length === 0 && pSubs.length === 0 && pCOs.length === 0 && !billingLag && <span className="text-green">On track</span>}
               </div>
               {/* Closeout button for near-complete */}
@@ -5429,22 +5428,94 @@ const ModalHub = ({ type, data, app }) => {
             {projTab === "financials" && (() => {
               const approvedCOTotal = projCOs.filter(c => c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
               const pendingCOTotal = projCOs.filter(c => c.status !== "approved" && c.status !== "rejected").reduce((s, c) => s + (c.amount || 0), 0);
+              const costs = computeProjectTotalCost(draft.id, draft.name, app.timeEntries, app.employees, app.apBills, app.companySettings?.laborBurdenMultiplier || 1.35);
+              const adjustedContract = (draft.contract || 0) + approvedCOTotal;
+              const billedToDate = filterActive(projInvoices).reduce((s, i) => s + (i.amount || 0), 0);
+              const retainageRate = app.companySettings?.defaultRetainageRate || 10;
+              const retainageReceivable = Math.round(billedToDate * retainageRate / 100);
+              const percentComplete = adjustedContract > 0 ? Math.min(costs.total / adjustedContract, 1) : 0;
+              const earnedRevenue = percentComplete * adjustedContract;
+              const overUnder = billedToDate - earnedRevenue;
+              const grossMargin = adjustedContract > 0 ? adjustedContract - costs.total : 0;
+              const grossMarginPct = adjustedContract > 0 ? Math.round((grossMargin / adjustedContract) * 100) : 0;
+              const paidTotal = projInvoices.filter(i => i.status === "paid").reduce((s, i) => s + (i.amount || 0), 0);
+              const netReceived = paidTotal - retainageReceivable;
               return (
               <div>
+                {/* Contract KPIs */}
                 <div className="flex gap-16 mb-16 flex-wrap">
                   <div><span className="text-dim text-xs">CONTRACT</span><div className="font-mono text-amber">{fmt(draft.contract)}</div></div>
                   <div><span className="text-dim text-xs">APPROVED COs</span><div className="font-mono text-green">{fmt(approvedCOTotal)}</div></div>
                   <div><span className="text-dim text-xs">PENDING COs</span><div className="font-mono" style={{color: pendingCOTotal > 0 ? "var(--red)" : "var(--text3)"}}>{fmt(pendingCOTotal)}</div></div>
-                  <div><span className="text-dim text-xs">REVISED</span><div className="font-mono font-bold">{fmt((draft.contract || 0) + approvedCOTotal)}</div></div>
-                  <div><span className="text-dim text-xs">INVOICED</span><div className="font-mono">{fmt(totalBilled)}</div></div>
+                  <div><span className="text-dim text-xs">ADJUSTED CONTRACT</span><div className="font-mono font-bold">{fmt(adjustedContract)}</div></div>
+                  <div><span className="text-dim text-xs">INVOICED</span><div className="font-mono">{fmt(billedToDate)}</div></div>
                   <div><span className="text-dim text-xs">REMAINING</span><div className="font-mono" style={{ color: remaining > 0 ? "var(--green)" : "var(--red)" }}>{fmt(remaining)}</div></div>
                 </div>
+
+                {/* Retainage + Over/Under Billing KPIs */}
+                <div className="flex gap-16 mb-16 flex-wrap">
+                  <div><span className="text-dim text-xs">RETAINAGE RECEIVABLE ({retainageRate}%)</span><div className="font-mono text-amber">{fmt(retainageReceivable)}</div></div>
+                  <div>
+                    <span className="text-dim text-xs">OVER/(UNDER) BILLED</span>
+                    <div className="font-mono" style={{ color: overUnder >= 0 ? "var(--green)" : "var(--red)" }}>
+                      {overUnder >= 0 ? fmt(overUnder) : `(${fmt(Math.abs(overUnder))})`}
+                    </div>
+                    <div className="text-xs" style={{ color: overUnder >= 0 ? "var(--green)" : "var(--red)", opacity: 0.8 }}>
+                      {overUnder >= 0 ? "Cash ahead" : "Earnings ahead of cash"}
+                    </div>
+                  </div>
+                  <div><span className="text-dim text-xs">% COMPLETE (COST)</span><div className="font-mono">{Math.round(percentComplete * 100)}%</div></div>
+                  <div><span className="text-dim text-xs">EARNED REVENUE</span><div className="font-mono">{fmt(Math.round(earnedRevenue))}</div></div>
+                </div>
+
+                {/* Project P&L Summary Card */}
+                <div className="card p-12 mb-16" style={{ border: `1px solid ${grossMarginPct < (app.companySettings?.marginAlertThreshold || 25) ? "var(--red)" : "var(--green)"}` }}>
+                  <div className="text-xs font-semi mb-8 text-amber">PROJECT P&L SUMMARY</div>
+                  <div className="flex gap-16 flex-wrap mb-8">
+                    <div><span className="text-dim text-xs">CONTRACT</span><div className="font-mono">{fmt(draft.contract)}</div></div>
+                    <div><span className="text-dim text-xs">+ CHANGE ORDERS</span><div className="font-mono">{fmt(approvedCOTotal)}</div></div>
+                    <div><span className="text-dim text-xs">= ADJUSTED CONTRACT</span><div className="font-mono font-bold text-amber">{fmt(adjustedContract)}</div></div>
+                  </div>
+                  <div className="text-xs font-semi mb-4" style={{ color: "var(--text3)" }}>COST BREAKDOWN</div>
+                  <div className="flex gap-16 flex-wrap mb-8">
+                    <div><span className="text-dim text-xs">LABOR (BURDENED)</span><div className="font-mono">{fmt(Math.round(costs.labor))}</div></div>
+                    <div><span className="text-dim text-xs">MATERIAL</span><div className="font-mono">{fmt(Math.round(costs.material))}</div></div>
+                    <div><span className="text-dim text-xs">SUBCONTRACTOR</span><div className="font-mono">{fmt(Math.round(costs.subcontractor))}</div></div>
+                    <div><span className="text-dim text-xs">EQUIPMENT/OTHER</span><div className="font-mono">{fmt(Math.round(costs.otherAP))}</div></div>
+                    <div><span className="text-dim text-xs">TOTAL COST</span><div className="font-mono font-bold">{fmt(Math.round(costs.total))}</div></div>
+                  </div>
+                  <div style={{ borderTop: "1px solid var(--border)", paddingTop: "var(--space-2)" }}>
+                    <div className="flex gap-16 flex-wrap mb-8">
+                      <div>
+                        <span className="text-dim text-xs">GROSS MARGIN $</span>
+                        <div className="font-mono font-bold" style={{ color: grossMargin >= 0 ? "var(--green)" : "var(--red)" }}>{fmt(Math.round(grossMargin))}</div>
+                      </div>
+                      <div>
+                        <span className="text-dim text-xs">GROSS MARGIN %</span>
+                        <div className="font-mono font-bold" style={{ color: grossMarginPct < (app.companySettings?.marginAlertThreshold || 25) ? "var(--red)" : "var(--green)" }}>{grossMarginPct}%</div>
+                      </div>
+                    </div>
+                    <div className="flex gap-16 flex-wrap">
+                      <div><span className="text-dim text-xs">BILLED TO DATE</span><div className="font-mono">{fmt(billedToDate)}</div></div>
+                      <div><span className="text-dim text-xs">RETAINAGE HELD</span><div className="font-mono text-amber">{fmt(retainageReceivable)}</div></div>
+                      <div><span className="text-dim text-xs">NET RECEIVED</span><div className="font-mono" style={{ color: netReceived > 0 ? "var(--green)" : "var(--text3)" }}>{fmt(Math.max(0, netReceived))}</div></div>
+                      <div>
+                        <span className="text-dim text-xs">OVER/(UNDER) BILLED</span>
+                        <div className="font-mono" style={{ color: overUnder >= 0 ? "var(--green)" : "var(--red)" }}>
+                          {overUnder >= 0 ? fmt(Math.round(overUnder)) : `(${fmt(Math.round(Math.abs(overUnder)))})`}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Labor budget vs actual */}
-                {(draft.laborBudget > 0 || draft.laborCost > 0) && (
+                {(draft.laborBudget > 0 || costs.labor > 0) && (
                   <div className="flex gap-16 mb-16 flex-wrap">
                     <div><span className="text-dim text-xs">LABOR BUDGET</span><div className="font-mono">{fmt(draft.laborBudget || 0)}</div></div>
-                    <div><span className="text-dim text-xs">LABOR SPENT</span><div className="font-mono" style={{ color: (draft.laborCost || 0) > (draft.laborBudget || 0) ? "var(--red)" : "var(--text)" }}>{fmt(draft.laborCost || 0)}</div></div>
-                    <div><span className="text-dim text-xs">LABOR REMAINING</span><div className="font-mono" style={{ color: ((draft.laborBudget || 0) - (draft.laborCost || 0)) > 0 ? "var(--green)" : "var(--red)" }}>{fmt((draft.laborBudget || 0) - (draft.laborCost || 0))}</div></div>
+                    <div><span className="text-dim text-xs">LABOR ACTUAL</span><div className="font-mono" style={{ color: costs.labor > (draft.laborBudget || 0) ? "var(--red)" : "var(--text)" }}>{fmt(Math.round(costs.labor))}</div></div>
+                    <div><span className="text-dim text-xs">LABOR REMAINING</span><div className="font-mono" style={{ color: ((draft.laborBudget || 0) - costs.labor) > 0 ? "var(--green)" : "var(--red)" }}>{fmt(Math.round((draft.laborBudget || 0) - costs.labor))}</div></div>
+                    <div><span className="text-dim text-xs">LABOR HOURS</span><div className="font-mono">{Math.round(costs.laborHours * 10) / 10}h</div></div>
                   </div>
                 )}
                 {projInvoices.length > 0 && (

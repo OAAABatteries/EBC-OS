@@ -3,7 +3,7 @@ import { resetAllGuides } from "../components/FeatureGuide";
 import { ClipboardList, Folder, Search, Smartphone, Wrench, Shield, Download, ClipboardCopy, CheckCircle, AlertTriangle, AlertOctagon, Flame, Droplets, Heart, Globe, Wind, Zap, CheckSquare, Square } from "lucide-react";
 import { THEMES, OSHA_CHECKLIST, COMPANY_DEFAULTS, ASSEMBLIES } from "../data/constants";
 import { storePdf, getPdfUrl, deletePdf, fmtSize } from "../hooks/useSubmittalPdf";
-import { softDelete, filterActive, auditDiff, CRITICAL_FIELDS, validateInvoice, findDuplicateInvoice, validateChangeOrder, findDuplicateCO, validateAPBill, findDuplicateAPBill, computeProjectLaborCost } from "../utils/financialValidation";
+import { softDelete, filterActive, auditDiff, CRITICAL_FIELDS, validateInvoice, findDuplicateInvoice, validateChangeOrder, findDuplicateCO, validateAPBill, findDuplicateAPBill, computeProjectLaborCost, computeProjectTotalCost, validateAccrual, validateCommitment, computeProjectCommittedCost, computeBudgetVsActual } from "../utils/financialValidation";
 import { TimeClockAdmin } from "./TimeClockAdmin";
 import { MapView } from "./MapView";
 
@@ -83,7 +83,7 @@ function Financials({ app }) {
   const [sub, setSub] = useState("Invoices");
   return (
     <div>
-      <SubTabs tabs={["Invoices", "Change Orders", "T&M Tickets", "Job Costing", "Payroll Summary", "Aging Report", "AP Bills", "Vendors"]} active={sub} onChange={setSub} />
+      <SubTabs tabs={["Invoices", "Change Orders", "T&M Tickets", "Job Costing", "Payroll Summary", "Aging Report", "AP Bills", "Vendors", "Retainage", "Period Close", "Budget", "Reports"]} active={sub} onChange={setSub} />
       {sub === "Invoices" && <InvoicesTab app={app} />}
       {sub === "Change Orders" && <ChangeOrdersTab app={app} />}
       {sub === "T&M Tickets" && <TmTicketsTab app={app} />}
@@ -92,6 +92,10 @@ function Financials({ app }) {
       {sub === "Aging Report" && <AgingReportTab app={app} />}
       {sub === "AP Bills" && <APBillsTab app={app} />}
       {sub === "Vendors" && <VendorsTab app={app} />}
+      {sub === "Retainage" && <RetainageTab app={app} />}
+      {sub === "Period Close" && <PeriodCloseTab app={app} />}
+      {sub === "Budget" && <BudgetTab app={app} />}
+      {sub === "Reports" && <FinReportsTab app={app} />}
     </div>
   );
 }
@@ -1368,16 +1372,16 @@ function JobCostingTab({ app }) {
         const adjustedContract = proj.contract + cos;
         const remaining = adjustedContract - billed;
         const pct = adjustedContract > 0 ? Math.round((billed / adjustedContract) * 100) : 0;
-        // Labor cost rollup from time entries — actual employee rates
-        const laborData = computeProjectLaborCost(
+        // Full cost breakdown from all sources
+        const costData = computeProjectTotalCost(
           proj.id, proj.name, app.timeEntries || [], app.employees || [],
+          filterActive(app.apBills || []),
           app.companySettings?.laborBurdenMultiplier || 1.0
         );
-        const laborHours = laborData.hours;
-        const laborCost = laborData.burdenedCost;
-        const laborVariance = adjustedContract > 0 ? adjustedContract - laborCost : 0;
-        const laborMarginPct = adjustedContract > 0 ? (1 - laborCost / adjustedContract) : 0;
-        const belowThreshold = adjustedContract > 0 && laborMarginPct < marginThreshold;
+        const totalCost = costData.total;
+        const grossMargin = adjustedContract - totalCost;
+        const marginPct = adjustedContract > 0 ? (grossMargin / adjustedContract) * 100 : 0;
+        const belowThreshold = adjustedContract > 0 && (marginPct / 100) < marginThreshold;
         return (
           <div className="card mt-16" key={proj.id}>
             <div className="flex-between">
@@ -1393,15 +1397,26 @@ function JobCostingTab({ app }) {
               <div><span className="text2">Total Billed</span><br />{app.fmt(billed)}</div>
               <div><span className="text2">Remaining</span><br />{app.fmt(remaining)}</div>
             </div>
-            {/* Labor Cost Rollup */}
+            {/* Full Cost Breakdown */}
+            <div style={{ marginTop: "var(--space-2)", padding: "var(--space-2) var(--space-3)", background: "var(--bg3)", borderRadius: "var(--radius-control)" }}>
+              <div className="text-xs fw-600 mb-4" style={{ color: "var(--text2)" }}>Cost Breakdown</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "var(--space-2)", fontSize: "var(--fs-11)" }}>
+                <div><span className="text2">Labor{(app.companySettings?.laborBurdenMultiplier || 1) > 1 ? " (burdened)" : ""}</span><br /><span className="font-mono text-amber">{app.fmt(costData.labor)}</span></div>
+                <div><span className="text2">Material</span><br /><span className="font-mono">{app.fmt(costData.material)}</span></div>
+                <div><span className="text2">Subcontractor</span><br /><span className="font-mono">{app.fmt(costData.subcontractor)}</span></div>
+                <div><span className="text2">Other</span><br /><span className="font-mono">{app.fmt(costData.otherAP)}</span></div>
+                <div><span className="text2 fw-600">Total Cost</span><br /><span className="font-mono fw-600" style={{ color: "var(--amber)" }}>{app.fmt(totalCost)}</span></div>
+              </div>
+            </div>
+            {/* Gross Margin */}
             <div className="more-cost-grid--border">
-              <div><span className="text2">Labor Hours</span><br /><span className="font-mono">{laborHours.toFixed(1)}h</span></div>
-              <div><span className="text2">Labor Cost{(app.companySettings?.laborBurdenMultiplier || 1) > 1 ? " (burdened)" : ""}</span><br /><span className="font-mono text-amber">{app.fmt(laborCost)}</span></div>
-              <div><span className="text2">Budget Remaining</span><br /><span className="font-mono" style={{ color: laborVariance >= 0 ? "var(--green)" : "var(--red)" }}>{app.fmt(laborVariance)}</span></div>
-              <div><span className="text2">Labor Margin</span><br /><span className="font-mono" style={{ color: belowThreshold ? "var(--red)" : adjustedContract > 0 && laborCost / adjustedContract < 0.7 ? "var(--green)" : "var(--amber)" }}>{adjustedContract > 0 ? Math.round(laborMarginPct * 100) : 0}%</span></div>
+              <div><span className="text2">Labor Hours</span><br /><span className="font-mono">{costData.laborHours.toFixed(1)}h</span></div>
+              <div><span className="text2">Gross Margin</span><br /><span className="font-mono" style={{ color: grossMargin >= 0 ? "var(--green)" : "var(--red)" }}>{app.fmt(grossMargin)}</span></div>
+              <div><span className="text2">Margin %</span><br /><span className="font-mono" style={{ color: belowThreshold ? "var(--red)" : marginPct >= 30 ? "var(--green)" : "var(--amber)" }}>{adjustedContract > 0 ? marginPct.toFixed(1) : "0.0"}%</span></div>
+              <div><span className="text2">Budget Remaining</span><br /><span className="font-mono" style={{ color: remaining >= 0 ? "var(--green)" : "var(--red)" }}>{app.fmt(remaining)}</span></div>
             </div>
             {/* Cost Code Breakdown */}
-            {laborHours > 0 && (
+            {costData.laborHours > 0 && (
               <div style={{ marginTop: "var(--space-2)" }}>
                 <button className="btn btn-ghost btn-sm" style={{ fontSize: "var(--fs-10)" }}
                   onClick={() => setExpandedCostCodes(prev => ({ ...prev, [proj.id]: !prev[proj.id] }))}>
@@ -2157,6 +2172,708 @@ function VendorsTab({ app }) {
             })}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+/* ── Retainage Register (Slice 3) ─────────────────────────────── */
+function RetainageTab({ app }) {
+  const retainageRate = app.companySettings?.defaultRetainageRate || 10;
+  const projects = app.projects || [];
+  const invoices = filterActive(app.invoices || []);
+  const apBills = filterActive(app.apBills || []);
+  const vendors = app.vendors || [];
+  const pName = (pid) => projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
+  const vName = (vid) => vendors.find(v => String(v.id) === String(vid))?.name || "Unknown";
+
+  // Retainage Receivable — what GCs hold from EBC
+  const receivableRows = projects
+    .filter(p => p.status !== "completed" && p.status !== "deleted")
+    .map(p => {
+      const billed = invoices.filter(i => String(i.projectId) === String(p.id)).reduce((s, i) => s + (i.amount || 0), 0);
+      const held = Math.round(billed * retainageRate / 100);
+      return { id: p.id, name: p.name, billed, rate: retainageRate, held, status: p.status || "active" };
+    })
+    .filter(r => r.billed > 0);
+  const totalReceivable = receivableRows.reduce((s, r) => s + r.held, 0);
+
+  // Retainage Payable — what EBC holds from subs
+  const payableRows = apBills
+    .filter(b => (b.retainageRate || 0) > 0 && b.status !== "void")
+    .map(b => ({
+      id: b.id,
+      vendor: vName(b.vendorId),
+      project: pName(b.projectId),
+      amount: b.amount || 0,
+      rate: b.retainageRate,
+      held: b.retainageAmount || Math.round((b.amount || 0) * (b.retainageRate || 0) / 100),
+      status: b.status,
+    }));
+  const totalPayable = payableRows.reduce((s, r) => s + r.held, 0);
+
+  const netExposure = totalReceivable - totalPayable;
+
+  return (
+    <div>
+      <div className="flex-between mt-16">
+        <div className="section-title">Retainage Register</div>
+      </div>
+
+      {/* KPI cards */}
+      <div className="flex gap-8 mt-16 flex-wrap">
+        <div className="kpi-card"><span className="text2">Retainage Receivable</span><strong className="text-amber">{app.fmt(totalReceivable)}</strong></div>
+        <div className="kpi-card"><span className="text2">Retainage Payable</span><strong className="text-red">{app.fmt(totalPayable)}</strong></div>
+        <div className="kpi-card"><span className="text2">Net Exposure</span><strong style={{ color: netExposure >= 0 ? "var(--green)" : "var(--red)" }}>{app.fmt(netExposure)}</strong></div>
+      </div>
+
+      {/* Receivable Table */}
+      <div className="mt-16">
+        <div className="text-sm fw-600 mb-8">Retainage Receivable (Held by GC)</div>
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead><tr><th>Project</th><th>Billed to Date</th><th>Rate</th><th>Retainage Held</th><th>Status</th></tr></thead>
+            <tbody>
+              {receivableRows.length === 0 && <tr><td colSpan={5} className="more-empty-cell">No billed invoices yet</td></tr>}
+              {receivableRows.map(r => (
+                <tr key={r.id}>
+                  <td>{r.name}</td>
+                  <td>{app.fmt(r.billed)}</td>
+                  <td>{r.rate}%</td>
+                  <td className="text-amber fw-600">{app.fmt(r.held)}</td>
+                  <td>{r.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Payable Table */}
+      <div className="mt-16">
+        <div className="text-sm fw-600 mb-8">Retainage Payable (EBC Holds from Subs)</div>
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead><tr><th>Vendor</th><th>Project</th><th>Bill Amount</th><th>Rate</th><th>Retainage Held</th><th>Status</th></tr></thead>
+            <tbody>
+              {payableRows.length === 0 && <tr><td colSpan={6} className="more-empty-cell">No subcontractor retainage held</td></tr>}
+              {payableRows.map(r => (
+                <tr key={r.id}>
+                  <td>{r.vendor}</td>
+                  <td>{r.project}</td>
+                  <td>{app.fmt(r.amount)}</td>
+                  <td>{r.rate}%</td>
+                  <td className="text-red fw-600">{app.fmt(r.held)}</td>
+                  <td>{r.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Period Close + Accruals (Slice 4) ────────────────────────── */
+function PeriodCloseTab({ app }) {
+  const [addingAccrual, setAddingAccrual] = useState(false);
+  const [accrualForm, setAccrualForm] = useState({
+    projectId: "", accrualType: "labor_stub", costType: "labor",
+    amount: "", period: "", description: "", autoReverse: true,
+  });
+  const [accrualErrors, setAccrualErrors] = useState([]);
+
+  const periods = app.periods || [];
+  const accruals = app.accruals || [];
+  const projects = app.projects || [];
+  const isAdmin = app.auth?.role === "admin" || app.auth?.role === "owner";
+  const pName = (pid) => projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
+
+  const closePeriod = (period) => {
+    if (!confirm(`Close period ${period}? Future entries with dates in this period will require override.`)) return;
+    app.setPeriods(prev => prev.map(p => p.period === period ? {
+      ...p, status: "closed",
+      closedAt: new Date().toISOString(),
+      closedBy: app.auth?.name || "Unknown",
+    } : p));
+    app.show(`Period ${period} closed`);
+  };
+
+  const reopenPeriod = (period) => {
+    if (!isAdmin) return app.show("Only admin/owner can reopen periods", "err");
+    if (!confirm(`Reopen period ${period}? This should only be used for corrections.`)) return;
+    app.setPeriods(prev => prev.map(p => p.period === period ? {
+      ...p, status: "open", reopenedAt: new Date().toISOString(), reopenedBy: app.auth?.name,
+    } : p));
+    app.show(`Period ${period} reopened`);
+  };
+
+  const saveAccrual = () => {
+    const errors = validateAccrual({
+      projectId: accrualForm.projectId,
+      amount: Number(accrualForm.amount),
+      period: accrualForm.period,
+      accrualType: accrualForm.accrualType,
+      description: accrualForm.description,
+    });
+    if (errors.length > 0) { setAccrualErrors(errors); return; }
+    setAccrualErrors([]);
+    const newAccrual = {
+      id: app.nextId(),
+      type: "accrual",
+      projectId: Number(accrualForm.projectId),
+      accrualType: accrualForm.accrualType,
+      costType: accrualForm.costType,
+      amount: Number(accrualForm.amount),
+      period: accrualForm.period,
+      description: accrualForm.description,
+      autoReverse: accrualForm.autoReverse,
+      reversalPeriod: accrualForm.autoReverse ? nextPeriod(accrualForm.period) : null,
+      status: "posted",
+      createdAt: new Date().toISOString(),
+      createdBy: app.auth?.name || "Unknown",
+      audit: [],
+    };
+    app.setAccruals(prev => [...prev, newAccrual]);
+    app.show("Accrual posted");
+    setAddingAccrual(false);
+    setAccrualForm({ projectId: "", accrualType: "labor_stub", costType: "labor", amount: "", period: "", description: "", autoReverse: true });
+  };
+
+  const voidAccrual = (id) => {
+    const reason = prompt("Reason for voiding this accrual:");
+    if (reason === null) return;
+    app.setAccruals(prev => prev.map(a => a.id === id ? softDelete(a, app.auth?.name, reason) : a));
+    app.show("Accrual voided");
+  };
+
+  // Cutoff Report: accruals/transactions created after period close date but dated in closed period
+  const cutoffItems = [];
+  periods.filter(p => p.status === "closed").forEach(closedP => {
+    const closedAt = new Date(closedP.closedAt);
+    // Invoices with dates in this period but created after close
+    (app.invoices || []).forEach(inv => {
+      if (!inv.date || inv.status === "deleted") return;
+      if (inv.date.slice(0, 7) !== closedP.period) return;
+      const created = inv.audit?.[0]?.timestamp || inv.createdAt;
+      if (created && new Date(created) > closedAt) {
+        cutoffItems.push({ type: "Invoice", id: inv.id, ref: inv.number, project: pName(inv.projectId), amount: inv.amount, period: closedP.period, created });
+      }
+    });
+    (app.apBills || []).forEach(bill => {
+      if (!bill.date || bill.status === "deleted") return;
+      if (bill.date.slice(0, 7) !== closedP.period) return;
+      const created = bill.createdAt || bill.audit?.[0]?.timestamp;
+      if (created && new Date(created) > closedAt) {
+        cutoffItems.push({ type: "AP Bill", id: bill.id, ref: bill.invoiceNumber, project: pName(bill.projectId), amount: bill.amount, period: closedP.period, created });
+      }
+    });
+  });
+
+  return (
+    <div>
+      <div className="flex-between mt-16">
+        <div className="section-title">Period Close</div>
+        <button className="btn btn-primary btn-sm" onClick={() => {
+          const p = prompt("New period (YYYY-MM):", new Date().toISOString().slice(0, 7));
+          if (!p || !/^\d{4}-\d{2}$/.test(p)) return app.show("Invalid period format (use YYYY-MM)", "err");
+          if (periods.find(x => x.period === p)) return app.show("Period already exists", "err");
+          app.setPeriods(prev => [...prev, { period: p, status: "open" }]);
+          app.show(`Period ${p} added`);
+        }}>+ Add Period</button>
+      </div>
+
+      <div className="table-wrap mt-16">
+        <table className="data-table">
+          <thead><tr><th>Period</th><th>Status</th><th>Closed By</th><th>Closed At</th><th>Actions</th></tr></thead>
+          <tbody>
+            {periods.length === 0 && <tr><td colSpan={5} className="more-empty-cell">No periods yet</td></tr>}
+            {[...periods].sort((a, b) => b.period.localeCompare(a.period)).map(p => (
+              <tr key={p.period}>
+                <td className="fw-600">{p.period}</td>
+                <td><span className={p.status === "closed" ? "badge-red" : p.status === "locked" ? "badge-muted" : "badge-green"}>{p.status}</span></td>
+                <td>{p.closedBy || "—"}</td>
+                <td>{p.closedAt ? p.closedAt.slice(0, 10) : "—"}</td>
+                <td>
+                  <div className="flex gap-4">
+                    {p.status === "open" && <button className="btn btn-ghost btn-sm btn-table-action" onClick={() => closePeriod(p.period)}>Close</button>}
+                    {p.status === "closed" && isAdmin && <button className="btn btn-ghost btn-sm btn-table-action" onClick={() => reopenPeriod(p.period)}>Reopen</button>}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Accruals Section */}
+      <div className="mt-24">
+        <div className="flex-between">
+          <div className="section-title">Accruals</div>
+          <button className="btn btn-primary btn-sm" onClick={() => { setAddingAccrual(!addingAccrual); setAccrualErrors([]); }}>
+            {addingAccrual ? "Cancel" : "+ Add Accrual"}
+          </button>
+        </div>
+
+        {addingAccrual && (
+          <div className="card mt-16">
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">Project</label>
+                <select className="form-select" value={accrualForm.projectId} onChange={e => setAccrualForm({ ...accrualForm, projectId: e.target.value })}>
+                  <option value="">Select...</option>
+                  {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Accrual Type</label>
+                <select className="form-select" value={accrualForm.accrualType} onChange={e => setAccrualForm({ ...accrualForm, accrualType: e.target.value })}>
+                  <option value="labor_stub">Labor Stub</option>
+                  <option value="sub_accrual">Sub Accrual</option>
+                  <option value="material_accrual">Material Accrual</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Cost Type</label>
+                <select className="form-select" value={accrualForm.costType} onChange={e => setAccrualForm({ ...accrualForm, costType: e.target.value })}>
+                  {(app.COST_TYPES || ["labor","material","subcontractor","equipment","other"]).map(ct => <option key={ct} value={ct}>{ct}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Period (YYYY-MM)</label>
+                <input className="form-input" value={accrualForm.period} onChange={e => setAccrualForm({ ...accrualForm, period: e.target.value })} placeholder="2026-03" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Amount</label>
+                <input className="form-input" type="number" value={accrualForm.amount} onChange={e => setAccrualForm({ ...accrualForm, amount: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label"><input type="checkbox" checked={accrualForm.autoReverse} onChange={e => setAccrualForm({ ...accrualForm, autoReverse: e.target.checked })} /> Auto-reverse next period</label>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Description</label>
+              <input className="form-input" value={accrualForm.description} onChange={e => setAccrualForm({ ...accrualForm, description: e.target.value })} />
+            </div>
+            {accrualErrors.length > 0 && (
+              <div className="mt-8" style={{ color: "var(--red)", fontSize: "var(--fs-11)" }}>
+                {accrualErrors.map((err, i) => <div key={i}>• {err}</div>)}
+              </div>
+            )}
+            <div className="flex gap-8 mt-16">
+              <button className="btn btn-primary btn-sm" onClick={saveAccrual}>Post Accrual</button>
+            </div>
+          </div>
+        )}
+
+        <div className="table-wrap mt-16">
+          <table className="data-table">
+            <thead><tr><th>Period</th><th>Project</th><th>Type</th><th>Cost Type</th><th>Amount</th><th>Auto-Reverse</th><th>Status</th><th>Description</th><th></th></tr></thead>
+            <tbody>
+              {filterActive(accruals).length === 0 && <tr><td colSpan={9} className="more-empty-cell">No accruals posted</td></tr>}
+              {filterActive(accruals).map(a => (
+                <tr key={a.id}>
+                  <td className="fw-600">{a.period}</td>
+                  <td>{pName(a.projectId)}</td>
+                  <td>{a.accrualType}</td>
+                  <td>{a.costType}</td>
+                  <td className="font-mono">{app.fmt(a.amount)}</td>
+                  <td>{a.autoReverse ? `Yes (${a.reversalPeriod})` : "No"}</td>
+                  <td><span className={a.status === "posted" ? "badge-green" : "badge-muted"}>{a.status}</span></td>
+                  <td>{a.description}</td>
+                  <td><button className="btn btn-ghost btn-sm btn-table-delete" onClick={() => voidAccrual(a.id)}>✕</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Cutoff Report */}
+      {cutoffItems.length > 0 && (
+        <div className="mt-24">
+          <div className="section-title" style={{ color: "var(--red)" }}>⚠ Cutoff Report — Entries Posted After Period Close</div>
+          <div className="text-xs text-dim mb-8">These entries have dates in a closed period but were created after the period was closed. Review for correctness.</div>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead><tr><th>Type</th><th>Ref</th><th>Project</th><th>Amount</th><th>Period</th><th>Created</th></tr></thead>
+              <tbody>
+                {cutoffItems.map((c, i) => (
+                  <tr key={i}>
+                    <td>{c.type}</td>
+                    <td>{c.ref}</td>
+                    <td>{c.project}</td>
+                    <td className="font-mono">{app.fmt(c.amount)}</td>
+                    <td className="fw-600">{c.period}</td>
+                    <td>{c.created.slice(0, 10)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function nextPeriod(period) {
+  if (!/^\d{4}-\d{2}$/.test(period)) return period;
+  const [y, m] = period.split("-").map(Number);
+  const next = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+  return next;
+}
+
+/* ── Budget vs Actual vs Committed (Slice 5) ──────────────────── */
+function BudgetTab({ app }) {
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const projects = app.projects || [];
+  const budgets = app.budgets || {};
+  const commitments = app.commitments || [];
+  const timeEntries = app.timeEntries || [];
+  const employees = app.employees || [];
+  const apBills = filterActive(app.apBills || []);
+  const burden = app.companySettings?.laborBurdenMultiplier || 1.35;
+
+  const projectsWithBudgets = projects.filter(p => budgets[p.id] && budgets[p.id].length > 0);
+
+  // Auto-select first project with budget
+  const effectiveProjectId = selectedProjectId || (projectsWithBudgets[0]?.id ?? "");
+  const project = projects.find(p => String(p.id) === String(effectiveProjectId));
+
+  const rows = project
+    ? computeBudgetVsActual(project.id, project.name, budgets, timeEntries, employees, apBills, commitments, burden)
+    : [];
+
+  const totals = rows.reduce((acc, r) => ({
+    budget: acc.budget + r.budget,
+    actual: acc.actual + r.actual,
+    committed: acc.committed + r.committed,
+    projectedFinal: acc.projectedFinal + r.projectedFinal,
+    variance: acc.variance + r.variance,
+  }), { budget: 0, actual: 0, committed: 0, projectedFinal: 0, variance: 0 });
+
+  return (
+    <div>
+      <div className="flex-between mt-16">
+        <div className="section-title">Budget vs Actual vs Committed</div>
+        <select className="form-select" style={{ width: "auto" }} value={effectiveProjectId} onChange={e => setSelectedProjectId(e.target.value)}>
+          <option value="">Select project...</option>
+          {projectsWithBudgets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+      </div>
+
+      {!project && (
+        <div className="card mt-16 more-empty-cell">
+          No projects with budgets yet.<br />
+          <span className="more-empty-hint">Budgets can be set in constants.js (initBudgets) or imported from estimating takeoffs.</span>
+        </div>
+      )}
+
+      {project && rows.length === 0 && (
+        <div className="card mt-16 more-empty-cell">No budget lines for {project.name}</div>
+      )}
+
+      {project && rows.length > 0 && (
+        <>
+          <div className="flex gap-8 mt-16 flex-wrap">
+            <div className="kpi-card"><span className="text2">Total Budget</span><strong>{app.fmt(totals.budget)}</strong></div>
+            <div className="kpi-card"><span className="text2">Actual to Date</span><strong>{app.fmt(Math.round(totals.actual))}</strong></div>
+            <div className="kpi-card"><span className="text2">Committed</span><strong>{app.fmt(totals.committed)}</strong></div>
+            <div className="kpi-card"><span className="text2">Projected Final</span><strong>{app.fmt(Math.round(totals.projectedFinal))}</strong></div>
+            <div className="kpi-card"><span className="text2">Variance</span><strong style={{ color: totals.variance >= 0 ? "var(--green)" : "var(--red)" }}>{app.fmt(Math.round(totals.variance))}</strong></div>
+          </div>
+
+          <div className="table-wrap mt-16">
+            <table className="data-table">
+              <thead><tr><th>Phase</th><th>Cost Type</th><th>Budget</th><th>Actual</th><th>Committed</th><th>Projected Final</th><th>Variance</th><th>Status</th></tr></thead>
+              <tbody>
+                {rows.map((r, i) => (
+                  <tr key={i} style={r.overBudget ? { background: "rgba(220,38,38,0.08)" } : {}}>
+                    <td className="fw-600">{r.phase}</td>
+                    <td>{r.costType}</td>
+                    <td className="font-mono">{app.fmt(r.budget)}</td>
+                    <td className="font-mono">{app.fmt(Math.round(r.actual))}</td>
+                    <td className="font-mono">{app.fmt(r.committed)}</td>
+                    <td className="font-mono fw-600">{app.fmt(Math.round(r.projectedFinal))}</td>
+                    <td className="font-mono" style={{ color: r.variance >= 0 ? "var(--green)" : "var(--red)" }}>
+                      {r.variance >= 0 ? app.fmt(Math.round(r.variance)) : `(${app.fmt(Math.round(Math.abs(r.variance)))})`}
+                    </td>
+                    <td>{r.overBudget ? <span className="badge-red">OVER</span> : <span className="badge-green">OK</span>}</td>
+                  </tr>
+                ))}
+                <tr style={{ borderTop: "2px solid var(--border)", fontWeight: "var(--weight-bold)" }}>
+                  <td colSpan={2}>TOTAL</td>
+                  <td className="font-mono">{app.fmt(totals.budget)}</td>
+                  <td className="font-mono">{app.fmt(Math.round(totals.actual))}</td>
+                  <td className="font-mono">{app.fmt(totals.committed)}</td>
+                  <td className="font-mono">{app.fmt(Math.round(totals.projectedFinal))}</td>
+                  <td className="font-mono" style={{ color: totals.variance >= 0 ? "var(--green)" : "var(--red)" }}>{app.fmt(Math.round(totals.variance))}</td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* Committed Costs Summary */}
+      <div className="mt-24">
+        <div className="section-title">Active Commitments (POs + Subcontracts)</div>
+        <div className="table-wrap mt-8">
+          <table className="data-table">
+            <thead><tr><th>Type</th><th>Vendor</th><th>Project</th><th>Phase</th><th>Original</th><th>Revised</th><th>Invoiced</th><th>Remaining</th><th>Status</th></tr></thead>
+            <tbody>
+              {commitments.filter(c => c.status === "active").length === 0 && <tr><td colSpan={9} className="more-empty-cell">No active commitments</td></tr>}
+              {commitments.filter(c => c.status === "active").map(c => {
+                const vendor = (app.vendors || []).find(v => v.id === c.vendorId);
+                const proj = projects.find(p => p.id === c.projectId);
+                return (
+                  <tr key={c.id}>
+                    <td>{c.type === "subcontract" ? "Subcontract" : "PO"}</td>
+                    <td>{vendor?.name || "Unknown"}</td>
+                    <td>{proj?.name || "Unknown"}</td>
+                    <td>{c.phase}</td>
+                    <td className="font-mono">{app.fmt(c.originalAmount)}</td>
+                    <td className="font-mono">{app.fmt(c.revisedAmount)}</td>
+                    <td className="font-mono">{app.fmt(c.invoicedToDate)}</td>
+                    <td className="font-mono fw-600">{app.fmt(c.remainingCommitment)}</td>
+                    <td><span className="badge-green">{c.status}</span></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Management Reports (Slice 6) ─────────────────────────────── */
+function FinReportsTab({ app }) {
+  const projects = app.projects || [];
+  const invoices = filterActive(app.invoices || []);
+  const changeOrders = filterActive(app.changeOrders || []);
+  const apBills = filterActive(app.apBills || []);
+  const commitments = app.commitments || [];
+  const vendors = app.vendors || [];
+  const timeEntries = app.timeEntries || [];
+  const employees = app.employees || [];
+  const burden = app.companySettings?.laborBurdenMultiplier || 1.35;
+  const marginThreshold = app.companySettings?.marginAlertThreshold || 25;
+
+  // Compute project metrics once — exclude completed projects
+  const projectMetrics = projects.filter(p => p.status !== "completed" && p.status !== "deleted").map(p => {
+    const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden);
+    const billed = invoices.filter(i => String(i.projectId) === String(p.id)).reduce((s, i) => s + (i.amount || 0), 0);
+    const approvedCOs = changeOrders.filter(c => String(c.projectId) === String(p.id) && c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
+    const adjustedContract = (p.contract || 0) + approvedCOs;
+    const percentComplete = adjustedContract > 0 ? Math.min(costs.total / adjustedContract, 1) : 0;
+    const earnedRevenue = percentComplete * adjustedContract;
+    const overUnder = billed - earnedRevenue;
+    const grossMargin = adjustedContract - costs.total;
+    const marginPct = adjustedContract > 0 ? (grossMargin / adjustedContract) * 100 : 0;
+    const retainageHeld = Math.round(billed * (app.companySettings?.defaultRetainageRate || 10) / 100);
+    return { p, costs, billed, approvedCOs, adjustedContract, percentComplete, earnedRevenue, overUnder, grossMargin, marginPct, retainageHeld };
+  });
+
+  // Portfolio totals
+  const totals = projectMetrics.reduce((acc, m) => ({
+    contract: acc.contract + m.adjustedContract,
+    cost: acc.cost + m.costs.total,
+    billed: acc.billed + m.billed,
+    earned: acc.earned + m.earnedRevenue,
+    overUnder: acc.overUnder + m.overUnder,
+    retainage: acc.retainage + m.retainageHeld,
+  }), { contract: 0, cost: 0, billed: 0, earned: 0, overUnder: 0, retainage: 0 });
+
+  // Exception counts
+  const now = Date.now();
+  const staleBilling = projectMetrics.filter(m => {
+    const lastInv = invoices.filter(i => String(i.projectId) === String(m.p.id)).sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
+    if (!lastInv) return true;
+    const daysSince = (now - new Date(lastInv.date).getTime()) / 86400000;
+    return daysSince > 30;
+  });
+  const unapprovedBills = apBills.filter(b => {
+    if (b.status !== "entered") return false;
+    const daysOld = (now - new Date(b.date).getTime()) / 86400000;
+    return daysOld > 7;
+  });
+  const missingW9 = vendors.filter(v => v.is1099Eligible && v.w9Status !== "received");
+  const missingLienWaivers = apBills.filter(b => b.costType === "subcontractor" && (b.lienWaiverStatus === "missing" || !b.lienWaiverStatus));
+  const lowMargin = projectMetrics.filter(m => m.adjustedContract > 0 && m.marginPct < marginThreshold);
+  const totalRetainageReceivable = totals.retainage;
+  const totalRetainagePayable = apBills.reduce((s, b) => s + (b.retainageAmount || 0), 0);
+
+  return (
+    <div>
+      {/* A) WIP SCHEDULE */}
+      <div className="flex-between mt-16">
+        <div className="section-title">WIP Schedule (Work in Progress)</div>
+        <button className="btn btn-ghost btn-sm" onClick={() => {
+          const headers = ["Project", "Contract", "Adj Contract", "Cost to Date", "% Complete", "Earned", "Billed", "Over/Under"];
+          const rows = projectMetrics.map(m => [`"${m.p.name}"`, m.p.contract || 0, m.adjustedContract, Math.round(m.costs.total), Math.round(m.percentComplete * 100) + "%", Math.round(m.earnedRevenue), m.billed, Math.round(m.overUnder)]);
+          const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+          const blob = new Blob([csv], { type: "text/csv" });
+          const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "ebc_wip_schedule.csv"; a.click(); URL.revokeObjectURL(url);
+          app.show("WIP schedule exported");
+        }}>Export CSV</button>
+      </div>
+
+      <div className="table-wrap mt-16">
+        <table className="data-table">
+          <thead><tr><th>Project</th><th>Contract</th><th>Adj Contract</th><th>Cost to Date</th><th>% Complete</th><th>Earned</th><th>Billed</th><th>Over/(Under)</th></tr></thead>
+          <tbody>
+            {projectMetrics.length === 0 && <tr><td colSpan={8} className="more-empty-cell">No active projects</td></tr>}
+            {projectMetrics.map(m => (
+              <tr key={m.p.id}>
+                <td className="fw-600">{m.p.name}</td>
+                <td className="font-mono">{app.fmt(m.p.contract || 0)}</td>
+                <td className="font-mono">{app.fmt(m.adjustedContract)}</td>
+                <td className="font-mono">{app.fmt(Math.round(m.costs.total))}</td>
+                <td className="font-mono">{Math.round(m.percentComplete * 100)}%</td>
+                <td className="font-mono">{app.fmt(Math.round(m.earnedRevenue))}</td>
+                <td className="font-mono">{app.fmt(m.billed)}</td>
+                <td className="font-mono" style={{ color: m.overUnder >= 0 ? "var(--green)" : "var(--red)" }}>
+                  {m.overUnder >= 0 ? app.fmt(Math.round(m.overUnder)) : `(${app.fmt(Math.round(Math.abs(m.overUnder)))})`}
+                </td>
+              </tr>
+            ))}
+            <tr style={{ borderTop: "2px solid var(--border)", fontWeight: "var(--weight-bold)" }}>
+              <td>TOTAL</td>
+              <td className="font-mono">{app.fmt(projectMetrics.reduce((s, m) => s + (m.p.contract || 0), 0))}</td>
+              <td className="font-mono">{app.fmt(totals.contract)}</td>
+              <td className="font-mono">{app.fmt(Math.round(totals.cost))}</td>
+              <td></td>
+              <td className="font-mono">{app.fmt(Math.round(totals.earned))}</td>
+              <td className="font-mono">{app.fmt(totals.billed)}</td>
+              <td className="font-mono" style={{ color: totals.overUnder >= 0 ? "var(--green)" : "var(--red)" }}>{app.fmt(Math.round(totals.overUnder))}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* B) PORTFOLIO SUMMARY */}
+      <div className="mt-24">
+        <div className="section-title">Portfolio Summary</div>
+        <div className="table-wrap mt-8">
+          <table className="data-table">
+            <thead><tr><th>Project</th><th>Contract</th><th>Total Cost</th><th>Margin %</th><th>Billed</th><th>Over/Under</th><th>Status</th></tr></thead>
+            <tbody>
+              {projectMetrics.map(m => (
+                <tr key={m.p.id}>
+                  <td className="fw-600">{m.p.name}</td>
+                  <td className="font-mono">{app.fmt(m.adjustedContract)}</td>
+                  <td className="font-mono">{app.fmt(Math.round(m.costs.total))}</td>
+                  <td className="font-mono" style={{ color: m.marginPct >= 30 ? "var(--green)" : m.marginPct >= marginThreshold ? "var(--amber)" : "var(--red)" }}>
+                    {m.marginPct.toFixed(1)}%
+                  </td>
+                  <td className="font-mono">{app.fmt(m.billed)}</td>
+                  <td className="font-mono" style={{ color: m.overUnder >= 0 ? "var(--green)" : "var(--red)" }}>
+                    {m.overUnder >= 0 ? app.fmt(Math.round(m.overUnder)) : `(${app.fmt(Math.round(Math.abs(m.overUnder)))})`}
+                  </td>
+                  <td>{m.p.status || "active"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* C) EXCEPTION DASHBOARD */}
+      <div className="mt-24">
+        <div className="section-title">Exception Dashboard</div>
+        <div className="flex gap-8 mt-8 flex-wrap">
+          <div className="kpi-card">
+            <span className="text2">Low Margin Projects</span>
+            <strong style={{ color: lowMargin.length > 0 ? "var(--red)" : "var(--green)" }}>{lowMargin.length}</strong>
+            <div className="text-xs text-dim">Below {marginThreshold}% threshold</div>
+          </div>
+          <div className="kpi-card">
+            <span className="text2">Stale Billing</span>
+            <strong style={{ color: staleBilling.length > 0 ? "var(--amber)" : "var(--green)" }}>{staleBilling.length}</strong>
+            <div className="text-xs text-dim">No invoice in 30+ days</div>
+          </div>
+          <div className="kpi-card">
+            <span className="text2">Unapproved AP Bills</span>
+            <strong style={{ color: unapprovedBills.length > 0 ? "var(--amber)" : "var(--green)" }}>{unapprovedBills.length}</strong>
+            <div className="text-xs text-dim">Entered 7+ days ago</div>
+          </div>
+          <div className="kpi-card">
+            <span className="text2">Missing W-9</span>
+            <strong style={{ color: missingW9.length > 0 ? "var(--red)" : "var(--green)" }}>{missingW9.length}</strong>
+            <div className="text-xs text-dim">1099-eligible vendors</div>
+          </div>
+          <div className="kpi-card">
+            <span className="text2">Missing Lien Waivers</span>
+            <strong style={{ color: missingLienWaivers.length > 0 ? "var(--red)" : "var(--green)" }}>{missingLienWaivers.length}</strong>
+            <div className="text-xs text-dim">Sub payments</div>
+          </div>
+          <div className="kpi-card">
+            <span className="text2">Net Retainage Exposure</span>
+            <strong style={{ color: (totalRetainageReceivable - totalRetainagePayable) >= 0 ? "var(--green)" : "var(--red)" }}>
+              {app.fmt(totalRetainageReceivable - totalRetainagePayable)}
+            </strong>
+            <div className="text-xs text-dim">Receivable − Payable</div>
+          </div>
+        </div>
+
+        {/* Drill-down lists for the alerts with items */}
+        {lowMargin.length > 0 && (
+          <div className="mt-16">
+            <div className="text-sm fw-600 mb-8" style={{ color: "var(--red)" }}>Low Margin Projects ({lowMargin.length})</div>
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead><tr><th>Project</th><th>Contract</th><th>Cost</th><th>Margin %</th></tr></thead>
+                <tbody>
+                  {lowMargin.map(m => (
+                    <tr key={m.p.id}>
+                      <td>{m.p.name}</td>
+                      <td className="font-mono">{app.fmt(m.adjustedContract)}</td>
+                      <td className="font-mono">{app.fmt(Math.round(m.costs.total))}</td>
+                      <td className="font-mono text-red fw-600">{m.marginPct.toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {missingW9.length > 0 && (
+          <div className="mt-16">
+            <div className="text-sm fw-600 mb-8" style={{ color: "var(--red)" }}>Vendors Missing W-9 ({missingW9.length})</div>
+            <ul className="text-sm">{missingW9.map(v => <li key={v.id}>• {v.name} — status: {v.w9Status}</li>)}</ul>
+          </div>
+        )}
+
+        {unapprovedBills.length > 0 && (
+          <div className="mt-16">
+            <div className="text-sm fw-600 mb-8" style={{ color: "var(--amber)" }}>Unapproved AP Bills ({unapprovedBills.length})</div>
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead><tr><th>Vendor</th><th>Invoice #</th><th>Date</th><th>Amount</th></tr></thead>
+                <tbody>
+                  {unapprovedBills.map(b => {
+                    const v = vendors.find(x => x.id === b.vendorId);
+                    return (
+                      <tr key={b.id}>
+                        <td>{v?.name || "Unknown"}</td>
+                        <td>{b.invoiceNumber}</td>
+                        <td>{b.date}</td>
+                        <td className="font-mono">{app.fmt(b.amount)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
