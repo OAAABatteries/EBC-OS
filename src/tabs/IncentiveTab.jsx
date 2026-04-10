@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Award } from "lucide-react";
+import { computeProjectTotalCost } from "../utils/financialValidation";
 
 // ═══════════════════════════════════════════════════════════════
 //  Incentive & Appreciation System
@@ -27,9 +28,9 @@ function buildRewardTiers() {
   const mt = getMarginTiers();
   return [
     { name: "Bronze", min: mt.bronze, color: "#cd7f32", bg: "rgba(205,127,50,0.10)", perks: ["Thank-you email", "Referral to new GCs", "Priority scheduling"] },
-    { name: "Silver", min: mt.silver, color: "#94a3b8", bg: "rgba(148,163,184,0.10)", perks: ["All Bronze perks", "Lunch on EBC", "Preferred pricing on next bid"] },
-    { name: "Gold", min: mt.gold, color: "#eab308", bg: "rgba(234,179,8,0.10)", perks: ["All Silver perks", "Gift card ($100)", "First-call on new projects"] },
-    { name: "Platinum", min: mt.platinum, color: "#a78bfa", bg: "rgba(167,139,250,0.10)", perks: ["All Gold perks", "Annual appreciation dinner", "Exclusive partnership status"] },
+    { name: "Silver", min: mt.silver, color: "var(--text2)", bg: "rgba(148,163,184,0.10)", perks: ["All Bronze perks", "Lunch on EBC", "Preferred pricing on next bid"] },
+    { name: "Gold", min: mt.gold, color: "var(--yellow)", bg: "rgba(234,179,8,0.10)", perks: ["All Silver perks", "Gift card ($100)", "First-call on new projects"] },
+    { name: "Platinum", min: mt.platinum, color: "var(--purple)", bg: "rgba(167,139,250,0.10)", perks: ["All Gold perks", "Annual appreciation dinner", "Exclusive partnership status"] },
   ];
 }
 
@@ -76,22 +77,35 @@ export function IncentiveTab({ app }) {
     return null;
   };
 
-  // ── Auto-calculated margins from real project data ──
-  const DEFAULT_LABOR_RATE = 45; // $/hr blended rate
+  // ── Auto-calculated margins from real project data (single source of truth) ──
   const liveProjectMargins = useMemo(() => {
     const projects = app.projects || [];
     const timeEntries = app.timeEntries || [];
+    const employees = app.employees || [];
+    const apBills = app.apBills || [];
+    const accruals = app.accruals || [];
+    const burden = app.companySettings?.laborBurdenMultiplier || 1.35;
     return projects.filter(p => p.contract > 0).map(p => {
-      const projEntries = timeEntries.filter(te => te.projectName === p.name && te.clockIn && te.clockOut);
-      const totalHours = projEntries.reduce((s, te) => {
-        return s + (new Date(te.clockOut) - new Date(te.clockIn)) / 3600000;
-      }, 0);
-      const laborCost = totalHours * DEFAULT_LABOR_RATE;
+      const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, accruals);
+      const totalCost = costs.total;
       const revenue = p.contract;
-      const margin = revenue > 0 ? ((revenue - laborCost) / revenue * 100) : 0;
-      return { id: p.id, name: p.name, gc: p.gc, revenue, laborCost, totalHours, margin: Math.round(margin * 10) / 10, phase: p.phase };
+      const margin = revenue > 0 ? ((revenue - totalCost) / revenue * 100) : 0;
+      return {
+        id: p.id,
+        name: p.name,
+        gc: p.gc,
+        revenue,
+        laborCost: Math.round(costs.labor),
+        materialCost: Math.round(costs.material),
+        subCost: Math.round(costs.subcontractor),
+        otherCost: Math.round(costs.otherAP),
+        totalCost: Math.round(totalCost),
+        totalHours: costs.laborHours || 0,
+        margin: Math.round(margin * 10) / 10,
+        phase: p.phase,
+      };
     });
-  }, [app.projects, app.timeEntries]);
+  }, [app.projects, app.timeEntries, app.employees, app.apBills, app.accruals, app.companySettings]);
 
   // ── Stats ──
   const stats = useMemo(() => {
@@ -136,14 +150,14 @@ export function IncentiveTab({ app }) {
           <div className="kpi-card"><span className="text2">Total Profit</span><strong>{app.fmtK(stats.totalProfit)}</strong></div>
         </div>
         <button className="btn btn-primary" onClick={() => setEditProj({
-          gc: "", project: "", revenue: 0, cost: 0, margin: 0, status: "complete", rewardSent: false, notes: ""
+          gc: "", project: "", revenue: 0, cost: 0, margin: "0", status: "complete", rewardSent: false, notes: ""
         })}>+ Add Project</button>
       </div>
 
-      {/* ── Live Project Margins (auto-calculated from time entries) ── */}
+      {/* ── Live Project Margins (single source of truth: computeProjectTotalCost) ── */}
       {liveProjectMargins.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--amber)", marginBottom: 8 }}>Live Project Margins (auto-calculated from labor hours)</div>
+        <div style={{ marginBottom: "var(--space-6)" }}>
+          <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--amber)", marginBottom: "var(--space-2)" }}>Live Project Margins (burdened labor + AP bills + accruals)</div>
           <div className="table-wrap">
             <table className="table">
               <thead>
@@ -151,8 +165,10 @@ export function IncentiveTab({ app }) {
                   <th>Project</th>
                   <th>GC</th>
                   <th style={{ textAlign: "right" }}>Contract</th>
-                  <th style={{ textAlign: "right" }}>Labor Hours</th>
-                  <th style={{ textAlign: "right" }}>Labor Cost</th>
+                  <th style={{ textAlign: "right" }}>Labor</th>
+                  <th style={{ textAlign: "right" }}>Material</th>
+                  <th style={{ textAlign: "right" }}>Sub/Other</th>
+                  <th style={{ textAlign: "right" }}>Total Cost</th>
                   <th style={{ textAlign: "right" }}>Margin</th>
                   <th>Tier</th>
                 </tr>
@@ -165,23 +181,25 @@ export function IncentiveTab({ app }) {
                       <td className="font-semi">{p.name}</td>
                       <td>{p.gc}</td>
                       <td style={{ textAlign: "right" }} className="font-mono">{fmt(p.revenue)}</td>
-                      <td style={{ textAlign: "right" }} className="font-mono">{p.totalHours.toFixed(1)}h</td>
                       <td style={{ textAlign: "right" }} className="font-mono">{fmt(p.laborCost)}</td>
+                      <td style={{ textAlign: "right" }} className="font-mono">{fmt(p.materialCost)}</td>
+                      <td style={{ textAlign: "right" }} className="font-mono">{fmt(p.subCost + p.otherCost)}</td>
+                      <td style={{ textAlign: "right" }} className="font-mono font-bold">{fmt(p.totalCost)}</td>
                       <td style={{ textAlign: "right" }}>
                         <span className="font-mono" style={{ color: tier ? tier.color : p.margin > 0 ? "#10b981" : "var(--red)" }}>{p.margin}%</span>
                       </td>
-                      <td>{tier ? <span style={{ color: tier.color, fontWeight: 600, fontSize: 13 }}>{tier.name}</span> : <span className="text-dim text-xs">—</span>}</td>
+                      <td>{tier ? <span style={{ color: tier.color, fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)" }}>{tier.name}</span> : <span className="text-dim text-xs">—</span>}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-          <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>Based on ${DEFAULT_LABOR_RATE}/hr blended labor rate. Material costs not included.</div>
+          <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", marginTop: "var(--space-1)" }}>Burdened labor from time entries ({((app.companySettings?.laborBurdenMultiplier || 1.35) * 100 - 100).toFixed(0)}% burden) + AP bills + accruals. Matches Job Costing and Dashboard.</div>
         </div>
       )}
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text2)", marginBottom: 8, marginTop: 8 }}>Manual Project Tracking</div>
+      <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--text2)", marginBottom: "var(--space-2)", marginTop: "var(--space-2)" }}>Manual Project Tracking</div>
       {incentiveProjects.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon"><Award style={{ width: 40, height: 40 }} /></div>
@@ -216,7 +234,7 @@ export function IncentiveTab({ app }) {
                     </td>
                     <td>
                       {tier ? (
-                        <span style={{ color: tier.color, fontWeight: 600, fontSize: 13 }}>{tier.name}</span>
+                        <span style={{ color: tier.color, fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)" }}>{tier.name}</span>
                       ) : (
                         <span className="text-dim text-xs">Below 5%</span>
                       )}
@@ -255,13 +273,13 @@ export function IncentiveTab({ app }) {
           return (
             <div key={tier.name} className="bid-card" style={{ borderTop: `3px solid ${tier.color}` }}>
               <div className="flex-between mb-8">
-                <span style={{ color: tier.color, fontWeight: 700, fontSize: 18 }}>{tier.name}</span>
+                <span style={{ color: tier.color, fontWeight: "var(--weight-bold)", fontSize: "var(--text-section)" }}>{tier.name}</span>
                 <span className="text-xs text-dim">{tier.min}%+ margin</span>
               </div>
               <div className="text-sm text-dim mb-12">{count} project{count !== 1 ? "s" : ""} at this tier</div>
-              <div style={{ fontSize: 13 }}>
+              <div style={{ fontSize: "var(--text-label)" }}>
                 {tier.perks.map((perk, i) => (
-                  <div key={i} style={{ padding: "4px 0", borderBottom: i < tier.perks.length - 1 ? "1px solid var(--border)" : "none" }}>
+                  <div key={i} style={{ padding: "var(--space-1) 0", borderBottom: i < tier.perks.length - 1 ? "1px solid var(--border)" : "none" }}>
                     {perk}
                   </div>
                 ))}
@@ -298,23 +316,23 @@ export function IncentiveTab({ app }) {
 
           <div className="flex gap-16 mt-16 flex-wrap">
             <div><span className="text-dim text-xs">PROFIT</span><div className="font-mono" style={{ color: profit >= 0 ? "var(--green)" : "var(--red)" }}>{fmt(profit)}</div></div>
-            <div><span className="text-dim text-xs">MARGIN</span><div className="font-mono font-bold" style={{ fontSize: 20, color: tier ? tier.color : "var(--text2)" }}>{margin.toFixed(1)}%</div></div>
-            <div><span className="text-dim text-xs">TIER</span><div style={{ color: tier ? tier.color : "var(--text2)", fontWeight: 700, fontSize: 18 }}>{tier ? tier.name : "Below threshold"}</div></div>
+            <div><span className="text-dim text-xs">MARGIN</span><div className="font-mono font-bold" style={{ fontSize: "var(--text-subtitle)", color: tier ? tier.color : "var(--text2)" }}>{margin.toFixed(1)}%</div></div>
+            <div><span className="text-dim text-xs">TIER</span><div style={{ color: tier ? tier.color : "var(--text2)", fontWeight: "var(--weight-bold)", fontSize: "var(--text-section)" }}>{tier ? tier.name : "Below threshold"}</div></div>
           </div>
 
           {/* Tier progress bar */}
           <div className="mt-24">
-            <div style={{ position: "relative", height: 32, background: "var(--bg4)", borderRadius: 6 }}>
+            <div style={{ position: "relative", height: 32, background: "var(--bg4)", borderRadius: "var(--radius-control)" }}>
               <div style={{
                 position: "absolute", left: 0, top: 0, height: "100%",
                 width: `${Math.min(Math.max(margin, 0), 25) / 25 * 100}%`,
                 background: tier ? tier.color : "var(--text3)",
-                borderRadius: 6, transition: "width 0.3s, background 0.3s",
+                borderRadius: "var(--radius-control)", transition: "width 0.3s, background 0.3s",
               }} />
               {REWARD_TIERS.map(t => (
                 <div key={t.name} style={{
                   position: "absolute", left: `${(t.min / 25) * 100}%`, top: -18,
-                  fontSize: 10, color: t.color, fontWeight: 600, transform: "translateX(-50%)"
+                  fontSize: "var(--text-xs)", color: t.color, fontWeight: "var(--weight-semi)", transform: "translateX(-50%)"
                 }}>
                   {t.name} ({t.min}%)
                 </div>
@@ -369,7 +387,7 @@ export function IncentiveTab({ app }) {
             </div>
             <div className="form-group">
               <label className="form-label">Live Margin</label>
-              <div className="font-mono" style={{ color: tier ? tier.color : "var(--text2)", fontSize: 18, fontWeight: 700, paddingTop: 6 }}>
+              <div className="font-mono" style={{ color: tier ? tier.color : "var(--text2)", fontSize: "var(--text-section)", fontWeight: "var(--weight-bold)", paddingTop: "var(--space-2)" }}>
                 {margin.toFixed(1)}% {tier ? `(${tier.name})` : ""}
               </div>
             </div>
@@ -421,7 +439,7 @@ export function IncentiveTab({ app }) {
 
       {/* AI Strategy Panel */}
       {showStrat && stratResult && (
-        <div className="card" style={{ padding: 20, marginBottom: 16, maxHeight: 500, overflow: "auto" }}>
+        <div className="card" style={{ padding: "var(--space-5)", marginBottom: "var(--space-4)", maxHeight: 500, overflow: "auto" }}>
           <div className="flex-between mb-12">
             <div className="text-sm font-semi">Incentive Strategy Analysis</div>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowStrat(false)}>Close</button>
@@ -432,7 +450,7 @@ export function IncentiveTab({ app }) {
             <div className="flex gap-16 mb-16" style={{ alignItems: "center" }}>
               <div style={{ textAlign: "center" }}>
                 <div className="text-xs text-muted">Program Score</div>
-                <div style={{ fontSize: 32, fontWeight: 700, color: stratResult.programHealth.score >= 70 ? "var(--green)" : stratResult.programHealth.score >= 40 ? "var(--amber)" : "var(--red)" }}>
+                <div style={{ fontSize: "var(--text-stat)", fontWeight: "var(--weight-bold)", color: stratResult.programHealth.score >= 70 ? "var(--green)" : stratResult.programHealth.score >= 40 ? "var(--amber)" : "var(--red)" }}>
                   {stratResult.programHealth.score}/100
                 </div>
               </div>
@@ -448,10 +466,10 @@ export function IncentiveTab({ app }) {
 
           {/* Upsell Opportunities */}
           {stratResult.upsellOpportunities?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: "var(--space-3)" }}>
               <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Tier Upgrade Opportunities</div>
               {stratResult.upsellOpportunities.map((u, i) => (
-                <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "var(--bg3)", border: "1px solid var(--border)" }}>
+                <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: "var(--bg3)", border: "1px solid var(--border)" }}>
                   <div className="flex-between">
                     <span className="text-sm font-semi">{u.gc}</span>
                     <div className="flex gap-4">
@@ -468,10 +486,10 @@ export function IncentiveTab({ app }) {
 
           {/* Program Suggestions */}
           {stratResult.programSuggestions?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: "var(--space-3)" }}>
               <div className="text-sm font-semi mb-8">Program Improvements</div>
               {stratResult.programSuggestions.map((s, i) => (
-                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
                   <div className="flex-between">
                     <span className="text-sm">{s.suggestion}</span>
                     <span className={`badge ${s.effort === "easy" ? "badge-green" : s.effort === "medium" ? "badge-amber" : "badge-red"}`}>{s.effort}</span>
@@ -484,10 +502,10 @@ export function IncentiveTab({ app }) {
 
           {/* At Risk */}
           {stratResult.atRiskRelationships?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: "var(--space-3)" }}>
               <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>At-Risk Relationships</div>
               {stratResult.atRiskRelationships.map((r, i) => (
-                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
                   <span className="text-sm font-semi">{r.gc}</span>
                   <div className="text-xs text-muted mt-2">{r.concern}</div>
                   <div className="text-xs mt-2" style={{ color: "var(--green)" }}>{r.action}</div>
@@ -496,7 +514,7 @@ export function IncentiveTab({ app }) {
             </div>
           )}
 
-          {stratResult.roi && <div className="text-sm" style={{ padding: 8, color: "var(--green)" }}>ROI: {stratResult.roi}</div>}
+          {stratResult.roi && <div className="text-sm" style={{ padding: "var(--space-2)", color: "var(--green)" }}>ROI: {stratResult.roi}</div>}
         </div>
       )}
 
@@ -522,7 +540,7 @@ export function IncentiveTab({ app }) {
               <div className="modal-title">AI-Drafted Appreciation Email</div>
               <button className="modal-close" onClick={() => setAiDraft(null)}>✕</button>
             </div>
-            <div style={{ whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.6, padding: "8px 0" }}>
+            <div style={{ whiteSpace: "pre-wrap", fontSize: "var(--text-secondary)", lineHeight: 1.6, padding: "var(--space-2) 0" }}>
               {aiDraft}
             </div>
             <div className="modal-actions">

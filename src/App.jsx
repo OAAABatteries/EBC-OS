@@ -15,7 +15,7 @@ import {
   initVendors, initAPBills, initPeriods, COST_TYPES, COST_CODES,
   initAccruals, initCommitments, initBudgets
 } from "./data/constants";
-import { softDelete, filterActive, computeProjectLaborCost, computeProjectLaborByCode, computeProjectTotalCost } from "./utils/financialValidation";
+import { softDelete, filterActive, computeProjectLaborCost, computeProjectLaborByCode, computeProjectTotalCost, validatePeriod } from "./utils/financialValidation";
 import { AreasTab } from "./tabs/AreasTab";
 import { PunchListTab } from "./tabs/PunchListTab";
 import { DecisionLogTab } from "./tabs/DecisionLogTab";
@@ -520,6 +520,7 @@ function App({ auth, onLogout }) {
   const alertEngine = useAlertEngine({
     bids, projects, contacts, submittals, rfis, changeOrders,
     certifications, employees, timeEntries, invoices,
+    apBills, accruals, companySettings,
   });
   const { activeAlerts, grouped: alertGroups, badgeCount: alertBadgeCount, dismissAlert, dismissAll } = alertEngine;
 
@@ -954,13 +955,13 @@ function App({ auth, onLogout }) {
       if ((p.progress || 0) >= 100) return false; // skip completed
       const contract = p.contract || 0;
       if (contract <= 0) return false; // can't calculate without contract
-      const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden);
+      const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, accruals || []);
       if (costs.total <= 0) return false; // no costs yet — not alertable
       const margin = ((contract - costs.total) / contract) * 100;
       return margin < marginThreshold;
     }).map(p => {
       const contract = p.contract || 0;
-      const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden);
+      const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, accruals || []);
       const margin = Math.round(((contract - costs.total) / contract) * 100);
       return { ...p, margin, totalCost: costs.total, laborActual: costs.labor, materialEst: costs.material, laborHours: costs.laborHours, subCost: costs.subcontractor, otherAP: costs.otherAP };
     }).sort((a, b) => a.margin - b.margin);
@@ -969,7 +970,7 @@ function App({ auth, onLogout }) {
     const urgentCount = bidsDueSoon.length + cosPending.length + rfisOpen.filter(r => r.age > 7).length + subsDueSoon.length + overdueInv.length + profitAlerts.length;
 
     return { bidsDueSoon, cosPending, cosPendingTotal, rfisOpen, subsDueSoon, overdueInv, overdueTotal, tmPending, projNoBilling, projAtRisk, followUps, profitAlerts, urgentCount };
-  }, [bids, changeOrders, rfis, submittals, invoices, tmTickets, projects, callLog, timeEntries, employees, companySettings, apBills]);
+  }, [bids, changeOrders, rfis, submittals, invoices, tmTickets, projects, callLog, timeEntries, employees, companySettings, apBills, accruals]);
 
   const pName = (pid) => projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
 
@@ -2033,7 +2034,7 @@ function App({ auth, onLogout }) {
                     id: nextId(), bidId: b.id, name: b.name, gc: b.gc,
                     contract: b.value || 0, billed: 0, progress: 0,
                     phase: b.phase || b.sector || "", start: b.due || "", end: "",
-                    pm: b.estimator || "", laborBudget: 0, laborHours: 0, laborCost: 0, materialCost: 0,
+                    pm: b.estimator || "", laborBudget: 0, laborHours: 0,
                     address: b.address || "", attachments: b.attachments || [],
                     notes: b.notes || "", scope: b.scope || [], sector: b.sector || "", contact: b.contact || "",
                   };
@@ -2441,7 +2442,7 @@ function App({ auth, onLogout }) {
                         pm: b.estimator || "", address: b.address || "",
                         scope: b.scope || [], sector: b.sector || "", contact: b.contact || "",
                         notes: b.notes || "", attachments: b.attachments || [],
-                        laborBudget: 0, laborHours: 0, laborCost: 0, materialCost: 0,
+                        laborBudget: 0, laborHours: 0,
                         assignedForeman: b.assignedForeman || null,
                       };
                       setProjects(prev => [...prev, newProj]);
@@ -2859,7 +2860,7 @@ function App({ auth, onLogout }) {
                 {pSubs.length > 0 && <span className="text-amber">Sub: {pSubs.length}</span>}
                 {pCOs.length > 0 && <span className="text-amber">CO: {pCOs.length}</span>}
                 {billingLag && <span className="text-red">Billing lag</span>}
-                {(() => { const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, companySettings?.laborBurdenMultiplier || 1.35); const c = p.contract || 0; const thr = companySettings?.marginAlertThreshold || 25; if (costs.total > 0 && c > 0) { const m = Math.round(((c - costs.total) / c) * 100); if (m < thr) return <span style={{ color: m < 0 ? "#dc2626" : "var(--red)", fontWeight: "var(--weight-semi)" }}>Margin: {m}%</span>; } return null; })()}
+                {(() => { const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, companySettings?.laborBurdenMultiplier || 1.35, accruals || []); const c = p.contract || 0; const thr = companySettings?.marginAlertThreshold || 25; if (costs.total > 0 && c > 0) { const m = Math.round(((c - costs.total) / c) * 100); if (m < thr) return <span style={{ color: m < 0 ? "#dc2626" : "var(--red)", fontWeight: "var(--weight-semi)" }}>Margin: {m}%</span>; } return null; })()}
                 {pRfis.length === 0 && pSubs.length === 0 && pCOs.length === 0 && !billingLag && <span className="text-green">On track</span>}
               </div>
               {/* Closeout button for near-complete */}
@@ -4156,7 +4157,6 @@ const ModalHub = ({ type, data, app }) => {
       case "editProject":
         return data ? { ...data } : {
           name: "", gc: "", contract: 0, billed: 0, progress: 0,
-          laborCost: 0, materialCost: 0,
           phase: "", start: "", end: "", pm: "", address: "",
           suite: "", parking: "", lat: "", lng: "",
           closeOut: "", attachments: [], assignedForeman: null
@@ -4263,7 +4263,7 @@ const ModalHub = ({ type, data, app }) => {
                 phase: awardedBid.phase || awardedBid.sector || "",
                 start: awardedBid.due || "",
                 end: "", pm: awardedBid.estimator || "",
-                laborBudget: 0, laborHours: 0, laborCost: 0, materialCost: 0,
+                laborBudget: 0, laborHours: 0,
                 address: awardedBid.address || "",
                 attachments: awardedBid.attachments || [],
                 bidId: awardedBid.id,
@@ -4355,8 +4355,6 @@ const ModalHub = ({ type, data, app }) => {
       pm: awardedBid.estimator || "",
       laborBudget: 0,
       laborHours: 0,
-      laborCost: 0,
-      materialCost: 0,
       address: awardedBid.address || "",
       attachments: awardedBid.attachments || [],
       bidId: awardedBid.id, // link back to the bid
@@ -4490,6 +4488,23 @@ const ModalHub = ({ type, data, app }) => {
       const amt = parseFloat(coForm.amount) || 0;
       const finalAmt = coForm.type === "deduct" ? -Math.abs(amt) : coForm.type === "no cost" ? 0 : Math.abs(amt);
       const tmIds = coForm.tmTicketIds || [];
+      // Enforce period discipline — block saves into closed periods (admin can override with reason)
+      let periodOverride = null;
+      const periodCheck = validatePeriod(coForm.date, app.periods || []);
+      if (!periodCheck.allowed) {
+        const isAdmin = app.auth?.role === "admin" || app.auth?.role === "owner";
+        if (!isAdmin) {
+          app.show(periodCheck.warning, "err");
+          return;
+        }
+        const reason = prompt(`${periodCheck.warning}\n\nOverride reason (required):`);
+        if (!reason || !reason.trim()) return;
+        periodOverride = {
+          reason: reason.trim(),
+          approvedBy: app.auth?.name || "unknown",
+          timestamp: new Date().toISOString(),
+        };
+      }
       if (coEditId) {
         // Clear changeOrderId from previously linked T&M tickets that are no longer selected
         const oldCo = app.changeOrders.find(c => c.id === coEditId);
@@ -4497,9 +4512,9 @@ const ModalHub = ({ type, data, app }) => {
         if (removedTmIds.length > 0) {
           app.setTmTickets(prev => prev.map(t => removedTmIds.includes(t.id) ? { ...t, changeOrderId: undefined } : t));
         }
-        app.setChangeOrders(prev => prev.map(c => c.id === coEditId ? { ...c, number: num, description: coForm.description, type: coForm.type, amount: finalAmt, status: coForm.status, date: coForm.date, notes: coForm.notes, tmTicketIds: tmIds } : c));
+        app.setChangeOrders(prev => prev.map(c => c.id === coEditId ? { ...c, number: num, description: coForm.description, type: coForm.type, amount: finalAmt, status: coForm.status, date: coForm.date, notes: coForm.notes, tmTicketIds: tmIds, ...(periodOverride ? { periodOverride } : {}) } : c));
       } else {
-        const newCo = { id: crypto.randomUUID(), projectId: draft.id, number: num, description: coForm.description, type: coForm.type, amount: finalAmt, status: coForm.status, date: coForm.date, notes: coForm.notes, tmTicketIds: tmIds, created: new Date().toISOString() };
+        const newCo = { id: crypto.randomUUID(), projectId: draft.id, number: num, description: coForm.description, type: coForm.type, amount: finalAmt, status: coForm.status, date: coForm.date, notes: coForm.notes, tmTicketIds: tmIds, created: new Date().toISOString(), ...(periodOverride ? { periodOverride } : {}) };
         app.setChangeOrders(prev => [...prev, newCo]);
         // Set changeOrderId on linked T&M tickets
         if (tmIds.length > 0) {
@@ -5428,18 +5443,27 @@ const ModalHub = ({ type, data, app }) => {
             {projTab === "financials" && (() => {
               const approvedCOTotal = projCOs.filter(c => c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
               const pendingCOTotal = projCOs.filter(c => c.status !== "approved" && c.status !== "rejected").reduce((s, c) => s + (c.amount || 0), 0);
-              const costs = computeProjectTotalCost(draft.id, draft.name, app.timeEntries, app.employees, app.apBills, app.companySettings?.laborBurdenMultiplier || 1.35);
+              const costs = computeProjectTotalCost(draft.id, draft.name, app.timeEntries, app.employees, app.apBills, app.companySettings?.laborBurdenMultiplier || 1.35, app.accruals || []);
               const adjustedContract = (draft.contract || 0) + approvedCOTotal;
               const billedToDate = filterActive(projInvoices).reduce((s, i) => s + (i.amount || 0), 0);
               const retainageRate = app.companySettings?.defaultRetainageRate || 10;
               const retainageReceivable = Math.round(billedToDate * retainageRate / 100);
-              const percentComplete = adjustedContract > 0 ? Math.min(costs.total / adjustedContract, 1) : 0;
-              const earnedRevenue = percentComplete * adjustedContract;
-              const overUnder = billedToDate - earnedRevenue;
+              // Correct % complete = cost incurred / total estimated cost (budget), NOT cost / adjustedContract
+              const totalEstimatedCost = (app.budgets?.[draft.id] || []).reduce((s, line) => s + (line.budgetAmount || 0), 0);
+              const hasBudget = totalEstimatedCost > 0;
+              const percentComplete = hasBudget ? Math.min(costs.total / totalEstimatedCost, 1) : 0;
+              const earnedRevenue = hasBudget ? percentComplete * adjustedContract : 0;
+              const overUnder = hasBudget ? billedToDate - earnedRevenue : 0;
               const grossMargin = adjustedContract > 0 ? adjustedContract - costs.total : 0;
               const grossMarginPct = adjustedContract > 0 ? Math.round((grossMargin / adjustedContract) * 100) : 0;
               const paidTotal = projInvoices.filter(i => i.status === "paid").reduce((s, i) => s + (i.amount || 0), 0);
               const netReceived = paidTotal - retainageReceivable;
+              // Commitments (POs/subcontracts) — open remaining exposure
+              const projectCommitments = (app.commitments || []).filter(c => String(c.projectId) === String(draft.id) && c.status === "active");
+              const totalCommitted = projectCommitments.reduce((s, c) => s + (c.remainingCommitment || 0), 0);
+              const projectedFinalCost = costs.total + totalCommitted;
+              const projectedFinalMargin = adjustedContract > 0 ? adjustedContract - projectedFinalCost : 0;
+              const projectedFinalMarginPct = adjustedContract > 0 ? Math.round((projectedFinalMargin / adjustedContract) * 100) : 0;
               return (
               <div>
                 {/* Contract KPIs */}
@@ -5455,17 +5479,25 @@ const ModalHub = ({ type, data, app }) => {
                 {/* Retainage + Over/Under Billing KPIs */}
                 <div className="flex gap-16 mb-16 flex-wrap">
                   <div><span className="text-dim text-xs">RETAINAGE RECEIVABLE ({retainageRate}%)</span><div className="font-mono text-amber">{fmt(retainageReceivable)}</div></div>
-                  <div>
-                    <span className="text-dim text-xs">OVER/(UNDER) BILLED</span>
-                    <div className="font-mono" style={{ color: overUnder >= 0 ? "var(--green)" : "var(--red)" }}>
-                      {overUnder >= 0 ? fmt(overUnder) : `(${fmt(Math.abs(overUnder))})`}
+                  {hasBudget ? (
+                    <>
+                      <div>
+                        <span className="text-dim text-xs">OVER/(UNDER) BILLED</span>
+                        <div className="font-mono" style={{ color: overUnder >= 0 ? "var(--green)" : "var(--red)" }}>
+                          {overUnder >= 0 ? fmt(Math.round(overUnder)) : `(${fmt(Math.round(Math.abs(overUnder)))})`}
+                        </div>
+                        <div className="text-xs" style={{ color: overUnder >= 0 ? "var(--green)" : "var(--red)", opacity: 0.8 }}>
+                          {overUnder >= 0 ? "Cash ahead" : "Earnings ahead of cash"}
+                        </div>
+                      </div>
+                      <div><span className="text-dim text-xs">% COMPLETE (COST/BUDGET)</span><div className="font-mono">{Math.round(percentComplete * 100)}%</div></div>
+                      <div><span className="text-dim text-xs">EARNED REVENUE</span><div className="font-mono">{fmt(Math.round(earnedRevenue))}</div></div>
+                    </>
+                  ) : (
+                    <div style={{ color: "var(--amber)", fontSize: "var(--text-label)", fontStyle: "italic", alignSelf: "center" }}>
+                      No budget set — cannot compute earned revenue / over-under billing. Add budget lines on the Budget subtab.
                     </div>
-                    <div className="text-xs" style={{ color: overUnder >= 0 ? "var(--green)" : "var(--red)", opacity: 0.8 }}>
-                      {overUnder >= 0 ? "Cash ahead" : "Earnings ahead of cash"}
-                    </div>
-                  </div>
-                  <div><span className="text-dim text-xs">% COMPLETE (COST)</span><div className="font-mono">{Math.round(percentComplete * 100)}%</div></div>
-                  <div><span className="text-dim text-xs">EARNED REVENUE</span><div className="font-mono">{fmt(Math.round(earnedRevenue))}</div></div>
+                  )}
                 </div>
 
                 {/* Project P&L Summary Card */}
@@ -5482,16 +5514,34 @@ const ModalHub = ({ type, data, app }) => {
                     <div><span className="text-dim text-xs">MATERIAL</span><div className="font-mono">{fmt(Math.round(costs.material))}</div></div>
                     <div><span className="text-dim text-xs">SUBCONTRACTOR</span><div className="font-mono">{fmt(Math.round(costs.subcontractor))}</div></div>
                     <div><span className="text-dim text-xs">EQUIPMENT/OTHER</span><div className="font-mono">{fmt(Math.round(costs.otherAP))}</div></div>
-                    <div><span className="text-dim text-xs">TOTAL COST</span><div className="font-mono font-bold">{fmt(Math.round(costs.total))}</div></div>
+                    <div><span className="text-dim text-xs">TOTAL COST TO DATE</span><div className="font-mono font-bold">{fmt(Math.round(costs.total))}</div></div>
+                  </div>
+                  {/* Commitment visibility — POs/subcontracts not yet invoiced */}
+                  <div className="flex gap-16 flex-wrap mb-8" style={{ borderTop: "1px dashed var(--border)", paddingTop: "var(--space-2)" }}>
+                    <div>
+                      <span className="text-dim text-xs">COMMITTED REMAINING</span>
+                      <div className="font-mono" style={{ color: totalCommitted > 0 ? "var(--amber)" : "var(--text3)" }}>{fmt(Math.round(totalCommitted))}</div>
+                      <div className="text-xs text-dim">{projectCommitments.length} open commitment{projectCommitments.length !== 1 ? "s" : ""}</div>
+                    </div>
+                    <div>
+                      <span className="text-dim text-xs">PROJECTED FINAL COST</span>
+                      <div className="font-mono font-bold">{fmt(Math.round(projectedFinalCost))}</div>
+                      <div className="text-xs text-dim">Cost to date + committed</div>
+                    </div>
+                    <div>
+                      <span className="text-dim text-xs">PROJECTED FINAL MARGIN %</span>
+                      <div className="font-mono font-bold" style={{ color: projectedFinalMarginPct < (app.companySettings?.marginAlertThreshold || 25) ? "var(--red)" : "var(--green)" }}>{projectedFinalMarginPct}%</div>
+                      <div className="text-xs text-dim">{fmt(Math.round(projectedFinalMargin))}</div>
+                    </div>
                   </div>
                   <div style={{ borderTop: "1px solid var(--border)", paddingTop: "var(--space-2)" }}>
                     <div className="flex gap-16 flex-wrap mb-8">
                       <div>
-                        <span className="text-dim text-xs">GROSS MARGIN $</span>
+                        <span className="text-dim text-xs">GROSS MARGIN $ (TO DATE)</span>
                         <div className="font-mono font-bold" style={{ color: grossMargin >= 0 ? "var(--green)" : "var(--red)" }}>{fmt(Math.round(grossMargin))}</div>
                       </div>
                       <div>
-                        <span className="text-dim text-xs">GROSS MARGIN %</span>
+                        <span className="text-dim text-xs">GROSS MARGIN % (TO DATE)</span>
                         <div className="font-mono font-bold" style={{ color: grossMarginPct < (app.companySettings?.marginAlertThreshold || 25) ? "var(--red)" : "var(--green)" }}>{grossMarginPct}%</div>
                       </div>
                     </div>
@@ -5499,12 +5549,19 @@ const ModalHub = ({ type, data, app }) => {
                       <div><span className="text-dim text-xs">BILLED TO DATE</span><div className="font-mono">{fmt(billedToDate)}</div></div>
                       <div><span className="text-dim text-xs">RETAINAGE HELD</span><div className="font-mono text-amber">{fmt(retainageReceivable)}</div></div>
                       <div><span className="text-dim text-xs">NET RECEIVED</span><div className="font-mono" style={{ color: netReceived > 0 ? "var(--green)" : "var(--text3)" }}>{fmt(Math.max(0, netReceived))}</div></div>
-                      <div>
-                        <span className="text-dim text-xs">OVER/(UNDER) BILLED</span>
-                        <div className="font-mono" style={{ color: overUnder >= 0 ? "var(--green)" : "var(--red)" }}>
-                          {overUnder >= 0 ? fmt(Math.round(overUnder)) : `(${fmt(Math.round(Math.abs(overUnder)))})`}
+                      {hasBudget ? (
+                        <div>
+                          <span className="text-dim text-xs">OVER/(UNDER) BILLED</span>
+                          <div className="font-mono" style={{ color: overUnder >= 0 ? "var(--green)" : "var(--red)" }}>
+                            {overUnder >= 0 ? fmt(Math.round(overUnder)) : `(${fmt(Math.round(Math.abs(overUnder)))})`}
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div>
+                          <span className="text-dim text-xs">OVER/(UNDER) BILLED</span>
+                          <div className="font-mono text-dim" style={{ fontStyle: "italic" }}>No budget</div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -5704,6 +5761,19 @@ const ModalHub = ({ type, data, app }) => {
                   <button className="btn btn-primary fs-11" onClick={async () => {
                     try {
                       const { generateCloseoutPdf } = await import("./utils/closeoutPdf.js");
+                      // Use single source of truth for cost math (matches dashboard + job costing)
+                      const closeoutCosts = computeProjectTotalCost(
+                        draft.id,
+                        draft.name,
+                        app.timeEntries,
+                        app.employees,
+                        app.apBills,
+                        app.companySettings?.laborBurdenMultiplier || 1.35,
+                        app.accruals || []
+                      );
+                      const closeoutMargin = totalBilled > 0
+                        ? Math.round(((totalBilled - closeoutCosts.total) / totalBilled) * 100) + "%"
+                        : "N/A";
                       generateCloseoutPdf(draft, {
                         rfis: (app.rfis || []).filter(r => String(r.projectId) === String(draft.id)),
                         submittals: (app.submittals || []).filter(s => String(s.projectId) === String(draft.id)),
@@ -5729,7 +5799,12 @@ const ModalHub = ({ type, data, app }) => {
                             remaining: remainingBalance,
                             retainage: retainageHeld,
                             openCOs: projCOs.filter(c => c.status !== "approved" && c.status !== "rejected").length,
-                            margin: totalBilled > 0 ? Math.round(((totalBilled - (draft.laborCost || 0) - (draft.materialCost || 0)) / totalBilled) * 100) + "%" : "N/A",
+                            totalCost: Math.round(closeoutCosts.total),
+                            laborCost: Math.round(closeoutCosts.labor),
+                            materialCost: Math.round(closeoutCosts.material),
+                            subCost: Math.round(closeoutCosts.subcontractor),
+                            otherCost: Math.round(closeoutCosts.otherAP),
+                            margin: closeoutMargin,
                           },
                         },
                       });
@@ -6698,27 +6773,11 @@ const ModalHub = ({ type, data, app }) => {
               <label className="form-label">Billed Amount ($)</label>
               <input className="form-input" type="number" value={draft.billed} onChange={e => upd("billed", Number(e.target.value))} />
             </div>
-            <div className="form-group">
-              <label className="form-label">Est. Labor Cost ($)</label>
-              <input className="form-input" type="number" value={draft.laborCost || 0} onChange={e => upd("laborCost", Number(e.target.value))} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Est. Material Cost ($)</label>
-              <input className="form-input" type="number" value={draft.materialCost || 0} onChange={e => upd("materialCost", Number(e.target.value))} />
-            </div>
-            {(draft.contract || 0) > 0 && ((draft.laborCost || 0) + (draft.materialCost || 0)) > 0 && (() => {
-              const totalCost = (draft.laborCost || 0) + (draft.materialCost || 0);
-              const margin = Math.round(((draft.contract - totalCost) / draft.contract) * 100);
-              const mThr = app.companySettings?.marginAlertThreshold || 25;
-              return (
-                <div className="form-group">
-                  <label className="form-label">Profit Margin (Est.)</label>
-                  <div style={{ padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", background: margin < mThr ? "rgba(239,68,68,0.1)" : "rgba(34,197,94,0.1)", border: `1px solid ${margin < mThr ? "var(--red)" : "var(--green)"}`, fontWeight: "var(--weight-bold)", color: margin < 0 ? "#dc2626" : margin < mThr ? "var(--red)" : "var(--green)" }}>
-                    {margin}% {margin < mThr ? ` — Below ${mThr}% target` : ""}
-                  </div>
-                </div>
-              );
-            })()}
+            {/*
+              Est. Labor / Material Cost inputs removed (Slice 2).
+              Live cost totals come from computeProjectTotalCost (time entries + AP bills + accruals).
+              Use the Financials subtab for the authoritative project P&L.
+            */}
             <div className="form-group">
               <label className="form-label">Progress (%)</label>
               <input className="form-input" type="number" min="0" max="100" value={draft.progress} onChange={e => upd("progress", Number(e.target.value))} />

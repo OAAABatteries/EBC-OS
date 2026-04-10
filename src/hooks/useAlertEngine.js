@@ -1,4 +1,5 @@
 import { useMemo, useCallback, useState } from "react";
+import { computeProjectTotalCost } from "../utils/financialValidation";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS Smart Alert Engine
@@ -74,7 +75,7 @@ function invoiceEmail(gcContact, projectName, contactEmail) {
 }
 
 // ── Main scan function ──
-export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices }) {
+export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices, apBills, accruals, companySettings }) {
   const now = new Date();
   const alerts = [];
   const contactMap = {};
@@ -229,9 +230,11 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
       });
     }
 
-    // 7) Profit margin below 30%
+    // 7) Profit margin below 30% — uses computed costs (single source of truth)
     const contract = p.contract || 0;
-    const totalCost = (p.laborCost || 0) + (p.materialCost || 0);
+    const burden = companySettings?.laborBurdenMultiplier || 1.35;
+    const costs = computeProjectTotalCost(p.id, p.name, timeEntries || [], employees || [], apBills || [], burden, accruals || []);
+    const totalCost = costs.total;
     if (contract > 0 && totalCost > 0) {
       const margin = Math.round(((contract - totalCost) / contract) * 100);
       if (margin < 30) {
@@ -475,13 +478,13 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
 }
 
 // ── Hook ──
-export function useAlertEngine({ bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices }) {
+export function useAlertEngine({ bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices, apBills, accruals, companySettings }) {
   // Counter to force re-render when dismiss state changes (localStorage is not reactive)
   const [dismissVer, setDismissVer] = useState(0);
 
   const alerts = useMemo(() =>
-    scanAlerts({ bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices }),
-    [bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices]
+    scanAlerts({ bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices, apBills, accruals, companySettings }),
+    [bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices, apBills, accruals, companySettings]
   );
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
