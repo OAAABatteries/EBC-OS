@@ -416,12 +416,12 @@ export function EmployeeView({ app }) {
     if (latlngs.length >= 2) {
       // Close the polygon preview if 3+ points
       const previewPts = latlngs.length >= 3 ? [...latlngs, latlngs[0]] : latlngs;
-      drawingPolylineRef.current = L.polyline(previewPts, { color: "#f59e0b", weight: 3, dashArray: "8 4" }).addTo(map);
+      drawingPolylineRef.current = L.polyline(previewPts, { color: "var(--amber)", weight: 3, dashArray: "8 4" }).addTo(map);
     }
     // draw vertex markers
     latlngs.forEach((pt, i) => {
       const m = L.circleMarker(pt, {
-        radius: 6, color: "#f59e0b", fillColor: i === 0 ? "#10b981" : "#f59e0b", fillOpacity: 1, weight: 2,
+        radius: 6, color: "var(--amber)", fillColor: i === 0 ? "#10b981" : "#f59e0b", fillOpacity: 1, weight: 2,
       }).addTo(map);
       m.bindTooltip(`Point ${i + 1}`, { permanent: false, direction: "top", offset: [0, -8] });
       drawingMarkersRef.current.push(m);
@@ -710,7 +710,7 @@ export function EmployeeView({ app }) {
   }, [activeEmp, lang, isClockedIn]);
 
   // ── portal tab bar definition ──
-  const isCrewRole = activeEmp.role === "Crew" || activeEmp.role === "Employee";
+  const isCrewRole = !!activeEmp && (activeEmp.role === "Crew" || activeEmp.role === "Employee");
   const portalTabs = [
     // ── Primary (4 + More) — frequency-driven: Home, Clock, Log Work, Drawings ──
     { id: "home", label: t("Home"), icon: Home, badge: false },
@@ -1297,7 +1297,7 @@ export function EmployeeView({ app }) {
                             <div className="emp-project-meta">
                               {areaLabel} &middot; {p.perimeter.length} pts
                               {position && (
-                                <span style={{ marginLeft: 6, color: isInside ? "var(--green)" : "var(--red)" }}>
+                                <span style={{ marginLeft: "var(--space-2)", color: isInside ? "var(--green)" : "var(--red)" }}>
                                   {isInside ? "Inside" : "Outside"}
                                 </span>
                               )}
@@ -1386,12 +1386,12 @@ export function EmployeeView({ app }) {
                     return (
                       <div key={dayLabel}>
                         {/* Day header with total */}
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0 4px", borderBottom: "2px solid var(--border)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-2) 0 var(--space-1)", borderBottom: "2px solid var(--border)" }}>
                           <span className="text-sm font-bold">{dayLabel}</span>
                           <span className="text-sm font-bold" style={{ color: "var(--amber)" }}>{dayTotal.toFixed(1)}h</span>
                         </div>
                         {entries.map((entry) => (
-                          <div key={entry.id} className="card emp-log-entry" style={{ marginTop: 4 }}>
+                          <div key={entry.id} className="card emp-log-entry" style={{ marginTop: "var(--space-1)" }}>
                             <div className="flex-between mb-4">
                               <span className="text-xs text-muted">{entry.projectName}</span>
                               <span className={`badge ${entry.geofenceStatus === "inside" ? "badge-green" : entry.geofenceStatus === "override" ? "badge-amber" : "badge-red"}`}>
@@ -1659,12 +1659,12 @@ export function EmployeeView({ app }) {
                 </FieldSelect>
               </div>
               <div className="mb-12">
-                <label className="form-label" style={{ fontSize: 11, fontWeight: 600, marginBottom: 6 }}>{t("Material")}</label>
+                <label className="form-label" style={{ fontSize: "var(--text-tab)", fontWeight: "var(--weight-semi)", marginBottom: "var(--space-2)" }}>{t("Material")}</label>
                 {/* Common materials quick-select */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", marginBottom: "var(--space-2)" }}>
                   {['5/8" GWB', '1/2" GWB', '3-5/8" Studs', '1-5/8" Track', 'Screws', 'Tape', 'Mud/JDL', 'Corner Bead', 'ACT Tile', 'Grid Wire', 'Insulation', 'Other'].map(item => (
                     <button key={item} type="button"
-                      style={{ padding: "8px 14px", fontSize: 13, fontWeight: matForm.material === item ? 700 : 500, borderRadius: 8, border: matForm.material === item ? "2px solid var(--accent)" : "1px solid var(--border)", background: matForm.material === item ? "var(--accent)" : "var(--bg3)", color: matForm.material === item ? "#fff" : "var(--text)", cursor: "pointer", minHeight: 36 }}
+                      style={{ padding: "var(--space-2) var(--space-4)", fontSize: "var(--text-label)", fontWeight: matForm.material === item ? 700 : 500, borderRadius: "var(--radius-control)", border: matForm.material === item ? "2px solid var(--accent)" : "1px solid var(--border)", background: matForm.material === item ? "var(--accent)" : "var(--bg3)", color: matForm.material === item ? "#fff" : "var(--text)", cursor: "pointer", minHeight: 36 }}
                       onClick={() => setMatForm(f => ({ ...f, material: item === "Other" ? "" : item }))}>
                       {item}
                     </button>
@@ -1928,22 +1928,6 @@ export function EmployeeView({ app }) {
           </div>
         )}
       </div>
-
-      {/* Floating Report Problem Button — accessible from every tab */}
-      <button
-        onClick={() => setShowReportProblem(true)}
-        aria-label={t("Report a Problem")}
-        style={{
-          position: "fixed", bottom: 72, right: 16, zIndex: 140,
-          width: 52, height: 52, borderRadius: "50%",
-          background: "var(--red)", color: "#fff", border: "none",
-          boxShadow: "0 4px 16px rgba(239,68,68,0.4)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          cursor: "pointer",
-        }}
-      >
-        <AlertTriangle size={22} />
-      </button>
 
       <PortalTabBar
         tabs={portalTabs}

@@ -3,7 +3,7 @@ import { resetAllGuides } from "../components/FeatureGuide";
 import { ClipboardList, Folder, Search, Smartphone, Wrench, Shield, Download, ClipboardCopy, CheckCircle, AlertTriangle, AlertOctagon, Flame, Droplets, Heart, Globe, Wind, Zap, CheckSquare, Square } from "lucide-react";
 import { THEMES, OSHA_CHECKLIST, COMPANY_DEFAULTS, ASSEMBLIES } from "../data/constants";
 import { storePdf, getPdfUrl, deletePdf, fmtSize } from "../hooks/useSubmittalPdf";
-import { softDelete, filterActive, auditDiff, CRITICAL_FIELDS, validateInvoice, findDuplicateInvoice, validateChangeOrder, findDuplicateCO, validateAPBill, findDuplicateAPBill, computeProjectLaborCost, computeProjectTotalCost, validateAccrual, validateCommitment, computeProjectCommittedCost, computeBudgetVsActual } from "../utils/financialValidation";
+import { softDelete, filterActive, auditDiff, CRITICAL_FIELDS, validateInvoice, findDuplicateInvoice, validateChangeOrder, findDuplicateCO, validateAPBill, findDuplicateAPBill, computeProjectLaborCost, computeProjectTotalCost, validateAccrual, validateCommitment, computeProjectCommittedCost, computeBudgetVsActual, validatePeriod, DEFAULT_BURDEN } from "../utils/financialValidation";
 import { TimeClockAdmin } from "./TimeClockAdmin";
 import { MapView } from "./MapView";
 
@@ -27,6 +27,40 @@ function addAudit(item, field, oldVal, newVal, user) {
     newValue: String(newVal ?? ""),
   });
   return audit;
+}
+
+// Shared attachments input for Invoice / AP Bill / CO forms
+function AttachmentsInput({ app, form, setForm }) {
+  const attachments = form.attachments || [];
+  const onFiles = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    Promise.all(files.map(f => new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({
+        name: f.name, type: f.type, size: f.size, dataUrl: reader.result,
+        uploadedAt: new Date().toISOString(), uploadedBy: app.auth?.name || "Unknown",
+      });
+      reader.readAsDataURL(f);
+    }))).then(attached => setForm({ ...form, attachments: [...attachments, ...attached] }));
+    e.target.value = "";
+  };
+  return (
+    <div className="form-group mt-8">
+      <label className="form-label">Attachments</label>
+      <input className="form-input fs-12" type="file" multiple accept="image/*,.pdf" onChange={onFiles} />
+      {attachments.length > 0 && (
+        <div className="flex gap-4 flex-wrap mt-8">
+          {attachments.map((a, i) => (
+            <span key={i} className="more-attach-pill">
+              📎 {a.name} ({Math.round((a.size || 0) / 1024)}KB)
+              <span className="more-attach-remove" onClick={() => setForm({ ...form, attachments: attachments.filter((_, j) => j !== i) })}>✕</span>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function AuditHistory({ audit }) {
@@ -83,7 +117,7 @@ function Financials({ app }) {
   const [sub, setSub] = useState("Invoices");
   return (
     <div>
-      <SubTabs tabs={["Invoices", "Change Orders", "T&M Tickets", "Job Costing", "Payroll Summary", "Aging Report", "AP Bills", "Vendors", "Retainage", "Period Close", "Budget", "Reports"]} active={sub} onChange={setSub} />
+      <SubTabs tabs={["Invoices", "Change Orders", "T&M Tickets", "Job Costing", "Payroll Summary", "Aging Report", "AP Bills", "Vendors", "Commitments", "Retainage", "Period Close", "Budget", "Reports"]} active={sub} onChange={setSub} />
       {sub === "Invoices" && <InvoicesTab app={app} />}
       {sub === "Change Orders" && <ChangeOrdersTab app={app} />}
       {sub === "T&M Tickets" && <TmTicketsTab app={app} />}
@@ -92,6 +126,7 @@ function Financials({ app }) {
       {sub === "Aging Report" && <AgingReportTab app={app} />}
       {sub === "AP Bills" && <APBillsTab app={app} />}
       {sub === "Vendors" && <VendorsTab app={app} />}
+      {sub === "Commitments" && <CommitmentsTab app={app} />}
       {sub === "Retainage" && <RetainageTab app={app} />}
       {sub === "Period Close" && <PeriodCloseTab app={app} />}
       {sub === "Budget" && <BudgetTab app={app} />}
@@ -103,7 +138,7 @@ function Financials({ app }) {
 /* ── Invoices ────────────────────────────────────────────────── */
 function InvoicesTab({ app }) {
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ projectId: "", number: "", date: "", amount: "", status: "pending", desc: "", paidDate: "" });
+  const [form, setForm] = useState({ projectId: "", number: "", date: "", amount: "", status: "pending", desc: "", paidDate: "", retainageRate: String(app.companySettings?.defaultRetainageRate || 0), attachments: [] });
   const [collectId, setCollectId] = useState(null);
   const [collectText, setCollectText] = useState("");
   const [collectLoading, setCollectLoading] = useState(false);
@@ -147,6 +182,26 @@ function InvoicesTab({ app }) {
     const errors = validateInvoice({ projectId: form.projectId, amount: Number(form.amount), date: form.date, desc: form.desc });
     if (errors.length > 0) { setInvoiceErrors(errors); return; }
     setInvoiceErrors([]);
+
+    // Period discipline: block closed periods unless admin overrides with reason
+    let periodOverride = null;
+    const periodCheck = validatePeriod(form.date, app.periods || []);
+    if (!periodCheck.allowed) {
+      const isAdmin = app.auth?.role === "admin" || app.auth?.role === "owner";
+      if (!isAdmin) {
+        app.show(`Blocked: ${periodCheck.warning}`, "err");
+        return;
+      }
+      const reason = prompt(`${periodCheck.warning}\n\nOverride reason (required):`);
+      if (!reason || !reason.trim()) return;
+      periodOverride = { reason: reason.trim(), approvedBy: app.auth?.name || "Unknown", timestamp: new Date().toISOString() };
+    }
+
+    // Retainage calculation
+    const retainageRate = Number(form.retainageRate) || (app.companySettings?.defaultRetainageRate || 0);
+    const retainageWithheld = Math.round(Number(form.amount) * retainageRate / 100);
+    const netAmount = Number(form.amount) - retainageWithheld;
+
     if (editingInvId) {
       // Edit existing invoice
       app.setInvoices(prev => prev.map(i => {
@@ -160,7 +215,12 @@ function InvoicesTab({ app }) {
           status: form.status,
           desc: form.desc,
           paidDate: form.paidDate || null,
+          retainageRate,
+          retainageWithheld,
+          netAmount,
+          attachments: form.attachments || i.attachments || [],
         };
+        if (periodOverride) updated.periodOverride = periodOverride;
         updated.audit = auditDiff(i, updated, CRITICAL_FIELDS.invoice, app.auth);
         return updated;
       }));
@@ -182,13 +242,20 @@ function InvoicesTab({ app }) {
         status: form.status,
         desc: form.desc,
         paidDate: form.paidDate || null,
+        retainageRate,
+        retainageWithheld,
+        netAmount,
+        attachments: form.attachments || [],
         audit: [],
+        createdAt: new Date().toISOString(),
+        createdBy: app.auth?.name || "Unknown",
       };
+      if (periodOverride) newItem.periodOverride = periodOverride;
       app.setInvoices(prev => [...prev, newItem]);
       app.show("Invoice added", "ok");
     }
     setAdding(false);
-    setForm({ projectId: "", number: "", date: "", amount: "", status: "pending", desc: "", paidDate: "" });
+    setForm({ projectId: "", number: "", date: "", amount: "", status: "pending", desc: "", paidDate: "", retainageRate: String(app.companySettings?.defaultRetainageRate || 0), attachments: [] });
   };
 
   return (
@@ -226,7 +293,7 @@ function InvoicesTab({ app }) {
               app.show("QuickBooks IIF exported", "ok");
             });
           }}>Export to QB</button>
-          <button className="btn btn-primary btn-sm" onClick={() => { if (!adding) { setEditingInvId(null); const nums = app.invoices.map(i => parseInt(i.number)).filter(n => !isNaN(n)); setForm(f => ({ ...f, number: String((nums.length ? Math.max(...nums) : 0) + 1).padStart(4, "0"), date: new Date().toISOString().slice(0, 10) })); } setAdding(!adding); }}>+ Add Invoice</button>
+          <button className="btn btn-primary btn-sm" onClick={() => { if (!adding) { setEditingInvId(null); const nums = app.invoices.map(i => parseInt(i.number)).filter(n => !isNaN(n)); setForm(f => ({ ...f, number: String((nums.length ? Math.max(...nums) : 0) + 1).padStart(4, "0"), date: new Date().toISOString().slice(0, 10), attachments: [], retainageRate: String(app.companySettings?.defaultRetainageRate || 0) })); } setAdding(!adding); }}>+ Add Invoice</button>
         </div>
       </div>
 
@@ -266,11 +333,21 @@ function InvoicesTab({ app }) {
               <label className="form-label">Paid Date</label>
               <input className="form-input" type="date" value={form.paidDate} onChange={e => setForm({ ...form, paidDate: e.target.value })} />
             </div>
+            <div className="form-group">
+              <label className="form-label">Retainage Rate (%)</label>
+              <input className="form-input" type="number" min="0" max="100" value={form.retainageRate} onChange={e => setForm({ ...form, retainageRate: e.target.value })} />
+              {Number(form.amount) > 0 && Number(form.retainageRate) > 0 && (
+                <div className="text-xs text-dim mt-4">
+                  Withheld: {app.fmt(Math.round(Number(form.amount) * Number(form.retainageRate) / 100))} / Net: {app.fmt(Number(form.amount) - Math.round(Number(form.amount) * Number(form.retainageRate) / 100))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label">Description</label>
             <input className="form-input" value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} />
           </div>
+          <AttachmentsInput app={app} form={form} setForm={setForm} />
           {invoiceErrors.length > 0 && (
             <div className="mt-8" style={{ color: "var(--red)", fontSize: "var(--fs-11)" }}>
               {invoiceErrors.map((err, i) => <div key={i}>• {err}</div>)}
@@ -311,12 +388,10 @@ function InvoicesTab({ app }) {
                           const paidDate = prompt("Payment date (YYYY-MM-DD):", new Date().toISOString().slice(0, 10));
                           if (!paidDate) return;
                           const checkNum = prompt("Check/Reference # (optional):", "");
-                          app.setInvoices(prev => prev.map(i => {
-                            if (i.id !== inv.id) return i;
-                            const updated = { ...i, status: "paid", paidDate, checkNum: checkNum || null };
-                            updated.audit = auditDiff(i, updated, CRITICAL_FIELDS.invoice, app.auth);
-                            return updated;
-                          }));
+                          // Compute audit outside setter to avoid React strict-mode double-append
+                          const nextInv = { ...inv, status: "paid", paidDate, checkNum: checkNum || null };
+                          const newAudit = auditDiff(inv, nextInv, CRITICAL_FIELDS.invoice, app.auth);
+                          app.setInvoices(prev => prev.map(i => i.id === inv.id ? { ...i, status: "paid", paidDate, checkNum: checkNum || null, audit: newAudit } : i));
                           app.show(`Invoice ${inv.number} marked paid`);
                         }}>
                         Mark Paid
@@ -340,6 +415,8 @@ function InvoicesTab({ app }) {
                             status: inv.status,
                             desc: inv.desc || "",
                             paidDate: inv.paidDate || "",
+                            retainageRate: String(inv.retainageRate ?? (app.companySettings?.defaultRetainageRate || 0)),
+                            attachments: inv.attachments || [],
                           });
                           setEditingInvId(inv.id);
                           setAdding(true);
@@ -389,13 +466,14 @@ function InvoicesTab({ app }) {
 /* ── Change Orders ───────────────────────────────────────────── */
 function ChangeOrdersTab({ app }) {
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ projectId: "", number: "", desc: "", amount: "", status: "pending", submitted: "", approved: "", type: "add", reference: "", notes: "", scope_items: [], gc_name: "", gc_company: "" });
+  const [form, setForm] = useState({ projectId: "", number: "", desc: "", amount: "", status: "pending", submitted: "", approved: "", type: "add", reference: "", notes: "", scope_items: [], gc_name: "", gc_company: "", attachments: [], date: "" });
   const [scopeInput, setScopeInput] = useState("");
   const [impactId, setImpactId] = useState(null);
   const [impactResult, setImpactResult] = useState(null);
   const [impactLoading, setImpactLoading] = useState(false);
   const [showDeletedCO, setShowDeletedCO] = useState(false);
   const [coErrors, setCoErrors] = useState([]);
+  const [editingCoId, setEditingCoId] = useState(null);
 
   const pName = (pid) => app.projects.find(p => p.id === pid)?.name || "Unknown";
   const badge = (s) => s === "approved" ? "badge-green" : s === "pending" ? "badge-amber" : "badge-red";
@@ -429,34 +507,82 @@ function ChangeOrdersTab({ app }) {
     const errors = validateChangeOrder({ projectId: form.projectId, description: form.desc, amount: form.amount, type: form.type, number: form.number });
     if (errors.length > 0) { setCoErrors(errors); return; }
     setCoErrors([]);
-    const duplicate = findDuplicateCO({ number: form.number, projectId: Number(form.projectId) }, app.changeOrders);
-    if (duplicate) {
-      const proceed = confirm(`Warning: CO #${form.number} already exists for this project (${app.fmt(duplicate.amount)}). Save anyway?`);
-      if (!proceed) return;
+
+    // Period discipline against CO submitted date (or today if missing)
+    const coDate = form.submitted || form.date || new Date().toISOString().slice(0, 10);
+    let periodOverride = null;
+    const periodCheck = validatePeriod(coDate, app.periods || []);
+    if (!periodCheck.allowed) {
+      const isAdmin = app.auth?.role === "admin" || app.auth?.role === "owner";
+      if (!isAdmin) {
+        app.show(`Blocked: ${periodCheck.warning}`, "err");
+        return;
+      }
+      const reason = prompt(`${periodCheck.warning}\n\nOverride reason (required):`);
+      if (!reason || !reason.trim()) return;
+      periodOverride = { reason: reason.trim(), approvedBy: app.auth?.name || "Unknown", timestamp: new Date().toISOString() };
     }
-    const newItem = {
-      id: app.nextId(),
-      projectId: Number(form.projectId),
-      number: form.number,
-      desc: form.desc,
-      amount: Number(form.amount),
-      status: form.status,
-      submitted: form.submitted,
-      approved: form.approved || null,
-      type: form.type || "add",
-      reference: form.reference || "",
-      notes: form.notes || "",
-      scope_items: form.scope_items || [],
-      gc_name: form.gc_name || "",
-      gc_company: form.gc_company || "",
-      audit: [],
-    };
-    app.setChangeOrders(prev => [...prev, newItem]);
-    app.show("Change order added", "ok");
+
+    if (editingCoId) {
+      app.setChangeOrders(prev => prev.map(c => {
+        if (c.id !== editingCoId) return c;
+        const updated = {
+          ...c,
+          projectId: Number(form.projectId),
+          number: form.number,
+          desc: form.desc,
+          amount: Number(form.amount),
+          status: form.status,
+          submitted: form.submitted,
+          approved: form.approved || null,
+          type: form.type || "add",
+          reference: form.reference || "",
+          notes: form.notes || "",
+          scope_items: form.scope_items || [],
+          gc_name: form.gc_name || "",
+          gc_company: form.gc_company || "",
+          attachments: form.attachments || [],
+        };
+        if (periodOverride) updated.periodOverride = periodOverride;
+        updated.audit = auditDiff(c, updated, CRITICAL_FIELDS.changeOrder, app.auth);
+        return updated;
+      }));
+      app.show("Change order updated", "ok");
+      setEditingCoId(null);
+    } else {
+      const duplicate = findDuplicateCO({ number: form.number, projectId: Number(form.projectId) }, app.changeOrders);
+      if (duplicate) {
+        const proceed = confirm(`Warning: CO #${form.number} already exists for this project (${app.fmt(duplicate.amount)}). Save anyway?`);
+        if (!proceed) return;
+      }
+      const newItem = {
+        id: app.nextId(),
+        projectId: Number(form.projectId),
+        number: form.number,
+        desc: form.desc,
+        amount: Number(form.amount),
+        status: form.status,
+        submitted: form.submitted,
+        approved: form.approved || null,
+        type: form.type || "add",
+        reference: form.reference || "",
+        notes: form.notes || "",
+        scope_items: form.scope_items || [],
+        gc_name: form.gc_name || "",
+        gc_company: form.gc_company || "",
+        attachments: form.attachments || [],
+        audit: [],
+        createdAt: new Date().toISOString(),
+        createdBy: app.auth?.name || "Unknown",
+      };
+      if (periodOverride) newItem.periodOverride = periodOverride;
+      app.setChangeOrders(prev => [...prev, newItem]);
+      app.show("Change order added", "ok");
+    }
     setAdding(false);
     setScopeInput("");
     setCoErrors([]);
-    setForm({ projectId: "", number: "", desc: "", amount: "", status: "pending", submitted: "", approved: "", type: "add", reference: "", notes: "", scope_items: [], gc_name: "", gc_company: "" });
+    setForm({ projectId: "", number: "", desc: "", amount: "", status: "pending", submitted: "", approved: "", type: "add", reference: "", notes: "", scope_items: [], gc_name: "", gc_company: "", attachments: [], date: "" });
   };
 
   return (
@@ -472,7 +598,7 @@ function ChangeOrdersTab({ app }) {
             const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'ebc_change_orders.csv'; a.click(); URL.revokeObjectURL(url);
             app.show("Change orders CSV exported");
           }}>Export CSV</button>
-          <button className="btn btn-primary btn-sm" onClick={() => { if (!adding) { const nums = app.changeOrders.map(c => parseInt(c.number)).filter(n => !isNaN(n)); setForm(f => ({ ...f, number: String((nums.length ? Math.max(...nums) : 0) + 1).padStart(3, "0") })); } setAdding(!adding); }}>+ Add CO</button>
+          <button className="btn btn-primary btn-sm" onClick={() => { if (!adding) { setEditingCoId(null); const nums = app.changeOrders.map(c => parseInt(c.number)).filter(n => !isNaN(n)); setForm(f => ({ ...f, number: String((nums.length ? Math.max(...nums) : 0) + 1).padStart(3, "0"), attachments: [] })); } setAdding(!adding); }}>+ Add CO</button>
         </div>
       </div>
 
@@ -520,6 +646,7 @@ function ChangeOrdersTab({ app }) {
             <div className="form-group">
               <label className="form-label">Submitted</label>
               <input className="form-input" type="date" value={form.submitted} onChange={e => setForm({ ...form, submitted: e.target.value })} />
+              <PeriodWarning date={form.submitted} periods={app.periods} />
             </div>
             <div className="form-group">
               <label className="form-label">Approved</label>
@@ -532,6 +659,8 @@ function ChangeOrdersTab({ app }) {
             <label className="form-label">Description</label>
             <textarea className="form-input" rows={2} placeholder="Changes associated with Bulletin #01..." value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} />
           </div>
+
+          <AttachmentsInput app={app} form={form} setForm={setForm} />
 
           {/* Scope Items */}
           <div className="form-group mt-8">
@@ -587,8 +716,8 @@ function ChangeOrdersTab({ app }) {
             </div>
           )}
           <div className="flex gap-8 mt-16">
-            <button className="btn btn-primary btn-sm" onClick={save}>Save</button>
-            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setScopeInput(""); setCoErrors([]); }}>Cancel</button>
+            <button className="btn btn-primary btn-sm" onClick={save}>{editingCoId ? "Update CO" : "Save"}</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setScopeInput(""); setCoErrors([]); setEditingCoId(null); }}>Cancel</button>
           </div>
         </div>
       )}
@@ -613,12 +742,19 @@ function ChangeOrdersTab({ app }) {
                   <td>{app.fmt(co.amount)}</td>
                   <td><span className={`${badge(co.status)} more-cursor-pointer`} title="Click to change status" onClick={() => {
                     const next = co.status === "pending" ? "approved" : co.status === "approved" ? "rejected" : "pending";
-                    if (next === "approved" && !confirm(`Approve CO #${co.number} for ${app.fmt(co.amount)}?`)) return;
-                    app.setChangeOrders(prev => prev.map(c => c.id === co.id ? {
-                      ...c, status: next,
-                      approved: next === "approved" ? new Date().toISOString().slice(0, 10) : c.approved,
-                      audit: addAudit(c, "status", co.status, next, app.auth),
-                    } : c));
+                    if (next === "approved") {
+                      const isApprover = app.auth?.role === "admin" || app.auth?.role === "owner" || app.auth?.role === "pm";
+                      if (!isApprover) { app.show("Only PM/Admin/Owner can approve COs", "err"); return; }
+                      if (!confirm(`Approve CO #${co.number} for ${app.fmt(co.amount)}?`)) return;
+                    }
+                    const updated = {
+                      ...co, status: next,
+                      approved: next === "approved" ? new Date().toISOString().slice(0, 10) : co.approved,
+                      approvedBy: next === "approved" ? (app.auth?.name || "Unknown") : co.approvedBy,
+                      approvedAt: next === "approved" ? new Date().toISOString() : co.approvedAt,
+                    };
+                    updated.audit = auditDiff(co, updated, CRITICAL_FIELDS.changeOrder, app.auth);
+                    app.setChangeOrders(prev => prev.map(c => c.id === co.id ? updated : c));
                     app.show(`CO ${co.number} → ${next}`, "ok");
                   }}>{co.status}</span></td>
                   <td>{co.submitted}</td>
@@ -638,6 +774,31 @@ function ChangeOrdersTab({ app }) {
                       disabled={impactLoading && impactId === co.id}>
                       {impactLoading && impactId === co.id ? "..." : impactId === co.id && impactResult ? "Hide" : "Analyze"}
                     </button>
+                    {co.status !== "deleted" && (
+                      <button className="btn btn-ghost btn-sm btn-table-action"
+                        onClick={() => {
+                          setForm({
+                            projectId: String(co.projectId),
+                            number: co.number || "",
+                            desc: co.desc || "",
+                            amount: String(co.amount || ""),
+                            status: co.status || "pending",
+                            submitted: co.submitted || "",
+                            approved: co.approved || "",
+                            type: co.type || "add",
+                            reference: co.reference || "",
+                            notes: co.notes || "",
+                            scope_items: co.scope_items || [],
+                            gc_name: co.gc_name || "",
+                            gc_company: co.gc_company || "",
+                            attachments: co.attachments || [],
+                            date: co.date || "",
+                          });
+                          setEditingCoId(co.id);
+                          setAdding(true);
+                          setCoErrors([]);
+                        }}>Edit</button>
+                    )}
                     <button className="btn btn-ghost btn-sm btn-table-delete"
                       onClick={() => {
                         const reason = prompt("Reason for voiding this change order:");
@@ -784,6 +945,21 @@ function TmTicketsTab({ app }) {
   const save = () => {
     if (!form.projectId || !form.ticketNumber) return app.show("Project and ticket # required", "err");
     if (form.laborEntries.every(e => !e.hours) && form.materialEntries.every(e => !e.qty)) return app.show("Add at least one labor or material entry", "err");
+
+    // Period discipline: block closed periods unless admin overrides with reason
+    let periodOverride = null;
+    const periodCheck = validatePeriod(form.date, app.periods || []);
+    if (!periodCheck.allowed) {
+      const isAdmin = app.auth?.role === "admin" || app.auth?.role === "owner";
+      if (!isAdmin) {
+        app.show(`Blocked: ${periodCheck.warning}`, "err");
+        return;
+      }
+      const reason = prompt(`${periodCheck.warning}\n\nOverride reason (required):`);
+      if (!reason || !reason.trim()) return;
+      periodOverride = { reason: reason.trim(), approvedBy: app.auth?.name || "Unknown", timestamp: new Date().toISOString() };
+    }
+
     const newTicket = {
       id: app.nextId(),
       projectId: Number(form.projectId),
@@ -795,7 +971,10 @@ function TmTicketsTab({ app }) {
       materialEntries: form.materialEntries.filter(e => e.qty && e.item).map((e, i) => ({ ...e, id: i + 1, qty: Number(e.qty), unitCost: Number(e.unitCost), markup: Number(e.markup) })),
       submittedDate: null, approvedDate: null, billedDate: null,
       notes: form.notes,
+      createdAt: new Date().toISOString(),
+      createdBy: app.auth?.name || "Unknown",
     };
+    if (periodOverride) newTicket.periodOverride = periodOverride;
     app.setTmTickets(prev => [...prev, newTicket]);
     app.show("T&M ticket created", "ok");
     setAdding(false);
@@ -973,6 +1152,7 @@ function TmTicketsTab({ app }) {
             <div className="form-group">
               <label className="form-label">Date</label>
               <input className="form-input" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+              <PeriodWarning date={form.date} periods={app.periods} />
             </div>
           </div>
           <div className="form-group">
@@ -1218,7 +1398,7 @@ function JobCostingTab({ app }) {
   const marginThreshold = (app.companySettings?.marginAlertThreshold || 25) / 100;
 
   const getCostCodeBreakdown = (projectId, projectName) => {
-    const burden = app.companySettings?.laborBurdenMultiplier || 1.0;
+    const burden = app.companySettings?.laborBurdenMultiplier || DEFAULT_BURDEN;
     const employeeMap = new Map((app.employees || []).map(e => [e.id, e]));
     const employeeNameMap = new Map((app.employees || []).map(e => [e.name, e]));
     const entries = (app.timeEntries || []).filter(te => {
@@ -1376,7 +1556,7 @@ function JobCostingTab({ app }) {
         const costData = computeProjectTotalCost(
           proj.id, proj.name, app.timeEntries || [], app.employees || [],
           filterActive(app.apBills || []),
-          app.companySettings?.laborBurdenMultiplier || 1.0
+          app.companySettings?.laborBurdenMultiplier || DEFAULT_BURDEN
         );
         const totalCost = costData.total;
         const grossMargin = adjustedContract - totalCost;
@@ -1401,7 +1581,7 @@ function JobCostingTab({ app }) {
             <div style={{ marginTop: "var(--space-2)", padding: "var(--space-2) var(--space-3)", background: "var(--bg3)", borderRadius: "var(--radius-control)" }}>
               <div className="text-xs fw-600 mb-4" style={{ color: "var(--text2)" }}>Cost Breakdown</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "var(--space-2)", fontSize: "var(--fs-11)" }}>
-                <div><span className="text2">Labor{(app.companySettings?.laborBurdenMultiplier || 1) > 1 ? " (burdened)" : ""}</span><br /><span className="font-mono text-amber">{app.fmt(costData.labor)}</span></div>
+                <div><span className="text2">Labor{(app.companySettings?.laborBurdenMultiplier || DEFAULT_BURDEN) > 1 ? " (burdened)" : ""}</span><br /><span className="font-mono text-amber">{app.fmt(costData.labor)}</span></div>
                 <div><span className="text2">Material</span><br /><span className="font-mono">{app.fmt(costData.material)}</span></div>
                 <div><span className="text2">Subcontractor</span><br /><span className="font-mono">{app.fmt(costData.subcontractor)}</span></div>
                 <div><span className="text2">Other</span><br /><span className="font-mono">{app.fmt(costData.otherAP)}</span></div>
@@ -1676,7 +1856,7 @@ function APBillsTab({ app }) {
   const [form, setForm] = useState({
     vendorId: "", projectId: "", costType: "", invoiceNumber: "", date: "",
     dueDate: "", amount: "", description: "", retainageRate: "0",
-    lienWaiverStatus: "not_required",
+    lienWaiverStatus: "not_required", attachments: [],
   });
   const [showDeleted, setShowDeleted] = useState(false);
   const [billErrors, setBillErrors] = useState([]);
@@ -1722,10 +1902,10 @@ function APBillsTab({ app }) {
     return vName(bill.vendorId).toLowerCase().includes(q) || pName(bill.projectId).toLowerCase().includes(q) || (bill.invoiceNumber || "").toLowerCase().includes(q) || (bill.description || "").toLowerCase().includes(q);
   });
 
-  const totalAP = billsFiltered.filter(b => b.status !== "void" && b.status !== "paid").reduce((s, b) => s + (b.amount || 0), 0);
+  const totalAP = billsFiltered.filter(b => b.status !== "void" && b.status !== "paid" && b.status !== "deleted").reduce((s, b) => s + (b.amount || 0), 0);
   const pendingApproval = billsFiltered.filter(b => b.status === "entered").reduce((s, b) => s + (b.amount || 0), 0);
   const today = new Date();
-  const overdue = billsFiltered.filter(b => b.status !== "paid" && b.status !== "void" && b.dueDate && new Date(b.dueDate) < today).reduce((s, b) => s + (b.amount || 0), 0);
+  const overdue = billsFiltered.filter(b => b.status !== "paid" && b.status !== "void" && b.status !== "deleted" && b.dueDate && new Date(b.dueDate) < today).reduce((s, b) => s + (b.amount || 0), 0);
 
   const save = () => {
     const errors = validateAPBill({
@@ -1736,6 +1916,20 @@ function APBillsTab({ app }) {
     if (errors.length > 0) { setBillErrors(errors); return; }
     setBillErrors([]);
 
+    // Period discipline: block closed periods unless admin overrides with reason
+    let periodOverride = null;
+    const periodCheck = validatePeriod(form.date, app.periods || []);
+    if (!periodCheck.allowed) {
+      const isAdmin = app.auth?.role === "admin" || app.auth?.role === "owner";
+      if (!isAdmin) {
+        app.show(`Blocked: ${periodCheck.warning}`, "err");
+        return;
+      }
+      const reason = prompt(`${periodCheck.warning}\n\nOverride reason (required):`);
+      if (!reason || !reason.trim()) return;
+      periodOverride = { reason: reason.trim(), approvedBy: app.auth?.name || "Unknown", timestamp: new Date().toISOString() };
+    }
+
     if (editingBillId) {
       app.setAPBills(prev => prev.map(b => {
         if (b.id !== editingBillId) return b;
@@ -1744,7 +1938,9 @@ function APBillsTab({ app }) {
           costType: form.costType, invoiceNumber: form.invoiceNumber, date: form.date,
           dueDate: form.dueDate, amount: Number(form.amount), description: form.description,
           retainageRate: Number(form.retainageRate) || 0, lienWaiverStatus: form.lienWaiverStatus,
+          attachments: form.attachments || b.attachments || [],
         };
+        if (periodOverride) updated.periodOverride = periodOverride;
         updated.audit = auditDiff(b, updated, CRITICAL_FIELDS.apBill, app.auth);
         return updated;
       }));
@@ -1756,23 +1952,49 @@ function APBillsTab({ app }) {
         const proceed = confirm(`Warning: Vendor invoice #${form.invoiceNumber} already exists for this vendor (${app.fmt(duplicate.amount)}). Save anyway?`);
         if (!proceed) return;
       }
-      // Check closed period
-      const derivedMonth = form.date ? form.date.slice(0, 7) : null;
-      const closedPeriod = derivedMonth && app.periods?.find(p => p.period === derivedMonth && p.status === "closed");
 
+      const amt = Number(form.amount);
+      const retRate = Number(form.retainageRate) || 0;
+      const retainageAmount = Math.round(amt * retRate / 100);
       const newItem = {
         id: app.nextId(), vendorId: Number(form.vendorId), projectId: Number(form.projectId),
         costType: form.costType, invoiceNumber: form.invoiceNumber, date: form.date,
-        dueDate: form.dueDate, amount: Number(form.amount), description: form.description,
-        retainageRate: Number(form.retainageRate) || 0, lienWaiverStatus: form.lienWaiverStatus,
+        dueDate: form.dueDate, amount: amt, description: form.description,
+        retainageRate: retRate, retainageAmount, lienWaiverStatus: form.lienWaiverStatus,
+        attachments: form.attachments || [],
         status: "entered",
-        audit: closedPeriod ? [{ timestamp: new Date().toISOString(), userName: app.auth?.name || "System", field: "period_override", oldValue: "", newValue: `Entered in closed period ${derivedMonth}` }] : [],
+        audit: [],
+        createdAt: new Date().toISOString(),
+        createdBy: app.auth?.name || "Unknown",
       };
+      if (periodOverride) newItem.periodOverride = periodOverride;
+
+      // Commitment linkage prompt — link bill to matching PO/subcontract and roll up invoiced
+      const match = (app.commitments || []).find(c =>
+        c.status === "active" &&
+        String(c.projectId) === String(newItem.projectId) &&
+        String(c.vendorId) === String(newItem.vendorId) &&
+        (!c.costType || c.costType === newItem.costType)
+      );
+      if (match && app.setCommitments) {
+        const remaining = match.remainingCommitment != null
+          ? match.remainingCommitment
+          : (match.revisedAmount || match.originalAmount || 0) - (match.invoicedToDate || 0);
+        if (confirm(`Link this bill to commitment "${match.description || match.id}"? (Remaining: ${app.fmt(remaining)})`)) {
+          newItem.commitmentId = match.id;
+          app.setCommitments(prev => prev.map(c => c.id === match.id ? {
+            ...c,
+            invoicedToDate: (c.invoicedToDate || 0) + amt,
+            remainingCommitment: Math.max(0, remaining - amt),
+          } : c));
+        }
+      }
+
       app.setAPBills(prev => [...prev, newItem]);
       app.show("AP Bill added", "ok");
     }
     setAdding(false);
-    setForm({ vendorId: "", projectId: "", costType: "", invoiceNumber: "", date: "", dueDate: "", amount: "", description: "", retainageRate: "0", lienWaiverStatus: "not_required" });
+    setForm({ vendorId: "", projectId: "", costType: "", invoiceNumber: "", date: "", dueDate: "", amount: "", description: "", retainageRate: "0", lienWaiverStatus: "not_required", attachments: [] });
   };
 
   // AP Aging buckets (payables)
@@ -1808,7 +2030,7 @@ function APBillsTab({ app }) {
             const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'ebc_ap_bills.csv'; a.click(); URL.revokeObjectURL(url);
             app.show("AP Bills CSV exported");
           }}>Export CSV</button>
-          <button className="btn btn-primary btn-sm" onClick={() => { if (!adding) { setEditingBillId(null); setForm(f => ({ ...f, date: new Date().toISOString().slice(0, 10) })); } setAdding(!adding); }}>+ Add AP Bill</button>
+          <button className="btn btn-primary btn-sm" onClick={() => { if (!adding) { setEditingBillId(null); setForm(f => ({ ...f, date: new Date().toISOString().slice(0, 10), attachments: [] })); } setAdding(!adding); }}>+ Add AP Bill</button>
         </div>
       </div>
 
@@ -1871,6 +2093,7 @@ function APBillsTab({ app }) {
             <label className="form-label">Description</label>
             <textarea className="form-input" rows={2} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
           </div>
+          <AttachmentsInput app={app} form={form} setForm={setForm} />
           {billErrors.length > 0 && (
             <div className="mt-8" style={{ color: "var(--red)", fontSize: "var(--fs-11)" }}>
               {billErrors.map((err, i) => <div key={i}>• {err}</div>)}
@@ -1913,13 +2136,13 @@ function APBillsTab({ app }) {
                       <div className="flex gap-4">
                         {bill.status === "entered" && (
                           <button className="btn btn-ghost btn-sm btn-table-action" onClick={() => {
+                            const isApprover = app.auth?.role === "admin" || app.auth?.role === "owner" || app.auth?.role === "pm";
+                            if (!isApprover) { app.show("Only PM/Admin/Owner can approve AP bills", "err"); return; }
                             if (!confirm("Approve this AP bill?")) return;
-                            app.setAPBills(prev => prev.map(b => {
-                              if (b.id !== bill.id) return b;
-                              const updated = { ...b, status: "approved" };
-                              updated.audit = auditDiff(b, updated, CRITICAL_FIELDS.apBill, app.auth);
-                              return updated;
-                            }));
+                            // Compute audit outside setter to avoid React strict-mode double-append
+                            const nextBill = { ...bill, status: "approved", approvedBy: app.auth?.name || "Unknown", approvedAt: new Date().toISOString() };
+                            const newAudit = auditDiff(bill, nextBill, CRITICAL_FIELDS.apBill, app.auth);
+                            app.setAPBills(prev => prev.map(b => b.id === bill.id ? { ...b, status: "approved", approvedBy: app.auth?.name || "Unknown", approvedAt: new Date().toISOString(), audit: newAudit } : b));
                             app.show(`AP Bill ${bill.invoiceNumber} approved`);
                           }}>Approve</button>
                         )}
@@ -1929,12 +2152,10 @@ function APBillsTab({ app }) {
                             if (!paidDate) return;
                             const checkNum = prompt("Check/Reference # (optional):", "");
                             const payMethod = prompt("Payment method (check/ach/wire/credit_card):", "check");
-                            app.setAPBills(prev => prev.map(b => {
-                              if (b.id !== bill.id) return b;
-                              const updated = { ...b, status: "paid", paidDate, checkNum: checkNum || null, paymentMethod: payMethod || "check" };
-                              updated.audit = auditDiff(b, updated, CRITICAL_FIELDS.apBill, app.auth);
-                              return updated;
-                            }));
+                            // Compute audit outside setter to avoid React strict-mode double-append
+                            const nextBill = { ...bill, status: "paid", paidDate, checkNum: checkNum || null, paymentMethod: payMethod || "check" };
+                            const newAudit = auditDiff(bill, nextBill, CRITICAL_FIELDS.apBill, app.auth);
+                            app.setAPBills(prev => prev.map(b => b.id === bill.id ? { ...b, status: "paid", paidDate, checkNum: checkNum || null, paymentMethod: payMethod || "check", audit: newAudit } : b));
                             app.show(`AP Bill ${bill.invoiceNumber} marked paid`);
                           }}>Mark Paid</button>
                         )}
@@ -1947,6 +2168,7 @@ function APBillsTab({ app }) {
                               amount: String(bill.amount), description: bill.description || "",
                               retainageRate: String(bill.retainageRate || 0),
                               lienWaiverStatus: bill.lienWaiverStatus || "not_required",
+                              attachments: bill.attachments || [],
                             });
                             setEditingBillId(bill.id);
                             setAdding(true);
@@ -2177,6 +2399,245 @@ function VendorsTab({ app }) {
   );
 }
 
+/* ── Commitments CRUD (Slice 5) ───────────────────────────────── */
+function CommitmentsTab({ app }) {
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState({
+    type: "purchase_order", projectId: "", vendorId: "", phase: "",
+    costType: "material", originalAmount: "", description: "",
+  });
+  const [errors, setErrors] = useState([]);
+  const [filterStatus, setFilterStatus] = useState("active");
+
+  const projects = app.projects || [];
+  const vendors = app.vendors || [];
+  const commitments = app.commitments || [];
+  const apBills = filterActive(app.apBills || []);
+  const costTypes = app.COST_TYPES || ["labor", "material", "subcontractor", "equipment", "other"];
+  const costCodes = app.COST_CODES || ["framing", "board", "tape", "finish", "ACT", "insulation", "demo", "misc"];
+
+  const pName = (pid) => projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
+  const vName = (vid) => vendors.find(v => String(v.id) === String(vid))?.name || "Unknown";
+
+  // Recalc invoicedToDate for each commitment from linked AP bills
+  const commitmentsWithLive = commitments.map(c => {
+    const linkedBills = apBills.filter(b => String(b.commitmentId) === String(c.id));
+    const liveInvoiced = linkedBills.reduce((s, b) => s + (b.amount || 0), 0);
+    const invoicedToDate = liveInvoiced || c.invoicedToDate || 0;
+    const remainingCommitment = Math.max(0, (c.revisedAmount || c.originalAmount || 0) - invoicedToDate);
+    return { ...c, invoicedToDate, remainingCommitment, linkedBillCount: linkedBills.length };
+  });
+
+  const filtered = commitmentsWithLive.filter(c => {
+    if (filterStatus === "all") return c.status !== "deleted";
+    return c.status === filterStatus;
+  });
+
+  const totalActive = commitmentsWithLive.filter(c => c.status === "active");
+  const totalOriginal = totalActive.reduce((s, c) => s + (c.originalAmount || 0), 0);
+  const totalRevised = totalActive.reduce((s, c) => s + (c.revisedAmount || c.originalAmount || 0), 0);
+  const totalInvoiced = totalActive.reduce((s, c) => s + (c.invoicedToDate || 0), 0);
+  const totalRemaining = totalActive.reduce((s, c) => s + (c.remainingCommitment || 0), 0);
+
+  const save = () => {
+    const errs = validateCommitment({
+      projectId: form.projectId,
+      vendorId: form.vendorId,
+      costType: form.costType,
+      originalAmount: Number(form.originalAmount),
+      description: form.description,
+    });
+    if (errs.length > 0) { setErrors(errs); return; }
+    setErrors([]);
+    const amount = Number(form.originalAmount);
+    if (editingId) {
+      const oldC = commitments.find(c => c.id === editingId);
+      const updated = {
+        ...oldC,
+        type: form.type,
+        projectId: Number(form.projectId),
+        vendorId: Number(form.vendorId),
+        phase: form.phase,
+        costType: form.costType,
+        originalAmount: amount,
+        revisedAmount: amount + (oldC.changeOrders || 0),
+        remainingCommitment: Math.max(0, amount + (oldC.changeOrders || 0) - (oldC.invoicedToDate || 0)),
+        description: form.description,
+      };
+      updated.audit = auditDiff(oldC, updated, ["originalAmount", "revisedAmount", "description", "status"], app.auth);
+      app.setCommitments(prev => prev.map(c => c.id === editingId ? updated : c));
+      app.show("Commitment updated", "ok");
+    } else {
+      const newC = {
+        id: app.nextId(),
+        type: form.type,
+        projectId: Number(form.projectId),
+        vendorId: Number(form.vendorId),
+        phase: form.phase,
+        costType: form.costType,
+        originalAmount: amount,
+        changeOrders: 0,
+        revisedAmount: amount,
+        invoicedToDate: 0,
+        remainingCommitment: amount,
+        description: form.description,
+        status: "active",
+        createdAt: new Date().toISOString(),
+        createdBy: app.auth?.name || "Unknown",
+        audit: [],
+      };
+      app.setCommitments(prev => [...prev, newC]);
+      app.show("Commitment added", "ok");
+    }
+    setAdding(false);
+    setEditingId(null);
+    setForm({ type: "purchase_order", projectId: "", vendorId: "", phase: "", costType: "material", originalAmount: "", description: "" });
+  };
+
+  const edit = (c) => {
+    setEditingId(c.id);
+    setForm({
+      type: c.type || "purchase_order",
+      projectId: String(c.projectId),
+      vendorId: String(c.vendorId),
+      phase: c.phase || "",
+      costType: c.costType || "material",
+      originalAmount: String(c.originalAmount || 0),
+      description: c.description || "",
+    });
+    setAdding(true);
+  };
+
+  const closeCommitment = (id) => {
+    if (!confirm("Mark this commitment as complete? Remaining budget will be released.")) return;
+    app.setCommitments(prev => prev.map(c => c.id === id ? { ...c, status: "complete" } : c));
+    app.show("Commitment closed");
+  };
+
+  const voidCommitment = (id) => {
+    const reason = prompt("Reason for voiding this commitment:");
+    if (reason === null) return;
+    app.setCommitments(prev => prev.map(c => c.id === id ? softDelete(c, app.auth?.name, reason) : c));
+    app.show("Commitment voided");
+  };
+
+  return (
+    <div>
+      <div className="flex-between mt-16">
+        <div className="flex gap-8">
+          <div className="kpi-card"><span className="text2">Active Commitments</span><strong>{totalActive.length}</strong></div>
+          <div className="kpi-card"><span className="text2">Total Original</span><strong>{app.fmt(totalOriginal)}</strong></div>
+          <div className="kpi-card"><span className="text2">Revised</span><strong>{app.fmt(totalRevised)}</strong></div>
+          <div className="kpi-card"><span className="text2">Invoiced</span><strong>{app.fmt(totalInvoiced)}</strong></div>
+          <div className="kpi-card"><span className="text2">Remaining</span><strong className="text-amber">{app.fmt(totalRemaining)}</strong></div>
+        </div>
+        <div className="flex gap-8">
+          <select className="form-select" style={{ width: "auto" }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+            <option value="active">Active</option>
+            <option value="complete">Complete</option>
+            <option value="all">All</option>
+          </select>
+          <button className="btn btn-primary btn-sm" onClick={() => { setAdding(!adding); setEditingId(null); setErrors([]); setForm({ type: "purchase_order", projectId: "", vendorId: "", phase: "", costType: "material", originalAmount: "", description: "" }); }}>
+            {adding ? "Cancel" : "+ Add Commitment"}
+          </button>
+        </div>
+      </div>
+
+      {adding && (
+        <div className="card mt-16">
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Type</label>
+              <select className="form-select" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
+                <option value="purchase_order">Purchase Order</option>
+                <option value="subcontract">Subcontract</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Project</label>
+              <select className="form-select" value={form.projectId} onChange={e => setForm({ ...form, projectId: e.target.value })}>
+                <option value="">Select...</option>
+                {projects.filter(p => p.status !== "completed" && p.status !== "deleted").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Vendor</label>
+              <select className="form-select" value={form.vendorId} onChange={e => setForm({ ...form, vendorId: e.target.value })}>
+                <option value="">Select...</option>
+                {vendors.filter(v => v.status !== "deleted").map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Phase</label>
+              <select className="form-select" value={form.phase} onChange={e => setForm({ ...form, phase: e.target.value })}>
+                <option value="">Select...</option>
+                {costCodes.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Cost Type</label>
+              <select className="form-select" value={form.costType} onChange={e => setForm({ ...form, costType: e.target.value })}>
+                {costTypes.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Original Amount</label>
+              <input className="form-input" type="number" value={form.originalAmount} onChange={e => setForm({ ...form, originalAmount: e.target.value })} />
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Description</label>
+            <input className="form-input" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="e.g. Tape and finish scope — Project Name" />
+          </div>
+          {errors.length > 0 && (
+            <div className="mt-8" style={{ color: "var(--red)", fontSize: "var(--fs-11)" }}>
+              {errors.map((e, i) => <div key={i}>• {e}</div>)}
+            </div>
+          )}
+          <div className="flex gap-8 mt-16">
+            <button className="btn btn-primary btn-sm" onClick={save}>{editingId ? "Update Commitment" : "Save Commitment"}</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setAdding(false); setEditingId(null); setErrors([]); }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className="table-wrap mt-16">
+        <table className="data-table">
+          <thead><tr><th>Type</th><th>Vendor</th><th>Project</th><th>Phase</th><th>Cost Type</th><th>Original</th><th>Revised</th><th>Invoiced</th><th>Remaining</th><th>Linked</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {filtered.length === 0 && <tr><td colSpan={12} className="more-empty-cell">No commitments in this view</td></tr>}
+            {filtered.map(c => (
+              <tr key={c.id} style={c.status === "deleted" ? { opacity: 0.5, textDecoration: "line-through" } : {}}>
+                <td>{c.type === "subcontract" ? "Subcontract" : "PO"}</td>
+                <td>{vName(c.vendorId)}</td>
+                <td>{pName(c.projectId)}</td>
+                <td>{c.phase}</td>
+                <td>{c.costType}</td>
+                <td className="font-mono">{app.fmt(c.originalAmount)}</td>
+                <td className="font-mono">{app.fmt(c.revisedAmount || c.originalAmount)}</td>
+                <td className="font-mono">{app.fmt(c.invoicedToDate || 0)}</td>
+                <td className="font-mono fw-600" style={{ color: c.remainingCommitment <= 0 ? "var(--green)" : "var(--amber)" }}>{app.fmt(c.remainingCommitment || 0)}</td>
+                <td>{c.linkedBillCount || 0}</td>
+                <td><span className={c.status === "active" ? "badge-green" : c.status === "complete" ? "badge-muted" : "badge-red"}>{c.status}</span></td>
+                <td>
+                  <div className="flex gap-4">
+                    {c.status === "active" && <>
+                      <button className="btn btn-ghost btn-sm btn-table-action" onClick={() => edit(c)}>Edit</button>
+                      <button className="btn btn-ghost btn-sm btn-table-action" onClick={() => closeCommitment(c.id)}>Close</button>
+                      <button className="btn btn-ghost btn-sm btn-table-delete" onClick={() => voidCommitment(c.id)}>✕</button>
+                    </>}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 /* ── Retainage Register (Slice 3) ─────────────────────────────── */
 function RetainageTab({ app }) {
   const retainageRate = app.companySettings?.defaultRetainageRate || 10;
@@ -2187,20 +2648,27 @@ function RetainageTab({ app }) {
   const pName = (pid) => projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
   const vName = (vid) => vendors.find(v => String(v.id) === String(vid))?.name || "Unknown";
 
-  // Retainage Receivable — what GCs hold from EBC
+  // Retainage Receivable — per-invoice retainageWithheld (fallback to flat % if field missing)
   const receivableRows = projects
     .filter(p => p.status !== "completed" && p.status !== "deleted")
     .map(p => {
-      const billed = invoices.filter(i => String(i.projectId) === String(p.id)).reduce((s, i) => s + (i.amount || 0), 0);
-      const held = Math.round(billed * retainageRate / 100);
-      return { id: p.id, name: p.name, billed, rate: retainageRate, held, status: p.status || "active" };
+      const projInvoices = invoices.filter(i => String(i.projectId) === String(p.id));
+      const billed = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);
+      // Sum actual retainageWithheld from invoices; fall back to flat rate only for legacy invoices
+      const held = projInvoices.reduce((s, i) => {
+        if (i.retainageWithheld !== undefined && i.retainageWithheld !== null) return s + (i.retainageWithheld || 0);
+        return s + Math.round((i.amount || 0) * retainageRate / 100);
+      }, 0);
+      // Show weighted average rate for display
+      const effectiveRate = billed > 0 ? Math.round((held / billed) * 100) : retainageRate;
+      return { id: p.id, name: p.name, billed, rate: effectiveRate, held, status: p.status || "active" };
     })
     .filter(r => r.billed > 0);
   const totalReceivable = receivableRows.reduce((s, r) => s + r.held, 0);
 
-  // Retainage Payable — what EBC holds from subs
+  // Retainage Payable — exclude released + voided + paid-with-released bills
   const payableRows = apBills
-    .filter(b => (b.retainageRate || 0) > 0 && b.status !== "void")
+    .filter(b => (b.retainageRate || 0) > 0 && b.status !== "void" && !b.retainageReleasedAt)
     .map(b => ({
       id: b.id,
       vendor: vName(b.vendorId),
@@ -2348,25 +2816,58 @@ function PeriodCloseTab({ app }) {
     app.show("Accrual voided");
   };
 
-  // Cutoff Report: accruals/transactions created after period close date but dated in closed period
+  // Cutoff Report: transactions created after period close date but dated in closed period
   const cutoffItems = [];
-  periods.filter(p => p.status === "closed").forEach(closedP => {
+  periods.filter(p => p.status === "closed" && p.closedAt).forEach(closedP => {
     const closedAt = new Date(closedP.closedAt);
-    // Invoices with dates in this period but created after close
+    // Invoices
     (app.invoices || []).forEach(inv => {
       if (!inv.date || inv.status === "deleted") return;
       if (inv.date.slice(0, 7) !== closedP.period) return;
-      const created = inv.audit?.[0]?.timestamp || inv.createdAt;
+      const created = inv.createdAt || inv.audit?.[0]?.timestamp;
       if (created && new Date(created) > closedAt) {
         cutoffItems.push({ type: "Invoice", id: inv.id, ref: inv.number, project: pName(inv.projectId), amount: inv.amount, period: closedP.period, created });
       }
     });
+    // AP Bills
     (app.apBills || []).forEach(bill => {
       if (!bill.date || bill.status === "deleted") return;
       if (bill.date.slice(0, 7) !== closedP.period) return;
       const created = bill.createdAt || bill.audit?.[0]?.timestamp;
       if (created && new Date(created) > closedAt) {
         cutoffItems.push({ type: "AP Bill", id: bill.id, ref: bill.invoiceNumber, project: pName(bill.projectId), amount: bill.amount, period: closedP.period, created });
+      }
+    });
+    // Change Orders
+    (app.changeOrders || []).forEach(co => {
+      const coDate = co.submitted || co.date;
+      if (!coDate || co.status === "deleted") return;
+      if (coDate.slice(0, 7) !== closedP.period) return;
+      const created = co.createdAt || co.audit?.[0]?.timestamp;
+      if (created && new Date(created) > closedAt) {
+        cutoffItems.push({ type: "Change Order", id: co.id, ref: co.number, project: pName(co.projectId), amount: co.amount, period: closedP.period, created });
+      }
+    });
+    // T&M Tickets
+    (app.tmTickets || []).forEach(t => {
+      if (!t.date || t.status === "deleted") return;
+      if (t.date.slice(0, 7) !== closedP.period) return;
+      const created = t.createdAt || t.audit?.[0]?.timestamp;
+      if (created && new Date(created) > closedAt) {
+        const labor = (t.laborEntries || []).reduce((s, e) => s + (Number(e.hours) || 0) * (Number(e.rate) || 0), 0);
+        const mat = (t.materialEntries || []).reduce((s, e) => { const b = (Number(e.qty) || 0) * (Number(e.unitCost) || 0); return s + b + b * (Number(e.markup) || 0) / 100; }, 0);
+        cutoffItems.push({ type: "T&M Ticket", id: t.id, ref: t.ticketNumber, project: pName(t.projectId), amount: Math.round(labor + mat), period: closedP.period, created });
+      }
+    });
+    // Time entries
+    (app.timeEntries || []).forEach(te => {
+      if (!te.clockIn || te.status === "deleted") return;
+      const entryDate = te.clockIn.slice(0, 10);
+      if (entryDate.slice(0, 7) !== closedP.period) return;
+      const created = te.createdAt;
+      if (created && new Date(created) > closedAt) {
+        const hours = te.clockOut ? (new Date(te.clockOut) - new Date(te.clockIn)) / 3600000 : 0;
+        cutoffItems.push({ type: "Time Entry", id: te.id, ref: te.employeeName || te.employeeId, project: pName(te.projectId), amount: Math.round(hours * 10) / 10, period: closedP.period, created });
       }
     });
   });
@@ -2529,19 +3030,60 @@ function nextPeriod(period) {
 /* ── Budget vs Actual vs Committed (Slice 5) ──────────────────── */
 function BudgetTab({ app }) {
   const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [addingLine, setAddingLine] = useState(false);
+  const [lineForm, setLineForm] = useState({ phase: "", costType: "labor", budgetAmount: "" });
+  const [editingLineIdx, setEditingLineIdx] = useState(null);
   const projects = app.projects || [];
   const budgets = app.budgets || {};
   const commitments = app.commitments || [];
   const timeEntries = app.timeEntries || [];
   const employees = app.employees || [];
   const apBills = filterActive(app.apBills || []);
-  const burden = app.companySettings?.laborBurdenMultiplier || 1.35;
+  const burden = app.companySettings?.laborBurdenMultiplier || DEFAULT_BURDEN;
+  const costTypes = app.COST_TYPES || ["labor", "material", "subcontractor", "equipment", "other"];
+  const costCodes = app.COST_CODES || ["framing", "board", "tape", "finish", "ACT", "insulation", "demo", "misc"];
 
-  const projectsWithBudgets = projects.filter(p => budgets[p.id] && budgets[p.id].length > 0);
+  // Show ALL active projects (not just those with budgets) so user can add budgets to any
+  const activeProjects = projects.filter(p => p.status !== "completed" && p.status !== "deleted");
 
-  // Auto-select first project with budget
-  const effectiveProjectId = selectedProjectId || (projectsWithBudgets[0]?.id ?? "");
+  // Auto-select first active project with budget, else first active project
+  const projectsWithBudgets = activeProjects.filter(p => budgets[p.id] && budgets[p.id].length > 0);
+  const effectiveProjectId = selectedProjectId || (projectsWithBudgets[0]?.id ?? activeProjects[0]?.id ?? "");
   const project = projects.find(p => String(p.id) === String(effectiveProjectId));
+
+  const saveLine = () => {
+    if (!project) return app.show("Select a project first", "err");
+    if (!lineForm.phase || !lineForm.costType || !lineForm.budgetAmount) return app.show("Fill all fields", "err");
+    const amount = Number(lineForm.budgetAmount);
+    if (amount <= 0) return app.show("Amount must be > 0", "err");
+    const newLine = { phase: lineForm.phase, costType: lineForm.costType, budgetAmount: amount };
+    app.setBudgets(prev => {
+      const current = prev[project.id] || [];
+      const updated = editingLineIdx !== null
+        ? current.map((l, i) => i === editingLineIdx ? newLine : l)
+        : [...current, newLine];
+      return { ...prev, [project.id]: updated };
+    });
+    app.show(editingLineIdx !== null ? "Budget line updated" : "Budget line added", "ok");
+    setAddingLine(false);
+    setEditingLineIdx(null);
+    setLineForm({ phase: "", costType: "labor", budgetAmount: "" });
+  };
+
+  const editLine = (idx, line) => {
+    setEditingLineIdx(idx);
+    setLineForm({ phase: line.phase, costType: line.costType, budgetAmount: String(line.budgetAmount) });
+    setAddingLine(true);
+  };
+
+  const deleteLine = (idx) => {
+    if (!confirm("Delete this budget line?")) return;
+    app.setBudgets(prev => {
+      const current = prev[project.id] || [];
+      return { ...prev, [project.id]: current.filter((_, i) => i !== idx) };
+    });
+    app.show("Budget line deleted", "ok");
+  };
 
   const rows = project
     ? computeBudgetVsActual(project.id, project.name, budgets, timeEntries, employees, apBills, commitments, burden)
@@ -2559,21 +3101,61 @@ function BudgetTab({ app }) {
     <div>
       <div className="flex-between mt-16">
         <div className="section-title">Budget vs Actual vs Committed</div>
-        <select className="form-select" style={{ width: "auto" }} value={effectiveProjectId} onChange={e => setSelectedProjectId(e.target.value)}>
-          <option value="">Select project...</option>
-          {projectsWithBudgets.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
+        <div className="flex gap-8">
+          <select className="form-select" style={{ width: "auto" }} value={effectiveProjectId} onChange={e => { setSelectedProjectId(e.target.value); setAddingLine(false); setEditingLineIdx(null); }}>
+            <option value="">Select project...</option>
+            {activeProjects.map(p => {
+              const has = budgets[p.id] && budgets[p.id].length > 0;
+              return <option key={p.id} value={p.id}>{has ? "✓ " : ""}{p.name}</option>;
+            })}
+          </select>
+          {project && (
+            <button className="btn btn-primary btn-sm" onClick={() => { setAddingLine(!addingLine); setEditingLineIdx(null); setLineForm({ phase: "", costType: "labor", budgetAmount: "" }); }}>
+              {addingLine ? "Cancel" : "+ Add Budget Line"}
+            </button>
+          )}
+        </div>
       </div>
 
-      {!project && (
-        <div className="card mt-16 more-empty-cell">
-          No projects with budgets yet.<br />
-          <span className="more-empty-hint">Budgets can be set in constants.js (initBudgets) or imported from estimating takeoffs.</span>
+      {addingLine && project && (
+        <div className="card mt-16">
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Phase</label>
+              <select className="form-select" value={lineForm.phase} onChange={e => setLineForm({ ...lineForm, phase: e.target.value })}>
+                <option value="">Select phase...</option>
+                {costCodes.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Cost Type</label>
+              <select className="form-select" value={lineForm.costType} onChange={e => setLineForm({ ...lineForm, costType: e.target.value })}>
+                {costTypes.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Budget Amount</label>
+              <input className="form-input" type="number" value={lineForm.budgetAmount} onChange={e => setLineForm({ ...lineForm, budgetAmount: e.target.value })} />
+            </div>
+          </div>
+          <div className="flex gap-8 mt-16">
+            <button className="btn btn-primary btn-sm" onClick={saveLine}>{editingLineIdx !== null ? "Update Line" : "Save Line"}</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setAddingLine(false); setEditingLineIdx(null); }}>Cancel</button>
+          </div>
         </div>
       )}
 
-      {project && rows.length === 0 && (
-        <div className="card mt-16 more-empty-cell">No budget lines for {project.name}</div>
+      {!project && (
+        <div className="card mt-16 more-empty-cell">
+          Select an active project to view or create a budget.
+        </div>
+      )}
+
+      {project && rows.length === 0 && !addingLine && (
+        <div className="card mt-16 more-empty-cell">
+          No budget lines for {project.name} yet.<br />
+          <span className="more-empty-hint">Click "+ Add Budget Line" to start building a budget for this project.</span>
+        </div>
       )}
 
       {project && rows.length > 0 && (
@@ -2588,7 +3170,7 @@ function BudgetTab({ app }) {
 
           <div className="table-wrap mt-16">
             <table className="data-table">
-              <thead><tr><th>Phase</th><th>Cost Type</th><th>Budget</th><th>Actual</th><th>Committed</th><th>Projected Final</th><th>Variance</th><th>Status</th></tr></thead>
+              <thead><tr><th>Phase</th><th>Cost Type</th><th>Budget</th><th>Actual</th><th>Committed</th><th>Projected Final</th><th>Variance</th><th>Status</th><th></th></tr></thead>
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={i} style={r.overBudget ? { background: "rgba(220,38,38,0.08)" } : {}}>
@@ -2602,6 +3184,12 @@ function BudgetTab({ app }) {
                       {r.variance >= 0 ? app.fmt(Math.round(r.variance)) : `(${app.fmt(Math.round(Math.abs(r.variance)))})`}
                     </td>
                     <td>{r.overBudget ? <span className="badge-red">OVER</span> : <span className="badge-green">OK</span>}</td>
+                    <td>
+                      <div className="flex gap-4">
+                        <button className="btn btn-ghost btn-sm btn-table-action" onClick={() => editLine(i, { phase: r.phase, costType: r.costType, budgetAmount: r.budget })}>Edit</button>
+                        <button className="btn btn-ghost btn-sm btn-table-delete" onClick={() => deleteLine(i)}>✕</button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
                 <tr style={{ borderTop: "2px solid var(--border)", fontWeight: "var(--weight-bold)" }}>
@@ -2611,6 +3199,7 @@ function BudgetTab({ app }) {
                   <td className="font-mono">{app.fmt(totals.committed)}</td>
                   <td className="font-mono">{app.fmt(Math.round(totals.projectedFinal))}</td>
                   <td className="font-mono" style={{ color: totals.variance >= 0 ? "var(--green)" : "var(--red)" }}>{app.fmt(Math.round(totals.variance))}</td>
+                  <td></td>
                   <td></td>
                 </tr>
               </tbody>
@@ -2662,22 +3251,30 @@ function FinReportsTab({ app }) {
   const vendors = app.vendors || [];
   const timeEntries = app.timeEntries || [];
   const employees = app.employees || [];
-  const burden = app.companySettings?.laborBurdenMultiplier || 1.35;
+  const burden = app.companySettings?.laborBurdenMultiplier || DEFAULT_BURDEN;
   const marginThreshold = app.companySettings?.marginAlertThreshold || 25;
 
   // Compute project metrics once — exclude completed projects
+  const budgets = app.budgets || {};
   const projectMetrics = projects.filter(p => p.status !== "completed" && p.status !== "deleted").map(p => {
     const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden);
     const billed = invoices.filter(i => String(i.projectId) === String(p.id)).reduce((s, i) => s + (i.amount || 0), 0);
     const approvedCOs = changeOrders.filter(c => String(c.projectId) === String(p.id) && c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
     const adjustedContract = (p.contract || 0) + approvedCOs;
-    const percentComplete = adjustedContract > 0 ? Math.min(costs.total / adjustedContract, 1) : 0;
-    const earnedRevenue = percentComplete * adjustedContract;
-    const overUnder = billed - earnedRevenue;
+    // Cost-to-cost % complete: actual cost / total estimated cost (budget)
+    const totalEstimatedCost = (budgets[p.id] || []).reduce((s, l) => s + (l.budgetAmount || 0), 0);
+    const hasBudget = totalEstimatedCost > 0;
+    const percentComplete = hasBudget ? Math.min(costs.total / totalEstimatedCost, 1) : 0;
+    const earnedRevenue = hasBudget ? percentComplete * adjustedContract : 0;
+    const overUnder = hasBudget ? billed - earnedRevenue : 0;
     const grossMargin = adjustedContract - costs.total;
     const marginPct = adjustedContract > 0 ? (grossMargin / adjustedContract) * 100 : 0;
-    const retainageHeld = Math.round(billed * (app.companySettings?.defaultRetainageRate || 10) / 100);
-    return { p, costs, billed, approvedCOs, adjustedContract, percentComplete, earnedRevenue, overUnder, grossMargin, marginPct, retainageHeld };
+    // Retainage: prefer stored invoice retainageWithheld; fallback to flat rate on billed
+    const retainageRate = app.companySettings?.defaultRetainageRate || 10;
+    const retainageHeld = invoices
+      .filter(i => String(i.projectId) === String(p.id))
+      .reduce((s, i) => s + (i.retainageWithheld || Math.round((i.amount || 0) * retainageRate / 100)), 0);
+    return { p, costs, billed, approvedCOs, adjustedContract, percentComplete, earnedRevenue, overUnder, grossMargin, marginPct, retainageHeld, hasBudget, totalEstimatedCost };
   });
 
   // Portfolio totals
@@ -2703,11 +3300,13 @@ function FinReportsTab({ app }) {
     const daysOld = (now - new Date(b.date).getTime()) / 86400000;
     return daysOld > 7;
   });
-  const missingW9 = vendors.filter(v => v.is1099Eligible && v.w9Status !== "received");
-  const missingLienWaivers = apBills.filter(b => b.costType === "subcontractor" && (b.lienWaiverStatus === "missing" || !b.lienWaiverStatus));
+  const missingW9 = vendors.filter(v => (v.is1099Eligible || v.is1099) && v.w9Status !== "received");
+  const missingLienWaivers = apBills.filter(b => b.status !== "void" && b.costType === "subcontractor" && (b.lienWaiverStatus === "missing" || !b.lienWaiverStatus));
   const lowMargin = projectMetrics.filter(m => m.adjustedContract > 0 && m.marginPct < marginThreshold);
   const totalRetainageReceivable = totals.retainage;
-  const totalRetainagePayable = apBills.reduce((s, b) => s + (b.retainageAmount || 0), 0);
+  const totalRetainagePayable = apBills
+    .filter(b => b.status !== "void" && !b.retainageReleasedAt) // exclude voided + released
+    .reduce((s, b) => s + (b.retainageAmount || Math.round((b.amount || 0) * (b.retainageRate || 0) / 100)), 0);
 
   return (
     <div>
@@ -2724,6 +3323,7 @@ function FinReportsTab({ app }) {
         }}>Export CSV</button>
       </div>
 
+      <div className="text-xs text-dim mt-4">% Complete is cost-to-cost based on approved budget. Projects without a budget show "—".</div>
       <div className="table-wrap mt-16">
         <table className="data-table">
           <thead><tr><th>Project</th><th>Contract</th><th>Adj Contract</th><th>Cost to Date</th><th>% Complete</th><th>Earned</th><th>Billed</th><th>Over/(Under)</th></tr></thead>
@@ -2735,11 +3335,13 @@ function FinReportsTab({ app }) {
                 <td className="font-mono">{app.fmt(m.p.contract || 0)}</td>
                 <td className="font-mono">{app.fmt(m.adjustedContract)}</td>
                 <td className="font-mono">{app.fmt(Math.round(m.costs.total))}</td>
-                <td className="font-mono">{Math.round(m.percentComplete * 100)}%</td>
-                <td className="font-mono">{app.fmt(Math.round(m.earnedRevenue))}</td>
+                <td className="font-mono">{m.hasBudget ? `${Math.round(m.percentComplete * 100)}%` : "—"}</td>
+                <td className="font-mono">{m.hasBudget ? app.fmt(Math.round(m.earnedRevenue)) : "—"}</td>
                 <td className="font-mono">{app.fmt(m.billed)}</td>
                 <td className="font-mono" style={{ color: m.overUnder >= 0 ? "var(--green)" : "var(--red)" }}>
-                  {m.overUnder >= 0 ? app.fmt(Math.round(m.overUnder)) : `(${app.fmt(Math.round(Math.abs(m.overUnder)))})`}
+                  {m.hasBudget
+                    ? (m.overUnder >= 0 ? app.fmt(Math.round(m.overUnder)) : `(${app.fmt(Math.round(Math.abs(m.overUnder)))})`)
+                    : "—"}
                 </td>
               </tr>
             ))}
