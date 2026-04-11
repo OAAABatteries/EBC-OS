@@ -998,8 +998,12 @@ function TmTicketsTab({ app }) {
   };
 
   const deleteTicket = (id) => {
-    app.setTmTickets(prev => prev.filter(t => t.id !== id));
-    app.show("Ticket deleted", "ok");
+    const isAdmin = app.auth?.role === "admin" || app.auth?.role === "owner";
+    if (!isAdmin) { app.show("Only admin/owner can delete T&M tickets", "err"); return; }
+    const reason = prompt("Reason for voiding this T&M ticket (required):");
+    if (!reason || !reason.trim()) return;
+    app.setTmTickets(prev => prev.map(t => t.id === id ? softDelete(t, app.auth?.name, reason.trim()) : t));
+    app.show("Ticket voided", "ok");
     setExpandedId(null);
   };
 
@@ -1556,7 +1560,8 @@ function JobCostingTab({ app }) {
         const costData = computeProjectTotalCost(
           proj.id, proj.name, app.timeEntries || [], app.employees || [],
           filterActive(app.apBills || []),
-          app.companySettings?.laborBurdenMultiplier || DEFAULT_BURDEN
+          app.companySettings?.laborBurdenMultiplier || DEFAULT_BURDEN,
+          app.accruals || []
         );
         const totalCost = costData.total;
         const grossMargin = adjustedContract - totalCost;
@@ -1641,8 +1646,8 @@ function JobCostingTab({ app }) {
 /* ── Payroll Summary ──────────────────────────────────────────── */
 function PayrollSummaryTab({ app }) {
   const [period, setPeriod] = useState("week");
-  const users = (() => { try { return JSON.parse(localStorage.getItem("ebc_users") || "[]"); } catch { return []; } })();
-  const employees = users.filter(u => u.role !== "driver" || true); // all users are on payroll
+  // Single source of truth: app.employees (replaces legacy localStorage "ebc_users" read)
+  const employees = (app.employees || []).filter(u => u && u.status !== "deleted");
 
   const now = new Date();
   const periodStart = new Date(now);
@@ -1854,7 +1859,7 @@ function PeriodWarning({ date, periods }) {
 function APBillsTab({ app }) {
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({
-    vendorId: "", projectId: "", costType: "", invoiceNumber: "", date: "",
+    vendorId: "", projectId: "", costType: "", phase: "", invoiceNumber: "", date: "",
     dueDate: "", amount: "", description: "", retainageRate: "0",
     lienWaiverStatus: "not_required", attachments: [],
   });
@@ -1863,8 +1868,10 @@ function APBillsTab({ app }) {
   const [editingBillId, setEditingBillId] = useState(null);
 
   const COST_TYPES = app.COST_TYPES || ["labor", "material", "subcontractor", "equipment", "other"];
+  const COST_CODES = app.COST_CODES || [];
   const vendors = app.vendors || [];
   const apBills = app.apBills || [];
+  const isAdmin = app.auth?.role === "admin" || app.auth?.role === "owner";
 
   const vName = (vid) => vendors.find(v => String(v.id) === String(vid))?.name || "Unknown";
   const pName = (pid) => app.projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
@@ -1914,13 +1921,19 @@ function APBillsTab({ app }) {
       description: form.description,
     });
     if (errors.length > 0) { setBillErrors(errors); return; }
+    // Phase is required for anything that isn't pure labor (material/sub/equipment/other).
+    // Labor cost is already phase-coded via timeEntries, but non-labor bills need a phase
+    // so budget-vs-actual and cost-code reporting can roll them up correctly.
+    if (form.costType && form.costType !== "labor" && !form.phase) {
+      app.show("Phase is required for material/subcontractor/equipment bills", "err");
+      return;
+    }
     setBillErrors([]);
 
     // Period discipline: block closed periods unless admin overrides with reason
     let periodOverride = null;
     const periodCheck = validatePeriod(form.date, app.periods || []);
     if (!periodCheck.allowed) {
-      const isAdmin = app.auth?.role === "admin" || app.auth?.role === "owner";
       if (!isAdmin) {
         app.show(`Blocked: ${periodCheck.warning}`, "err");
         return;
@@ -1931,19 +1944,51 @@ function APBillsTab({ app }) {
     }
 
     if (editingBillId) {
+      // Duplicate check on edit — exclude the record being edited
+      const otherBills = apBills.filter(b => b.id !== editingBillId);
+      const duplicate = findDuplicateAPBill({ invoiceNumber: form.invoiceNumber, vendorId: Number(form.vendorId) }, otherBills);
+      if (duplicate) {
+        const proceed = confirm(`Warning: Vendor invoice #${form.invoiceNumber} already exists for this vendor (${app.fmt(duplicate.amount)}). Save anyway?`);
+        if (!proceed) return;
+      }
+
+      const oldBill = apBills.find(b => b.id === editingBillId);
+      const newAmt = Number(form.amount);
+      const newRetRate = Number(form.retainageRate) || 0;
+      const newRetainageAmount = Math.round(newAmt * newRetRate / 100);
+
       app.setAPBills(prev => prev.map(b => {
         if (b.id !== editingBillId) return b;
         const updated = {
           ...b, vendorId: Number(form.vendorId), projectId: Number(form.projectId),
-          costType: form.costType, invoiceNumber: form.invoiceNumber, date: form.date,
-          dueDate: form.dueDate, amount: Number(form.amount), description: form.description,
-          retainageRate: Number(form.retainageRate) || 0, lienWaiverStatus: form.lienWaiverStatus,
+          costType: form.costType, phase: form.phase || "", invoiceNumber: form.invoiceNumber, date: form.date,
+          dueDate: form.dueDate, amount: newAmt, description: form.description,
+          retainageRate: newRetRate, retainageAmount: newRetainageAmount,
+          lienWaiverStatus: form.lienWaiverStatus,
           attachments: form.attachments || b.attachments || [],
         };
         if (periodOverride) updated.periodOverride = periodOverride;
         updated.audit = auditDiff(b, updated, CRITICAL_FIELDS.apBill, app.auth);
         return updated;
       }));
+
+      // Cascade amount delta to linked commitment, if any
+      if (oldBill?.commitmentId && app.setCommitments) {
+        const delta = newAmt - (oldBill.amount || 0);
+        if (delta !== 0) {
+          app.setCommitments(prev => prev.map(c => {
+            if (c.id !== oldBill.commitmentId) return c;
+            const newInvoicedToDate = (c.invoicedToDate || 0) + delta;
+            const baseCommit = c.revisedAmount || c.originalAmount || 0;
+            return {
+              ...c,
+              invoicedToDate: newInvoicedToDate,
+              remainingCommitment: Math.max(0, baseCommit - newInvoicedToDate),
+            };
+          }));
+        }
+      }
+
       app.show("AP Bill updated", "ok");
       setEditingBillId(null);
     } else {
@@ -1958,7 +2003,7 @@ function APBillsTab({ app }) {
       const retainageAmount = Math.round(amt * retRate / 100);
       const newItem = {
         id: app.nextId(), vendorId: Number(form.vendorId), projectId: Number(form.projectId),
-        costType: form.costType, invoiceNumber: form.invoiceNumber, date: form.date,
+        costType: form.costType, phase: form.phase || "", invoiceNumber: form.invoiceNumber, date: form.date,
         dueDate: form.dueDate, amount: amt, description: form.description,
         retainageRate: retRate, retainageAmount, lienWaiverStatus: form.lienWaiverStatus,
         attachments: form.attachments || [],
@@ -1994,7 +2039,7 @@ function APBillsTab({ app }) {
       app.show("AP Bill added", "ok");
     }
     setAdding(false);
-    setForm({ vendorId: "", projectId: "", costType: "", invoiceNumber: "", date: "", dueDate: "", amount: "", description: "", retainageRate: "0", lienWaiverStatus: "not_required", attachments: [] });
+    setForm({ vendorId: "", projectId: "", costType: "", phase: "", invoiceNumber: "", date: "", dueDate: "", amount: "", description: "", retainageRate: "0", lienWaiverStatus: "not_required", attachments: [] });
   };
 
   // AP Aging buckets (payables)
@@ -2057,6 +2102,16 @@ function APBillsTab({ app }) {
                 <option value="">Select...</option>
                 {COST_TYPES.map(ct => <option key={ct} value={ct}>{ct.charAt(0).toUpperCase() + ct.slice(1)}</option>)}
               </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Phase {form.costType && form.costType !== "labor" ? <span style={{ color: "var(--red)" }}>*</span> : null}</label>
+              <select className="form-select" value={form.phase} onChange={e => setForm({ ...form, phase: e.target.value })}>
+                <option value="">Select phase...</option>
+                {COST_CODES.map(cc => <option key={cc.code || cc} value={cc.code || cc}>{cc.code ? `${cc.code} — ${cc.label || cc.description || cc.code}` : cc}</option>)}
+              </select>
+              {form.costType && form.costType !== "labor" && !form.phase && (
+                <div className="text-xs" style={{ color: "var(--text2)" }}>Required for non-labor bills so they roll up against the budget phase.</div>
+              )}
             </div>
             <div className="form-group">
               <label className="form-label">Vendor Invoice #</label>
@@ -2148,14 +2203,22 @@ function APBillsTab({ app }) {
                         )}
                         {bill.status === "approved" && (
                           <button className="btn btn-ghost btn-sm btn-table-green" onClick={() => {
+                            if (!isAdmin) { app.show("Only admin/owner can mark bills paid", "err"); return; }
                             const paidDate = prompt("Payment date (YYYY-MM-DD):", new Date().toISOString().slice(0, 10));
                             if (!paidDate) return;
+                            // Period check on paidDate
+                            const paidPeriodCheck = validatePeriod(paidDate, app.periods || []);
+                            if (!paidPeriodCheck.allowed) {
+                              app.show(paidPeriodCheck.warning || "Payment date falls in a closed period", "err");
+                              return;
+                            }
                             const checkNum = prompt("Check/Reference # (optional):", "");
                             const payMethod = prompt("Payment method (check/ach/wire/credit_card):", "check");
+                            const paidBy = app.auth?.name || "Unknown";
                             // Compute audit outside setter to avoid React strict-mode double-append
-                            const nextBill = { ...bill, status: "paid", paidDate, checkNum: checkNum || null, paymentMethod: payMethod || "check" };
+                            const nextBill = { ...bill, status: "paid", paidDate, checkNum: checkNum || null, paymentMethod: payMethod || "check", paidBy };
                             const newAudit = auditDiff(bill, nextBill, CRITICAL_FIELDS.apBill, app.auth);
-                            app.setAPBills(prev => prev.map(b => b.id === bill.id ? { ...b, status: "paid", paidDate, checkNum: checkNum || null, paymentMethod: payMethod || "check", audit: newAudit } : b));
+                            app.setAPBills(prev => prev.map(b => b.id === bill.id ? { ...b, status: "paid", paidDate, checkNum: checkNum || null, paymentMethod: payMethod || "check", paidBy, audit: newAudit } : b));
                             app.show(`AP Bill ${bill.invoiceNumber} marked paid`);
                           }}>Mark Paid</button>
                         )}
@@ -2163,7 +2226,8 @@ function APBillsTab({ app }) {
                           <button className="btn btn-ghost btn-sm btn-table-action" onClick={() => {
                             setForm({
                               vendorId: String(bill.vendorId), projectId: String(bill.projectId),
-                              costType: bill.costType || "", invoiceNumber: bill.invoiceNumber || "",
+                              costType: bill.costType || "", phase: bill.phase || "",
+                              invoiceNumber: bill.invoiceNumber || "",
                               date: bill.date || "", dueDate: bill.dueDate || "",
                               amount: String(bill.amount), description: bill.description || "",
                               retainageRate: String(bill.retainageRate || 0),
@@ -2177,9 +2241,23 @@ function APBillsTab({ app }) {
                         )}
                         {bill.status !== "deleted" && bill.status !== "void" && (
                           <button className="btn btn-ghost btn-sm btn-table-delete" onClick={() => {
+                            if (!isAdmin) { app.show("Only admin/owner can void AP bills", "err"); return; }
                             const reason = prompt("Reason for voiding this AP bill:");
                             if (reason !== null) {
                               app.setAPBills(prev => prev.map(b => b.id === bill.id ? softDelete(b, app.auth?.name, reason) : b));
+                              // Cascade void to linked commitment — roll back invoicedToDate/remaining
+                              if (bill.commitmentId && app.setCommitments) {
+                                app.setCommitments(prev => prev.map(c => {
+                                  if (c.id !== bill.commitmentId) return c;
+                                  const baseCommit = c.revisedAmount || c.originalAmount || 0;
+                                  const newInvoiced = Math.max(0, (c.invoicedToDate || 0) - (bill.amount || 0));
+                                  return {
+                                    ...c,
+                                    invoicedToDate: newInvoiced,
+                                    remainingCommitment: Math.max(0, baseCommit - newInvoiced),
+                                  };
+                                }));
+                              }
                               app.show("AP Bill voided");
                             }
                           }}>Void</button>
@@ -2270,26 +2348,56 @@ function VendorsTab({ app }) {
     return { cls: "badge-red", text: "W-9 Missing" };
   };
 
+  // Critical vendor fields that should trigger audit trail entries
+  const CRITICAL_VENDOR_FIELDS = ["name", "w9Status", "is1099", "paymentTermsDays", "address", "email", "phone"];
+
+  // Local dup detector — warn on name collision (case/whitespace insensitive),
+  // or email/phone collision, excluding the record being edited and voided vendors.
+  const findDuplicateVendor = (candidate, all, excludeId) => {
+    const norm = (s) => (s || "").trim().toLowerCase();
+    const cName = norm(candidate.name);
+    const cEmail = norm(candidate.email);
+    const cPhone = (candidate.phone || "").replace(/\D/g, "");
+    return all.find(v => {
+      if (excludeId && v.id === excludeId) return false;
+      if (v.status === "deleted") return false;
+      if (cName && norm(v.name) === cName) return true;
+      if (cEmail && norm(v.email) === cEmail) return true;
+      if (cPhone && cPhone.length >= 7 && (v.phone || "").replace(/\D/g, "") === cPhone) return true;
+      return false;
+    });
+  };
+
   const save = () => {
     if (!form.name.trim()) { app.show("Vendor name is required", "err"); return; }
+
+    const candidate = {
+      name: form.name.trim(), address: form.address, phone: form.phone,
+      email: form.email, paymentTermsDays: Number(form.paymentTermsDays) || 30,
+      defaultCostType: form.defaultCostType, w9Status: form.w9Status, is1099: form.is1099,
+    };
+
+    const dup = findDuplicateVendor(candidate, vendors, editingVendorId);
+    if (dup) {
+      const proceed = confirm(`A vendor already exists that matches "${dup.name}" (by name, email, or phone). Save anyway?`);
+      if (!proceed) return;
+    }
 
     if (editingVendorId) {
       app.setVendors(prev => prev.map(v => {
         if (v.id !== editingVendorId) return v;
-        return {
-          ...v, name: form.name.trim(), address: form.address, phone: form.phone,
-          email: form.email, paymentTermsDays: Number(form.paymentTermsDays) || 30,
-          defaultCostType: form.defaultCostType, w9Status: form.w9Status, is1099: form.is1099,
-        };
+        const updated = { ...v, ...candidate };
+        updated.audit = auditDiff(v, updated, CRITICAL_VENDOR_FIELDS, app.auth);
+        return updated;
       }));
       app.show("Vendor updated", "ok");
       setEditingVendorId(null);
     } else {
       const newVendor = {
-        id: app.nextId(), name: form.name.trim(), address: form.address, phone: form.phone,
-        email: form.email, paymentTermsDays: Number(form.paymentTermsDays) || 30,
-        defaultCostType: form.defaultCostType, w9Status: form.w9Status, is1099: form.is1099,
+        id: app.nextId(), ...candidate,
         status: "active", audit: [],
+        createdAt: new Date().toISOString(),
+        createdBy: app.auth?.name || "Unknown",
       };
       app.setVendors(prev => [...prev, newVendor]);
       app.show("Vendor added", "ok");
@@ -2509,13 +2617,22 @@ function CommitmentsTab({ app }) {
     setAdding(true);
   };
 
+  const canManageCommitments = ["admin", "owner", "pm"].includes(app.auth?.role);
+
   const closeCommitment = (id) => {
+    if (!canManageCommitments) { app.show("Only admin/owner/pm can close commitments", "err"); return; }
     if (!confirm("Mark this commitment as complete? Remaining budget will be released.")) return;
-    app.setCommitments(prev => prev.map(c => c.id === id ? { ...c, status: "complete" } : c));
+    app.setCommitments(prev => prev.map(c => c.id === id ? {
+      ...c,
+      status: "complete",
+      closedAt: new Date().toISOString(),
+      closedBy: app.auth?.name || "Unknown",
+    } : c));
     app.show("Commitment closed");
   };
 
   const voidCommitment = (id) => {
+    if (!canManageCommitments) { app.show("Only admin/owner/pm can void commitments", "err"); return; }
     const reason = prompt("Reason for voiding this commitment:");
     if (reason === null) return;
     app.setCommitments(prev => prev.map(c => c.id === id ? softDelete(c, app.auth?.name, reason) : c));
@@ -2647,23 +2764,23 @@ function RetainageTab({ app }) {
   const vendors = app.vendors || [];
   const pName = (pid) => projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
   const vName = (vid) => vendors.find(v => String(v.id) === String(vid))?.name || "Unknown";
+  const canRelease = ["admin", "owner", "pm"].includes(app.auth?.role);
 
   // Retainage Receivable — per-invoice retainageWithheld (fallback to flat % if field missing)
   const receivableRows = projects
     .filter(p => p.status !== "completed" && p.status !== "deleted")
     .map(p => {
-      const projInvoices = invoices.filter(i => String(i.projectId) === String(p.id));
+      // Exclude invoices whose retainage has already been released
+      const projInvoices = invoices.filter(i => String(i.projectId) === String(p.id) && !i.retainageReleasedAt);
       const billed = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);
-      // Sum actual retainageWithheld from invoices; fall back to flat rate only for legacy invoices
-      const held = projInvoices.reduce((s, i) => {
-        if (i.retainageWithheld !== undefined && i.retainageWithheld !== null) return s + (i.retainageWithheld || 0);
-        return s + Math.round((i.amount || 0) * retainageRate / 100);
-      }, 0);
+      // Sum actual retainageWithheld from invoices; fall back to flat rate only for legacy invoices.
+      // Use ?? so a legitimate 0 retainage doesn't trigger the fallback.
+      const held = projInvoices.reduce((s, i) => s + (i.retainageWithheld ?? Math.round((i.amount || 0) * retainageRate / 100)), 0);
       // Show weighted average rate for display
       const effectiveRate = billed > 0 ? Math.round((held / billed) * 100) : retainageRate;
-      return { id: p.id, name: p.name, billed, rate: effectiveRate, held, status: p.status || "active" };
+      return { id: p.id, name: p.name, billed, rate: effectiveRate, held, status: p.status || "active", invoiceIds: projInvoices.map(i => i.id) };
     })
-    .filter(r => r.billed > 0);
+    .filter(r => r.billed > 0 && r.held > 0);
   const totalReceivable = receivableRows.reduce((s, r) => s + r.held, 0);
 
   // Retainage Payable — exclude released + voided + paid-with-released bills
@@ -2675,12 +2792,44 @@ function RetainageTab({ app }) {
       project: pName(b.projectId),
       amount: b.amount || 0,
       rate: b.retainageRate,
-      held: b.retainageAmount || Math.round((b.amount || 0) * (b.retainageRate || 0) / 100),
+      // Use ?? so $0 retainage doesn't fall back
+      held: b.retainageAmount ?? Math.round((b.amount || 0) * (b.retainageRate || 0) / 100),
       status: b.status,
     }));
   const totalPayable = payableRows.reduce((s, r) => s + r.held, 0);
 
   const netExposure = totalReceivable - totalPayable;
+
+  // MVP release workflow — mark all held retainage on a project as released
+  const releaseReceivable = (row) => {
+    if (!canRelease) { app.show("Only admin/owner/pm can release retainage", "err"); return; }
+    const reference = prompt(`Release $${row.held.toLocaleString()} of retainage on ${row.name}? Enter reference (e.g. final invoice #):`);
+    if (!reference) return;
+    const ts = new Date().toISOString();
+    const by = app.auth?.name || "Unknown";
+    app.setInvoices(prev => prev.map(i => row.invoiceIds.includes(i.id) ? {
+      ...i,
+      retainageReleasedAt: ts,
+      retainageReleasedBy: by,
+      retainageReleaseReference: reference,
+    } : i));
+    app.show(`Retainage released for ${row.name}`, "ok");
+  };
+
+  const releasePayable = (row) => {
+    if (!canRelease) { app.show("Only admin/owner/pm can release retainage", "err"); return; }
+    const reason = prompt(`Release $${row.held.toLocaleString()} of retainage to ${row.vendor}? Enter release reason:`);
+    if (!reason) return;
+    const ts = new Date().toISOString();
+    const by = app.auth?.name || "Unknown";
+    app.setApBills(prev => prev.map(b => String(b.id) === String(row.id) ? {
+      ...b,
+      retainageReleasedAt: ts,
+      retainageReleasedBy: by,
+      retainageReleaseReason: reason,
+    } : b));
+    app.show(`Retainage released to ${row.vendor}`, "ok");
+  };
 
   return (
     <div>
@@ -2700,9 +2849,9 @@ function RetainageTab({ app }) {
         <div className="text-sm fw-600 mb-8">Retainage Receivable (Held by GC)</div>
         <div className="table-wrap">
           <table className="data-table">
-            <thead><tr><th>Project</th><th>Billed to Date</th><th>Rate</th><th>Retainage Held</th><th>Status</th></tr></thead>
+            <thead><tr><th>Project</th><th>Billed to Date</th><th>Rate</th><th>Retainage Held</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
-              {receivableRows.length === 0 && <tr><td colSpan={5} className="more-empty-cell">No billed invoices yet</td></tr>}
+              {receivableRows.length === 0 && <tr><td colSpan={6} className="more-empty-cell">No billed invoices yet</td></tr>}
               {receivableRows.map(r => (
                 <tr key={r.id}>
                   <td>{r.name}</td>
@@ -2710,6 +2859,9 @@ function RetainageTab({ app }) {
                   <td>{r.rate}%</td>
                   <td className="text-amber fw-600">{app.fmt(r.held)}</td>
                   <td>{r.status}</td>
+                  <td>
+                    <button className="btn btn-ghost btn-sm btn-table-action" disabled={!canRelease} onClick={() => releaseReceivable(r)}>Release</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -2722,9 +2874,9 @@ function RetainageTab({ app }) {
         <div className="text-sm fw-600 mb-8">Retainage Payable (EBC Holds from Subs)</div>
         <div className="table-wrap">
           <table className="data-table">
-            <thead><tr><th>Vendor</th><th>Project</th><th>Bill Amount</th><th>Rate</th><th>Retainage Held</th><th>Status</th></tr></thead>
+            <thead><tr><th>Vendor</th><th>Project</th><th>Bill Amount</th><th>Rate</th><th>Retainage Held</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
-              {payableRows.length === 0 && <tr><td colSpan={6} className="more-empty-cell">No subcontractor retainage held</td></tr>}
+              {payableRows.length === 0 && <tr><td colSpan={7} className="more-empty-cell">No subcontractor retainage held</td></tr>}
               {payableRows.map(r => (
                 <tr key={r.id}>
                   <td>{r.vendor}</td>
@@ -2733,6 +2885,9 @@ function RetainageTab({ app }) {
                   <td>{r.rate}%</td>
                   <td className="text-red fw-600">{app.fmt(r.held)}</td>
                   <td>{r.status}</td>
+                  <td>
+                    <button className="btn btn-ghost btn-sm btn-table-action" disabled={!canRelease} onClick={() => releasePayable(r)}>Release</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -2759,6 +2914,7 @@ function PeriodCloseTab({ app }) {
   const pName = (pid) => projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
 
   const closePeriod = (period) => {
+    if (!isAdmin) { app.show("Only admin/owner can close periods", "err"); return; }
     if (!confirm(`Close period ${period}? Future entries with dates in this period will require override.`)) return;
     app.setPeriods(prev => prev.map(p => p.period === period ? {
       ...p, status: "closed",
@@ -2778,6 +2934,7 @@ function PeriodCloseTab({ app }) {
   };
 
   const saveAccrual = () => {
+    if (!isAdmin) { app.show("Only admin/owner can post accruals", "err"); return; }
     const errors = validateAccrual({
       projectId: accrualForm.projectId,
       amount: Number(accrualForm.amount),
@@ -2787,6 +2944,16 @@ function PeriodCloseTab({ app }) {
     });
     if (errors.length > 0) { setAccrualErrors(errors); return; }
     setAccrualErrors([]);
+
+    // Prevent posting to a closed period without an explicit admin override + reason
+    let periodOverride = null;
+    const pRecord = periods.find(p => p.period === accrualForm.period);
+    if (pRecord?.status === "closed") {
+      const reason = prompt(`Period ${accrualForm.period} is closed. Override reason (required):`);
+      if (!reason || !reason.trim()) return;
+      periodOverride = { reason: reason.trim(), approvedBy: app.auth?.name || "Unknown", timestamp: new Date().toISOString() };
+    }
+
     const newAccrual = {
       id: app.nextId(),
       type: "accrual",
@@ -2803,6 +2970,8 @@ function PeriodCloseTab({ app }) {
       createdBy: app.auth?.name || "Unknown",
       audit: [],
     };
+    if (periodOverride) newAccrual.periodOverride = periodOverride;
+
     app.setAccruals(prev => [...prev, newAccrual]);
     app.show("Accrual posted");
     setAddingAccrual(false);
@@ -2810,6 +2979,7 @@ function PeriodCloseTab({ app }) {
   };
 
   const voidAccrual = (id) => {
+    if (!isAdmin) { app.show("Only admin/owner can void accruals", "err"); return; }
     const reason = prompt("Reason for voiding this accrual:");
     if (reason === null) return;
     app.setAccruals(prev => prev.map(a => a.id === id ? softDelete(a, app.auth?.name, reason) : a));
@@ -3051,17 +3221,37 @@ function BudgetTab({ app }) {
   const effectiveProjectId = selectedProjectId || (projectsWithBudgets[0]?.id ?? activeProjects[0]?.id ?? "");
   const project = projects.find(p => String(p.id) === String(effectiveProjectId));
 
+  const canEditBudget = ["admin", "owner", "pm"].includes(app.auth?.role);
+
   const saveLine = () => {
+    if (!canEditBudget) { app.show("Only admin/owner/pm can edit budgets", "err"); return; }
     if (!project) return app.show("Select a project first", "err");
     if (!lineForm.phase || !lineForm.costType || !lineForm.budgetAmount) return app.show("Fill all fields", "err");
     const amount = Number(lineForm.budgetAmount);
     if (amount <= 0) return app.show("Amount must be > 0", "err");
-    const newLine = { phase: lineForm.phase, costType: lineForm.costType, budgetAmount: amount };
+
+    // Duplicate detection — warn if the same phase+costType line already exists on this project
+    const currentLines = budgets[project.id] || [];
+    const dup = currentLines.find((l, i) => i !== editingLineIdx && l.phase === lineForm.phase && l.costType === lineForm.costType);
+    if (dup) {
+      const proceed = confirm(`A ${lineForm.phase}/${lineForm.costType} line already exists ($${(dup.budgetAmount || 0).toLocaleString()}). Add anyway?`);
+      if (!proceed) return;
+    }
+
+    const nowIso = new Date().toISOString();
+    const by = app.auth?.name || "Unknown";
+    const newLine = {
+      phase: lineForm.phase,
+      costType: lineForm.costType,
+      budgetAmount: amount,
+      updatedAt: nowIso,
+      updatedBy: by,
+    };
     app.setBudgets(prev => {
       const current = prev[project.id] || [];
       const updated = editingLineIdx !== null
-        ? current.map((l, i) => i === editingLineIdx ? newLine : l)
-        : [...current, newLine];
+        ? current.map((l, i) => i === editingLineIdx ? { ...l, ...newLine } : l)
+        : [...current, { ...newLine, createdAt: nowIso, createdBy: by }];
       return { ...prev, [project.id]: updated };
     });
     app.show(editingLineIdx !== null ? "Budget line updated" : "Budget line added", "ok");
@@ -3071,12 +3261,14 @@ function BudgetTab({ app }) {
   };
 
   const editLine = (idx, line) => {
+    if (!canEditBudget) { app.show("Only admin/owner/pm can edit budgets", "err"); return; }
     setEditingLineIdx(idx);
     setLineForm({ phase: line.phase, costType: line.costType, budgetAmount: String(line.budgetAmount) });
     setAddingLine(true);
   };
 
   const deleteLine = (idx) => {
+    if (!canEditBudget) { app.show("Only admin/owner/pm can delete budget lines", "err"); return; }
     if (!confirm("Delete this budget line?")) return;
     app.setBudgets(prev => {
       const current = prev[project.id] || [];
@@ -3257,23 +3449,25 @@ function FinReportsTab({ app }) {
   // Compute project metrics once — exclude completed projects
   const budgets = app.budgets || {};
   const projectMetrics = projects.filter(p => p.status !== "completed" && p.status !== "deleted").map(p => {
-    const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden);
+    const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, app.accruals || []);
     const billed = invoices.filter(i => String(i.projectId) === String(p.id)).reduce((s, i) => s + (i.amount || 0), 0);
     const approvedCOs = changeOrders.filter(c => String(c.projectId) === String(p.id) && c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
     const adjustedContract = (p.contract || 0) + approvedCOs;
-    // Cost-to-cost % complete: actual cost / total estimated cost (budget)
+    // Cost-to-cost % complete: actual cost / total estimated cost (budget). NOT clamped — show overruns.
     const totalEstimatedCost = (budgets[p.id] || []).reduce((s, l) => s + (l.budgetAmount || 0), 0);
     const hasBudget = totalEstimatedCost > 0;
-    const percentComplete = hasBudget ? Math.min(costs.total / totalEstimatedCost, 1) : 0;
-    const earnedRevenue = hasBudget ? percentComplete * adjustedContract : 0;
+    const percentComplete = hasBudget ? costs.total / totalEstimatedCost : 0;
+    // Earned revenue uses clamped pct so we don't overstate revenue above contract
+    const earnedRevenue = hasBudget ? Math.min(percentComplete, 1) * adjustedContract : 0;
     const overUnder = hasBudget ? billed - earnedRevenue : 0;
     const grossMargin = adjustedContract - costs.total;
     const marginPct = adjustedContract > 0 ? (grossMargin / adjustedContract) * 100 : 0;
-    // Retainage: prefer stored invoice retainageWithheld; fallback to flat rate on billed
+    // Retainage: prefer stored invoice retainageWithheld; fallback to flat rate on billed.
+    // Use ?? so a legitimate 0 doesn't trigger the fallback calculation.
     const retainageRate = app.companySettings?.defaultRetainageRate || 10;
     const retainageHeld = invoices
       .filter(i => String(i.projectId) === String(p.id))
-      .reduce((s, i) => s + (i.retainageWithheld || Math.round((i.amount || 0) * retainageRate / 100)), 0);
+      .reduce((s, i) => s + (i.retainageWithheld ?? Math.round((i.amount || 0) * retainageRate / 100)), 0);
     return { p, costs, billed, approvedCOs, adjustedContract, percentComplete, earnedRevenue, overUnder, grossMargin, marginPct, retainageHeld, hasBudget, totalEstimatedCost };
   });
 
@@ -3300,13 +3494,13 @@ function FinReportsTab({ app }) {
     const daysOld = (now - new Date(b.date).getTime()) / 86400000;
     return daysOld > 7;
   });
-  const missingW9 = vendors.filter(v => (v.is1099Eligible || v.is1099) && v.w9Status !== "received");
+  const missingW9 = vendors.filter(v => v.is1099 && v.w9Status !== "received");
   const missingLienWaivers = apBills.filter(b => b.status !== "void" && b.costType === "subcontractor" && (b.lienWaiverStatus === "missing" || !b.lienWaiverStatus));
   const lowMargin = projectMetrics.filter(m => m.adjustedContract > 0 && m.marginPct < marginThreshold);
   const totalRetainageReceivable = totals.retainage;
   const totalRetainagePayable = apBills
     .filter(b => b.status !== "void" && !b.retainageReleasedAt) // exclude voided + released
-    .reduce((s, b) => s + (b.retainageAmount || Math.round((b.amount || 0) * (b.retainageRate || 0) / 100)), 0);
+    .reduce((s, b) => s + (b.retainageAmount ?? Math.round((b.amount || 0) * (b.retainageRate || 0) / 100)), 0);
 
   return (
     <div>
@@ -3335,7 +3529,7 @@ function FinReportsTab({ app }) {
                 <td className="font-mono">{app.fmt(m.p.contract || 0)}</td>
                 <td className="font-mono">{app.fmt(m.adjustedContract)}</td>
                 <td className="font-mono">{app.fmt(Math.round(m.costs.total))}</td>
-                <td className="font-mono">{m.hasBudget ? `${Math.round(m.percentComplete * 100)}%` : "—"}</td>
+                <td className="font-mono" style={{ color: m.hasBudget && m.percentComplete > 1 ? "var(--red)" : undefined }}>{m.hasBudget ? `${Math.round(m.percentComplete * 100)}%${m.percentComplete > 1 ? " ⚠" : ""}` : "—"}</td>
                 <td className="font-mono">{m.hasBudget ? app.fmt(Math.round(m.earnedRevenue)) : "—"}</td>
                 <td className="font-mono">{app.fmt(m.billed)}</td>
                 <td className="font-mono" style={{ color: m.overUnder >= 0 ? "var(--green)" : "var(--red)" }}>
