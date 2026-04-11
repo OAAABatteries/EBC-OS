@@ -247,14 +247,29 @@ function AuthGate() {
   const DEV_BYPASS_LOGIN = true;
   const DEV_DEFAULT_USER = { id: 999, name: "Abner Aguilar", email: "abner@ebconstructors.com", role: "admin", pin: "1234" };
 
+  // Phone-preview iframe mode: when the admin impersonates a field role from the
+  // role switcher, the parent renders this app inside a 390×844 iframe with a
+  // ?preview=employee|foreman|driver URL param. Inside that iframe we force auth
+  // to the impersonated role so the portal renders naturally — no phone-frame
+  // wrap, and media queries key off the iframe's own 390px viewport.
+  const urlPreviewRole = (() => {
+    try {
+      const r = new URLSearchParams(window.location.search).get("preview");
+      return (r === "employee" || r === "foreman" || r === "driver") ? r : null;
+    } catch { return null; }
+  })();
+
   const [auth, setAuth] = useState(() => {
+    if (urlPreviewRole) {
+      return { ...DEV_DEFAULT_USER, role: urlPreviewRole };
+    }
     if (DEV_BYPASS_LOGIN) return DEV_DEFAULT_USER;
     try {
       const stored = localStorage.getItem("ebc_auth");
       return stored ? JSON.parse(stored) : null;
     } catch { return null; }
   });
-  const [onboardingDone, setOnboardingDone] = useState(DEV_BYPASS_LOGIN);
+  const [onboardingDone, setOnboardingDone] = useState(DEV_BYPASS_LOGIN || !!urlPreviewRole);
 
   // Recompute whenever auth changes — check role-specific key first, then legacy key
   useEffect(() => {
@@ -369,6 +384,17 @@ function App({ auth, onLogout }) {
   const [theme, setTheme] = useLocalStorage("theme", "ebc");
   const [lang, setLang] = useLocalStorage("ebc_lang", "en");
   const [apiKey, setApiKey] = useLocalStorage("apiKey", "");
+
+  // Phone-preview iframe mode — when this App instance is running inside the
+  // admin's preview iframe, ?preview=<role> is set. Used to inject a top
+  // safe-area so the portal header clears the notch, and to disable features
+  // that don't make sense inside a preview (PWA install prompt, etc).
+  const isPhonePreview = (() => {
+    try {
+      const r = new URLSearchParams(window.location.search).get("preview");
+      return r === "employee" || r === "foreman" || r === "driver";
+    } catch { return false; }
+  })();
 
   // ── Robust overlay dismiss (prevents close-on-highlight) ──
   const _overlayDown = useRef(false);
@@ -541,13 +567,27 @@ function App({ auth, onLogout }) {
   // ── role view toggle (Admin can preview other role views) ──
   const [viewAsRole, setViewAsRole] = useLocalStorage("ebc_viewAsRole", "");
 
-  // ── role view toggle (effective role for tabs/dashboard, actual role for portals) ──
+  // ── role view toggle (effective role drives tabs AND phone-portal impersonation) ──
   const effectiveRole = viewAsRole || auth?.role || "owner";
 
-  // ── portal routing for field roles (uses actual auth role, NOT the toggle) ──
-  const isDriverView = auth?.role === "driver";
-  const isEmployeeView = auth?.role === "employee";
-  const isForemanView = auth?.role === "foreman";
+  // ── portal routing: actual field user OR admin/owner impersonating via dropdown ──
+  // When an admin/owner picks Foreman/Employee/Driver from the role switcher,
+  // we swap the whole screen to that portal (wrapped in a phone-frame bezel) so
+  // the big-screen view matches what the crew sees on their phone. Real field
+  // logins are untouched — isImpersonating is only true for admin/owner.
+  const isImpersonatingPortal = (auth?.role === "owner" || auth?.role === "admin")
+    && (viewAsRole === "driver" || viewAsRole === "employee" || viewAsRole === "foreman");
+  const isDriverView = auth?.role === "driver" || (isImpersonatingPortal && viewAsRole === "driver");
+  const isEmployeeView = auth?.role === "employee" || (isImpersonatingPortal && viewAsRole === "employee");
+  const isForemanView = auth?.role === "foreman" || (isImpersonatingPortal && viewAsRole === "foreman");
+
+  // Viewport tracking for responsive phone-frame scaling in impersonation mode.
+  const [viewportH, setViewportH] = useState(() => typeof window !== "undefined" ? window.innerHeight : 900);
+  useEffect(() => {
+    const handler = () => setViewportH(window.innerHeight);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   // ── ephemeral state ──
   const [tab, setTab] = useState("dashboard");
@@ -3749,37 +3789,156 @@ function App({ auth, onLogout }) {
   const isAnime = theme === "anime";
   const isCyber = theme === "cyberpunk";
 
-  // ── Portal views for field roles ──
-  if (isDriverView) {
+  // ── Portal views for field roles (real login OR admin/owner impersonation) ──
+  // When impersonating, wrap the portal in a phone-frame bezel so the desktop
+  // view mirrors what the crew sees — intended for in-person explanation.
+  // Safe-area CSS injected only when this App instance is running inside the
+  // preview iframe — pushes the portal header down so the phone notch stops
+  // covering the EN/ES language toggle.
+  const phonePreviewSafeArea = isPhonePreview ? (
+    <style>{`
+      /* Kill default iframe body margin so there's no pixel crack at the edges */
+      html, body { margin: 0 !important; padding: 0 !important; background: var(--bg1) !important; overflow-x: hidden; }
+      html, body, #root { min-height: 100vh; }
+      #root { background: var(--bg1); }
+      /* The portal's .app shell must extend flush to the bottom of the iframe
+         so the bottom nav sits on the phone's rounded corner without a gap. */
+      .app { min-height: 100vh; padding-bottom: 0 !important; background: var(--bg1); }
+      /* The field-nav (portal bottom tab bar) is position:fixed; make sure it's
+         pinned to the very bottom of the iframe viewport with no inset leak. */
+      .field-nav, .bottom-nav { bottom: 0 !important; }
+      /* Network banner was pushed down by the header safe-area shift */
+      .network-banner { position: relative; }
+    `}</style>
+  ) : null;
+  const renderFieldPortal = (PortalComp, roleLabel) => {
+    // For real field logins, render the portal full-bleed as before.
+    if (!isImpersonatingPortal) {
+      return (
+        <div className={`app${isAnime ? " anime-glow" : ""}${isCyber ? " cyber-glow" : ""}`}>
+          <style>{styles}</style>
+          {phonePreviewSafeArea}
+          {isAnime && <SakuraPetals />}
+          {isCyber && <CyberRain />}
+          <PortalComp app={app} />
+        </div>
+      );
+    }
+    // Impersonation mode: top control bar + iPhone-style frame containing an
+    // iframe that loads the app with ?preview=<role>. Inside the iframe, auth is
+    // forced to that role by AuthGate, so the portal renders full-bleed AND its
+    // CSS media queries fire against the iframe's real 390px viewport.
     return (
-      <div className={`app${isAnime ? " anime-glow" : ""}${isCyber ? " cyber-glow" : ""}`}>
+      <div className={`app${isAnime ? " anime-glow" : ""}${isCyber ? " cyber-glow" : ""}`} style={{ background: "var(--bg1)", minHeight: "100vh" }}>
         <style>{styles}</style>
         {isAnime && <SakuraPetals />}
         {isCyber && <CyberRain />}
-        <DriverView app={app} />
+        {/* Impersonation control bar */}
+        <div style={{
+          position: "sticky", top: 0, zIndex: 50,
+          background: "linear-gradient(180deg, rgba(245,158,11,0.14), rgba(245,158,11,0.04))",
+          borderBottom: "1px solid rgba(245,158,11,0.35)",
+          padding: "10px 16px",
+          display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
+        }}>
+          <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.5, color: "var(--amber)", textTransform: "uppercase" }}>
+            Preview Mode
+          </span>
+          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
+            Viewing as <strong style={{ color: "var(--text1)" }}>{roleLabel}</strong> — this is the crew's phone view
+          </span>
+          <div style={{ flex: 1 }} />
+          <select
+            value={viewAsRole}
+            onChange={(e) => setViewAsRole(e.target.value)}
+            style={{ fontSize: 12, padding: "6px 10px", borderRadius: 8, background: "var(--bg3)", color: "var(--text1)", border: "1px solid var(--border)", cursor: "pointer" }}
+            aria-label="Switch impersonated role"
+          >
+            <option value="foreman">Foreman</option>
+            <option value="employee">Employee / Team</option>
+            <option value="driver">Driver</option>
+          </select>
+          <button
+            onClick={() => setViewAsRole("")}
+            style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "var(--bg3)", color: "var(--text1)", border: "1px solid var(--border)", cursor: "pointer", fontWeight: 600 }}
+          >
+            Exit preview
+          </button>
+        </div>
+        {/* Phone-frame wrapper — FIXED 390×844 layout box, visually scaled via transform
+            so the portal's CSS/media-query context stays "phone-sized" regardless of the
+            host desktop viewport. The reservation div claims only the scaled footprint. */}
+        {(() => {
+          const PHONE_W = 390;
+          const PHONE_H = 844;
+          // 56px preview bar + 60px top padding + 40px bottom padding ≈ 156px of chrome.
+          const available = Math.max(320, viewportH - 160);
+          const phoneScale = Math.min(1, available / PHONE_H);
+          const scaledW = PHONE_W * phoneScale;
+          const scaledH = PHONE_H * phoneScale;
+          return (
+            <div style={{
+              display: "flex", justifyContent: "center", alignItems: "flex-start",
+              padding: "24px 16px 32px",
+              minHeight: "calc(100vh - 56px)",
+            }}>
+              {/* Reservation: takes the visual (scaled) size in flex layout */}
+              <div style={{ width: scaledW, height: scaledH, position: "relative", flexShrink: 0 }}>
+                {/* The actual phone, at native 390×844, scaled down via transform.
+                    transform-origin: top left makes the scaled box occupy [0,0]→[scaledW,scaledH]. */}
+                <div style={{
+                  width: PHONE_W,
+                  height: PHONE_H,
+                  transform: `scale(${phoneScale})`,
+                  transformOrigin: "top left",
+                  borderRadius: 48,
+                  background: "#0b0b0f",
+                  padding: 12,
+                  boxShadow: "0 30px 70px rgba(0,0,0,0.6), 0 0 0 2px rgba(255,255,255,0.06) inset",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                }}>
+                  {/* Notch */}
+                  <div style={{
+                    position: "absolute", top: 14, left: "50%", transform: "translateX(-50%)",
+                    width: 120, height: 28, borderRadius: 18, background: "#000", zIndex: 2,
+                  }} />
+                  {/* Screen — iframe preview. The iframe document has its own 390px
+                      viewport, so CSS media queries fire correctly and the portal
+                      renders pixel-accurately (not "desktop inside a phone"). */}
+                  <div style={{
+                    width: "100%", height: "100%",
+                    borderRadius: 36,
+                    overflow: "hidden",
+                    background: "var(--bg1)",
+                    position: "relative",
+                    isolation: "isolate",
+                  }}>
+                    <iframe
+                      key={viewAsRole}
+                      src={`${window.location.pathname}?preview=${viewAsRole}`}
+                      title={`${roleLabel} phone preview`}
+                      style={{
+                        width: "100%", height: "100%",
+                        border: 0,
+                        display: "block",
+                        background: "var(--bg1)",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
-  }
-  if (isEmployeeView) {
-    return (
-      <div className={`app${isAnime ? " anime-glow" : ""}${isCyber ? " cyber-glow" : ""}`}>
-        <style>{styles}</style>
-        {isAnime && <SakuraPetals />}
-        {isCyber && <CyberRain />}
-        <EmployeeView app={app} />
-      </div>
-    );
-  }
-  if (isForemanView) {
-    return (
-      <div className={`app${isAnime ? " anime-glow" : ""}${isCyber ? " cyber-glow" : ""}`}>
-        <style>{styles}</style>
-        {isAnime && <SakuraPetals />}
-        {isCyber && <CyberRain />}
-        <ForemanView app={app} />
-      </div>
-    );
-  }
+  };
+
+  if (isDriverView) return renderFieldPortal(DriverView, "Driver");
+  if (isEmployeeView) return renderFieldPortal(EmployeeView, "Employee / Team");
+  if (isForemanView) return renderFieldPortal(ForemanView, "Superintendent / Foreman");
 
   return (
     <div className={`app${isAnime ? " anime-glow" : ""}${isCyber ? " cyber-glow" : ""}`}>
@@ -5445,13 +5604,19 @@ const ModalHub = ({ type, data, app }) => {
               const pendingCOTotal = projCOs.filter(c => c.status !== "approved" && c.status !== "rejected").reduce((s, c) => s + (c.amount || 0), 0);
               const costs = computeProjectTotalCost(draft.id, draft.name, app.timeEntries, app.employees, app.apBills, app.companySettings?.laborBurdenMultiplier || 1.35, app.accruals || []);
               const adjustedContract = (draft.contract || 0) + approvedCOTotal;
-              const billedToDate = filterActive(projInvoices).reduce((s, i) => s + (i.amount || 0), 0);
-              const retainageRate = app.companySettings?.defaultRetainageRate || 10;
-              const retainageReceivable = Math.round(billedToDate * retainageRate / 100);
+              const activeInvoices = filterActive(projInvoices);
+              const billedToDate = activeInvoices.reduce((s, i) => s + (i.amount || 0), 0);
+              const defaultRetainageRate = app.companySettings?.defaultRetainageRate || 10;
+              // Retainage: prefer per-invoice retainageWithheld, fall back to flat rate for legacy records
+              const retainageReceivable = activeInvoices.reduce((s, i) => {
+                if (i.retainageWithheld != null) return s + (i.retainageWithheld || 0);
+                return s + Math.round((i.amount || 0) * defaultRetainageRate / 100);
+              }, 0);
               // Correct % complete = cost incurred / total estimated cost (budget), NOT cost / adjustedContract
               const totalEstimatedCost = (app.budgets?.[draft.id] || []).reduce((s, line) => s + (line.budgetAmount || 0), 0);
               const hasBudget = totalEstimatedCost > 0;
-              const percentComplete = hasBudget ? Math.min(costs.total / totalEstimatedCost, 1) : 0;
+              // NOTE: Do NOT clamp at 1.0 — an over-budget job (cost > estimated) must show the overrun
+              const percentComplete = hasBudget ? costs.total / totalEstimatedCost : 0;
               const earnedRevenue = hasBudget ? percentComplete * adjustedContract : 0;
               const overUnder = hasBudget ? billedToDate - earnedRevenue : 0;
               const grossMargin = adjustedContract > 0 ? adjustedContract - costs.total : 0;
@@ -5566,15 +5731,19 @@ const ModalHub = ({ type, data, app }) => {
                   </div>
                 </div>
 
-                {/* Labor budget vs actual */}
-                {(draft.laborBudget > 0 || costs.labor > 0) && (
-                  <div className="flex gap-16 mb-16 flex-wrap">
-                    <div><span className="text-dim text-xs">LABOR BUDGET</span><div className="font-mono">{fmt(draft.laborBudget || 0)}</div></div>
-                    <div><span className="text-dim text-xs">LABOR ACTUAL</span><div className="font-mono" style={{ color: costs.labor > (draft.laborBudget || 0) ? "var(--red)" : "var(--text)" }}>{fmt(Math.round(costs.labor))}</div></div>
-                    <div><span className="text-dim text-xs">LABOR REMAINING</span><div className="font-mono" style={{ color: ((draft.laborBudget || 0) - costs.labor) > 0 ? "var(--green)" : "var(--red)" }}>{fmt(Math.round((draft.laborBudget || 0) - costs.labor))}</div></div>
-                    <div><span className="text-dim text-xs">LABOR HOURS</span><div className="font-mono">{Math.round(costs.laborHours * 10) / 10}h</div></div>
-                  </div>
-                )}
+                {/* Labor budget vs actual — sourced from app.budgets (the single source of truth) */}
+                {(() => {
+                  const laborBudget = (app.budgets?.[draft.id] || []).filter(l => l.costType === "labor").reduce((s, l) => s + (l.budgetAmount || 0), 0);
+                  if (laborBudget <= 0 && costs.labor <= 0) return null;
+                  return (
+                    <div className="flex gap-16 mb-16 flex-wrap">
+                      <div><span className="text-dim text-xs">LABOR BUDGET</span><div className="font-mono">{fmt(laborBudget)}</div></div>
+                      <div><span className="text-dim text-xs">LABOR ACTUAL</span><div className="font-mono" style={{ color: costs.labor > laborBudget ? "var(--red)" : "var(--text)" }}>{fmt(Math.round(costs.labor))}</div></div>
+                      <div><span className="text-dim text-xs">LABOR REMAINING</span><div className="font-mono" style={{ color: (laborBudget - costs.labor) > 0 ? "var(--green)" : "var(--red)" }}>{fmt(Math.round(laborBudget - costs.labor))}</div></div>
+                      <div><span className="text-dim text-xs">LABOR HOURS</span><div className="font-mono">{Math.round(costs.laborHours * 10) / 10}h</div></div>
+                    </div>
+                  );
+                })()}
                 {projInvoices.length > 0 && (
                   <table className="data-table">
                     <thead><tr><th>#</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
@@ -5771,8 +5940,12 @@ const ModalHub = ({ type, data, app }) => {
                         app.companySettings?.laborBurdenMultiplier || 1.35,
                         app.accruals || []
                       );
-                      const closeoutMargin = totalBilled > 0
-                        ? Math.round(((totalBilled - closeoutCosts.total) / totalBilled) * 100) + "%"
+                      // Margin is measured against adjusted contract (contract + approved COs),
+                      // NOT billed-to-date. Billing-based margin is wrong when over/underbilled.
+                      const closeoutApprovedCOs = projCOs.filter(c => c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
+                      const closeoutAdjustedContract = (draft.contract || 0) + closeoutApprovedCOs;
+                      const closeoutMargin = closeoutAdjustedContract > 0
+                        ? Math.round(((closeoutAdjustedContract - closeoutCosts.total) / closeoutAdjustedContract) * 100) + "%"
                         : "N/A";
                       generateCloseoutPdf(draft, {
                         rfis: (app.rfis || []).filter(r => String(r.projectId) === String(draft.id)),

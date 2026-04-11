@@ -84,11 +84,16 @@ export function IncentiveTab({ app }) {
     const employees = app.employees || [];
     const apBills = app.apBills || [];
     const accruals = app.accruals || [];
+    const changeOrders = app.changeOrders || [];
     const burden = app.companySettings?.laborBurdenMultiplier || 1.35;
     return projects.filter(p => p.contract > 0).map(p => {
       const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, accruals);
       const totalCost = costs.total;
-      const revenue = p.contract;
+      // Adjusted contract = base contract + approved change orders (matches dashboard / WIP)
+      const approvedCOs = changeOrders
+        .filter(c => String(c.projectId) === String(p.id) && c.status === "approved")
+        .reduce((s, c) => s + (c.amount || 0), 0);
+      const revenue = (p.contract || 0) + approvedCOs;
       const margin = revenue > 0 ? ((revenue - totalCost) / revenue * 100) : 0;
       return {
         id: p.id,
@@ -105,7 +110,7 @@ export function IncentiveTab({ app }) {
         phase: p.phase,
       };
     });
-  }, [app.projects, app.timeEntries, app.employees, app.apBills, app.accruals, app.companySettings]);
+  }, [app.projects, app.timeEntries, app.employees, app.apBills, app.accruals, app.changeOrders, app.companySettings]);
 
   // ── Stats ──
   const stats = useMemo(() => {

@@ -279,6 +279,18 @@ export function computeProjectCostForPeriod(projectId, projectName, period, time
 
 // ── Labor Cost Computation ──
 
+/**
+ * Compute worked hours from a time entry.
+ * Prefers stored `totalHours` (which already subtracts unpaid lunch for shifts >=6h);
+ * falls back to raw (clockOut - clockIn) only when totalHours is absent.
+ * Applies a 0.5h lunch deduction on fallback when shift >= 6h.
+ */
+function computeWorkedHours(te) {
+  if (typeof te.totalHours === "number" && te.totalHours >= 0) return te.totalHours;
+  const raw = (new Date(te.clockOut) - new Date(te.clockIn)) / 3600000;
+  return raw >= 6 ? Math.max(0, raw - 0.5) : raw;
+}
+
 export function computeProjectLaborCost(projectId, projectName, timeEntries, employees, burdenMultiplier = DEFAULT_BURDEN) {
   const employeeMap = new Map(employees.map(e => [e.id, e]));
   const employeeNameMap = new Map(employees.map(e => [e.name, e]));
@@ -296,7 +308,7 @@ export function computeProjectLaborCost(projectId, projectName, timeEntries, emp
   let rawCost = 0;
 
   for (const te of projEntries) {
-    const hours = (new Date(te.clockOut) - new Date(te.clockIn)) / 3600000;
+    const hours = computeWorkedHours(te);
     const emp = employeeMap.get(te.employeeId) || employeeNameMap.get(te.employeeName);
     const rate = emp?.hourlyRate || 0;
     totalHours += hours;
@@ -326,7 +338,7 @@ export function computeProjectLaborByCode(projectId, projectName, timeEntries, e
   let totalRaw = 0;
 
   for (const te of projEntries) {
-    const hours = (new Date(te.clockOut) - new Date(te.clockIn)) / 3600000;
+    const hours = computeWorkedHours(te);
     const emp = employeeMap.get(te.employeeId) || employeeNameMap.get(te.employeeName);
     const rate = emp?.hourlyRate || 0;
     const cost = hours * rate;

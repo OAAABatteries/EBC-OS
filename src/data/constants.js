@@ -7,7 +7,7 @@ import { isDemoMode } from "./defaults";
 const _demo = isDemoMode();
 
 // Bump this when seed data changes to bust stale localStorage caches
-export const DATA_VERSION = 22;
+export const DATA_VERSION = 23;
 
 // ── THEMES ────────────────────────────────────────────────────
 export const THEMES = {
@@ -759,7 +759,7 @@ function _seedTimeEntries() {
   const today = new Date();
   const mon = new Date(today); mon.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Monday
   const entries = [];
-  const mkEntry = (empId, empName, projId, projName, dayOffset, startH, startM, endH, endM) => {
+  const mkEntry = (empId, empName, projId, projName, dayOffset, startH, startM, endH, endM, costCode) => {
     const d = new Date(mon); d.setDate(mon.getDate() + dayOffset);
     const cin = new Date(d); cin.setHours(startH, startM, 0, 0);
     const cout = new Date(d); cout.setHours(endH, endM, 0, 0);
@@ -771,6 +771,7 @@ function _seedTimeEntries() {
       id: `te_${empId}_${projId}_${dayOffset}`,
       employeeId: empId, employeeName: empName,
       projectId: projId, projectName: projName,
+      costCode: costCode || "misc",
       clockIn: cin.toISOString(), clockOut: cout.toISOString(),
       clockInLat: 29.73, clockInLng: -95.43, clockOutLat: 29.73, clockOutLng: -95.43,
       totalHours, geofenceStatus: "inside",
@@ -778,18 +779,29 @@ function _seedTimeEntries() {
   };
   // David's team on THC Baytown (id:5)
   for (let d = 0; d < 3; d++) {
-    entries.push(mkEntry(5, "David Ramirez", 5, "Texas Heart Center - Baytown", d, 6, 0, 14, 30));
-    entries.push(mkEntry(4, "Miguel Torres", 5, "Texas Heart Center - Baytown", d, 6, 30, 15, 0));
-    entries.push(mkEntry(6, "Luis Herrera", 5, "Texas Heart Center - Baytown", d, 7, 0, 15, 30));
+    entries.push(mkEntry(5, "David Ramirez", 5, "Texas Heart Center - Baytown", d, 6, 0, 14, 30, "framing"));
+    entries.push(mkEntry(4, "Miguel Torres", 5, "Texas Heart Center - Baytown", d, 6, 30, 15, 0, "framing"));
+    entries.push(mkEntry(6, "Luis Herrera", 5, "Texas Heart Center - Baytown", d, 7, 0, 15, 30, "board"));
   }
   // David's team on MH MC Single Plane IR (id:7)
   for (let d = 3; d < 5; d++) {
-    entries.push(mkEntry(5, "David Ramirez", 7, "MH MC Single Plane IR", d, 6, 0, 14, 30));
-    entries.push(mkEntry(4, "Miguel Torres", 7, "MH MC Single Plane IR", d, 6, 30, 15, 0));
+    entries.push(mkEntry(5, "David Ramirez", 7, "MH MC Single Plane IR", d, 6, 0, 14, 30, "framing"));
+    entries.push(mkEntry(4, "Miguel Torres", 7, "MH MC Single Plane IR", d, 6, 30, 15, 0, "board"));
   }
   // Antonio's team on Sprouts (id:12)
   for (let d = 0; d < 5; d++) {
-    entries.push(mkEntry(9, "Antonio Hernandez", 12, "Arch-Con - Sprouts Farmers Market", d, 6, 0, 14, 30));
+    entries.push(mkEntry(9, "Antonio Hernandez", 12, "Arch-Con - Sprouts Farmers Market", d, 6, 0, 14, 30, "framing"));
+  }
+  // Oscar's team on Endurance Woodside Lab (id:1) — last week of March + first days of April
+  // Covers the test question: "March margin for Project 1 broken out by cost type"
+  for (let d = -7; d < 0; d++) {
+    entries.push(mkEntry(1, "Oscar Alvarez", 1, "Endurance - Woodside Laboratory", d, 6, 30, 15, 0, "framing"));
+    entries.push(mkEntry(2, "Ricardo Mendez", 1, "Endurance - Woodside Laboratory", d, 6, 30, 15, 0, "framing"));
+    entries.push(mkEntry(3, "Carlos Fuentes", 1, "Endurance - Woodside Laboratory", d, 7, 0, 15, 30, "demo"));
+  }
+  for (let d = 0; d < 2; d++) {
+    entries.push(mkEntry(1, "Oscar Alvarez", 1, "Endurance - Woodside Laboratory", d, 6, 30, 15, 0, "board"));
+    entries.push(mkEntry(2, "Ricardo Mendez", 1, "Endurance - Woodside Laboratory", d, 6, 30, 15, 0, "board"));
   }
   return entries.filter(Boolean);
 }
@@ -874,22 +886,25 @@ export const COST_TYPES = ["labor", "material", "subcontractor", "equipment", "o
 export const COST_CODES = ["framing", "board", "tape", "finish", "ACT", "insulation", "demo", "misc"];
 
 // ── VENDOR MASTER ───────────────────────────────────────────
+// NOTE: Use `is1099` as the canonical field. Legacy `is1099Eligible` removed.
 export const initVendors = [
-  { id: 1, name: "ABC Supply Co", address: "4521 Dacoma St, Houston, TX 77092", phone: "713-555-0101", email: "orders@abcsupply.com", paymentTerms: "Net 30", defaultCostType: "material", w9Status: "received", is1099Eligible: false, status: "active", audit: [] },
-  { id: 2, name: "L&W Supply", address: "8900 Westpark Dr, Houston, TX 77063", phone: "713-555-0202", email: "sales@lwsupply.com", paymentTerms: "Net 30", defaultCostType: "material", w9Status: "received", is1099Eligible: false, status: "active", audit: [] },
-  { id: 3, name: "Tape & Texture Inc", dba: "T&T Drywall Services", phone: "281-555-0303", paymentTerms: "Net 15", defaultCostType: "subcontractor", w9Status: "received", is1099Eligible: true, status: "active", audit: [] },
-  { id: 4, name: "Metro Scaffold Rental", phone: "832-555-0404", paymentTerms: "Due on Receipt", defaultCostType: "equipment", w9Status: "missing", is1099Eligible: true, status: "active", audit: [] },
-  { id: 5, name: "Houston Steel Studs", address: "2200 Navigation Blvd, Houston, TX 77003", phone: "713-555-0505", email: "info@houstonsteel.com", paymentTerms: "Net 30", defaultCostType: "material", w9Status: "received", is1099Eligible: false, status: "active", audit: [] },
+  { id: 1, name: "ABC Supply Co", address: "4521 Dacoma St, Houston, TX 77092", phone: "713-555-0101", email: "orders@abcsupply.com", paymentTerms: "Net 30", defaultCostType: "material", w9Status: "received", is1099: false, status: "active", audit: [] },
+  { id: 2, name: "L&W Supply", address: "8900 Westpark Dr, Houston, TX 77063", phone: "713-555-0202", email: "sales@lwsupply.com", paymentTerms: "Net 30", defaultCostType: "material", w9Status: "received", is1099: false, status: "active", audit: [] },
+  { id: 3, name: "Tape & Texture Inc", dba: "T&T Drywall Services", phone: "281-555-0303", paymentTerms: "Net 15", defaultCostType: "subcontractor", w9Status: "received", is1099: true, status: "active", audit: [] },
+  { id: 4, name: "Metro Scaffold Rental", phone: "832-555-0404", paymentTerms: "Due on Receipt", defaultCostType: "equipment", w9Status: "missing", is1099: true, status: "active", audit: [] },
+  { id: 5, name: "Houston Steel Studs", address: "2200 Navigation Blvd, Houston, TX 77003", phone: "713-555-0505", email: "info@houstonsteel.com", paymentTerms: "Net 30", defaultCostType: "material", w9Status: "received", is1099: false, status: "active", audit: [] },
 ];
 
 // ── AP BILLS (ACCOUNTS PAYABLE) ─────────────────────────────
+// NOTE: `phase` is required for budget variance tracking (material/sub budget rows match on phase).
+// `commitmentId` links bills to POs/subcontracts for live commitment rollup.
 export const initAPBills = [
-  { id: 1, vendorId: 1, projectId: 2, costType: "material", invoiceNumber: "INV-88421", date: "2026-03-15", dueDate: "2026-04-14", amount: 8450, description: "Drywall board delivery - Brunello Cucinelli", status: "approved", approvedBy: "Emmanuel Aguilar", approvedAt: "2026-03-16", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-15T13:45:00Z", audit: [] },
-  { id: 2, vendorId: 5, projectId: 3, costType: "material", invoiceNumber: "HSS-2026-0312", date: "2026-03-12", dueDate: "2026-04-11", amount: 6200, description: "Steel studs and track - BSLMC Cath Labs", status: "entered", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-12T10:20:00Z", audit: [] },
-  { id: 3, vendorId: 3, projectId: 2, costType: "subcontractor", invoiceNumber: "TT-2026-041", date: "2026-03-28", dueDate: "2026-04-12", amount: 12500, description: "Tape and texture scope - Brunello Cucinelli", status: "entered", retainageRate: 10, retainageAmount: 1250, netPayable: 11250, attachments: [], lienWaiverStatus: "conditional_received", lienWaiverDate: "2026-03-30", createdAt: "2026-03-28T15:10:00Z", audit: [] },
-  { id: 4, vendorId: 5, projectId: 1, costType: "material", invoiceNumber: "HSS-2026-0320", date: "2026-03-20", dueDate: "2026-04-19", amount: 4200, description: "Metal studs and track - Woodside Lab framing", status: "approved", approvedBy: "Emmanuel Aguilar", approvedAt: "2026-03-21T10:00:00Z", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-20T14:30:00Z", audit: [] },
-  { id: 5, vendorId: 1, projectId: 1, costType: "material", invoiceNumber: "ABC-48821", date: "2026-03-25", dueDate: "2026-04-24", amount: 3850, description: "Drywall board - Woodside Lab", status: "approved", approvedBy: "Emmanuel Aguilar", approvedAt: "2026-03-26T09:15:00Z", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-25T11:00:00Z", audit: [] },
-  { id: 6, vendorId: 3, projectId: 1, costType: "subcontractor", invoiceNumber: "TT-2026-055", date: "2026-04-02", dueDate: "2026-04-17", amount: 6500, description: "Tape and finish scope - Woodside Lab", status: "entered", retainageRate: 10, retainageAmount: 650, netPayable: 5850, attachments: [], lienWaiverStatus: "missing", createdAt: "2026-04-02T16:00:00Z", audit: [] },
+  { id: 1, vendorId: 1, projectId: 2, costType: "material", phase: "board", invoiceNumber: "INV-88421", date: "2026-03-15", dueDate: "2026-04-14", amount: 8450, description: "Drywall board delivery - Brunello Cucinelli", status: "approved", approvedBy: "Emmanuel Aguilar", approvedAt: "2026-03-16", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-15T13:45:00Z", commitmentId: 3, audit: [] },
+  { id: 2, vendorId: 5, projectId: 3, costType: "material", phase: "framing", invoiceNumber: "HSS-2026-0312", date: "2026-03-12", dueDate: "2026-04-11", amount: 6200, description: "Steel studs and track - BSLMC Cath Labs", status: "entered", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-12T10:20:00Z", commitmentId: 2, audit: [] },
+  { id: 3, vendorId: 3, projectId: 2, costType: "subcontractor", phase: "tape", invoiceNumber: "TT-2026-041", date: "2026-03-28", dueDate: "2026-04-12", amount: 12500, description: "Tape and texture scope - Brunello Cucinelli", status: "entered", retainageRate: 10, retainageAmount: 1250, netPayable: 11250, attachments: [], lienWaiverStatus: "conditional_received", lienWaiverDate: "2026-03-30", createdAt: "2026-03-28T15:10:00Z", commitmentId: 1, audit: [] },
+  { id: 4, vendorId: 5, projectId: 1, costType: "material", phase: "framing", invoiceNumber: "HSS-2026-0320", date: "2026-03-20", dueDate: "2026-04-19", amount: 4200, description: "Metal studs and track - Woodside Lab framing", status: "approved", approvedBy: "Emmanuel Aguilar", approvedAt: "2026-03-21T10:00:00Z", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-20T14:30:00Z", commitmentId: 4, audit: [] },
+  { id: 5, vendorId: 1, projectId: 1, costType: "material", phase: "board", invoiceNumber: "ABC-48821", date: "2026-03-25", dueDate: "2026-04-24", amount: 3850, description: "Drywall board - Woodside Lab", status: "approved", approvedBy: "Emmanuel Aguilar", approvedAt: "2026-03-26T09:15:00Z", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-25T11:00:00Z", audit: [] },
+  { id: 6, vendorId: 3, projectId: 1, costType: "subcontractor", phase: "tape", invoiceNumber: "TT-2026-055", date: "2026-04-02", dueDate: "2026-04-17", amount: 6500, description: "Tape and finish scope - Woodside Lab", status: "entered", retainageRate: 10, retainageAmount: 650, netPayable: 5850, attachments: [], lienWaiverStatus: "missing", createdAt: "2026-04-02T16:00:00Z", commitmentId: 5, audit: [] },
 ];
 
 // ── ACCOUNTING PERIODS ──────────────────────────────────────

@@ -230,21 +230,28 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
       });
     }
 
-    // 7) Profit margin below 30% — uses computed costs (single source of truth)
-    const contract = p.contract || 0;
+    // 7) Profit margin below threshold — uses computed costs (single source of truth)
+    //    Threshold comes from companySettings.marginAlertThreshold (default 25).
+    //    Margin is computed against ADJUSTED contract (contract + approved COs), not raw contract.
+    const rawContract = p.contract || 0;
+    const projApprovedCOs = (changeOrders || [])
+      .filter(c => String(c.projectId) === String(p.id) && c.status === "approved")
+      .reduce((s, c) => s + (c.amount || 0), 0);
+    const adjustedContract = rawContract + projApprovedCOs;
     const burden = companySettings?.laborBurdenMultiplier || 1.35;
+    const marginThreshold = companySettings?.marginAlertThreshold ?? 25;
     const costs = computeProjectTotalCost(p.id, p.name, timeEntries || [], employees || [], apBills || [], burden, accruals || []);
     const totalCost = costs.total;
-    if (contract > 0 && totalCost > 0) {
-      const margin = Math.round(((contract - totalCost) / contract) * 100);
-      if (margin < 30) {
+    if (adjustedContract > 0 && totalCost > 0) {
+      const margin = Math.round(((adjustedContract - totalCost) / adjustedContract) * 100);
+      if (margin < marginThreshold) {
         alerts.push({
           id: `low_margin_${p.id}`,
           category: "projects",
           urgency: margin < 0 ? "critical" : "warning",
           icon: "trending-down",
           title: `${p.name.length > 30 ? p.name.slice(0, 27) + "..." : p.name} — ${margin}% margin`,
-          message: `Below 30% profit margin. Contract: $${contract.toLocaleString()}, Costs: $${totalCost.toLocaleString()}.`,
+          message: `Below ${marginThreshold}% profit margin. Adjusted Contract: $${adjustedContract.toLocaleString()}, Costs: $${totalCost.toLocaleString()}.`,
           action: { label: "View Financials", type: "openProject" },
           nav: { tab: "projects", projectId: p.id, projTab: "financials" },
           ts: now.toISOString(),
