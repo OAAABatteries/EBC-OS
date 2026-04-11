@@ -10,10 +10,15 @@
   status = 200
 
 # Security headers
+# SAMEORIGIN (not DENY) because the admin "preview mode" feature iframes
+# the app into itself at /?preview=<role>&device=<id>&... so auditors can
+# walk the foreman/employee/driver portals at fixed phone/tablet viewports.
+# SAMEORIGIN still blocks cross-origin clickjacking — external sites cannot
+# iframe us — it only permits our own domain to frame itself.
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
+    X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
