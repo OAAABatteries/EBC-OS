@@ -4229,7 +4229,22 @@ function App({ auth, onLogout }) {
 
       <header className="header">
         <div className="logo flex-center-gap-6">
-          <img src={theme === "daylight" ? "/eagle-blue.png" : "/ebc-eagle-white.png"} alt="Eagles Brothers Constructors" style={{ height: 32, width: "auto", objectFit: "contain", transition: "opacity 0.3s" }} onError={(e) => e.target.style.display = "none"} />
+          {/* EBC brand mark — masked from ebc-eagle-white.png (the only
+              true-transparent asset in /public/), theme-tinted via --logo-tint */}
+          <div
+            role="img"
+            aria-label="Eagles Brothers Constructors"
+            style={{
+              width: 32, height: 32,
+              backgroundColor: "var(--logo-tint, #ffffff)",
+              WebkitMaskImage: "url(/ebc-eagle-white.png)",
+              maskImage: "url(/ebc-eagle-white.png)",
+              WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat",
+              WebkitMaskPosition: "center", maskPosition: "center",
+              WebkitMaskSize: "contain", maskSize: "contain",
+              transition: "background-color 0.3s",
+            }}
+          />
         </div>
         <button className="hamburger" onClick={() => setMobileNav(!mobileNav)} aria-label="Menu">
           <span className={`hamburger-line ${mobileNav ? "open" : ""}`} />
@@ -4335,7 +4350,21 @@ function App({ auth, onLogout }) {
           <div className="mobile-nav-overlay" onClick={() => setMobileNav(false)}>
             <nav className="mobile-nav" onClick={e => e.stopPropagation()}>
               <div className="mobile-nav-header">
-                <div className="logo" style={{ fontSize: "var(--text-card)", display: "flex", alignItems: "center" }}><img src={theme === "daylight" ? "/eagle-blue.png" : "/ebc-eagle-white.png"} alt="EBC" style={{ height: 24, width: "auto", objectFit: "contain" }} onError={(e) => e.target.style.display = "none"} /></div>
+                <div className="logo" style={{ fontSize: "var(--text-card)", display: "flex", alignItems: "center" }}>
+                  <div
+                    role="img"
+                    aria-label="EBC"
+                    style={{
+                      width: 24, height: 24,
+                      backgroundColor: "var(--logo-tint, #ffffff)",
+                      WebkitMaskImage: "url(/ebc-eagle-white.png)",
+                      maskImage: "url(/ebc-eagle-white.png)",
+                      WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat",
+                      WebkitMaskPosition: "center", maskPosition: "center",
+                      WebkitMaskSize: "contain", maskSize: "contain",
+                    }}
+                  />
+                </div>
                 <button className="modal-close" onClick={() => setMobileNav(false)}>{"\u2715"}</button>
               </div>
               <div className="mobile-nav-section">
