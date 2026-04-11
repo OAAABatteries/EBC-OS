@@ -7,7 +7,7 @@ import { isDemoMode } from "./defaults";
 const _demo = isDemoMode();
 
 // Bump this when seed data changes to bust stale localStorage caches
-export const DATA_VERSION = 23;
+export const DATA_VERSION = 24;
 
 // ── THEMES ────────────────────────────────────────────────────
 export const THEMES = {
@@ -24,6 +24,7 @@ export const THEMES = {
       "--yellow":"#eab308",
       "--purple":"#8b5cf6","--purple-dim":"rgba(139,92,246,0.10)","--cyan":"#22d3ee","--cyan-dim":"rgba(34,211,238,0.10)",
       "--text":"#d4dae6","--text2":"#8494ad","--text3":"#455068",
+      "--logo-tint":"#d4dae6",
       "--bg2-rgb":"12,15,22",
       "--glass-border":"rgba(255,255,255,0.06)","--glass-bg":"rgba(12,15,22,0.72)",
       "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
@@ -49,6 +50,7 @@ export const THEMES = {
       "--yellow":"#ffd866",
       "--purple":"#a78bfa","--purple-dim":"rgba(167,139,250,0.10)","--cyan":"#67e8f9","--cyan-dim":"rgba(103,232,249,0.10)",
       "--text":"#bdddf0","--text2":"#5d98b8","--text3":"#2a5570",
+      "--logo-tint":"#00bfef",
       "--bg2-rgb":"4,18,32",
       "--glass-border":"rgba(0,191,239,0.08)","--glass-bg":"rgba(4,18,32,0.72)",
       "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
@@ -73,6 +75,7 @@ export const THEMES = {
       "--red":"#dc2626","--red-dim":"rgba(220,38,38,0.07)",
       "--yellow":"#b45309","--purple":"#7c3aed","--purple-dim":"rgba(124,58,237,0.10)","--cyan":"#0891b2","--cyan-dim":"rgba(8,145,178,0.10)",
       "--text":"#1a1d28","--text2":"#555d6e","--text3":"#9aa0b0",
+      "--logo-tint":"#0f1a24",
       "--bg2-rgb":"255,255,255",
       "--glass-border":"rgba(0,0,0,0.06)","--glass-bg":"rgba(255,255,255,0.78)",
       "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
@@ -97,6 +100,7 @@ export const THEMES = {
       "--red":"#ff3c00","--red-dim":"rgba(255,60,0,0.08)",
       "--yellow":"#aaff00","--purple":"#bf7fff","--purple-dim":"rgba(191,127,255,0.10)","--cyan":"#00ffcc","--cyan-dim":"rgba(0,255,204,0.10)",
       "--text":"#00ff41","--text2":"#009928","--text3":"#005216",
+      "--logo-tint":"#00ff41",
       "--bg2-rgb":"1,10,1",
       "--glass-border":"rgba(0,255,65,0.08)","--glass-bg":"rgba(1,10,1,0.85)",
       "--font-head":"'IBM Plex Mono', monospace",
@@ -645,9 +649,9 @@ const _demoToolboxTalks = [];
 
 const _demoDailyReports = [
   // Endurance - Woodside Laboratory (projectId: 1) — seed daily reports for PM audit
-  {id:"dr-ws-1",projectId:1,date:"2026-04-03",foremanId:4,foremanName:"Antonio Ramirez",temperature:"82°F",conditions:"clear",teamPresent:[2,3,5,6,7],crewCount:5,totalHours:40,workPerformed:"Framed east wall of Main Lab. Hung 200 SF drywall on Control Room ceiling. Started demo of existing partition at Corridor A.",materialsReceived:"200 EA 3-5/8\" studs, 80 SHT 5/8\" Type X",equipmentOnSite:"Scissor lift, powder-actuated tool",visitors:"Mason Williams (GC super) — morning walkthrough",safetyIncident:"None",issues:"Pipe run blocking framing at Grid B — submitted RFI-001.",tomorrowPlan:"Continue Main Lab framing. Start corridor ceiling grid layout.",photos:[],reviewedBy:null,reviewedAt:null,submittedAt:"2026-04-03T15:30:00Z"},
-  {id:"dr-ws-2",projectId:1,date:"2026-04-04",foremanId:4,foremanName:"Antonio Ramirez",temperature:"79°F",conditions:"partly cloudy",teamPresent:[2,3,5,6,7,8],crewCount:6,totalHours:48,workPerformed:"Completed Main Lab east wall framing. Hung remaining drywall on Control Room ceiling. GC confirmed RFI-002 — frame to deck. Started elevator shaft layout.",materialsReceived:"None",equipmentOnSite:"Scissor lift",visitors:"None",safetyIncident:"None",issues:"Elevator shaft fire rating needs UL confirmation — submitted RFI-004.",tomorrowPlan:"Continue elevator shaft framing. Begin ACT grid at Storage Room A.",photos:[],reviewedBy:"Abner Aguilar",reviewedAt:"2026-04-04T17:00:00Z",submittedAt:"2026-04-04T15:45:00Z"},
-  {id:"dr-ws-3",projectId:1,date:"2026-04-05",foremanId:4,foremanName:"Antonio Ramirez",temperature:"76°F",conditions:"overcast",teamPresent:[2,3,5,6],crewCount:4,totalHours:32,workPerformed:"Elevator shaft framing in progress. Started ACT grid layout at Storage Room A. Punch items from corridor walkthrough documented.",materialsReceived:"ACT grid runners + cross tees (delivery from EBC Yard)",equipmentOnSite:"Scissor lift, laser level",visitors:"None",safetyIncident:"None",issues:"ACT tile substitution pending — RFI-003 awaiting response.",tomorrowPlan:"Weekend — resume Monday with corridor framing and ACT install.",photos:[],reviewedBy:null,reviewedAt:null,submittedAt:"2026-04-05T15:15:00Z"},
+  {id:"dr-ws-1",projectId:1,date:"2026-04-03",foremanId:4,foremanName:"Antonio Ramirez",isOutdoor:false,temperature:"",conditions:"",teamPresent:[2,3,5,6,7],crewCount:5,totalHours:40,workPerformed:"Framed east wall of Main Lab. Hung 200 SF drywall on Control Room ceiling. Started demo of existing partition at Corridor A.",materialsReceived:"200 EA 3-5/8\" studs, 80 SHT 5/8\" Type X",equipmentOnSite:"Scissor lift, powder-actuated tool",visitors:"Mason Williams (GC super) — morning walkthrough",safetyIncident:"None",issues:"Pipe run blocking framing at Grid B — submitted RFI-001.",tomorrowPlan:"Continue Main Lab framing. Start corridor ceiling grid layout.",photos:[],reviewedBy:null,reviewedAt:null,submittedAt:"2026-04-03T15:30:00Z"},
+  {id:"dr-ws-2",projectId:1,date:"2026-04-04",foremanId:4,foremanName:"Antonio Ramirez",isOutdoor:false,temperature:"",conditions:"",teamPresent:[2,3,5,6,7,8],crewCount:6,totalHours:48,workPerformed:"Completed Main Lab east wall framing. Hung remaining drywall on Control Room ceiling. GC confirmed RFI-002 — frame to deck. Started elevator shaft layout.",materialsReceived:"None",equipmentOnSite:"Scissor lift",visitors:"None",safetyIncident:"None",issues:"Elevator shaft fire rating needs UL confirmation — submitted RFI-004.",tomorrowPlan:"Continue elevator shaft framing. Begin ACT grid at Storage Room A.",photos:[],reviewedBy:"Abner Aguilar",reviewedAt:"2026-04-04T17:00:00Z",submittedAt:"2026-04-04T15:45:00Z"},
+  {id:"dr-ws-3",projectId:1,date:"2026-04-05",foremanId:4,foremanName:"Antonio Ramirez",isOutdoor:false,temperature:"",conditions:"",teamPresent:[2,3,5,6],crewCount:4,totalHours:32,workPerformed:"Elevator shaft framing in progress. Started ACT grid layout at Storage Room A. Punch items from corridor walkthrough documented.",materialsReceived:"ACT grid runners + cross tees (delivery from EBC Yard)",equipmentOnSite:"Scissor lift, laser level",visitors:"None",safetyIncident:"None",issues:"ACT tile substitution pending — RFI-003 awaiting response.",tomorrowPlan:"Weekend — resume Monday with corridor framing and ACT install.",photos:[],reviewedBy:null,reviewedAt:null,submittedAt:"2026-04-05T15:15:00Z"},
 ];
 
 // ── SEED: TAKEOFFS ──
@@ -695,14 +699,19 @@ export const MS = ["Award","Submittal","Buyout","Framing","Board","Tape","Punch"
 
 // ── SEED: EMPLOYEES ──
 const _demoEmployees = [
-  { id: 1, name: "Oscar Alvarez", role: "Foreman", pin: "1234", phone: "713-555-1001", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 42, active: true, email: "oscar@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
+  { id: 1, name: "Oscar Alvarez", role: "Foreman", pin: "1234", phone: "713-555-1001", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 42, active: true, email: "oscar@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null, trustedLead: false },
   { id: 2, name: "Ricardo Mendez", role: "Journeyman", pin: "2345", phone: "713-555-1002", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 35, active: true, email: "ricardo@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
   { id: 3, name: "Carlos Fuentes", role: "Apprentice", pin: "3456", phone: "713-555-1003", schedule: { start: "07:00", end: "15:30" }, hourlyRate: 22, active: true, email: "carlos@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
   { id: 4, name: "Miguel Torres", role: "Journeyman", pin: "4567", phone: "713-555-1004", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 35, active: true, email: "miguel@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
-  { id: 5, name: "David Ramirez", role: "Foreman", pin: "5678", phone: "713-555-1005", schedule: { start: "06:00", end: "14:30" }, hourlyRate: 42, active: true, email: "david@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
+  { id: 5, name: "David Ramirez", role: "Foreman", pin: "5678", phone: "713-555-1005", schedule: { start: "06:00", end: "14:30" }, hourlyRate: 42, active: true, email: "david@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null, trustedLead: false },
   { id: 6, name: "Luis Herrera", role: "Apprentice", pin: "6789", phone: "713-555-1006", schedule: { start: "07:00", end: "15:30" }, hourlyRate: 22, active: true, email: "luis@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
-  { id: 7, name: "Rigoberto Martinez", role: "Driver", pin: "7890", phone: "713-555-1007", schedule: { start: "07:00", end: "16:00" }, hourlyRate: 25, active: true, email: "rigoberto@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
-  { id: 9, name: "Antonio Hernandez", role: "Foreman", pin: "1009", phone: "713-555-1009", schedule: { start: "06:00", end: "14:30" }, hourlyRate: 42, active: true, email: "antonio@ebconstructors.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
+  // Rigoberto is SALARIED and delivery-only (not a crew member). He does not
+  // receive an hourly wage, so `hourlyRate` is null — this keeps him out of the
+  // hourly-payroll pipe (PayrollSummary/QB IIF time export) and out of project
+  // labor cost aggregations. His compensation runs through salary payroll in
+  // QuickBooks, not through the field-time-clock workflow.
+  { id: 7, name: "Rigoberto Martinez", role: "Driver", pin: "7890", phone: "713-555-1007", schedule: { start: "07:00", end: "16:00" }, employmentType: "salary", hourlyRate: null, active: true, email: "rigoberto@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
+  { id: 9, name: "Antonio Hernandez", role: "Foreman", pin: "1009", phone: "713-555-1009", schedule: { start: "06:00", end: "14:30" }, hourlyRate: 42, active: true, email: "antonio@ebconstructors.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null, trustedLead: false },
   { id: 10, name: "Jose Perez", role: "Journeyman", pin: "1110", phone: "713-555-1010", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 35, active: true, email: "jose@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
   { id: 11, name: "Fernando Reyes", role: "Apprentice", pin: "1111", phone: "713-555-1011", schedule: { start: "07:00", end: "15:30" }, hourlyRate: 22, active: true, email: "fernando@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
 ];

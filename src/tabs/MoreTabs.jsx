@@ -3,7 +3,7 @@ import { resetAllGuides } from "../components/FeatureGuide";
 import { ClipboardList, Folder, Search, Smartphone, Wrench, Shield, Download, ClipboardCopy, CheckCircle, AlertTriangle, AlertOctagon, Flame, Droplets, Heart, Globe, Wind, Zap, CheckSquare, Square } from "lucide-react";
 import { THEMES, OSHA_CHECKLIST, COMPANY_DEFAULTS, ASSEMBLIES } from "../data/constants";
 import { storePdf, getPdfUrl, deletePdf, fmtSize } from "../hooks/useSubmittalPdf";
-import { softDelete, filterActive, auditDiff, CRITICAL_FIELDS, validateInvoice, findDuplicateInvoice, validateChangeOrder, findDuplicateCO, validateAPBill, findDuplicateAPBill, computeProjectLaborCost, computeProjectTotalCost, validateAccrual, validateCommitment, computeProjectCommittedCost, computeBudgetVsActual, validatePeriod, DEFAULT_BURDEN } from "../utils/financialValidation";
+import { softDelete, filterActive, auditDiff, CRITICAL_FIELDS, validateInvoice, findDuplicateInvoice, validateChangeOrder, findDuplicateCO, validateAPBill, findDuplicateAPBill, computeProjectLaborCost, computeProjectLaborByCode, computeProjectTotalCost, computeProjectCostForPeriod, validateAccrual, validateCommitment, computeProjectCommittedCost, computeBudgetVsActual, validatePeriod, computeWorkedHours, getAdjustedContract, DEFAULT_BURDEN } from "../utils/financialValidation";
 import { TimeClockAdmin } from "./TimeClockAdmin";
 import { MapView } from "./MapView";
 
@@ -1399,31 +1399,39 @@ function JobCostingTab({ app }) {
   const [varianceLoading, setVarianceLoading] = useState(false);
   const [showVariance, setShowVariance] = useState(false);
   const [expandedCostCodes, setExpandedCostCodes] = useState({});
+  // Period scoping — null = all-time (current behavior). Otherwise "YYYY-MM".
+  const [costPeriod, setCostPeriod] = useState(null);
   const marginThreshold = (app.companySettings?.marginAlertThreshold || 25) / 100;
 
+  // Build period choices from existing time entries + AP bills so the user
+  // only sees months that actually have cost data.
+  const periodOptions = (() => {
+    const months = new Set();
+    for (const te of (app.timeEntries || [])) {
+      if (te.status === "deleted") continue;
+      if (te.clockIn) months.add(String(te.clockIn).slice(0, 7));
+    }
+    for (const b of (app.apBills || [])) {
+      if (b.status === "deleted") continue;
+      if (b.date) months.add(String(b.date).slice(0, 7));
+    }
+    return Array.from(months).filter(Boolean).sort().reverse();
+  })();
+
+  // Uses shared computeProjectLaborByCode so this table reconciles with the
+  // summary row above (lunch deduction + burden applied identically).
   const getCostCodeBreakdown = (projectId, projectName) => {
     const burden = app.companySettings?.laborBurdenMultiplier || DEFAULT_BURDEN;
-    const employeeMap = new Map((app.employees || []).map(e => [e.id, e]));
-    const employeeNameMap = new Map((app.employees || []).map(e => [e.name, e]));
-    const entries = (app.timeEntries || []).filter(te => {
-      if (te.status === "deleted") return false;
-      if (!te.clockIn || !te.clockOut) return false;
-      if (te.isTM) return false;
-      if (te.projectId && String(te.projectId) === String(projectId)) return true;
-      if (te.projectName && te.projectName === projectName) return true;
-      return false;
-    });
-    const codes = {};
-    for (const te of entries) {
-      const code = te.costCode || "misc";
-      const hours = (new Date(te.clockOut) - new Date(te.clockIn)) / 3600000;
-      const emp = employeeMap.get(te.employeeId) || employeeNameMap.get(te.employeeName);
-      const rate = emp?.hourlyRate || 0;
-      if (!codes[code]) codes[code] = { hours: 0, cost: 0 };
-      codes[code].hours += hours;
-      codes[code].cost += hours * rate * burden;
-    }
-    return Object.entries(codes).sort((a, b) => b[1].cost - a[1].cost);
+    const { byCode } = computeProjectLaborByCode(
+      projectId,
+      projectName,
+      app.timeEntries || [],
+      app.employees || [],
+      burden
+    );
+    return Array.from(byCode.entries())
+      .map(([code, data]) => [code || "misc", { hours: data.hours, cost: data.burdenedCost }])
+      .sort((a, b) => b[1].cost - a[1].cost);
   };
 
   const runVarianceAnalysis = async () => {
@@ -1459,10 +1467,26 @@ function JobCostingTab({ app }) {
     <div className="mt-16">
       <div className="flex-between">
         <div className="section-title">Job Costing by Project</div>
-        <button className="btn btn-ghost btn-sm" onClick={runVarianceAnalysis} disabled={varianceLoading}>
-          {varianceLoading ? "Analyzing..." : "AI Variance Analysis"}
-        </button>
+        <div className="flex gap-8" style={{ alignItems: "center" }}>
+          <label className="text-xs text-muted">Period</label>
+          <select
+            className="form-select more-edit-select"
+            value={costPeriod || ""}
+            onChange={e => setCostPeriod(e.target.value || null)}
+          >
+            <option value="">All-time</option>
+            {periodOptions.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <button className="btn btn-ghost btn-sm" onClick={runVarianceAnalysis} disabled={varianceLoading}>
+            {varianceLoading ? "Analyzing..." : "AI Variance Analysis"}
+          </button>
+        </div>
       </div>
+      {costPeriod && (
+        <div className="text-xs text-amber mt-4" style={{ fontStyle: "italic" }}>
+          Showing costs for {costPeriod} only (time entries + AP bills dated in this month).
+        </div>
+      )}
 
       {/* Variance Analysis Panel */}
       {showVariance && (
@@ -1553,16 +1577,22 @@ function JobCostingTab({ app }) {
         const tmTickets = (app.tmTickets || []).filter(t => t.projectId === proj.id);
         const tmApproved = tmTickets.filter(t => t.status === "approved" || t.status === "billed").reduce((s, t) => s + calcTicketTotal(t), 0);
         const tmPending = tmTickets.filter(t => t.status === "draft" || t.status === "submitted").reduce((s, t) => s + calcTicketTotal(t), 0);
-        const adjustedContract = proj.contract + cos;
+        const adjustedContract = getAdjustedContract(proj, app.changeOrders || []);
         const remaining = adjustedContract - billed;
         const pct = adjustedContract > 0 ? Math.round((billed / adjustedContract) * 100) : 0;
-        // Full cost breakdown from all sources
-        const costData = computeProjectTotalCost(
-          proj.id, proj.name, app.timeEntries || [], app.employees || [],
-          filterActive(app.apBills || []),
-          app.companySettings?.laborBurdenMultiplier || DEFAULT_BURDEN,
-          app.accruals || []
-        );
+        // Full cost breakdown from all sources — period-scoped when a month is selected
+        const burden = app.companySettings?.laborBurdenMultiplier || DEFAULT_BURDEN;
+        const costData = costPeriod
+          ? computeProjectCostForPeriod(
+              proj.id, proj.name, costPeriod,
+              app.timeEntries || [], app.employees || [],
+              filterActive(app.apBills || []),
+              app.accruals || [], burden
+            )
+          : computeProjectTotalCost(
+              proj.id, proj.name, app.timeEntries || [], app.employees || [],
+              filterActive(app.apBills || []), burden, app.accruals || []
+            );
         const totalCost = costData.total;
         const grossMargin = adjustedContract - totalCost;
         const marginPct = adjustedContract > 0 ? (grossMargin / adjustedContract) * 100 : 0;
@@ -1646,8 +1676,19 @@ function JobCostingTab({ app }) {
 /* ── Payroll Summary ──────────────────────────────────────────── */
 function PayrollSummaryTab({ app }) {
   const [period, setPeriod] = useState("week");
-  // Single source of truth: app.employees (replaces legacy localStorage "ebc_users" read)
-  const employees = (app.employees || []).filter(u => u && u.status !== "deleted");
+  // Single source of truth: app.employees (replaces legacy localStorage "ebc_users" read).
+  // Exclude salaried employees and non-crew roles (Drivers) — their compensation
+  // runs through salary payroll in QuickBooks, not through the hourly time-clock
+  // pipe. Including them would inflate hourly wages or divide by null.
+  // Drivers at EBC are salaried delivery-only (not field crew) — Rigoberto
+  // Martinez is the current example.
+  const isHourlyCrew = (u) => {
+    if (!u || u.status === "deleted") return false;
+    if (u.employmentType === "salary") return false;
+    if (u.role === "Driver") return false; // drivers are salaried, not hourly crew
+    return true;
+  };
+  const employees = (app.employees || []).filter(isHourlyCrew);
 
   const now = new Date();
   const periodStart = new Date(now);
@@ -1661,19 +1702,43 @@ function PayrollSummaryTab({ app }) {
     return d >= periodStart && d <= now;
   });
 
+  // FLSA OT is computed per workweek (Mon-Sun), NOT across the pay period.
+  // Biweekly 38h + 38h = 0 OT (not 40 reg + 36 OT). Without this grouping
+  // the QB IIF export ships wrong wages for any biweekly/monthly run.
+  const getWorkweekKey = (date) => {
+    if (!date) return "unknown";
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "unknown";
+    const day = d.getDay(); // 0=Sun, 1=Mon ... 6=Sat
+    const diff = day === 0 ? -6 : 1 - day; // back to Monday
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diff);
+    monday.setHours(0, 0, 0, 0);
+    return monday.toISOString().slice(0, 10);
+  };
+
   const byEmployee = employees.map(emp => {
     const entries = periodEntries.filter(e => e.employeeId === emp.id || e.employee === emp.name);
-    const totalHours = entries.reduce((s, e) => {
-      if (e.hours) return s + e.hours;
-      if (e.clockIn && e.clockOut) return s + (new Date(e.clockOut) - new Date(e.clockIn)) / 3600000;
-      return s;
-    }, 0);
+
+    // Group hours by ISO workweek (Mon-Sun) so OT is per-week, not per-period.
+    const weekHours = new Map();
+    for (const e of entries) {
+      const key = getWorkweekKey(e.clockIn || e.date);
+      const hours = computeWorkedHours(e);
+      weekHours.set(key, (weekHours.get(key) || 0) + hours);
+    }
+
+    let regularHours = 0;
+    let otHours = 0;
+    for (const h of weekHours.values()) {
+      regularHours += Math.min(h, 40);
+      otHours += Math.max(h - 40, 0);
+    }
+    const totalHours = regularHours + otHours;
     const rate = emp.hourlyRate || 35;
-    const regularHours = Math.min(totalHours, 40);
-    const otHours = Math.max(totalHours - 40, 0);
     const grossPay = regularHours * rate + otHours * rate * 1.5;
     return { ...emp, totalHours, regularHours, otHours, rate, grossPay, entryCount: entries.length };
-  }).filter(e => e.totalHours > 0 || true).sort((a, b) => b.totalHours - a.totalHours);
+  }).sort((a, b) => b.totalHours - a.totalHours);
 
   const totalPayroll = byEmployee.reduce((s, e) => s + e.grossPay, 0);
   const totalHours = byEmployee.reduce((s, e) => s + e.totalHours, 0);
@@ -1709,9 +1774,19 @@ function PayrollSummaryTab({ app }) {
           <button className="btn btn-ghost btn-sm" onClick={exportPayrollCSV}>Export CSV</button>
           <button className="btn btn-primary btn-sm" onClick={() => {
             import("../utils/qbExport.js").then(({ generateTimeIIF, downloadIIF, validateTimeEntries }) => {
+              // Salaried / non-crew employee IDs — their time entries must NEVER
+              // land in the hourly-wage IIF export or QB will double-pay them.
+              // Drivers are salaried delivery-only (not hourly field crew).
+              const excludedIds = new Set(
+                (app.employees || [])
+                  .filter(u => u && (u.employmentType === "salary" || u.role === "Driver"))
+                  .map(u => u.id)
+              );
               const filtered = (app.timeEntries || []).filter(e => {
                 const d = new Date(e.clockIn || e.date);
-                return d >= periodStart && d <= now;
+                if (!(d >= periodStart && d <= now)) return false;
+                if (excludedIds.has(e.employeeId)) return false;
+                return true;
               });
               if (filtered.length === 0) { app.show("No time entries for this period"); return; }
               const warnings = validateTimeEntries(filtered);
@@ -3446,13 +3521,30 @@ function FinReportsTab({ app }) {
   const burden = app.companySettings?.laborBurdenMultiplier || DEFAULT_BURDEN;
   const marginThreshold = app.companySettings?.marginAlertThreshold || 25;
 
+  // Period scoping — null = all-time; "YYYY-MM" = month-scoped
+  const [wipPeriod, setWipPeriod] = useState(null);
+  const wipPeriodOptions = (() => {
+    const months = new Set();
+    for (const te of (app.timeEntries || [])) {
+      if (te.status === "deleted") continue;
+      if (te.clockIn) months.add(String(te.clockIn).slice(0, 7));
+    }
+    for (const b of (app.apBills || [])) {
+      if (b.status === "deleted") continue;
+      if (b.date) months.add(String(b.date).slice(0, 7));
+    }
+    return Array.from(months).filter(Boolean).sort().reverse();
+  })();
+
   // Compute project metrics once — exclude completed projects
   const budgets = app.budgets || {};
   const projectMetrics = projects.filter(p => p.status !== "completed" && p.status !== "deleted").map(p => {
-    const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, app.accruals || []);
+    const costs = wipPeriod
+      ? computeProjectCostForPeriod(p.id, p.name, wipPeriod, timeEntries, employees, apBills, app.accruals || [], burden)
+      : computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, app.accruals || []);
     const billed = invoices.filter(i => String(i.projectId) === String(p.id)).reduce((s, i) => s + (i.amount || 0), 0);
-    const approvedCOs = changeOrders.filter(c => String(c.projectId) === String(p.id) && c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
-    const adjustedContract = (p.contract || 0) + approvedCOs;
+    const adjustedContract = getAdjustedContract(p, changeOrders);
+    const approvedCOs = adjustedContract - (p.contract || 0);
     // Cost-to-cost % complete: actual cost / total estimated cost (budget). NOT clamped — show overruns.
     const totalEstimatedCost = (budgets[p.id] || []).reduce((s, l) => s + (l.budgetAmount || 0), 0);
     const hasBudget = totalEstimatedCost > 0;
@@ -3507,17 +3599,31 @@ function FinReportsTab({ app }) {
       {/* A) WIP SCHEDULE */}
       <div className="flex-between mt-16">
         <div className="section-title">WIP Schedule (Work in Progress)</div>
-        <button className="btn btn-ghost btn-sm" onClick={() => {
-          const headers = ["Project", "Contract", "Adj Contract", "Cost to Date", "% Complete", "Earned", "Billed", "Over/Under"];
-          const rows = projectMetrics.map(m => [`"${m.p.name}"`, m.p.contract || 0, m.adjustedContract, Math.round(m.costs.total), Math.round(m.percentComplete * 100) + "%", Math.round(m.earnedRevenue), m.billed, Math.round(m.overUnder)]);
-          const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-          const blob = new Blob([csv], { type: "text/csv" });
-          const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "ebc_wip_schedule.csv"; a.click(); URL.revokeObjectURL(url);
-          app.show("WIP schedule exported");
-        }}>Export CSV</button>
+        <div className="flex gap-8" style={{ alignItems: "center" }}>
+          <label className="text-xs text-muted">Period</label>
+          <select
+            className="form-select more-edit-select"
+            value={wipPeriod || ""}
+            onChange={e => setWipPeriod(e.target.value || null)}
+          >
+            <option value="">All-time</option>
+            {wipPeriodOptions.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <button className="btn btn-ghost btn-sm" onClick={() => {
+            const headers = ["Project", "Contract", "Adj Contract", "Cost to Date", "% Complete", "Earned", "Billed", "Over/Under"];
+            const rows = projectMetrics.map(m => [`"${m.p.name}"`, m.p.contract || 0, m.adjustedContract, Math.round(m.costs.total), Math.round(m.percentComplete * 100) + "%", Math.round(m.earnedRevenue), m.billed, Math.round(m.overUnder)]);
+            const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `ebc_wip_schedule${wipPeriod ? "_" + wipPeriod : ""}.csv`; a.click(); URL.revokeObjectURL(url);
+            app.show("WIP schedule exported");
+          }}>Export CSV</button>
+        </div>
       </div>
 
-      <div className="text-xs text-dim mt-4">% Complete is cost-to-cost based on approved budget. Projects without a budget show "—".</div>
+      <div className="text-xs text-dim mt-4">
+        % Complete is cost-to-cost based on approved budget. Projects without a budget show "—".
+        {wipPeriod && <span className="text-amber" style={{ marginLeft: 8, fontStyle: "italic" }}>Costs scoped to {wipPeriod}. Billed/earned are still lifetime.</span>}
+      </div>
       <div className="table-wrap mt-16">
         <table className="data-table">
           <thead><tr><th>Project</th><th>Contract</th><th>Adj Contract</th><th>Cost to Date</th><th>% Complete</th><th>Earned</th><th>Billed</th><th>Over/(Under)</th></tr></thead>

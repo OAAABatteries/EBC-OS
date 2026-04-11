@@ -15,7 +15,7 @@ import {
   initVendors, initAPBills, initPeriods, COST_TYPES, COST_CODES,
   initAccruals, initCommitments, initBudgets
 } from "./data/constants";
-import { softDelete, filterActive, computeProjectLaborCost, computeProjectLaborByCode, computeProjectTotalCost, validatePeriod } from "./utils/financialValidation";
+import { softDelete, filterActive, computeProjectLaborCost, computeProjectLaborByCode, computeProjectTotalCost, validatePeriod, getAdjustedContract } from "./utils/financialValidation";
 import { AreasTab } from "./tabs/AreasTab";
 import { PunchListTab } from "./tabs/PunchListTab";
 import { DecisionLogTab } from "./tabs/DecisionLogTab";
@@ -239,6 +239,161 @@ const CyberRain = () => {
     </div>
   );
 };
+
+// ═══════════════════════════════════════════════════════════════
+// PREVIEW DEVICE FRAMES (admin impersonation / auditor QA)
+// ═══════════════════════════════════════════════════════════════
+// Each preset defines portrait dimensions + chrome locations; landscape is
+// an explicit sibling (not derived) so we can reposition notch/home-indicator
+// cleanly for each orientation. `class` drives the mock status bar styling.
+// `statusBar` is the TOTAL vertical height (px) reserved for fake OS chrome
+// at the top of the screen area — portal content pads below it.
+const DEVICE_PRESETS = {
+  "iphone-14-pro": {
+    label: "iPhone 14 Pro",
+    class: "ios",
+    portrait: {
+      w: 390, h: 844, radius: 48, bezel: 12,
+      statusBar: 54,
+      notch: { type: "island", side: "top", w: 120, h: 28, offset: 14 },
+      homeIndicator: { side: "bottom", w: 140, h: 5, offset: 8 },
+    },
+    landscape: {
+      w: 844, h: 390, radius: 48, bezel: 12,
+      statusBar: 24,
+      // In landscape (rotated counter-clockwise) the island sits on the LEFT edge
+      notch: { type: "island", side: "left", w: 28, h: 120, offset: 14 },
+      homeIndicator: { side: "right", w: 5, h: 140, offset: 8 },
+    },
+  },
+  "ipad-pro-11": {
+    label: "iPad Pro 11\"",
+    class: "ios",
+    portrait: {
+      w: 834, h: 1194, radius: 24, bezel: 14,
+      statusBar: 24,
+      notch: null,
+      homeIndicator: { side: "bottom", w: 140, h: 5, offset: 8 },
+    },
+    landscape: {
+      w: 1194, h: 834, radius: 24, bezel: 14,
+      statusBar: 24,
+      notch: null,
+      homeIndicator: { side: "bottom", w: 140, h: 5, offset: 8 },
+    },
+  },
+  "galaxy-tab-s9": {
+    label: "Galaxy Tab S9",
+    class: "android",
+    portrait: {
+      w: 800, h: 1280, radius: 20, bezel: 10,
+      statusBar: 28,
+      notch: null,
+      homeIndicator: null,
+      navBar: 24,
+    },
+    landscape: {
+      w: 1280, h: 800, radius: 20, bezel: 10,
+      statusBar: 28,
+      notch: null,
+      homeIndicator: null,
+      navBar: 24,
+    },
+  },
+};
+
+// Draws a fake iOS/Android status bar pinned to the top of the device screen
+// area. Shows live clock + signal/wifi/battery indicators. Intended as visual
+// polish for the auditor preview frames — NOT wired to real signal data.
+function MockStatusBar({ deviceClass, statusBarHeight, orientation, hasTopNotch }) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(id);
+  }, []);
+  const time = deviceClass === "ios"
+    ? now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).replace(/\s?(AM|PM)/i, "")
+    : now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+
+  // iOS portrait with a top island: time sits left of notch, icons right of notch.
+  // iOS landscape/iPad/Android: no center gap, thin strip.
+  const sidePad = hasTopNotch ? 24 : 20;
+  const fontSize = deviceClass === "ios" ? (hasTopNotch ? 15 : 12) : 12;
+  const topOffset = hasTopNotch ? 14 : 0; // push content down to align with the island midline
+  const color = "#fff";
+
+  // Inline SVG-ish glyphs rendered with divs/svg for minimal footprint
+  const SignalBars = () => (
+    <div style={{ display: "inline-flex", gap: 1.5, alignItems: "flex-end", height: 10 }} aria-hidden>
+      <div style={{ width: 3, height: 4, borderRadius: 0.5, background: color }} />
+      <div style={{ width: 3, height: 6, borderRadius: 0.5, background: color }} />
+      <div style={{ width: 3, height: 8, borderRadius: 0.5, background: color }} />
+      <div style={{ width: 3, height: 10, borderRadius: 0.5, background: color }} />
+    </div>
+  );
+  const WifiGlyph = () => (
+    <svg width="15" height="11" viewBox="0 0 15 11" aria-hidden>
+      <path d="M7.5 10.5a1.1 1.1 0 1 0 0-2.2 1.1 1.1 0 0 0 0 2.2Z" fill={color} />
+      <path d="M4.2 7.2a4.6 4.6 0 0 1 6.6 0l-1.3 1.3a2.8 2.8 0 0 0-4 0L4.2 7.2Z" fill={color} />
+      <path d="M1.6 4.6a8.4 8.4 0 0 1 11.8 0l-1.3 1.3a6.6 6.6 0 0 0-9.2 0L1.6 4.6Z" fill={color} />
+    </svg>
+  );
+  const Battery = () => (
+    <div style={{
+      position: "relative",
+      width: 24,
+      height: 11,
+      border: `1px solid ${color}`,
+      borderRadius: 3,
+      padding: 1,
+      boxSizing: "border-box",
+    }} aria-hidden>
+      <div style={{ width: "82%", height: "100%", background: color, borderRadius: 1 }} />
+      <div style={{
+        position: "absolute",
+        right: -3,
+        top: "50%",
+        transform: "translateY(-50%)",
+        width: 2,
+        height: 5,
+        background: color,
+        borderRadius: "0 1px 1px 0",
+      }} />
+    </div>
+  );
+
+  return (
+    <div
+      className="mock-status-bar"
+      style={{
+        position: "absolute",
+        top: 0, left: 0, right: 0,
+        height: statusBarHeight,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: `${topOffset}px ${sidePad}px 0`,
+        color,
+        fontSize,
+        fontWeight: 600,
+        fontFamily: deviceClass === "ios"
+          ? "-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif"
+          : "'Roboto', system-ui, sans-serif",
+        letterSpacing: deviceClass === "ios" ? -0.2 : 0,
+        zIndex: 4,
+        pointerEvents: "none",
+        background: "transparent",
+      }}
+    >
+      <div style={{ minWidth: 40, textAlign: "left" }}>{time}</div>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <SignalBars />
+        <WifiGlyph />
+        <Battery />
+      </div>
+    </div>
+  );
+}
 
 // ── AUTH WRAPPER (defined after App below, exported as default) ──
 function AuthGate() {
@@ -536,6 +691,7 @@ function App({ auth, onLogout }) {
         setVendors(initVendors);
         setAPBills(initAPBills);
         setPeriods(initPeriods);
+        setEmployees(initEmployees);       // refreshes roster (comp type, rate, role)
         localStorage.setItem("ebc_data_version", String(DATA_VERSION));
         console.info("[EBC] Data version upgraded to", DATA_VERSION, "— re-seeded all data from constants.js");
       }
@@ -566,6 +722,10 @@ function App({ auth, onLogout }) {
   }, []);
   // ── role view toggle (Admin can preview other role views) ──
   const [viewAsRole, setViewAsRole] = useLocalStorage("ebc_viewAsRole", "");
+  // Auditor device + orientation for preview frames. Persisted so auditors
+  // don't have to re-pick every session. Defaults to iPhone portrait.
+  const [previewDevice, setPreviewDevice] = useLocalStorage("ebc_previewDevice", "iphone-14-pro");
+  const [previewOrient, setPreviewOrient] = useLocalStorage("ebc_previewOrient", "portrait");
 
   // ── role view toggle (effective role drives tabs AND phone-portal impersonation) ──
   const effectiveRole = viewAsRole || auth?.role || "owner";
@@ -582,11 +742,27 @@ function App({ auth, onLogout }) {
   const isForemanView = auth?.role === "foreman" || (isImpersonatingPortal && viewAsRole === "foreman");
 
   // Viewport tracking for responsive phone-frame scaling in impersonation mode.
+  // rAF-throttled so drag-resize only updates once per frame (avoids the "GTA
+  // choppy zoom" effect where every intermediate innerHeight triggered a
+  // re-render + snap-to-new-scale). Tracks BOTH axes so landscape tablet frames
+  // can fit-box against horizontal space too.
   const [viewportH, setViewportH] = useState(() => typeof window !== "undefined" ? window.innerHeight : 900);
+  const [viewportW, setViewportW] = useState(() => typeof window !== "undefined" ? window.innerWidth : 1400);
   useEffect(() => {
-    const handler = () => setViewportH(window.innerHeight);
+    let rafId = 0;
+    const handler = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        setViewportH(window.innerHeight);
+        setViewportW(window.innerWidth);
+      });
+    };
     window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
+    return () => {
+      window.removeEventListener("resize", handler);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   // ── ephemeral state ──
@@ -991,19 +1167,22 @@ function App({ auth, onLogout }) {
     // Uses computeProjectTotalCost for full cost breakdown (labor + material + sub + other AP)
     const marginThreshold = companySettings?.marginAlertThreshold || 25;
     const burden = companySettings?.laborBurdenMultiplier || 1.35;
+    // Use adjusted contract (base + approved COs) so margin matches every other
+    // screen. Using raw p.contract here is the #1 source of dashboard/P&L
+    // self-contradiction flagged by the auditor.
     const profitAlerts = projects.filter(p => {
       if ((p.progress || 0) >= 100) return false; // skip completed
-      const contract = p.contract || 0;
-      if (contract <= 0) return false; // can't calculate without contract
+      const adjustedContract = getAdjustedContract(p, changeOrders);
+      if (adjustedContract <= 0) return false; // can't calculate without contract
       const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, accruals || []);
       if (costs.total <= 0) return false; // no costs yet — not alertable
-      const margin = ((contract - costs.total) / contract) * 100;
+      const margin = ((adjustedContract - costs.total) / adjustedContract) * 100;
       return margin < marginThreshold;
     }).map(p => {
-      const contract = p.contract || 0;
+      const adjustedContract = getAdjustedContract(p, changeOrders);
       const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, accruals || []);
-      const margin = Math.round(((contract - costs.total) / contract) * 100);
-      return { ...p, margin, totalCost: costs.total, laborActual: costs.labor, materialEst: costs.material, laborHours: costs.laborHours, subCost: costs.subcontractor, otherAP: costs.otherAP };
+      const margin = Math.round(((adjustedContract - costs.total) / adjustedContract) * 100);
+      return { ...p, adjustedContract, margin, totalCost: costs.total, laborActual: costs.labor, materialActual: costs.material, laborHours: costs.laborHours, subCost: costs.subcontractor, otherAP: costs.otherAP };
     }).sort((a, b) => a.margin - b.margin);
 
     // Total urgency count
@@ -1556,8 +1735,9 @@ function App({ auth, onLogout }) {
       {dashCfg.showKPIs && dashActions.profitAlerts.length > 0 && (() => {
         const marginThr = companySettings?.marginAlertThreshold || 25;
         const getProfitDiagnosis = (p) => {
-          const laborRatio = p.laborActual ? p.laborActual / p.contract : null;
-          const matRatio = p.materialEst ? p.materialEst / p.contract : null;
+          const base = p.adjustedContract || p.contract || 0;
+          const laborRatio = p.laborActual && base > 0 ? p.laborActual / base : null;
+          const matRatio = p.materialActual && base > 0 ? p.materialActual / base : null;
           const issues = [];
           // Labor is primary profit driver — healthy labor ratio is ~50% of contract (100% markup)
           if (laborRatio !== null && laborRatio > 0.55) issues.push({ icon: <Wrench size={11} />, text: "Labor overrun" });
@@ -1610,7 +1790,7 @@ function App({ auth, onLogout }) {
                           <div className="text-xs text-muted">{p.phase}</div>
                         </td>
                         <td className="text-sm text-muted">{p.gc}</td>
-                        <td className="num">{fmt(p.contract)}</td>
+                        <td className="num">{fmt(p.adjustedContract || p.contract)}</td>
                         <td className="num text-muted">{fmt(p.totalCost)}</td>
                         <td className="num">
                           <span className={`badge ${badgeClass} inline-block text-center`} style={{ minWidth: 48 }}>
@@ -2900,7 +3080,7 @@ function App({ auth, onLogout }) {
                 {pSubs.length > 0 && <span className="text-amber">Sub: {pSubs.length}</span>}
                 {pCOs.length > 0 && <span className="text-amber">CO: {pCOs.length}</span>}
                 {billingLag && <span className="text-red">Billing lag</span>}
-                {(() => { const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, companySettings?.laborBurdenMultiplier || 1.35, accruals || []); const c = p.contract || 0; const thr = companySettings?.marginAlertThreshold || 25; if (costs.total > 0 && c > 0) { const m = Math.round(((c - costs.total) / c) * 100); if (m < thr) return <span style={{ color: m < 0 ? "#dc2626" : "var(--red)", fontWeight: "var(--weight-semi)" }}>Margin: {m}%</span>; } return null; })()}
+                {(() => { const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, companySettings?.laborBurdenMultiplier || 1.35, accruals || []); const c = getAdjustedContract(p, changeOrders); const thr = companySettings?.marginAlertThreshold || 25; if (costs.total > 0 && c > 0) { const m = Math.round(((c - costs.total) / c) * 100); if (m < thr) return <span style={{ color: m < 0 ? "#dc2626" : "var(--red)", fontWeight: "var(--weight-semi)" }}>Margin: {m}%</span>; } return null; })()}
                 {pRfis.length === 0 && pSubs.length === 0 && pCOs.length === 0 && !billingLag && <span className="text-green">On track</span>}
               </div>
               {/* Closeout button for near-complete */}
@@ -3790,11 +3970,21 @@ function App({ auth, onLogout }) {
   const isCyber = theme === "cyberpunk";
 
   // ── Portal views for field roles (real login OR admin/owner impersonation) ──
-  // When impersonating, wrap the portal in a phone-frame bezel so the desktop
-  // view mirrors what the crew sees — intended for in-person explanation.
+  // When impersonating, wrap the portal in a device-frame bezel so the desktop
+  // view mirrors what the crew sees — intended for in-person explanation AND
+  // auditor QA across multiple device viewports (phone/tablet, portrait/land).
+  //
   // Safe-area CSS injected only when this App instance is running inside the
-  // preview iframe — pushes the portal header down so the phone notch stops
-  // covering the EN/ES language toggle.
+  // preview iframe. The status-bar height is read from the `sb` URL param so
+  // the portal header reserves exactly the right amount of space for the
+  // mock iOS/Android status bar drawn by the parent frame.
+  const previewStatusBarH = (() => {
+    if (!isPhonePreview) return 0;
+    try {
+      const n = parseInt(new URLSearchParams(window.location.search).get("sb") || "0", 10);
+      return Number.isFinite(n) && n >= 0 && n <= 120 ? n : 0;
+    } catch { return 0; }
+  })();
   const phonePreviewSafeArea = isPhonePreview ? (
     <style>{`
       /* Kill default iframe body margin so there's no pixel crack at the edges */
@@ -3809,6 +3999,9 @@ function App({ auth, onLogout }) {
       .field-nav, .bottom-nav { bottom: 0 !important; }
       /* Network banner was pushed down by the header safe-area shift */
       .network-banner { position: relative; }
+      /* Status-bar safe-area: push the portal header below the mock OS chrome
+         drawn by the parent preview frame. Value comes from ?sb=<px> param. */
+      .portal-header--preview { padding-top: ${previewStatusBarH + 6}px !important; }
     `}</style>
   ) : null;
   const renderFieldPortal = (PortalComp, roleLabel) => {
@@ -3824,10 +4017,16 @@ function App({ auth, onLogout }) {
         </div>
       );
     }
-    // Impersonation mode: top control bar + iPhone-style frame containing an
-    // iframe that loads the app with ?preview=<role>. Inside the iframe, auth is
-    // forced to that role by AuthGate, so the portal renders full-bleed AND its
-    // CSS media queries fire against the iframe's real 390px viewport.
+    // Impersonation mode: top control bar + device-style frame containing an
+    // iframe that loads the app with ?preview=<role>&device=<id>&orient=<o>&sb=<n>.
+    // Inside the iframe, AuthGate forces auth to the impersonated role and
+    // PortalHeader reads the `sb` param to reserve space below the mock OS chrome.
+    // Each device preset defines its own dimensions + chrome, so iPhone/iPad/
+    // Galaxy Tab all render with correct viewport AND correct CSS media-query
+    // context — auditors see real responsive behavior, not stretched phone.
+    const device = DEVICE_PRESETS[previewDevice] || DEVICE_PRESETS["iphone-14-pro"];
+    const orient = previewOrient === "landscape" ? "landscape" : "portrait";
+    const dims = device[orient];
     return (
       <div className={`app${isAnime ? " anime-glow" : ""}${isCyber ? " cyber-glow" : ""}`} style={{ background: "var(--bg1)", minHeight: "100vh" }}>
         <style>{styles}</style>
@@ -3839,13 +4038,13 @@ function App({ auth, onLogout }) {
           background: "linear-gradient(180deg, rgba(245,158,11,0.14), rgba(245,158,11,0.04))",
           borderBottom: "1px solid rgba(245,158,11,0.35)",
           padding: "10px 16px",
-          display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
+          display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
         }}>
           <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.5, color: "var(--amber)", textTransform: "uppercase" }}>
             Preview Mode
           </span>
           <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
-            Viewing as <strong style={{ color: "var(--text1)" }}>{roleLabel}</strong> — this is the crew's phone view
+            <strong style={{ color: "var(--text1)" }}>{roleLabel}</strong> on <strong style={{ color: "var(--text1)" }}>{device.label}</strong> · <span style={{ textTransform: "capitalize" }}>{orient}</span>
           </span>
           <div style={{ flex: 1 }} />
           <select
@@ -3858,6 +4057,25 @@ function App({ auth, onLogout }) {
             <option value="employee">Employee / Team</option>
             <option value="driver">Driver</option>
           </select>
+          <select
+            value={previewDevice}
+            onChange={(e) => setPreviewDevice(e.target.value)}
+            style={{ fontSize: 12, padding: "6px 10px", borderRadius: 8, background: "var(--bg3)", color: "var(--text1)", border: "1px solid var(--border)", cursor: "pointer" }}
+            aria-label="Switch preview device"
+          >
+            {Object.entries(DEVICE_PRESETS).map(([key, preset]) => (
+              <option key={key} value={key}>{preset.label}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => setPreviewOrient(previewOrient === "landscape" ? "portrait" : "landscape")}
+            style={{ fontSize: 12, padding: "6px 10px", borderRadius: 8, background: "var(--bg3)", color: "var(--text1)", border: "1px solid var(--border)", cursor: "pointer", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}
+            aria-label={`Rotate to ${previewOrient === "landscape" ? "portrait" : "landscape"}`}
+            title={`Rotate to ${previewOrient === "landscape" ? "portrait" : "landscape"}`}
+          >
+            <span style={{ display: "inline-block", transform: previewOrient === "landscape" ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 180ms ease-out" }}>⟲</span>
+            <span>{previewOrient === "landscape" ? "Landscape" : "Portrait"}</span>
+          </button>
           <button
             onClick={() => setViewAsRole("")}
             style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "var(--bg3)", color: "var(--text1)", border: "1px solid var(--border)", cursor: "pointer", fontWeight: 600 }}
@@ -3865,67 +4083,128 @@ function App({ auth, onLogout }) {
             Exit preview
           </button>
         </div>
-        {/* Phone-frame wrapper — FIXED 390×844 layout box, visually scaled via transform
-            so the portal's CSS/media-query context stays "phone-sized" regardless of the
-            host desktop viewport. The reservation div claims only the scaled footprint. */}
+        {/* Device-frame wrapper — FIXED (dims.w × dims.h) layout box, visually
+            scaled via transform so the portal's CSS/media-query context stays
+            pinned to the device's true viewport regardless of the host window size.
+            Fit-to-box scaling uses min(availableH/h, availableW/w) so landscape
+            tablets (1194px wide) still fit in a 1280px browser window. */}
         {(() => {
-          const PHONE_W = 390;
-          const PHONE_H = 844;
-          // 56px preview bar + 60px top padding + 40px bottom padding ≈ 156px of chrome.
-          const available = Math.max(320, viewportH - 160);
-          const phoneScale = Math.min(1, available / PHONE_H);
-          const scaledW = PHONE_W * phoneScale;
-          const scaledH = PHONE_H * phoneScale;
+          const DEV_W = dims.w;
+          const DEV_H = dims.h;
+          // Chrome budget: preview bar (~56px) + top pad (32px) + bottom pad (40px)
+          // vertical, horizontal pad (32px) horizontal.
+          const availableH = Math.max(320, viewportH - 128);
+          const availableW = Math.max(320, viewportW - 64);
+          const deviceScale = Math.min(1, Math.min(availableH / DEV_H, availableW / DEV_W));
+          const scaledW = DEV_W * deviceScale;
+          const scaledH = DEV_H * deviceScale;
+
+          const sbH = dims.statusBar || 0;
+          const hasTopNotch = !!(dims.notch && dims.notch.side === "top");
+          const hasSideNotch = !!(dims.notch && dims.notch.side !== "top");
+          const sideGap = hasSideNotch ? (dims.notch.w + 4) : 0;
+
+          // URL params for the iframe: role + device class so PortalHeader can
+          // reserve the right status-bar height AND side-gutter in landscape.
+          const iframeSrc = `${window.location.pathname}?preview=${viewAsRole}&device=${previewDevice}&orient=${orient}&sb=${sbH}&sideGap=${sideGap}&notchSide=${dims.notch?.side || "none"}`;
+
+          // Inner screen area = frame size minus bezel padding on all sides.
+          const screenW = DEV_W - (dims.bezel * 2);
+          const screenH = DEV_H - (dims.bezel * 2);
+
+          // Notch absolute position inside the screen-area container
+          const notchStyle = dims.notch ? (() => {
+            const n = dims.notch;
+            if (n.side === "top") {
+              return { position: "absolute", top: n.offset, left: "50%", transform: "translateX(-50%)", width: n.w, height: n.h, borderRadius: Math.min(n.h, n.w) * 0.6, background: "#000", zIndex: 3 };
+            }
+            if (n.side === "left") {
+              return { position: "absolute", left: n.offset, top: "50%", transform: "translateY(-50%)", width: n.w, height: n.h, borderRadius: Math.min(n.h, n.w) * 0.6, background: "#000", zIndex: 3 };
+            }
+            return null;
+          })() : null;
+
+          // Home indicator (iOS) or nav bar (Android)
+          const hi = dims.homeIndicator;
+          const homeStyle = hi ? (() => {
+            if (hi.side === "bottom") {
+              return { position: "absolute", bottom: hi.offset, left: "50%", transform: "translateX(-50%)", width: hi.w, height: hi.h, borderRadius: hi.h / 2, background: "rgba(255,255,255,0.85)", zIndex: 3 };
+            }
+            if (hi.side === "right") {
+              return { position: "absolute", right: hi.offset, top: "50%", transform: "translateY(-50%)", width: hi.w, height: hi.h, borderRadius: hi.w / 2, background: "rgba(255,255,255,0.85)", zIndex: 3 };
+            }
+            return null;
+          })() : null;
+
           return (
             <div style={{
               display: "flex", justifyContent: "center", alignItems: "flex-start",
-              padding: "24px 16px 32px",
+              padding: "24px 32px 40px",
               minHeight: "calc(100vh - 56px)",
             }}>
-              {/* Reservation: takes the visual (scaled) size in flex layout */}
-              <div style={{ width: scaledW, height: scaledH, position: "relative", flexShrink: 0 }}>
-                {/* The actual phone, at native 390×844, scaled down via transform.
-                    transform-origin: top left makes the scaled box occupy [0,0]→[scaledW,scaledH]. */}
+              {/* Reservation: takes the visual (scaled) size in flex layout. */}
+              <div style={{
+                width: scaledW,
+                height: scaledH,
+                position: "relative",
+                flexShrink: 0,
+                transition: "width 180ms ease-out, height 180ms ease-out",
+                willChange: "width, height",
+              }}>
+                {/* Actual device frame, native size, scaled via transform. */}
                 <div style={{
-                  width: PHONE_W,
-                  height: PHONE_H,
-                  transform: `scale(${phoneScale})`,
+                  width: DEV_W,
+                  height: DEV_H,
+                  transform: `scale(${deviceScale})`,
                   transformOrigin: "top left",
-                  borderRadius: 48,
+                  transition: "transform 180ms ease-out",
+                  willChange: "transform",
+                  borderRadius: dims.radius,
                   background: "#0b0b0f",
-                  padding: 12,
+                  padding: dims.bezel,
                   boxShadow: "0 30px 70px rgba(0,0,0,0.6), 0 0 0 2px rgba(255,255,255,0.06) inset",
                   position: "absolute",
                   top: 0,
                   left: 0,
+                  boxSizing: "border-box",
                 }}>
-                  {/* Notch */}
+                  {/* Screen area — iframe preview + mock status bar + notch overlay */}
                   <div style={{
-                    position: "absolute", top: 14, left: "50%", transform: "translateX(-50%)",
-                    width: 120, height: 28, borderRadius: 18, background: "#000", zIndex: 2,
-                  }} />
-                  {/* Screen — iframe preview. The iframe document has its own 390px
-                      viewport, so CSS media queries fire correctly and the portal
-                      renders pixel-accurately (not "desktop inside a phone"). */}
-                  <div style={{
-                    width: "100%", height: "100%",
-                    borderRadius: 36,
+                    width: screenW,
+                    height: screenH,
+                    borderRadius: Math.max(0, dims.radius - dims.bezel),
                     overflow: "hidden",
                     background: "var(--bg1)",
                     position: "relative",
                     isolation: "isolate",
                   }}>
+                    {/* iframe — loads portal at device's native viewport */}
                     <iframe
-                      key={viewAsRole}
-                      src={`${window.location.pathname}?preview=${viewAsRole}`}
-                      title={`${roleLabel} phone preview`}
+                      key={`${viewAsRole}_${previewDevice}_${orient}`}
+                      src={iframeSrc}
+                      title={`${roleLabel} ${device.label} ${orient} preview`}
                       style={{
                         width: "100%", height: "100%",
                         border: 0,
                         display: "block",
                         background: "var(--bg1)",
+                        position: "absolute",
+                        top: 0, left: 0,
                       }}
                     />
+                    {/* Mock OS status bar (live clock + signal/wifi/battery).
+                        Sits above the iframe so the clock/battery are visible
+                        at all times — the portal header pads down below it. */}
+                    <MockStatusBar
+                      deviceClass={device.class}
+                      statusBarHeight={sbH}
+                      orientation={orient}
+                      hasTopNotch={hasTopNotch}
+                    />
+                    {/* Notch / Dynamic Island overlay */}
+                    {notchStyle && <div style={notchStyle} aria-hidden />}
+                    {/* Home indicator / Android gesture bar */}
+                    {homeStyle && <div style={homeStyle} aria-hidden />}
                   </div>
                 </div>
               </div>
@@ -5612,12 +5891,15 @@ const ModalHub = ({ type, data, app }) => {
                 if (i.retainageWithheld != null) return s + (i.retainageWithheld || 0);
                 return s + Math.round((i.amount || 0) * defaultRetainageRate / 100);
               }, 0);
-              // Correct % complete = cost incurred / total estimated cost (budget), NOT cost / adjustedContract
+              // Correct % complete = cost incurred / total estimated cost (budget), NOT cost / adjustedContract.
+              // Unclamped % complete is shown to surface overruns; earned revenue is capped at 100%
+              // because you cannot recognize more revenue than the contract authorizes — the overrun
+              // is a projected loss, not additional earnings. Matches FinReports convention.
               const totalEstimatedCost = (app.budgets?.[draft.id] || []).reduce((s, line) => s + (line.budgetAmount || 0), 0);
               const hasBudget = totalEstimatedCost > 0;
-              // NOTE: Do NOT clamp at 1.0 — an over-budget job (cost > estimated) must show the overrun
               const percentComplete = hasBudget ? costs.total / totalEstimatedCost : 0;
-              const earnedRevenue = hasBudget ? percentComplete * adjustedContract : 0;
+              const earnedRevenue = hasBudget ? Math.min(percentComplete, 1) * adjustedContract : 0;
+              const projectedLoss = hasBudget && percentComplete > 1 ? (percentComplete - 1) * adjustedContract : 0;
               const overUnder = hasBudget ? billedToDate - earnedRevenue : 0;
               const grossMargin = adjustedContract > 0 ? adjustedContract - costs.total : 0;
               const grossMarginPct = adjustedContract > 0 ? Math.round((grossMargin / adjustedContract) * 100) : 0;
@@ -5655,8 +5937,20 @@ const ModalHub = ({ type, data, app }) => {
                           {overUnder >= 0 ? "Cash ahead" : "Earnings ahead of cash"}
                         </div>
                       </div>
-                      <div><span className="text-dim text-xs">% COMPLETE (COST/BUDGET)</span><div className="font-mono">{Math.round(percentComplete * 100)}%</div></div>
+                      <div>
+                        <span className="text-dim text-xs">% COMPLETE (COST/BUDGET)</span>
+                        <div className="font-mono" style={{ color: percentComplete > 1 ? "var(--red)" : undefined }}>
+                          {Math.round(percentComplete * 100)}%{percentComplete > 1 ? " ⚠" : ""}
+                        </div>
+                      </div>
                       <div><span className="text-dim text-xs">EARNED REVENUE</span><div className="font-mono">{fmt(Math.round(earnedRevenue))}</div></div>
+                      {projectedLoss > 0 && (
+                        <div>
+                          <span className="text-dim text-xs">PROJECTED LOSS</span>
+                          <div className="font-mono" style={{ color: "var(--red)" }}>({fmt(Math.round(projectedLoss))})</div>
+                          <div className="text-xs" style={{ color: "var(--red)", opacity: 0.8 }}>Cost over budget</div>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div style={{ color: "var(--amber)", fontSize: "var(--text-label)", fontStyle: "italic", alignSelf: "center" }}>

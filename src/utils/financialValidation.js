@@ -9,6 +9,26 @@
 
 export const DEFAULT_BURDEN = 1.35; // FICA + SUTA + WC + GL + benefits
 
+// ── Contract Adjustments ──
+
+/**
+ * Adjusted contract = base contract + all APPROVED change orders for this project.
+ * Single source of truth for margin/earned-revenue math across dashboard, P&L,
+ * job costing, FinReports, alert engine, and closeout. Pending/rejected/deleted
+ * COs are ignored. Deduct COs are stored as negative amounts and net down.
+ */
+export function getAdjustedContract(project, changeOrders = []) {
+  const base = project?.contract || 0;
+  const approvedCOs = (changeOrders || [])
+    .filter(c =>
+      c
+      && c.status === "approved"
+      && String(c.projectId) === String(project?.id)
+    )
+    .reduce((s, c) => s + (c.amount || 0), 0);
+  return base + approvedCOs;
+}
+
 // ── Validation Rules ──
 
 export function validateInvoice(inv) {
@@ -285,9 +305,13 @@ export function computeProjectCostForPeriod(projectId, projectName, period, time
  * falls back to raw (clockOut - clockIn) only when totalHours is absent.
  * Applies a 0.5h lunch deduction on fallback when shift >= 6h.
  */
-function computeWorkedHours(te) {
+export function computeWorkedHours(te) {
+  if (!te) return 0;
   if (typeof te.totalHours === "number" && te.totalHours >= 0) return te.totalHours;
+  if (typeof te.hours === "number" && te.hours >= 0) return te.hours;
+  if (!te.clockIn || !te.clockOut) return 0;
   const raw = (new Date(te.clockOut) - new Date(te.clockIn)) / 3600000;
+  if (!isFinite(raw) || raw <= 0) return 0;
   return raw >= 6 ? Math.max(0, raw - 0.5) : raw;
 }
 
