@@ -248,6 +248,10 @@ const CyberRain = () => {
 // cleanly for each orientation. `class` drives the mock status bar styling.
 // `statusBar` is the TOTAL vertical height (px) reserved for fake OS chrome
 // at the top of the screen area — portal content pads below it.
+// homeArea: RESERVED vertical space at the bottom of the screen, in device
+// pixels, that the portal content (bottom nav, etc) must not draw into so
+// the home-indicator pill / Android gesture bar remains visible. Matches
+// the iOS safe-area-inset-bottom behavior on real devices.
 const DEVICE_PRESETS = {
   "iphone-14-pro": {
     label: "iPhone 14 Pro",
@@ -257,6 +261,7 @@ const DEVICE_PRESETS = {
       statusBar: 54,
       notch: { type: "island", side: "top", w: 120, h: 28, offset: 14 },
       homeIndicator: { side: "bottom", w: 140, h: 5, offset: 8 },
+      homeArea: 24,
     },
     landscape: {
       w: 844, h: 390, radius: 48, bezel: 12,
@@ -264,6 +269,11 @@ const DEVICE_PRESETS = {
       // In landscape (rotated counter-clockwise) the island sits on the LEFT edge
       notch: { type: "island", side: "left", w: 28, h: 120, offset: 14 },
       homeIndicator: { side: "right", w: 5, h: 140, offset: 8 },
+      // Landscape safe-area is smaller vertically; the indicator sits on the
+      // right edge, not the bottom, so bottom reservation is 0 but we still
+      // need to protect the right edge — portals don't use right-edge nav
+      // in landscape so 0 is safe.
+      homeArea: 0,
     },
   },
   "ipad-pro-11": {
@@ -274,12 +284,14 @@ const DEVICE_PRESETS = {
       statusBar: 24,
       notch: null,
       homeIndicator: { side: "bottom", w: 140, h: 5, offset: 8 },
+      homeArea: 20,
     },
     landscape: {
       w: 1194, h: 834, radius: 24, bezel: 14,
       statusBar: 24,
       notch: null,
       homeIndicator: { side: "bottom", w: 140, h: 5, offset: 8 },
+      homeArea: 20,
     },
   },
   "galaxy-tab-s9": {
@@ -289,15 +301,17 @@ const DEVICE_PRESETS = {
       w: 800, h: 1280, radius: 20, bezel: 10,
       statusBar: 28,
       notch: null,
-      homeIndicator: null,
+      homeIndicator: { side: "bottom", w: 100, h: 4, offset: 10 },
       navBar: 24,
+      homeArea: 24,
     },
     landscape: {
       w: 1280, h: 800, radius: 20, bezel: 10,
       statusBar: 28,
       notch: null,
-      homeIndicator: null,
+      homeIndicator: { side: "bottom", w: 100, h: 4, offset: 10 },
       navBar: 24,
+      homeArea: 24,
     },
   },
 };
@@ -305,7 +319,12 @@ const DEVICE_PRESETS = {
 // Draws a fake iOS/Android status bar pinned to the top of the device screen
 // area. Shows live clock + signal/wifi/battery indicators. Intended as visual
 // polish for the auditor preview frames — NOT wired to real signal data.
-function MockStatusBar({ deviceClass, statusBarHeight, orientation, hasTopNotch }) {
+//
+// On iPhone portrait (Dynamic Island present), the time/signal/wifi/battery
+// are vertically centered on the ISLAND'S MIDLINE, not the status-bar strip's
+// midline. This matches real iOS, where the clock sits at the same Y as the
+// island center — not shifted above or below it.
+function MockStatusBar({ deviceClass, statusBarHeight, orientation, hasTopNotch, notchCfg }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30000);
@@ -315,12 +334,16 @@ function MockStatusBar({ deviceClass, statusBarHeight, orientation, hasTopNotch 
     ? now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).replace(/\s?(AM|PM)/i, "")
     : now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 
-  // iOS portrait with a top island: time sits left of notch, icons right of notch.
-  // iOS landscape/iPad/Android: no center gap, thin strip.
   const sidePad = hasTopNotch ? 24 : 20;
   const fontSize = deviceClass === "ios" ? (hasTopNotch ? 15 : 12) : 12;
-  const topOffset = hasTopNotch ? 14 : 0; // push content down to align with the island midline
   const color = "#fff";
+
+  // Y-position for the row of status items. On a top-notch iPhone, align
+  // the item midline with the island midline: notchCfg.offset + notchCfg.h/2.
+  // Without a top notch, sit in the vertical center of the strip.
+  const rowCenterY = hasTopNotch && notchCfg
+    ? notchCfg.offset + notchCfg.h / 2
+    : statusBarHeight / 2;
 
   // Inline SVG-ish glyphs rendered with divs/svg for minimal footprint
   const SignalBars = () => (
@@ -362,6 +385,9 @@ function MockStatusBar({ deviceClass, statusBarHeight, orientation, hasTopNotch 
     </div>
   );
 
+  // Outer container is a positioning reference; the actual row is absolutely
+  // positioned with its MIDLINE at rowCenterY. This lets us align precisely
+  // to the island midline regardless of item intrinsic heights.
   return (
     <div
       className="mock-status-bar"
@@ -369,10 +395,6 @@ function MockStatusBar({ deviceClass, statusBarHeight, orientation, hasTopNotch 
         position: "absolute",
         top: 0, left: 0, right: 0,
         height: statusBarHeight,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: `${topOffset}px ${sidePad}px 0`,
         color,
         fontSize,
         fontWeight: 600,
@@ -385,11 +407,23 @@ function MockStatusBar({ deviceClass, statusBarHeight, orientation, hasTopNotch 
         background: "transparent",
       }}
     >
-      <div style={{ minWidth: 40, textAlign: "left" }}>{time}</div>
-      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-        <SignalBars />
-        <WifiGlyph />
-        <Battery />
+      {/* Row whose vertical midline is pinned to rowCenterY */}
+      <div style={{
+        position: "absolute",
+        top: rowCenterY,
+        left: sidePad,
+        right: sidePad,
+        transform: "translateY(-50%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}>
+        <div style={{ minWidth: 40, textAlign: "left" }}>{time}</div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <SignalBars />
+          <WifiGlyph />
+          <Battery />
+        </div>
       </div>
     </div>
   );
@@ -3985,18 +4019,32 @@ function App({ auth, onLogout }) {
       return Number.isFinite(n) && n >= 0 && n <= 120 ? n : 0;
     } catch { return 0; }
   })();
+  // Home-indicator safe area: reserved space at the bottom of the iframe so
+  // the portal's bottom nav doesn't collide with the home-indicator pill or
+  // Android gesture bar. Value comes from ?ha=<px> URL param, same channel
+  // as status-bar height.
+  const previewHomeArea = (() => {
+    if (!isPhonePreview) return 0;
+    try {
+      const n = parseInt(new URLSearchParams(window.location.search).get("ha") || "0", 10);
+      return Number.isFinite(n) && n >= 0 && n <= 80 ? n : 0;
+    } catch { return 0; }
+  })();
   const phonePreviewSafeArea = isPhonePreview ? (
     <style>{`
       /* Kill default iframe body margin so there's no pixel crack at the edges */
       html, body { margin: 0 !important; padding: 0 !important; background: var(--bg1) !important; overflow-x: hidden; }
       html, body, #root { min-height: 100vh; }
       #root { background: var(--bg1); }
-      /* The portal's .app shell must extend flush to the bottom of the iframe
-         so the bottom nav sits on the phone's rounded corner without a gap. */
-      .app { min-height: 100vh; padding-bottom: 0 !important; background: var(--bg1); }
-      /* The field-nav (portal bottom tab bar) is position:fixed; make sure it's
-         pinned to the very bottom of the iframe viewport with no inset leak. */
-      .field-nav, .bottom-nav { bottom: 0 !important; }
+      /* The portal's .app shell reserves bottom space for the home-indicator
+         area so content doesn't hide behind the pill. Matches iOS
+         safe-area-inset-bottom behavior. */
+      .app { min-height: 100vh; padding-bottom: ${previewHomeArea}px !important; background: var(--bg1); }
+      /* The portal's bottom tab bar (.field-tab-bar) and any bottom-attached
+         sheets (.field-tab-sheet) are position: fixed; push them up by the
+         home-indicator area so the pill remains visible below. */
+      .field-tab-bar, .field-nav, .bottom-nav { bottom: ${previewHomeArea}px !important; }
+      .field-tab-sheet { bottom: ${56 + previewHomeArea}px !important; }
       /* Network banner was pushed down by the header safe-area shift */
       .network-banner { position: relative; }
       /* Status-bar safe-area: push the portal header below the mock OS chrome
@@ -4100,13 +4148,16 @@ function App({ auth, onLogout }) {
           const scaledH = DEV_H * deviceScale;
 
           const sbH = dims.statusBar || 0;
+          const haH = dims.homeArea || 0;
           const hasTopNotch = !!(dims.notch && dims.notch.side === "top");
           const hasSideNotch = !!(dims.notch && dims.notch.side !== "top");
           const sideGap = hasSideNotch ? (dims.notch.w + 4) : 0;
 
-          // URL params for the iframe: role + device class so PortalHeader can
-          // reserve the right status-bar height AND side-gutter in landscape.
-          const iframeSrc = `${window.location.pathname}?preview=${viewAsRole}&device=${previewDevice}&orient=${orient}&sb=${sbH}&sideGap=${sideGap}&notchSide=${dims.notch?.side || "none"}`;
+          // URL params for the iframe: role + device chrome dimensions so
+          // PortalHeader + injected safe-area CSS reserve the right amount
+          // of space for status bar (sb), home-indicator area (ha), and
+          // side-gutter in landscape (sideGap).
+          const iframeSrc = `${window.location.pathname}?preview=${viewAsRole}&device=${previewDevice}&orient=${orient}&sb=${sbH}&ha=${haH}&sideGap=${sideGap}&notchSide=${dims.notch?.side || "none"}`;
 
           // Inner screen area = frame size minus bezel padding on all sides.
           const screenW = DEV_W - (dims.bezel * 2);
@@ -4124,14 +4175,19 @@ function App({ auth, onLogout }) {
             return null;
           })() : null;
 
-          // Home indicator (iOS) or nav bar (Android)
+          // Home indicator (iOS) or nav gesture bar (Android). Lives INSIDE
+          // the reserved homeArea at the bottom of the screen so it never
+          // overlaps the portal's bottom nav. For bottom-side indicators,
+          // center the pill vertically within the homeArea strip so it's
+          // visually balanced (top of pill = haH/2 + hi.h/2 from screen bottom).
           const hi = dims.homeIndicator;
           const homeStyle = hi ? (() => {
             if (hi.side === "bottom") {
-              return { position: "absolute", bottom: hi.offset, left: "50%", transform: "translateX(-50%)", width: hi.w, height: hi.h, borderRadius: hi.h / 2, background: "rgba(255,255,255,0.85)", zIndex: 3 };
+              const centerOffset = Math.max(6, Math.round((haH - hi.h) / 2));
+              return { position: "absolute", bottom: centerOffset, left: "50%", transform: "translateX(-50%)", width: hi.w, height: hi.h, borderRadius: hi.h / 2, background: "rgba(255,255,255,0.9)", zIndex: 3 };
             }
             if (hi.side === "right") {
-              return { position: "absolute", right: hi.offset, top: "50%", transform: "translateY(-50%)", width: hi.w, height: hi.h, borderRadius: hi.w / 2, background: "rgba(255,255,255,0.85)", zIndex: 3 };
+              return { position: "absolute", right: hi.offset, top: "50%", transform: "translateY(-50%)", width: hi.w, height: hi.h, borderRadius: hi.w / 2, background: "rgba(255,255,255,0.9)", zIndex: 3 };
             }
             return null;
           })() : null;
@@ -4200,6 +4256,7 @@ function App({ auth, onLogout }) {
                       statusBarHeight={sbH}
                       orientation={orient}
                       hasTopNotch={hasTopNotch}
+                      notchCfg={dims.notch}
                     />
                     {/* Notch / Dynamic Island overlay */}
                     {notchStyle && <div style={notchStyle} aria-hidden />}
