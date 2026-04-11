@@ -78,35 +78,35 @@ function SignaturePad({ signatureData, onSave, onClear, label }) {
 
   if (signatureData) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 600 }}>{label}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+        <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", fontWeight: "var(--weight-semi)" }}>{label}</div>
         <img src={signatureData} alt="Signature" style={{
           width: "100%", maxWidth: 280, height: 60, objectFit: "contain",
-          background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: 4
+          background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", padding: "var(--space-1)"
         }} />
-        <button className="cal-nav-btn" style={{ fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}
+        <button className="cal-nav-btn" style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", alignSelf: "flex-start" }}
           onClick={handleClear}>Re-sign</button>
       </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <div style={{ fontSize: 11, color: "var(--text3)", fontWeight: 600 }}>{label || "Sign here"}</div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+      <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", fontWeight: "var(--weight-semi)" }}>{label || "Sign here"}</div>
       <canvas
         ref={canvasRef}
         style={{
           width: "100%", maxWidth: 280, height: 70,
-          background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6,
+          background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)",
           cursor: "crosshair", touchAction: "none"
         }}
         onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
         onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw}
       />
-      <div style={{ display: "flex", gap: 6 }}>
-        <button className="cal-nav-btn" style={{ fontSize: 10, padding: "2px 8px" }}
+      <div style={{ display: "flex", gap: "var(--space-2)" }}>
+        <button className="cal-nav-btn" style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}
           onClick={handleClear}>Clear</button>
-        <button className="btn btn-primary btn-sm" style={{ fontSize: 10, padding: "2px 10px", opacity: hasStrokes ? 1 : 0.4 }}
+        <button className="btn btn-primary btn-sm" style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-3)", opacity: hasStrokes ? 1 : 0.4 }}
           onClick={handleSave} disabled={!hasStrokes}>Save Signature</button>
       </div>
     </div>
@@ -213,8 +213,8 @@ export function JSATab({ app }) {
       <div className="jsa-list">
         {/* KPIs */}
         <div className="jsa-kpis">
-          <div className="jsa-kpi"><div className="jsa-kpi-val" style={{ color: "#10b981" }}>{stats.active}</div><div className="jsa-kpi-lbl">{t("Active")}</div></div>
-          <div className="jsa-kpi"><div className="jsa-kpi-val" style={{ color: "#f59e0b" }}>{stats.draft}</div><div className="jsa-kpi-lbl">{t("Draft")}</div></div>
+          <div className="jsa-kpi"><div className="jsa-kpi-val" style={{ color: "var(--green)" }}>{stats.active}</div><div className="jsa-kpi-lbl">{t("Active")}</div></div>
+          <div className="jsa-kpi"><div className="jsa-kpi-val" style={{ color: "var(--amber)" }}>{stats.draft}</div><div className="jsa-kpi-lbl">{t("Draft")}</div></div>
           <div className="jsa-kpi"><div className="jsa-kpi-val" style={{ color: "var(--text3)" }}>{stats.closed}</div><div className="jsa-kpi-lbl">{t("Closed")}</div></div>
           <div className="jsa-kpi"><div className="jsa-kpi-val">{stats.total}</div><div className="jsa-kpi-lbl">{t("Total")}</div></div>
         </div>
@@ -231,7 +231,7 @@ export function JSATab({ app }) {
 
         {/* JSA cards */}
         {filtered.length === 0 && (
-          <div style={{ color: "var(--text3)", padding: 24, textAlign: "center", fontSize: 13 }}>
+          <div style={{ color: "var(--text3)", padding: "var(--space-6)", textAlign: "center", fontSize: "var(--text-label)" }}>
             {t("No JSAs found. Create one to get started.")}
           </div>
         )}
@@ -243,28 +243,28 @@ export function JSATab({ app }) {
             <div key={j.id} className="jsa-card" onClick={() => { setActiveJsa(j.id); setSubTab("detail"); }} style={{ cursor: "pointer" }}>
               <div className="jsa-card-top">
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
+                  <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginBottom: "var(--space-1)" }}>
                     <span className="jsa-status-badge" style={{ background: statusClr + "22", color: statusClr }}>{j.status.toUpperCase()}</span>
                     <span className="jsa-risk-badge" style={{ background: rc.bg + "22", color: rc.bg }}>{rc.label} Risk</span>
                     {(j.trades || (j.trade ? [j.trade] : [])).map(tr => (
-                      <span key={tr} style={{ fontSize: 11, color: "var(--text3)" }}>{lang === "es" ? TRADE_LABELS[tr]?.labelEs : TRADE_LABELS[tr]?.label}</span>
+                      <span key={tr} style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{lang === "es" ? TRADE_LABELS[tr]?.labelEs : TRADE_LABELS[tr]?.label}</span>
                     ))}
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{j.title}</div>
-                  <div style={{ fontSize: 12, color: "var(--text3)" }}>
+                  <div style={{ fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)", marginBottom: "var(--space-1)" }}>{j.title}</div>
+                  <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>
                     {projName(j.projectId)} · {j.date} · {j.supervisor}
                   </div>
                 </div>
-                <div style={{ textAlign: "right", fontSize: 11, color: "var(--text3)" }}>
+                <div style={{ textAlign: "right", fontSize: "var(--text-tab)", color: "var(--text3)" }}>
                   <div>{j.steps.length} {t("steps")}</div>
                   <div>{(j.teamSignOn || []).length} {t("signed")}</div>
                 </div>
               </div>
               {/* PPE icons */}
-              <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "var(--space-1)", marginTop: "var(--space-2)", flexWrap: "wrap" }}>
                 {(j.ppe || []).slice(0, 8).map(k => {
                   const item = PPE_ITEMS.find(p => p.key === k);
-                  return item ? <span key={k} title={lang === "es" ? item.labelEs : item.label} style={{ fontSize: 16 }}>{item.icon}</span> : null;
+                  return item ? <span key={k} title={lang === "es" ? item.labelEs : item.label} style={{ fontSize: "var(--text-card)" }}>{item.icon}</span> : null;
                 })}
               </div>
             </div>
@@ -296,12 +296,12 @@ export function JSATab({ app }) {
 
     return (
       <div className="jsa-detail">
-        <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-4)", alignItems: "center", flexWrap: "wrap" }}>
           <button className="cal-nav-btn" onClick={() => setSubTab("list")}>{t("← Back")}</button>
           <span className="jsa-status-badge" style={{ background: (jsa.status === "active" ? "#10b981" : jsa.status === "draft" ? "#f59e0b" : "var(--text3)") + "22", color: jsa.status === "active" ? "#10b981" : jsa.status === "draft" ? "#f59e0b" : "var(--text3)" }}>
             {jsa.status.toUpperCase()}
           </span>
-          <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+          <div style={{ marginLeft: "auto", display: "flex", gap: "var(--space-2)" }}>
             {jsa.status === "draft" && <button className="btn btn-primary btn-sm" onClick={() => updateJsa({ status: "active" })}>{t("Activate")}</button>}
             {jsa.status === "active" && <button className="cal-nav-btn" onClick={() => updateJsa({ status: "closed" })}>{t("Close JSA")}</button>}
             <button className="cal-nav-btn" onClick={() => {
@@ -316,19 +316,19 @@ export function JSATab({ app }) {
               const teamMembersList = (jsa.teamMembers || []).map(c => c.name + (c.role ? ` (${c.role})` : ''));
               const allTeam = [...new Set([...teamList, ...teamMembersList])];
               const html = `<!DOCTYPE html><html><head><title>JSA — ${jsa.title}</title><style>
-                body{font-family:Arial,sans-serif;max-width:850px;margin:0 auto;padding:20px;color:#111;font-size:12px}
-                h1{font-size:20px;margin:0 0 2px} h2{font-size:14px;margin:12px 0 6px;border-bottom:1px solid #ccc;padding-bottom:4px}
+                body{font-family:Arial,sans-serif;max-width:850px;margin: "0" auto;padding:20px;color:#111;font-size:12px}
+                h1{font-size:20px;margin: "0" 0 2px} h2{font-size:14px;margin: "var(--space-3)"px 0 6px;border-bottom:1px solid #ccc;padding-bottom:4px}
                 .header{border-bottom:3px solid #333;padding-bottom:10px;margin-bottom:12px}
                 .company{font-size:18px;font-weight:700;color:#b45309}
-                .meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 12px;margin-bottom:12px}
+                .meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap: "var(--space-1)"px 12px;margin-bottom:12px}
                 .meta-grid div{padding:2px 0} .meta-grid span{color:#666;font-size:11px}
                 .risk-badge{display:inline-block;padding:2px 10px;border-radius:4px;font-weight:700;color:#fff;font-size:11px}
-                table{width:100%;border-collapse:collapse;margin:6px 0 12px}
+                table{width:100%;border-collapse:collapse;margin: "var(--space-2)"px 0 12px}
                 th,td{border:1px solid #ccc;padding:5px 8px;text-align:left;font-size:11px}
                 th{background:#f0f0f0;font-weight:600} .step-hdr{background:#f8f8f8;font-weight:600}
-                .ppe-list{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0}
+                .ppe-list{display:flex;gap: "var(--space-2)"px;flex-wrap:wrap;margin: "var(--space-1)"px 0}
                 .ppe-item{padding:2px 8px;background:#e8f4fd;border-radius:4px;font-size:11px}
-                .sig-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:24px}
+                .sig-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap: "var(--space-4)"px;margin-top:24px}
                 .sig-box{border-top:1px solid #666;padding-top:4px;font-size:10px;color:#666;min-height:32px}
                 @media print{body{padding:8px;font-size:11px}}
               </style></head><body>
@@ -366,7 +366,7 @@ export function JSATab({ app }) {
                     if (allTeam.length > 0) {
                       return allTeam.map(n => {
                         const sig = sigMap[n];
-                        return '<div><strong>'+n+'</strong><div class="sig-box">'+(sig ? '<img src="'+sig+'" style="width:200px;height:50px;object-fit:contain;display:block;margin:4px 0"/>' : 'Signature: ________________')+'<br/>Date: '+jsa.date+'</div></div>';
+                        return '<div><strong>'+n+'</strong><div class="sig-box">'+(sig ? '<img src="'+sig+'" style="width:200px;height:50px;object-fit:contain;display:block;margin: "var(--space-1)"px 0"/>' : 'Signature: ________________')+'<br/>Date: '+jsa.date+'</div></div>';
                       }).join('');
                     }
                     return '<div class="sig-box">Name: ________________<br/>Signature: ________________<br/>Date: ________</div><div class="sig-box">Name: ________________<br/>Signature: ________________<br/>Date: ________</div><div class="sig-box">Name: ________________<br/>Signature: ________________<br/>Date: ________</div>';
@@ -407,7 +407,7 @@ export function JSATab({ app }) {
 
         {/* Header info */}
         <div className="jsa-detail-header">
-          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{jsa.title}</h2>
+          <h2 style={{ fontSize: "var(--text-section)", fontWeight: "var(--weight-bold)", marginBottom: "var(--space-1)" }}>{jsa.title}</h2>
           <div className="jsa-detail-meta">
             <span>{projName(jsa.projectId)}</span>
             <span>{jsa.date}</span>
@@ -420,21 +420,21 @@ export function JSATab({ app }) {
         {/* Risk summary bar */}
         <div className="jsa-risk-summary">
           <div className="jsa-risk-item">
-            <div style={{ fontSize: 11, color: "var(--text3)" }}>{t("Highest Risk")}</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: rc.bg }}>{maxRisk}</div>
-            <div style={{ fontSize: 10, color: rc.bg }}>{rc.label}</div>
+            <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{t("Highest Risk")}</div>
+            <div style={{ fontSize: "var(--text-subtitle)", fontWeight: "var(--weight-bold)", color: rc.bg }}>{maxRisk}</div>
+            <div style={{ fontSize: "var(--text-xs)", color: rc.bg }}>{rc.label}</div>
           </div>
           <div className="jsa-risk-item">
-            <div style={{ fontSize: 11, color: "var(--text3)" }}>{t("Avg Risk")}</div>
-            <div style={{ fontSize: 20, fontWeight: 700 }}>{avgRisk}</div>
+            <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{t("Avg Risk")}</div>
+            <div style={{ fontSize: "var(--text-subtitle)", fontWeight: "var(--weight-bold)" }}>{avgRisk}</div>
           </div>
           <div className="jsa-risk-item">
-            <div style={{ fontSize: 11, color: "var(--text3)" }}>{t("Hazards")}</div>
-            <div style={{ fontSize: 20, fontWeight: 700 }}>{allHazards.length}</div>
+            <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{t("Hazards")}</div>
+            <div style={{ fontSize: "var(--text-subtitle)", fontWeight: "var(--weight-bold)" }}>{allHazards.length}</div>
           </div>
           <div className="jsa-risk-item">
-            <div style={{ fontSize: 11, color: "var(--text3)" }}>{t("Crew Signed")}</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#10b981" }}>{(jsa.teamSignOn || []).length}</div>
+            <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{t("Crew Signed")}</div>
+            <div style={{ fontSize: "var(--text-subtitle)", fontWeight: "var(--weight-bold)", color: "var(--green)" }}>{(jsa.teamSignOn || []).length}</div>
           </div>
         </div>
 
@@ -447,8 +447,8 @@ export function JSATab({ app }) {
               if (!item) return null;
               return (
                 <div key={k} className="jsa-ppe-item">
-                  <span style={{ fontSize: 22 }}>{item.icon}</span>
-                  <span style={{ fontSize: 11 }}>{lang === "es" ? item.labelEs : item.label}</span>
+                  <span style={{ fontSize: "var(--text-subtitle)" }}>{item.icon}</span>
+                  <span style={{ fontSize: "var(--text-tab)" }}>{lang === "es" ? item.labelEs : item.label}</span>
                 </div>
               );
             })}
@@ -459,7 +459,7 @@ export function JSATab({ app }) {
         {(jsa.permits || []).length > 0 && (
           <div className="jsa-section">
             <div className="jsa-section-title">{t("Permits Required")}</div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
               {jsa.permits.map(k => {
                 const p = PERMIT_TYPES.find(pt => pt.key === k);
                 return <span key={k} className="jsa-permit-badge">{lang === "es" ? p?.labelEs : p?.label}</span>;
@@ -485,15 +485,15 @@ export function JSATab({ app }) {
                 return (
                   <div key={hi} className="jsa-hazard-row">
                     <div className="jsa-hazard-info">
-                      <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 2 }}>
+                      <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginBottom: "var(--space-1)" }}>
                         <span className="jsa-cat-badge" style={{ background: cat?.color + "22", color: cat?.color }}>
                           {lang === "es" ? cat?.labelEs : cat?.label}
                         </span>
                         <span className="jsa-risk-score" style={{ background: hrc.bg, color: "#fff" }}>{score}</span>
-                        {ctrl && <span style={{ fontSize: 10, color: ctrl.color, fontWeight: 600 }}>{lang === "es" ? ctrl.labelEs : ctrl.label}</span>}
+                        {ctrl && <span style={{ fontSize: "var(--text-xs)", color: ctrl.color, fontWeight: "var(--weight-semi)" }}>{lang === "es" ? ctrl.labelEs : ctrl.label}</span>}
                       </div>
-                      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>{h.hazard}</div>
-                      <div style={{ fontSize: 12, color: "var(--text3)" }}>
+                      <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-medium)", marginBottom: "var(--space-1)" }}>{h.hazard}</div>
+                      <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>
                         {t("L")}:{h.likelihood} × {t("S")}:{h.severity} = {score}
                       </div>
                     </div>
@@ -506,7 +506,7 @@ export function JSATab({ app }) {
                 );
               })}
               {(step.hazards || []).length === 0 && (
-                <div style={{ fontSize: 12, color: "var(--text3)", padding: "8px 0 0 36px" }}>{t("No hazards identified for this step")}</div>
+                <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", padding: "8px 0 0 36px" }}>{t("No hazards identified for this step")}</div>
               )}
             </div>
           ))}
@@ -517,10 +517,10 @@ export function JSATab({ app }) {
           <div className="jsa-section-title">{t("Crew Sign-On")}</div>
           <div className="jsa-team-list">
             {(jsa.teamSignOn || []).map((c, i) => (
-              <div key={i} className="jsa-team-item" style={{ flexDirection: "column", alignItems: "flex-start", gap: 6, padding: "10px 12px" }}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", width: "100%" }}>
-                  <span style={{ fontWeight: 600, fontSize: 13 }}>{c.name}</span>
-                  <span style={{ fontSize: 11, color: "#10b981" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+              <div key={i} className="jsa-team-item" style={{ flexDirection: "column", alignItems: "flex-start", gap: "var(--space-2)", padding: "var(--space-3) var(--space-3)" }}>
+                <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", width: "100%" }}>
+                  <span style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)" }}>{c.name}</span>
+                  <span style={{ fontSize: "var(--text-tab)", color: "var(--green)" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                 </div>
                 <SignaturePad
                   label={t("Touch to Sign") + " — " + c.name}
@@ -540,10 +540,10 @@ export function JSATab({ app }) {
               </div>
             ))}
             {jsa.status === "active" && (
-              <div style={{ marginTop: 8 }}>
+              <div style={{ marginTop: "var(--space-2)" }}>
                 <select
                   className="form-select"
-                  style={{ fontSize: 12, maxWidth: 250 }}
+                  style={{ fontSize: "var(--text-label)", maxWidth: 250 }}
                   onChange={(e) => {
                     if (!e.target.value) return;
                     const emp = (employees || []).find(em => em.id === Number(e.target.value));
@@ -569,11 +569,11 @@ export function JSATab({ app }) {
           <div className="jsa-section-title">{t("Toolbox Talk")}</div>
           {jsa.toolboxTalk?.discussed ? (
             <div className="jsa-toolbox">
-              <div style={{ fontSize: 13, fontWeight: 500 }}>{jsa.toolboxTalk.topic}</div>
-              <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 4 }}>{jsa.toolboxTalk.notes}</div>
+              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-medium)" }}>{jsa.toolboxTalk.topic}</div>
+              <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginTop: "var(--space-1)" }}>{jsa.toolboxTalk.notes}</div>
             </div>
           ) : (
-            <div style={{ fontSize: 12, color: "var(--text3)" }}>{t("No toolbox talk recorded")}</div>
+            <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>{t("No toolbox talk recorded")}</div>
           )}
         </div>
 
@@ -583,10 +583,10 @@ export function JSATab({ app }) {
             <div className="jsa-section-title">{t("Crew Members")}</div>
             <div className="jsa-team-list">
               {jsa.teamMembers.map((cm, i) => (
-                <div key={i} className="jsa-team-item" style={{ flexDirection: "column", alignItems: "flex-start", gap: 6, padding: "10px 12px" }}>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <span style={{ fontWeight: 600, fontSize: 13 }}>{cm.name}</span>
-                    {cm.role && <span style={{ fontSize: 11, color: "var(--text3)" }}>{cm.role}</span>}
+                <div key={i} className="jsa-team-item" style={{ flexDirection: "column", alignItems: "flex-start", gap: "var(--space-2)", padding: "var(--space-3) var(--space-3)" }}>
+                  <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
+                    <span style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)" }}>{cm.name}</span>
+                    {cm.role && <span style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{cm.role}</span>}
                   </div>
                   {jsa.status === "active" && (
                     <SignaturePad
@@ -608,7 +608,7 @@ export function JSATab({ app }) {
                   {jsa.status !== "active" && cm.signature && (
                     <img src={cm.signature} alt="Signature" style={{
                       width: "100%", maxWidth: 280, height: 60, objectFit: "contain",
-                      background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, padding: 4
+                      background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", padding: "var(--space-1)"
                     }} />
                   )}
                 </div>
@@ -621,7 +621,7 @@ export function JSATab({ app }) {
         {jsa.gc && (
           <div className="jsa-section">
             <div className="jsa-section-title">{t("General Contractor")}</div>
-            <div style={{ fontSize: 13 }}>{jsa.gc}</div>
+            <div style={{ fontSize: "var(--text-label)" }}>{jsa.gc}</div>
           </div>
         )}
 
@@ -629,14 +629,14 @@ export function JSATab({ app }) {
         <div className="jsa-section">
           <div className="jsa-section-title">{t("Near Misses / Close Calls")}</div>
           {(jsa.nearMisses || []).length === 0 ? (
-            <div style={{ fontSize: 12, color: "var(--text3)" }}>{t("None reported")}</div>
+            <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>{t("None reported")}</div>
           ) : (
             (jsa.nearMisses || []).map((nm, i) => (
               <div key={i} className="jsa-near-miss">{nm.description} — {nm.reportedBy} ({nm.date})</div>
             ))
           )}
           {jsa.status === "active" && (
-            <button className="cal-nav-btn" style={{ marginTop: 8, fontSize: 12 }} onClick={() => {
+            <button className="cal-nav-btn" style={{ marginTop: "var(--space-2)", fontSize: "var(--text-label)" }} onClick={() => {
               const desc = prompt(lang === "es" ? "Describe el casi-accidente:" : "Describe the near miss:");
               if (!desc) return;
               updateJsa({
@@ -745,7 +745,7 @@ export function JSATab({ app }) {
         </div>
 
         {/* Basic info */}
-        <div className="form-grid" style={{ marginBottom: 16 }}>
+        <div className="form-grid" style={{ marginBottom: "var(--space-4)" }}>
           <div className="form-group">
             <label className="form-label">{t("Project")}</label>
             <select className="form-select" value={form.projectId} onChange={e => updForm("projectId", e.target.value)}>
@@ -754,7 +754,7 @@ export function JSATab({ app }) {
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label">{t("Trades")} <span style={{ fontSize: 11, color: "var(--text3)", fontWeight: 400 }}>({t("select all that apply")})</span></label>
+            <label className="form-label">{t("Trades")} <span style={{ fontSize: "var(--text-tab)", color: "var(--text3)", fontWeight: "var(--weight-normal)" }}>({t("select all that apply")})</span></label>
             <div className="flex gap-4 flex-wrap">
               {Object.entries(TRADE_LABELS).map(([k, v]) => {
                 const selected = (form.trades || []).includes(k);
@@ -807,7 +807,7 @@ export function JSATab({ app }) {
           </div>
           <div className="form-group">
             <label className="form-label">{t("Indoor / Outdoor")}</label>
-            <div style={{ display: "flex", gap: 4 }}>
+            <div style={{ display: "flex", gap: "var(--space-1)" }}>
               <button type="button" className={`cal-nav-btn${form.indoorOutdoor === "indoor" ? " active" : ""}`}
                 style={form.indoorOutdoor === "indoor" ? { background: "var(--amber)", color: "var(--bg)", borderColor: "var(--amber)" } : {}}
                 onClick={() => updForm("indoorOutdoor", "indoor")}>{t("Indoor")}</button>
@@ -837,12 +837,12 @@ export function JSATab({ app }) {
         {/* Weather warning */}
         {form.indoorOutdoor !== "indoor" && weatherHazard && form.weather !== "clear" && (
           <div className="jsa-weather-warn">
-            <AlertTriangle style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle", marginRight: 4 }} />{lang === "es" ? weatherHazard.hazardEs : weatherHazard.hazard}
+            <AlertTriangle style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle", marginRight: "var(--space-1)" }} />{lang === "es" ? weatherHazard.hazardEs : weatherHazard.hazard}
           </div>
         )}
 
         {/* PPE Selector */}
-        <div className="jsa-section" style={{ marginBottom: 16 }}>
+        <div className="jsa-section" style={{ marginBottom: "var(--space-4)" }}>
           <div className="jsa-section-title">{t("Required PPE")}</div>
           <div className="jsa-ppe-picker">
             {PPE_ITEMS.map(item => {
@@ -853,8 +853,8 @@ export function JSATab({ app }) {
                   className={`jsa-ppe-pick${active ? " active" : ""}`}
                   onClick={() => updForm("ppe", active ? form.ppe.filter(k => k !== item.key) : [...form.ppe, item.key])}
                 >
-                  <span style={{ fontSize: 20 }}>{item.icon}</span>
-                  <span style={{ fontSize: 10 }}>{lang === "es" ? item.labelEs : item.label}</span>
+                  <span style={{ fontSize: "var(--text-subtitle)" }}>{item.icon}</span>
+                  <span style={{ fontSize: "var(--text-xs)" }}>{lang === "es" ? item.labelEs : item.label}</span>
                 </div>
               );
             })}
@@ -862,9 +862,9 @@ export function JSATab({ app }) {
         </div>
 
         {/* Permits */}
-        <div className="jsa-section" style={{ marginBottom: 16 }}>
+        <div className="jsa-section" style={{ marginBottom: "var(--space-4)" }}>
           <div className="jsa-section-title">{t("Permits Required")}</div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
             {PERMIT_TYPES.map(p => {
               const active = form.permits.includes(p.key);
               return (
@@ -890,12 +890,12 @@ export function JSATab({ app }) {
                 <span className="jsa-step-num">{idx + 1}</span>
                 <input
                   className="form-input"
-                  style={{ flex: 1, fontSize: 13 }}
+                  style={{ flex: 1, fontSize: "var(--text-label)" }}
                   value={step.step}
                   onChange={e => updateFormStep(idx, { step: e.target.value })}
                   placeholder={t("Describe this step...")}
                 />
-                <button className="btn btn-danger btn-sm" style={{ padding: "2px 8px", fontSize: 11 }} onClick={() => removeStep(idx)}>X</button>
+                <button className="btn btn-danger btn-sm" style={{ padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-tab)" }} onClick={() => removeStep(idx)}>X</button>
               </div>
 
               {/* Hazards for this step */}
@@ -905,12 +905,12 @@ export function JSATab({ app }) {
                 return (
                   <div key={hi} className="jsa-hazard-row" style={{ background: "var(--bg3)" }}>
                     <div className="jsa-hazard-info" style={{ flex: 1 }}>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
                         <span className="jsa-risk-score" style={{ background: hrc.bg, color: "#fff" }}>{score}</span>
-                        <span style={{ fontSize: 12, fontWeight: 500 }}>{h.hazard}</span>
-                        <button style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 14, marginLeft: "auto" }} onClick={() => removeHazardFromStep(idx, hi)}>✕</button>
+                        <span style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-medium)" }}>{h.hazard}</span>
+                        <button style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: "var(--text-secondary)", marginLeft: "auto" }} onClick={() => removeHazardFromStep(idx, hi)}>✕</button>
                       </div>
-                      <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>
+                      <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", marginTop: "var(--space-1)" }}>
                         {(h.controls || []).join(" · ")}
                       </div>
                     </div>
@@ -919,10 +919,10 @@ export function JSATab({ app }) {
               })}
 
               {/* Add hazard from library */}
-              <div style={{ padding: "4px 0 0 36px", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "end" }}>
+              <div style={{ padding: "4px 0 0 36px", display: "flex", gap: "var(--space-2)", flexWrap: "wrap", alignItems: "end" }}>
                 <select
                   className="form-select"
-                  style={{ fontSize: 11, maxWidth: 350 }}
+                  style={{ fontSize: "var(--text-tab)", maxWidth: 350 }}
                   onChange={e => {
                     if (!e.target.value) return;
                     if (e.target.value === "__custom__") {
@@ -953,7 +953,7 @@ export function JSATab({ app }) {
               </div>
             </div>
           ))}
-          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
             <button className="cal-nav-btn" onClick={addStep}>{t("+ Add Step")}</button>
             <button className="cal-nav-btn" onClick={() => {
               const desc = prompt(lang === "es" ? "Describa el paso personalizado:" : "Describe the custom step:");
@@ -965,32 +965,32 @@ export function JSATab({ app }) {
         </div>
 
         {/* Crew Members / Signatures */}
-        <div className="jsa-section" style={{ marginTop: 16 }}>
+        <div className="jsa-section" style={{ marginTop: "var(--space-4)" }}>
           <div className="jsa-section-title">{t("Crew Members / Signatures")}</div>
-          <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 8 }}>{t("Add team members who will acknowledge this JSA")}</div>
+          <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginBottom: "var(--space-2)" }}>{t("Add team members who will acknowledge this JSA")}</div>
           {(form.teamMembers || []).map((cm, i) => (
-            <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-              <input className="form-input" style={{ flex: 1, fontSize: 12 }} value={cm.name} placeholder={t("Name")}
+            <div key={i} style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginBottom: "var(--space-2)" }}>
+              <input className="form-input" style={{ flex: 1, fontSize: "var(--text-label)" }} value={cm.name} placeholder={t("Name")}
                 onChange={e => {
                   const updated = [...form.teamMembers];
                   updated[i] = { ...updated[i], name: e.target.value };
                   updForm("teamMembers", updated);
                 }} />
-              <input className="form-input" style={{ flex: 1, fontSize: 12 }} value={cm.role || ""} placeholder={t("Role / Trade")}
+              <input className="form-input" style={{ flex: 1, fontSize: "var(--text-label)" }} value={cm.role || ""} placeholder={t("Role / Trade")}
                 onChange={e => {
                   const updated = [...form.teamMembers];
                   updated[i] = { ...updated[i], role: e.target.value };
                   updForm("teamMembers", updated);
                 }} />
-              <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)", padding: "2px 8px" }}
+              <button className="btn btn-ghost btn-sm" style={{ color: "var(--red)", padding: "var(--space-1) var(--space-2)" }}
                 onClick={() => updForm("teamMembers", form.teamMembers.filter((_, j) => j !== i))}>x</button>
             </div>
           ))}
-          <div style={{ display: "flex", gap: 8 }}>
-            <button className="cal-nav-btn" style={{ fontSize: 12 }}
+          <div style={{ display: "flex", gap: "var(--space-2)" }}>
+            <button className="cal-nav-btn" style={{ fontSize: "var(--text-label)" }}
               onClick={() => updForm("teamMembers", [...(form.teamMembers || []), { name: "", role: "" }])}>{t("+ Add Crew Member")}</button>
             {(employees || []).length > 0 && (
-              <select className="form-select" style={{ fontSize: 11, maxWidth: 200 }}
+              <select className="form-select" style={{ fontSize: "var(--text-tab)", maxWidth: 200 }}
                 onChange={e => {
                   if (!e.target.value) return;
                   const emp = employees.find(em => em.id === Number(e.target.value));
@@ -1005,9 +1005,9 @@ export function JSATab({ app }) {
         </div>
 
         {/* Save */}
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+        <div style={{ display: "flex", gap: "var(--space-2)", justifyContent: "flex-end", marginTop: "var(--space-5)" }}>
           <button className="btn btn-ghost" style={{ color: "var(--amber)", marginRight: "auto" }} onClick={runAiAutoFill} disabled={aiJsaLoading}>
-            {aiJsaLoading ? "Generating..." : <><Zap style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle", marginRight: 4 }} />AI Auto-Fill</>}
+            {aiJsaLoading ? "Generating..." : <><Zap style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle", marginRight: "var(--space-1)" }} />AI Auto-Fill</>}
           </button>
           <button className="cal-nav-btn" onClick={() => setSubTab("list")}>{t("Cancel")}</button>
           <button className="btn btn-primary" onClick={saveJsa}>{t("Create JSA")}</button>
@@ -1024,7 +1024,7 @@ export function JSATab({ app }) {
     return (
       <div className="jsa-library">
         <div className="jsa-section-title">{t("Hazard Library")}</div>
-        <div className="jsa-trade-filter" style={{ marginBottom: 16 }}>
+        <div className="jsa-trade-filter" style={{ marginBottom: "var(--space-4)" }}>
           {Object.entries(TRADE_LABELS).map(([key, { label, labelEs }]) => (
             <button key={key} className={`cal-nav-btn${libTrade === key ? " active" : ""}`} onClick={() => setLibTrade(key)}>
               {lang === "es" ? labelEs : label}
@@ -1032,7 +1032,7 @@ export function JSATab({ app }) {
           ))}
         </div>
 
-        <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 12 }}>{hazards.length} {t("hazards")}</div>
+        <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginBottom: "var(--space-3)" }}>{hazards.length} {t("hazards")}</div>
 
         {hazards.map((h, i) => {
           const score = h.likelihood * h.severity;
@@ -1042,25 +1042,25 @@ export function JSATab({ app }) {
           return (
             <div key={i} className="jsa-hazard-row" style={{ borderLeft: `3px solid ${rc.bg}` }}>
               <div className="jsa-hazard-info" style={{ flex: 1 }}>
-                <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4 }}>
+                <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginBottom: "var(--space-1)" }}>
                   <span className="jsa-cat-badge" style={{ background: cat?.color + "22", color: cat?.color }}>
                     {lang === "es" ? cat?.labelEs : cat?.label}
                   </span>
                   <span className="jsa-risk-score" style={{ background: rc.bg, color: "#fff" }}>{score}</span>
-                  {ctrl && <span style={{ fontSize: 10, color: ctrl.color, fontWeight: 600 }}>{lang === "es" ? ctrl.labelEs : ctrl.label}</span>}
+                  {ctrl && <span style={{ fontSize: "var(--text-xs)", color: ctrl.color, fontWeight: "var(--weight-semi)" }}>{lang === "es" ? ctrl.labelEs : ctrl.label}</span>}
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{lang === "es" ? h.hazardEs : h.hazard}</div>
-                <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 4 }}>
+                <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", marginBottom: "var(--space-1)" }}>{lang === "es" ? h.hazardEs : h.hazard}</div>
+                <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginBottom: "var(--space-1)" }}>
                   {t("Likelihood")}: {h.likelihood}/5 · {t("Severity")}: {h.severity}/5
                 </div>
                 <div className="jsa-controls-list">
                   {h.controls.map((c, ci) => <div key={ci} className="jsa-control-item">✓ {c}</div>)}
                 </div>
                 {h.ppe.length > 0 && (
-                  <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
+                  <div style={{ display: "flex", gap: "var(--space-1)", marginTop: "var(--space-2)" }}>
                     {h.ppe.map(k => {
                       const item = PPE_ITEMS.find(p => p.key === k);
-                      return item ? <span key={k} title={lang === "es" ? item.labelEs : item.label} style={{ fontSize: 16 }}>{item.icon}</span> : null;
+                      return item ? <span key={k} title={lang === "es" ? item.labelEs : item.label} style={{ fontSize: "var(--text-card)" }}>{item.icon}</span> : null;
                     })}
                   </div>
                 )}
@@ -1078,7 +1078,7 @@ export function JSATab({ app }) {
   const renderTemplates = () => (
     <div className="jsa-templates">
       <div className="jsa-section-title">{t("Pre-Built JSA Templates")}</div>
-      <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 16 }}>
+      <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginBottom: "var(--space-4)" }}>
         {t("Select a template to quickly create a JSA with pre-loaded steps, hazards, and controls.")}
       </div>
       <div className="jsa-template-grid">
@@ -1088,19 +1088,19 @@ export function JSATab({ app }) {
           const totalHazards = tmpl.steps.reduce((s, step) => s + (step.hazards || []).length, 0);
           return (
             <div key={tmpl.id} className="jsa-template-card" onClick={() => { setSubTab("create"); }}>
-              <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8 }}>
+              <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginBottom: "var(--space-2)" }}>
                 <span className="jsa-cat-badge" style={{ background: "var(--amber-dim)", color: "var(--amber)" }}>
                   {lang === "es" ? trade?.labelEs : trade?.label}
                 </span>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{lang === "es" ? tmpl.titleEs : tmpl.title}</div>
-              <div style={{ fontSize: 12, color: "var(--text3)" }}>
+              <div style={{ fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)", marginBottom: "var(--space-1)" }}>{lang === "es" ? tmpl.titleEs : tmpl.title}</div>
+              <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>
                 {tmpl.steps.length} {t("steps")} · {totalHazards} {t("hazards")}
               </div>
-              <div style={{ display: "flex", gap: 4, marginTop: 8, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "var(--space-1)", marginTop: "var(--space-2)", flexWrap: "wrap" }}>
                 {tmpl.ppe.slice(0, 6).map(k => {
                   const item = PPE_ITEMS.find(p => p.key === k);
-                  return item ? <span key={k} style={{ fontSize: 14 }}>{item.icon}</span> : null;
+                  return item ? <span key={k} style={{ fontSize: "var(--text-secondary)" }}>{item.icon}</span> : null;
                 })}
               </div>
             </div>
@@ -1109,7 +1109,7 @@ export function JSATab({ app }) {
       </div>
 
       {/* 5×5 Risk Matrix Reference */}
-      <div className="jsa-section" style={{ marginTop: 24 }}>
+      <div className="jsa-section" style={{ marginTop: "var(--space-6)" }}>
         <div className="jsa-section-title">{t("5×5 Risk Matrix Reference")}</div>
         <div className="jsa-matrix">
           <div className="jsa-matrix-corner">{t("L \\ S")}</div>
@@ -1127,15 +1127,15 @@ export function JSATab({ app }) {
             </div>
           ))}
         </div>
-        <div style={{ display: "flex", gap: 16, marginTop: 8, flexWrap: "wrap", fontSize: 11 }}>
+        <div style={{ display: "flex", gap: "var(--space-4)", marginTop: "var(--space-2)", flexWrap: "wrap", fontSize: "var(--text-tab)" }}>
           {[
             { label: "Low (1-4)", bg: "#10b981" },
             { label: "Medium (5-9)", bg: "#eab308" },
             { label: "High (10-15)", bg: "#f97316" },
             { label: "Critical (16-25)", bg: "#ef4444" },
           ].map(r => (
-            <div key={r.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <div style={{ width: 12, height: 12, borderRadius: 3, background: r.bg }} />
+            <div key={r.label} style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+              <div style={{ width: 12, height: 12, borderRadius: "var(--radius-control)", background: r.bg }} />
               <span style={{ color: "var(--text2)" }}>{r.label}</span>
             </div>
           ))}

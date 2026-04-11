@@ -1,6 +1,11 @@
 # Claude Code local config
 .claude/
 
+# Claude-Flow / Superpowers / Swarm tool state (daemons, memory DBs, logs)
+.claude-flow/
+.superpowers/
+.swarm/
+
 # Logs
 logs
 *.log

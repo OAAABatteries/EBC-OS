@@ -65,28 +65,28 @@ const CP = `
 
   /* ── Header ── */
   .cp-header { background:#0a1520; border-bottom:1px solid #1e3550; padding:0 28px; display:flex; align-items:center; justify-content:space-between; height:60px; position:sticky; top:0; z-index:50; box-shadow:0 1px 8px rgba(0,0,0,0.35); }
-  .cp-logo { display:flex; align-items:center; gap:12px; }
+  .cp-logo { display:flex; align-items:center; gap: "var(--space-3)"px; }
   .cp-logo-mark { width:36px; height:36px; background:linear-gradient(135deg,#1a3a5c,#0e2035); border:1.5px solid #2a5580; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .cp-logo-text { font-size:15px; font-weight:800; color:#e2eaf4; letter-spacing:0.2px; }
   .cp-logo-sub { font-size:11px; color:#5580a0; font-weight:500; }
-  .cp-header-right { display:flex; align-items:center; gap:12px; }
+  .cp-header-right { display:flex; align-items:center; gap: "var(--space-3)"px; }
   .cp-project-pill { background:#1a3a5c; border:1px solid #2a5580; border-radius:20px; padding:4px 14px; font-size:12px; font-weight:600; color:#7ab8e8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
-  .cp-logout-btn { background:transparent; border:1px solid #1e3550; border-radius:8px; color:#5580a0; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; font-family:inherit; transition:all 0.15s; }
+  .cp-logout-btn { background:transparent; border:1px solid #1e3550; border-radius:8px; color:#5580a0; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap: "var(--space-2)"px; font-family:inherit; transition:all 0.15s; }
   .cp-logout-btn:hover { border-color:#d97706; color:#d97706; }
 
   /* ── Body ── */
-  .cp-body { max-width:920px; margin:0 auto; padding:24px 20px 80px; }
+  .cp-body { max-width:920px; margin: "0" auto; padding:24px 20px 80px; }
 
   /* ── Tabs ── */
-  .cp-tabs { display:flex; gap:2px; margin-bottom:24px; background:#0a1520; border-radius:12px; padding:4px; border:1px solid #1e3550; overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  .cp-tab { padding:9px 16px; border:none; background:none; color:#5580a0; font-size:13px; font-weight:600; cursor:pointer; border-radius:9px; transition:all 0.15s; font-family:inherit; white-space:nowrap; display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .cp-tabs { display:flex; gap: "var(--space-1)"px; margin-bottom:24px; background:#0a1520; border-radius:12px; padding:4px; border:1px solid #1e3550; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .cp-tab { padding:9px 16px; border:none; background:none; color:#5580a0; font-size:13px; font-weight:600; cursor:pointer; border-radius:9px; transition:all 0.15s; font-family:inherit; white-space:nowrap; display:flex; align-items:center; gap: "var(--space-2)"px; flex-shrink:0; }
   .cp-tab:hover { color:#e2eaf4; background:#132030; }
   .cp-tab.active { color:#0d1b2a; background:#d97706; box-shadow:0 1px 6px rgba(217,119,6,0.35); }
   .cp-tab.active svg { color:#0d1b2a; }
 
   /* ── Cards ── */
   .cp-card { background:#0f1f30; border:1px solid #1e3550; border-radius:14px; padding:22px; margin-bottom:16px; }
-  .cp-card-title { font-size:16px; font-weight:700; color:#e2eaf4; margin-bottom:4px; display:flex; align-items:center; gap:8px; }
+  .cp-card-title { font-size:16px; font-weight:700; color:#e2eaf4; margin-bottom:4px; display:flex; align-items:center; gap: "var(--space-2)"px; }
   .cp-card-sub { font-size:12px; color:#5580a0; margin-bottom:16px; }
 
   /* ── Section label ── */
@@ -94,21 +94,21 @@ const CP = `
   .cp-value { font-size:14px; font-weight:600; color:#c8daf0; }
 
   /* ── Grid ── */
-  .cp-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-  .cp-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+  .cp-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap: "var(--space-4)"px; }
+  .cp-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap: "var(--space-4)"px; }
   .cp-stat-block { background:#0a1520; border:1px solid #1a3248; border-radius:10px; padding:14px 16px; }
 
   /* ── Progress ── */
-  .cp-progress-wrap { margin:14px 0 4px; }
+  .cp-progress-wrap { margin: "var(--space-4)"px 0 4px; }
   .cp-progress-label { display:flex; justify-content:space-between; margin-bottom:6px; }
   .cp-progress-bar { height:8px; background:#1a3248; border-radius:8px; overflow:hidden; }
   .cp-progress-fill { height:100%; border-radius:8px; background:linear-gradient(90deg,#d97706,#f59e0b); transition:width 0.5s ease; }
 
   /* ── Phase tracker (read-only) ── */
-  .cp-phases { display:flex; gap:0; margin:4px 0; }
+  .cp-phases { display:flex; gap:0; margin: "var(--space-1)"px 0; }
   .cp-phase { flex:1; text-align:center; padding:8px 4px 10px; position:relative; }
   .cp-phase:not(:last-child)::after { content:''; position:absolute; right:0; top:50%; transform:translateY(-50%); width:1px; height:60%; background:#1e3550; }
-  .cp-phase-dot { width:20px; height:20px; border-radius:50%; margin:0 auto 5px; display:flex; align-items:center; justify-content:center; }
+  .cp-phase-dot { width:20px; height:20px; border-radius:50%; margin: "0" auto 5px; display:flex; align-items:center; justify-content:center; }
   .cp-phase-dot.done { background:#059669; }
   .cp-phase-dot.current { background:#d97706; box-shadow:0 0 8px rgba(217,119,6,0.5); }
   .cp-phase-dot.upcoming { background:#1a3248; border:1.5px solid #2a5580; }
@@ -117,7 +117,7 @@ const CP = `
   .cp-phase-name.current { color:#d97706; }
 
   /* ── Badges ── */
-  .cp-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+  .cp-badge { display:inline-flex; align-items:center; gap: "var(--space-1)"px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
   .cp-badge-green { background:rgba(5,150,105,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.2); }
   .cp-badge-amber { background:rgba(217,119,6,0.15); color:#d97706; border:1px solid rgba(217,119,6,0.2); }
   .cp-badge-blue { background:rgba(59,130,246,0.12); color:#60a5fa; border:1px solid rgba(59,130,246,0.2); }
@@ -135,7 +135,7 @@ const CP = `
   .cp-table-empty { text-align:center; padding:40px 12px; color:#3a5470; font-size:13px; }
 
   /* ── Performance / feedback ── */
-  .cp-stars { display:flex; gap:4px; margin-bottom:12px; }
+  .cp-stars { display:flex; gap: "var(--space-1)"px; margin-bottom:12px; }
   .cp-star { cursor:pointer; transition:transform 0.1s; }
   .cp-star:hover { transform:scale(1.15); }
   .cp-textarea { width:100%; min-height:90px; background:#0a1520; border:1px solid #1e3550; border-radius:9px; color:#e2eaf4; font-size:14px; font-family:inherit; padding:12px; resize:vertical; box-sizing:border-box; transition:border 0.15s; }
@@ -147,7 +147,7 @@ const CP = `
   .cp-form-label { display:block; font-size:12px; font-weight:600; color:#5580a0; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:6px; }
 
   /* ── Buttons ── */
-  .cp-btn-primary { background:#d97706; color:#0d1b2a; border:none; border-radius:9px; padding:11px 24px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:all 0.2s; display:inline-flex; align-items:center; gap:6px; }
+  .cp-btn-primary { background:#d97706; color:#0d1b2a; border:none; border-radius:9px; padding:11px 24px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:all 0.2s; display:inline-flex; align-items:center; gap: "var(--space-2)"px; }
   .cp-btn-primary:hover { background:#f59e0b; transform:translateY(-1px); box-shadow:0 4px 14px rgba(217,119,6,0.3); }
   .cp-btn-primary:disabled { opacity:0.45; cursor:not-allowed; transform:none; }
   .cp-btn-ghost { background:transparent; color:#5580a0; border:1px solid #1e3550; border-radius:9px; padding:10px 20px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s; }
@@ -159,34 +159,34 @@ const CP = `
   .cp-feedback-name { font-size:13px; font-weight:700; color:#c8daf0; }
   .cp-feedback-date { font-size:11px; color:#3a5470; }
   .cp-feedback-text { font-size:13px; color:#8ab0cc; line-height:1.5; }
-  .cp-feedback-stars { display:flex; gap:3px; margin-bottom:6px; }
+  .cp-feedback-stars { display:flex; gap: "var(--space-1)"px; margin-bottom:6px; }
 
   /* ── Photo gallery ── */
-  .cp-photo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
-  .cp-photo-placeholder { background:#0a1520; border:1px dashed #1e3550; border-radius:10px; aspect-ratio:4/3; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:#2a5580; }
+  .cp-photo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap: "var(--space-3)"px; }
+  .cp-photo-placeholder { background:#0a1520; border:1px dashed #1e3550; border-radius:10px; aspect-ratio:4/3; display:flex; flex-direction:column; align-items:center; justify-content:center; gap: "var(--space-2)"px; color:#2a5580; }
   .cp-photo-placeholder span { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
 
   /* ── Alert banner ── */
-  .cp-alert { background:rgba(217,119,6,0.1); border:1px solid rgba(217,119,6,0.25); border-radius:10px; padding:14px 16px; margin-bottom:20px; display:flex; align-items:flex-start; gap:12px; }
+  .cp-alert { background:rgba(217,119,6,0.1); border:1px solid rgba(217,119,6,0.25); border-radius:10px; padding:14px 16px; margin-bottom:20px; display:flex; align-items:flex-start; gap: "var(--space-3)"px; }
   .cp-alert-text { font-size:13px; color:#d97706; font-weight:500; line-height:1.5; }
 
   /* ── Success banner ── */
-  .cp-success { background:rgba(5,150,105,0.1); border:1px solid rgba(16,185,129,0.2); border-radius:10px; padding:14px 18px; margin-bottom:16px; display:flex; align-items:center; gap:10px; color:#10b981; font-size:14px; font-weight:600; }
+  .cp-success { background:rgba(5,150,105,0.1); border:1px solid rgba(16,185,129,0.2); border-radius:10px; padding:14px 18px; margin-bottom:16px; display:flex; align-items:center; gap: "var(--space-3)"px; color:#10b981; font-size:14px; font-weight:600; }
 
   /* ── Login ── */
   .cp-login-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; background:#0d1b2a; }
   .cp-login-card { width:100%; max-width:400px; background:#0f1f30; border:1px solid #1e3550; border-radius:18px; padding:36px 32px; }
-  .cp-login-eagle { width:60px; height:60px; background:linear-gradient(135deg,#1a3a5c,#0e2035); border:1.5px solid #2a5580; border-radius:16px; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; }
+  .cp-login-eagle { width:60px; height:60px; background:linear-gradient(135deg,#1a3a5c,#0e2035); border:1.5px solid #2a5580; border-radius:16px; display:flex; align-items:center; justify-content:center; margin: "0" auto 20px; }
   .cp-login-title { font-size:22px; font-weight:800; color:#e2eaf4; text-align:center; margin-bottom:6px; }
   .cp-login-sub { font-size:13px; color:#5580a0; text-align:center; margin-bottom:28px; line-height:1.5; }
-  .cp-login-error { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:8px; padding:10px 14px; font-size:13px; color:#f87171; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .cp-login-error { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:8px; padding:10px 14px; font-size:13px; color:#f87171; margin-bottom:16px; display:flex; align-items:center; gap: "var(--space-2)"px; }
   .cp-login-footer { text-align:center; margin-top:20px; font-size:11px; color:#2a5580; line-height:1.6; }
 
   /* ── Divider ── */
-  .cp-divider { height:1px; background:#131f2e; margin:16px 0; }
+  .cp-divider { height:1px; background:#131f2e; margin: "var(--space-4)"px 0; }
 
   /* ── Scope pills ── */
-  .cp-scope-pills { display:flex; flex-wrap:wrap; gap:6px; }
+  .cp-scope-pills { display:flex; flex-wrap:wrap; gap: "var(--space-2)"px; }
   .cp-scope-pill { background:#1a3248; border:1px solid #2a5580; border-radius:20px; padding:4px 12px; font-size:11px; font-weight:600; color:#7ab8e8; }
 
   /* ── Responsive ── */
@@ -203,7 +203,7 @@ const CP = `
     .cp-logo-sub { display:none; }
     .cp-login-card { padding:28px 20px; }
     .cp-photo-grid { grid-template-columns:1fr 1fr; }
-    .cp-header-right { gap:6px; }
+    .cp-header-right { gap: "var(--space-2)"px; }
     .cp-project-pill { display:none; }
   }
 `;
@@ -402,7 +402,7 @@ export default function CustomerPortal() {
               </div>
             )}
 
-            <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: "var(--space-5)" }}>
               <label className="cp-form-label">Project Access Code</label>
               <input
                 className="cp-input"
@@ -489,13 +489,13 @@ export default function CustomerPortal() {
           <>
             {/* Project header card */}
             <div className="cp-card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "var(--space-3)", marginBottom: "var(--space-4)" }}>
                 <div>
                   <div className="cp-card-title">
                     <Building2 size={18} color="#d97706" />
                     {project.name}
                   </div>
-                  <div style={{ fontSize: 12, color: "#5580a0", marginTop: 3 }}>{project.address}</div>
+                  <div style={{ fontSize: "var(--text-label)", color: "#5580a0", marginTop: "var(--space-1)" }}>{project.address}</div>
                 </div>
                 <StatusBadge status={project.status} label={STATUS_LABELS[project.status] || project.status} />
               </div>
@@ -508,7 +508,7 @@ export default function CustomerPortal() {
                 </div>
                 <div className="cp-stat-block">
                   <div className="cp-label">Current Stage</div>
-                  <div className="cp-value" style={{ color: "#d97706" }}>{currentMS}</div>
+                  <div className="cp-value" style={{ color: "var(--amber)" }}>{currentMS}</div>
                 </div>
                 <div className="cp-stat-block">
                   <div className="cp-label">Next Milestone</div>
@@ -519,8 +519,8 @@ export default function CustomerPortal() {
               {/* Progress bar */}
               <div className="cp-progress-wrap">
                 <div className="cp-progress-label">
-                  <span style={{ fontSize: 12, color: "#5580a0", fontWeight: 600 }}>Overall Progress</span>
-                  <span style={{ fontSize: 13, color: "#d97706", fontWeight: 700 }}>{progress}%</span>
+                  <span style={{ fontSize: "var(--text-label)", color: "#5580a0", fontWeight: "var(--weight-semi)" }}>Overall Progress</span>
+                  <span style={{ fontSize: "var(--text-label)", color: "var(--amber)", fontWeight: "var(--weight-bold)" }}>{progress}%</span>
                 </div>
                 <div className="cp-progress-bar">
                   <div className="cp-progress-fill" style={{ width: `${progress}%` }} />
@@ -531,7 +531,7 @@ export default function CustomerPortal() {
             {/* Key dates */}
             <div className="cp-card">
               <div className="cp-card-title"><CalendarDays size={16} color="#d97706" />Key Dates</div>
-              <div className="cp-grid-2" style={{ marginTop: 4 }}>
+              <div className="cp-grid-2" style={{ marginTop: "var(--space-1)" }}>
                 <div className="cp-stat-block">
                   <div className="cp-label">Start Date</div>
                   <div className="cp-value">{fmtDate(project.start)}</div>
@@ -554,7 +554,7 @@ export default function CustomerPortal() {
             {project.scope && project.scope.length > 0 && (
               <div className="cp-card">
                 <div className="cp-card-title"><HardHat size={16} color="#d97706" />Scope of Work</div>
-                <div className="cp-scope-pills" style={{ marginTop: 8 }}>
+                <div className="cp-scope-pills" style={{ marginTop: "var(--space-2)" }}>
                   {project.scope.map(s => (
                     <span key={s} className="cp-scope-pill">{s}</span>
                   ))}
@@ -565,18 +565,18 @@ export default function CustomerPortal() {
             {/* EBC contact */}
             <div className="cp-card">
               <div className="cp-card-title"><Phone size={16} color="#d97706" />Your EBC Contact</div>
-              <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 8 }}>
+              <div style={{ display: "flex", gap: "var(--space-4)", alignItems: "center", marginTop: "var(--space-2)" }}>
                 <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#1a3a5c,#0e2035)", border: "1.5px solid #2a5580", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <HardHat size={20} color="#d97706" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#c8daf0" }}>{project.pm || "Abner Aguilar"}</div>
-                  <div style={{ fontSize: 12, color: "#5580a0" }}>Project Manager · Eagles Brothers Constructors</div>
-                  <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
-                    <a href="tel:+12817629999" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#d97706", textDecoration: "none", fontWeight: 600 }}>
+                  <div style={{ fontSize: "var(--text-secondary)", fontWeight: "var(--weight-bold)", color: "#c8daf0" }}>{project.pm || "Abner Aguilar"}</div>
+                  <div style={{ fontSize: "var(--text-label)", color: "#5580a0" }}>Project Manager · Eagles Brothers Constructors</div>
+                  <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "var(--space-2)" }}>
+                    <a href="tel:+12817629999" style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", fontSize: "var(--text-label)", color: "var(--amber)", textDecoration: "none", fontWeight: "var(--weight-semi)" }}>
                       <Phone size={11} /> (281) 762-9999
                     </a>
-                    <a href="mailto:info@eaglesbrothers.com" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "#d97706", textDecoration: "none", fontWeight: 600 }}>
+                    <a href="mailto:info@eaglesbrothers.com" style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", fontSize: "var(--text-label)", color: "var(--amber)", textDecoration: "none", fontWeight: "var(--weight-semi)" }}>
                       <Mail size={11} /> Email
                     </a>
                   </div>
@@ -606,16 +606,16 @@ export default function CustomerPortal() {
                   {changeOrders.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="cp-table-empty">
-                        <FileText size={28} color="#1e3550" style={{ marginBottom: 8 }} />
+                        <FileText size={28} color="#1e3550" style={{ marginBottom: "var(--space-2)" }} />
                         <div>No change orders on record for this project.</div>
                       </td>
                     </tr>
                   ) : (
                     changeOrders.map(co => (
                       <tr key={co.id}>
-                        <td style={{ fontWeight: 700, color: "#c8daf0", whiteSpace: "nowrap" }}>{co.number}</td>
+                        <td style={{ fontWeight: "var(--weight-bold)", color: "#c8daf0", whiteSpace: "nowrap" }}>{co.number}</td>
                         <td style={{ maxWidth: 280 }}>{co.desc}</td>
-                        <td style={{ whiteSpace: "nowrap", fontWeight: 600, color: co.amount < 0 ? "#10b981" : "#e2eaf4" }}>{fmt$(co.amount)}</td>
+                        <td style={{ whiteSpace: "nowrap", fontWeight: "var(--weight-semi)", color: co.amount < 0 ? "#10b981" : "#e2eaf4" }}>{fmt$(co.amount)}</td>
                         <td><StatusBadge status={co.status} /></td>
                         <td style={{ whiteSpace: "nowrap", color: "#5580a0" }}>{fmtDate(co.submitted)}</td>
                       </tr>
@@ -626,9 +626,9 @@ export default function CustomerPortal() {
             </div>
 
             {changeOrders.length > 0 && (
-              <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #131f2e", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "#5580a0" }}>Total Change Orders: {changeOrders.length}</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#d97706" }}>
+              <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid #131f2e", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "var(--text-label)", color: "#5580a0" }}>Total Change Orders: {changeOrders.length}</span>
+                <span style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-bold)", color: "var(--amber)" }}>
                   Net: {fmt$(changeOrders.reduce((sum, co) => sum + (co.amount || 0), 0))}
                 </span>
               </div>
@@ -656,14 +656,14 @@ export default function CustomerPortal() {
                   {rfis.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="cp-table-empty">
-                        <ClipboardList size={28} color="#1e3550" style={{ marginBottom: 8 }} />
+                        <ClipboardList size={28} color="#1e3550" style={{ marginBottom: "var(--space-2)" }} />
                         <div>No RFIs on record for this project.</div>
                       </td>
                     </tr>
                   ) : (
                     rfis.map(r => (
                       <tr key={r.id}>
-                        <td style={{ fontWeight: 700, color: "#c8daf0", whiteSpace: "nowrap" }}>{r.number}</td>
+                        <td style={{ fontWeight: "var(--weight-bold)", color: "#c8daf0", whiteSpace: "nowrap" }}>{r.number}</td>
                         <td style={{ maxWidth: 280 }}>{r.subject}</td>
                         <td><StatusBadge status={r.status} /></td>
                         <td style={{ whiteSpace: "nowrap", color: "#5580a0" }}>{fmtDate(r.submitted)}</td>
@@ -696,15 +696,15 @@ export default function CustomerPortal() {
                   {submittals.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="cp-table-empty">
-                        <Layers size={28} color="#1e3550" style={{ marginBottom: 8 }} />
+                        <Layers size={28} color="#1e3550" style={{ marginBottom: "var(--space-2)" }} />
                         <div>No submittals on record for this project.</div>
-                        <div style={{ marginTop: 6, fontSize: 12, color: "#2a5580" }}>Submittals will appear here once processed by your EBC PM.</div>
+                        <div style={{ marginTop: "var(--space-2)", fontSize: "var(--text-label)", color: "#2a5580" }}>Submittals will appear here once processed by your EBC PM.</div>
                       </td>
                     </tr>
                   ) : (
                     submittals.map(s => (
                       <tr key={s.id}>
-                        <td style={{ fontWeight: 700, color: "#c8daf0", whiteSpace: "nowrap" }}>{s.number}</td>
+                        <td style={{ fontWeight: "var(--weight-bold)", color: "#c8daf0", whiteSpace: "nowrap" }}>{s.number}</td>
                         <td style={{ maxWidth: 300 }}>{s.description || s.desc || s.name}</td>
                         <td><StatusBadge status={s.status} /></td>
                         <td style={{ whiteSpace: "nowrap", color: "#5580a0" }}>{fmtDate(s.submitted || s.date)}</td>
@@ -732,17 +732,17 @@ export default function CustomerPortal() {
                 </div>
               )}
 
-              <div style={{ marginBottom: 14 }}>
+              <div style={{ marginBottom: "var(--space-4)" }}>
                 <div className="cp-form-label">Overall Rating</div>
                 <StarRating value={fbRating} onChange={setFbRating} />
                 {fbRating > 0 && (
-                  <div style={{ fontSize: 12, color: "#d97706", marginTop: 4 }}>
+                  <div style={{ fontSize: "var(--text-label)", color: "var(--amber)", marginTop: "var(--space-1)" }}>
                     {["", "Poor", "Fair", "Good", "Very Good", "Excellent"][fbRating]}
                   </div>
                 )}
               </div>
 
-              <div style={{ marginBottom: 14 }}>
+              <div style={{ marginBottom: "var(--space-4)" }}>
                 <label className="cp-form-label">Your Name (optional)</label>
                 <input
                   className="cp-input"
@@ -753,7 +753,7 @@ export default function CustomerPortal() {
                 />
               </div>
 
-              <div style={{ marginBottom: 20 }}>
+              <div style={{ marginBottom: "var(--space-5)" }}>
                 <label className="cp-form-label">Comments</label>
                 <textarea
                   className="cp-textarea"
@@ -788,7 +788,7 @@ export default function CustomerPortal() {
                       {[1, 2, 3, 4, 5].map(n => (
                         <Star key={n} size={14} fill={f.rating >= n ? "#d97706" : "none"} color={f.rating >= n ? "#d97706" : "#2a5580"} strokeWidth={1.5} />
                       ))}
-                      <span style={{ fontSize: 11, color: "#5580a0", marginLeft: 6, alignSelf: "center" }}>
+                      <span style={{ fontSize: "var(--text-tab)", color: "#5580a0", marginLeft: "var(--space-2)", alignSelf: "center" }}>
                         {["", "Poor", "Fair", "Good", "Very Good", "Excellent"][f.rating]}
                       </span>
                     </div>
@@ -799,10 +799,10 @@ export default function CustomerPortal() {
             )}
 
             {projectFeedback.length === 0 && !fbSuccess && (
-              <div className="cp-card" style={{ textAlign: "center", padding: "32px 20px" }}>
-                <Star size={32} color="#1e3550" style={{ marginBottom: 12 }} />
-                <div style={{ color: "#3a5470", fontSize: 13 }}>No feedback submitted yet for this project.</div>
-                <div style={{ color: "#2a5580", fontSize: 12, marginTop: 6 }}>Be the first to rate the team above.</div>
+              <div className="cp-card" style={{ textAlign: "center", padding: "var(--space-8) var(--space-5)" }}>
+                <Star size={32} color="#1e3550" style={{ marginBottom: "var(--space-3)" }} />
+                <div style={{ color: "#3a5470", fontSize: "var(--text-label)" }}>No feedback submitted yet for this project.</div>
+                <div style={{ color: "#2a5580", fontSize: "var(--text-label)", marginTop: "var(--space-2)" }}>Be the first to rate the team above.</div>
               </div>
             )}
           </>
@@ -814,7 +814,7 @@ export default function CustomerPortal() {
             <div className="cp-card-title"><Image size={16} color="#d97706" />Daily Report Photos</div>
             <div className="cp-card-sub">Progress photos from the field — updated daily by your foreman</div>
 
-            <div className="cp-alert" style={{ marginBottom: 20 }}>
+            <div className="cp-alert" style={{ marginBottom: "var(--space-5)" }}>
               <AlertCircle size={18} color="#d97706" style={{ flexShrink: 0 }} />
               <div className="cp-alert-text">
                 <strong>Coming Soon</strong> — Daily report photos will be available here once EBC activates photo uploads for your project. Contact your PM to enable this feature.
@@ -830,14 +830,14 @@ export default function CustomerPortal() {
               ))}
             </div>
 
-            <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #131f2e" }}>
-              <div className="cp-label" style={{ marginBottom: 8 }}>Request Photo Updates</div>
-              <p style={{ fontSize: 13, color: "#5580a0", margin: "0 0 12px", lineHeight: 1.6 }}>
+            <div style={{ marginTop: "var(--space-5)", paddingTop: "var(--space-4)", borderTop: "1px solid #131f2e" }}>
+              <div className="cp-label" style={{ marginBottom: "var(--space-2)" }}>Request Photo Updates</div>
+              <p style={{ fontSize: "var(--text-label)", color: "#5580a0", margin: "0 0 12px", lineHeight: 1.6 }}>
                 To receive daily progress photos directly to your email, contact your EBC project manager.
               </p>
               <a
                 href="mailto:info@eaglesbrothers.com?subject=Photo Updates Request"
-                style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "#d97706", textDecoration: "none", fontWeight: 600 }}
+                style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", fontSize: "var(--text-label)", color: "var(--amber)", textDecoration: "none", fontWeight: "var(--weight-semi)" }}
               >
                 <Mail size={14} />
                 Request Photo Access

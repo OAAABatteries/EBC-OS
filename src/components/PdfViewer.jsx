@@ -88,8 +88,8 @@ export function PdfViewer({ pdfData, fileName, onClose, isCachedOffline }) {
   const resetZoom = () => setScale(1);
 
   const btnStyle = {
-    padding: "6px 14px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.2)",
-    background: "rgba(255,255,255,0.1)", color: "#fff", cursor: "pointer", fontSize: 14,
+    padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.2)",
+    background: "rgba(255,255,255,0.1)", color: "#fff", cursor: "pointer", fontSize: "var(--text-secondary)",
   };
   const btnDisabled = { ...btnStyle, opacity: 0.4, cursor: "default" };
 
@@ -101,21 +101,21 @@ export function PdfViewer({ pdfData, fileName, onClose, isCachedOffline }) {
       {/* Header */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "10px 16px", borderBottom: "1px solid rgba(255,255,255,0.1)",
+        padding: "var(--space-3) var(--space-4)", borderBottom: "1px solid rgba(255,255,255,0.1)",
         background: "rgba(0,0,0,0.8)", flexShrink: 0,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
           <button onClick={onClose} style={{ ...btnStyle, background: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.4)" }}>
             Close
           </button>
-          <span style={{ color: "#fff", fontSize: 14, fontWeight: 600, maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span style={{ color: "#fff", fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)", maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {fileName || "Drawing"}
           </span>
           {isCachedOffline && (
             <span title="Available offline" style={{
-              display: "inline-flex", alignItems: "center", gap: 4,
-              fontSize: 11, color: "#4ade80", background: "rgba(74,222,128,0.12)",
-              padding: "2px 8px", borderRadius: 10, border: "1px solid rgba(74,222,128,0.25)",
+              display: "inline-flex", alignItems: "center", gap: "var(--space-1)",
+              fontSize: "var(--text-tab)", color: "#4ade80", background: "rgba(74,222,128,0.12)",
+              padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(74,222,128,0.25)",
               whiteSpace: "nowrap",
             }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -129,20 +129,20 @@ export function PdfViewer({ pdfData, fileName, onClose, isCachedOffline }) {
         </div>
 
         {/* Page nav */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
           <button onClick={prevPage} style={page <= 1 ? btnDisabled : btnStyle} disabled={page <= 1}>Prev</button>
-          <span style={{ color: "#ccc", fontSize: 13, minWidth: 80, textAlign: "center" }}>
+          <span style={{ color: "var(--text2)", fontSize: "var(--text-label)", minWidth: 80, textAlign: "center" }}>
             {page} / {numPages}
           </span>
           <button onClick={nextPage} style={page >= numPages ? btnDisabled : btnStyle} disabled={page >= numPages}>Next</button>
         </div>
 
         {/* Zoom controls */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
           <button onClick={zoomOut} style={btnStyle}>−</button>
-          <span style={{ color: "#ccc", fontSize: 12, minWidth: 48, textAlign: "center" }}>{Math.round(scale * 100)}%</span>
+          <span style={{ color: "var(--text2)", fontSize: "var(--text-label)", minWidth: 48, textAlign: "center" }}>{Math.round(scale * 100)}%</span>
           <button onClick={zoomIn} style={btnStyle}>+</button>
-          <button onClick={resetZoom} style={{ ...btnStyle, fontSize: 12 }}>Fit</button>
+          <button onClick={resetZoom} style={{ ...btnStyle, fontSize: "var(--text-label)" }}>Fit</button>
         </div>
       </div>
 
@@ -153,7 +153,7 @@ export function PdfViewer({ pdfData, fileName, onClose, isCachedOffline }) {
         onTouchMove={handleTouchMove}
         style={{
           flex: 1, overflow: "auto", display: "flex", justifyContent: "center",
-          padding: 16, WebkitOverflowScrolling: "touch",
+          padding: "var(--space-4)", WebkitOverflowScrolling: "touch",
         }}
       >
         <canvas ref={canvasRef} style={{ maxWidth: "100%", height: "auto" }} />
@@ -162,7 +162,7 @@ export function PdfViewer({ pdfData, fileName, onClose, isCachedOffline }) {
       {rendering && (
         <div style={{
           position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-          color: "#fff", fontSize: 14, background: "rgba(0,0,0,0.7)", padding: "8px 16px", borderRadius: 8,
+          color: "#fff", fontSize: "var(--text-secondary)", background: "rgba(0,0,0,0.7)", padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-control)",
         }}>
           Loading page...
         </div>

@@ -181,9 +181,9 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
   }, [projectAreas, projectLogs]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       {/* ── Summary ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: "var(--space-2)" }}>
         <StatTile label={tr("Overall %")} value={`${projectStats.pct}%`} color="var(--blue)" t={t} />
         <StatTile label={tr("Areas")} value={projectStats.totalAreas} t={t} />
         <StatTile label={tr("Today's Entries")} value={projectStats.todayEntries} color="var(--green)" t={t} />
@@ -191,16 +191,16 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
 
       {/* ── New Entry Toggle ── */}
       <FieldButton onClick={() => setShowForm(!showForm)} t={t}>
-        <Plus size={14} style={{ marginRight: 4 }} />
+        <Plus size={14} style={{ marginRight: "var(--space-1)" }} />
         {tr("Log Production")}
       </FieldButton>
 
       {/* ── Entry Form ── */}
       {showForm && (
         <FieldCard>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ fontWeight: 700, fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>
-              <TrendingUp size={14} style={{ marginRight: 4, verticalAlign: "middle" }} />
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>
+              <TrendingUp size={14} style={{ marginRight: "var(--space-1)", verticalAlign: "middle" }} />
               {tr("Daily Production Entry")}
             </div>
 
@@ -224,21 +224,21 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
               <>
                 {/* Running total bar */}
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-sm, 12px)", color: "var(--text2)", marginBottom: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-sm, 12px)", color: "var(--text2)", marginBottom: "var(--space-1)" }}>
                     <span>{tr("Installed-to-Date")}</span>
                     <span>{runningTotal.installed} / {runningTotal.budget} {selectedScope?.unit || ""}</span>
                   </div>
-                  <div style={{ height: 8, background: "var(--bg3)", borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: 8, background: "var(--bg3)", borderRadius: "var(--radius-control)", overflow: "hidden" }}>
                     <div style={{
                       height: "100%",
                       width: `${runningTotal.budget > 0 ? Math.min(Math.round((runningTotal.installed / runningTotal.budget) * 100), 100) : 0}%`,
                       background: runningTotal.installed >= runningTotal.budget ? "var(--green)" : "var(--blue)",
-                      borderRadius: 4, transition: "width 0.3s",
+                      borderRadius: "var(--radius-control)", transition: "width 0.3s",
                     }} />
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
                   <div style={{ flex: "1 1 100px" }}>
                     <FieldInput
                       label={`${tr("Qty Installed")} (${selectedScope?.unit || ""})`}
@@ -257,22 +257,22 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
                 </div>
 
                 {/* Productivity rate */}
-                <div style={{ padding: "6px 12px", background: "var(--bg3)", borderRadius: "var(--radius-sm, 6px)", display: "flex", justifyContent: "space-between", fontSize: "var(--text-sm, 12px)" }}>
+                <div style={{ padding: "var(--space-2) var(--space-3)", background: "var(--bg3)", borderRadius: "var(--radius-sm, 6px)", display: "flex", justifyContent: "space-between", fontSize: "var(--text-sm, 12px)" }}>
                   <span style={{ color: "var(--text2)" }}>{tr("Productivity Rate")}</span>
-                  <span style={{ fontWeight: 700, color: "var(--amber)" }}>{productivityRate} {selectedScope?.unit || ""}/hr</span>
+                  <span style={{ fontWeight: "var(--weight-bold)", color: "var(--amber)" }}>{productivityRate} {selectedScope?.unit || ""}/hr</span>
                 </div>
 
                 <FieldInput label={tr("Notes")} value={entryNotes} onChange={(e) => setEntryNotes(e.target.value)} t={t} />
 
                 <PhotoCapture photos={formPhotos} onPhotos={setFormPhotos} t={tr} />
 
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
                   <FieldButton onClick={handleSave} disabled={!(parseFloat(qtyInstalled) > 0)} t={t} style={{ flex: 1, minHeight: 48 }}>
-                    <Save size={14} style={{ marginRight: 4 }} />
+                    <Save size={14} style={{ marginRight: "var(--space-1)" }} />
                     {tr("Save Entry")}
                   </FieldButton>
                   {saveMsg && (
-                    <span style={{ color: "var(--green)", fontWeight: 700, fontSize: "var(--text-sm, 12px)" }}>{saveMsg}</span>
+                    <span style={{ color: "var(--green)", fontWeight: "var(--weight-bold)", fontSize: "var(--text-sm, 12px)" }}>{saveMsg}</span>
                   )}
                 </div>
               </>
@@ -284,16 +284,16 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
       {/* ── Recent logs for selected area ── */}
       {selectedAreaId && areaLogs.length > 0 && (
         <FieldCard>
-          <div style={{ fontWeight: 700, fontSize: "var(--text-sm, 12px)", color: "var(--text2)", textTransform: "uppercase", marginBottom: 8 }}>
-            <BarChart3 size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />
+          <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-sm, 12px)", color: "var(--text2)", textTransform: "uppercase", marginBottom: "var(--space-2)" }}>
+            <BarChart3 size={12} style={{ marginRight: "var(--space-1)", verticalAlign: "middle" }} />
             {tr("Recent Entries")} &middot; {selectedArea?.name}
           </div>
           {areaLogs.map((log) => (
-            <div key={log.id} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: "var(--text-sm, 12px)" }}>
+            <div key={log.id} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)", fontSize: "var(--text-sm, 12px)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text)" }}>
                 <span>{log.date} &middot; {log.trade}</span>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontWeight: 600 }}>{log.qtyInstalled} {log.unit}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                  <span style={{ fontWeight: "var(--weight-semi)" }}>{log.qtyInstalled} {log.unit}</span>
                   {log.date === todayStr && (
                     <button
                       onClick={() => handleDeleteEntry(log)}
@@ -301,7 +301,7 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
                       style={{
                         display: "flex", alignItems: "center", justifyContent: "center",
                         width: 24, height: 24, padding: 0, border: "1px solid var(--border)",
-                        borderRadius: 4, background: "var(--bg3)", color: "var(--red)",
+                        borderRadius: "var(--radius-control)", background: "var(--bg3)", color: "var(--red)",
                         cursor: "pointer",
                       }}
                     >
@@ -310,14 +310,14 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
                   )}
                 </div>
               </div>
-              <div style={{ color: "var(--text3)", marginTop: 2 }}>
+              <div style={{ color: "var(--text3)", marginTop: "var(--space-1)" }}>
                 {log.laborHours}h &middot; {log.crewSize} crew &middot; Rate: {log.laborHours > 0 ? (log.qtyInstalled / log.laborHours).toFixed(1) : "—"}/{tr("hr")}
               </div>
-              {log.notes && <div style={{ color: "var(--text2)", fontStyle: "italic", marginTop: 2 }}>{log.notes}</div>}
+              {log.notes && <div style={{ color: "var(--text2)", fontStyle: "italic", marginTop: "var(--space-1)" }}>{log.notes}</div>}
               {log.photos && log.photos.length > 0 && (
-                <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
+                <div style={{ display: "flex", gap: "var(--space-1)", marginTop: "var(--space-1)" }}>
                   {log.photos.map((p, i) => (
-                    <div key={i} style={{ width: 36, height: 36, borderRadius: 4, overflow: "hidden" }}>
+                    <div key={i} style={{ width: 36, height: 36, borderRadius: "var(--radius-control)", overflow: "hidden" }}>
                       <img src={p.data} alt={p.name || "photo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
                   ))}
@@ -330,33 +330,33 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
 
       {/* ── All Areas Summary ── */}
       <FieldCard>
-        <div style={{ fontWeight: 700, fontSize: "var(--text-sm, 12px)", color: "var(--text2)", textTransform: "uppercase", marginBottom: 10 }}>
+        <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-sm, 12px)", color: "var(--text2)", textTransform: "uppercase", marginBottom: "var(--space-3)" }}>
           {tr("All Areas Progress")}
         </div>
         {areaSummaries.length === 0 && (
-          <div style={{ color: "var(--text3)", fontSize: "var(--text-sm, 12px)", textAlign: "center", padding: 16 }}>
+          <div style={{ color: "var(--text3)", fontSize: "var(--text-sm, 12px)", textAlign: "center", padding: "var(--space-4)" }}>
             {tr("No areas for this project")}
           </div>
         )}
         {areaSummaries.map((a) => (
           <div
             key={a.id}
-            style={{ marginBottom: 10, cursor: "pointer" }}
+            style={{ marginBottom: "var(--space-3)", cursor: "pointer" }}
             onClick={() => { setSelectedAreaId(a.id); setSelectedTrade(""); setShowForm(true); }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-sm, 12px)", marginBottom: 2 }}>
-              <span style={{ color: "var(--text)", fontWeight: 600 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-sm, 12px)", marginBottom: "var(--space-1)" }}>
+              <span style={{ color: "var(--text)", fontWeight: "var(--weight-semi)" }}>
                 {a.name}
-                <span style={{ fontWeight: 400, color: "var(--text3)", marginLeft: 4 }}>F{a.floor} Z{a.zone}</span>
+                <span style={{ fontWeight: "var(--weight-normal)", color: "var(--text3)", marginLeft: "var(--space-1)" }}>F{a.floor} Z{a.zone}</span>
               </span>
-              <span style={{ fontWeight: 700, color: a.pct >= 100 ? "var(--green)" : "var(--text)" }}>{a.pct}%</span>
+              <span style={{ fontWeight: "var(--weight-bold)", color: a.pct >= 100 ? "var(--green)" : "var(--text)" }}>{a.pct}%</span>
             </div>
-            <div style={{ height: 6, background: "var(--bg3)", borderRadius: 3, overflow: "hidden" }}>
+            <div style={{ height: 6, background: "var(--bg3)", borderRadius: "var(--radius-control)", overflow: "hidden" }}>
               <div style={{
                 height: "100%",
                 width: `${Math.min(a.pct, 100)}%`,
                 background: a.pct >= 100 ? "var(--green)" : a.pct > 0 ? "var(--amber)" : "var(--bg4)",
-                borderRadius: 3, transition: "width 0.3s",
+                borderRadius: "var(--radius-control)", transition: "width 0.3s",
               }} />
             </div>
           </div>

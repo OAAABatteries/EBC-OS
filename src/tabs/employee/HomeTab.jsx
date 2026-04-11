@@ -1,6 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import { Calendar, AlertTriangle } from 'lucide-react';
-import { PremiumCard, StatTile, AlertCard, EmptyState, FieldButton } from '../../components/field';
+import { AlertTriangle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 /**
@@ -141,139 +140,146 @@ export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, m
     return alerts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   }, [credentials, myMatRequests, lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // --- Derive foreman name from schedule if available ---
+  const foremanName = useMemo(() => {
+    if (todayAssignments.length === 0) return null;
+    const s = todayAssignments[0];
+    return s.foremanName || s.foreman || null;
+  }, [todayAssignments]);
+
+  // --- Derive status state ---
+  const statusState = useMemo(() => {
+    if (isClockedIn) return 'on-clock';
+    if (assignedProject && !isClockedIn) return 'ready';
+    return 'off-clock';
+  }, [isClockedIn, assignedProject]);
+
+  // --- Issue count ---
+  const issueCount = homeAlerts.filter(a => a.type === 'error' || a.type === 'warning').length;
+
+  // --- Has drawings for assigned project ---
+  const hasDrawings = assignedProject ? true : false; // placeholder — will be refined
+
   return (
     <div className="emp-content">
-      {/* Greeting */}
-      <div style={{padding: `0 0 var(--space-2)`}}>
-        <span className="home-clock-elapsed">{greeting}, {activeEmp?.name?.split(' ')[0]}</span>
-      </div>
 
-      {/* 1. Clock status hero — per D-05, D-06, HOME-01 */}
-      <PremiumCard variant="hero" className="home-clock-hero" onClick={() => setEmpTab("clock")}>
-        <div className={`home-clock-status${isClockedIn ? ' active' : ''}`}>
-          {isClockedIn ? t("ON CLOCK") : t("OFF CLOCK")}
-        </div>
-        <div className="home-clock-elapsed">
-          {isClockedIn
-            ? `${clockElapsed} ${t("on clock")}`
-            : (activeEntry
-              ? `${t("Last punch")}: ${new Date(activeEntry.clockOut || activeEntry.clockIn).toLocaleTimeString(lang === 'es' ? 'es' : 'en', {hour:'numeric', minute:'2-digit'})}`
-              : '')}
-        </div>
-      </PremiumCard>
+      {/* ═══ A. STATUS PANEL — the hero. One block. Owns the screen. ═══ */}
+      <div className={`hs-panel hs-panel--${statusState}`}>
 
-      {/* 2. Stat tiles row — per D-07, HOME-02 */}
-      <div className="home-stat-row" style={{marginTop: 'var(--space-8)'}}>
-        <StatTile label={t("Hours")} value={weekTotal.toFixed(1)} onTap={() => setEmpTab("log")} t={t} />
-        <StatTile label={t("Tasks")} value={String(activeTaskCount)} onTap={() => setEmpTab("schedule")} t={t} />
-        <StatTile label={t("Pending")} value={String(pendingCount)} onTap={() => setEmpTab("materials")} t={t} />
-      </div>
+        {/* Status label */}
+        <div className="hs-status-label">{t("Current Status")}</div>
 
-      {/* 3. Active project card with task/area detail — per D-05, HOME-03 */}
-      {assignedProject ? (
-        <div style={{marginTop: 'var(--space-8)'}}>
-          <div className="section-label">{t("TODAY'S WORK")}</div>
-          <PremiumCard variant="info" className="home-project-card" onClick={() => setSelectedInfoProject(assignedProject.id)} style={{marginTop: 'var(--space-2)'}}>
-            <div className="text-base font-bold">{assignedProject.name}</div>
-            <div className="text-sm text-muted">{assignedProject.address || assignedProject.location || ''}</div>
-            {/* Area/task/trade detail from schedule */}
-            {todayWork.length > 0 && todayWork[0].task && (
-              <div className="home-work-detail">
-                {todayWork.map((w, i) => (
-                  <div key={i} className={`home-work-item${i > 0 ? " home-work-item--border" : ""}`}>
-                    <div className="flex-1">
-                      <div className="home-work-task">{w.task || w.areaName}</div>
-                      <div className="home-work-location">
-                        {w.floor && `${t("Floor")} ${w.floor}`}{w.zone && `, ${t("Zone")} ${w.zone}`}
-                        {w.areaName && w.task !== w.areaName && ` — ${w.areaName}`}
-                      </div>
-                    </div>
-                    {w.trade && <span className="home-trade-badge">{w.trade}</span>}
-                  </div>
-                ))}
-                <FieldButton variant="outline" className="home-log-progress-btn" onClick={(e) => { e.stopPropagation(); setEmpTab("production"); }} t={t}>
-                  {t("Log Progress")}
-                </FieldButton>
-              </div>
-            )}
-          </PremiumCard>
+        {/* Status state — the largest text on screen */}
+        <div className="hs-status-state">
+          {statusState === 'on-clock' && t("On Clock")}
+          {statusState === 'ready' && t("Ready to Check In")}
+          {statusState === 'off-clock' && t("Off Clock")}
         </div>
-      ) : (
-        <div style={{marginTop: 'var(--space-8)'}}>
-          <div className="section-label">{t("TODAY'S WORK")}</div>
-          <PremiumCard variant="info" style={{marginTop: 'var(--space-2)', textAlign: 'center', padding: 16, opacity: 0.7}}>
-            <div className="text-sm text-muted">{t("No assignment today")}</div>
-            <div className="text-xs text-dim" style={{marginTop: 4}}>{t("Check with your foreman")}</div>
-          </PremiumCard>
-        </div>
-      )}
 
-      {/* 3b. Report Problem FAB — 1-tap access from home */}
-      {onReportProblem && (
-        <div style={{marginTop: 'var(--space-8)'}}>
-          <FieldButton variant="outline" onClick={onReportProblem} t={t}
-            style={{width: '100%', gap: 8, justifyContent: 'center', color: 'var(--warning)', borderColor: 'var(--warning)'}}>
-            <AlertTriangle size={16} /> {t("Report Problem")}
-          </FieldButton>
+        {/* Status explanation — specific, not generic */}
+        <div className="hs-status-explain">
+          {statusState === 'on-clock' && assignedProject && (
+            <>{t("Working at")} {assignedProject.name}. {clockElapsed} {t("elapsed")}.</>
+          )}
+          {statusState === 'on-clock' && !assignedProject && (
+            <>{clockElapsed} {t("elapsed")}. {t("No project assigned to this punch.")}</>
+          )}
+          {statusState === 'ready' && (
+            <>{t("You are assigned to")} {assignedProject.name}.</>
+          )}
+          {statusState === 'off-clock' && !assignedProject && (
+            <>{t("No assignment has been posted for your crew today.")}</>
+          )}
+          {statusState === 'off-clock' && assignedProject && (
+            <>{t("Assigned to")} {assignedProject.name}. {t("Not clocked in.")}</>
+          )}
         </div>
-      )}
 
-      {/* 4. Alerts feed — per D-08, HOME-04, HOME-05 */}
-      <div className="home-alerts-section" style={{marginTop: 'var(--space-8)'}}>
-        {credLoading ? (
-          <>
-            <div className="section-label">{t("ALERTS")}</div>
-            <div className="home-alerts-skeleton">
-              {[1,2].map(i => <div key={i} className="skeleton-card" style={{ height: 52, borderRadius: 'var(--radius)', background: 'var(--bg3)', marginBottom: 8, animation: 'pulse 1.5s ease-in-out infinite' }} />)}
-            </div>
-          </>
-        ) : homeAlerts.length > 0 ? (
-          <>
-            <div className="home-alerts-header">
-              <span className="section-label">{t("ALERTS")}</span>
-              {homeAlerts.length > 3 && !showAllAlerts && (
-                <button className="view-all-link" onClick={() => setShowAllAlerts(true)}>{t("View All")}</button>
-              )}
-            </div>
-            {(showAllAlerts ? homeAlerts : homeAlerts.slice(0, 3)).map(alert => (
-              <AlertCard key={alert.id} type={alert.type} message={alert.message}
-                timestamp={alert.timestamp} onTap={() => setEmpTab(alert.sourceTab)} t={t} />
-            ))}
-          </>
-        ) : (
-          <>
-            <div className="section-label">{t("ALERTS")}</div>
-            <EmptyState icon={Calendar} heading={t("No alerts right now")}
-              action={<FieldButton variant="ghost" onClick={() => setEmpTab("schedule")} t={t}>{t("View Schedule")}</FieldButton>} t={t} />
-          </>
+        {/* Context row — crew, foreman, time */}
+        <div className="hs-context">
+          {foremanName && <span>{t("Foreman")}: {foremanName}</span>}
+          {assignedProject && todayWork.length > 0 && todayWork[0].floor && (
+            <span>{t("Area")}: {todayWork[0].task || todayWork[0].areaName}{todayWork[0].floor ? `, ${t("Fl")} ${todayWork[0].floor}` : ''}</span>
+          )}
+          {isClockedIn && activeEntry && (
+            <span>{t("Since")} {new Date(activeEntry.clockIn).toLocaleTimeString(lang === 'es' ? 'es' : 'en', {hour:'numeric', minute:'2-digit'})}</span>
+          )}
+        </div>
+
+        {/* Primary action */}
+        <button className="hs-action" onClick={() => setEmpTab("clock")}>
+          {statusState === 'on-clock' && t("View Punch")}
+          {statusState === 'ready' && t("Check In")}
+          {statusState === 'off-clock' && t("View Schedule")}
+        </button>
+
+        {/* Secondary: report issue — inline, not a separate element */}
+        {onReportProblem && (
+          <button className="hs-report" onClick={(e) => { e.stopPropagation(); onReportProblem(); }}>
+            {t("Report issue")}
+          </button>
         )}
       </div>
 
-      {/* 5. Tomorrow preview — what's next */}
-      {(() => {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowKey = ['sun','mon','tue','wed','thu','fri','sat'][tomorrow.getDay()];
-        const tomorrowWork = mySchedule.filter(s => s.days?.[tomorrowKey] && s.projectId).map(s => {
-          const proj = projects.find(p => p.id === s.projectId);
-          const area = s.areaId ? (areas || []).find(a => String(a.id) === String(s.areaId)) : null;
-          return { task: s.task || area?.name || proj?.name || "", trade: s.trade || "", floor: s.floor || area?.floor || "", zone: s.zone || area?.zone || "" };
-        });
-        if (tomorrowWork.length === 0) return null;
-        return (
-          <div className="home-section">
-            <div className="section-label">{t("TOMORROW")}</div>
-            <div className="home-tomorrow-card">
-              {tomorrowWork.map((w, i) => (
-                <div key={i} className={`home-tomorrow-item${i > 0 ? " home-tomorrow-item--gap" : ""}`}>
-                  <span className="text-sm">{w.task}{w.floor ? ` — ${t("Floor")} ${w.floor}` : ""}</span>
-                  {w.trade && <span className="home-trade-badge home-trade-badge--blue">{w.trade}</span>}
-                </div>
-              ))}
+      {/* ═══ B. TODAY'S WORK — subordinate to status, only if real data ═══ */}
+      {assignedProject && todayWork.length > 0 && todayWork[0].task && (
+        <div className="hs-today" onClick={() => setSelectedInfoProject(assignedProject.id)}>
+          <div className="hs-today-label">{t("Today's Work")}</div>
+          {todayWork.map((w, i) => (
+            <div key={i} className="hs-today-row">
+              <div className="hs-today-task">{w.task || w.areaName}</div>
+              <div className="hs-today-meta">
+                {w.floor && <span>{t("Fl")} {w.floor}{w.zone ? ` / ${w.zone}` : ''}</span>}
+                {w.trade && <span className="hs-trade">{w.trade}</span>}
+              </div>
             </div>
-          </div>
-        );
-      })()}
+          ))}
+          <button className="hs-today-action" onClick={(e) => { e.stopPropagation(); setEmpTab("production"); }}>
+            {t("Log Progress")} &rsaquo;
+          </button>
+        </div>
+      )}
+
+      {/* ═══ C. QUICK INFO — one dense row, not three cards ═══ */}
+      <div className="hs-quick">
+        <button className="hs-quick-item" onClick={() => setEmpTab("log")}>
+          <span className="hs-quick-val">{weekTotal.toFixed(1)}h</span>
+          <span className="hs-quick-lbl">{t("this week")}</span>
+        </button>
+        <button className="hs-quick-item" onClick={() => setEmpTab("drawings")}>
+          <span className="hs-quick-val">{hasDrawings ? t("Available") : t("None")}</span>
+          <span className="hs-quick-lbl">{t("drawings")}</span>
+        </button>
+        <button className="hs-quick-item" onClick={() => issueCount > 0 ? setEmpTab("credentials") : null}>
+          <span className={`hs-quick-val${issueCount > 0 ? ' hs-quick-val--alert' : ''}`}>{issueCount}</span>
+          <span className="hs-quick-lbl">{issueCount === 1 ? t("issue") : t("issues")}</span>
+        </button>
+      </div>
+
+      {/* ═══ D. ALERTS — only if real alerts exist. No empty card. ═══ */}
+      {!credLoading && homeAlerts.length > 0 && (
+        <div className="hs-alerts">
+          {(showAllAlerts ? homeAlerts : homeAlerts.slice(0, 3)).map(alert => (
+            <button key={alert.id} className={`hs-alert hs-alert--${alert.type}`} onClick={() => setEmpTab(alert.sourceTab)}>
+              <span className="hs-alert-dot" />
+              <span className="hs-alert-text">{alert.message}</span>
+              <span className="hs-alert-arrow">&rsaquo;</span>
+            </button>
+          ))}
+          {homeAlerts.length > 3 && !showAllAlerts && (
+            <button className="hs-alerts-more" onClick={() => setShowAllAlerts(true)}>
+              {t("View all")} {homeAlerts.length} {t("alerts")}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ═══ E. TOOLS — quiet operational shortcuts ═══ */}
+      <div className="hs-tools">
+        <button className="hs-tool" onClick={() => setEmpTab("drawings")}>{t("Drawings")}</button>
+        <button className="hs-tool" onClick={() => setEmpTab("production")}>{t("Log Work")}</button>
+        <button className="hs-tool" onClick={() => setEmpTab("schedule")}>{t("Schedule")}</button>
+      </div>
     </div>
   );
 }

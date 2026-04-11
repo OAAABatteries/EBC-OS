@@ -55,9 +55,9 @@ export function PhotoCapture({ photos = [], onPhotos, multiple = true, label, t 
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
       {label !== false && (
-        <label style={{ fontSize: "var(--text-sm)", color: "var(--text2)", fontWeight: 600, textTransform: "uppercase" }}>
+        <label style={{ fontSize: "var(--text-sm)", color: "var(--text2)", fontWeight: "var(--weight-semi)", textTransform: "uppercase" }}>
           {tr(label || "Photos")}
         </label>
       )}
@@ -76,11 +76,11 @@ export function PhotoCapture({ photos = [], onPhotos, multiple = true, label, t 
         type="button"
         onClick={() => inputRef.current?.click()}
         style={{
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          padding: "12px 16px", minHeight: "var(--touch-min, 44px)",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)",
+          padding: "var(--space-3) var(--space-4)", minHeight: "var(--touch-min, 44px)",
           background: "var(--bg3)", border: "2px dashed var(--border2)",
           borderRadius: "var(--radius-sm, 6px)", color: "var(--text2)",
-          cursor: "pointer", fontSize: "var(--text-base, 13px)", fontWeight: 600,
+          cursor: "pointer", fontSize: "var(--text-base, 13px)", fontWeight: "var(--weight-semi)",
         }}
       >
         <Camera size={18} />
@@ -88,7 +88,7 @@ export function PhotoCapture({ photos = [], onPhotos, multiple = true, label, t 
       </button>
 
       {photos.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(64px, 1fr))", gap: 8, marginTop: 4 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(64px, 1fr))", gap: "var(--space-2)", marginTop: "var(--space-1)" }}>
           {photos.map((p, i) => (
             <div key={i} style={{ position: "relative", aspectRatio: "1", borderRadius: "var(--radius-sm, 6px)", overflow: "hidden" }}>
               <img src={p.data} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />

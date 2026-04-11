@@ -168,14 +168,14 @@ export function CalendarLookahead({ app, lang }) {
     <div className="cal-lookahead">
       {/* Controls */}
       <div className="cal-lookahead-controls">
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <label style={{ fontSize: 12, color: "var(--text2)" }}>{t("Weeks")}:</label>
+        <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
+          <label style={{ fontSize: "var(--text-label)", color: "var(--text2)" }}>{t("Weeks")}:</label>
           {[3, 4, 6].map(n => (
             <button key={n} className={`cal-nav-btn${weeks === n ? " active" : ""}`} onClick={() => setWeeks(n)}>{n}</button>
           ))}
         </div>
         <select
-          style={{ background: "var(--bg3)", border: "1px solid var(--border)", color: "var(--text)", padding: "6px 10px", borderRadius: "var(--radius)", fontSize: 12 }}
+          style={{ background: "var(--bg3)", border: "1px solid var(--border)", color: "var(--text)", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius)", fontSize: "var(--text-label)" }}
           value={filterProject || ""}
           onChange={e => setFilterProject(e.target.value ? Number(e.target.value) : null)}
         >
@@ -189,7 +189,7 @@ export function CalendarLookahead({ app, lang }) {
 
       {/* AI Lookahead Panel */}
       {showLa && laResult && (
-        <div className="card" style={{ padding: 20, marginBottom: 16, maxHeight: 450, overflow: "auto" }}>
+        <div className="card" style={{ padding: "var(--space-5)", marginBottom: "var(--space-4)", maxHeight: 450, overflow: "auto" }}>
           <div className="flex-between mb-12">
             <div className="text-sm font-semi">AI Lookahead Analysis</div>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowLa(false)}>Close</button>
@@ -199,10 +199,10 @@ export function CalendarLookahead({ app, lang }) {
 
           {/* Critical Actions */}
           {laResult.criticalActions?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: "var(--space-3)" }}>
               <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Critical Actions</div>
               {laResult.criticalActions.map((a, i) => (
-                <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: a.priority === "critical" ? "rgba(239,68,68,0.08)" : "var(--bg3)", border: `1px solid ${a.priority === "critical" ? "rgba(239,68,68,0.2)" : "var(--border)"}` }}>
+                <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: a.priority === "critical" ? "rgba(239,68,68,0.08)" : "var(--bg3)", border: `1px solid ${a.priority === "critical" ? "rgba(239,68,68,0.2)" : "var(--border)"}` }}>
                   <div className="flex-between">
                     <span className="text-sm font-semi">{a.action}</span>
                     <span className={`badge ${a.priority === "critical" ? "badge-red" : a.priority === "high" ? "badge-amber" : "badge-muted"}`}>{a.priority}</span>
@@ -215,9 +215,9 @@ export function CalendarLookahead({ app, lang }) {
 
           {/* Resource Peaks */}
           {laResult.resourcePeaks?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: "var(--space-3)" }}>
               <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Resource Peaks</div>
-              <table className="data-table" style={{ fontSize: 12 }}>
+              <table className="data-table" style={{ fontSize: "var(--text-label)" }}>
                 <thead><tr><th>Week</th><th>Demand</th><th>Available</th><th>Gap</th><th>Solution</th></tr></thead>
                 <tbody>
                   {laResult.resourcePeaks.map((r, i) => (
@@ -236,10 +236,10 @@ export function CalendarLookahead({ app, lang }) {
 
           {/* Milestone Tracker */}
           {laResult.milestoneTracker?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: "var(--space-3)" }}>
               <div className="text-sm font-semi mb-8">Milestones</div>
               {laResult.milestoneTracker.map((m, i) => (
-                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
                   <div className="flex-between">
                     <span className="text-sm">{m.milestone}</span>
                     <span className={`badge ${m.status === "on_track" ? "badge-green" : m.status === "at_risk" ? "badge-amber" : "badge-red"}`}>{m.status?.replace("_", " ")}</span>
@@ -269,9 +269,9 @@ export function CalendarLookahead({ app, lang }) {
                   <div className="cal-lookahead-week-label">{wi === 0 ? t("This Week") : wi === 1 ? t("Next Week") : `${t("Week")} ${wi + 1}`}</div>
                   <div className="cal-lookahead-date-range">{label}</div>
                 </div>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  {hasIssues && <span style={{ color: "#ef4444", fontSize: 14 }}>!</span>}
-                  <span style={{ fontSize: 11, color: "var(--text3)" }}>{isExpanded ? "▲" : "▼"}</span>
+                <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
+                  {hasIssues && <span style={{ color: "var(--red)", fontSize: "var(--text-secondary)" }}>!</span>}
+                  <span style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{isExpanded ? "▲" : "▼"}</span>
                 </div>
               </div>
 
@@ -304,12 +304,12 @@ export function CalendarLookahead({ app, lang }) {
                       <div className="cal-lookahead-section-title">{t("Crew Assignments")}</div>
                       {Object.entries(w.teamByProject).map(([pid, entries]) => (
                         <div key={pid} className="cal-lookahead-item">
-                          <span style={{ color: "var(--accent)", fontWeight: 600, fontSize: 12 }}>{projName(Number(pid))}</span>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 2 }}>
+                          <span style={{ color: "var(--accent)", fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)" }}>{projName(Number(pid))}</span>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", marginTop: "var(--space-1)" }}>
                             {entries.map(cs => (
-                              <span key={cs.id} style={{ fontSize: 11, padding: "1px 6px", background: "var(--bg3)", borderRadius: 8, color: "var(--text2)" }}>
+                              <span key={cs.id} style={{ fontSize: "var(--text-tab)", padding: "var(--space-1) var(--space-2)", background: "var(--bg3)", borderRadius: "var(--radius-control)", color: "var(--text2)" }}>
                                 {empName(cs.employeeId)}
-                                <span style={{ color: "var(--text3)", marginLeft: 4 }}>
+                                <span style={{ color: "var(--text3)", marginLeft: "var(--space-1)" }}>
                                   {DAY_KEYS.filter(k => cs.days?.[k]).map(k => k.charAt(0).toUpperCase()).join("")}
                                 </span>
                               </span>
@@ -326,8 +326,8 @@ export function CalendarLookahead({ app, lang }) {
                       <div className="cal-lookahead-section-title">{t("Events")}</div>
                       {w.events.map(ev => (
                         <div key={ev.id} className="cal-lookahead-item" style={{ borderLeft: `3px solid ${getTypeColor(ev.type)}` }}>
-                          <div style={{ fontSize: 12, fontWeight: 500 }}>{ev.title}</div>
-                          <div style={{ fontSize: 11, color: "var(--text3)" }}>{ev.date}{ev.startTime ? ` · ${ev.startTime}` : ""}</div>
+                          <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-medium)" }}>{ev.title}</div>
+                          <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{ev.date}{ev.startTime ? ` · ${ev.startTime}` : ""}</div>
                         </div>
                       ))}
                     </div>
@@ -339,8 +339,8 @@ export function CalendarLookahead({ app, lang }) {
                       <div className="cal-lookahead-section-title">{t("Active Tasks")}</div>
                       {w.ganttTasks.map(task => (
                         <div key={task.id} className="cal-lookahead-item" style={{ borderLeft: `3px solid ${getTypeColor("gantt")}` }}>
-                          <div style={{ fontSize: 12, fontWeight: 500 }}>{task.task || task.name}</div>
-                          <div style={{ fontSize: 11, color: "var(--text3)" }}>{projName(task.projectId)} · {task.start} → {task.end}</div>
+                          <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-medium)" }}>{task.task || task.name}</div>
+                          <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{projName(task.projectId)} · {task.start} → {task.end}</div>
                         </div>
                       ))}
                     </div>
@@ -352,8 +352,8 @@ export function CalendarLookahead({ app, lang }) {
                       <div className="cal-lookahead-section-title">{t("Subcontractors")}</div>
                       {w.subs.map(ss => (
                         <div key={ss.id} className="cal-lookahead-item" style={{ borderLeft: `3px solid ${getTypeColor("sub")}` }}>
-                          <div style={{ fontSize: 12, fontWeight: 500 }}>{ss.subName} — {ss.trade}</div>
-                          <div style={{ fontSize: 11, color: "var(--text3)" }}>{projName(ss.projectId)} · {ss.area}</div>
+                          <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-medium)" }}>{ss.subName} — {ss.trade}</div>
+                          <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{projName(ss.projectId)} · {ss.area}</div>
                         </div>
                       ))}
                     </div>
@@ -365,8 +365,8 @@ export function CalendarLookahead({ app, lang }) {
                       <div className="cal-lookahead-section-title">{t("Equipment")}</div>
                       {w.eqBookings.map(eb => (
                         <div key={eb.id} className="cal-lookahead-item" style={{ borderLeft: `3px solid ${getTypeColor("equipment")}` }}>
-                          <div style={{ fontSize: 12, fontWeight: 500 }}>{eqName(eb.equipmentId)}</div>
-                          <div style={{ fontSize: 11, color: "var(--text3)" }}>{projName(eb.projectId)} · {eb.startDate} → {eb.endDate}</div>
+                          <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-medium)" }}>{eqName(eb.equipmentId)}</div>
+                          <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{projName(eb.projectId)} · {eb.startDate} → {eb.endDate}</div>
                         </div>
                       ))}
                     </div>
@@ -375,11 +375,11 @@ export function CalendarLookahead({ app, lang }) {
                   {/* PTO */}
                   {w.ptos.length > 0 && (
                     <div className="cal-lookahead-section">
-                      <div className="cal-lookahead-section-title" style={{ color: "#64748b" }}>{t("PTO")}</div>
+                      <div className="cal-lookahead-section-title" style={{ color: "var(--text3)" }}>{t("PTO")}</div>
                       {w.ptos.map(pto => (
                         <div key={pto.id} className="cal-lookahead-item" style={{ borderLeft: `3px solid #64748b` }}>
-                          <div style={{ fontSize: 12 }}>{empName(pto.employeeId)} — {pto.type}</div>
-                          <div style={{ fontSize: 11, color: "var(--text3)" }}>{pto.startDate} → {pto.endDate}</div>
+                          <div style={{ fontSize: "var(--text-label)" }}>{empName(pto.employeeId)} — {pto.type}</div>
+                          <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{pto.startDate} → {pto.endDate}</div>
                         </div>
                       ))}
                     </div>
@@ -388,11 +388,11 @@ export function CalendarLookahead({ app, lang }) {
                   {/* Weather */}
                   {w.weather.length > 0 && (
                     <div className="cal-lookahead-section">
-                      <div className="cal-lookahead-section-title" style={{ color: "#ef4444" }}>{t("Weather Alerts")}</div>
+                      <div className="cal-lookahead-section-title" style={{ color: "var(--red)" }}>{t("Weather Alerts")}</div>
                       {w.weather.map(wa => (
                         <div key={wa.id} className="cal-lookahead-item" style={{ borderLeft: "3px solid #ef4444" }}>
-                          <div style={{ fontSize: 12 }}>{wa.advisory}</div>
-                          <div style={{ fontSize: 11, color: "var(--text3)" }}>{wa.date} · {wa.highTemp}°F</div>
+                          <div style={{ fontSize: "var(--text-label)" }}>{wa.advisory}</div>
+                          <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{wa.date} · {wa.highTemp}°F</div>
                         </div>
                       ))}
                     </div>

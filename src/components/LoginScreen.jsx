@@ -79,7 +79,7 @@ const loginStyles = `
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20px;
+  gap: "var(--space-5)"px;
   transition: opacity 0.55s ease, transform 0.55s ease;
   pointer-events: all;
 }
@@ -91,7 +91,7 @@ const loginStyles = `
 .splash-logo-lockup {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: "var(--space-4)"px;
 }
 .splash-logo {
   width: 80px;
@@ -123,7 +123,7 @@ const loginStyles = `
 }
 .splash-loading-dots {
   display: flex;
-  gap: 7px;
+  gap: "var(--space-2)"px;
   margin-top: 4px;
 }
 .splash-loading-dot {
@@ -142,7 +142,7 @@ const loginStyles = `
   z-index: 2;
   width: 100%;
   max-width: 420px;
-  margin: 20px;
+  margin: "var(--space-5)"px;
   background: rgba(12,15,22,0.88);
   backdrop-filter: blur(24px) saturate(1.8);
   -webkit-backdrop-filter: blur(24px) saturate(1.8);
@@ -167,7 +167,7 @@ const loginStyles = `
 .login-logo-lockup {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: "var(--space-4)"px;
   margin-bottom: 10px;
 }
 .login-logo-eagle {
@@ -201,19 +201,19 @@ const loginStyles = `
 .login-divider-line {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(224,148,34,0.2), transparent);
-  margin: 6px 0 24px;
+  margin: "var(--space-2)"px 0 24px;
 }
 
 /* ── Form ── */
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: "var(--space-4)"px;
 }
 .login-field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: "var(--space-1)"px;
 }
 .login-label {
   font-size: 11px;
@@ -267,7 +267,7 @@ const loginStyles = `
 .login-remember {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: "var(--space-2)"px;
   font-size: 13px;
   color: #8494ad;
   cursor: pointer;
@@ -304,7 +304,7 @@ const loginStyles = `
 .login-btn-loading {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: "var(--space-2)"px;
 }
 .login-btn-spinner {
   width: 14px; height: 14px;
@@ -329,7 +329,7 @@ const loginStyles = `
 .login-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, #1c2233, transparent);
-  margin: 8px 0;
+  margin: "var(--space-2)"px 0;
 }
 .login-pin-mode {
   text-align: center;
@@ -361,7 +361,7 @@ const loginStyles = `
   font-family: var(--font-body);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: "var(--space-1)"px;
 }
 .login-lang-toggle:hover { border-color: #e09422; color: #d4dae6; }
 .login-version {
@@ -402,7 +402,7 @@ const loginStyles = `
 .pin-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: "var(--space-3)"px;
   margin-top: 4px;
 }
 .pin-key {
@@ -425,8 +425,8 @@ const loginStyles = `
 .pin-display {
   display: flex;
   justify-content: center;
-  gap: 14px;
-  margin: 16px 0 8px;
+  gap: "var(--space-4)"px;
+  margin: "var(--space-4)"px 0 8px;
 }
 .pin-dot {
   width: 14px;
@@ -443,7 +443,7 @@ const loginStyles = `
 
 @media (max-width: 480px) {
   .login-card {
-    margin: 12px;
+    margin: "var(--space-3)"px;
     padding: 28px 20px;
     border-radius: 14px;
   }
@@ -701,9 +701,9 @@ export function LoginScreen({ onLogin }) {
               <div className="login-success">{t("Password updated!")} ✓</div>
             ) : (
               <form onSubmit={handleChangePassword} className="login-form">
-                <div style={{ textAlign: "center", color: "#8494ad", fontSize: 13, marginBottom: 4 }}>
-                  Logged in as: <strong style={{ color: "#d4dae6" }}>{changingUser.name}</strong>
-                  <span style={{ color: "#e09422", marginLeft: 8, fontSize: 11 }}>{ROLES[changingUser.role]?.label}</span>
+                <div style={{ textAlign: "center", color: "var(--text2)", fontSize: "var(--text-label)", marginBottom: "var(--space-1)" }}>
+                  Logged in as: <strong style={{ color: "var(--text)" }}>{changingUser.name}</strong>
+                  <span style={{ color: "var(--amber)", marginLeft: "var(--space-2)", fontSize: "var(--text-tab)" }}>{ROLES[changingUser.role]?.label}</span>
                 </div>
                 <div className="login-field">
                   <label className="login-label">{t("New Password")}</label>
@@ -719,7 +719,7 @@ export function LoginScreen({ onLogin }) {
                 </div>
                 {error && <div className="login-error">{error}</div>}
                 <button className="login-btn" type="submit">{t("Update & Continue")}</button>
-                <button type="button" className="login-pin-link" onClick={handleSkipChange} style={{ marginTop: 4 }}>{t("Skip for Now")}</button>
+                <button type="button" className="login-pin-link" onClick={handleSkipChange} style={{ marginTop: "var(--space-1)" }}>{t("Skip for Now")}</button>
               </form>
             )}
           </div>
@@ -728,13 +728,13 @@ export function LoginScreen({ onLogin }) {
         {/* ── PIN LOGIN MODE ── */}
         {mode === "pin" && (
           <div>
-            <div style={{ textAlign: "center", color: "#8494ad", fontSize: 12, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>{t("PIN")}</div>
+            <div style={{ textAlign: "center", color: "var(--text2)", fontSize: "var(--text-label)", letterSpacing: 1, textTransform: "uppercase", marginBottom: "var(--space-2)" }}>{t("PIN")}</div>
             <div className="pin-display">
               {[0,1,2,3].map(i => (
                 <div key={i} className={`pin-dot${pinValue.length > i ? " filled" : ""}`} />
               ))}
             </div>
-            {error && <div className="login-error" style={{ marginBottom: 12 }}>{error}</div>}
+            {error && <div className="login-error" style={{ marginBottom: "var(--space-3)" }}>{error}</div>}
             <div className="pin-grid">
               {["1","2","3","4","5","6","7","8","9","","0","del"].map((k, i) => (
                 k === "" ? <div key={i} /> :
@@ -743,7 +743,7 @@ export function LoginScreen({ onLogin }) {
                 </button>
               ))}
             </div>
-            <div className="login-pin-mode" style={{ marginTop: 16 }}>
+            <div className="login-pin-mode" style={{ marginTop: "var(--space-4)" }}>
               <button type="button" className="login-pin-link" onClick={() => { setMode("login"); setError(""); setPinValue(""); }}>
                 {t("Sign in with Email")}
               </button>

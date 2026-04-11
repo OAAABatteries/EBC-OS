@@ -12,6 +12,7 @@ export { EmptyState } from './EmptyState';
 export { AsyncState } from './AsyncState';
 export { PortalHeader } from './PortalHeader';
 export { PortalTabBar } from './PortalTabBar';
+export { LanguageToggle } from './LanguageToggle';
 export { FieldSignaturePad } from './FieldSignaturePad';
 export { MaterialRequestCard } from './MaterialRequestCard';
 export { PremiumCard } from './PremiumCard';

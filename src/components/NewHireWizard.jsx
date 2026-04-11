@@ -148,7 +148,7 @@ const nhwStyles = `
 /* ── step indicators ── */
 .nhw-steps {
   display: flex;
-  gap: 4px;
+  gap: "var(--space-1)"px;
   margin-bottom: 4px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -198,12 +198,12 @@ const nhwStyles = `
 .nhw-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: "var(--space-4)"px;
 }
 .nhw-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: "var(--space-1)"px;
 }
 .nhw-field.full {
   grid-column: 1 / -1;
@@ -239,12 +239,12 @@ const nhwStyles = `
 .nhw-checkbox-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: "var(--space-2)"px;
 }
 .nhw-checkbox-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: "var(--space-2)"px;
   padding: 10px 12px;
   background: #06080c;
   border: 1px solid #1c2233;
@@ -288,7 +288,7 @@ const nhwStyles = `
 .nhw-cert-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: "var(--space-3)"px;
   padding: 10px 12px;
   background: #06080c;
   border: 1px solid #1c2233;
@@ -374,7 +374,7 @@ const nhwStyles = `
 .nhw-review-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: "var(--space-1)"px;
   justify-content: flex-end;
   max-width: 60%;
 }
@@ -456,7 +456,7 @@ const nhwStyles = `
 /* ── radio group ── */
 .nhw-radio-group {
   display: flex;
-  gap: 8px;
+  gap: "var(--space-2)"px;
   flex-wrap: wrap;
 }
 .nhw-radio-item {
@@ -484,7 +484,7 @@ const nhwStyles = `
 .nhw-doc-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: "var(--space-3)"px;
   padding: 16px;
   background: #06080c;
   border: 1px solid #1c2233;
@@ -537,7 +537,7 @@ const nhwStyles = `
   .nhw-checkbox-grid { grid-template-columns: 1fr; }
   .nhw-cert-row { flex-wrap: wrap; }
   .nhw-cert-exp { width: 100%; margin-top: 4px; }
-  .nhw-steps { gap: 2px; }
+  .nhw-steps { gap: "var(--space-1)"px; }
   .nhw-step-pill { font-size: 10px; padding: 5px 2px; }
   .nhw-radio-group { flex-direction: column; }
   .nhw-radio-item { text-align: center; }
@@ -755,8 +755,8 @@ export function NewHireWizard({ onSubmit, onClose }) {
           />
         </div>
       </div>
-      <div style={{ marginTop: 18 }}>
-        <label className="nhw-label" style={{ marginBottom: 10, display: "block" }}>
+      <div style={{ marginTop: "var(--space-5)" }}>
+        <label className="nhw-label" style={{ marginBottom: "var(--space-3)", display: "block" }}>
           Trade Skills * (select all that apply)
         </label>
         <div className="nhw-checkbox-grid">
@@ -781,7 +781,7 @@ export function NewHireWizard({ onSubmit, onClose }) {
   const renderCertifications = () => (
     <div key="step-2">
       <div className="nhw-section-title">Certifications</div>
-      <p style={{ fontSize: 12, color: "#8494ad", marginBottom: 14 }}>
+      <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-4)" }}>
         Toggle on any certifications you hold and enter the expiration date.
       </p>
       {CERT_LIST.map((cert) => {
@@ -802,7 +802,7 @@ export function NewHireWizard({ onSubmit, onClose }) {
                   type="date"
                   value={form.certifications[cert.key]?.expires || ""}
                   onChange={(e) => setCertExp(cert.key, e.target.value)}
-                  style={{ padding: "6px 8px", fontSize: 12 }}
+                  style={{ padding: "var(--space-2) var(--space-2)", fontSize: "var(--text-label)" }}
                 />
               </div>
             )}
@@ -815,8 +815,8 @@ export function NewHireWizard({ onSubmit, onClose }) {
   const renderLogistics = () => (
     <div key="step-3">
       <div className="nhw-section-title">Logistics</div>
-      <div style={{ marginBottom: 20 }}>
-        <label className="nhw-label" style={{ marginBottom: 8, display: "block" }}>Shirt Size</label>
+      <div style={{ marginBottom: "var(--space-5)" }}>
+        <label className="nhw-label" style={{ marginBottom: "var(--space-2)", display: "block" }}>Shirt Size</label>
         <div className="nhw-radio-group">
           {SHIRT_SIZES.map((sz) => (
             <div
@@ -829,8 +829,8 @@ export function NewHireWizard({ onSubmit, onClose }) {
           ))}
         </div>
       </div>
-      <div style={{ marginBottom: 20 }}>
-        <label className="nhw-label" style={{ marginBottom: 8, display: "block" }}>Transportation</label>
+      <div style={{ marginBottom: "var(--space-5)" }}>
+        <label className="nhw-label" style={{ marginBottom: "var(--space-2)", display: "block" }}>Transportation</label>
         <div className="nhw-radio-group">
           {TRANSPORT_OPTIONS.map((opt) => (
             <div
@@ -843,8 +843,8 @@ export function NewHireWizard({ onSubmit, onClose }) {
           ))}
         </div>
       </div>
-      <div style={{ marginBottom: 20 }}>
-        <label className="nhw-label" style={{ marginBottom: 8, display: "block" }}>Tool Ownership</label>
+      <div style={{ marginBottom: "var(--space-5)" }}>
+        <label className="nhw-label" style={{ marginBottom: "var(--space-2)", display: "block" }}>Tool Ownership</label>
         <div className="nhw-radio-group">
           {TOOL_OPTIONS.map((opt) => (
             <div
@@ -858,7 +858,7 @@ export function NewHireWizard({ onSubmit, onClose }) {
         </div>
       </div>
       <div>
-        <label className="nhw-label" style={{ marginBottom: 8, display: "block" }}>Preferred Language</label>
+        <label className="nhw-label" style={{ marginBottom: "var(--space-2)", display: "block" }}>Preferred Language</label>
         <div className="nhw-radio-group">
           {LANG_OPTIONS.map((opt) => (
             <div
@@ -877,7 +877,7 @@ export function NewHireWizard({ onSubmit, onClose }) {
   const renderDocuments = () => (
     <div key="step-4">
       <div className="nhw-section-title">Document Checklist</div>
-      <p style={{ fontSize: 12, color: "#8494ad", marginBottom: 14 }}>
+      <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-4)" }}>
         Mark each document as submitted. Actual forms are handled by HR &mdash; this is just a status tracker.
       </p>
       <div
@@ -920,7 +920,7 @@ export function NewHireWizard({ onSubmit, onClose }) {
     return (
       <div key="step-5">
         <div className="nhw-section-title">Review & Submit</div>
-        <p style={{ fontSize: 12, color: "#8494ad", marginBottom: 16 }}>
+        <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-4)" }}>
           Please review all information before submitting. You can go back to make changes.
         </p>
 
@@ -1066,7 +1066,7 @@ export function NewHireWizard({ onSubmit, onClose }) {
               </button>
             )}
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: "var(--space-2)" }}>
             {step < TOTAL - 1 ? (
               <button className="nhw-btn" onClick={next} disabled={!canProceed()}>
                 Next

@@ -215,12 +215,12 @@ export function PhaseTracker({ phases = [], employees = [], onUpdate, readOnly =
           <div className="phase-detail-panel">
             {/* Header */}
             <div className="flex-between mb-8">
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}>{phase.name}</span>
-                <span className={statusBadgeClass(phase.status)} style={{ fontSize: 10 }}>{phase.status}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                <span style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)", color: "var(--text)" }}>{phase.name}</span>
+                <span className={statusBadgeClass(phase.status)} style={{ fontSize: "var(--text-xs)" }}>{phase.status}</span>
               </div>
               <button
-                style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 16, lineHeight: 1 }}
+                style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: "var(--text-card)", lineHeight: 1 }}
                 onClick={() => setExpandedKey(null)}
               >
                 ✕
@@ -229,36 +229,36 @@ export function PhaseTracker({ phases = [], employees = [], onUpdate, readOnly =
 
             {readOnly ? (
               /* ── Read-only detail view ── */
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", fontSize: "var(--text-label)" }}>
                 {phase.assignedForeman && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                     <span style={{ color: "var(--text3)" }}><IcoUser /></span>
                     <span style={{ color: "var(--text2)" }}>{phase.assignedForeman}</span>
                   </div>
                 )}
                 {phase.startDate && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                     <span style={{ color: "var(--text3)" }}><IcoCalendar /></span>
-                    <span className="text-dim text-xs" style={{ marginRight: 4 }}>STARTED</span>
-                    <span style={{ color: "var(--text2)", fontFamily: "var(--font-mono)", fontSize: 12 }}>{phase.startDate}</span>
+                    <span className="text-dim text-xs" style={{ marginRight: "var(--space-1)" }}>STARTED</span>
+                    <span style={{ color: "var(--text2)", fontFamily: "var(--font-mono)", fontSize: "var(--text-label)" }}>{phase.startDate}</span>
                     {phase.completedDate && (
                       <>
-                        <span className="text-dim text-xs" style={{ marginLeft: 8, marginRight: 4 }}>DONE</span>
-                        <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)", fontSize: 12 }}>{phase.completedDate}</span>
+                        <span className="text-dim text-xs" style={{ marginLeft: "var(--space-2)", marginRight: "var(--space-1)" }}>DONE</span>
+                        <span style={{ color: "var(--green)", fontFamily: "var(--font-mono)", fontSize: "var(--text-label)" }}>{phase.completedDate}</span>
                       </>
                     )}
                   </div>
                 )}
                 {phase.notes && (
-                  <div style={{ color: "var(--text2)", fontSize: 12, borderLeft: "2px solid var(--border2)", paddingLeft: 8 }}>
+                  <div style={{ color: "var(--text2)", fontSize: "var(--text-label)", borderLeft: "2px solid var(--border2)", paddingLeft: "var(--space-2)" }}>
                     {phase.notes}
                   </div>
                 )}
                 {!phase.assignedForeman && !phase.startDate && !phase.notes && (
-                  <div style={{ color: "var(--text3)", fontSize: 12 }}>No details recorded yet.</div>
+                  <div style={{ color: "var(--text3)", fontSize: "var(--text-label)" }}>No details recorded yet.</div>
                 )}
                 {!readOnly && (
-                  <button className="btn btn-ghost btn-sm" style={{ alignSelf: "flex-start", marginTop: 4 }}
+                  <button className="btn btn-ghost btn-sm" style={{ alignSelf: "flex-start", marginTop: "var(--space-1)" }}
                     onClick={() => { /* switch to edit */ }}>
                     <IcoPencil /> Edit
                   </button>
@@ -266,11 +266,11 @@ export function PhaseTracker({ phases = [], employees = [], onUpdate, readOnly =
               </div>
             ) : (
               /* ── Edit view ── */
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                 {/* Status buttons */}
                 <div>
-                  <div className="form-label" style={{ marginBottom: 6 }}>Status</div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <div className="form-label" style={{ marginBottom: "var(--space-2)" }}>Status</div>
+                  <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
                     {STATUSES.map(s => {
                       const isSelected = form.status === s;
                       const color = s === "completed" ? "var(--green)" : s === "in progress" ? "var(--amber)" : "var(--text3)";
@@ -280,12 +280,12 @@ export function PhaseTracker({ phases = [], employees = [], onUpdate, readOnly =
                           key={s}
                           onClick={() => setStatus(s)}
                           style={{
-                            display: "inline-flex", alignItems: "center", gap: 5,
-                            padding: "5px 12px", borderRadius: "var(--radius-sm)",
+                            display: "inline-flex", alignItems: "center", gap: "var(--space-1)",
+                            padding: "var(--space-1) var(--space-3)", borderRadius: "var(--radius-sm)",
                             border: isSelected ? `1px solid ${color}` : "1px solid var(--border)",
                             background: isSelected ? bg : "transparent",
                             color: isSelected ? color : "var(--text3)",
-                            cursor: "pointer", fontSize: 12, fontWeight: isSelected ? 600 : 400,
+                            cursor: "pointer", fontSize: "var(--text-label)", fontWeight: isSelected ? 600 : 400,
                             transition: "all 0.15s ease",
                           }}
                         >
@@ -300,7 +300,7 @@ export function PhaseTracker({ phases = [], employees = [], onUpdate, readOnly =
                 </div>
 
                 {/* Foreman + Dates row */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
                   <div className="form-group">
                     <label className="form-label">Assigned Foreman</label>
                     {foremen.length > 0 ? (
@@ -356,7 +356,7 @@ export function PhaseTracker({ phases = [], employees = [], onUpdate, readOnly =
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <div style={{ display: "flex", gap: "var(--space-2)", justifyContent: "flex-end" }}>
                   <button className="btn btn-ghost btn-sm" onClick={() => setExpandedKey(null)}>
                     Cancel
                   </button>

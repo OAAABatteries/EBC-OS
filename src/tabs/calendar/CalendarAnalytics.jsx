@@ -147,13 +147,13 @@ export function CalendarAnalytics({ app, lang }) {
   const Bar = ({ value, max, color, label }) => {
     const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
     return (
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 2 }}>
+      <div style={{ marginBottom: "var(--space-2)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-label)", marginBottom: "var(--space-1)" }}>
           <span>{label}</span>
           <span style={{ color: "var(--text3)" }}>{value.toFixed(0)}h</span>
         </div>
-        <div style={{ height: 6, background: "var(--bg3)", borderRadius: 3, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 3, transition: "width 0.3s" }} />
+        <div style={{ height: 6, background: "var(--bg3)", borderRadius: "var(--radius-control)", overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: "var(--radius-control)", transition: "width 0.3s" }} />
         </div>
       </div>
     );
@@ -163,7 +163,7 @@ export function CalendarAnalytics({ app, lang }) {
     <div className="cal-analytics">
       {/* Sub-nav */}
       <div className="cal-pto-nav" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", gap: 4 }}>
+        <div style={{ display: "flex", gap: "var(--space-1)" }}>
           {[
             { key: "overview", label: "Overview" },
             { key: "overtime", label: "OT Forecast" },
@@ -175,52 +175,52 @@ export function CalendarAnalytics({ app, lang }) {
             </button>
           ))}
         </div>
-        <button className="primary" style={{ fontSize: 11, padding: "4px 10px" }} onClick={wfLoading ? undefined : () => showWf ? setShowWf(false) : wfResult ? setShowWf(true) : runWorkforceInsights()} disabled={wfLoading}>
+        <button className="primary" style={{ fontSize: "var(--text-tab)", padding: "var(--space-1) var(--space-3)" }} onClick={wfLoading ? undefined : () => showWf ? setShowWf(false) : wfResult ? setShowWf(true) : runWorkforceInsights()} disabled={wfLoading}>
           {wfLoading ? "Analyzing..." : "AI Insights"}
         </button>
       </div>
 
       {/* AI Workforce Insights Panel */}
       {showWf && wfResult && (
-        <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 16, marginBottom: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "var(--space-4)", marginBottom: "var(--space-4)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
               <BarChart2 style={{ width: 22, height: 22 }} />
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>Workforce Score: {wfResult.insightScore}/100 ({wfResult.grade})</div>
-                <div style={{ fontSize: 12, color: "var(--text3)" }}>{wfResult.summary}</div>
+                <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)" }}>Workforce Score: {wfResult.insightScore}/100 ({wfResult.grade})</div>
+                <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>{wfResult.summary}</div>
               </div>
             </div>
-            <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "var(--text3)" }} onClick={() => setShowWf(false)}>✕</button>
+            <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--text-card)", color: "var(--text3)" }} onClick={() => setShowWf(false)}>✕</button>
           </div>
 
           {wfResult.laborEfficiency && (
-            <div style={{ marginBottom: 12, padding: "8px 12px", background: "rgba(59,130,246,0.08)", borderRadius: "var(--radius)" }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--blue)", marginBottom: 4 }}>Labor Efficiency</div>
-              <div style={{ fontSize: 12, display: "flex", gap: 16 }}>
+            <div style={{ marginBottom: "var(--space-3)", padding: "var(--space-2) var(--space-3)", background: "rgba(59,130,246,0.08)", borderRadius: "var(--radius)" }}>
+              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--blue)", marginBottom: "var(--space-1)" }}>Labor Efficiency</div>
+              <div style={{ fontSize: "var(--text-label)", display: "flex", gap: "var(--space-4)" }}>
                 <span>Score: <strong>{wfResult.laborEfficiency.score}</strong></span>
                 <span>Trend: <strong style={{ color: wfResult.laborEfficiency.trend === "improving" ? "var(--green)" : wfResult.laborEfficiency.trend === "declining" ? "var(--red)" : "var(--text2)" }}>{wfResult.laborEfficiency.trend}</strong></span>
               </div>
-              <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>{wfResult.laborEfficiency.insight}</div>
+              <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", marginTop: "var(--space-1)" }}>{wfResult.laborEfficiency.insight}</div>
             </div>
           )}
 
           {wfResult.overtimeAnalysis && (
-            <div style={{ marginBottom: 12, padding: "8px 12px", background: "rgba(239,68,68,0.08)", borderRadius: "var(--radius)" }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--red)", marginBottom: 4 }}>Overtime Analysis</div>
-              <div style={{ fontSize: 12 }}>
+            <div style={{ marginBottom: "var(--space-3)", padding: "var(--space-2) var(--space-3)", background: "rgba(239,68,68,0.08)", borderRadius: "var(--radius)" }}>
+              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--red)", marginBottom: "var(--space-1)" }}>Overtime Analysis</div>
+              <div style={{ fontSize: "var(--text-label)" }}>
                 This week: <strong>{wfResult.overtimeAnalysis.currentWeekOT}h</strong> · Monthly projected: <strong>{wfResult.overtimeAnalysis.projectedMonthOT}h</strong> · Impact: {wfResult.overtimeAnalysis.costImpact}
               </div>
-              <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>{wfResult.overtimeAnalysis.recommendation}</div>
+              <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", marginTop: "var(--space-1)" }}>{wfResult.overtimeAnalysis.recommendation}</div>
             </div>
           )}
 
           {wfResult.staffingGaps?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#f59e0b", marginBottom: 6 }}>Staffing Gaps</div>
+            <div style={{ marginBottom: "var(--space-3)" }}>
+              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--amber)", marginBottom: "var(--space-2)" }}>Staffing Gaps</div>
               {wfResult.staffingGaps.map((g, i) => (
-                <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(245,158,11,0.08)", borderRadius: "var(--radius)", borderLeft: `3px solid ${g.urgency === "critical" ? "#ef4444" : g.urgency === "moderate" ? "#f59e0b" : "#6b7280"}` }}>
-                  <span style={{ fontWeight: 500 }}>{g.area}:</span> {g.gap} — <em>{g.action}</em>
+                <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(245,158,11,0.08)", borderRadius: "var(--radius)", borderLeft: `3px solid ${g.urgency === "critical" ? "#ef4444" : g.urgency === "moderate" ? "#f59e0b" : "#6b7280"}` }}>
+                  <span style={{ fontWeight: "var(--weight-medium)" }}>{g.area}:</span> {g.gap} — <em>{g.action}</em>
                 </div>
               ))}
             </div>
@@ -228,11 +228,11 @@ export function CalendarAnalytics({ app, lang }) {
 
           {wfResult.strategicRecommendations?.length > 0 && (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--green)", marginBottom: 6 }}>Strategic Recommendations</div>
+              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--green)", marginBottom: "var(--space-2)" }}>Strategic Recommendations</div>
               {wfResult.strategicRecommendations.map((r, i) => (
-                <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(16,185,129,0.08)", borderRadius: "var(--radius)", display: "flex", justifyContent: "space-between" }}>
+                <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(16,185,129,0.08)", borderRadius: "var(--radius)", display: "flex", justifyContent: "space-between" }}>
                   <span><strong>{r.title}:</strong> {r.detail}</span>
-                  <span style={{ fontSize: 10, color: r.impact === "high" ? "var(--red)" : r.impact === "medium" ? "#f59e0b" : "var(--text3)", whiteSpace: "nowrap", marginLeft: 8 }}>{r.impact}</span>
+                  <span style={{ fontSize: "var(--text-xs)", color: r.impact === "high" ? "var(--red)" : r.impact === "medium" ? "#f59e0b" : "var(--text3)", whiteSpace: "nowrap", marginLeft: "var(--space-2)" }}>{r.impact}</span>
                 </div>
               ))}
             </div>
@@ -243,7 +243,7 @@ export function CalendarAnalytics({ app, lang }) {
       {/* ── Overview ── */}
       {analyticsView === "overview" && (
         <div>
-          <div className="cal-lookahead-kpis" style={{ marginBottom: 16 }}>
+          <div className="cal-lookahead-kpis" style={{ marginBottom: "var(--space-4)" }}>
             <div className="cal-lookahead-kpi">
               <div className="cal-lookahead-kpi-val">{availability.utilization}%</div>
               <div className="cal-lookahead-kpi-lbl">{t("Crew Utilization")}</div>
@@ -265,8 +265,8 @@ export function CalendarAnalytics({ app, lang }) {
           </div>
 
           {/* Weekly hours trend */}
-          <div className="cal-lookahead-section-title" style={{ marginTop: 16 }}>{t("4-Week Hours Trend")}</div>
-          <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+          <div className="cal-lookahead-section-title" style={{ marginTop: "var(--space-4)" }}>{t("4-Week Hours Trend")}</div>
+          <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "var(--space-2)" }}>
             {weeklyData.map((w, i) => (
               <div key={i} style={{ flex: 1, textAlign: "center" }}>
                 <div style={{ height: 100, display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center" }}>
@@ -282,8 +282,8 @@ export function CalendarAnalytics({ app, lang }) {
                     opacity: 0.7,
                   }} title={`Regular: ${(w.totalHours - w.totalOT).toFixed(0)}h`} />
                 </div>
-                <div style={{ fontSize: 11, marginTop: 4, color: "var(--text2)" }}>{w.label}</div>
-                <div style={{ fontSize: 10, color: "var(--text3)" }}>{w.totalHours.toFixed(0)}h</div>
+                <div style={{ fontSize: "var(--text-tab)", marginTop: "var(--space-1)", color: "var(--text2)" }}>{w.label}</div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>{w.totalHours.toFixed(0)}h</div>
               </div>
             ))}
           </div>
@@ -295,15 +295,15 @@ export function CalendarAnalytics({ app, lang }) {
         <div>
           <div className="cal-lookahead-section-title">{t("Overtime Forecast — Next 4 Weeks")}</div>
           {weeklyData.map((w, wi) => (
-            <div key={wi} className="cal-lookahead-card" style={{ marginBottom: 12 }}>
+            <div key={wi} className="cal-lookahead-card" style={{ marginBottom: "var(--space-3)" }}>
               <div className="cal-lookahead-header">
                 <div>
                   <div className="cal-lookahead-week-label">{w.label}</div>
-                  <div style={{ fontSize: 11, color: "var(--text3)" }}>
+                  <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>
                     {w.teamSize} {t("team")} · {w.totalHours.toFixed(0)} {t("total hrs")} · {w.totalOT.toFixed(0)} {t("OT hrs")}
                   </div>
                 </div>
-                {w.totalOT > 0 && <span style={{ color: "#ef4444", fontSize: 12, fontWeight: 600 }}>{w.totalOT.toFixed(0)}h OT</span>}
+                {w.totalOT > 0 && <span style={{ color: "var(--red)", fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)" }}>{w.totalOT.toFixed(0)}h OT</span>}
               </div>
               {w.empHours.filter(e => e.hours > 0).map(e => (
                 <Bar
@@ -323,7 +323,7 @@ export function CalendarAnalytics({ app, lang }) {
       {analyticsView === "capacity" && (
         <div>
           <div className="cal-lookahead-section-title">{t("Crew Capacity")}</div>
-          <div className="cal-lookahead-kpis" style={{ marginBottom: 16 }}>
+          <div className="cal-lookahead-kpis" style={{ marginBottom: "var(--space-4)" }}>
             <div className="cal-lookahead-kpi">
               <div className="cal-lookahead-kpi-val">{availability.total}</div>
               <div className="cal-lookahead-kpi-lbl">{t("Total Active")}</div>
@@ -333,40 +333,40 @@ export function CalendarAnalytics({ app, lang }) {
               <div className="cal-lookahead-kpi-lbl">{t("Scheduled")}</div>
             </div>
             <div className="cal-lookahead-kpi">
-              <div className="cal-lookahead-kpi-val" style={{ color: "#10b981" }}>{availability.available}</div>
+              <div className="cal-lookahead-kpi-val" style={{ color: "var(--green)" }}>{availability.available}</div>
               <div className="cal-lookahead-kpi-lbl">{t("Available")}</div>
             </div>
           </div>
 
-          <div className="cal-lookahead-section-title" style={{ marginTop: 16 }}>{t("Equipment Capacity")}</div>
+          <div className="cal-lookahead-section-title" style={{ marginTop: "var(--space-4)" }}>{t("Equipment Capacity")}</div>
           <div className="cal-lookahead-kpis">
             <div className="cal-lookahead-kpi">
               <div className="cal-lookahead-kpi-val">{eqUtil.total}</div>
               <div className="cal-lookahead-kpi-lbl">{t("Total")}</div>
             </div>
             <div className="cal-lookahead-kpi">
-              <div className="cal-lookahead-kpi-val" style={{ color: "#0ea5e9" }}>{eqUtil.inUse}</div>
+              <div className="cal-lookahead-kpi-val" style={{ color: "var(--cyan)" }}>{eqUtil.inUse}</div>
               <div className="cal-lookahead-kpi-lbl">{t("In Use")}</div>
             </div>
             <div className="cal-lookahead-kpi">
-              <div className="cal-lookahead-kpi-val" style={{ color: "#10b981" }}>{eqUtil.available}</div>
+              <div className="cal-lookahead-kpi-val" style={{ color: "var(--green)" }}>{eqUtil.available}</div>
               <div className="cal-lookahead-kpi-lbl">{t("Available")}</div>
             </div>
           </div>
 
           {/* Max capacity by week */}
-          <div className="cal-lookahead-section-title" style={{ marginTop: 24 }}>{t("Weekly Capacity Allocation")}</div>
+          <div className="cal-lookahead-section-title" style={{ marginTop: "var(--space-6)" }}>{t("Weekly Capacity Allocation")}</div>
           {weeklyData.map((w, i) => {
             const maxHrs = availability.total * 40;
             const pct = maxHrs > 0 ? Math.round((w.totalHours / maxHrs) * 100) : 0;
             return (
-              <div key={i} style={{ marginBottom: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 2 }}>
+              <div key={i} style={{ marginBottom: "var(--space-2)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-label)", marginBottom: "var(--space-1)" }}>
                   <span>{w.label}</span>
                   <span style={{ color: pct > 90 ? "#ef4444" : "var(--text3)" }}>{pct}% ({w.totalHours.toFixed(0)}/{maxHrs}h)</span>
                 </div>
-                <div style={{ height: 8, background: "var(--bg3)", borderRadius: 4, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${Math.min(100, pct)}%`, background: pct > 90 ? "#ef4444" : pct > 70 ? "#f59e0b" : "var(--accent)", borderRadius: 4 }} />
+                <div style={{ height: 8, background: "var(--bg3)", borderRadius: "var(--radius-control)", overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${Math.min(100, pct)}%`, background: pct > 90 ? "#ef4444" : pct > 70 ? "#f59e0b" : "var(--accent)", borderRadius: "var(--radius-control)" }} />
                 </div>
               </div>
             );
@@ -379,12 +379,12 @@ export function CalendarAnalytics({ app, lang }) {
         <div>
           <div className="cal-lookahead-section-title">{t("Project Resource Allocation — This Week")}</div>
           {projectUtil.length === 0 && (
-            <div style={{ color: "var(--text3)", fontSize: 13, padding: 16 }}>{t("No team scheduled this week")}</div>
+            <div style={{ color: "var(--text3)", fontSize: "var(--text-label)", padding: "var(--space-4)" }}>{t("No team scheduled this week")}</div>
           )}
           {projectUtil.map(p => (
-            <div key={p.projectId} className="cal-lookahead-card" style={{ marginBottom: 12 }}>
-              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{p.name}</div>
-              <div style={{ display: "flex", gap: 16, fontSize: 12, color: "var(--text3)", marginBottom: 8 }}>
+            <div key={p.projectId} className="cal-lookahead-card" style={{ marginBottom: "var(--space-3)" }}>
+              <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)", marginBottom: "var(--space-1)" }}>{p.name}</div>
+              <div style={{ display: "flex", gap: "var(--space-4)", fontSize: "var(--text-label)", color: "var(--text3)", marginBottom: "var(--space-2)" }}>
                 <span>{p.team} {t("team")}</span>
                 <span>{p.hours.toFixed(0)} {t("hrs this week")}</span>
                 {p.laborHours > 0 && <span>{p.laborHours} {t("total allocated")}</span>}

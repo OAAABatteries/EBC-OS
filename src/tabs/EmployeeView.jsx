@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Search, MapPin, Calendar, Clock, AlertTriangle, Shield, Package, ClipboardList, FileText, PenLine, Settings, Home, ShieldCheck, BarChart3 } from "lucide-react";
-import { PortalHeader, PortalTabBar, FieldButton, FieldInput, FieldSelect, EmptyState, StatusBadge, DrawingsTab, PhotoCapture } from "../components/field";
+import { Search, MapPin, Calendar, Clock, AlertTriangle, Shield, Package, ClipboardList, FileText, PenLine, Settings, Home, ShieldCheck, BarChart3, Binoculars } from "lucide-react";
+import { PortalHeader, PortalTabBar, FieldButton, FieldInput, FieldSelect, EmptyState, StatusBadge, DrawingsTab, PhotoCapture, LanguageToggle } from "../components/field";
 import { HomeTab } from './employee/HomeTab';
 import { ProductionEntry } from './employee/ProductionEntry';
 import { ScheduleTab } from './employee/ScheduleTab';
@@ -21,10 +21,10 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-const DARK_TILES = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const OSM_TILES = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const SATELLITE_TILES = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-const STREET_TILES = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const TILE_SETS = { dark: DARK_TILES, satellite: SATELLITE_TILES, street: STREET_TILES };
+const TILE_SETS = { map: OSM_TILES, satellite: SATELLITE_TILES };
+const MAP_STYLE_LABELS = { map: "Map", satellite: "Satellite" };
 const PHASE_COLORS = {
   "Pre-Construction": "var(--amber)",
   "Estimating": "var(--blue)",
@@ -160,8 +160,13 @@ export function EmployeeView({ app }) {
   const clockMapRef = useRef(null);
   const clockMapInstance = useRef(null);
   const clockMarkersRef = useRef([]);
+  // projectId → marker index so we can pan/zoom + open the popup for the
+  // currently-selected project without re-scanning the marker array.
+  const markersByProjectIdRef = useRef(new Map());
   const tileLayerRef = useRef(null);
-  const [mapStyle, setMapStyle] = useState("dark");
+  // Default to satellite. Map/Satellite are the only basemaps now —
+  // street-level "look around" is a separate FAB that opens Google Street View.
+  const [mapStyle, setMapStyle] = useState("satellite");
 
   // ── perimeter drawing ──
   const [drawingPerimeter, setDrawingPerimeter] = useState(false);
@@ -313,12 +318,30 @@ export function EmployeeView({ app }) {
     tileLayerRef.current = L.tileLayer(TILE_SETS[mapStyle], { maxZoom: 22 }).addTo(map);
   }, [mapStyle]);
 
+  // Google Street View "look around" href — GPS > selected project > map center.
+  // Rendered as an <a href target="_blank"> so mobile Safari/Chrome treat it as
+  // a real link (no popup-blocker, long-press works, etc.). Re-computes when
+  // GPS or selected project changes; map-center fallback is set on FAB click.
+  const streetViewHref = useMemo(() => {
+    let lat = null, lng = null;
+    if (position?.lat && position?.lng) { lat = position.lat; lng = position.lng; }
+    else if (selectedProject?.lat && selectedProject?.lng) { lat = selectedProject.lat; lng = selectedProject.lng; }
+    else if (clockMapInstance.current) {
+      const c = clockMapInstance.current.getCenter();
+      lat = c.lat; lng = c.lng;
+    } else {
+      lat = 29.76; lng = -95.40; // Houston fallback
+    }
+    return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+  }, [position, selectedProject, clockMapReady, mapStyle]);
+
   useEffect(() => {
     const map = clockMapInstance.current;
     if (!map || !clockMapReady) return;
     // clear old markers
     clockMarkersRef.current.forEach(m => map.removeLayer(m));
     clockMarkersRef.current = [];
+    markersByProjectIdRef.current.clear();
     // add project markers
     projects.forEach(p => {
       if (!p.lat || !p.lng) return;
@@ -335,6 +358,7 @@ export function EmployeeView({ app }) {
       const navLink = `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
       marker.bindPopup(`<div style="font-size:12px;min-width:180px"><b style="color:${color}">${p.name}</b><br/>${p.gc} · ${p.phase}<br/>${p.address || ""}${suiteHtml}${parkingHtml}<br/><a href="${navLink}" target="_blank" style="color:#3b82f6;text-decoration:underline;font-size:11px">Navigate</a></div>`);
       clockMarkersRef.current.push(marker);
+      markersByProjectIdRef.current.set(String(p.id), marker);
     });
     // add user position marker
     if (position) {
@@ -364,6 +388,29 @@ export function EmployeeView({ app }) {
       }
     };
   }, []);
+
+  // ── sync map to the currently-selected project ──
+  // When a worker picks a jobsite from the geofence dropdown or the manual
+  // search list, fly the map to that project and open its popup so the
+  // "Navigate" link is immediately tappable. Falls back to fit-all when no
+  // project is selected.
+  useEffect(() => {
+    const map = clockMapInstance.current;
+    if (!map || !clockMapReady) return;
+    if (!selectedProject?.id) return;
+    const marker = markersByProjectIdRef.current.get(String(selectedProject.id));
+    if (!marker) return;
+    const latlng = marker.getLatLng();
+    // flyTo gives a smooth transition; fallback to setView for safety
+    try {
+      map.flyTo(latlng, 17, { duration: 0.6 });
+    } catch {
+      map.setView(latlng, 17);
+    }
+    // open popup once the pan finishes so it's anchored correctly
+    const t = setTimeout(() => { try { marker.openPopup(); } catch {} }, 650);
+    return () => clearTimeout(t);
+  }, [selectedProject?.id, clockMapReady]);
 
   // ── render saved perimeters on map ──
   const PERIMETER_COLORS = ["#3b82f6", "#10b981", "#e09422", "#ef4444", "#8b5cf6", "#06b6d4", "#f59e0b", "#ec4899"];
@@ -691,12 +738,7 @@ export function EmployeeView({ app }) {
   };
 
   // ── language toggle for PortalHeader ──
-  const langToggle = (
-    <div className="emp-lang-switch">
-      <button className={`emp-lang-option${lang === "en" ? " emp-lang-active" : ""}`} onClick={() => setLang("en")}>EN</button>
-      <button className={`emp-lang-option${lang === "es" ? " emp-lang-active" : ""}`} onClick={() => setLang("es")}>ES</button>
-    </div>
-  );
+  const langToggle = <LanguageToggle lang={lang} onChange={setLang} />;
 
   // ── role-aware tabs ──
   const tabs = useMemo(() => {
@@ -1086,12 +1128,25 @@ export function EmployeeView({ app }) {
                 </>
               )}
 
-              {geoStatus?.nearest && (
-                <div className={`geo-status ${geoStatus.nearest.withinGeofence ? "inside" : "outside"}`}>
+              {/* Geo status — only show a specific project callout when we're
+                  genuinely near one (<=2000 ft). Far-away "Outside — 35,000 ft"
+                  messages were noise and have been suppressed in favor of a
+                  neutral muted hint. */}
+              {geoStatus?.nearest && geoStatus.nearest.withinGeofence && (
+                <div className="geo-status inside">
                   <span className="geo-dot" />
-                  {geoStatus.nearest.withinGeofence
-                    ? `Inside — ${geoStatus.nearest.name} (${geoStatus.nearest.distance} ft)`
-                    : `Outside — ${geoStatus.nearest.name} (${geoStatus.nearest.distance} ft)`}
+                  Inside — {geoStatus.nearest.name} ({geoStatus.nearest.distance} ft)
+                </div>
+              )}
+              {geoStatus?.nearest && !geoStatus.nearest.withinGeofence && geoStatus.nearest.distance <= 2000 && (
+                <div className="geo-status outside">
+                  <span className="geo-dot" />
+                  Outside — {geoStatus.nearest.name} ({geoStatus.nearest.distance} ft)
+                </div>
+              )}
+              {geoStatus?.nearest && !geoStatus.nearest.withinGeofence && geoStatus.nearest.distance > 2000 && (
+                <div className="text-xs text-muted" style={{ textAlign: "center", marginBottom: "var(--space-3)" }}>
+                  No nearby jobsites — search manually below
                 </div>
               )}
               {geoLoading && (
@@ -1242,7 +1297,7 @@ export function EmployeeView({ app }) {
             {/* ── Map ── */}
             <div className="clock-card emp-clock-map-card">
               <div ref={clockMapRef} className="emp-clock-map" style={{ height: drawingPerimeter ? 380 : 280, cursor: drawingPerimeter ? "crosshair" : "" }} />
-              {/* Tile switcher */}
+              {/* Tile switcher — Map (OSM streets) / Satellite */}
               <div className="emp-map-tile-bar">
                 {Object.keys(TILE_SETS).map(key => (
                   <button
@@ -1250,10 +1305,23 @@ export function EmployeeView({ app }) {
                     className={`emp-map-tile-btn${mapStyle === key ? " active" : ""}`}
                     onClick={() => setMapStyle(key)}
                   >
-                    {key}
+                    {MAP_STYLE_LABELS[key]}
                   </button>
                 ))}
               </div>
+              {/* Street View "look around" — real <a> so mobile browsers treat it as a link */}
+              {!drawingPerimeter && (
+                <a
+                  href={streetViewHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="emp-map-street-fab"
+                  aria-label="Open Google Street View"
+                  title="Street View"
+                >
+                  <Binoculars size={20} />
+                </a>
+              )}
               {/* Drawing mode controls */}
               {drawingPerimeter && (
                 <div className="emp-perimeter-bar">

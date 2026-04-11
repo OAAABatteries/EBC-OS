@@ -330,7 +330,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   // ── Annotations (markup only — no takeoff impact) ──
   const [annotations, setAnnotations] = useState(_init.annotations || {}); // { [pageKey]: [ann, ...] }
   const [selectedAnnId, setSelectedAnnId] = useState(null);
-  const [annStyle, setAnnStyle] = useState({ strokeColor: "#ef4444", fillColor: null, lineWidth: 2, opacity: 1.0, fontSize: 14 });
+  const [annStyle, setAnnStyle] = useState({ strokeColor: "#ef4444", fillColor: null, lineWidth: 2, opacity: 1.0, fontSize: "var(--text-secondary)" });
   const [annStartPt, setAnnStartPt] = useState(null); // for arrow/line/callout: first click point
   const [showAnnTextInput, setShowAnnTextInput] = useState(null); // { position: {x,y}, type: "text"|"callout", anchorPt?: {x,y} }
   const [annTextValue, setAnnTextValue] = useState("");
@@ -589,7 +589,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           const q = m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0);
           return s + (asm ? q * ((asm.matRate || 0) + (asm.labRate || 0)) : 0);
         }, 0);
-        rows.push({ key: ba.id, name: ba.name, folder: "", color: "#888", unit: "mixed", qty, matCost: 0, labCost: 0, total: cost, measCount: qty });
+        rows.push({ key: ba.id, name: ba.name, folder: "", color: "var(--text2)", unit: "mixed", qty, matCost: 0, labCost: 0, total: cost, measCount: qty });
       });
     } else if (summaryGroupBy === "page") {
       Object.entries(measurements).forEach(([pg, meas]) => {
@@ -600,7 +600,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           const q = m.type === "count" ? (m.count || 1) : m.type === "linear" ? (m.totalFt || 0) : (m.totalSf || 0);
           return s + (asm ? q * ((asm.matRate || 0) + (asm.labRate || 0)) : 0);
         }, 0);
-        rows.push({ key: pg, name: getKeyName(pg), folder: "", color: "#888", unit: "mixed", qty: meas.length, matCost: 0, labCost: 0, total: cost, measCount: meas.length });
+        rows.push({ key: pg, name: getKeyName(pg), folder: "", color: "var(--text2)", unit: "mixed", qty: meas.length, matCost: 0, labCost: 0, total: cost, measCount: meas.length });
       });
     } else if (summaryGroupBy === "folder") {
       const folderMap = {};
@@ -617,7 +617,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           });
         });
         if (measCount === 0) return;
-        rows.push({ key: folder, name: folder, folder: "", color: "#888", unit: "mixed", qty: measCount, matCost: 0, labCost: 0, total: totalCost, measCount });
+        rows.push({ key: folder, name: folder, folder: "", color: "var(--text2)", unit: "mixed", qty: measCount, matCost: 0, labCost: 0, total: totalCost, measCount });
       });
     }
     return rows;
@@ -2908,8 +2908,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   const fmt = n => "$" + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   const fmtK = n => n >= 1000 ? "$" + (n / 1000).toFixed(1) + "K" : fmt(n);
 
-  const btn = { padding: "6px 12px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#fff", cursor: "pointer", fontSize: 12, transition: "all 0.2s" };
-  const btnActive = { ...btn, background: "var(--amber)", color: "#000", borderColor: "var(--amber)", fontWeight: 600 };
+  const btn = { padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#fff", cursor: "pointer", fontSize: "var(--text-label)", transition: "all 0.2s" };
+  const btnActive = { ...btn, background: "var(--amber)", color: "#000", borderColor: "var(--amber)", fontWeight: "var(--weight-semi)" };
   const btnDis = { ...btn, opacity: 0.4, cursor: "default" };
 
   return (
@@ -2918,18 +2918,18 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       {/* ── Top Toolbar ── */}
       <div style={{ flexShrink: 0, borderBottom: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.85)" }}>
         {/* Row 1: Close + File info + Drawing Tools */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 10px", gap: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <button onClick={handleClose} style={{ ...btn, padding: "4px 10px", fontSize: 12, background: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.4)" }}>✕ Close</button>
-            <span style={{ color: "#fff", fontSize: 12, fontWeight: 600, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "var(--space-1) var(--space-3)", gap: "var(--space-2)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+            <button onClick={handleClose} style={{ ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)", background: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.4)" }}>✕ Close</button>
+            <span style={{ color: "#fff", fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {pdfFiles.length > 1
                 ? `${(pdfFiles[activePdfIdx]?.name || "PDF").replace(/\.pdf$/i, "")} — ${getSheetName(page)}`
                 : numPages > 1 ? getSheetName(page) : (fileName || "Drawing")}
             </span>
-            {onTakeoffStateChange && lastSaved && <span style={{ color: "#10b981", fontSize: 10 }}>✓ saved</span>}
+            {onTakeoffStateChange && lastSaved && <span style={{ color: "var(--green)", fontSize: "var(--text-xs)" }}>✓ saved</span>}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <button onClick={() => { setMode(MODE.PAN); cancelActive(); }} style={mode === MODE.PAN ? { ...btnActive, padding: "4px 10px", fontSize: 12 } : { ...btn, padding: "4px 10px", fontSize: 12 }} title="Space">Pan</button>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+            <button onClick={() => { setMode(MODE.PAN); cancelActive(); }} style={mode === MODE.PAN ? { ...btnActive, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }} title="Space">Pan</button>
             <select value={ppf ? (closestPresetLabel(ppf) || "__custom") : ""}
               onChange={e => {
                 const val = e.target.value;
@@ -2944,7 +2944,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                 }
               }}
               style={{
-                padding: "4px 6px", borderRadius: 5, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", fontSize: "var(--text-tab)", fontWeight: "var(--weight-semi)", cursor: "pointer",
                 border: ppf ? "1px solid rgba(74,222,128,0.5)" : "1px solid rgba(239,68,68,0.5)",
                 background: ppf ? "rgba(74,222,128,0.12)" : "rgba(239,68,68,0.12)",
                 color: ppf ? "#4ade80" : "#f87171",
@@ -2961,33 +2961,33 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               {ppf && <option value="__clear">Clear Scale</option>}
             </select>
             <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)" }} />
-            <button onClick={() => { if (ppf) { setMode(MODE.LINEAR); cancelActive(); }}} style={!ppf ? { ...btnDis, padding: "4px 10px", fontSize: 12 } : mode === MODE.LINEAR ? { ...btnActive, padding: "4px 10px", fontSize: 12 } : { ...btn, padding: "4px 10px", fontSize: 12 }} disabled={!ppf} title="L">Linear</button>
-            <button onClick={() => { if (ppf) { setMode(MODE.AREA); cancelActive(); }}} style={!ppf ? { ...btnDis, padding: "4px 10px", fontSize: 12 } : mode === MODE.AREA ? { ...btnActive, padding: "4px 10px", fontSize: 12 } : { ...btn, padding: "4px 10px", fontSize: 12 }} disabled={!ppf} title="A">Area</button>
-            <button onClick={() => { setMode(MODE.COUNT); cancelActive(); }} style={mode === MODE.COUNT ? { ...btnActive, padding: "4px 10px", fontSize: 12 } : { ...btn, padding: "4px 10px", fontSize: 12 }} title="C">Count</button>
+            <button onClick={() => { if (ppf) { setMode(MODE.LINEAR); cancelActive(); }}} style={!ppf ? { ...btnDis, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : mode === MODE.LINEAR ? { ...btnActive, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }} disabled={!ppf} title="L">Linear</button>
+            <button onClick={() => { if (ppf) { setMode(MODE.AREA); cancelActive(); }}} style={!ppf ? { ...btnDis, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : mode === MODE.AREA ? { ...btnActive, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }} disabled={!ppf} title="A">Area</button>
+            <button onClick={() => { setMode(MODE.COUNT); cancelActive(); }} style={mode === MODE.COUNT ? { ...btnActive, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }} title="C">Count</button>
             <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)" }} />
             <button onClick={() => { if (ppf) { setMode(MODE.MEASURE); cancelActive(); setMeasureVertices([]); }}}
-              style={!ppf ? { ...btnDis, padding: "4px 10px", fontSize: 12 } : mode === MODE.MEASURE ? { ...btnActive, padding: "4px 10px", fontSize: 12, background: "#f59e0b", color: "#000", borderColor: "#f59e0b" } : { ...btn, padding: "4px 10px", fontSize: 12 }}
+              style={!ppf ? { ...btnDis, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : mode === MODE.MEASURE ? { ...btnActive, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)", background: "var(--amber)", color: "#000", borderColor: "var(--amber)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }}
               disabled={!ppf} title="M — Quick ruler (no condition)">📏 Measure</button>
             <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)" }} />
-            <button onClick={undo} style={{ ...btn, padding: "4px 10px", fontSize: 12 }} title="Ctrl+Z">Undo</button>
-            <button onClick={redo} style={redoStack.length ? { ...btn, padding: "4px 10px", fontSize: 12 } : { ...btnDis, padding: "4px 10px", fontSize: 12 }} disabled={!redoStack.length} title="Ctrl+Y">Redo</button>
+            <button onClick={undo} style={{ ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }} title="Ctrl+Z">Undo</button>
+            <button onClick={redo} style={redoStack.length ? { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : { ...btnDis, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }} disabled={!redoStack.length} title="Ctrl+Y">Redo</button>
             <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)" }} />
             <button onClick={() => setContinuousMode(m => !m)}
-              style={continuousMode ? { ...btn, padding: "4px 10px", fontSize: 12, background: "rgba(16,185,129,0.2)", borderColor: "rgba(16,185,129,0.5)", color: "#10b981" } : { ...btn, padding: "4px 10px", fontSize: 12 }}
+              style={continuousMode ? { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)", background: "rgba(16,185,129,0.2)", borderColor: "rgba(16,185,129,0.5)", color: "var(--green)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }}
               title="Continuous mode: auto-start next measurement">{continuousMode ? "⟳ On" : "⟳ Off"}</button>
             <button onClick={() => setShowCondNames(v => !v)}
-              style={showCondNames ? { ...btn, padding: "4px 10px", fontSize: 12, background: "rgba(139,92,246,0.2)", borderColor: "rgba(139,92,246,0.5)", color: "#a78bfa" } : { ...btn, padding: "4px 10px", fontSize: 12 }}
+              style={showCondNames ? { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)", background: "rgba(139,92,246,0.2)", borderColor: "rgba(139,92,246,0.5)", color: "var(--purple)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }}
               title="Toggle condition name labels (N)">Names</button>
             <button onClick={() => setSnapEnabled(v => !v)}
-              style={snapEnabled ? { ...btn, padding: "4px 10px", fontSize: 12, background: "rgba(245,158,11,0.2)", borderColor: "rgba(245,158,11,0.5)", color: "#f59e0b" } : { ...btn, padding: "4px 10px", fontSize: 12 }}
+              style={snapEnabled ? { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)", background: "rgba(245,158,11,0.2)", borderColor: "rgba(245,158,11,0.5)", color: "var(--amber)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }}
               title="Angle snap (15°). Shift inverts temporarily.">⊾ Snap</button>
           </div>
         </div>
         {/* Row 2: Page Navigation + Zoom — prominent */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "3px 10px 4px", gap: 8, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-          <button onClick={prevPage} style={page <= 1 ? { ...btnDis, padding: "4px 10px", fontSize: 13 } : { ...btn, padding: "4px 10px", fontSize: 13 }} disabled={page <= 1}>◀ Prev</button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--space-1) var(--space-3) var(--space-1)", gap: "var(--space-2)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+          <button onClick={prevPage} style={page <= 1 ? { ...btnDis, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }} disabled={page <= 1}>◀ Prev</button>
           <select value={page} onChange={e => { setPage(Number(e.target.value)); setActiveVertices([]); }}
-            style={{ padding: "4px 8px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.3)", background: "#1a1a2e", color: "#fff", fontSize: 13, minWidth: 180, maxWidth: 300, fontWeight: 500 }}>
+            style={{ padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.3)", background: "#1a1a2e", color: "#fff", fontSize: "var(--text-label)", minWidth: 180, maxWidth: 300, fontWeight: "var(--weight-medium)" }}>
             {Array.from({ length: numPages }, (_, i) => i + 1).map(pg => {
               const pk = activePdfIdx + ":" + pg;
               const name = sheetNames[pk] || `Page ${pg}`;
@@ -2997,25 +2997,25 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               return <option key={pg} value={pg} style={{ background: "#1a1a2e", color: "#fff" }}>{indicator}{pg} - {name}</option>;
             })}
           </select>
-          <button onClick={nextPage} style={page >= numPages ? { ...btnDis, padding: "4px 10px", fontSize: 13 } : { ...btn, padding: "4px 10px", fontSize: 13 }} disabled={page >= numPages}>Next ▶</button>
-          <span style={{ color: "#999", fontSize: 12 }}>Page {page} of {numPages}</span>
+          <button onClick={nextPage} style={page >= numPages ? { ...btnDis, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }} disabled={page >= numPages}>Next ▶</button>
+          <span style={{ color: "#999", fontSize: "var(--text-label)" }}>Page {page} of {numPages}</span>
           <button onClick={() => setCompletedPages(prev => ({ ...prev, [pageKey]: !prev[pageKey] }))}
-            style={completedPages[pageKey] ? { ...btn, padding: "4px 10px", fontSize: 12, background: "rgba(34,197,94,0.2)", borderColor: "rgba(34,197,94,0.5)", color: "#22c55e" } : { ...btn, padding: "4px 10px", fontSize: 12 }}
+            style={completedPages[pageKey] ? { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)", background: "rgba(34,197,94,0.2)", borderColor: "rgba(34,197,94,0.5)", color: "var(--green)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }}
             title="Mark this page as takeoff complete">{completedPages[pageKey] ? "✓ Done" : "Mark Done"}</button>
           <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
-          <button onClick={zoomOut} style={{ ...btn, padding: "4px 8px", fontSize: 13 }}>−</button>
-          <span style={{ color: "#ccc", fontSize: 12, minWidth: 36, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
-          <button onClick={zoomIn} style={{ ...btn, padding: "4px 8px", fontSize: 13 }}>+</button>
-          <button onClick={resetZoom} style={{ ...btn, padding: "4px 6px", fontSize: 10 }} title="F — Fit width">W Fit</button>
-          <button onClick={fitToPage} style={{ ...btn, padding: "4px 6px", fontSize: 10 }} title="Fit entire page">P Fit</button>
+          <button onClick={zoomOut} style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-label)" }}>−</button>
+          <span style={{ color: "var(--text2)", fontSize: "var(--text-label)", minWidth: 36, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
+          <button onClick={zoomIn} style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-label)" }}>+</button>
+          <button onClick={resetZoom} style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)" }} title="F — Fit width">W Fit</button>
+          <button onClick={fitToPage} style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)" }} title="Fit entire page">P Fit</button>
           <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
           {/* Named Views */}
           <button onClick={() => { setShowSaveView(true); setSaveViewName(""); }}
-            style={{ ...btn, padding: "4px 8px", fontSize: 10, background: "rgba(59,130,246,0.1)", borderColor: "rgba(59,130,246,0.25)", color: "#93c5fd" }}
+            style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)", background: "rgba(59,130,246,0.1)", borderColor: "rgba(59,130,246,0.25)", color: "#93c5fd" }}
             title="Save current view (page + zoom + scroll position)">📌 Save View</button>
           {namedViews.length > 0 && (
             <select value="" onChange={e => { const nv = namedViews.find(v => v.id === e.target.value); if (nv) navigateToView(nv); }}
-              style={{ padding: "3px 6px", borderRadius: 4, border: "1px solid rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.08)", color: "#93c5fd", fontSize: 10, maxWidth: 130 }}>
+              style={{ padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.08)", color: "#93c5fd", fontSize: "var(--text-xs)", maxWidth: 130 }}>
               <option value="" disabled>Views ({namedViews.length})</option>
               {namedViews.map(nv => (
                 <option key={nv.id} value={nv.id}>{nv.name} — {sheetNames[nv.pageKey] || `P${nv.page}`}</option>
@@ -3024,40 +3024,40 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           )}
           <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
           <button onClick={() => setViewMode(v => v === "drawing" ? "summary" : "drawing")}
-            style={viewMode === "summary" ? { ...btnActive, padding: "4px 10px", fontSize: 12 } : { ...btn, padding: "4px 10px", fontSize: 12 }} title="Toggle summary view">
+            style={viewMode === "summary" ? { ...btnActive, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }} title="Toggle summary view">
             {viewMode === "summary" ? "Drawing" : "Summary"}
           </button>
         </div>
         {/* Row 2: Bid area + CO + Add PDF (compact, only shows when needed) */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 10px 4px", gap: 4, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "var(--space-1) var(--space-3) var(--space-1)", gap: "var(--space-1)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
             <select value={activeBidAreaId} onChange={e => setActiveBidAreaId(e.target.value)}
-              style={{ padding: "2px 4px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 9, maxWidth: 100 }}>
+              style={{ padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-xs)", maxWidth: 100 }}>
               {bidAreas.map(ba => <option key={ba.id} value={ba.id}>{ba.name}</option>)}
             </select>
-            <button onClick={() => setShowBidAreaAdd(true)} style={{ ...btn, fontSize: 8, padding: "2px 5px" }} title="Add bid area">+Area</button>
+            <button onClick={() => setShowBidAreaAdd(true)} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)" }} title="Add bid area">+Area</button>
             <span style={{ width: 1, height: 12, background: "rgba(255,255,255,0.08)" }} />
             <button onClick={() => setCoMode(m => m === "add" ? null : "add")}
-              style={coMode === "add" ? { ...btn, padding: "2px 6px", fontSize: 9, background: "rgba(34,197,94,0.25)", borderColor: "rgba(34,197,94,0.5)", color: "#22c55e", fontWeight: 600 } : { ...btn, fontSize: 9, padding: "2px 6px" }}
+              style={coMode === "add" ? { ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)", background: "rgba(34,197,94,0.25)", borderColor: "rgba(34,197,94,0.5)", color: "var(--green)", fontWeight: "var(--weight-semi)" } : { ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}
               title="Change Order: Mark additions">CO+</button>
             <button onClick={() => setCoMode(m => m === "delete" ? null : "delete")}
-              style={coMode === "delete" ? { ...btn, padding: "2px 6px", fontSize: 9, background: "rgba(239,68,68,0.25)", borderColor: "rgba(239,68,68,0.5)", color: "#ef4444", fontWeight: 600 } : { ...btn, fontSize: 9, padding: "2px 6px" }}
+              style={coMode === "delete" ? { ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)", background: "rgba(239,68,68,0.25)", borderColor: "rgba(239,68,68,0.5)", color: "var(--red)", fontWeight: "var(--weight-semi)" } : { ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}
               title="Change Order: Mark deletions">CO−</button>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <button onClick={() => addPdfInputRef.current?.click()} style={{ ...btn, fontSize: 8, padding: "2px 5px", background: "rgba(59,130,246,0.1)", borderColor: "rgba(59,130,246,0.25)", color: "#60a5fa" }} title="Add another PDF file">+ PDF</button>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+            <button onClick={() => addPdfInputRef.current?.click()} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", background: "rgba(59,130,246,0.1)", borderColor: "rgba(59,130,246,0.25)", color: "var(--blue)" }} title="Add another PDF file">+ PDF</button>
             <input ref={addPdfInputRef} type="file" accept=".pdf" style={{ display: "none" }}
               onChange={e => { const f = e.target.files?.[0]; if (f) handleAddPdf(f); e.target.value = ""; }} />
             {(numPages > 1 || pdfFiles.length > 1) && (
-              <button onClick={() => setShowSheets(v => !v)} style={{ ...btn, fontSize: 8, padding: "2px 5px" }}>
+              <button onClick={() => setShowSheets(v => !v)} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)" }}>
                 {showSheets ? "Hide Sheets" : "Show Sheets"}
               </button>
             )}
           </div>
         </div>
         {/* Row 4: Annotation Tools + Style */}
-        <div style={{ display: "flex", alignItems: "center", padding: "3px 10px 4px", gap: 4, borderTop: "1px solid rgba(255,255,255,0.05)", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 9, color: "#666", letterSpacing: 0.5 }}>MARKUP</span>
+        <div style={{ display: "flex", alignItems: "center", padding: "var(--space-1) var(--space-3) var(--space-1)", gap: "var(--space-1)", borderTop: "1px solid rgba(255,255,255,0.05)", flexWrap: "wrap" }}>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)", letterSpacing: 0.5 }}>MARKUP</span>
           <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.08)" }} />
           {[
             { m: MODE.TEXT, label: "T Text", key: "T" },
@@ -3074,53 +3074,53 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           ].map(t => (
             <button key={t.m} onClick={() => { if (t.m === MODE.HOTLINK && namedViews.length === 0) { alert("Save a Named View first (📌 Save View button)."); return; } setMode(t.m); cancelActive(); }}
               style={mode === t.m
-                ? { ...btn, padding: "3px 6px", fontSize: 10, background: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.5)", color: "#f87171" }
-                : { ...btn, padding: "3px 6px", fontSize: 10 }}
+                ? { ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)", background: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.5)", color: "var(--red)" }
+                : { ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)" }}
               title={t.key ? `${t.key} — ${t.label}` : t.label}>{t.label}</button>
           ))}
           <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.08)" }} />
           {/* Stroke color */}
-          <span style={{ fontSize: 8, color: "#666" }}>Stroke</span>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>Stroke</span>
           {["#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7", "#fff"].map(c => (
             <div key={"s" + c} onClick={() => setAnnStyle(s => ({ ...s, strokeColor: c }))}
-              style={{ width: 14, height: 14, borderRadius: 2, background: c, cursor: "pointer",
+              style={{ width: 14, height: 14, borderRadius: "var(--radius-control)", background: c, cursor: "pointer",
                 border: annStyle.strokeColor === c ? "2px solid #fff" : "1px solid rgba(255,255,255,0.2)",
                 boxShadow: annStyle.strokeColor === c ? "0 0 3px " + c : "none" }} />
           ))}
           <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.08)" }} />
           {/* Fill color (for shapes) */}
-          <span style={{ fontSize: 8, color: "#666" }}>Fill</span>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>Fill</span>
           <div onClick={() => setAnnStyle(s => ({ ...s, fillColor: null }))}
-            style={{ width: 14, height: 14, borderRadius: 2, background: "transparent", cursor: "pointer",
+            style={{ width: 14, height: 14, borderRadius: "var(--radius-control)", background: "transparent", cursor: "pointer",
               border: !annStyle.fillColor ? "2px solid #fff" : "1px solid rgba(255,255,255,0.2)",
               position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", top: 0, left: "50%", width: 1, height: "100%", background: "#ef4444", transform: "rotate(45deg)", transformOrigin: "top" }} />
+            <div style={{ position: "absolute", top: 0, left: "50%", width: 1, height: "100%", background: "var(--red)", transform: "rotate(45deg)", transformOrigin: "top" }} />
           </div>
           {["#ef444466", "#f59e0b66", "#22c55e66", "#3b82f666", "#a855f766"].map(c => (
             <div key={"f" + c} onClick={() => setAnnStyle(s => ({ ...s, fillColor: c }))}
-              style={{ width: 14, height: 14, borderRadius: 2, background: c, cursor: "pointer",
+              style={{ width: 14, height: 14, borderRadius: "var(--radius-control)", background: c, cursor: "pointer",
                 border: annStyle.fillColor === c ? "2px solid #fff" : "1px solid rgba(255,255,255,0.2)" }} />
           ))}
           <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.08)" }} />
           {/* Line width */}
-          <span style={{ fontSize: 8, color: "#666" }}>Wt</span>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>Wt</span>
           {[1, 2, 3, 5].map(w => (
             <button key={w} onClick={() => setAnnStyle(s => ({ ...s, lineWidth: w }))}
               style={annStyle.lineWidth === w
-                ? { ...btn, padding: "1px 5px", fontSize: 9, background: "rgba(239,68,68,0.15)", borderColor: "rgba(239,68,68,0.4)", color: "#f87171" }
-                : { ...btn, padding: "1px 5px", fontSize: 9 }}>{w}</button>
+                ? { ...btn, padding: "var(--space-1) var(--space-1)", fontSize: "var(--text-xs)", background: "rgba(239,68,68,0.15)", borderColor: "rgba(239,68,68,0.4)", color: "var(--red)" }
+                : { ...btn, padding: "var(--space-1) var(--space-1)", fontSize: "var(--text-xs)" }}>{w}</button>
           ))}
           {/* Opacity */}
-          <span style={{ fontSize: 8, color: "#666" }}>Op</span>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>Op</span>
           {[0.3, 0.5, 0.7, 1.0].map(o => (
             <button key={o} onClick={() => setAnnStyle(s => ({ ...s, opacity: o }))}
               style={annStyle.opacity === o
-                ? { ...btn, padding: "1px 5px", fontSize: 9, background: "rgba(239,68,68,0.15)", borderColor: "rgba(239,68,68,0.4)", color: "#f87171" }
-                : { ...btn, padding: "1px 5px", fontSize: 9 }}>{Math.round(o * 100)}%</button>
+                ? { ...btn, padding: "var(--space-1) var(--space-1)", fontSize: "var(--text-xs)", background: "rgba(239,68,68,0.15)", borderColor: "rgba(239,68,68,0.4)", color: "var(--red)" }
+                : { ...btn, padding: "var(--space-1) var(--space-1)", fontSize: "var(--text-xs)" }}>{Math.round(o * 100)}%</button>
           ))}
           {/* Annotation count */}
           {pageAnnotations.length > 0 && (
-            <span style={{ fontSize: 9, color: "#555", marginLeft: 4 }}>{pageAnnotations.length} markup{pageAnnotations.length !== 1 ? "s" : ""}</span>
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)", marginLeft: "var(--space-1)" }}>{pageAnnotations.length} markup{pageAnnotations.length !== 1 ? "s" : ""}</span>
           )}
         </div>
       </div>
@@ -3130,16 +3130,16 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
         {/* ── Left Sidebar: Sheet Navigator (Multi-PDF) ── */}
         {showSheets && (numPages > 1 || pdfFiles.length > 1) && (
-          <div style={{ width: 190, flexShrink: 0, borderRight: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.9)", overflow: "auto", padding: "8px 6px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, padding: "0 4px" }}>
-              <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>Sheets</span>
-              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          <div style={{ width: 190, flexShrink: 0, borderRight: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.9)", overflow: "auto", padding: "var(--space-2) var(--space-2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-2)", padding: "0 4px" }}>
+              <span style={{ color: "#fff", fontSize: "var(--text-label)", fontWeight: "var(--weight-bold)" }}>Sheets</span>
+              <div style={{ display: "flex", gap: "var(--space-1)", alignItems: "center" }}>
                 <button onClick={() => { const pf = pdfFiles[activePdfIdx]; if (pf) autoNamePages(pf.doc, activePdfIdx); }}
                   disabled={autoNaming}
-                  style={{ fontSize: 8, padding: "2px 5px", borderRadius: 3, border: "1px solid rgba(74,222,128,0.3)", background: autoNaming ? "rgba(74,222,128,0.2)" : "transparent", color: "#4ade80", cursor: autoNaming ? "wait" : "pointer" }}>
+                  style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(74,222,128,0.3)", background: autoNaming ? "rgba(74,222,128,0.2)" : "transparent", color: "#4ade80", cursor: autoNaming ? "wait" : "pointer" }}>
                   {autoNaming ? "Naming..." : "Auto Name"}
                 </button>
-                <span style={{ fontSize: 9, color: "#666" }}>{pdfFiles.reduce((s, pf) => s + pf.numPages, 0)}</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>{pdfFiles.reduce((s, pf) => s + pf.numPages, 0)}</span>
               </div>
             </div>
             {pdfFiles.map((pf, pIdx) => {
@@ -3147,22 +3147,22 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               // Count total measurements across all pages of this PDF
               const pdfMeasCount = Array.from({ length: pf.numPages }, (_, i) => (measurements[pIdx + ":" + (i + 1)] || []).length).reduce((a, b) => a + b, 0);
               return (
-                <div key={pIdx} style={{ marginBottom: 6 }}>
+                <div key={pIdx} style={{ marginBottom: "var(--space-2)" }}>
                   {/* PDF file header */}
                   {pdfFiles.length > 1 && (
                     <div onClick={() => setActivePdfIdx(pIdx)}
                       style={{
-                        padding: "4px 6px", marginBottom: 2, borderRadius: 4, cursor: "pointer",
+                        padding: "var(--space-1) var(--space-2)", marginBottom: "var(--space-1)", borderRadius: "var(--radius-control)", cursor: "pointer",
                         background: isActivePdf ? "rgba(59,130,246,0.12)" : "transparent",
                         border: isActivePdf ? "1px solid rgba(59,130,246,0.25)" : "1px solid transparent",
-                        display: "flex", alignItems: "center", gap: 5,
+                        display: "flex", alignItems: "center", gap: "var(--space-1)",
                       }}>
-                      <FileText size={10} style={{ color: "#60a5fa", flexShrink: 0 }} />
-                      <span style={{ fontSize: 10, fontWeight: 600, color: isActivePdf ? "#fff" : "#999",
+                      <FileText size={10} style={{ color: "var(--blue)", flexShrink: 0 }} />
+                      <span style={{ fontSize: "var(--text-xs)", fontWeight: "var(--weight-semi)", color: isActivePdf ? "#fff" : "#999",
                         flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {pf.name.replace(/\.pdf$/i, "")}
                       </span>
-                      {pdfMeasCount > 0 && <span style={{ fontSize: 8, color: "#888" }}>{pdfMeasCount}</span>}
+                      {pdfMeasCount > 0 && <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>{pdfMeasCount}</span>}
                     </div>
                   )}
                   {/* Pages for this PDF (only show if this is the active PDF or there's only one PDF) */}
@@ -3175,15 +3175,15 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                       <div key={pk}
                         onClick={() => { if (!isActivePdf) setActivePdfIdx(pIdx); setPage(pg); setActiveVertices([]); }}
                         style={{
-                          padding: "5px 8px", marginBottom: 2, borderRadius: 5, cursor: "pointer",
+                          padding: "var(--space-1) var(--space-2)", marginBottom: "var(--space-1)", borderRadius: "var(--radius-control)", cursor: "pointer",
                           marginLeft: pdfFiles.length > 1 ? 10 : 0,
                           background: isCurrent ? "rgba(224,148,34,0.12)" : "transparent",
                           border: isCurrent ? "1px solid rgba(224,148,34,0.3)" : "1px solid transparent",
                           transition: "all 0.15s",
                         }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                           <span title={hasScale ? "Scale set" : "No scale"} style={{
-                            width: 6, height: 6, borderRadius: 3, flexShrink: 0,
+                            width: 6, height: 6, borderRadius: "var(--radius-control)", flexShrink: 0,
                             background: hasScale ? "#4ade80" : "#ef4444",
                           }} />
                           {editingSheet === pk ? (
@@ -3194,11 +3194,11 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                               onBlur={() => setEditingSheet(null)}
                               onKeyDown={e => { if (e.key === "Enter") setEditingSheet(null); }}
                               onClick={e => e.stopPropagation()}
-                              style={{ flex: 1, padding: "1px 4px", borderRadius: 3, border: "1px solid var(--amber)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 10, minWidth: 0 }}
+                              style={{ flex: 1, padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid var(--amber)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-xs)", minWidth: 0 }}
                             />
                           ) : (
                             <span onDoubleClick={(e) => { e.stopPropagation(); setEditingSheet(pk); }}
-                              style={{ flex: 1, fontSize: 10, color: isCurrent ? "#fff" : "#aaa", fontWeight: isCurrent ? 600 : 400,
+                              style={{ flex: 1, fontSize: "var(--text-xs)", color: isCurrent ? "#fff" : "#aaa", fontWeight: isCurrent ? 600 : 400,
                                 whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}
                               title="Double-click to rename">
                               {sheetNames[pk] || `Page ${pg}`}
@@ -3206,7 +3206,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                           )}
                         </div>
                         {measCount > 0 && (
-                          <div style={{ fontSize: 9, color: "#888", paddingLeft: 12, marginTop: 2 }}>
+                          <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)", paddingLeft: "var(--space-3)", marginTop: "var(--space-1)" }}>
                             {measCount} measurement{measCount !== 1 ? "s" : ""}
                           </div>
                         )}
@@ -3219,7 +3219,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
             {/* Apply scale to all button */}
             {ppf && (
               <button onClick={applyScaleToAll}
-                style={{ ...btn, width: "100%", marginTop: 8, fontSize: 9, padding: "4px 6px", color: "#4ade80", borderColor: "rgba(74,222,128,0.2)" }}>
+                style={{ ...btn, width: "100%", marginTop: "var(--space-2)", fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", color: "#4ade80", borderColor: "rgba(74,222,128,0.2)" }}>
                 Apply scale to all pages
               </button>
             )}
@@ -3230,14 +3230,14 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         {viewMode === "drawing" ? (
           <div ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove}
             onMouseDown={handlePanStart} onMouseMove={handlePanMove} onMouseUp={handlePanEnd} onMouseLeave={handlePanEnd}
-            style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: 12,
+            style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "var(--space-3)",
               cursor: draggingHandle ? "grabbing" : spaceHeld ? "grab" : mode === MODE.PAN ? (isPanning ? "grabbing" : "grab") : "crosshair" }}>
             {/* Show re-upload prompt if no PDF loaded but state exists */}
             {pdfFiles.length === 0 && _init.pdfFileNames?.length > 0 && (
-              <div style={{ textAlign: "center", padding: 60, color: "#888" }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>Loading plans from cache...</div>
-                <div style={{ fontSize: 13, marginBottom: 16 }}>If plans don't appear, re-upload the PDF to restore your {Object.values(measurements).flat().length} saved measurements.</div>
-                <label style={{ display: "inline-block", padding: "10px 24px", borderRadius: 8, background: "var(--amber, #e09422)", color: "#000", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+              <div style={{ textAlign: "center", padding: 60, color: "var(--text2)" }}>
+                <div style={{ fontSize: "var(--text-hero)", marginBottom: "var(--space-3)" }}>Loading plans from cache...</div>
+                <div style={{ fontSize: "var(--text-label)", marginBottom: "var(--space-4)" }}>If plans don't appear, re-upload the PDF to restore your {Object.values(measurements).flat().length} saved measurements.</div>
+                <label style={{ display: "inline-block", padding: "var(--space-3) var(--space-6)", borderRadius: "var(--radius-control)", background: "var(--amber, #e09422)", color: "#000", fontWeight: "var(--weight-bold)", cursor: "pointer", fontSize: "var(--text-secondary)" }}>
                   Re-upload PDF
                   <input type="file" accept=".pdf" style={{ display: "none" }} onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -3263,12 +3263,12 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
             )}
             <div style={{ position: "relative", display: "inline-block" }}>
               {pdfLoading && (
-                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 10, background: "rgba(0,0,0,0.9)", padding: "32px 48px", borderRadius: 12, textAlign: "center", minWidth: 280, border: "1px solid rgba(224,148,34,0.3)" }}>
-                  <div style={{ fontSize: 15, color: "#fff", marginBottom: 12, fontWeight: 600 }}>Loading Drawing...</div>
-                  <div style={{ width: "100%", height: 8, background: "rgba(255,255,255,0.1)", borderRadius: 4, overflow: "hidden", marginBottom: 8 }}>
-                    <div style={{ width: `${pdfLoadProgress || 5}%`, height: "100%", background: "linear-gradient(90deg, #e09422, #f59e0b)", borderRadius: 4, transition: "width 0.3s ease" }} />
+                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 10, background: "rgba(0,0,0,0.9)", padding: "var(--space-8) var(--space-12)", borderRadius: "var(--radius-control)", textAlign: "center", minWidth: 280, border: "1px solid rgba(224,148,34,0.3)" }}>
+                  <div style={{ fontSize: "var(--text-secondary)", color: "#fff", marginBottom: "var(--space-3)", fontWeight: "var(--weight-semi)" }}>Loading Drawing...</div>
+                  <div style={{ width: "100%", height: 8, background: "rgba(255,255,255,0.1)", borderRadius: "var(--radius-control)", overflow: "hidden", marginBottom: "var(--space-2)" }}>
+                    <div style={{ width: `${pdfLoadProgress || 5}%`, height: "100%", background: "linear-gradient(90deg, #e09422, #f59e0b)", borderRadius: "var(--radius-control)", transition: "width 0.3s ease" }} />
                   </div>
-                  <div style={{ fontSize: 11, color: "#8494ad" }}>
+                  <div style={{ fontSize: "var(--text-tab)", color: "var(--text2)" }}>
                     {pdfLoadProgress > 0 ? `${pdfLoadProgress}% — ` : ""}Large drawings may take a moment
                   </div>
                 </div>
@@ -3376,37 +3376,37 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                 const asm = sc?.asmCode && assemblies?.find(a => a.code === sc.asmCode);
                 const cost = asm ? (sm.type === "linear" ? (sm.totalFt || 0) * ((asm.matRate || 0) + (asm.labRate || 0)) : sm.type === "area" ? (sm.totalSf || 0) * ((asm.matRate || 0) + (asm.labRate || 0)) : (sm.count || 1) * ((asm.matRate || 0) + (asm.labRate || 0))) : 0;
                 return (
-                  <div style={{ position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.92)", border: "1px solid rgba(59,130,246,0.5)", borderRadius: 8, padding: "6px 16px", zIndex: 10, display: "flex", alignItems: "center", gap: 14, fontSize: 12, color: "#fff" }}>
-                    <span style={{ width: 8, height: 8, borderRadius: 2, background: sc?.color || "#3b82f6" }} />
-                    <span style={{ fontWeight: 600 }}>{sc?.name || "Unknown"}</span>
-                    <span style={{ color: "#aaa" }}>|</span>
+                  <div style={{ position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.92)", border: "1px solid rgba(59,130,246,0.5)", borderRadius: "var(--radius-control)", padding: "var(--space-2) var(--space-4)", zIndex: 10, display: "flex", alignItems: "center", gap: "var(--space-4)", fontSize: "var(--text-label)", color: "#fff" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "var(--radius-control)", background: sc?.color || "#3b82f6" }} />
+                    <span style={{ fontWeight: "var(--weight-semi)" }}>{sc?.name || "Unknown"}</span>
+                    <span style={{ color: "var(--text2)" }}>|</span>
                     <span>{sm.type === "linear" ? `${sm.totalFt?.toFixed(1)}' LF` : sm.type === "area" ? `${sm.totalSf?.toFixed(0)} SF` : `${sm.count || 1} EA`}</span>
-                    {cost > 0 && <><span style={{ color: "#aaa" }}>|</span><span style={{ color: "#4ade80" }}>${cost.toFixed(0)}</span></>}
-                    {sm.backoutOf && <span style={{ fontSize: 9, color: "#f87171", fontWeight: 600 }}>BACKOUT</span>}
+                    {cost > 0 && <><span style={{ color: "var(--text2)" }}>|</span><span style={{ color: "#4ade80" }}>${cost.toFixed(0)}</span></>}
+                    {sm.backoutOf && <span style={{ fontSize: "var(--text-xs)", color: "var(--red)", fontWeight: "var(--weight-semi)" }}>BACKOUT</span>}
                     {sm.type === "area" && !sm.backoutOf && (
                       <button onClick={() => { setBackoutMode(backoutMode === sm.id ? null : sm.id); setMode(MODE.AREA); setSelectedMeasId(null); }}
-                        style={{ ...btn, padding: "2px 8px", fontSize: 10, color: backoutMode === sm.id ? "#f87171" : "#f59e0b", borderColor: backoutMode === sm.id ? "rgba(239,68,68,0.4)" : "rgba(245,158,11,0.3)" }}>
+                        style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)", color: backoutMode === sm.id ? "#f87171" : "#f59e0b", borderColor: backoutMode === sm.id ? "rgba(239,68,68,0.4)" : "rgba(245,158,11,0.3)" }}>
                         {backoutMode === sm.id ? "Exit Backout" : "Backout"}
                       </button>
                     )}
-                    <button onClick={() => { deleteMeasurement(selectedMeasId); setSelectedMeasId(null); }} style={{ ...btn, padding: "2px 8px", fontSize: 10, color: "#ef4444", borderColor: "rgba(239,68,68,0.3)" }}>Delete</button>
-                    <button onClick={() => setSelectedMeasId(null)} style={{ ...btn, padding: "2px 8px", fontSize: 10 }}>✕</button>
+                    <button onClick={() => { deleteMeasurement(selectedMeasId); setSelectedMeasId(null); }} style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)", color: "var(--red)", borderColor: "rgba(239,68,68,0.3)" }}>Delete</button>
+                    <button onClick={() => setSelectedMeasId(null)} style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)" }}>✕</button>
                   </div>
                 );
               })()}
               {/* ── Floating Finish hint while drawing ── */}
               {(mode === MODE.LINEAR || mode === MODE.AREA) && activeVertices.length >= 2 && ppf && activeCond && !localStorage.getItem("ebc_hide_finish_hint") && (
-                <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 10, display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                   <button onClick={finishMeasurement}
                     style={{
-                      padding: "8px 24px", borderRadius: 8, fontSize: 13, fontWeight: 700,
+                      padding: "var(--space-2) var(--space-6)", borderRadius: "var(--radius-control)", fontSize: "var(--text-label)", fontWeight: "var(--weight-bold)",
                       background: "var(--amber, #e09422)", color: "#000", border: "2px solid rgba(0,0,0,0.3)",
                       cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
                     }}>
                     Finish ({activeVertices.length} pts) — Right-click or Enter
                   </button>
                   <button onClick={() => { localStorage.setItem("ebc_hide_finish_hint", "1"); cancelActive(); }}
-                    style={{ padding: "4px 8px", borderRadius: 6, background: "rgba(0,0,0,0.7)", border: "1px solid rgba(255,255,255,0.2)", color: "#888", fontSize: 10, cursor: "pointer" }}
+                    style={{ padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(0,0,0,0.7)", border: "1px solid rgba(255,255,255,0.2)", color: "var(--text2)", fontSize: "var(--text-xs)", cursor: "pointer" }}
                     title="Don't show this hint again">
                     Don't show again
                   </button>
@@ -3416,20 +3416,20 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           </div>
         ) : (
           /* ── SUMMARY VIEW ── */
-          <div style={{ flex: 1, overflow: "auto", padding: 20, background: "rgba(10,12,18,0.95)" }}>
+          <div style={{ flex: 1, overflow: "auto", padding: "var(--space-5)", background: "rgba(10,12,18,0.95)" }}>
             <div style={{ maxWidth: 900, margin: "0 auto" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <h2 style={{ color: "#fff", fontSize: 18, fontWeight: 700, margin: 0 }}>Takeoff Summary</h2>
-                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                  <span style={{ fontSize: 11, color: "#888", marginRight: 6 }}>Group by:</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
+                <h2 style={{ color: "#fff", fontSize: "var(--text-section)", fontWeight: "var(--weight-bold)", margin: "0" }}>Takeoff Summary</h2>
+                <div style={{ display: "flex", gap: "var(--space-1)", alignItems: "center" }}>
+                  <span style={{ fontSize: "var(--text-tab)", color: "var(--text2)", marginRight: "var(--space-2)" }}>Group by:</span>
                   {["condition", "bidArea", "page", "folder"].map(g => (
                     <button key={g} onClick={() => setSummaryGroupBy(g)}
-                      style={summaryGroupBy === g ? btnActive : { ...btn, fontSize: 10, padding: "3px 10px" }}>
+                      style={summaryGroupBy === g ? btnActive : { ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-3)" }}>
                       {g === "bidArea" ? "Area" : g.charAt(0).toUpperCase() + g.slice(1)}
                     </button>
                   ))}
                   {summaryRows.length > 0 && (
-                    <button onClick={exportToExcel} style={{ ...btn, fontSize: 10, padding: "3px 10px", marginLeft: 8, background: "rgba(16,185,129,0.15)", borderColor: "rgba(16,185,129,0.4)", color: "#10b981" }}>
+                    <button onClick={exportToExcel} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-3)", marginLeft: "var(--space-2)", background: "rgba(16,185,129,0.15)", borderColor: "rgba(16,185,129,0.4)", color: "var(--green)" }}>
                       Export Excel
                     </button>
                   )}
@@ -3437,57 +3437,57 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               </div>
 
               {summaryRows.length === 0 ? (
-                <div style={{ textAlign: "center", padding: 40, color: "#666" }}>
-                  <div style={{ fontSize: 36, marginBottom: 8 }}>&#128203;</div>
-                  <div style={{ fontSize: 14 }}>No measurements yet. Switch to Drawing view and start measuring.</div>
+                <div style={{ textAlign: "center", padding: "var(--space-10)", color: "var(--text3)" }}>
+                  <div style={{ fontSize: "var(--text-stat)", marginBottom: "var(--space-2)" }}>&#128203;</div>
+                  <div style={{ fontSize: "var(--text-secondary)" }}>No measurements yet. Switch to Drawing view and start measuring.</div>
                 </div>
               ) : (
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--text-label)" }}>
                   <thead>
                     <tr style={{ borderBottom: "2px solid rgba(255,255,255,0.15)" }}>
-                      <th style={{ textAlign: "left", padding: "8px 10px", color: "#888", fontWeight: 600, fontSize: 10, textTransform: "uppercase" }}>
+                      <th style={{ textAlign: "left", padding: "var(--space-2) var(--space-3)", color: "var(--text2)", fontWeight: "var(--weight-semi)", fontSize: "var(--text-xs)", textTransform: "uppercase" }}>
                         {summaryGroupBy === "condition" ? "Condition" : summaryGroupBy === "bidArea" ? "Bid Area" : summaryGroupBy === "page" ? "Sheet" : "Folder"}
                       </th>
-                      {summaryGroupBy === "condition" && <th style={{ textAlign: "left", padding: "8px 6px", color: "#888", fontWeight: 600, fontSize: 10, textTransform: "uppercase" }}>Folder</th>}
-                      <th style={{ textAlign: "right", padding: "8px 10px", color: "#888", fontWeight: 600, fontSize: 10, textTransform: "uppercase" }}>Qty</th>
-                      <th style={{ textAlign: "center", padding: "8px 6px", color: "#888", fontWeight: 600, fontSize: 10, textTransform: "uppercase" }}>Unit</th>
+                      {summaryGroupBy === "condition" && <th style={{ textAlign: "left", padding: "var(--space-2) var(--space-2)", color: "var(--text2)", fontWeight: "var(--weight-semi)", fontSize: "var(--text-xs)", textTransform: "uppercase" }}>Folder</th>}
+                      <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)", fontWeight: "var(--weight-semi)", fontSize: "var(--text-xs)", textTransform: "uppercase" }}>Qty</th>
+                      <th style={{ textAlign: "center", padding: "var(--space-2) var(--space-2)", color: "var(--text2)", fontWeight: "var(--weight-semi)", fontSize: "var(--text-xs)", textTransform: "uppercase" }}>Unit</th>
                       {summaryGroupBy === "condition" && <>
-                        <th style={{ textAlign: "right", padding: "8px 10px", color: "#888", fontWeight: 600, fontSize: 10, textTransform: "uppercase" }}>Mat $</th>
-                        <th style={{ textAlign: "right", padding: "8px 10px", color: "#888", fontWeight: 600, fontSize: 10, textTransform: "uppercase" }}>Lab $</th>
+                        <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)", fontWeight: "var(--weight-semi)", fontSize: "var(--text-xs)", textTransform: "uppercase" }}>Mat $</th>
+                        <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)", fontWeight: "var(--weight-semi)", fontSize: "var(--text-xs)", textTransform: "uppercase" }}>Lab $</th>
                       </>}
-                      <th style={{ textAlign: "right", padding: "8px 10px", color: "#888", fontWeight: 600, fontSize: 10, textTransform: "uppercase" }}>Total</th>
+                      <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)", fontWeight: "var(--weight-semi)", fontSize: "var(--text-xs)", textTransform: "uppercase" }}>Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {summaryRows.map(row => (
                       <tr key={row.key} style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                        <td style={{ padding: "8px 10px", color: "#ddd" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ width: 8, height: 8, borderRadius: 2, background: row.color, flexShrink: 0 }} />
+                        <td style={{ padding: "var(--space-2) var(--space-3)", color: "#ddd" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                            <span style={{ width: 8, height: 8, borderRadius: "var(--radius-control)", background: row.color, flexShrink: 0 }} />
                             {row.name}
                           </div>
                         </td>
-                        {summaryGroupBy === "condition" && <td style={{ padding: "8px 6px", color: "#888", fontSize: 11 }}>{row.folder}</td>}
-                        <td style={{ textAlign: "right", padding: "8px 10px", color: "#fff", fontWeight: 600 }}>
+                        {summaryGroupBy === "condition" && <td style={{ padding: "var(--space-2) var(--space-2)", color: "var(--text2)", fontSize: "var(--text-tab)" }}>{row.folder}</td>}
+                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "#fff", fontWeight: "var(--weight-semi)" }}>
                           {summaryGroupBy === "condition" ? Math.round(row.qty).toLocaleString() : row.measCount}
                         </td>
-                        <td style={{ textAlign: "center", padding: "8px 6px", color: "#888" }}>{row.unit}</td>
+                        <td style={{ textAlign: "center", padding: "var(--space-2) var(--space-2)", color: "var(--text2)" }}>{row.unit}</td>
                         {summaryGroupBy === "condition" && <>
-                          <td style={{ textAlign: "right", padding: "8px 10px", color: "#10b981" }}>{fmt(row.matCost)}</td>
-                          <td style={{ textAlign: "right", padding: "8px 10px", color: "#3b82f6" }}>{fmt(row.labCost)}</td>
+                          <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--green)" }}>{fmt(row.matCost)}</td>
+                          <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--blue)" }}>{fmt(row.labCost)}</td>
                         </>}
-                        <td style={{ textAlign: "right", padding: "8px 10px", color: "var(--amber, #e09422)", fontWeight: 600 }}>{fmt(row.total)}</td>
+                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--amber, #e09422)", fontWeight: "var(--weight-semi)" }}>{fmt(row.total)}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr style={{ borderTop: "2px solid rgba(224,148,34,0.4)" }}>
-                      <td colSpan={summaryGroupBy === "condition" ? 4 : 3} style={{ padding: "10px 10px", color: "#fff", fontWeight: 700, fontSize: 13 }}>GRAND TOTAL</td>
+                      <td colSpan={summaryGroupBy === "condition" ? 4 : 3} style={{ padding: "var(--space-3) var(--space-3)", color: "#fff", fontWeight: "var(--weight-bold)", fontSize: "var(--text-label)" }}>GRAND TOTAL</td>
                       {summaryGroupBy === "condition" && <>
-                        <td style={{ textAlign: "right", padding: "10px 10px", color: "#10b981", fontWeight: 600 }}>{fmt(summaryRows.reduce((s, r) => s + r.matCost, 0))}</td>
-                        <td style={{ textAlign: "right", padding: "10px 10px", color: "#3b82f6", fontWeight: 600 }}>{fmt(summaryRows.reduce((s, r) => s + r.labCost, 0))}</td>
+                        <td style={{ textAlign: "right", padding: "var(--space-3) var(--space-3)", color: "var(--green)", fontWeight: "var(--weight-semi)" }}>{fmt(summaryRows.reduce((s, r) => s + r.matCost, 0))}</td>
+                        <td style={{ textAlign: "right", padding: "var(--space-3) var(--space-3)", color: "var(--blue)", fontWeight: "var(--weight-semi)" }}>{fmt(summaryRows.reduce((s, r) => s + r.labCost, 0))}</td>
                       </>}
-                      <td style={{ textAlign: "right", padding: "10px 10px", color: "var(--amber, #e09422)", fontWeight: 700, fontSize: 14 }}>{fmt(grandTotal)}</td>
+                      <td style={{ textAlign: "right", padding: "var(--space-3) var(--space-3)", color: "var(--amber, #e09422)", fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)" }}>{fmt(grandTotal)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -3500,46 +3500,46 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         <div style={{ width: 260, flexShrink: 0, borderLeft: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.85)", display: "flex", flexDirection: "column" }}>
 
           {/* Conditions list */}
-          <div style={{ flex: 1, overflow: "auto", padding: "10px 10px 6px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>Conditions</span>
-              <div style={{ display: "flex", gap: 3 }}>
+          <div style={{ flex: 1, overflow: "auto", padding: "var(--space-3) var(--space-3) var(--space-2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-2)" }}>
+              <span style={{ color: "#fff", fontSize: "var(--text-label)", fontWeight: "var(--weight-bold)" }}>Conditions</span>
+              <div style={{ display: "flex", gap: "var(--space-1)" }}>
                 <button onClick={runPlanAnalysis} disabled={analyzing || !pdf}
-                  style={{ ...btn, fontSize: 9, padding: "2px 6px", background: analyzing ? "rgba(224,148,34,0.3)" : "rgba(224,148,34,0.15)", color: "#e09422", border: "1px solid rgba(224,148,34,0.4)" }}>
+                  style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", background: analyzing ? "rgba(224,148,34,0.3)" : "rgba(224,148,34,0.15)", color: "var(--amber)", border: "1px solid rgba(224,148,34,0.4)" }}>
                   {analyzing ? "Analyzing..." : "AI Analyze"}
                 </button>
-                <button onClick={() => setShowTemplatePicker(true)} style={{ ...btn, fontSize: 9, padding: "2px 6px" }}>Template</button>
-                <button onClick={() => { setShowCondProps(true); setEditingCondId(null); }} style={{ ...btn, fontSize: 10, padding: "2px 8px" }}>+ Add</button>
+                <button onClick={() => setShowTemplatePicker(true)} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}>Template</button>
+                <button onClick={() => { setShowCondProps(true); setEditingCondId(null); }} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}>+ Add</button>
               </div>
             </div>
 
             {/* Search conditions */}
             {conditions.length > 8 && (
               <input placeholder="Search conditions..." value={condSearch} onChange={e => setCondSearch(e.target.value)}
-                style={{ width: "100%", padding: "4px 8px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: 10, marginBottom: 6 }} />
+                style={{ width: "100%", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: "var(--text-xs)", marginBottom: "var(--space-2)" }} />
             )}
 
             {/* Add condition dropdown (legacy — replaced by Insert dialog) */}
 
             {!ppf && (
-              <div style={{ fontSize: 11, color: "#f59e0b", padding: "10px 8px", background: "rgba(245,158,11,0.08)", borderRadius: 6, border: "1px solid rgba(245,158,11,0.2)", marginBottom: 8 }}>
+              <div style={{ fontSize: "var(--text-tab)", color: "var(--amber)", padding: "var(--space-3) var(--space-2)", background: "rgba(245,158,11,0.08)", borderRadius: "var(--radius-control)", border: "1px solid rgba(245,158,11,0.2)", marginBottom: "var(--space-2)" }}>
                 Set scale first (S key), then select a condition and start measuring.
               </div>
             )}
 
             {/* Empty state — no conditions yet */}
             {conditions.length === 0 && !showAddCond && !analyzing && (
-              <div style={{ fontSize: 12, color: "#8494ad", padding: "16px 8px", textAlign: "center", lineHeight: 1.5 }}>
+              <div style={{ fontSize: "var(--text-label)", color: "var(--text2)", padding: "var(--space-4) var(--space-2)", textAlign: "center", lineHeight: 1.5 }}>
                 No conditions yet.<br/>
-                Click <b style={{ color: "#e09422" }}>AI Analyze</b> to auto-detect scope, <b style={{ color: "#e09422" }}>+ Add</b> to add manually, or <b style={{ color: "#e09422" }}>Template</b> for a preset.
+                Click <b style={{ color: "var(--amber)" }}>AI Analyze</b> to auto-detect scope, <b style={{ color: "var(--amber)" }}>+ Add</b> to add manually, or <b style={{ color: "var(--amber)" }}>Template</b> for a preset.
               </div>
             )}
 
             {/* AI Analysis loading */}
             {analyzing && (
-              <div style={{ fontSize: 12, color: "#e09422", padding: "16px 8px", textAlign: "center", lineHeight: 1.5 }}>
+              <div style={{ fontSize: "var(--text-label)", color: "var(--amber)", padding: "var(--space-4) var(--space-2)", textAlign: "center", lineHeight: 1.5 }}>
                 Analyzing plans...<br/>
-                <span style={{ fontSize: 10, color: "#8494ad" }}>Reading all pages and identifying EBC scope</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>Reading all pages and identifying EBC scope</span>
               </div>
             )}
 
@@ -3548,17 +3548,17 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               const filteredConds = condSearch ? conds.filter(c => c.name.toLowerCase().includes(condSearch.toLowerCase()) || c.asmCode.toLowerCase().includes(condSearch.toLowerCase())) : conds;
               if (condSearch && filteredConds.length === 0) return null;
               return (
-              <div key={folder} style={{ marginBottom: 6 }}>
+              <div key={folder} style={{ marginBottom: "var(--space-2)" }}>
                 <div onClick={() => setOpenFolders(prev => ({ ...prev, [folder]: !prev[folder] }))}
-                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 6px", cursor: "pointer", borderRadius: 4, background: "rgba(255,255,255,0.03)" }}>
-                  <span style={{ fontSize: 9, color: "#888" }}>{openFolders[folder] ? "▼" : "▶"}</span>
-                  <span style={{ fontSize: 11, color: hiddenFolders[folder] ? "#555" : "#aaa", fontWeight: 600, flex: 1, textDecoration: hiddenFolders[folder] ? "line-through" : "none" }}>{folder}</span>
+                  style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-1) var(--space-2)", cursor: "pointer", borderRadius: "var(--radius-control)", background: "rgba(255,255,255,0.03)" }}>
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>{openFolders[folder] ? "▼" : "▶"}</span>
+                  <span style={{ fontSize: "var(--text-tab)", color: hiddenFolders[folder] ? "#555" : "#aaa", fontWeight: "var(--weight-semi)", flex: 1, textDecoration: hiddenFolders[folder] ? "line-through" : "none" }}>{folder}</span>
                   <span onClick={(e) => { e.stopPropagation(); setHiddenFolders(prev => ({ ...prev, [folder]: !prev[folder] })); }}
                     title={hiddenFolders[folder] ? "Show layer" : "Hide layer"}
-                    style={{ fontSize: 10, cursor: "pointer", padding: "0 3px", color: hiddenFolders[folder] ? "#555" : "#888" }}>
+                    style={{ fontSize: "var(--text-xs)", cursor: "pointer", padding: "0 3px", color: hiddenFolders[folder] ? "#555" : "#888" }}>
                     {hiddenFolders[folder] ? "○" : "●"}
                   </span>
-                  <span style={{ fontSize: 10, color: "#666" }}>{conds.length}</span>
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>{conds.length}</span>
                 </div>
                 {openFolders[folder] && filteredConds.map((c, ci) => {
                   const isActive = c.id === activeCondId;
@@ -3573,32 +3573,32 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                       }}
                       onDoubleClick={(e) => { e.stopPropagation(); setEditingCondId(c.id); setShowCondProps(true); }}
                       style={{
-                        display: "flex", alignItems: "center", gap: 6, padding: "5px 8px 5px 20px", cursor: "pointer",
-                        borderRadius: 4, marginTop: 1,
+                        display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-1) var(--space-2) var(--space-1) var(--space-5)", cursor: "pointer",
+                        borderRadius: "var(--radius-control)", marginTop: "var(--space-1)",
                         background: isActive ? "rgba(224,148,34,0.15)" : "transparent",
                         border: isActive ? "1px solid rgba(224,148,34,0.3)" : "1px solid transparent",
                       }}>
-                      <span style={{ width: 8, height: 8, borderRadius: 2, background: c.color, flexShrink: 0 }} />
+                      <span style={{ width: 8, height: 8, borderRadius: "var(--radius-control)", background: c.color, flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 11, color: isActive ? "#fff" : "#ccc", fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <div style={{ fontSize: "var(--text-tab)", color: isActive ? "#fff" : "#ccc", fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {c.name}
                         </div>
                         {totals.qty > 0 && (
-                          <div style={{ fontSize: 9, color: "#888" }}>
+                          <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>
                             {totals.deductions > 0
-                              ? <><span style={{ textDecoration: "line-through", color: "#666" }}>{Math.round(totals.grossQty)}</span> <span style={{ color: "#f87171" }}>{Math.round(totals.qty)}</span> {unit}</>
+                              ? <><span style={{ textDecoration: "line-through", color: "var(--text3)" }}>{Math.round(totals.grossQty)}</span> <span style={{ color: "var(--red)" }}>{Math.round(totals.qty)}</span> {unit}</>
                               : <>{Math.round(totals.qty)} {unit}</>
                             } &middot; {fmt(totals.cost)} &middot; {Object.values(measurements).flat().filter(m => m.conditionId === c.id).length}&#x1f4cf;
                           </div>
                         )}
                         {c.attachTo && c.deductWidth > 0 && (
-                          <div style={{ fontSize: 8, color: "#f87171" }}>
+                          <div style={{ fontSize: "var(--text-xs)", color: "var(--red)" }}>
                             &#x2192; -{c.deductWidth}'/ea from {conditions.find(cc => cc.id === c.attachTo)?.name?.slice(0, 15) || "?"}
                           </div>
                         )}
                       </div>
                       {/* Height badge for linear conditions + delete */}
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "var(--space-1)" }}>
                         {c.type === "linear" && c.height > 0 && (
                           <span onClick={(e) => {
                             e.stopPropagation();
@@ -3608,7 +3608,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                             }
                           }}
                           title="Click to edit height"
-                          style={{ fontSize: 8, color: "#888", padding: "0 4px", borderRadius: 2, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
+                          style={{ fontSize: "var(--text-xs)", color: "var(--text2)", padding: "0 4px", borderRadius: "var(--radius-control)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
                             {c.height}'
                           </span>
                         )}
@@ -3620,7 +3620,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                               if (activeCondId === c.id) setActiveCondId(null);
                             }
                           }}
-                          style={{ fontSize: 8, color: "#ef4444", cursor: "pointer", padding: "0 3px" }} title="Delete condition">
+                          style={{ fontSize: "var(--text-xs)", color: "var(--red)", cursor: "pointer", padding: "0 3px" }} title="Delete condition">
                             &#x2715;
                           </span>
                         )}
@@ -3634,40 +3634,40 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           </div>
 
           {/* ── Typical Groups Section ── */}
-          <div style={{ flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.08)", padding: "8px 10px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <span style={{ color: "#22d3ee", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+          <div style={{ flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.08)", padding: "var(--space-2) var(--space-3)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-2)" }}>
+              <span style={{ color: "var(--cyan)", fontSize: "var(--text-tab)", fontWeight: "var(--weight-bold)", cursor: "pointer" }}
                 onClick={() => setShowTypicalPanel(!showTypicalPanel)}>
                 Typical Groups {typicalGroups.length > 0 ? `(${typicalGroups.length})` : ""} {showTypicalPanel ? "▾" : "▸"}
               </span>
               {selectedMeasIds.size > 0 && (
                 <button onClick={() => setShowTypicalCreate(true)}
-                  style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, border: "1px solid rgba(34,211,238,0.3)", background: "rgba(34,211,238,0.1)", color: "#22d3ee", cursor: "pointer" }}>
+                  style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(34,211,238,0.3)", background: "rgba(34,211,238,0.1)", color: "var(--cyan)", cursor: "pointer" }}>
                   Create ({selectedMeasIds.size})
                 </button>
               )}
             </div>
             {selectedMeasIds.size > 0 && !showTypicalCreate && (
-              <div style={{ fontSize: 9, color: "#888", marginBottom: 4 }}>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)", marginBottom: "var(--space-1)" }}>
                 {selectedMeasIds.size} measurement{selectedMeasIds.size !== 1 ? "s" : ""} selected (Shift+click)
-                <span onClick={() => setSelectedMeasIds(new Set())} style={{ color: "#ef4444", cursor: "pointer", marginLeft: 6 }}>Clear</span>
+                <span onClick={() => setSelectedMeasIds(new Set())} style={{ color: "var(--red)", cursor: "pointer", marginLeft: "var(--space-2)" }}>Clear</span>
               </div>
             )}
             {/* Create Typical modal */}
             {showTypicalCreate && (
-              <div style={{ padding: 8, borderRadius: 6, background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.2)", marginBottom: 6 }}>
-                <div style={{ fontSize: 10, color: "#22d3ee", marginBottom: 4, fontWeight: 600 }}>Name this Typical Group</div>
+              <div style={{ padding: "var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.2)", marginBottom: "var(--space-2)" }}>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--cyan)", marginBottom: "var(--space-1)", fontWeight: "var(--weight-semi)" }}>Name this Typical Group</div>
                 <input autoFocus value={typicalName} onChange={e => setTypicalName(e.target.value)}
                   placeholder="e.g. Standard Patient Room"
                   onKeyDown={e => { if (e.key === "Enter" && typicalName.trim()) createTypicalGroup(typicalName.trim()); }}
-                  style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid rgba(34,211,238,0.3)", background: "rgba(0,0,0,0.3)", color: "#fff", fontSize: 10, marginBottom: 4 }} />
-                <div style={{ display: "flex", gap: 4 }}>
+                  style={{ width: "100%", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(34,211,238,0.3)", background: "rgba(0,0,0,0.3)", color: "#fff", fontSize: "var(--text-xs)", marginBottom: "var(--space-1)" }} />
+                <div style={{ display: "flex", gap: "var(--space-1)" }}>
                   <button onClick={() => { if (typicalName.trim()) createTypicalGroup(typicalName.trim()); }}
-                    style={{ flex: 1, padding: "3px 0", borderRadius: 3, border: "none", background: "#22d3ee", color: "#000", fontSize: 9, fontWeight: 600, cursor: "pointer" }}>
+                    style={{ flex: 1, padding: "var(--space-1) 0", borderRadius: "var(--radius-control)", border: "none", background: "#22d3ee", color: "#000", fontSize: "var(--text-xs)", fontWeight: "var(--weight-semi)", cursor: "pointer" }}>
                     Create
                   </button>
                   <button onClick={() => { setShowTypicalCreate(false); setTypicalName(""); }}
-                    style={{ padding: "3px 8px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#888", fontSize: 9, cursor: "pointer" }}>
+                    style={{ padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "var(--text2)", fontSize: "var(--text-xs)", cursor: "pointer" }}>
                     Cancel
                   </button>
                 </div>
@@ -3675,34 +3675,34 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
             )}
             {/* Typical Groups list */}
             {showTypicalPanel && typicalGroups.map(tg => (
-              <div key={tg.id} style={{ padding: "5px 6px", marginBottom: 4, borderRadius: 5, background: "rgba(34,211,238,0.04)", border: "1px solid rgba(34,211,238,0.1)" }}>
+              <div key={tg.id} style={{ padding: "var(--space-1) var(--space-2)", marginBottom: "var(--space-1)", borderRadius: "var(--radius-control)", background: "rgba(34,211,238,0.04)", border: "1px solid rgba(34,211,238,0.1)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 10, color: "#22d3ee", fontWeight: 600 }}>{tg.name}</span>
-                  <div style={{ display: "flex", gap: 3 }}>
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--cyan)", fontWeight: "var(--weight-semi)" }}>{tg.name}</span>
+                  <div style={{ display: "flex", gap: "var(--space-1)" }}>
                     <button onClick={() => { setPlacingTypicalId(tg.id); setMode(MODE.PAN); }}
-                      style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, border: "1px solid rgba(34,211,238,0.3)", background: placingTypicalId === tg.id ? "#22d3ee" : "transparent", color: placingTypicalId === tg.id ? "#000" : "#22d3ee", cursor: "pointer" }}>
+                      style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(34,211,238,0.3)", background: placingTypicalId === tg.id ? "#22d3ee" : "transparent", color: placingTypicalId === tg.id ? "#000" : "#22d3ee", cursor: "pointer" }}>
                       {placingTypicalId === tg.id ? "Placing..." : "Place"}
                     </button>
                     <button onClick={() => deleteTypicalGroup(tg.id)}
-                      style={{ fontSize: 8, padding: "1px 4px", borderRadius: 3, border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "#ef4444", cursor: "pointer" }}>
+                      style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "var(--red)", cursor: "pointer" }}>
                       ✕
                     </button>
                   </div>
                 </div>
-                <div style={{ fontSize: 9, color: "#666", marginTop: 2 }}>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text3)", marginTop: "var(--space-1)" }}>
                   {tg.sourceMeasurementIds.length} source meas &middot; {tg.instances.length} instance{tg.instances.length !== 1 ? "s" : ""}
                 </div>
                 {tg.instances.length > 0 && (
-                  <div style={{ marginTop: 3 }}>
+                  <div style={{ marginTop: "var(--space-1)" }}>
                     {tg.instances.map(inst => (
-                      <div key={inst.id} style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 0" }}>
-                        <span style={{ fontSize: 9, color: "#888", flex: 1 }}>{getKeyName(inst.pageKey)}</span>
-                        <span style={{ fontSize: 9, color: "#aaa" }}>×</span>
+                      <div key={inst.id} style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", padding: "var(--space-1) 0" }}>
+                        <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)", flex: 1 }}>{getKeyName(inst.pageKey)}</span>
+                        <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>×</span>
                         <input type="number" min="0.1" step="0.5" value={inst.multiplier || 1}
                           onChange={e => updateInstanceMultiplier(tg.id, inst.id, parseFloat(e.target.value) || 1)}
-                          style={{ width: 32, padding: "1px 2px", borderRadius: 2, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 9, textAlign: "center" }} />
+                          style={{ width: 32, padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "var(--text-xs)", textAlign: "center" }} />
                         <button onClick={() => deleteTypicalInstance(tg.id, inst.id)}
-                          style={{ fontSize: 8, padding: "0 3px", border: "none", background: "transparent", color: "#ef4444", cursor: "pointer" }}>✕</button>
+                          style={{ fontSize: "var(--text-xs)", padding: "0 3px", border: "none", background: "transparent", color: "var(--red)", cursor: "pointer" }}>✕</button>
                       </div>
                     ))}
                   </div>
@@ -3710,45 +3710,45 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               </div>
             ))}
             {showTypicalPanel && typicalGroups.length === 0 && (
-              <div style={{ fontSize: 9, color: "#555", fontStyle: "italic", padding: "4px 0" }}>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text3)", fontStyle: "italic", padding: "var(--space-1) 0" }}>
                 Shift+click measurements to select, then "Create" a typical group
               </div>
             )}
           </div>
 
           {/* ── Change Order Panel ── */}
-          <div style={{ flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.08)", padding: "8px 10px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b" }}>Change Orders</span>
+          <div style={{ flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.08)", padding: "var(--space-2) var(--space-3)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-1)" }}>
+              <span style={{ fontSize: "var(--text-tab)", fontWeight: "var(--weight-bold)", color: "var(--amber)" }}>Change Orders</span>
               <button onClick={() => revisionInputRef.current?.click()}
-                style={{ fontSize: 8, padding: "2px 6px", borderRadius: 3, border: "1px solid rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.08)", color: "#f59e0b", cursor: "pointer" }}>
+                style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.08)", color: "var(--amber)", cursor: "pointer" }}>
                 {revisionDocs[pageKey] ? "Replace Rev" : "Upload Rev"}
               </button>
               <input ref={revisionInputRef} type="file" accept=".pdf" style={{ display: "none" }}
                 onChange={e => { const f = e.target.files?.[0]; if (f) handleRevisionUpload(f); e.target.value = ""; }} />
             </div>
             {revisionDocs[pageKey] && (
-              <div style={{ marginBottom: 4 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
+              <div style={{ marginBottom: "var(--space-1)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", marginBottom: "var(--space-1)" }}>
                   <input type="checkbox" checked={showRevision} onChange={e => setShowRevision(e.target.checked)}
                     style={{ width: 12, height: 12 }} />
-                  <span style={{ fontSize: 9, color: "#aaa", flex: 1 }}>
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)", flex: 1 }}>
                     {revisionDocs[pageKey].name?.replace(/\.pdf$/i, "") || "Revision"}
                   </span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <span style={{ fontSize: 8, color: "#666", width: 40 }}>Opacity</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)", width: 40 }}>Opacity</span>
                   <input type="range" min="0" max="1" step="0.05" value={revisionOpacity}
                     onChange={e => setRevisionOpacity(parseFloat(e.target.value))}
                     style={{ flex: 1, height: 4 }} />
-                  <span style={{ fontSize: 8, color: "#888", width: 24 }}>{Math.round(revisionOpacity * 100)}%</span>
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)", width: 24 }}>{Math.round(revisionOpacity * 100)}%</span>
                 </div>
                 {revisionDocs[pageKey].numPages > 1 && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
-                    <span style={{ fontSize: 8, color: "#666" }}>Rev page:</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", marginTop: "var(--space-1)" }}>
+                    <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>Rev page:</span>
                     <select value={revisionDocs[pageKey].revPage || 1}
                       onChange={e => setRevisionDocs(prev => ({ ...prev, [pageKey]: { ...prev[pageKey], revPage: Number(e.target.value) } }))}
-                      style={{ padding: "1px 4px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 9 }}>
+                      style={{ padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "var(--text-xs)" }}>
                       {Array.from({ length: revisionDocs[pageKey].numPages }, (_, i) => (
                         <option key={i + 1} value={i + 1}>Page {i + 1}</option>
                       ))}
@@ -3759,16 +3759,16 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
             )}
             {/* CO Summary */}
             {coSummary.total > 0 && (
-              <div style={{ padding: "6px 8px", borderRadius: 5, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", marginTop: 4 }}>
-                <div style={{ fontSize: 9, fontWeight: 600, color: "#f59e0b", marginBottom: 3 }}>CO Net Delta</div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9 }}>
-                  <span style={{ color: "#22c55e" }}>+ {fmt(coSummary.adds.cost)}</span>
-                  <span style={{ color: "#ef4444" }}>− {fmt(coSummary.dels.cost)}</span>
-                  <span style={{ color: coSummary.net >= 0 ? "#22c55e" : "#ef4444", fontWeight: 700 }}>
+              <div style={{ padding: "var(--space-2) var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", marginTop: "var(--space-1)" }}>
+                <div style={{ fontSize: "var(--text-xs)", fontWeight: "var(--weight-semi)", color: "var(--amber)", marginBottom: "var(--space-1)" }}>CO Net Delta</div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-xs)" }}>
+                  <span style={{ color: "var(--green)" }}>+ {fmt(coSummary.adds.cost)}</span>
+                  <span style={{ color: "var(--red)" }}>− {fmt(coSummary.dels.cost)}</span>
+                  <span style={{ color: coSummary.net >= 0 ? "#22c55e" : "#ef4444", fontWeight: "var(--weight-bold)" }}>
                     Net: {coSummary.net >= 0 ? "+" : ""}{fmt(coSummary.net)}
                   </span>
                 </div>
-                <div style={{ fontSize: 8, color: "#666", marginTop: 2 }}>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text3)", marginTop: "var(--space-1)" }}>
                   {coSummary.total} CO measurement{coSummary.total !== 1 ? "s" : ""}
                   {coSummary.adds.lf > 0 && ` · +${Math.round(coSummary.adds.lf)} LF`}
                   {coSummary.dels.lf > 0 && ` · −${Math.round(coSummary.dels.lf)} LF`}
@@ -3780,54 +3780,54 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           </div>
 
           {/* ── Live Cost Bar (bottom of sidebar) ── */}
-          <div style={{ flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.1)", padding: "10px 12px", background: "rgba(0,0,0,0.9)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-              <span style={{ fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: 0.5 }}>Takeoff Total</span>
-              <span style={{ fontSize: 16, fontWeight: 700, color: "var(--amber, #e09422)" }}>{fmtK(grandTotal)}</span>
+          <div style={{ flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.1)", padding: "var(--space-3) var(--space-3)", background: "rgba(0,0,0,0.9)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-1)" }}>
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.5 }}>Takeoff Total</span>
+              <span style={{ fontSize: "var(--text-card)", fontWeight: "var(--weight-bold)", color: "var(--amber, #e09422)" }}>{fmtK(grandTotal)}</span>
             </div>
-            <div style={{ display: "flex", gap: 8, fontSize: 9, color: "#666" }}>
-              <span style={{ color: "#10b981" }}>Mat {fmtK(totalMat)}</span>
-              <span style={{ color: "#3b82f6" }}>Lab {fmtK(totalLab)}</span>
+            <div style={{ display: "flex", gap: "var(--space-2)", fontSize: "var(--text-xs)", color: "var(--text3)" }}>
+              <span style={{ color: "var(--green)" }}>Mat {fmtK(totalMat)}</span>
+              <span style={{ color: "var(--blue)" }}>Lab {fmtK(totalLab)}</span>
               <span>&middot;</span>
               <span>{Object.values(measurements).reduce((s, pm) => s + pm.length, 0)} meas</span>
             </div>
             {activeCond && (
-              <div style={{ marginTop: 6, padding: "4px 8px", borderRadius: 4, background: "rgba(255,255,255,0.04)", border: `1px solid ${activeCond.color}33` }}>
+              <div style={{ marginTop: "var(--space-2)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(255,255,255,0.04)", border: `1px solid ${activeCond.color}33` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontSize: 10, color: activeCond.color, fontWeight: 600 }}>{activeCond.name}</div>
-                  <div style={{ display: "flex", gap: 3 }}>
+                  <div style={{ fontSize: "var(--text-xs)", color: activeCond.color, fontWeight: "var(--weight-semi)" }}>{activeCond.name}</div>
+                  <div style={{ display: "flex", gap: "var(--space-1)" }}>
                     {activeCond.type === "linear" && (
                       <button onClick={() => { setShowLinkSetup(!showLinkSetup); setShowAttachSetup(false); }}
-                        style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.15)", background: (condLinks[activeCond.id]?.length > 0) ? "rgba(74,222,128,0.15)" : "transparent", color: (condLinks[activeCond.id]?.length > 0) ? "#4ade80" : "#888", cursor: "pointer" }}>
+                        style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.15)", background: (condLinks[activeCond.id]?.length > 0) ? "rgba(74,222,128,0.15)" : "transparent", color: (condLinks[activeCond.id]?.length > 0) ? "#4ade80" : "#888", cursor: "pointer" }}>
                         {condLinks[activeCond.id]?.length > 0 ? `${condLinks[activeCond.id].length} linked` : "Link"}
                       </button>
                     )}
                     {activeCond.type === "count" && (
                       <button onClick={() => { setShowAttachSetup(!showAttachSetup); setShowLinkSetup(false); }}
-                        style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.15)", background: activeCond.attachTo ? "rgba(239,68,68,0.15)" : "transparent", color: activeCond.attachTo ? "#f87171" : "#888", cursor: "pointer" }}>
+                        style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.15)", background: activeCond.attachTo ? "rgba(239,68,68,0.15)" : "transparent", color: activeCond.attachTo ? "#f87171" : "#888", cursor: "pointer" }}>
                         {activeCond.attachTo ? `→ ${conditions.find(c => c.id === activeCond.attachTo)?.name?.slice(0, 12) || "?"}` : "Attach"}
                       </button>
                     )}
                   </div>
                 </div>
-                <div style={{ fontSize: 9, color: "#888" }}>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>
                   {(() => {
                     const t = condTotals[activeCond.id];
                     const unit = activeCond.type === "count" ? "EA" : activeCond.type === "area" ? "SF" : "LF";
                     const hasDeductions = t && t.deductions > 0;
                     return hasDeductions
-                      ? <><span style={{ textDecoration: "line-through", color: "#666" }}>{Math.round(t.grossQty)} {unit}</span> <span style={{ color: "#f87171" }}>{Math.round(t.qty)} {unit} net</span> &middot; {fmt(t.cost)}</>
+                      ? <><span style={{ textDecoration: "line-through", color: "var(--text3)" }}>{Math.round(t.grossQty)} {unit}</span> <span style={{ color: "var(--red)" }}>{Math.round(t.qty)} {unit} net</span> &middot; {fmt(t.cost)}</>
                       : <>{Math.round(t?.qty || 0)} {unit} &middot; {fmt(t?.cost || 0)}</>;
                   })()}
                 </div>
                 {/* Multi-Condition Link Setup */}
                 {showLinkSetup && activeCond.type === "linear" && (
-                  <div style={{ marginTop: 6, padding: "6px", borderRadius: 4, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                    <div style={{ fontSize: 9, color: "#aaa", marginBottom: 4 }}>When drawing this wall, also create:</div>
+                  <div style={{ marginTop: "var(--space-2)", padding: "var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)", marginBottom: "var(--space-1)" }}>When drawing this wall, also create:</div>
                     {conditions.filter(c => c.id !== activeCond.id && (c.type === "area" || c.type === "linear")).map(c => {
                       const existingLink = (condLinks[activeCond.id] || []).find(l => l.condId === c.id);
                       return (
-                        <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 0" }}>
+                        <div key={c.id} style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", padding: "var(--space-1) 0" }}>
                           <input type="checkbox" checked={!!existingLink}
                             onChange={e => {
                               setCondLinks(prev => {
@@ -3842,8 +3842,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                               });
                             }}
                             style={{ width: 12, height: 12 }} />
-                          <span style={{ width: 6, height: 6, borderRadius: 1, background: c.color }} />
-                          <span style={{ fontSize: 9, color: "#ccc", flex: 1 }}>{c.name}</span>
+                          <span style={{ width: 6, height: 6, borderRadius: "var(--radius-control)", background: c.color }} />
+                          <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)", flex: 1 }}>{c.name}</span>
                           {existingLink && (
                             <select value={existingLink.calcType}
                               onChange={e => {
@@ -3852,7 +3852,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                                   return { ...prev, [activeCond.id]: links };
                                 });
                               }}
-                              style={{ fontSize: 8, padding: "1px 2px", borderRadius: 2, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#aaa" }}>
+                              style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "var(--text2)" }}>
                               <option value="sf_both_sides">SF both sides</option>
                               <option value="sf_one_side">SF one side</option>
                               <option value="match_lf">Same LF</option>
@@ -3868,14 +3868,14 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                   const parentCond = activeCond.attachTo ? conditions.find(c => c.id === activeCond.attachTo) : null;
                   const isAreaParent = parentCond?.type === "area";
                   return (
-                  <div style={{ marginTop: 6, padding: "6px", borderRadius: 4, background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.15)" }}>
-                    <div style={{ fontSize: 9, color: "#f87171", marginBottom: 4 }}>Deduct from parent:</div>
+                  <div style={{ marginTop: "var(--space-2)", padding: "var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.15)" }}>
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--red)", marginBottom: "var(--space-1)" }}>Deduct from parent:</div>
                     <select value={activeCond.attachTo || ""}
                       onChange={e => {
                         const val = e.target.value || null;
                         setConditions(prev => prev.map(c => c.id === activeCond.id ? { ...c, attachTo: val, deductHeight: 0 } : c));
                       }}
-                      style={{ width: "100%", fontSize: 9, padding: "3px 4px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#ccc", marginBottom: 4 }}>
+                      style={{ width: "100%", fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "var(--text2)", marginBottom: "var(--space-1)" }}>
                       <option value="">None (no deduction)</option>
                       <optgroup label="Linear (LF)">
                         {conditions.filter(c => c.type === "linear" && c.id !== activeCond.id).map(c => (
@@ -3889,43 +3889,43 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                       </optgroup>
                     </select>
                     {activeCond.attachTo && !isAreaParent && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <span style={{ fontSize: 9, color: "#aaa" }}>Width per count:</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+                        <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>Width per count:</span>
                         <input type="number" value={activeCond.deductWidth || 0} min={0} step={0.5}
                           onChange={e => {
                             const w = Math.max(0, parseFloat(e.target.value) || 0);
                             setConditions(prev => prev.map(c => c.id === activeCond.id ? { ...c, deductWidth: w } : c));
                           }}
-                          style={{ width: 44, fontSize: 9, padding: "2px 4px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#fff", textAlign: "center" }} />
-                        <span style={{ fontSize: 9, color: "#aaa" }}>ft</span>
+                          style={{ width: 44, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#fff", textAlign: "center" }} />
+                        <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>ft</span>
                       </div>
                     )}
                     {activeCond.attachTo && isAreaParent && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 9, color: "#aaa" }}>Size per count:</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>Size per count:</span>
                         <input type="number" value={activeCond.deductWidth || 0} min={0} step={0.5}
                           onChange={e => {
                             const w = Math.max(0, parseFloat(e.target.value) || 0);
                             setConditions(prev => prev.map(c => c.id === activeCond.id ? { ...c, deductWidth: w } : c));
                           }}
-                          style={{ width: 36, fontSize: 9, padding: "2px 4px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#fff", textAlign: "center" }} />
-                        <span style={{ fontSize: 9, color: "#aaa" }}>×</span>
+                          style={{ width: 36, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#fff", textAlign: "center" }} />
+                        <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>×</span>
                         <input type="number" value={activeCond.deductHeight || 0} min={0} step={0.5}
                           onChange={e => {
                             const h = Math.max(0, parseFloat(e.target.value) || 0);
                             setConditions(prev => prev.map(c => c.id === activeCond.id ? { ...c, deductHeight: h } : c));
                           }}
-                          style={{ width: 36, fontSize: 9, padding: "2px 4px", borderRadius: 3, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#fff", textAlign: "center" }} />
-                        <span style={{ fontSize: 9, color: "#aaa" }}>ft</span>
+                          style={{ width: 36, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#fff", textAlign: "center" }} />
+                        <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>ft</span>
                       </div>
                     )}
                     {activeCond.attachTo && activeCond.deductWidth > 0 && !isAreaParent && (
-                      <div style={{ fontSize: 8, color: "#888", marginTop: 3 }}>
+                      <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)", marginTop: "var(--space-1)" }}>
                         Each count deducts {activeCond.deductWidth}' LF from {parentCond?.name || "parent"}
                       </div>
                     )}
                     {activeCond.attachTo && activeCond.deductWidth > 0 && isAreaParent && (
-                      <div style={{ fontSize: 8, color: "#888", marginTop: 3 }}>
+                      <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)", marginTop: "var(--space-1)" }}>
                         Each count deducts {activeCond.deductWidth}' × {activeCond.deductHeight || 1}' = {Math.round(activeCond.deductWidth * (activeCond.deductHeight || 1) * 100) / 100} SF from {parentCond?.name || "parent"}
                       </div>
                     )}
@@ -3949,7 +3949,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                 Object.values(agg).forEach(item => {
                   onAddToTakeoff({ ...item, qty: Math.round(item.qty) });
                 });
-              }} style={{ ...btn, width: "100%", marginTop: 8, background: "rgba(74,222,128,0.12)", borderColor: "rgba(74,222,128,0.3)", color: "#4ade80", fontSize: 11 }}>
+              }} style={{ ...btn, width: "100%", marginTop: "var(--space-2)", background: "rgba(74,222,128,0.12)", borderColor: "rgba(74,222,128,0.3)", color: "#4ade80", fontSize: "var(--text-tab)" }}>
                 Send to Estimate ({Object.values(measurements).flat().length} measurements)
               </button>
             )}
@@ -3959,14 +3959,14 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
       {/* Right-click context menu */}
       {contextMenu && (
-        <div style={{ position: "fixed", left: contextMenu.x, top: contextMenu.y, background: "rgba(0,0,0,0.95)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 6, padding: 4, zIndex: 10002, minWidth: 140 }}
+        <div style={{ position: "fixed", left: contextMenu.x, top: contextMenu.y, background: "rgba(0,0,0,0.95)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "var(--radius-control)", padding: "var(--space-1)", zIndex: 10002, minWidth: 140 }}
           onClick={() => setContextMenu(null)}>
           <div onClick={() => {
               if (contextMenu.isCo) deleteCoMeasurement(contextMenu.measurementId);
               else deleteMeasurement(contextMenu.measurementId);
               setContextMenu(null);
             }}
-            style={{ padding: "6px 12px", fontSize: 11, color: "#ef4444", cursor: "pointer", borderRadius: 4 }}
+            style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", color: "var(--red)", cursor: "pointer", borderRadius: "var(--radius-control)" }}
             onMouseEnter={e => e.target.style.background = "rgba(239,68,68,0.1)"}
             onMouseLeave={e => e.target.style.background = "transparent"}>
             Delete {contextMenu.isCo ? "CO " : ""}Measurement
@@ -3984,7 +3984,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               setRedoStack([]);
               setContextMenu(null);
             }}
-            style={{ padding: "6px 12px", fontSize: 11, color: "#60a5fa", cursor: "pointer", borderRadius: 4 }}
+            style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", color: "var(--blue)", cursor: "pointer", borderRadius: "var(--radius-control)" }}
             onMouseEnter={e => e.target.style.background = "rgba(96,165,250,0.1)"}
             onMouseLeave={e => e.target.style.background = "transparent"}>
             Copy Measurement
@@ -4005,10 +4005,10 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               }));
               setContextMenu(null);
             }}
-            style={{ padding: "5px 12px", fontSize: 10, color: "#ccc", cursor: "pointer", borderRadius: 4, display: "flex", alignItems: "center", gap: 6 }}
+            style={{ padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-xs)", color: "var(--text2)", cursor: "pointer", borderRadius: "var(--radius-control)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}
             onMouseEnter={e => e.target.style.background = "rgba(255,255,255,0.05)"}
             onMouseLeave={e => e.target.style.background = "transparent"}>
-              <span style={{ width: 6, height: 6, borderRadius: 1, background: c.color }} />
+              <span style={{ width: 6, height: 6, borderRadius: "var(--radius-control)", background: c.color }} />
               Move to {c.name}
             </div>
           ))}
@@ -4045,14 +4045,14 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
       {/* Template picker modal */}
       {showTemplatePicker && (
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.97)", border: "1px solid var(--amber)", borderRadius: 12, padding: 24, zIndex: 10001, minWidth: 420, maxWidth: 520, maxHeight: "80vh", overflow: "auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <div style={{ color: "#fff", fontSize: 16, fontWeight: 700 }}>Condition Templates</div>
-            <button onClick={() => setShowTemplatePicker(false)} style={{ ...btn, fontSize: 10, padding: "3px 10px" }}>Close</button>
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.97)", border: "1px solid var(--amber)", borderRadius: "var(--radius-control)", padding: "var(--space-6)", zIndex: 10001, minWidth: 420, maxWidth: 520, maxHeight: "80vh", overflow: "auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
+            <div style={{ color: "#fff", fontSize: "var(--text-card)", fontWeight: "var(--weight-bold)" }}>Condition Templates</div>
+            <button onClick={() => setShowTemplatePicker(false)} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-3)" }}>Close</button>
           </div>
-          <div style={{ color: "#aaa", fontSize: 11, marginBottom: 16 }}>Apply a template to replace or add conditions. Choose a trade package that matches your project scope.</div>
+          <div style={{ color: "var(--text2)", fontSize: "var(--text-tab)", marginBottom: "var(--space-4)" }}>Apply a template to replace or add conditions. Choose a trade package that matches your project scope.</div>
           {Object.entries(TEMPLATES).map(([name, tmpl]) => (
-            <div key={name} style={{ padding: "12px 14px", marginBottom: 8, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}
+            <div key={name} style={{ padding: "var(--space-3) var(--space-4)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}
               onClick={() => {
                 const newConds = tmpl.items.map((t, i) => createCondition(t, conditions.length + i));
                 if (tmpl.items.length === 0) {
@@ -4068,32 +4068,32 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                   return next;
                 });
               }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <span style={{ color: "#fff", fontSize: 14, fontWeight: 600 }}>{name}</span>
-                <span style={{ fontSize: 10, color: "#888" }}>{tmpl.items.length} conditions</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-1)" }}>
+                <span style={{ color: "#fff", fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)" }}>{name}</span>
+                <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>{tmpl.items.length} conditions</span>
               </div>
-              <div style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>{tmpl.description}</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+              <div style={{ fontSize: "var(--text-tab)", color: "var(--text2)", marginBottom: "var(--space-2)" }}>{tmpl.description}</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)" }}>
                 {tmpl.items.slice(0, 8).map((it, i) => (
-                  <span key={i} style={{ fontSize: 9, color: "#aaa", padding: "1px 5px", borderRadius: 3, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <span key={i} style={{ fontSize: "var(--text-xs)", color: "var(--text2)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
                     {it.asmCode}
                   </span>
                 ))}
-                {tmpl.items.length > 8 && <span style={{ fontSize: 9, color: "#666" }}>+{tmpl.items.length - 8} more</span>}
+                {tmpl.items.length > 8 && <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>+{tmpl.items.length - 8} more</span>}
               </div>
             </div>
           ))}
-          <div style={{ marginTop: 12, padding: "10px 14px", borderRadius: 8, border: "1px dashed rgba(255,255,255,0.15)", textAlign: "center" }}>
-            <div style={{ fontSize: 11, color: "#888" }}>Or add individual conditions with the + Add button in the panel</div>
+          <div style={{ marginTop: "var(--space-3)", padding: "var(--space-3) var(--space-4)", borderRadius: "var(--radius-control)", border: "1px dashed rgba(255,255,255,0.15)", textAlign: "center" }}>
+            <div style={{ fontSize: "var(--text-tab)", color: "var(--text2)" }}>Or add individual conditions with the + Add button in the panel</div>
           </div>
         </div>
       )}
 
       {/* Bid Area add dialog */}
       {showBidAreaAdd && (
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.95)", border: "1px solid var(--amber)", borderRadius: 10, padding: 20, zIndex: 10000, minWidth: 300 }}>
-          <div style={{ color: "#fff", fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Add Bid Area</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.95)", border: "1px solid var(--amber)", borderRadius: "var(--radius-control)", padding: "var(--space-5)", zIndex: 10000, minWidth: 300 }}>
+          <div style={{ color: "#fff", fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)", marginBottom: "var(--space-3)" }}>Add Bid Area</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", marginBottom: "var(--space-3)" }}>
             {["1st Floor", "2nd Floor", "3rd Floor", "Mezzanine", "Basement", "Roof", "Exterior", "Common Areas"].map(name => (
               <button key={name} onClick={() => {
                 const ba = { id: "ba_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5), name };
@@ -4101,10 +4101,10 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                 setActiveBidAreaId(ba.id);
                 setShowBidAreaAdd(false);
                 setNewBidAreaName("");
-              }} style={{ ...btn, fontSize: 10, padding: "3px 8px" }}>{name}</button>
+              }} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}>{name}</button>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 6 }}>
+          <div style={{ display: "flex", gap: "var(--space-2)" }}>
             <input placeholder="Custom area name..." value={newBidAreaName} onChange={e => setNewBidAreaName(e.target.value)}
               onKeyDown={e => {
                 if (e.key === "Enter" && newBidAreaName.trim()) {
@@ -4112,12 +4112,12 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                   setBidAreas(prev => [...prev, ba]); setActiveBidAreaId(ba.id); setShowBidAreaAdd(false); setNewBidAreaName("");
                 }
               }}
-              style={{ flex: 1, padding: "6px 10px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 12 }} />
+              style={{ flex: 1, padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-label)" }} />
             <button onClick={() => {
               if (!newBidAreaName.trim()) return;
               const ba = { id: "ba_" + Date.now(), name: newBidAreaName.trim() };
               setBidAreas(prev => [...prev, ba]); setActiveBidAreaId(ba.id); setShowBidAreaAdd(false); setNewBidAreaName("");
-            }} style={{ ...btn, background: "var(--amber)", color: "#000", fontWeight: 600 }}>Add</button>
+            }} style={{ ...btn, background: "var(--amber)", color: "#000", fontWeight: "var(--weight-semi)" }}>Add</button>
             <button onClick={() => { setShowBidAreaAdd(false); setNewBidAreaName(""); }} style={btn}>Cancel</button>
           </div>
         </div>
@@ -4125,11 +4125,11 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
       {/* Calibration prompt */}
       {showCalPrompt && (
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.95)", border: "1px solid var(--amber)", borderRadius: 10, padding: 24, zIndex: 10000, minWidth: 320, textAlign: "center" }}>
-          <div style={{ color: "#fff", fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Set Scale</div>
-          <div style={{ color: "#aaa", fontSize: 12, marginBottom: 12 }}>Pick a preset or enter the known distance:</div>
-          <div style={{ fontSize: 10, color: "#888", marginBottom: 6, textAlign: "center" }}>Common scales (click if printed on drawing):</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, justifyContent: "center", marginBottom: 14 }}>
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.95)", border: "1px solid var(--amber)", borderRadius: "var(--radius-control)", padding: "var(--space-6)", zIndex: 10000, minWidth: 320, textAlign: "center" }}>
+          <div style={{ color: "#fff", fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)", marginBottom: "var(--space-2)" }}>Set Scale</div>
+          <div style={{ color: "var(--text2)", fontSize: "var(--text-label)", marginBottom: "var(--space-3)" }}>Pick a preset or enter the known distance:</div>
+          <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)", marginBottom: "var(--space-2)", textAlign: "center" }}>Common scales (click if printed on drawing):</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", justifyContent: "center", marginBottom: "var(--space-4)" }}>
             {[
               { label: '1/8"', ratio: 96 }, { label: '3/16"', ratio: 64 }, { label: '1/4"', ratio: 48 },
               { label: '3/8"', ratio: 32 }, { label: '1/2"', ratio: 24 }, { label: '3/4"', ratio: 16 }, { label: '1"', ratio: 12 },
@@ -4142,16 +4142,16 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                   const realFeet = pixDist * sc.ratio / (72 * 12);
                   setCalInput(realFeet.toFixed(2));
                 }
-              }} style={{ ...btn, fontSize: 10, padding: "3px 8px", minWidth: 42 }}>{sc.label}=1'</button>
+              }} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", minWidth: 42 }}>{sc.label}=1'</button>
             ))}
           </div>
-          <div style={{ fontSize: 10, color: "#888", marginBottom: 6, textAlign: "center" }}>Or enter the real distance between your two clicks:</div>
+          <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)", marginBottom: "var(--space-2)", textAlign: "center" }}>Or enter the real distance between your two clicks:</div>
           <input autoFocus type="number" step="0.1" placeholder="Distance in feet" value={calInput}
             onChange={e => setCalInput(e.target.value)} onKeyDown={e => e.key === "Enter" && confirmCalibration()}
-            style={{ width: "100%", padding: "10px 12px", borderRadius: 6, border: "1px solid var(--amber)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 16, textAlign: "center" }} />
-          <div style={{ display: "flex", gap: 8, marginTop: 14, justifyContent: "center" }}>
+            style={{ width: "100%", padding: "var(--space-3) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid var(--amber)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-card)", textAlign: "center" }} />
+          <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-4)", justifyContent: "center" }}>
             <button onClick={() => { setCalPoints([]); setShowCalPrompt(false); }} style={{ ...btn, borderColor: "rgba(239,68,68,0.4)" }}>Cancel</button>
-            <button onClick={confirmCalibration} style={{ ...btn, background: "var(--amber)", color: "#000", fontWeight: 600 }}>Confirm</button>
+            <button onClick={confirmCalibration} style={{ ...btn, background: "var(--amber)", color: "#000", fontWeight: "var(--weight-semi)" }}>Confirm</button>
           </div>
         </div>
       )}
@@ -4159,53 +4159,53 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       {/* Scale verification prompt */}
       {showVerify && (
         <div style={{ position: "absolute", bottom: 60, left: "50%", transform: "translateX(-50%)",
-          background: "rgba(0,0,0,0.9)", border: "1px solid rgba(74,222,128,0.4)", borderRadius: 8,
-          padding: "12px 20px", zIndex: 10000, display: "flex", alignItems: "center", gap: 12, maxWidth: 500 }}>
-          <span style={{ fontSize: 16 }}>&#9989;</span>
+          background: "rgba(0,0,0,0.9)", border: "1px solid rgba(74,222,128,0.4)", borderRadius: "var(--radius-control)",
+          padding: "var(--space-3) var(--space-5)", zIndex: 10000, display: "flex", alignItems: "center", gap: "var(--space-3)", maxWidth: 500 }}>
+          <span style={{ fontSize: "var(--text-card)" }}>&#9989;</span>
           <div>
-            <div style={{ color: "#4ade80", fontSize: 12, fontWeight: 600 }}>Scale set!</div>
-            <div style={{ color: "#aaa", fontSize: 11 }}>Verify by measuring a known dimension (door = ~3', window = ~4'). If it's off, re-calibrate.</div>
+            <div style={{ color: "#4ade80", fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)" }}>Scale set!</div>
+            <div style={{ color: "var(--text2)", fontSize: "var(--text-tab)" }}>Verify by measuring a known dimension (door = ~3', window = ~4'). If it's off, re-calibrate.</div>
           </div>
-          <button onClick={() => setShowVerify(false)} style={{ ...btn, fontSize: 10, padding: "3px 10px", flexShrink: 0 }}>OK</button>
+          <button onClick={() => setShowVerify(false)} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-3)", flexShrink: 0 }}>OK</button>
         </div>
       )}
 
       {/* Save Named View dialog */}
       {showSaveView && (
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-          background: "rgba(0,0,0,0.95)", border: "1px solid rgba(59,130,246,0.5)", borderRadius: 8,
-          padding: 18, zIndex: 10001, minWidth: 300, textAlign: "center" }}>
-          <div style={{ color: "#93c5fd", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>📌 Save Named View</div>
-          <div style={{ color: "#888", fontSize: 11, marginBottom: 10 }}>Saves current page, zoom level, and scroll position.</div>
+          background: "rgba(0,0,0,0.95)", border: "1px solid rgba(59,130,246,0.5)", borderRadius: "var(--radius-control)",
+          padding: "var(--space-5)", zIndex: 10001, minWidth: 300, textAlign: "center" }}>
+          <div style={{ color: "#93c5fd", fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", marginBottom: "var(--space-2)" }}>📌 Save Named View</div>
+          <div style={{ color: "var(--text2)", fontSize: "var(--text-tab)", marginBottom: "var(--space-3)" }}>Saves current page, zoom level, and scroll position.</div>
           <input autoFocus value={saveViewName} onChange={e => setSaveViewName(e.target.value)}
             placeholder={`View ${namedViews.length + 1}`}
             onKeyDown={e => {
               if (e.key === "Enter") { saveNamedView(saveViewName || `View ${namedViews.length + 1}`); setShowSaveView(false); }
               if (e.key === "Escape") setShowSaveView(false);
             }}
-            style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid rgba(59,130,246,0.4)",
-              background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 14, outline: "none" }} />
+            style={{ width: "100%", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid rgba(59,130,246,0.4)",
+              background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-secondary)", outline: "none" }} />
           {/* Existing views list with delete */}
           {namedViews.length > 0 && (
-            <div style={{ marginTop: 10, maxHeight: 140, overflow: "auto", textAlign: "left" }}>
-              <div style={{ fontSize: 9, color: "#666", marginBottom: 4 }}>Existing views:</div>
+            <div style={{ marginTop: "var(--space-3)", maxHeight: 140, overflow: "auto", textAlign: "left" }}>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--text3)", marginBottom: "var(--space-1)" }}>Existing views:</div>
               {namedViews.map(nv => (
-                <div key={nv.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 0", fontSize: 11 }}>
+                <div key={nv.id} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-1) 0", fontSize: "var(--text-tab)" }}>
                   <span style={{ color: "#93c5fd", flex: 1 }}>{nv.name}</span>
-                  <span style={{ color: "#555", fontSize: 9 }}>{sheetNames[nv.pageKey] || `P${nv.page}`}</span>
+                  <span style={{ color: "var(--text3)", fontSize: "var(--text-xs)" }}>{sheetNames[nv.pageKey] || `P${nv.page}`}</span>
                   <button onClick={() => { navigateToView(nv); setShowSaveView(false); }}
-                    style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, border: "1px solid rgba(59,130,246,0.3)", background: "transparent", color: "#60a5fa", cursor: "pointer" }}>Go</button>
+                    style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(59,130,246,0.3)", background: "transparent", color: "var(--blue)", cursor: "pointer" }}>Go</button>
                   <button onClick={() => deleteNamedView(nv.id)}
-                    style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, border: "1px solid rgba(239,68,68,0.3)", background: "transparent", color: "#ef4444", cursor: "pointer" }}>✕</button>
+                    style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(239,68,68,0.3)", background: "transparent", color: "var(--red)", cursor: "pointer" }}>✕</button>
                 </div>
               ))}
             </div>
           )}
-          <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)", justifyContent: "center" }}>
             <button onClick={() => setShowSaveView(false)}
-              style={{ ...btn, padding: "4px 12px", fontSize: 11, borderColor: "rgba(59,130,246,0.3)" }}>Close</button>
+              style={{ ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-tab)", borderColor: "rgba(59,130,246,0.3)" }}>Close</button>
             <button onClick={() => { saveNamedView(saveViewName || `View ${namedViews.length + 1}`); setShowSaveView(false); }}
-              style={{ ...btn, padding: "4px 14px", fontSize: 11, background: "rgba(59,130,246,0.3)", borderColor: "rgba(59,130,246,0.5)", color: "#fff", fontWeight: 600 }}>
+              style={{ ...btn, padding: "var(--space-1) var(--space-4)", fontSize: "var(--text-tab)", background: "rgba(59,130,246,0.3)", borderColor: "rgba(59,130,246,0.5)", color: "#fff", fontWeight: "var(--weight-semi)" }}>
               Save View
             </button>
           </div>
@@ -4215,26 +4215,26 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       {/* Hot Link target selector (shown when HOTLINK mode active) */}
       {mode === MODE.HOTLINK && (
         <div style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)",
-          background: "rgba(0,0,0,0.9)", border: "1px solid rgba(59,130,246,0.5)", borderRadius: 8,
-          padding: "8px 14px", zIndex: 10000, display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ color: "#93c5fd", fontSize: 11, fontWeight: 600 }}>🔗 Place Hot Link to:</span>
+          background: "rgba(0,0,0,0.9)", border: "1px solid rgba(59,130,246,0.5)", borderRadius: "var(--radius-control)",
+          padding: "var(--space-2) var(--space-4)", zIndex: 10000, display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+          <span style={{ color: "#93c5fd", fontSize: "var(--text-tab)", fontWeight: "var(--weight-semi)" }}>🔗 Place Hot Link to:</span>
           <select value={hotlinkTargetId || ""} onChange={e => setHotlinkTargetId(e.target.value)}
-            style={{ padding: "3px 8px", borderRadius: 4, border: "1px solid rgba(59,130,246,0.4)", background: "rgba(59,130,246,0.08)", color: "#fff", fontSize: 11 }}>
+            style={{ padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(59,130,246,0.4)", background: "rgba(59,130,246,0.08)", color: "#fff", fontSize: "var(--text-tab)" }}>
             <option value="" disabled>Select a view...</option>
             {namedViews.map(nv => <option key={nv.id} value={nv.id}>{nv.name} — {sheetNames[nv.pageKey] || `P${nv.page}`}</option>)}
           </select>
-          <span style={{ color: "#666", fontSize: 9 }}>Click on plan to place</span>
+          <span style={{ color: "var(--text3)", fontSize: "var(--text-xs)" }}>Click on plan to place</span>
           <button onClick={() => { setMode(MODE.PAN); setHotlinkTargetId(null); }}
-            style={{ ...btn, padding: "2px 8px", fontSize: 9 }}>Cancel</button>
+            style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)" }}>Cancel</button>
         </div>
       )}
 
       {/* Annotation text input overlay */}
       {showAnnTextInput && (
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-          background: "rgba(0,0,0,0.95)", border: "1px solid rgba(239,68,68,0.5)", borderRadius: 8,
-          padding: 18, zIndex: 10001, minWidth: 280, textAlign: "center" }}>
-          <div style={{ color: "#f87171", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
+          background: "rgba(0,0,0,0.95)", border: "1px solid rgba(239,68,68,0.5)", borderRadius: "var(--radius-control)",
+          padding: "var(--space-5)", zIndex: 10001, minWidth: 280, textAlign: "center" }}>
+          <div style={{ color: "var(--red)", fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", marginBottom: "var(--space-2)" }}>
             {showAnnTextInput.type === "callout" ? "Callout Text" : "Text Annotation"}
           </div>
           <input ref={annTextRef} value={annTextValue} onChange={e => setAnnTextValue(e.target.value)}
@@ -4260,11 +4260,11 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               }
               if (e.key === "Escape") { setShowAnnTextInput(null); setAnnTextValue(""); }
             }}
-            style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.4)",
-              background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 14, outline: "none" }} />
-          <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "center" }}>
+            style={{ width: "100%", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid rgba(239,68,68,0.4)",
+              background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-secondary)", outline: "none" }} />
+          <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)", justifyContent: "center" }}>
             <button onClick={() => { setShowAnnTextInput(null); setAnnTextValue(""); }}
-              style={{ ...btn, padding: "4px 12px", fontSize: 11, borderColor: "rgba(239,68,68,0.3)" }}>Cancel</button>
+              style={{ ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-tab)", borderColor: "rgba(239,68,68,0.3)" }}>Cancel</button>
             <button onClick={() => {
               if (!annTextValue.trim()) return;
               const base = {
@@ -4283,7 +4283,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               setShowAnnTextInput(null);
               setAnnTextValue("");
               if (!continuousMode) setMode(MODE.PAN);
-            }} style={{ ...btn, padding: "4px 14px", fontSize: 11, background: "rgba(239,68,68,0.3)", borderColor: "rgba(239,68,68,0.5)", color: "#fff", fontWeight: 600 }}>
+            }} style={{ ...btn, padding: "var(--space-1) var(--space-4)", fontSize: "var(--text-tab)", background: "rgba(239,68,68,0.3)", borderColor: "rgba(239,68,68,0.5)", color: "#fff", fontWeight: "var(--weight-semi)" }}>
               Place
             </button>
           </div>
@@ -4291,7 +4291,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       )}
 
       {rendering && (
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", color: "#fff", fontSize: 14, background: "rgba(0,0,0,0.7)", padding: "8px 16px", borderRadius: 8 }}>
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", color: "#fff", fontSize: "var(--text-secondary)", background: "rgba(0,0,0,0.7)", padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-control)" }}>
           Loading page...
         </div>
       )}

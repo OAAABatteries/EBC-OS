@@ -1,0 +1,82 @@
+{
+  "appId": "com.eaglesbrothers.ebcos",
+  "appName": "EBC-OS",
+  "displayName": "Eagles Brothers Constructors",
+  "version": "1.0.0",
+  "buildNumber": 1,
+
+  "ios": {
+    "bundleId": "com.eaglesbrothers.ebcos",
+    "teamId": "",
+    "category": "Business",
+    "subcategory": "Productivity",
+    "ageRating": "4+",
+    "requiresFullScreen": true,
+    "supportedDevices": ["iPhone", "iPad"],
+    "minimumOSVersion": "16.0",
+    "signingConfig": {
+      "developmentTeam": "",
+      "codeSignIdentity": "Apple Distribution",
+      "provisioningProfile": ""
+    }
+  },
+
+  "android": {
+    "packageName": "com.eaglesbrothers.ebcos",
+    "minSdkVersion": 22,
+    "targetSdkVersion": 35,
+    "category": "BUSINESS",
+    "contentRating": "Everyone",
+    "signingConfig": {
+      "keystorePath": "",
+      "keystoreAlias": "ebcos",
+      "note": "Generate keystore: keytool -genkey -v -keystore ebcos-release.keystore -alias ebcos -keyalg RSA -keysize 2048 -validity 10000"
+    }
+  },
+
+  "storeListings": {
+    "en-US": {
+      "title": "EBC-OS — Field Operations",
+      "shortDescription": "Construction field management for crews, foremen, drivers, and PMs.",
+      "fullDescription": "EBC-OS is a mobile-first field operations platform built for commercial interior subcontractors. Manage crews, track labor hours, file RFIs, submit daily reports, coordinate deliveries, and monitor project budgets — all from the jobsite.\n\nDesigned for:\n• Crew Members — Clock in/out, log production, request materials\n• Foremen — Bulk labor entry, team management, daily reports, RFI tracking\n• Drivers — Route management, load verification, return/backhaul workflows\n• Project Managers — Cross-project dashboards, CO tracking, budget monitoring\n\nKey Features:\n• GPS-verified clock in/out with geofencing\n• Photo capture for RFIs, material requests, and daily reports\n• Bilingual (English/Spanish) interface\n• Offline-capable with sync on reconnect\n• Real-time crew and project dashboards\n• T&M ticket tracking with audit trail\n• Credential and certification management",
+      "keywords": "construction,field,crew,foreman,drywall,framing,labor,timecard,RFI,daily report,project management",
+      "privacyPolicyUrl": "",
+      "supportUrl": "",
+      "marketingUrl": ""
+    },
+    "es-US": {
+      "title": "EBC-OS — Operaciones de Campo",
+      "shortDescription": "Gestión de campo para cuadrillas, capataces, conductores y gerentes de proyecto.",
+      "fullDescription": "EBC-OS es una plataforma móvil de operaciones de campo construida para subcontratistas de interiores comerciales."
+    }
+  },
+
+  "screenshots": {
+    "note": "Required before submission: 6.7\" iPhone (1290x2796), 12.9\" iPad (2048x2732), Android phone (1080x1920)",
+    "scenes": [
+      "Dashboard overview",
+      "Clock in/out flow",
+      "Daily report creation",
+      "Material request with photo",
+      "Driver route management",
+      "PM cross-project summary"
+    ]
+  },
+
+  "preSubmissionChecklist": [
+    "Generate iOS signing certificate and provisioning profile in Apple Developer Portal",
+    "Create Android release keystore (see signingConfig.note)",
+    "Set up Apple App Store Connect listing",
+    "Set up Google Play Console listing",
+    "Create privacy policy page and add URL",
+    "Capture 6 screenshots per device size",
+    "Upload 1024x1024 app icon to App Store Connect",
+    "Upload 512x512 feature graphic to Google Play",
+    "Set iOS teamId in this config",
+    "Set iOS provisioningProfile in this config",
+    "Test release build on physical iOS device",
+    "Test release build on physical Android device",
+    "Run npx cap sync before each build",
+    "Increment buildNumber for each submission"
+  ]
+}

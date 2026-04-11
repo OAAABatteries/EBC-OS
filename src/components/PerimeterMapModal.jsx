@@ -59,7 +59,7 @@ export function PerimeterMapModal({ project, onSave, onClose }) {
     const pts = pointsRef.current;
     if (pts.length >= 2) {
       polygonRef.current = L.polygon(pts, {
-        color: "#3b82f6",
+        color: "var(--blue)",
         fillColor: "#3b82f6",
         fillOpacity: pts.length >= 3 ? 0.18 : 0,
         weight: 2,
@@ -119,7 +119,7 @@ export function PerimeterMapModal({ project, onSave, onClose }) {
     if (project.lat && project.lng) {
       centerMarkerRef.current = L.circleMarker([lat, lng], {
         radius: 5,
-        color: "#e09422",
+        color: "var(--amber)",
         fillColor: "#e09422",
         fillOpacity: 1,
         weight: 2,
@@ -195,7 +195,7 @@ export function PerimeterMapModal({ project, onSave, onClose }) {
           display: "flex",
           flexDirection: "column",
           background: "var(--bg2, #1a1f2e)",
-          borderRadius: 12,
+          borderRadius: "var(--radius-control)",
           border: "1px solid var(--border, rgba(255,255,255,0.1))",
           overflow: "hidden",
           boxShadow: "0 24px 80px rgba(0,0,0,0.7)",
@@ -211,40 +211,40 @@ export function PerimeterMapModal({ project, onSave, onClose }) {
           flexShrink: 0,
         }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: "var(--text)" }}>
+            <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)", color: "var(--text)" }}>
               Set Job Site Perimeter
             </div>
-            <div style={{ fontSize: 12, color: "var(--text-muted, #9ca3af)", marginTop: 2 }}>
+            <div style={{ fontSize: "var(--text-label)", color: "var(--text-muted, #9ca3af)", marginTop: "var(--space-1)" }}>
               {project.name}
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
             <button
               style={{
-                padding: "4px 10px",
-                borderRadius: 6,
+                padding: "var(--space-1) var(--space-3)",
+                borderRadius: "var(--radius-control)",
                 border: "1px solid var(--border)",
                 background: mapStyle === "dark" ? "#1d4ed8" : "transparent",
                 color: mapStyle === "dark" ? "#fff" : "var(--text-muted)",
-                fontSize: 12,
+                fontSize: "var(--text-label)",
                 cursor: "pointer",
               }}
               onClick={() => setMapStyle("dark")}
             >Dark</button>
             <button
               style={{
-                padding: "4px 10px",
-                borderRadius: 6,
+                padding: "var(--space-1) var(--space-3)",
+                borderRadius: "var(--radius-control)",
                 border: "1px solid var(--border)",
                 background: mapStyle === "satellite" ? "#1d4ed8" : "transparent",
                 color: mapStyle === "satellite" ? "#fff" : "var(--text-muted)",
-                fontSize: 12,
+                fontSize: "var(--text-label)",
                 cursor: "pointer",
               }}
               onClick={() => setMapStyle("satellite")}
             >Satellite</button>
             <button
-              style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--border)", background: "transparent", color: "var(--text-muted)", fontSize: 16, cursor: "pointer", lineHeight: 1 }}
+              style={{ padding: "var(--space-1) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid var(--border)", background: "transparent", color: "var(--text-muted)", fontSize: "var(--text-card)", cursor: "pointer", lineHeight: 1 }}
               onClick={onClose}
             >✕</button>
           </div>
@@ -257,7 +257,7 @@ export function PerimeterMapModal({ project, onSave, onClose }) {
           borderBottom: "1px solid rgba(59,130,246,0.15)",
           flexShrink: 0,
         }}>
-          <div style={{ fontSize: 12, color: "#93c5fd" }}>
+          <div style={{ fontSize: "var(--text-label)", color: "#93c5fd" }}>
             Tap/click to place points · Drag blue dots to adjust · Orange dot = project center
           </div>
         </div>
@@ -267,23 +267,23 @@ export function PerimeterMapModal({ project, onSave, onClose }) {
 
         {/* ── Controls ── */}
         <div style={{
-          padding: "12px 16px",
+          padding: "var(--space-3) var(--space-4)",
           borderTop: "1px solid var(--border, rgba(255,255,255,0.08))",
           display: "flex",
           alignItems: "center",
-          gap: 8,
+          gap: "var(--space-2)",
           flexWrap: "wrap",
           flexShrink: 0,
           background: "var(--bg3, #111827)",
         }}>
-          <div style={{ flex: 1, minWidth: 140, fontSize: 12, color: "var(--text-muted, #9ca3af)" }}>
+          <div style={{ flex: 1, minWidth: 140, fontSize: "var(--text-label)", color: "var(--text-muted, #9ca3af)" }}>
             {statusMsg}
           </div>
           <button
             style={{
-              padding: "6px 14px", borderRadius: 6, border: "1px solid var(--border)",
+              padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-control)", border: "1px solid var(--border)",
               background: "transparent", color: info.count === 0 ? "var(--text-dim, #4b5563)" : "var(--text-muted)",
-              fontSize: 13, cursor: info.count === 0 ? "not-allowed" : "pointer",
+              fontSize: "var(--text-label)", cursor: info.count === 0 ? "not-allowed" : "pointer",
             }}
             disabled={info.count === 0}
             onClick={handleUndo}
@@ -292,9 +292,9 @@ export function PerimeterMapModal({ project, onSave, onClose }) {
           </button>
           <button
             style={{
-              padding: "6px 14px", borderRadius: 6, border: "1px solid var(--border)",
+              padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-control)", border: "1px solid var(--border)",
               background: "transparent", color: info.count === 0 ? "var(--text-dim, #4b5563)" : "#f87171",
-              fontSize: 13, cursor: info.count === 0 ? "not-allowed" : "pointer",
+              fontSize: "var(--text-label)", cursor: info.count === 0 ? "not-allowed" : "pointer",
             }}
             disabled={info.count === 0}
             onClick={handleClear}
@@ -303,10 +303,10 @@ export function PerimeterMapModal({ project, onSave, onClose }) {
           </button>
           <button
             style={{
-              padding: "6px 16px", borderRadius: 6, border: "none",
+              padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-control)", border: "none",
               background: canSave ? "#1d4ed8" : "#374151",
               color: canSave ? "#fff" : "#6b7280",
-              fontSize: 13, fontWeight: 600, cursor: canSave ? "pointer" : "not-allowed",
+              fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", cursor: canSave ? "pointer" : "not-allowed",
             }}
             disabled={!canSave}
             onClick={handleSave}

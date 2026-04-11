@@ -10,12 +10,20 @@ describe('PortalHeader', () => {
     expect(header.className).toContain('header');
   });
 
-  it('renders eagle logo image with className "portal-header-logo"', () => {
+  it('renders an eagle logo image (wordmark)', () => {
     const { container } = render(<PortalHeader />);
-    const logo = container.querySelector('.portal-header-logo');
-    expect(logo).toBeTruthy();
-    expect(logo.tagName).toBe('IMG');
-    expect(logo.getAttribute('src')).toBe('/ebc-eagle-white.png');
+    const img = container.querySelector('header img');
+    expect(img).toBeTruthy();
+    expect(img.getAttribute('src')).toBe('/eagle-transparent.png');
+    expect(img.getAttribute('alt')).toBe('Eagles Brothers Constructors');
+  });
+
+  it('renders the EBC wordmark text in the header', () => {
+    const { container } = render(<PortalHeader />);
+    // Wordmark stacks EAGLES / BROTHERS / CONSTRUCTORS with <br>s.
+    expect(container.textContent).toContain('EAGLES');
+    expect(container.textContent).toContain('BROTHERS');
+    expect(container.textContent).toContain('CONSTRUCTORS');
   });
 
   it('variant="foreman" renders title prop in center slot', () => {
@@ -40,17 +48,22 @@ describe('PortalHeader', () => {
     expect(screen.getByTestId('lang-toggle')).toBeTruthy();
   });
 
-  it('variant="employee" renders logoutAction', () => {
-    const logoutEl = <button data-testid="logout-btn">Logout</button>;
-    render(<PortalHeader variant="employee" logoutAction={logoutEl} />);
-    expect(screen.getByTestId('logout-btn')).toBeTruthy();
+  it('variant="foreman" also renders languageToggle', () => {
+    const langToggle = <button data-testid="lang-toggle">ES</button>;
+    render(<PortalHeader variant="foreman" languageToggle={langToggle} />);
+    expect(screen.getByTestId('lang-toggle')).toBeTruthy();
   });
 
-  it('variant="driver" renders userName and logoutAction', () => {
-    const logoutEl = <button data-testid="driver-logout">Logout</button>;
-    render(<PortalHeader variant="driver" userName="Carlos M." logoutAction={logoutEl} />);
+  it('variant="driver" renders userName', () => {
+    render(<PortalHeader variant="driver" userName="Carlos M." />);
     expect(screen.getByText('Carlos M.')).toBeTruthy();
-    expect(screen.getByTestId('driver-logout')).toBeTruthy();
+  });
+
+  it('does NOT render a logout button (logout lives in settings)', () => {
+    render(
+      <PortalHeader variant="foreman" userName="Juan" logoutAction={<button data-testid="logout-btn">Logout</button>} />
+    );
+    expect(screen.queryByTestId('logout-btn')).toBeNull();
   });
 
   it('with projectSelector renders a sticky sub-strip div below the header', () => {
@@ -65,20 +78,6 @@ describe('PortalHeader', () => {
     const { container } = render(<PortalHeader />);
     // Fragment renders only the header — container has 1 child
     expect(container.childNodes.length).toBe(1);
-  });
-
-  it('renders eagle logo image regardless of t prop', () => {
-    const t = (key) => `TRANSLATED:${key}`;
-    const { container } = render(<PortalHeader t={t} />);
-    const logo = container.querySelector('.portal-header-logo');
-    expect(logo).toBeTruthy();
-    expect(logo.getAttribute('alt')).toBe('EBC Eagle');
-  });
-
-  it('variant="foreman" does NOT render languageToggle', () => {
-    const langToggle = <button data-testid="lang-toggle">ES</button>;
-    render(<PortalHeader variant="foreman" languageToggle={langToggle} />);
-    expect(screen.queryByTestId('lang-toggle')).toBeNull();
   });
 
   it('accepts additional className prop on header element', () => {

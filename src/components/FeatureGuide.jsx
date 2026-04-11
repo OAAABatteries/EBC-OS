@@ -275,7 +275,7 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "16px",
+            padding: "var(--space-4)",
           }}
           onClick={close}
         >
@@ -283,7 +283,7 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
             style={{
               background: "var(--bg2, #0f1c2e)",
               border: "1px solid var(--amber, #d4a537)",
-              borderRadius: 16,
+              borderRadius: "var(--radius-card)",
               padding: "28px 28px 20px",
               maxWidth: 440,
               width: "100%",
@@ -305,8 +305,8 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
                 border: "none",
                 color: "var(--text3, #6b7fa3)",
                 cursor: "pointer",
-                padding: 4,
-                borderRadius: 6,
+                padding: "var(--space-1)",
+                borderRadius: "var(--radius-control)",
                 display: "flex",
                 alignItems: "center",
               }}
@@ -317,12 +317,12 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
             {/* Step counter */}
             <div
               style={{
-                fontSize: 11,
-                fontWeight: 600,
+                fontSize: "var(--text-tab)",
+                fontWeight: "var(--weight-semi)",
                 letterSpacing: "0.8px",
                 textTransform: "uppercase",
                 color: "var(--amber, #d4a537)",
-                marginBottom: 12,
+                marginBottom: "var(--space-3)",
               }}
             >
               Step {step + 1} of {total}
@@ -333,8 +333,8 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
               style={{
                 height: 3,
                 background: "var(--border, #1e2d3b)",
-                borderRadius: 999,
-                marginBottom: 20,
+                borderRadius: "var(--radius-pill)",
+                marginBottom: "var(--space-5)",
                 overflow: "hidden",
               }}
             >
@@ -343,7 +343,7 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
                   height: "100%",
                   width: `${((step + 1) / total) * 100}%`,
                   background: "var(--amber, #d4a537)",
-                  borderRadius: 999,
+                  borderRadius: "var(--radius-pill)",
                   transition: "width 0.3s ease",
                   boxShadow: "0 0 8px rgba(212,165,55,0.5)",
                 }}
@@ -353,10 +353,10 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
             {/* Step title */}
             <div
               style={{
-                fontSize: 17,
-                fontWeight: 700,
+                fontSize: "var(--text-card)",
+                fontWeight: "var(--weight-bold)",
                 color: "var(--text, #e8edf5)",
-                marginBottom: 10,
+                marginBottom: "var(--space-3)",
                 letterSpacing: "0.2px",
                 lineHeight: 1.3,
               }}
@@ -367,10 +367,10 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
             {/* Step description */}
             <div
               style={{
-                fontSize: 14,
+                fontSize: "var(--text-secondary)",
                 color: "var(--text2, #9baac4)",
                 lineHeight: 1.6,
-                marginBottom: 24,
+                marginBottom: "var(--space-6)",
               }}
             >
               {current.description}
@@ -381,7 +381,7 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
+                gap: "var(--space-2)",
               }}
             >
               <button
@@ -390,18 +390,18 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 4,
-                  padding: "7px 14px",
+                  gap: "var(--space-1)",
+                  padding: "var(--space-2) var(--space-4)",
                   border: "1px solid var(--border, #1e2d3b)",
-                  borderRadius: 8,
+                  borderRadius: "var(--radius-control)",
                   background: "none",
                   color:
                     step === 0
                       ? "var(--text3, #6b7fa3)"
                       : "var(--text2, #9baac4)",
                   cursor: step === 0 ? "not-allowed" : "pointer",
-                  fontSize: 13,
-                  fontWeight: 500,
+                  fontSize: "var(--text-label)",
+                  fontWeight: "var(--weight-medium)",
                   opacity: step === 0 ? 0.4 : 1,
                   transition: "all 0.15s",
                 }}
@@ -418,15 +418,15 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 4,
-                    padding: "7px 16px",
+                    gap: "var(--space-1)",
+                    padding: "var(--space-2) var(--space-4)",
                     border: "none",
-                    borderRadius: 8,
+                    borderRadius: "var(--radius-control)",
                     background: "var(--amber, #d4a537)",
                     color: "#000",
                     cursor: "pointer",
-                    fontSize: 13,
-                    fontWeight: 600,
+                    fontSize: "var(--text-label)",
+                    fontWeight: "var(--weight-semi)",
                     boxShadow: "0 2px 8px rgba(212,165,55,0.3)",
                     transition: "all 0.15s",
                   }}
@@ -438,14 +438,14 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
                 <button
                   onClick={close}
                   style={{
-                    padding: "7px 16px",
+                    padding: "var(--space-2) var(--space-4)",
                     border: "none",
-                    borderRadius: 8,
+                    borderRadius: "var(--radius-control)",
                     background: "var(--amber, #d4a537)",
                     color: "#000",
                     cursor: "pointer",
-                    fontSize: 13,
-                    fontWeight: 600,
+                    fontSize: "var(--text-label)",
+                    fontWeight: "var(--weight-semi)",
                     boxShadow: "0 2px 8px rgba(212,165,55,0.3)",
                     transition: "all 0.15s",
                   }}
@@ -460,9 +460,9 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 16,
-                marginTop: 14,
-                paddingTop: 14,
+                gap: "var(--space-4)",
+                marginTop: "var(--space-4)",
+                paddingTop: "var(--space-4)",
                 borderTop: "1px solid var(--border, #1e2d3b)",
               }}
             >
@@ -473,7 +473,7 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
                   border: "none",
                   color: "var(--text3, #6b7fa3)",
                   cursor: "pointer",
-                  fontSize: 12,
+                  fontSize: "var(--text-label)",
                   padding: 0,
                   transition: "color 0.15s",
                 }}
@@ -485,12 +485,12 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 4,
+                  gap: "var(--space-1)",
                   background: "none",
                   border: "none",
                   color: "var(--text3, #6b7fa3)",
                   cursor: "pointer",
-                  fontSize: 12,
+                  fontSize: "var(--text-label)",
                   padding: 0,
                   marginLeft: "auto",
                   transition: "color 0.15s",
@@ -520,15 +520,15 @@ export function GuideButton({ onClick, label = "Guide" }) {
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 4,
+        gap: "var(--space-1)",
         padding: "4px 9px",
         border: `1px solid ${hovered ? "var(--amber, #d4a537)" : "var(--border, #1e2d3b)"}`,
-        borderRadius: 6,
+        borderRadius: "var(--radius-control)",
         background: hovered ? "var(--amber-dim, rgba(212,165,55,0.1))" : "none",
         color: hovered ? "var(--amber, #d4a537)" : "var(--text3, #6b7fa3)",
         cursor: "pointer",
-        fontSize: 12,
-        fontWeight: 500,
+        fontSize: "var(--text-label)",
+        fontWeight: "var(--weight-medium)",
         transition: "all 0.15s",
         whiteSpace: "nowrap",
       }}

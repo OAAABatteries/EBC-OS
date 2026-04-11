@@ -96,9 +96,9 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
       .sort((a, b) => b.date.localeCompare(a.date));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       {/* ── Summary Stats ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: "var(--space-2)" }}>
         <StatTile label={tr("Total Areas")} value={stats.total} t={t} />
         <StatTile label={tr("Complete")} value={stats.complete} color="var(--green)" t={t} />
         <StatTile label={tr("In Progress")} value={stats.inProgress} color="var(--amber)" t={t} />
@@ -107,7 +107,7 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
       </div>
 
       {/* ── Filters ── */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
         <div style={{ flex: "1 1 140px" }}>
           <FieldSelect label={tr("Floor")} value={filterFloor} onChange={(e) => setFilterFloor(e.target.value)} t={t}>
             <option value="all">{tr("All Floors")}</option>
@@ -129,8 +129,8 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
       {/* ── Area Cards ── */}
       {filtered.length === 0 && (
         <FieldCard>
-          <div style={{ textAlign: "center", padding: 24, color: "var(--text3)" }}>
-            <MapPin size={32} style={{ marginBottom: 8, opacity: 0.4 }} />
+          <div style={{ textAlign: "center", padding: "var(--space-6)", color: "var(--text3)" }}>
+            <MapPin size={32} style={{ marginBottom: "var(--space-2)", opacity: 0.4 }} />
             <div>{tr("No areas found for this project")}</div>
           </div>
         </FieldCard>
@@ -150,21 +150,21 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
             {/* Header row */}
             <div
               onClick={() => setExpandedId(isExpanded ? null : area.id)}
-              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", gap: 8 }}
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", gap: "var(--space-2)" }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontWeight: 700, fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>{area.name}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>{area.name}</span>
                   <span className={`badge ${STATUS_BADGE_MAP[area.status] || "badge-muted"}`}>
                     {tr(area.status)}
                   </span>
                 </div>
-                <div style={{ fontSize: "var(--text-sm, 12px)", color: "var(--text2)", marginTop: 2 }}>
+                <div style={{ fontSize: "var(--text-sm, 12px)", color: "var(--text2)", marginTop: "var(--space-1)" }}>
                   {tr("Floor")} {area.floor || "—"} &middot; {tr("Zone")} {area.zone || "—"} &middot; {empName(area.assignedTo)}
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: "var(--text-sm, 12px)", fontWeight: 700, color: pct >= 100 ? "var(--green)" : "var(--text)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                <span style={{ fontSize: "var(--text-sm, 12px)", fontWeight: "var(--weight-bold)", color: pct >= 100 ? "var(--green)" : "var(--text)" }}>
                   {pct}%
                 </span>
                 {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -172,20 +172,20 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
             </div>
 
             {/* Progress bar */}
-            <div style={{ height: 4, background: "var(--bg3)", borderRadius: 2, marginTop: 8, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${Math.min(pct, 100)}%`, background: pct >= 100 ? "var(--green)" : "var(--amber)", borderRadius: 2, transition: "width 0.3s" }} />
+            <div style={{ height: 4, background: "var(--bg3)", borderRadius: "var(--radius-control)", marginTop: "var(--space-2)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${Math.min(pct, 100)}%`, background: pct >= 100 ? "var(--green)" : "var(--amber)", borderRadius: "var(--radius-control)", transition: "width 0.3s" }} />
             </div>
 
             {/* Labor burn rate */}
             {budgetHrs > 0 && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
                 <span style={{ fontSize: "var(--text-sm, 12px)", color: "var(--text2)", minWidth: 70 }}>
                   {tr("Labor")}: {actualHrs}/{budgetHrs}h
                 </span>
-                <div style={{ flex: 1, height: 4, background: "var(--bg3)", borderRadius: 2, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${Math.min(laborBurnPct, 100)}%`, background: isOverBurning ? "var(--red)" : "var(--green)", borderRadius: 2, transition: "width 0.3s" }} />
+                <div style={{ flex: 1, height: 4, background: "var(--bg3)", borderRadius: "var(--radius-control)", overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${Math.min(laborBurnPct, 100)}%`, background: isOverBurning ? "var(--red)" : "var(--green)", borderRadius: "var(--radius-control)", transition: "width 0.3s" }} />
                 </div>
-                <span style={{ fontSize: "var(--text-sm, 12px)", fontWeight: 600, color: isOverBurning ? "var(--red)" : "var(--text2)", minWidth: 36, textAlign: "right" }}>
+                <span style={{ fontSize: "var(--text-sm, 12px)", fontWeight: "var(--weight-semi)", color: isOverBurning ? "var(--red)" : "var(--text2)", minWidth: 36, textAlign: "right" }}>
                   {laborBurnPct}%
                 </span>
                 {isOverBurning && (
@@ -196,19 +196,19 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
 
             {/* Expanded: Scope Items */}
             {isExpanded && (
-              <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ marginTop: "var(--space-3)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
                 {/* Scope items */}
-                <div style={{ fontSize: "var(--text-sm, 12px)", fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  <Layers size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />
+                <div style={{ fontSize: "var(--text-sm, 12px)", fontWeight: "var(--weight-bold)", color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <Layers size={12} style={{ marginRight: "var(--space-1)", verticalAlign: "middle" }} />
                   {tr("Scope Items")}
                 </div>
                 {(area.scopeItems || []).map((si, idx) => {
                   const siPct = si.budgetQty > 0 ? Math.round((si.installedQty / si.budgetQty) * 100) : 0;
                   return (
-                    <div key={idx} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div key={idx} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                       <span style={{ flex: "0 0 120px", fontSize: "var(--text-sm, 12px)", color: "var(--text)" }}>{si.trade}</span>
-                      <div style={{ flex: 1, height: 6, background: "var(--bg3)", borderRadius: 3, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${Math.min(siPct, 100)}%`, background: siPct >= 100 ? "var(--green)" : "var(--blue)", borderRadius: 3, transition: "width 0.3s" }} />
+                      <div style={{ flex: 1, height: 6, background: "var(--bg3)", borderRadius: "var(--radius-control)", overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${Math.min(siPct, 100)}%`, background: siPct >= 100 ? "var(--green)" : "var(--blue)", borderRadius: "var(--radius-control)", transition: "width 0.3s" }} />
                       </div>
                       <span style={{ flex: "0 0 80px", fontSize: "var(--text-sm, 12px)", color: "var(--text2)", textAlign: "right" }}>
                         {si.installedQty}/{si.budgetQty} {si.unit}
@@ -220,20 +220,20 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
                 {/* Production log entries */}
                 {logs.length > 0 && (
                   <>
-                    <div style={{ fontSize: "var(--text-sm, 12px)", fontWeight: 700, color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 8 }}>
-                      <BarChart3 size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />
+                    <div style={{ fontSize: "var(--text-sm, 12px)", fontWeight: "var(--weight-bold)", color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.05em", marginTop: "var(--space-2)" }}>
+                      <BarChart3 size={12} style={{ marginRight: "var(--space-1)", verticalAlign: "middle" }} />
                       {tr("Production Log")}
                     </div>
                     {logs.map((log) => (
-                      <div key={log.id} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: "var(--text-sm, 12px)" }}>
+                      <div key={log.id} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)", fontSize: "var(--text-sm, 12px)" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text)" }}>
                           <span>{log.date} &middot; {log.trade}</span>
-                          <span style={{ fontWeight: 600 }}>{log.qtyInstalled} {log.unit}</span>
+                          <span style={{ fontWeight: "var(--weight-semi)" }}>{log.qtyInstalled} {log.unit}</span>
                         </div>
-                        <div style={{ color: "var(--text3)", marginTop: 2 }}>
+                        <div style={{ color: "var(--text3)", marginTop: "var(--space-1)" }}>
                           {log.laborHours}h &middot; {log.crewSize} crew &middot; {log.enteredBy}
                         </div>
-                        {log.notes && <div style={{ color: "var(--text2)", marginTop: 2, fontStyle: "italic" }}>{log.notes}</div>}
+                        {log.notes && <div style={{ color: "var(--text2)", marginTop: "var(--space-1)", fontStyle: "italic" }}>{log.notes}</div>}
                       </div>
                     ))}
                   </>
@@ -241,7 +241,7 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
 
                 {/* Area notes */}
                 {area.notes && (
-                  <div style={{ fontSize: "var(--text-sm, 12px)", color: "var(--text2)", fontStyle: "italic", marginTop: 4 }}>
+                  <div style={{ fontSize: "var(--text-sm, 12px)", color: "var(--text2)", fontStyle: "italic", marginTop: "var(--space-1)" }}>
                     {area.notes}
                   </div>
                 )}

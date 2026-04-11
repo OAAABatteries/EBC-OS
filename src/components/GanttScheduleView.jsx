@@ -190,10 +190,10 @@ export function GanttScheduleView({ projects, onProjectClick }) {
 
   if (ganttProjects.length === 0) {
     return (
-      <div style={{ textAlign: "center", padding: 40 }}>
-        <div style={{ marginBottom: 12, opacity: 0.3, display: "flex", justifyContent: "center" }}><BarChart2 style={{ width: 48, height: 48 }} /></div>
+      <div style={{ textAlign: "center", padding: "var(--space-10)" }}>
+        <div style={{ marginBottom: "var(--space-3)", opacity: 0.3, display: "flex", justifyContent: "center" }}><BarChart2 style={{ width: 48, height: 48 }} /></div>
         <div style={{ color: "var(--text2)" }}>No projects with schedule dates</div>
-        <div style={{ color: "var(--text3)", fontSize: 13, marginTop: 4 }}>Add start/end dates to projects to see the Gantt timeline</div>
+        <div style={{ color: "var(--text3)", fontSize: "var(--text-label)", marginTop: "var(--space-1)" }}>Add start/end dates to projects to see the Gantt timeline</div>
       </div>
     );
   }
@@ -201,28 +201,28 @@ export function GanttScheduleView({ projects, onProjectClick }) {
   return (
     <div>
       {/* Stats Bar */}
-      <div style={{ display: "flex", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
-        <div className="card" style={{ padding: "10px 16px", flex: "1 1 120px", minWidth: 120 }}>
-          <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", letterSpacing: 1 }}>Active Projects</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--green)", fontFamily: "var(--font-mono)" }}>{stats.active}</div>
+      <div style={{ display: "flex", gap: "var(--space-4)", marginBottom: "var(--space-4)", flexWrap: "wrap" }}>
+        <div className="card" style={{ padding: "var(--space-3) var(--space-4)", flex: "1 1 120px", minWidth: 120 }}>
+          <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", textTransform: "uppercase", letterSpacing: 1 }}>Active Projects</div>
+          <div style={{ fontSize: "var(--text-title)", fontWeight: "var(--weight-bold)", color: "var(--green)", fontFamily: "var(--font-mono)" }}>{stats.active}</div>
         </div>
-        <div className="card" style={{ padding: "10px 16px", flex: "1 1 120px", minWidth: 120 }}>
-          <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", letterSpacing: 1 }}>Crew Deployed</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--blue)", fontFamily: "var(--font-mono)" }}>{stats.totalCrew}</div>
+        <div className="card" style={{ padding: "var(--space-3) var(--space-4)", flex: "1 1 120px", minWidth: 120 }}>
+          <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", textTransform: "uppercase", letterSpacing: 1 }}>Crew Deployed</div>
+          <div style={{ fontSize: "var(--text-title)", fontWeight: "var(--weight-bold)", color: "var(--blue)", fontFamily: "var(--font-mono)" }}>{stats.totalCrew}</div>
         </div>
-        <div className="card" style={{ padding: "10px 16px", flex: "1 1 120px", minWidth: 120 }}>
-          <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", letterSpacing: 1 }}>Backlog</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--amber)", fontFamily: "var(--font-mono)" }}>{stats.backlogWeeks}<span style={{ fontSize: 12, fontWeight: 400 }}> wks</span></div>
+        <div className="card" style={{ padding: "var(--space-3) var(--space-4)", flex: "1 1 120px", minWidth: 120 }}>
+          <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", textTransform: "uppercase", letterSpacing: 1 }}>Backlog</div>
+          <div style={{ fontSize: "var(--text-title)", fontWeight: "var(--weight-bold)", color: "var(--amber)", fontFamily: "var(--font-mono)" }}>{stats.backlogWeeks}<span style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-normal)" }}> wks</span></div>
         </div>
-        <div className="card" style={{ padding: "10px 16px", flex: "1 1 120px", minWidth: 120 }}>
-          <div style={{ fontSize: 11, color: "var(--text3)", textTransform: "uppercase", letterSpacing: 1 }}>Scheduled</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--text)", fontFamily: "var(--font-mono)" }}>{ganttProjects.length}<span style={{ fontSize: 12, fontWeight: 400, color: "var(--text3)" }}> / {projects.length}</span></div>
+        <div className="card" style={{ padding: "var(--space-3) var(--space-4)", flex: "1 1 120px", minWidth: 120 }}>
+          <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", textTransform: "uppercase", letterSpacing: 1 }}>Scheduled</div>
+          <div style={{ fontSize: "var(--text-title)", fontWeight: "var(--weight-bold)", color: "var(--text)", fontFamily: "var(--font-mono)" }}>{ganttProjects.length}<span style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-normal)", color: "var(--text3)" }}> / {projects.length}</span></div>
         </div>
       </div>
 
       {/* Zoom Toggle + Legend */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-        <div style={{ display: "flex", gap: 4 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)", flexWrap: "wrap", gap: "var(--space-2)" }}>
+        <div style={{ display: "flex", gap: "var(--space-1)" }}>
           <button
             className={`btn btn-sm ${zoom === "month" ? "btn-primary" : "btn-ghost"}`}
             onClick={() => setZoom("month")}
@@ -232,15 +232,15 @@ export function GanttScheduleView({ projects, onProjectClick }) {
             onClick={() => setZoom("week")}
           >Week</button>
         </div>
-        <div style={{ display: "flex", gap: 12, fontSize: 11, color: "var(--text2)", alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "var(--space-3)", fontSize: "var(--text-tab)", color: "var(--text2)", alignItems: "center", flexWrap: "wrap" }}>
           {Object.entries(STATUS_COLORS).map(([key, color]) => (
-            <span key={key} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ width: 10, height: 10, borderRadius: 2, background: color, display: "inline-block" }} />
+            <span key={key} style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+              <span style={{ width: 10, height: 10, borderRadius: "var(--radius-control)", background: color, display: "inline-block" }} />
               {STATUS_LABELS[key]}
             </span>
           ))}
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 2, height: 14, background: "#ef4444", display: "inline-block" }} />
+          <span style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+            <span style={{ width: 2, height: 14, background: "var(--red)", display: "inline-block" }} />
             Today
           </span>
         </div>
@@ -252,8 +252,8 @@ export function GanttScheduleView({ projects, onProjectClick }) {
         <div style={{ display: "flex", borderBottom: "1px solid var(--border)" }}>
           {/* Label header */}
           <div style={{
-            minWidth: LABEL_WIDTH, maxWidth: LABEL_WIDTH, padding: "8px 12px",
-            fontSize: 11, fontWeight: 600, color: "var(--text2)", textTransform: "uppercase",
+            minWidth: LABEL_WIDTH, maxWidth: LABEL_WIDTH, padding: "var(--space-2) var(--space-3)",
+            fontSize: "var(--text-tab)", fontWeight: "var(--weight-semi)", color: "var(--text2)", textTransform: "uppercase",
             letterSpacing: 1, borderRight: "1px solid var(--border)", background: "var(--bg3)",
             position: "sticky", left: 0, zIndex: 3,
           }}>
@@ -268,8 +268,8 @@ export function GanttScheduleView({ projects, onProjectClick }) {
           >
             {columns.map((col, i) => (
               <div key={i} style={{
-                minWidth: colWidth, maxWidth: colWidth, padding: "8px 6px",
-                fontSize: 11, color: "var(--text2)", textAlign: "center",
+                minWidth: colWidth, maxWidth: colWidth, padding: "var(--space-2) var(--space-2)",
+                fontSize: "var(--text-tab)", color: "var(--text2)", textAlign: "center",
                 borderRight: "1px solid var(--border)",
                 fontFamily: "var(--font-mono)",
               }}>
@@ -299,7 +299,7 @@ export function GanttScheduleView({ projects, onProjectClick }) {
               <div key={p.id}>
                 <div
                   style={{
-                    height: ROW_HEIGHT, padding: "6px 12px", display: "flex", flexDirection: "column",
+                    height: ROW_HEIGHT, padding: "var(--space-2) var(--space-3)", display: "flex", flexDirection: "column",
                     justifyContent: "center", borderBottom: "1px solid var(--border)",
                     borderRight: "1px solid var(--border)", cursor: "pointer",
                     transition: "background 0.15s",
@@ -309,25 +309,25 @@ export function GanttScheduleView({ projects, onProjectClick }) {
                   onMouseLeave={(e) => e.currentTarget.style.background = ""}
                 >
                   <div style={{
-                    fontSize: 12, fontWeight: 600, color: "var(--text)",
+                    fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--text)",
                     whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                     fontFamily: "var(--font-head)",
                   }}>
                     {p.name}
                   </div>
-                  <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text3)", marginTop: "var(--space-1)" }}>
                     {p.gc} {p.contract ? `\u00B7 ${fmtK(p.contract)}` : ""}
                   </div>
                 </div>
                 {/* Crew row */}
                 {p.teamSize > 0 && (
                   <div style={{
-                    height: CREW_ROW_HEIGHT, padding: "2px 12px",
+                    height: CREW_ROW_HEIGHT, padding: "var(--space-1) var(--space-3)",
                     borderBottom: "1px solid var(--border)", borderRight: "1px solid var(--border)",
                     display: "flex", alignItems: "center",
-                    fontSize: 10, color: "var(--text3)", background: "var(--bg)",
+                    fontSize: "var(--text-xs)", color: "var(--text3)", background: "var(--bg)",
                   }}>
-                    <HardHat style={{ width: 12, height: 12, marginRight: 4 }} /> {p.teamSize} team
+                    <HardHat style={{ width: 12, height: 12, marginRight: "var(--space-1)" }} /> {p.teamSize} team
                   </div>
                 )}
               </div>
@@ -357,14 +357,14 @@ export function GanttScheduleView({ projects, onProjectClick }) {
                 left: todayOffset,
                 top: 0, bottom: 0,
                 width: 2,
-                background: "#ef4444",
+                background: "var(--red)",
                 zIndex: 1,
                 pointerEvents: "none",
               }}>
                 <div style={{
                   position: "absolute", top: -2, left: -12,
-                  fontSize: 9, color: "#ef4444", fontWeight: 700,
-                  background: "var(--bg2)", padding: "1px 4px", borderRadius: 3,
+                  fontSize: "var(--text-xs)", color: "var(--red)", fontWeight: "var(--weight-bold)",
+                  background: "var(--bg2)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)",
                   whiteSpace: "nowrap",
                 }}>
                   TODAY
@@ -406,7 +406,7 @@ export function GanttScheduleView({ projects, onProjectClick }) {
                         height: ROW_HEIGHT - 18,
                         background: `${color}22`,
                         border: `1.5px solid ${color}`,
-                        borderRadius: 4,
+                        borderRadius: "var(--radius-control)",
                         cursor: "pointer",
                         overflow: "hidden",
                         transition: "filter 0.15s",
@@ -439,7 +439,7 @@ export function GanttScheduleView({ projects, onProjectClick }) {
                       {barWidth > 60 && (
                         <span style={{
                           position: "relative", zIndex: 1,
-                          fontSize: 10, fontWeight: 600, color: "var(--text)",
+                          fontSize: "var(--text-xs)", fontWeight: "var(--weight-semi)", color: "var(--text)",
                           padding: "0 6px", whiteSpace: "nowrap", overflow: "hidden",
                           textOverflow: "ellipsis",
                         }}>
@@ -466,9 +466,9 @@ export function GanttScheduleView({ projects, onProjectClick }) {
                         height: CREW_ROW_HEIGHT - 6,
                         background: `${color}11`,
                         border: `1px dashed ${color}55`,
-                        borderRadius: 3,
+                        borderRadius: "var(--radius-control)",
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 9, color: "var(--text3)",
+                        fontSize: "var(--text-xs)", color: "var(--text3)",
                       }}>
                         {p.teamSize} team
                       </div>
@@ -496,21 +496,21 @@ export function GanttScheduleView({ projects, onProjectClick }) {
           transform: "translate(-50%, -100%)",
           background: "var(--bg4)",
           border: "1px solid var(--border2)",
-          borderRadius: 8,
-          padding: "8px 12px",
+          borderRadius: "var(--radius-control)",
+          padding: "var(--space-2) var(--space-3)",
           zIndex: 1000,
           pointerEvents: "none",
           minWidth: 200,
           boxShadow: "var(--shadow)",
         }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", marginBottom: 4, fontFamily: "var(--font-head)" }}>
+          <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-bold)", color: "var(--text)", marginBottom: "var(--space-1)", fontFamily: "var(--font-head)" }}>
             {tooltip.project.name}
           </div>
-          <div style={{ fontSize: 11, color: "var(--text2)", marginBottom: 2 }}>{tooltip.project.gc}</div>
-          <div style={{ display: "flex", gap: 12, fontSize: 10, color: "var(--text3)", marginTop: 4 }}>
+          <div style={{ fontSize: "var(--text-tab)", color: "var(--text2)", marginBottom: "var(--space-1)" }}>{tooltip.project.gc}</div>
+          <div style={{ display: "flex", gap: "var(--space-3)", fontSize: "var(--text-xs)", color: "var(--text3)", marginTop: "var(--space-1)" }}>
             <span>{fmtDate(tooltip.project.startDate)} - {fmtDate(tooltip.project.endDate)}</span>
           </div>
-          <div style={{ display: "flex", gap: 12, fontSize: 10, marginTop: 4 }}>
+          <div style={{ display: "flex", gap: "var(--space-3)", fontSize: "var(--text-xs)", marginTop: "var(--space-1)" }}>
             <span style={{ color: STATUS_COLORS[tooltip.project.ganttStatus] }}>{STATUS_LABELS[tooltip.project.ganttStatus]}</span>
             <span style={{ color: "var(--text2)" }}>{tooltip.project.progress || 0}% complete</span>
             {tooltip.project.teamSize > 0 && <span style={{ color: "var(--text2)" }}>{tooltip.project.teamSize} team</span>}
@@ -521,7 +521,7 @@ export function GanttScheduleView({ projects, onProjectClick }) {
 
       {/* Undated projects note */}
       {undatedCount > 0 && (
-        <div style={{ marginTop: 12, fontSize: 12, color: "var(--text3)", fontStyle: "italic" }}>
+        <div style={{ marginTop: "var(--space-3)", fontSize: "var(--text-label)", color: "var(--text3)", fontStyle: "italic" }}>
           {undatedCount} project{undatedCount !== 1 ? "s" : ""} not shown (missing start date). Edit projects to add schedule dates.
         </div>
       )}

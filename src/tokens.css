@@ -11,6 +11,10 @@
   --space-12: 48px;
 
   /* ── TYPOGRAPHY SCALE (role-based, fixed line heights) ────── */
+  /* Stat: score/grade/KPI numerals */
+  --text-stat:     32px;
+  --lh-stat:       36px;
+
   /* Hero: clock display, live numerals */
   --text-hero:     48px;
   --lh-hero:       52px;
@@ -18,6 +22,10 @@
   /* Screen title: "My Schedule", "Request Material" */
   --text-title:    28px;
   --lh-title:      32px;
+
+  /* Subtitle: subsection headers, enlarged labels */
+  --text-subtitle: 20px;
+  --lh-subtitle:   26px;
 
   /* Section title: "Appearance", "Notifications" */
   --text-section:  18px;
@@ -53,11 +61,11 @@
   --weight-semi:   600;
   --weight-bold:   700;
 
-  /* Letter spacing */
-  --tracking-hero:    -0.02em;
-  --tracking-title:   -0.01em;
-  --tracking-normal:   0;
-  --tracking-label:    0.01em;
+  /* Letter spacing (tightened for Barlow) */
+  --tracking-hero:    -0.03em;
+  --tracking-title:   -0.02em;
+  --tracking-normal:  -0.005em;
+  --tracking-label:    0.02em;
 
   /* ── CREW VIEW OVERRIDES ──────────────────────────────────── */
   /* Applied via .crew-view class on EmployeeView root */
@@ -73,27 +81,27 @@
 }
 :root {
   /* ── BORDER RADIUS (three levels only) ──────────────────── */
-  --radius-control: 12px;  /* inputs, buttons, chips, compact elements */
-  --radius-card:    16px;  /* cards, grouped containers, schedule blocks */
-  --radius-sheet:   24px;  /* bottom sheets, large modals, major overlays */
+  --radius-control:  6px;  /* inputs, buttons, chips, compact elements */
+  --radius-card:    10px;  /* cards, grouped containers, schedule blocks */
+  --radius-sheet:   16px;  /* bottom sheets, large modals, major overlays */
   --radius-pill:    99px;  /* badge pills only */
 
-  /* Legacy aliases (for migration — map to nearest spec value) */
-  --radius-xs:   4px;   /* deprecated: use --radius-control */
-  --radius-sm:  12px;   /* remapped from 6px to 12px */
-  --radius:     16px;   /* remapped from 10px to 16px */
-  --radius-lg:  12px;   /* same as --radius-control */
-  --radius-xl:  16px;   /* same as --radius-card */
+  /* Legacy aliases (map to nearest spec value) */
+  --radius-xs:   4px;
+  --radius-sm:   6px;   /* matches --radius-control */
+  --radius:     10px;   /* matches --radius-card */
+  --radius-lg:   6px;   /* matches --radius-control */
+  --radius-xl:  10px;   /* matches --radius-card */
 
-  /* ── SHADOW SCALE (soft, nearly invisible in light mode) ── */
-  --shadow-sm:  0 1px 2px rgba(0,0,0,0.06);
-  --shadow-md:  0 2px 6px rgba(0,0,0,0.08);
-  --shadow-lg:  0 4px 12px rgba(0,0,0,0.12);
+  /* ── SHADOW SCALE ────────────────────────────────────────── */
+  --shadow-sm:  0 1px 2px rgba(0,0,0,0.10);
+  --shadow-md:  0 2px 6px rgba(0,0,0,0.15);
+  --shadow-lg:  0 4px 12px rgba(0,0,0,0.25);
 
   /* ── CONTROL HEIGHTS ────────────────────────────────────── */
-  --control-primary: 52px;  /* text inputs, primary buttons, selects */
-  --touch-min:       44px;  /* secondary buttons, list rows, tab items */
-  --control-row:     56px;  /* list rows, bottom sheet items */
+  --control-primary: 48px;  /* text inputs, primary buttons, selects */
+  --touch-min:       40px;  /* secondary buttons, list rows, tab items */
+  --control-row:     52px;  /* list rows, bottom sheet items */
   --control-textarea: 120px;
 
   /* ── FOCUS RING ──────────────────────────────────────────── */
@@ -105,4 +113,23 @@
   --ease-standard:   cubic-bezier(.4, 0, .2, 1);
   --transition-micro: var(--duration-micro) var(--ease-standard);
   --transition-state: var(--duration-state) var(--ease-standard);
+}
+
+/* ── TABLET TIER (≥768px) ─────────────────────────────────── */
+/* Tighter radius, denser spacing — utilitarian workspace feel */
+@media (min-width: 768px) {
+  :root {
+    --radius-control:  4px;
+    --radius-card:     8px;
+    --radius-sheet:   12px;
+    --radius-xs:   3px;
+    --radius-sm:   4px;
+    --radius:      8px;
+    --radius-lg:   4px;
+    --radius-xl:   8px;
+
+    /* Tighter tracking for denser layout */
+    --tracking-title:  -0.015em;
+    --tracking-normal: -0.003em;
+  }
 }

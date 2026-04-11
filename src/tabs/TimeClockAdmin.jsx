@@ -465,7 +465,7 @@ export function TimeClockAdmin({ app }) {
 
       {/* ═══ AI ANOMALY PANEL ═══ */}
       {showAnomaly && anomalyResult && (
-        <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+        <div className="card" style={{ padding: "var(--space-5)", marginBottom: "var(--space-4)" }}>
           <div className="flex-between mb-12">
             <div className="text-sm font-semi">AI Anomaly Scan Results</div>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowAnomaly(false)}>Close</button>
@@ -475,10 +475,10 @@ export function TimeClockAdmin({ app }) {
 
           {/* Anomalies */}
           {anomalyResult.anomalies?.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: "var(--space-4)" }}>
               <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Anomalies Detected ({anomalyResult.anomalies.length})</div>
               {anomalyResult.anomalies.map((a, i) => (
-                <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: a.severity === "critical" ? "rgba(239,68,68,0.08)" : "var(--bg3)", border: `1px solid ${a.severity === "critical" ? "rgba(239,68,68,0.2)" : "var(--border)"}` }}>
+                <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: a.severity === "critical" ? "rgba(239,68,68,0.08)" : "var(--bg3)", border: `1px solid ${a.severity === "critical" ? "rgba(239,68,68,0.2)" : "var(--border)"}` }}>
                   <div className="flex-between">
                     <span className="text-sm font-semi">{a.employee} — {a.date}</span>
                     <div className="flex gap-4">
@@ -495,9 +495,9 @@ export function TimeClockAdmin({ app }) {
 
           {/* Overtime Risk */}
           {anomalyResult.overtimeRisk?.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: "var(--space-4)" }}>
               <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Overtime Risk</div>
-              <table className="data-table" style={{ fontSize: 13 }}>
+              <table className="data-table" style={{ fontSize: "var(--text-label)" }}>
                 <thead><tr><th>Employee</th><th>Current Hrs</th><th>Projected Weekly</th><th>Alert</th></tr></thead>
                 <tbody>
                   {anomalyResult.overtimeRisk.map((o, i) => (
@@ -515,10 +515,10 @@ export function TimeClockAdmin({ app }) {
 
           {/* Productivity */}
           {anomalyResult.productivity?.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: "var(--space-4)" }}>
               <div className="text-sm font-semi mb-8">Productivity by Project</div>
               {anomalyResult.productivity.map((p, i) => (
-                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
                   <div className="flex-between">
                     <span className="text-sm font-semi">{p.project}</span>
                     <span className={`badge ${p.efficiency === "high" ? "badge-green" : p.efficiency === "low" ? "badge-red" : "badge-muted"}`}>{p.efficiency}</span>
@@ -534,7 +534,7 @@ export function TimeClockAdmin({ app }) {
             <div>
               <div className="text-sm font-semi mb-8">Recommendations</div>
               {anomalyResult.recommendations.map((r, i) => (
-                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
                   <div className="flex-between">
                     <span className="text-sm">{r.action}</span>
                     <div className="flex gap-4">
@@ -553,7 +553,7 @@ export function TimeClockAdmin({ app }) {
       {/* ═══ LIVE STATUS ═══ */}
       {sub === "Live Status" && (
         <div>
-          <div className="kpi-grid" style={{ marginBottom: 20 }}>
+          <div className="kpi-grid" style={{ marginBottom: "var(--space-5)" }}>
             <div className="kpi-card">
               <div className="kpi-label">Clocked In Now</div>
               <div className="kpi-value">{liveEntries.length}</div>
@@ -616,13 +616,13 @@ export function TimeClockAdmin({ app }) {
       {sub === "Time Log" && (
         <div>
           {/* ── Payroll Export ── */}
-          <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
-            <span className="font-semi" style={{ fontSize: 13 }}>Payroll Export</span>
+          <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "center", marginBottom: "var(--space-4)", flexWrap: "wrap" }}>
+            <span className="font-semi" style={{ fontSize: "var(--text-label)" }}>Payroll Export</span>
             <input type="date" value={toDateStr(currentWeekStart)}
               onChange={e => { const d = new Date(e.target.value); if (!isNaN(d)) setWeekOffset(Math.round((getWeekStart(d) - getWeekStart(new Date())) / 604800000)); }}
-              style={{ padding: "4px 8px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)", fontSize: 12 }} />
+              style={{ padding: "var(--space-1) var(--space-2)", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text)", fontSize: "var(--text-label)" }} />
             <span className="text-sm text-dim">Week of {fmtWeekDate(currentWeekStart)} — {fmtWeekDate(weekEnd)}</span>
-            <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+            <div style={{ marginLeft: "auto", display: "flex", gap: "var(--space-2)" }}>
               <button className="btn btn-ghost btn-sm" onClick={() => {
                 const ws = currentWeekStart; const we = new Date(ws); we.setDate(we.getDate() + 7);
                 const filtered = timeEntries.filter(e => { const d = new Date(e.clockIn); return d >= ws && d < we && e.clockOut; });
@@ -680,7 +680,7 @@ export function TimeClockAdmin({ app }) {
             const totReg = empList.reduce((s, e) => s + e.reg, 0);
             const totOT = empList.reduce((s, e) => s + e.ot, 0);
             return (
-              <div className="table-wrap" style={{ marginBottom: 16 }}>
+              <div className="table-wrap" style={{ marginBottom: "var(--space-4)" }}>
                 <table className="data-table">
                   <thead><tr><th>Employee</th><th>Projects</th><th style={{ textAlign: "right" }}>Regular</th><th style={{ textAlign: "right" }}>OT</th><th style={{ textAlign: "right" }}>Total</th></tr></thead>
                   <tbody>
@@ -693,7 +693,7 @@ export function TimeClockAdmin({ app }) {
                         <td className="font-mono text-sm text-amber" style={{ textAlign: "right" }}>{e.total.toFixed(1)}h</td>
                       </tr>
                     ))}
-                    <tr style={{ borderTop: "2px solid var(--amber)", fontWeight: 700 }}>
+                    <tr style={{ borderTop: "2px solid var(--amber)", fontWeight: "var(--weight-bold)" }}>
                       <td colSpan={2}>TOTAL</td>
                       <td className="font-mono" style={{ textAlign: "right" }}>{totReg.toFixed(1)}h</td>
                       <td className="font-mono" style={{ textAlign: "right", color: totOT > 0 ? "var(--red)" : "inherit" }}>{totOT.toFixed(1)}h</td>
@@ -705,7 +705,7 @@ export function TimeClockAdmin({ app }) {
             );
           })()}
 
-          <div className="section-title" style={{ marginBottom: 8 }}>All Time Entries</div>
+          <div className="section-title" style={{ marginBottom: "var(--space-2)" }}>All Time Entries</div>
           {allEntries.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon"><ClipboardList style={{ width: 40, height: 40 }} /></div>
@@ -743,7 +743,7 @@ export function TimeClockAdmin({ app }) {
                       <td>
                         <button
                           className={`badge ${entry.isTM ? "badge-amber" : "badge-muted"}`}
-                          style={{ cursor: "pointer", fontSize: 10, border: "none", padding: "2px 8px" }}
+                          style={{ cursor: "pointer", fontSize: "var(--text-xs)", border: "none", padding: "var(--space-1) var(--space-2)" }}
                           onClick={() => {
                             app.setTimeEntries(prev => prev.map(e => e.id === entry.id ? {
                               ...e, isTM: !e.isTM,
@@ -755,7 +755,7 @@ export function TimeClockAdmin({ app }) {
                         >
                           {entry.isTM ? "T&M ✓" : "—"}
                         </button>
-                        {entry.tmTicketId && <span className="text-xs text-muted" style={{ display: "block", marginTop: 2 }}>#{entry.tmTicketId.slice(0, 6)}</span>}
+                        {entry.tmTicketId && <span className="text-xs text-muted" style={{ display: "block", marginTop: "var(--space-1)" }}>#{entry.tmTicketId.slice(0, 6)}</span>}
                       </td>
                     </tr>
                   ))}
@@ -826,13 +826,13 @@ export function TimeClockAdmin({ app }) {
                   // Fallback: show in prompt
                   window.prompt("Copy this dispatch:", dispatchMsg);
                 });
-              }}><ClipboardList style={{ width: 14, height: 14, display: "inline", verticalAlign: "middle", marginRight: 4 }} />Send Dispatch</button>
+              }}><ClipboardList style={{ width: 14, height: 14, display: "inline", verticalAlign: "middle", marginRight: "var(--space-1)" }} />Send Dispatch</button>
             </div>
           </div>
 
           {/* AI Crew Optimizer Panel */}
           {showCrewOpt && teamOptResult && (
-            <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+            <div className="card" style={{ padding: "var(--space-5)", marginBottom: "var(--space-4)" }}>
               <div className="flex-between mb-12">
                 <div className="text-sm font-semi">AI Crew Optimization</div>
                 <button className="btn btn-ghost btn-sm" onClick={() => setShowCrewOpt(false)}>Close</button>
@@ -842,13 +842,13 @@ export function TimeClockAdmin({ app }) {
               <div className="flex gap-16 mb-12" style={{ alignItems: "center" }}>
                 <div style={{ textAlign: "center" }}>
                   <div className="text-xs text-muted">Efficiency</div>
-                  <div style={{ fontSize: 32, fontWeight: 700, color: teamOptResult.score >= 70 ? "var(--green)" : teamOptResult.score >= 40 ? "var(--amber)" : "var(--red)" }}>
+                  <div style={{ fontSize: "var(--text-stat)", fontWeight: "var(--weight-bold)", color: teamOptResult.score >= 70 ? "var(--green)" : teamOptResult.score >= 40 ? "var(--amber)" : "var(--red)" }}>
                     {teamOptResult.score}/100
                   </div>
                 </div>
                 <div style={{ textAlign: "center" }}>
                   <div className="text-xs text-muted">Grade</div>
-                  <div style={{ fontSize: 32, fontWeight: 700, color: "var(--amber)" }}>{teamOptResult.grade}</div>
+                  <div style={{ fontSize: "var(--text-stat)", fontWeight: "var(--weight-bold)", color: "var(--amber)" }}>{teamOptResult.grade}</div>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div className="text-sm text-muted">{teamOptResult.summary}</div>
@@ -857,10 +857,10 @@ export function TimeClockAdmin({ app }) {
 
               {/* Gaps */}
               {teamOptResult.gaps?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div style={{ marginBottom: "var(--space-3)" }}>
                   <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Crew Gaps ({teamOptResult.gaps.length})</div>
                   {teamOptResult.gaps.map((g, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
                       <div className="flex-between">
                         <span className="text-sm font-semi">{g.project} — {g.day}</span>
                         <span className={`badge ${g.priority === "critical" ? "badge-red" : g.priority === "high" ? "badge-amber" : "badge-muted"}`}>{g.priority}</span>
@@ -873,10 +873,10 @@ export function TimeClockAdmin({ app }) {
 
               {/* Suggested Moves */}
               {teamOptResult.moves?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div style={{ marginBottom: "var(--space-3)" }}>
                   <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Suggested Reassignments</div>
                   {teamOptResult.moves.map((m, i) => (
-                    <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "var(--bg3)", border: "1px solid var(--border)" }}>
+                    <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: "var(--bg3)", border: "1px solid var(--border)" }}>
                       <div className="text-sm font-semi">{m.employee}</div>
                       <div className="text-xs text-muted mt-2">{m.from} → {m.to} ({m.day})</div>
                       <div className="text-xs mt-2" style={{ color: "var(--green)" }}>{m.reason}</div>
@@ -887,10 +887,10 @@ export function TimeClockAdmin({ app }) {
 
               {/* Unassigned */}
               {teamOptResult.unassigned?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div style={{ marginBottom: "var(--space-3)" }}>
                   <div className="text-sm font-semi mb-8">Unassigned Employees</div>
                   {teamOptResult.unassigned.map((u, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
                       <span className="text-sm font-semi">{u.employee}</span>
                       <span className="text-xs text-muted ml-8">Days: {(u.days || []).join(", ")}</span>
                       <div className="text-xs mt-2" style={{ color: "var(--green)" }}>{u.recommendation}</div>
@@ -904,7 +904,7 @@ export function TimeClockAdmin({ app }) {
                 <div>
                   <div className="text-sm font-semi mb-8">Balancing Tips</div>
                   {teamOptResult.balancing.map((b, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
                       <div className="text-sm">{b.observation}</div>
                       <div className="text-xs text-muted mt-2">{b.suggestion} — {b.benefit}</div>
                     </div>
@@ -914,7 +914,7 @@ export function TimeClockAdmin({ app }) {
             </div>
           )}
 
-          <div className="kpi-grid" style={{ marginBottom: 20 }}>
+          <div className="kpi-grid" style={{ marginBottom: "var(--space-5)" }}>
             <div className="kpi-card">
               <div className="kpi-label">Scheduled This Week</div>
               <div className="kpi-value">
@@ -961,7 +961,7 @@ export function TimeClockAdmin({ app }) {
             const weeksOfWork = weeklyOverhead > 0 ? backlog / weeklyOverhead : 0;
 
             return (
-              <div className="card" style={{ padding: 16, marginBottom: 20 }}>
+              <div className="card" style={{ padding: "var(--space-4)", marginBottom: "var(--space-5)" }}>
                 <div className="text-sm font-semi mb-8">Backlog & Projected Overhead</div>
                 <div className="flex gap-16 flex-wrap">
                   <div>
@@ -998,7 +998,7 @@ export function TimeClockAdmin({ app }) {
                   <th>Employee</th>
                   {DAY_LABELS.slice(0, 5).map((d, i) => (
                     <th key={d} style={{ textAlign: "center" }}>
-                      {d}<br /><span style={{ fontWeight: 400, fontSize: 9 }}>{fmtWeekDate(getDayDate(currentWeekStart, i))}</span>
+                      {d}<br /><span style={{ fontWeight: "var(--weight-normal)", fontSize: "var(--text-xs)" }}>{fmtWeekDate(getDayDate(currentWeekStart, i))}</span>
                     </th>
                   ))}
                 </tr>
@@ -1020,7 +1020,7 @@ export function TimeClockAdmin({ app }) {
                           onClick={() => setAssignModal({ empId: emp.id, empName: emp.name, dayKey, current: assignment })}
                         >
                           {assignment ? (
-                            <span className="badge badge-amber" style={{ fontSize: 10 }}>
+                            <span className="badge badge-amber" style={{ fontSize: "var(--text-xs)" }}>
                               {(assignment.projectName || "").slice(0, 18)}
                             </span>
                           ) : (
@@ -1050,9 +1050,9 @@ export function TimeClockAdmin({ app }) {
                   value={projectSearch}
                   onChange={(e) => setProjectSearch(e.target.value)}
                   autoFocus
-                  style={{ marginBottom: 8 }}
+                  style={{ marginBottom: "var(--space-2)" }}
                 />
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 400, overflowY: "auto" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", maxHeight: 400, overflowY: "auto" }}>
                   <button
                     className="btn btn-ghost"
                     style={{ justifyContent: "flex-start" }}
@@ -1088,7 +1088,7 @@ export function TimeClockAdmin({ app }) {
         <div>
           <div className="flex-between mb-16">
             <div className="flex gap-12" style={{ alignItems: "center" }}>
-              <label className="form-label" style={{ margin: 0 }}>Date</label>
+              <label className="form-label" style={{ margin: "0" }}>Date</label>
               <input
                 type="date"
                 className="form-input"
@@ -1097,41 +1097,41 @@ export function TimeClockAdmin({ app }) {
                 style={{ width: 180 }}
               />
             </div>
-            <button className="primary" style={{ fontSize: 11, padding: "4px 12px" }} onClick={attLoading ? undefined : () => showAtt ? setShowAtt(false) : attResult ? setShowAtt(true) : runAttendanceAnalysis()} disabled={attLoading}>
+            <button className="primary" style={{ fontSize: "var(--text-tab)", padding: "var(--space-1) var(--space-3)" }} onClick={attLoading ? undefined : () => showAtt ? setShowAtt(false) : attResult ? setShowAtt(true) : runAttendanceAnalysis()} disabled={attLoading}>
               {attLoading ? "Analyzing..." : "AI Attendance"}
             </button>
           </div>
 
           {showAtt && attResult && (
-            <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 16, marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "var(--space-4)", marginBottom: "var(--space-4)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
                   <ClipboardList style={{ width: 22, height: 22 }} />
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>Attendance: {attResult.attendanceScore}/100 ({attResult.grade})</div>
-                    <div style={{ fontSize: 12, color: "var(--text3)" }}>{attResult.summary}</div>
+                    <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)" }}>Attendance: {attResult.attendanceScore}/100 ({attResult.grade})</div>
+                    <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>{attResult.summary}</div>
                   </div>
                 </div>
-                <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "var(--text3)" }} onClick={() => setShowAtt(false)}>✕</button>
+                <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--text-card)", color: "var(--text3)" }} onClick={() => setShowAtt(false)}>✕</button>
               </div>
 
               {attResult.patterns?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--blue)", marginBottom: 6 }}>Attendance Patterns</div>
+                <div style={{ marginBottom: "var(--space-3)" }}>
+                  <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--blue)", marginBottom: "var(--space-2)" }}>Attendance Patterns</div>
                   {attResult.patterns.map((p, i) => (
-                    <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(59,130,246,0.08)", borderRadius: "var(--radius)" }}>
-                      <span style={{ fontWeight: 500 }}>{p.pattern}:</span> {p.frequency} — Impact: {p.impact} — <em>{p.action}</em>
+                    <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(59,130,246,0.08)", borderRadius: "var(--radius)" }}>
+                      <span style={{ fontWeight: "var(--weight-medium)" }}>{p.pattern}:</span> {p.frequency} — Impact: {p.impact} — <em>{p.action}</em>
                     </div>
                   ))}
                 </div>
               )}
 
               {attResult.atRiskEmployees?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--red)", marginBottom: 6 }}>At-Risk Employees</div>
+                <div style={{ marginBottom: "var(--space-3)" }}>
+                  <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--red)", marginBottom: "var(--space-2)" }}>At-Risk Employees</div>
                   {attResult.atRiskEmployees.map((e, i) => (
-                    <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(239,68,68,0.08)", borderRadius: "var(--radius)", borderLeft: "3px solid var(--red)" }}>
-                      <div style={{ fontWeight: 500 }}>{e.name} — {e.issue} ({e.occurrences})</div>
+                    <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(239,68,68,0.08)", borderRadius: "var(--radius)", borderLeft: "3px solid var(--red)" }}>
+                      <div style={{ fontWeight: "var(--weight-medium)" }}>{e.name} — {e.issue} ({e.occurrences})</div>
                       <div style={{ color: "var(--text3)", fontStyle: "italic" }}>{e.recommendation}</div>
                     </div>
                   ))}
@@ -1139,22 +1139,22 @@ export function TimeClockAdmin({ app }) {
               )}
 
               {attResult.costOfAbsenteeism && (
-                <div style={{ marginBottom: 12, padding: "8px 12px", background: "rgba(245,158,11,0.08)", borderRadius: "var(--radius)" }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#f59e0b", marginBottom: 4 }}>Cost of Absenteeism</div>
-                  <div style={{ fontSize: 12 }}>
+                <div style={{ marginBottom: "var(--space-3)", padding: "var(--space-2) var(--space-3)", background: "rgba(245,158,11,0.08)", borderRadius: "var(--radius)" }}>
+                  <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--amber)", marginBottom: "var(--space-1)" }}>Cost of Absenteeism</div>
+                  <div style={{ fontSize: "var(--text-label)" }}>
                     Daily: <strong>{attResult.costOfAbsenteeism.dailyCost}</strong> · Weekly: <strong>{attResult.costOfAbsenteeism.weeklyCost}</strong>
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>{attResult.costOfAbsenteeism.recommendation}</div>
+                  <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", marginTop: "var(--space-1)" }}>{attResult.costOfAbsenteeism.recommendation}</div>
                 </div>
               )}
 
               {attResult.improvements?.length > 0 && (
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--green)", marginBottom: 6 }}>Improvements</div>
+                  <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--green)", marginBottom: "var(--space-2)" }}>Improvements</div>
                   {attResult.improvements.map((imp, i) => (
-                    <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(16,185,129,0.08)", borderRadius: "var(--radius)", display: "flex", justifyContent: "space-between" }}>
+                    <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(16,185,129,0.08)", borderRadius: "var(--radius)", display: "flex", justifyContent: "space-between" }}>
                       <span>{imp.action} — {imp.expectedImprovement}</span>
-                      <span style={{ fontSize: 10, color: imp.priority === "high" ? "var(--red)" : "#f59e0b", whiteSpace: "nowrap" }}>{imp.priority}</span>
+                      <span style={{ fontSize: "var(--text-xs)", color: imp.priority === "high" ? "var(--red)" : "#f59e0b", whiteSpace: "nowrap" }}>{imp.priority}</span>
                     </div>
                   ))}
                 </div>
@@ -1162,7 +1162,7 @@ export function TimeClockAdmin({ app }) {
             </div>
           )}
 
-          <div className="kpi-grid" style={{ marginBottom: 20 }}>
+          <div className="kpi-grid" style={{ marginBottom: "var(--space-5)" }}>
             <div className="kpi-card">
               <div className="kpi-label">On Time</div>
               <div className="kpi-value" style={{ color: "var(--green)" }}>{verifyCounts["on-time"]}</div>
@@ -1230,31 +1230,31 @@ export function TimeClockAdmin({ app }) {
       {/* ═══ LABOR BACKLOG ═══ */}
       {sub === "Labor Backlog" && (
         <div>
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-            <button className="primary" style={{ fontSize: 11, padding: "4px 12px" }} onClick={burnLoading ? undefined : () => showBurn ? setShowBurn(false) : burnResult ? setShowBurn(true) : runBurnPredict()} disabled={burnLoading}>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "var(--space-2)" }}>
+            <button className="primary" style={{ fontSize: "var(--text-tab)", padding: "var(--space-1) var(--space-3)" }} onClick={burnLoading ? undefined : () => showBurn ? setShowBurn(false) : burnResult ? setShowBurn(true) : runBurnPredict()} disabled={burnLoading}>
               {burnLoading ? "Predicting..." : "AI Burn Predictor"}
             </button>
           </div>
 
           {showBurn && burnResult && (
-            <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 16, marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "var(--space-4)", marginBottom: "var(--space-4)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
                   <Flame style={{ width: 22, height: 22 }} />
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>Backlog Health: {burnResult.backlogHealth}/100 ({burnResult.grade})</div>
-                    <div style={{ fontSize: 12, color: "var(--text3)" }}>{burnResult.summary}</div>
+                    <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)" }}>Backlog Health: {burnResult.backlogHealth}/100 ({burnResult.grade})</div>
+                    <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>{burnResult.summary}</div>
                   </div>
                 </div>
-                <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "var(--text3)" }} onClick={() => setShowBurn(false)}>✕</button>
+                <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--text-card)", color: "var(--text3)" }} onClick={() => setShowBurn(false)}>✕</button>
               </div>
 
               {burnResult.criticalProjects?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--red)", marginBottom: 6 }}>Critical Projects</div>
+                <div style={{ marginBottom: "var(--space-3)" }}>
+                  <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--red)", marginBottom: "var(--space-2)" }}>Critical Projects</div>
                   {burnResult.criticalProjects.map((p, i) => (
-                    <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(239,68,68,0.08)", borderRadius: "var(--radius)", borderLeft: "3px solid var(--red)" }}>
-                      <div style={{ fontWeight: 500 }}>{p.project} — {p.risk}</div>
+                    <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(239,68,68,0.08)", borderRadius: "var(--radius)", borderLeft: "3px solid var(--red)" }}>
+                      <div style={{ fontWeight: "var(--weight-medium)" }}>{p.project} — {p.risk}</div>
                       <div style={{ color: "var(--text3)" }}>{p.weeksUntilCrisis}w until crisis · <em>{p.intervention}</em></div>
                     </div>
                   ))}
@@ -1262,10 +1262,10 @@ export function TimeClockAdmin({ app }) {
               )}
 
               {burnResult.burnPredictions?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--blue)", marginBottom: 6 }}>Burn Predictions</div>
+                <div style={{ marginBottom: "var(--space-3)" }}>
+                  <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--blue)", marginBottom: "var(--space-2)" }}>Burn Predictions</div>
                   <div className="table-wrap">
-                    <table className="data-table" style={{ fontSize: 12 }}>
+                    <table className="data-table" style={{ fontSize: "var(--text-label)" }}>
                       <thead>
                         <tr>
                           <th>Project</th>
@@ -1278,11 +1278,11 @@ export function TimeClockAdmin({ app }) {
                       <tbody>
                         {burnResult.burnPredictions.map((b, i) => (
                           <tr key={i}>
-                            <td style={{ fontWeight: 500 }}>{b.project}</td>
+                            <td style={{ fontWeight: "var(--weight-medium)" }}>{b.project}</td>
                             <td className="font-mono">{b.currentBurnRate}</td>
                             <td>{b.predictedCompletion}</td>
                             <td><span className={`badge ${b.budgetOutcome === "over" ? "badge-red" : b.budgetOutcome === "under" ? "badge-green" : "badge-amber"}`}>{b.budgetOutcome} ({b.variance})</span></td>
-                            <td style={{ color: "var(--text3)", fontSize: 11 }}>{b.action}</td>
+                            <td style={{ color: "var(--text3)", fontSize: "var(--text-tab)" }}>{b.action}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1292,9 +1292,9 @@ export function TimeClockAdmin({ app }) {
               )}
 
               {burnResult.laborAllocation && (
-                <div style={{ marginBottom: 12, padding: "8px 12px", background: "rgba(139,92,246,0.08)", borderRadius: "var(--radius)" }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#8b5cf6", marginBottom: 4 }}>Labor Allocation Summary</div>
-                  <div style={{ fontSize: 12, display: "flex", gap: 16, flexWrap: "wrap" }}>
+                <div style={{ marginBottom: "var(--space-3)", padding: "var(--space-2) var(--space-3)", background: "rgba(139,92,246,0.08)", borderRadius: "var(--radius)" }}>
+                  <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--purple)", marginBottom: "var(--space-1)" }}>Labor Allocation Summary</div>
+                  <div style={{ fontSize: "var(--text-label)", display: "flex", gap: "var(--space-4)", flexWrap: "wrap" }}>
                     <span>Budgeted: <strong>${burnResult.laborAllocation.totalBudgeted?.toLocaleString()}</strong></span>
                     <span>Consumed: <strong>${burnResult.laborAllocation.totalConsumed?.toLocaleString()}</strong></span>
                     <span>Rate: <strong>{burnResult.laborAllocation.consumptionRate}</strong></span>
@@ -1305,11 +1305,11 @@ export function TimeClockAdmin({ app }) {
 
               {burnResult.efficiencyTips?.length > 0 && (
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--green)", marginBottom: 6 }}>Efficiency Tips</div>
+                  <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--green)", marginBottom: "var(--space-2)" }}>Efficiency Tips</div>
                   {burnResult.efficiencyTips.map((t, i) => (
-                    <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(16,185,129,0.08)", borderRadius: "var(--radius)", display: "flex", justifyContent: "space-between" }}>
+                    <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(16,185,129,0.08)", borderRadius: "var(--radius)", display: "flex", justifyContent: "space-between" }}>
                       <span>{t.tip} — {t.implementation}</span>
-                      <span style={{ fontWeight: 600, color: "var(--green)", whiteSpace: "nowrap" }}>{t.savingsPotential}</span>
+                      <span style={{ fontWeight: "var(--weight-semi)", color: "var(--green)", whiteSpace: "nowrap" }}>{t.savingsPotential}</span>
                     </div>
                   ))}
                 </div>
@@ -1317,7 +1317,7 @@ export function TimeClockAdmin({ app }) {
             </div>
           )}
 
-          <div className="kpi-grid" style={{ marginBottom: 20 }}>
+          <div className="kpi-grid" style={{ marginBottom: "var(--space-5)" }}>
             <div className="kpi-card">
               <div className="kpi-label">Total Labor Budget</div>
               <div className="kpi-value">{fmt(laborData.reduce((s, p) => s + (p.laborBudget || 0), 0))}</div>
@@ -1379,34 +1379,34 @@ export function TimeClockAdmin({ app }) {
       {/* ═══ OVERHEAD ═══ */}
       {sub === "Overhead" && (
         <div>
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-            <button className="primary" style={{ fontSize: 11, padding: "4px 12px" }} onClick={ohLoading ? undefined : () => showOh ? setShowOh(false) : ohResult ? setShowOh(true) : runOverheadProject()} disabled={ohLoading}>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "var(--space-2)" }}>
+            <button className="primary" style={{ fontSize: "var(--text-tab)", padding: "var(--space-1) var(--space-3)" }} onClick={ohLoading ? undefined : () => showOh ? setShowOh(false) : ohResult ? setShowOh(true) : runOverheadProject()} disabled={ohLoading}>
               {ohLoading ? "Projecting..." : "AI Cost Projector"}
             </button>
           </div>
 
           {showOh && ohResult && (
-            <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 16, marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "var(--space-4)", marginBottom: "var(--space-4)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
                   <DollarSign style={{ width: 22, height: 22 }} />
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>Cost Health: {ohResult.healthScore}/100 ({ohResult.grade})</div>
-                    <div style={{ fontSize: 12, color: "var(--text3)" }}>{ohResult.summary}</div>
+                    <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)" }}>Cost Health: {ohResult.healthScore}/100 ({ohResult.grade})</div>
+                    <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>{ohResult.summary}</div>
                   </div>
                 </div>
-                <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "var(--text3)" }} onClick={() => setShowOh(false)}>✕</button>
+                <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--text-card)", color: "var(--text3)" }} onClick={() => setShowOh(false)}>✕</button>
               </div>
 
               {ohResult.weeklyForecast?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--blue)", marginBottom: 6 }}>4-Week Forecast</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 6 }}>
+                <div style={{ marginBottom: "var(--space-3)" }}>
+                  <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--blue)", marginBottom: "var(--space-2)" }}>4-Week Forecast</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "var(--space-2)" }}>
                     {ohResult.weeklyForecast.map((w, i) => (
-                      <div key={i} style={{ fontSize: 12, padding: "8px 10px", background: "rgba(59,130,246,0.08)", borderRadius: "var(--radius)", textAlign: "center" }}>
-                        <div style={{ fontWeight: 500, marginBottom: 2 }}>{w.week}</div>
-                        <div style={{ fontSize: 14, fontWeight: 700 }}>${w.projectedBurn?.toLocaleString()}</div>
-                        <div style={{ fontSize: 10, color: w.trend === "up" ? "var(--red)" : w.trend === "down" ? "var(--green)" : "var(--text3)" }}>{w.trend === "up" ? "↑ Rising" : w.trend === "down" ? "↓ Falling" : "→ Stable"}</div>
+                      <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", background: "rgba(59,130,246,0.08)", borderRadius: "var(--radius)", textAlign: "center" }}>
+                        <div style={{ fontWeight: "var(--weight-medium)", marginBottom: "var(--space-1)" }}>{w.week}</div>
+                        <div style={{ fontSize: "var(--text-secondary)", fontWeight: "var(--weight-bold)" }}>${w.projectedBurn?.toLocaleString()}</div>
+                        <div style={{ fontSize: "var(--text-xs)", color: w.trend === "up" ? "var(--red)" : w.trend === "down" ? "var(--green)" : "var(--text3)" }}>{w.trend === "up" ? "↑ Rising" : w.trend === "down" ? "↓ Falling" : "→ Stable"}</div>
                       </div>
                     ))}
                   </div>
@@ -1414,11 +1414,11 @@ export function TimeClockAdmin({ app }) {
               )}
 
               {ohResult.burnRateAlerts?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--red)", marginBottom: 6 }}>Burn Rate Alerts</div>
+                <div style={{ marginBottom: "var(--space-3)" }}>
+                  <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--red)", marginBottom: "var(--space-2)" }}>Burn Rate Alerts</div>
                   {ohResult.burnRateAlerts.map((a, i) => (
-                    <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(239,68,68,0.08)", borderRadius: "var(--radius)", borderLeft: "3px solid var(--red)" }}>
-                      <div style={{ fontWeight: 500 }}>{a.project} — {a.burnRate}</div>
+                    <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(239,68,68,0.08)", borderRadius: "var(--radius)", borderLeft: "3px solid var(--red)" }}>
+                      <div style={{ fontWeight: "var(--weight-medium)" }}>{a.project} — {a.burnRate}</div>
                       <div style={{ color: "var(--text3)" }}>{a.alert} · {a.weeksUntilBudgetExhausted}w until budget exhausted</div>
                       <div style={{ color: "var(--text2)", fontStyle: "italic" }}>{a.action}</div>
                     </div>
@@ -1427,36 +1427,36 @@ export function TimeClockAdmin({ app }) {
               )}
 
               {ohResult.costOptimizations?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--green)", marginBottom: 6 }}>Cost Optimizations</div>
+                <div style={{ marginBottom: "var(--space-3)" }}>
+                  <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--green)", marginBottom: "var(--space-2)" }}>Cost Optimizations</div>
                   {ohResult.costOptimizations.map((c, i) => (
-                    <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(16,185,129,0.08)", borderRadius: "var(--radius)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(16,185,129,0.08)", borderRadius: "var(--radius)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span>{c.action}</span>
-                      <span style={{ fontWeight: 600, color: "var(--green)", whiteSpace: "nowrap" }}>{c.potentialSaving} · {c.effort}</span>
+                      <span style={{ fontWeight: "var(--weight-semi)", color: "var(--green)", whiteSpace: "nowrap" }}>{c.potentialSaving} · {c.effort}</span>
                     </div>
                   ))}
                 </div>
               )}
 
               {ohResult.quarterProjection && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#8b5cf6", marginBottom: 6 }}>Quarter Projection</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
-                    <div style={{ fontSize: 12, padding: 8, background: "rgba(139,92,246,0.08)", borderRadius: "var(--radius)", textAlign: "center" }}>
-                      <div style={{ color: "var(--text3)", fontSize: 10 }}>Spend</div>
-                      <div style={{ fontWeight: 700 }}>${ohResult.quarterProjection.projectedSpend?.toLocaleString()}</div>
+                <div style={{ marginBottom: "var(--space-3)" }}>
+                  <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--purple)", marginBottom: "var(--space-2)" }}>Quarter Projection</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--space-2)" }}>
+                    <div style={{ fontSize: "var(--text-label)", padding: "var(--space-2)", background: "rgba(139,92,246,0.08)", borderRadius: "var(--radius)", textAlign: "center" }}>
+                      <div style={{ color: "var(--text3)", fontSize: "var(--text-xs)" }}>Spend</div>
+                      <div style={{ fontWeight: "var(--weight-bold)" }}>${ohResult.quarterProjection.projectedSpend?.toLocaleString()}</div>
                     </div>
-                    <div style={{ fontSize: 12, padding: 8, background: "rgba(139,92,246,0.08)", borderRadius: "var(--radius)", textAlign: "center" }}>
-                      <div style={{ color: "var(--text3)", fontSize: 10 }}>Revenue</div>
-                      <div style={{ fontWeight: 700 }}>${ohResult.quarterProjection.projectedRevenue?.toLocaleString()}</div>
+                    <div style={{ fontSize: "var(--text-label)", padding: "var(--space-2)", background: "rgba(139,92,246,0.08)", borderRadius: "var(--radius)", textAlign: "center" }}>
+                      <div style={{ color: "var(--text3)", fontSize: "var(--text-xs)" }}>Revenue</div>
+                      <div style={{ fontWeight: "var(--weight-bold)" }}>${ohResult.quarterProjection.projectedRevenue?.toLocaleString()}</div>
                     </div>
-                    <div style={{ fontSize: 12, padding: 8, background: "rgba(139,92,246,0.08)", borderRadius: "var(--radius)", textAlign: "center" }}>
-                      <div style={{ color: "var(--text3)", fontSize: 10 }}>Profit</div>
-                      <div style={{ fontWeight: 700, color: "var(--green)" }}>${ohResult.quarterProjection.projectedProfit?.toLocaleString()}</div>
+                    <div style={{ fontSize: "var(--text-label)", padding: "var(--space-2)", background: "rgba(139,92,246,0.08)", borderRadius: "var(--radius)", textAlign: "center" }}>
+                      <div style={{ color: "var(--text3)", fontSize: "var(--text-xs)" }}>Profit</div>
+                      <div style={{ fontWeight: "var(--weight-bold)", color: "var(--green)" }}>${ohResult.quarterProjection.projectedProfit?.toLocaleString()}</div>
                     </div>
-                    <div style={{ fontSize: 12, padding: 8, background: "rgba(139,92,246,0.08)", borderRadius: "var(--radius)", textAlign: "center" }}>
-                      <div style={{ color: "var(--text3)", fontSize: 10 }}>Margin</div>
-                      <div style={{ fontWeight: 700 }}>{ohResult.quarterProjection.profitMargin}</div>
+                    <div style={{ fontSize: "var(--text-label)", padding: "var(--space-2)", background: "rgba(139,92,246,0.08)", borderRadius: "var(--radius)", textAlign: "center" }}>
+                      <div style={{ color: "var(--text3)", fontSize: "var(--text-xs)" }}>Margin</div>
+                      <div style={{ fontWeight: "var(--weight-bold)" }}>{ohResult.quarterProjection.profitMargin}</div>
                     </div>
                   </div>
                 </div>
@@ -1464,10 +1464,10 @@ export function TimeClockAdmin({ app }) {
 
               {ohResult.profitRisks?.length > 0 && (
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#f59e0b", marginBottom: 6 }}>Profit Risks</div>
+                  <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--amber)", marginBottom: "var(--space-2)" }}>Profit Risks</div>
                   {ohResult.profitRisks.map((r, i) => (
-                    <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(245,158,11,0.08)", borderRadius: "var(--radius)" }}>
-                      <span style={{ fontWeight: 500 }}>{r.risk}:</span> {r.impact} — <em>{r.mitigation}</em>
+                    <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(245,158,11,0.08)", borderRadius: "var(--radius)" }}>
+                      <span style={{ fontWeight: "var(--weight-medium)" }}>{r.risk}:</span> {r.impact} — <em>{r.mitigation}</em>
                     </div>
                   ))}
                 </div>
@@ -1475,7 +1475,7 @@ export function TimeClockAdmin({ app }) {
             </div>
           )}
 
-          <div className="kpi-grid" style={{ marginBottom: 20 }}>
+          <div className="kpi-grid" style={{ marginBottom: "var(--space-5)" }}>
             <div className="kpi-card">
               <div className="kpi-label">Weekly Burn Rate</div>
               <div className="kpi-value">{fmt(overheadData.weeklyBurn)}</div>
@@ -1544,7 +1544,7 @@ export function TimeClockAdmin({ app }) {
 
         return (
           <div>
-            <div className="kpi-grid" style={{ marginBottom: 20 }}>
+            <div className="kpi-grid" style={{ marginBottom: "var(--space-5)" }}>
               <div className="kpi-card"><div className="kpi-label">Pending</div><div className="kpi-value" style={{ color: "var(--amber)" }}>{counts.requested}</div></div>
               <div className="kpi-card"><div className="kpi-label">Approved</div><div className="kpi-value" style={{ color: "var(--blue)" }}>{counts.approved}</div></div>
               <div className="kpi-card"><div className="kpi-label">In Transit</div><div className="kpi-value" style={{ color: "var(--amber)" }}>{counts["in-transit"]}</div></div>
@@ -1637,11 +1637,11 @@ export function TimeClockAdmin({ app }) {
         <div>
           <div className="flex-between mb-16">
             <span className="text-sm text-muted">{employees.length} employees</span>
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: "var(--space-2)" }}>
               {canManageHires && (
                 <button
                   className="btn btn-sm"
-                  style={{ background: "rgba(224,148,34,0.12)", color: "#e09422", border: "1px solid rgba(224,148,34,0.3)" }}
+                  style={{ background: "rgba(224,148,34,0.12)", color: "var(--amber)", border: "1px solid rgba(224,148,34,0.3)" }}
                   onClick={() => setShowNewHire(true)}
                 >
                   New Hire Onboarding
@@ -1750,10 +1750,21 @@ export function TimeClockAdmin({ app }) {
                   </div>
                   <div className="form-group">
                     <label className="form-label">
-                      <input type="checkbox" checked={editEmp.active} onChange={(e) => setEditEmp({ ...editEmp, active: e.target.checked })} style={{ marginRight: 6 }} />
+                      <input type="checkbox" checked={editEmp.active} onChange={(e) => setEditEmp({ ...editEmp, active: e.target.checked })} style={{ marginRight: "var(--space-2)" }} />
                       Active
                     </label>
                   </div>
+                  {editEmp.role === "Foreman" && (
+                    <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                      <label className="form-label" title="When ON, this foreman can see $ rates, markup, and totals on T&M tickets. Default: OFF (show scope/hours/qty only).">
+                        <input type="checkbox" checked={!!editEmp.trustedLead} onChange={(e) => setEditEmp({ ...editEmp, trustedLead: e.target.checked })} style={{ marginRight: "var(--space-2)" }} />
+                        Trusted Lead — show $ costs, rates, markup on T&M tickets
+                      </label>
+                      <div style={{ fontSize: "var(--text-xs, 11px)", color: "var(--text3)", marginTop: "var(--space-1)", marginLeft: "24px" }}>
+                        Default OFF. Only enable for foremen you trust with billing-rate data.
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="modal-actions">
                   <button className="btn btn-ghost" onClick={() => setEditEmp(null)}>Cancel</button>

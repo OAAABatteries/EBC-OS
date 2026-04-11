@@ -10,11 +10,11 @@ import { flushSyncQueue } from "../hooks/useSyncedState";
 const BAR = {
   display: "flex",
   alignItems: "center",
-  gap: 8,
-  padding: "6px 14px",
+  gap: "var(--space-2)",
+  padding: "var(--space-2) var(--space-4)",
   color: "#fff",
-  fontSize: 13,
-  borderRadius: 6,
+  fontSize: "var(--text-label)",
+  borderRadius: "var(--radius-control)",
   margin: "0 0 8px 0",
 };
 
@@ -22,10 +22,10 @@ const BTN = {
   background: "rgba(255,255,255,0.2)",
   border: "1px solid rgba(255,255,255,0.4)",
   color: "#fff",
-  borderRadius: 4,
-  padding: "2px 10px",
+  borderRadius: "var(--radius-control)",
+  padding: "var(--space-1) var(--space-3)",
   cursor: "pointer",
-  fontSize: 12,
+  fontSize: "var(--text-label)",
 };
 
 export function SyncStatus({ syncStatus, network }) {
@@ -41,15 +41,15 @@ export function SyncStatus({ syncStatus, network }) {
   // ── Offline banner (highest priority) ──
   if (online === false) {
     return (
-      <div style={{ ...BAR, background: "#6b7280" }}>
-        <span style={{ fontSize: 16 }}>&#9676;</span>
+      <div style={{ ...BAR, background: "var(--text3)" }}>
+        <span style={{ fontSize: "var(--text-card)" }}>&#9676;</span>
         <span><strong>Offline</strong> &mdash; changes saved locally, will sync when connected</span>
         {pendingCount > 0 && (
           <span style={{
             background: "rgba(255,255,255,0.25)",
-            borderRadius: 10,
-            padding: "1px 8px",
-            fontSize: 11,
+            borderRadius: "var(--radius-control)",
+            padding: "var(--space-1) var(--space-2)",
+            fontSize: "var(--text-tab)",
             marginLeft: "auto",
           }}>
             {pendingCount} pending
@@ -66,7 +66,7 @@ export function SyncStatus({ syncStatus, network }) {
         <span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>&#8635;</span>
         <span>Syncing data...</span>
         {pendingCount > 0 && (
-          <span style={{ opacity: 0.8, marginLeft: "auto", fontSize: 11 }}>
+          <span style={{ opacity: 0.8, marginLeft: "auto", fontSize: "var(--text-tab)" }}>
             {pendingCount} queued
           </span>
         )}
@@ -109,7 +109,7 @@ export function SyncStatus({ syncStatus, network }) {
         </button>
         <button
           onClick={() => setDismissed(true)}
-          style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: 16, padding: "0 4px" }}
+          style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: "var(--text-card)", padding: "0 4px" }}
         >
           &times;
         </button>

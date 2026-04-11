@@ -113,21 +113,21 @@ export function ProductionEntry({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
       {/* Area header */}
       {currentArea ? (
         <div
           style={{
             background: "var(--bg3)",
-            borderRadius: 12,
-            padding: "14px 16px",
+            borderRadius: "var(--radius-control)",
+            padding: "var(--space-4) var(--space-4)",
             borderLeft: "4px solid var(--accent, #3b82f6)",
           }}
         >
           <div
             style={{
               fontSize: "var(--text-lg, 16px)",
-              fontWeight: 700,
+              fontWeight: "var(--weight-bold)",
               color: "var(--text)",
             }}
           >
@@ -137,7 +137,7 @@ export function ProductionEntry({
             style={{
               fontSize: "var(--text-sm, 12px)",
               color: "var(--text2)",
-              marginTop: 2,
+              marginTop: "var(--space-1)",
             }}
           >
             {tr("Floor")} {currentArea.floor} &middot; {tr("Zone")}{" "}
@@ -148,11 +148,11 @@ export function ProductionEntry({
         <div
           style={{
             background: "var(--bg3)",
-            borderRadius: 12,
-            padding: "14px 16px",
+            borderRadius: "var(--radius-control)",
+            padding: "var(--space-4) var(--space-4)",
           }}
         >
-          <div style={{ color: "var(--text2)", fontSize: "var(--text-sm, 12px)", marginBottom: 8 }}>
+          <div style={{ color: "var(--text2)", fontSize: "var(--text-sm, 12px)", marginBottom: "var(--space-2)" }}>
             {tr("No area assigned for today")}
           </div>
           <FieldSelect
@@ -175,18 +175,18 @@ export function ProductionEntry({
           style={{
             background: "rgba(34,197,94,0.12)",
             border: "1px solid var(--green, #22c55e)",
-            borderRadius: 10,
-            padding: "12px 16px",
+            borderRadius: "var(--radius-control)",
+            padding: "var(--space-3) var(--space-4)",
             display: "flex",
             alignItems: "center",
-            gap: 10,
+            gap: "var(--space-3)",
           }}
         >
           <CheckCircle size={22} color="var(--green, #22c55e)" />
           <div>
             <div
               style={{
-                fontWeight: 700,
+                fontWeight: "var(--weight-bold)",
                 color: "var(--green, #22c55e)",
                 fontSize: "var(--text-base, 14px)",
               }}
@@ -197,7 +197,7 @@ export function ProductionEntry({
               style={{
                 fontSize: "var(--text-sm, 12px)",
                 color: "var(--text2)",
-                marginTop: 2,
+                marginTop: "var(--space-1)",
               }}
             >
               {confirmation.scopeItem} &mdash; {confirmation.totalInstalled}
@@ -215,7 +215,7 @@ export function ProductionEntry({
         <div>
           <label
             className="form-label"
-            style={{ marginBottom: 8, display: "block" }}
+            style={{ marginBottom: "var(--space-2)", display: "block" }}
           >
             {tr("What did you install?")}
           </label>
@@ -223,7 +223,7 @@ export function ProductionEntry({
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
-              gap: 8,
+              gap: "var(--space-2)",
             }}
           >
             {scopeItems.map((item, idx) => (
@@ -231,8 +231,8 @@ export function ProductionEntry({
                 key={idx}
                 onClick={() => setSelectedScopeIdx(idx)}
                 style={{
-                  padding: "14px 10px",
-                  borderRadius: 10,
+                  padding: "var(--space-4) var(--space-3)",
+                  borderRadius: "var(--radius-control)",
                   border:
                     selectedScopeIdx === idx
                       ? "2px solid var(--accent, #3b82f6)"
@@ -257,7 +257,7 @@ export function ProductionEntry({
                     style={{
                       fontSize: "var(--text-xs, 11px)",
                       color: "var(--text3)",
-                      marginTop: 2,
+                      marginTop: "var(--space-1)",
                     }}
                   >
                     {item.unit}
@@ -298,7 +298,7 @@ export function ProductionEntry({
         style={{
           fontSize: "var(--text-lg, 16px)",
           minHeight: 56,
-          fontWeight: 700,
+          fontWeight: "var(--weight-bold)",
         }}
         t={tr}
       >
@@ -307,21 +307,21 @@ export function ProductionEntry({
 
       {/* Today's entries */}
       {todaysLogs.length > 0 && (
-        <div style={{ marginTop: 8 }}>
+        <div style={{ marginTop: "var(--space-2)" }}>
           <label
             className="form-label"
-            style={{ marginBottom: 8, display: "block" }}
+            style={{ marginBottom: "var(--space-2)", display: "block" }}
           >
             {tr("Today's Entries")}
           </label>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
             {todaysLogs.map((log) => (
               <div
                 key={log.id}
                 style={{
                   background: "var(--bg3)",
-                  borderRadius: 8,
-                  padding: "10px 14px",
+                  borderRadius: "var(--radius-control)",
+                  padding: "var(--space-3) var(--space-4)",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
@@ -330,7 +330,7 @@ export function ProductionEntry({
                 <div>
                   <div
                     style={{
-                      fontWeight: 600,
+                      fontWeight: "var(--weight-semi)",
                       fontSize: "var(--text-base, 14px)",
                       color: "var(--text)",
                     }}
@@ -352,7 +352,7 @@ export function ProductionEntry({
                 </div>
                 <div
                   style={{
-                    fontWeight: 700,
+                    fontWeight: "var(--weight-bold)",
                     fontSize: "var(--text-lg, 16px)",
                     color: "var(--accent, #3b82f6)",
                   }}

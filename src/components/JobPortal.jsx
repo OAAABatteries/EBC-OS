@@ -12,8 +12,8 @@ const PORTAL_STYLES = `
   .job-header { background:linear-gradient(135deg,#0f172a 0%,#1a2744 50%,#0f172a 100%);
     padding:48px 32px;text-align:center;border-bottom:1px solid rgba(245,158,11,0.15); }
   .job-hero { font-size:36px;font-weight:800;color:#f59e0b;letter-spacing:1px;margin-bottom:4px; }
-  .job-hero-sub { font-size:15px;color:#94a3b8;max-width:500px;margin:0 auto; }
-  .job-body { max-width:640px;margin:0 auto;padding:32px 24px; }
+  .job-hero-sub { font-size:15px;color:#94a3b8;max-width:500px;margin: "0" auto; }
+  .job-body { max-width:640px;margin: "0" auto;padding:32px 24px; }
   .job-card { background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:24px;margin-bottom:16px; }
   .job-input { width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);
     background:rgba(255,255,255,0.05);color:#e2e8f0;font-size:14px;font-family:inherit;box-sizing:border-box; }
@@ -23,15 +23,15 @@ const PORTAL_STYLES = `
   .job-btn { padding:14px 28px;border-radius:8px;border:none;font-weight:700;font-size:15px;cursor:pointer;
     background:#f59e0b;color:#0a0e1a;transition:all 0.2s;font-family:inherit;width:100%; }
   .job-btn:hover { background:#fbbf24;transform:translateY(-1px); }
-  .job-grid { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
+  .job-grid { display:grid;grid-template-columns:1fr 1fr;gap: "var(--space-4)"px; }
   @media(max-width:500px) { .job-grid { grid-template-columns:1fr; } .job-body { padding:20px 16px; } .job-hero { font-size:26px; } }
   .job-success { padding:24px;border-radius:12px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);
     text-align:center;color:#10b981;margin-top:20px; }
-  .job-success h3 { margin:0 0 8px; }
+  .job-success h3 { margin: "0" 0 8px; }
   .skill-btn { padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;
     border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;font-family:inherit; }
   .skill-btn.active { background:rgba(245,158,11,0.15);color:#f59e0b;border-color:#f59e0b; }
-  .perk { display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05); }
+  .perk { display:flex;gap: "var(--space-3)"px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05); }
   .perk-icon { font-size:24px;width:40px;text-align:center; }
   .perk-text { font-size:13px; }
   .perk-title { font-weight:600;color:#e2e8f0; }
@@ -76,7 +76,7 @@ export default function JobPortal() {
       <div className="job-body">
         {/* Perks */}
         <div className="job-card">
-          <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>Why EBC?</div>
+          <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", marginBottom: "var(--space-3)" }}>Why EBC?</div>
           {[
             [DollarSign, "Competitive Pay", "Top rates for skilled labor. Weekly pay."],
             [TrendingUp, "Growth", "Clear path from apprentice to foreman to PM."],
@@ -86,7 +86,7 @@ export default function JobPortal() {
           ].map(([Icon, title, desc]) => (
             <div key={title} className="perk">
               <div className="perk-icon"><Icon style={{ width: 24, height: 24 }} /></div>
-              <div className="perk-text"><div className="perk-title">{title}</div><div style={{ color: "#94a3b8", fontSize: 12 }}>{desc}</div></div>
+              <div className="perk-text"><div className="perk-title">{title}</div><div style={{ color: "var(--text2)", fontSize: "var(--text-label)" }}>{desc}</div></div>
             </div>
           ))}
         </div>
@@ -94,15 +94,15 @@ export default function JobPortal() {
         {submitted ? (
           <div className="job-success">
             <h3>Application Received!</h3>
-            <div style={{ fontSize: 14 }}>Thank you, {form.name}. Our team will review your application and contact you within 48 hours.</div>
-            <button className="job-btn" style={{ marginTop: 16, maxWidth: 200, margin: "16px auto 0" }} onClick={() => { setSubmitted(false); setForm({ name: "", phone: "", email: "", age: "", trade: "", level: "", yearsExp: "", skills: [], toolsOwned: [], driversLicense: "yes", ownTransport: "yes", availability: "immediate", notes: "" }); }}>Apply Again</button>
+            <div style={{ fontSize: "var(--text-secondary)" }}>Thank you, {form.name}. Our team will review your application and contact you within 48 hours.</div>
+            <button className="job-btn" style={{ marginTop: "var(--space-4)", maxWidth: 200, margin: "16px auto 0" }} onClick={() => { setSubmitted(false); setForm({ name: "", phone: "", email: "", age: "", trade: "", level: "", yearsExp: "", skills: [], toolsOwned: [], driversLicense: "yes", ownTransport: "yes", availability: "immediate", notes: "" }); }}>Apply Again</button>
           </div>
         ) : (
           <>
             {/* Personal Info */}
             <div className="job-card">
-              <div style={{ fontWeight: 700, marginBottom: 16 }}>Personal Information</div>
-              <div className="job-grid" style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: "var(--weight-bold)", marginBottom: "var(--space-4)" }}>Personal Information</div>
+              <div className="job-grid" style={{ marginBottom: "var(--space-4)" }}>
                 <div><label className="job-label">Full Name *</label><input className="job-input" placeholder="First & Last Name" value={form.name} onChange={e => upd("name", e.target.value)} /></div>
                 <div><label className="job-label">Phone *</label><input className="job-input" type="tel" placeholder="713-555-0000" value={form.phone} onChange={e => upd("phone", e.target.value)} /></div>
               </div>
@@ -114,8 +114,8 @@ export default function JobPortal() {
 
             {/* Trade & Experience */}
             <div className="job-card">
-              <div style={{ fontWeight: 700, marginBottom: 16 }}>Trade & Experience</div>
-              <div className="job-grid" style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: "var(--weight-bold)", marginBottom: "var(--space-4)" }}>Trade & Experience</div>
+              <div className="job-grid" style={{ marginBottom: "var(--space-4)" }}>
                 <div>
                   <label className="job-label">Primary Trade</label>
                   <select className="job-input" value={form.trade} onChange={e => upd("trade", e.target.value)}>
@@ -131,19 +131,19 @@ export default function JobPortal() {
                   </select>
                 </div>
               </div>
-              <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: "var(--space-4)" }}>
                 <label className="job-label">Years of Experience</label>
                 <input className="job-input" type="number" placeholder="e.g. 5" value={form.yearsExp} onChange={e => upd("yearsExp", e.target.value)} style={{ maxWidth: 120 }} />
               </div>
-              <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: "var(--space-4)" }}>
                 <label className="job-label">Skills (select all that apply)</label>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
                   {TRADES.map(s => <button key={s} className={`skill-btn ${form.skills.includes(s) ? "active" : ""}`} onClick={() => toggleSkill(s)}>{s}</button>)}
                 </div>
               </div>
               <div>
                 <label className="job-label">Tools You Own</label>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
                   {TOOLS_OWN.map(t => <button key={t} className={`skill-btn ${form.toolsOwned.includes(t) ? "active" : ""}`} onClick={() => toggleTool(t)}>{t}</button>)}
                 </div>
               </div>
@@ -151,8 +151,8 @@ export default function JobPortal() {
 
             {/* Logistics */}
             <div className="job-card">
-              <div style={{ fontWeight: 700, marginBottom: 16 }}>Logistics</div>
-              <div className="job-grid" style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: "var(--weight-bold)", marginBottom: "var(--space-4)" }}>Logistics</div>
+              <div className="job-grid" style={{ marginBottom: "var(--space-4)" }}>
                 <div>
                   <label className="job-label">Driver's License?</label>
                   <select className="job-input" value={form.driversLicense} onChange={e => upd("driversLicense", e.target.value)}>
@@ -187,7 +187,7 @@ export default function JobPortal() {
           </>
         )}
 
-        <div style={{ textAlign: "center", padding: "40px 0 20px", color: "#475569", fontSize: 11 }}>
+        <div style={{ textAlign: "center", padding: "var(--space-10) 0 var(--space-5)", color: "var(--text3)", fontSize: "var(--text-tab)" }}>
           Eagles Brothers Constructors · Houston, TX · Equal Opportunity Employer
         </div>
       </div>

@@ -67,7 +67,7 @@ export function NotificationPanel({ grouped, badgeCount, dismissAlert, dismissAl
         overflowY: "auto",
         background: "var(--bg2)",
         border: "1px solid var(--border)",
-        borderRadius: 10,
+        borderRadius: "var(--radius-control)",
         boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
         zIndex: 9999,
         padding: 0,
@@ -76,25 +76,25 @@ export function NotificationPanel({ grouped, badgeCount, dismissAlert, dismissAl
     >
       {/* ── Header ── */}
       <div style={{
-        padding: "14px 16px",
+        padding: "var(--space-4) var(--space-4)",
         borderBottom: "1px solid var(--border)",
         display: "flex", justifyContent: "space-between", alignItems: "center",
         position: "sticky", top: 0, background: "var(--bg2)", zIndex: 1,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontWeight: 700, fontSize: 15 }}>Alerts</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+          <span style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)" }}>Alerts</span>
           {totalAlerts > 0 && (
             <span style={{
-              background: "var(--red)", color: "#fff", borderRadius: 10,
-              padding: "1px 7px", fontSize: 11, fontWeight: 700,
+              background: "var(--red)", color: "#fff", borderRadius: "var(--radius-control)",
+              padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-tab)", fontWeight: "var(--weight-bold)",
             }}>{totalAlerts}</span>
           )}
         </div>
-        <div style={{ display: "flex", gap: 6 }}>
+        <div style={{ display: "flex", gap: "var(--space-2)" }}>
           {hasAlerts && (
             <button
               className="btn btn-ghost"
-              style={{ fontSize: 10, padding: "3px 8px" }}
+              style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}
               onClick={dismissAll}
             >Dismiss All</button>
           )}
@@ -103,10 +103,10 @@ export function NotificationPanel({ grouped, badgeCount, dismissAlert, dismissAl
 
       {/* ── Empty state ── */}
       {!hasAlerts && (
-        <div style={{ padding: 40, textAlign: "center" }}>
-          <div style={{ display: "flex", justifyContent: "center" }}><CheckCircle size={36} style={{ color: "#10b981" }} /></div>
-          <div className="text-sm" style={{ marginTop: 8, fontWeight: 600 }}>All caught up!</div>
-          <div className="text-xs text-muted" style={{ marginTop: 4 }}>No alerts need your attention right now.</div>
+        <div style={{ padding: "var(--space-10)", textAlign: "center" }}>
+          <div style={{ display: "flex", justifyContent: "center" }}><CheckCircle size={36} style={{ color: "var(--green)" }} /></div>
+          <div className="text-sm" style={{ marginTop: "var(--space-2)", fontWeight: "var(--weight-semi)" }}>All caught up!</div>
+          <div className="text-xs text-muted" style={{ marginTop: "var(--space-1)" }}>No alerts need your attention right now.</div>
         </div>
       )}
 
@@ -124,7 +124,7 @@ export function NotificationPanel({ grouped, badgeCount, dismissAlert, dismissAl
             {/* Category header */}
             <div
               style={{
-                padding: "10px 16px",
+                padding: "var(--space-3) var(--space-4)",
                 background: "var(--bg3)",
                 borderBottom: "1px solid var(--border)",
                 display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -132,14 +132,14 @@ export function NotificationPanel({ grouped, badgeCount, dismissAlert, dismissAl
               }}
               onClick={() => toggleCategory(cat)}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 14 }}>{info.icon}</span>
-                <span style={{ fontWeight: 600, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>{info.label}</span>
-                <span className="badge" style={{ fontSize: 10, background: "var(--bg)", padding: "1px 6px" }}>{items.length}</span>
-                {critCount > 0 && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#dc2626", display: "inline-block" }} />}
-                {warnCount > 0 && critCount === 0 && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#f59e0b", display: "inline-block" }} />}
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                <span style={{ fontSize: "var(--text-secondary)" }}>{info.icon}</span>
+                <span style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)", textTransform: "uppercase", letterSpacing: 0.5 }}>{info.label}</span>
+                <span className="badge" style={{ fontSize: "var(--text-xs)", background: "var(--bg)", padding: "var(--space-1) var(--space-2)" }}>{items.length}</span>
+                {critCount > 0 && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--red)", display: "inline-block" }} />}
+                {warnCount > 0 && critCount === 0 && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--amber)", display: "inline-block" }} />}
               </div>
-              <span style={{ fontSize: 10, color: "var(--text-muted)", transform: isCollapsed ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>{"\u25BC"}</span>
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", transform: isCollapsed ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>{"\u25BC"}</span>
             </div>
 
             {/* Alert items */}
@@ -149,30 +149,30 @@ export function NotificationPanel({ grouped, badgeCount, dismissAlert, dismissAl
                 <div
                   key={alert.id}
                   style={{
-                    padding: "10px 16px",
+                    padding: "var(--space-3) var(--space-4)",
                     borderBottom: "1px solid var(--border)",
                     borderLeft: `3px solid ${colors.border}`,
                     background: colors.bg,
-                    display: "flex", gap: 10, alignItems: "flex-start",
+                    display: "flex", gap: "var(--space-3)", alignItems: "flex-start",
                   }}
                 >
-                  <span style={{ flexShrink: 0, marginTop: 1 }}>{ALERT_ICONS[alert.icon] || <Bell size={16} />}</span>
+                  <span style={{ flexShrink: 0, marginTop: "var(--space-1)" }}>{ALERT_ICONS[alert.icon] || <Bell size={16} />}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
-                      style={{ fontWeight: 600, fontSize: 12, cursor: "pointer", lineHeight: 1.3 }}
+                      style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)", cursor: "pointer", lineHeight: 1.3 }}
                       onClick={() => handleNav(alert)}
                     >
                       {alert.title}
                     </div>
-                    <div className="text-xs text-muted" style={{ marginTop: 2, lineHeight: 1.3 }}>{alert.message}</div>
+                    <div className="text-xs text-muted" style={{ marginTop: "var(--space-1)", lineHeight: 1.3 }}>{alert.message}</div>
                     {/* Action buttons */}
-                    <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-2)", flexWrap: "wrap" }}>
                       {alert.action && (
                         <button
                           className="btn btn-sm"
                           style={{
-                            fontSize: 10, padding: "2px 8px",
-                            background: colors.dot, color: "#fff", border: "none", borderRadius: 4,
+                            fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)",
+                            background: colors.dot, color: "#fff", border: "none", borderRadius: "var(--radius-control)",
                           }}
                           onClick={(e) => handleAction(alert, e)}
                         >
@@ -181,7 +181,7 @@ export function NotificationPanel({ grouped, badgeCount, dismissAlert, dismissAl
                       )}
                       <button
                         className="btn btn-ghost btn-sm"
-                        style={{ fontSize: 10, padding: "2px 8px", color: "var(--text-muted)" }}
+                        style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", color: "var(--text-muted)" }}
                         onClick={(e) => { e.stopPropagation(); dismissAlert(alert.id); }}
                       >
                         Dismiss

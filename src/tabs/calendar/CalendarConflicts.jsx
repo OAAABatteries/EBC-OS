@@ -112,17 +112,17 @@ export function CalendarConflicts({ app, lang, conflicts }) {
   return (
     <div className="cal-conflicts">
       {/* Stats */}
-      <div className="cal-lookahead-kpis" style={{ marginBottom: 16 }}>
+      <div className="cal-lookahead-kpis" style={{ marginBottom: "var(--space-4)" }}>
         <div className="cal-lookahead-kpi" onClick={() => setFilterSeverity("error")} style={{ cursor: "pointer" }}>
-          <div className="cal-lookahead-kpi-val" style={{ color: "#ef4444" }}>{stats.error}</div>
+          <div className="cal-lookahead-kpi-val" style={{ color: "var(--red)" }}>{stats.error}</div>
           <div className="cal-lookahead-kpi-lbl">{t("Critical")}</div>
         </div>
         <div className="cal-lookahead-kpi" onClick={() => setFilterSeverity("warning")} style={{ cursor: "pointer" }}>
-          <div className="cal-lookahead-kpi-val" style={{ color: "#f59e0b" }}>{stats.warning}</div>
+          <div className="cal-lookahead-kpi-val" style={{ color: "var(--amber)" }}>{stats.warning}</div>
           <div className="cal-lookahead-kpi-lbl">{t("Warnings")}</div>
         </div>
         <div className="cal-lookahead-kpi" onClick={() => setFilterSeverity("info")} style={{ cursor: "pointer" }}>
-          <div className="cal-lookahead-kpi-val" style={{ color: "#3b82f6" }}>{stats.info}</div>
+          <div className="cal-lookahead-kpi-val" style={{ color: "var(--blue)" }}>{stats.info}</div>
           <div className="cal-lookahead-kpi-lbl">{t("Info")}</div>
         </div>
         <div className="cal-lookahead-kpi" onClick={() => { setFilterSeverity("all"); setShowResolved(false); }} style={{ cursor: "pointer" }}>
@@ -132,9 +132,9 @@ export function CalendarConflicts({ app, lang, conflicts }) {
       </div>
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-3)", flexWrap: "wrap", alignItems: "center" }}>
         <select
-          style={{ background: "var(--bg3)", border: "1px solid var(--border)", color: "var(--text)", padding: "6px 10px", borderRadius: "var(--radius)", fontSize: 12 }}
+          style={{ background: "var(--bg3)", border: "1px solid var(--border)", color: "var(--text)", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius)", fontSize: "var(--text-label)" }}
           value={filterSeverity}
           onChange={e => setFilterSeverity(e.target.value)}
         >
@@ -144,7 +144,7 @@ export function CalendarConflicts({ app, lang, conflicts }) {
           <option value="info">{t("Info")}</option>
         </select>
         <select
-          style={{ background: "var(--bg3)", border: "1px solid var(--border)", color: "var(--text)", padding: "6px 10px", borderRadius: "var(--radius)", fontSize: 12 }}
+          style={{ background: "var(--bg3)", border: "1px solid var(--border)", color: "var(--text)", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius)", fontSize: "var(--text-label)" }}
           value={filterType}
           onChange={e => setFilterType(e.target.value)}
         >
@@ -153,7 +153,7 @@ export function CalendarConflicts({ app, lang, conflicts }) {
             <option key={type} value={type}>{typeLabel(type)}</option>
           ))}
         </select>
-        <label style={{ fontSize: 12, color: "var(--text2)", display: "flex", alignItems: "center", gap: 4 }}>
+        <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
           <input type="checkbox" checked={showResolved} onChange={e => setShowResolved(e.target.checked)} />
           {t("Show resolved")}
         </label>
@@ -162,7 +162,7 @@ export function CalendarConflicts({ app, lang, conflicts }) {
       {/* Conflict list */}
       <div className="cal-pto-list">
         {filtered.length === 0 && (
-          <div style={{ color: "var(--text3)", fontSize: 13, padding: 16 }}>
+          <div style={{ color: "var(--text3)", fontSize: "var(--text-label)", padding: "var(--space-4)" }}>
             {stats.total === 0 ? t("No conflicts detected") : t("No conflicts match filters")}
           </div>
         )}
@@ -170,28 +170,28 @@ export function CalendarConflicts({ app, lang, conflicts }) {
           <div key={c.id} className="cal-pto-card" style={{ borderLeft: `3px solid ${SEVERITY_COLORS[c.severity] || "#94a3b8"}` }}>
             <div className="cal-pto-card-top">
               <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 2 }}>
+                <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginBottom: "var(--space-1)" }}>
                   <span style={{
-                    fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 4,
+                    fontSize: "var(--text-xs)", fontWeight: "var(--weight-semi)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)",
                     background: SEVERITY_COLORS[c.severity] + "22",
                     color: SEVERITY_COLORS[c.severity],
                     textTransform: "uppercase",
                   }}>
                     {SEVERITY_LABELS[c.severity]}
                   </span>
-                  <span style={{ fontSize: 11, color: "var(--text3)" }}>{typeLabel(c.type)}</span>
+                  <span style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{typeLabel(c.type)}</span>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2 }}>{c.description}</div>
-                <div style={{ fontSize: 11, color: "var(--text3)" }}>{c.date}</div>
+                <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-medium)", marginBottom: "var(--space-1)" }}>{c.description}</div>
+                <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{c.date}</div>
                 {c.resolved && (
-                  <div style={{ fontSize: 11, color: "#10b981", marginTop: 4 }}>
+                  <div style={{ fontSize: "var(--text-tab)", color: "var(--green)", marginTop: "var(--space-1)" }}>
                     Resolved by {c.resolvedBy} — {c.resolution === "reassign" ? "Reassigned" : c.resolution === "override" ? "Override approved" : "Dismissed"}
                     {c.resolveNote && <span style={{ color: "var(--text3)" }}> — {c.resolveNote}</span>}
                   </div>
                 )}
               </div>
               {!c.resolved && (
-                <button onClick={() => handleResolve(c)} style={{ padding: "4px 12px", fontSize: 11, fontWeight: 600, background: "var(--amber-dim)", border: "1px solid var(--amber)", color: "var(--amber)", borderRadius: 6, cursor: "pointer", whiteSpace: "nowrap", alignSelf: "flex-start" }}>
+                <button onClick={() => handleResolve(c)} style={{ padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-tab)", fontWeight: "var(--weight-semi)", background: "var(--amber-dim)", border: "1px solid var(--amber)", color: "var(--amber)", borderRadius: "var(--radius-control)", cursor: "pointer", whiteSpace: "nowrap", alignSelf: "flex-start" }}>
                   {t("Resolve")}
                 </button>
               )}
@@ -203,23 +203,23 @@ export function CalendarConflicts({ app, lang, conflicts }) {
       {/* Resolve Modal */}
       {resolveModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setResolveModal(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 12, padding: 24, width: "95%", maxWidth: 420 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", padding: "var(--space-6)", width: "95%", maxWidth: 420 }}>
             <h3 style={{ margin: "0 0 4px", color: "var(--amber)" }}>{t("Resolve Conflict")}</h3>
-            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 16 }}>{resolveModal.description}</div>
+            <div style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-4)" }}>{resolveModal.description}</div>
 
-            <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>{t("Resolution Action")}</label>
-            <select value={resolveAction} onChange={e => setResolveAction(e.target.value)} style={{ width: "100%", padding: 8, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)", marginBottom: 12 }}>
+            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>{t("Resolution Action")}</label>
+            <select value={resolveAction} onChange={e => setResolveAction(e.target.value)} style={{ width: "100%", padding: "var(--space-2)", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text)", marginBottom: "var(--space-3)" }}>
               <option value="dismiss">{t("Dismiss — Not applicable")}</option>
               <option value="reassign">{t("Reassign team / equipment")}</option>
               <option value="override">{t("Approve override")}</option>
             </select>
 
-            <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>{t("Notes (optional)")}</label>
-            <textarea value={resolveNote} onChange={e => setResolveNote(e.target.value)} rows={2} placeholder={t("Add context for this resolution...")} style={{ width: "100%", padding: 8, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)", marginBottom: 16, resize: "vertical" }} />
+            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>{t("Notes (optional)")}</label>
+            <textarea value={resolveNote} onChange={e => setResolveNote(e.target.value)} rows={2} placeholder={t("Add context for this resolution...")} style={{ width: "100%", padding: "var(--space-2)", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text)", marginBottom: "var(--space-4)", resize: "vertical" }} />
 
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <button onClick={() => setResolveModal(null)} style={{ padding: "8px 16px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text2)", cursor: "pointer" }}>{t("Cancel")}</button>
-              <button onClick={confirmResolve} style={{ padding: "8px 20px", background: "var(--amber)", border: "none", borderRadius: 6, color: "#000", fontWeight: 600, cursor: "pointer" }}>{t("Confirm")}</button>
+            <div style={{ display: "flex", gap: "var(--space-2)", justifyContent: "flex-end" }}>
+              <button onClick={() => setResolveModal(null)} style={{ padding: "var(--space-2) var(--space-4)", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text2)", cursor: "pointer" }}>{t("Cancel")}</button>
+              <button onClick={confirmResolve} style={{ padding: "var(--space-2) var(--space-5)", background: "var(--amber)", border: "none", borderRadius: "var(--radius-control)", color: "#000", fontWeight: "var(--weight-semi)", cursor: "pointer" }}>{t("Confirm")}</button>
             </div>
           </div>
         </div>

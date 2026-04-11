@@ -549,7 +549,7 @@ export function CalendarView({ app }) {
 
       {/* ── AI Week Plan Panel ── */}
       {showWeekPlan && weekPlanResult && (
-        <div className="card" style={{ padding: 20, marginBottom: 16, maxHeight: 500, overflow: "auto" }}>
+        <div className="card" style={{ padding: "var(--space-5)", marginBottom: "var(--space-4)", maxHeight: 500, overflow: "auto" }}>
           <div className="flex-between mb-12">
             <div className="text-sm font-semi">AI Week Plan</div>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowWeekPlan(false)}>Close</button>
@@ -559,18 +559,18 @@ export function CalendarView({ app }) {
 
           {/* Daily Plan */}
           {weekPlanResult.dailyPlan?.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: "var(--space-4)" }}>
               <div className="text-sm font-semi mb-8">Daily Breakdown</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "var(--space-2)" }}>
                 {weekPlanResult.dailyPlan.map((d, i) => (
-                  <div key={i} style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", border: `1px solid ${d.priority === "high" ? "var(--amber)" : "var(--border)"}` }}>
+                  <div key={i} style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "var(--bg3)", border: `1px solid ${d.priority === "high" ? "var(--amber)" : "var(--border)"}` }}>
                     <div className="flex-between mb-4">
                       <span className="font-semi text-sm">{d.day}</span>
-                      <span className={`badge ${d.priority === "high" ? "badge-red" : d.priority === "light" ? "badge-green" : "badge-muted"}`} style={{ fontSize: 9 }}>{d.priority}</span>
+                      <span className={`badge ${d.priority === "high" ? "badge-red" : d.priority === "light" ? "badge-green" : "badge-muted"}`} style={{ fontSize: "var(--text-xs)" }}>{d.priority}</span>
                     </div>
                     <div className="text-xs text-muted mb-4">{d.focus}</div>
                     {d.keyEvents?.map((e, j) => (
-                      <div key={j} className="text-xs" style={{ color: "var(--amber)", marginBottom: 2 }}>• {e}</div>
+                      <div key={j} className="text-xs" style={{ color: "var(--amber)", marginBottom: "var(--space-1)" }}>• {e}</div>
                     ))}
                     <div className="text-xs text-dim mt-4">{d.teamNeeds}</div>
                   </div>
@@ -581,9 +581,9 @@ export function CalendarView({ app }) {
 
           {/* Crew Allocation */}
           {weekPlanResult.teamAllocation?.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: "var(--space-4)" }}>
               <div className="text-sm font-semi mb-8">Crew Allocation</div>
-              <table className="data-table" style={{ fontSize: 12 }}>
+              <table className="data-table" style={{ fontSize: "var(--text-label)" }}>
                 <thead><tr><th>Project</th><th>Crew</th><th>Trade</th><th>Days</th><th>Notes</th></tr></thead>
                 <tbody>
                   {weekPlanResult.teamAllocation.map((c, i) => (
@@ -602,10 +602,10 @@ export function CalendarView({ app }) {
 
           {/* Suggestions */}
           {weekPlanResult.suggestions?.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: "var(--space-4)" }}>
               <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Suggestions</div>
               {weekPlanResult.suggestions.map((s, i) => (
-                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
                   <div className="flex-between">
                     <span className="text-sm">{s.suggestion}</span>
                     <span className={`badge ${s.priority === "high" ? "badge-red" : s.priority === "medium" ? "badge-amber" : "badge-muted"}`}>{s.priority}</span>
@@ -621,7 +621,7 @@ export function CalendarView({ app }) {
             <div>
               <div className="text-sm font-semi mb-8">Risks</div>
               {weekPlanResult.risks.map((r, i) => (
-                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
                   <div className="flex-between">
                     <span className="text-sm">{r.risk}</span>
                     <span className={`badge ${r.likelihood === "high" ? "badge-red" : r.likelihood === "medium" ? "badge-amber" : "badge-muted"}`}>{r.likelihood}</span>
@@ -663,7 +663,7 @@ export function CalendarView({ app }) {
             </div>
             <button className="cal-add-btn" onClick={openNewEvent}>+ {t("Add Event")}</button>
             <select
-              style={{ background: "var(--bg3)", border: "1px solid var(--border)", color: "var(--text)", padding: "6px 10px", borderRadius: "var(--radius)", fontSize: "12px" }}
+              style={{ background: "var(--bg3)", border: "1px solid var(--border)", color: "var(--text)", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius)", fontSize: "12px" }}
               value={filterProject || ""}
               onChange={(e) => setFilterProject(e.target.value ? Number(e.target.value) : null)}
             >
@@ -898,7 +898,7 @@ export function CalendarView({ app }) {
                       className={`cal-event-type-card${eventForm.type === et.key ? " active" : ""}`}
                       onClick={() => setField("type", et.key)}
                     >
-                      <span className="cal-filter-dot" style={{ background: et.color, display: "inline-block", marginRight: 4 }} />
+                      <span className="cal-filter-dot" style={{ background: et.color, display: "inline-block", marginRight: "var(--space-1)" }} />
                       {lang === "es" ? et.labelEs : et.label}
                     </div>
                   ))}
@@ -964,13 +964,13 @@ export function CalendarView({ app }) {
                     ) : null;
                   })}
                 </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", marginTop: "var(--space-1)" }}>
                   {(employees || [])
                     .filter((emp) => !eventForm.assignedTo.includes(emp.id))
                     .map((emp) => (
                       <span
                         key={emp.id}
-                        style={{ padding: "2px 8px", fontSize: 11, background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 12, cursor: "pointer", color: "var(--text2)" }}
+                        style={{ padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-tab)", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", cursor: "pointer", color: "var(--text2)" }}
                         onClick={() => toggleAssigned(emp.id)}
                       >
                         + {emp.name}
@@ -1037,7 +1037,7 @@ export function CalendarView({ app }) {
             {/* Actions */}
             <div className="cal-modal-actions">
               {typeof showEventForm === "object" && showEventForm.id && (
-                <button className="secondary" style={{ color: "#ef4444", borderColor: "#ef4444", marginRight: "auto" }} onClick={deleteEvent}>
+                <button className="secondary" style={{ color: "var(--red)", borderColor: "var(--red)", marginRight: "auto" }} onClick={deleteEvent}>
                   {t("Delete")}
                 </button>
               )}

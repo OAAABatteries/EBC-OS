@@ -14,9 +14,9 @@ const CARD_STYLES = `
   .bc-content { position:relative;z-index:1;padding:24px;display:flex;flex-direction:column;height:100%;box-sizing:border-box; }
   .bc-name { font-size:18px;font-weight:800;color:#ffffff;letter-spacing:0.5px; }
   .bc-title { font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;font-weight:600; }
-  .bc-divider { width:40px;height:2px;background:#f59e0b;margin:10px 0;border-radius:2px; }
-  .bc-info { margin-top:auto;display:flex;flex-direction:column;gap:3px; }
-  .bc-info-row { font-size:10px;color:#94a3b8;display:flex;align-items:center;gap:6px; }
+  .bc-divider { width:40px;height:2px;background:#f59e0b;margin: "var(--space-3)"px 0;border-radius:2px; }
+  .bc-info { margin-top:auto;display:flex;flex-direction:column;gap: "var(--space-1)"px; }
+  .bc-info-row { font-size:10px;color:#94a3b8;display:flex;align-items:center;gap: "var(--space-2)"px; }
   .bc-info-row span { color:#cbd5e1; }
   .bc-company { position:absolute;bottom:16px;right:20px;text-align:right; }
   .bc-company-name { font-size:9px;font-weight:800;color:#f59e0b;letter-spacing:2px;text-transform:uppercase; }
@@ -46,7 +46,7 @@ export default function BusinessCardGenerator({ employees, app }) {
 
   const handlePrint = () => {
     const printWin = window.open("", "_blank", "width=400,height=260");
-    printWin.document.write(`<html><head><style>${CARD_STYLES} body{margin:20px;background:#fff;}</style></head><body>`);
+    printWin.document.write(`<html><head><style>${CARD_STYLES} body{margin: "var(--space-5)"px;background:#fff;}</style></head><body>`);
     printWin.document.write(cardRef.current.outerHTML);
     printWin.document.write(`</body></html>`);
     printWin.document.close();
@@ -72,7 +72,7 @@ export default function BusinessCardGenerator({ employees, app }) {
   return (
     <div>
       <style>{CARD_STYLES}</style>
-      <div className="section-title" style={{ marginBottom: 16 }}>Business Card Generator</div>
+      <div className="section-title" style={{ marginBottom: "var(--space-4)" }}>Business Card Generator</div>
 
       {/* Team selector */}
       <div className="flex gap-8 mb-16 flex-wrap">
@@ -98,7 +98,7 @@ export default function BusinessCardGenerator({ employees, app }) {
 
       {/* Card preview */}
       {hasCard && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
           <div ref={cardRef} className="bc-preview">
             <div className="bc-accent" />
             <div className="bc-eagle" dangerouslySetInnerHTML={{ __html: EAGLE_SVG }} />

@@ -88,7 +88,7 @@ export function PodModal({ delivery, onConfirm, onClose, t }) {
           maxWidth: 480,
           width: "100%",
           background: "var(--card)",
-          borderRadius: 16,
+          borderRadius: "var(--radius-card)",
           padding: 0,
           overflow: "hidden",
         }}
@@ -97,18 +97,18 @@ export function PodModal({ delivery, onConfirm, onClose, t }) {
         <div
           style={{
             background: "var(--navy, #0f1f2e)",
-            padding: "20px 20px 16px",
+            padding: "var(--space-5) var(--space-5) var(--space-4)",
             display: "flex",
             alignItems: "center",
-            gap: 12,
+            gap: "var(--space-3)",
           }}
         >
           <ClipboardCheck size={24} color="var(--green, #22c55e)" />
           <div style={{ flex: 1 }}>
-            <div style={{ color: "#fff", fontWeight: 700, fontSize: 17 }}>
+            <div style={{ color: "#fff", fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)" }}>
               {tr("Proof of Delivery")}
             </div>
-            <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 12 }}>
+            <div style={{ color: "rgba(255,255,255,0.55)", fontSize: "var(--text-label)" }}>
               {delivery?.projectName || delivery?.materialName || ""}
             </div>
           </div>
@@ -118,11 +118,11 @@ export function PodModal({ delivery, onConfirm, onClose, t }) {
               background: "rgba(255,255,255,0.1)",
               border: "none",
               color: "#fff",
-              borderRadius: 8,
+              borderRadius: "var(--radius-control)",
               width: 32,
               height: 32,
               cursor: "pointer",
-              fontSize: 16,
+              fontSize: "var(--text-card)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -135,10 +135,10 @@ export function PodModal({ delivery, onConfirm, onClose, t }) {
         {/* Body */}
         <div
           style={{
-            padding: "20px 20px 8px",
+            padding: "var(--space-5) var(--space-5) var(--space-2)",
             display: "flex",
             flexDirection: "column",
-            gap: 16,
+            gap: "var(--space-4)",
             maxHeight: "60vh",
             overflowY: "auto",
           }}
@@ -156,19 +156,19 @@ export function PodModal({ delivery, onConfirm, onClose, t }) {
           <div>
             <label
               className="form-label"
-              style={{ marginBottom: 8, display: "block" }}
+              style={{ marginBottom: "var(--space-2)", display: "block" }}
             >
               {tr("Condition")}
             </label>
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: "var(--space-2)" }}>
               {CONDITIONS.map((c) => (
                 <button
                   key={c}
                   onClick={() => setCondition(c)}
                   style={{
                     flex: 1,
-                    padding: "12px 4px",
-                    borderRadius: 8,
+                    padding: "var(--space-3) var(--space-1)",
+                    borderRadius: "var(--radius-control)",
                     border:
                       condition === c
                         ? "2px solid var(--green, #22c55e)"
@@ -182,7 +182,7 @@ export function PodModal({ delivery, onConfirm, onClose, t }) {
                         ? "var(--green, #22c55e)"
                         : "var(--text2)",
                     fontWeight: condition === c ? 700 : 500,
-                    fontSize: 13,
+                    fontSize: "var(--text-label)",
                     cursor: "pointer",
                     textAlign: "center",
                   }}
@@ -215,11 +215,11 @@ export function PodModal({ delivery, onConfirm, onClose, t }) {
           {gpsStatus && (
             <div
               style={{
-                fontSize: 12,
+                fontSize: "var(--text-label)",
                 color: "var(--text3)",
                 display: "flex",
                 alignItems: "center",
-                gap: 6,
+                gap: "var(--space-2)",
               }}
             >
               <span
@@ -239,14 +239,14 @@ export function PodModal({ delivery, onConfirm, onClose, t }) {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: "12px 20px 20px", display: "flex", gap: 10 }}>
+        <div style={{ padding: "var(--space-3) var(--space-5) var(--space-5)", display: "flex", gap: "var(--space-3)" }}>
           <button
             className="btn"
             onClick={onClose}
             style={{
               flex: 1,
-              padding: "14px",
-              fontSize: 15,
+              padding: "var(--space-4)",
+              fontSize: "var(--text-secondary)",
               background: "var(--bg3)",
               border: "1px solid var(--border)",
               color: "var(--text2)",
@@ -259,18 +259,18 @@ export function PodModal({ delivery, onConfirm, onClose, t }) {
             disabled={saving}
             style={{
               flex: 2,
-              padding: "14px",
-              fontSize: 15,
-              fontWeight: 700,
+              padding: "var(--space-4)",
+              fontSize: "var(--text-secondary)",
+              fontWeight: "var(--weight-bold)",
               background: "var(--green, #22c55e)",
               color: "#fff",
               border: "none",
-              borderRadius: 10,
+              borderRadius: "var(--radius-control)",
               cursor: saving ? "not-allowed" : "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: 8,
+              gap: "var(--space-2)",
             }}
           >
             <ClipboardCheck

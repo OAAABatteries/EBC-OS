@@ -113,7 +113,7 @@ export function CalendarEquipment({ app, lang }) {
     <div className="cal-equipment">
       {/* Sub-nav */}
       <div className="cal-pto-nav" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", gap: 4 }}>
+        <div style={{ display: "flex", gap: "var(--space-1)" }}>
           {[
             { key: "bookings", label: "Bookings" },
             { key: "availability", label: "Availability" },
@@ -125,54 +125,54 @@ export function CalendarEquipment({ app, lang }) {
             </button>
           ))}
         </div>
-        <button className="primary" style={{ fontSize: 11, padding: "4px 10px" }} onClick={eqOptLoading ? undefined : () => showEqOpt ? setShowEqOpt(false) : eqOptResult ? setShowEqOpt(true) : runEqOptimize()} disabled={eqOptLoading}>
+        <button className="primary" style={{ fontSize: "var(--text-tab)", padding: "var(--space-1) var(--space-3)" }} onClick={eqOptLoading ? undefined : () => showEqOpt ? setShowEqOpt(false) : eqOptResult ? setShowEqOpt(true) : runEqOptimize()} disabled={eqOptLoading}>
           {eqOptLoading ? "Analyzing..." : "AI Optimize"}
         </button>
       </div>
 
       {/* AI Equipment Optimizer Panel */}
       {showEqOpt && eqOptResult && (
-        <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 16, marginBottom: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "var(--space-4)", marginBottom: "var(--space-4)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
               <Wrench style={{ width: 22, height: 22 }} />
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>Utilization: {eqOptResult.utilizationScore}/100 ({eqOptResult.grade})</div>
-                <div style={{ fontSize: 12, color: "var(--text3)" }}>{eqOptResult.summary}</div>
+                <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)" }}>Utilization: {eqOptResult.utilizationScore}/100 ({eqOptResult.grade})</div>
+                <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>{eqOptResult.summary}</div>
               </div>
             </div>
-            <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "var(--text3)" }} onClick={() => setShowEqOpt(false)}>✕</button>
+            <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--text-card)", color: "var(--text3)" }} onClick={() => setShowEqOpt(false)}>✕</button>
           </div>
 
           {eqOptResult.underutilized?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#f59e0b", marginBottom: 6 }}>Underutilized Equipment</div>
+            <div style={{ marginBottom: "var(--space-3)" }}>
+              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--amber)", marginBottom: "var(--space-2)" }}>Underutilized Equipment</div>
               {eqOptResult.underutilized.map((u, i) => (
-                <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(245,158,11,0.08)", borderRadius: "var(--radius)" }}>
-                  <span style={{ fontWeight: 500 }}>{u.equipment}:</span> {u.currentUsage} — <em>{u.suggestion}</em>
+                <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(245,158,11,0.08)", borderRadius: "var(--radius)" }}>
+                  <span style={{ fontWeight: "var(--weight-medium)" }}>{u.equipment}:</span> {u.currentUsage} — <em>{u.suggestion}</em>
                 </div>
               ))}
             </div>
           )}
 
           {eqOptResult.bookingSuggestions?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--blue)", marginBottom: 6 }}>Booking Suggestions</div>
+            <div style={{ marginBottom: "var(--space-3)" }}>
+              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--blue)", marginBottom: "var(--space-2)" }}>Booking Suggestions</div>
               {eqOptResult.bookingSuggestions.map((b, i) => (
-                <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(59,130,246,0.08)", borderRadius: "var(--radius)" }}>
-                  <span style={{ fontWeight: 500 }}>{b.equipment} → {b.project}</span> ({b.dates}) — {b.reason}
+                <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(59,130,246,0.08)", borderRadius: "var(--radius)" }}>
+                  <span style={{ fontWeight: "var(--weight-medium)" }}>{b.equipment} → {b.project}</span> ({b.dates}) — {b.reason}
                 </div>
               ))}
             </div>
           )}
 
           {eqOptResult.costSavings?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--green)", marginBottom: 6 }}>Cost Savings</div>
+            <div style={{ marginBottom: "var(--space-3)" }}>
+              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--green)", marginBottom: "var(--space-2)" }}>Cost Savings</div>
               {eqOptResult.costSavings.map((c, i) => (
-                <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(16,185,129,0.08)", borderRadius: "var(--radius)", display: "flex", justifyContent: "space-between" }}>
+                <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(16,185,129,0.08)", borderRadius: "var(--radius)", display: "flex", justifyContent: "space-between" }}>
                   <span>{c.action}</span>
-                  <span style={{ fontWeight: 600, color: "var(--green)" }}>{c.estimatedSaving}</span>
+                  <span style={{ fontWeight: "var(--weight-semi)", color: "var(--green)" }}>{c.estimatedSaving}</span>
                 </div>
               ))}
             </div>
@@ -180,9 +180,9 @@ export function CalendarEquipment({ app, lang }) {
 
           {eqOptResult.maintenanceAlerts?.length > 0 && (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--red)", marginBottom: 6 }}>Maintenance Alerts</div>
+              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--red)", marginBottom: "var(--space-2)" }}>Maintenance Alerts</div>
               {eqOptResult.maintenanceAlerts.map((m, i) => (
-                <div key={i} style={{ fontSize: 12, color: "var(--text2)", paddingLeft: 8, marginBottom: 3, display: "flex", alignItems: "center", gap: 4 }}><AlertTriangle style={{ width: 14, height: 14, color: "#f59e0b" }} /> <strong>{m.equipment}:</strong> {m.alert}</div>
+                <div key={i} style={{ fontSize: "var(--text-label)", color: "var(--text2)", paddingLeft: "var(--space-2)", marginBottom: "var(--space-1)", display: "flex", alignItems: "center", gap: "var(--space-1)" }}><AlertTriangle style={{ width: 14, height: 14, color: "var(--amber)" }} /> <strong>{m.equipment}:</strong> {m.alert}</div>
               ))}
             </div>
           )}
@@ -193,7 +193,7 @@ export function CalendarEquipment({ app, lang }) {
       {subView === "bookings" && (
         <div className="cal-pto-list">
           {activeBookings.length === 0 && (
-            <div style={{ color: "var(--text3)", fontSize: 13, padding: 16 }}>{t("No active bookings")}</div>
+            <div style={{ color: "var(--text3)", fontSize: "var(--text-label)", padding: "var(--space-4)" }}>{t("No active bookings")}</div>
           )}
           {activeBookings.map(b => {
             const eq = (equipment || []).find(e => String(e.id) === String(b.equipmentId));
@@ -201,13 +201,13 @@ export function CalendarEquipment({ app, lang }) {
               <div key={b.id} className="cal-pto-card" style={{ borderLeft: "3px solid #0ea5e9" }}>
                 <div className="cal-pto-card-top">
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{eq?.name || b.equipmentId}</div>
-                    <div style={{ fontSize: 12, color: "var(--text3)" }}>
+                    <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)" }}>{eq?.name || b.equipmentId}</div>
+                    <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>
                       {projName(b.projectId)} · {b.startDate} → {b.endDate}
                     </div>
-                    {b.notes && <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>{b.notes}</div>}
+                    {b.notes && <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", marginTop: "var(--space-1)" }}>{b.notes}</div>}
                   </div>
-                  <button className="cal-pto-btn deny" style={{ fontSize: 11 }} onClick={() => cancelBooking(b.id)}>{t("Cancel")}</button>
+                  <button className="cal-pto-btn deny" style={{ fontSize: "var(--text-tab)" }} onClick={() => cancelBooking(b.id)}>{t("Cancel")}</button>
                 </div>
               </div>
             );
@@ -218,7 +218,7 @@ export function CalendarEquipment({ app, lang }) {
       {/* ── Availability Matrix ── */}
       {subView === "availability" && (
         <div className="cal-pto-calendar">
-          <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-3)", alignItems: "center" }}>
             <button className="cal-nav-btn" onClick={() => setWeekOffset(w => w - 1)}>←</button>
             <button className="cal-nav-btn today" onClick={() => setWeekOffset(0)}>{t("Today")}</button>
             <button className="cal-nav-btn" onClick={() => setWeekOffset(w => w + 1)}>→</button>
@@ -229,13 +229,13 @@ export function CalendarEquipment({ app, lang }) {
               {days.map((d, i) => (
                 <div key={i} className="cal-pto-matrix-day">
                   <div>{["M", "T", "W", "T", "F", "S", "S"][d.getDay() === 0 ? 6 : d.getDay() - 1]}</div>
-                  <div style={{ fontSize: 10, color: "var(--text3)" }}>{d.getDate()}</div>
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>{d.getDate()}</div>
                 </div>
               ))}
             </div>
             {(equipment || []).map(eq => (
               <div key={eq.id} className="cal-pto-matrix-row">
-                <div className="cal-pto-matrix-name" style={{ fontSize: 11 }}>{eq.name}</div>
+                <div className="cal-pto-matrix-name" style={{ fontSize: "var(--text-tab)" }}>{eq.name}</div>
                 {days.map((d, i) => {
                   const ds = toStr(d);
                   const booked = isBooked(eq.id, ds);
@@ -244,7 +244,7 @@ export function CalendarEquipment({ app, lang }) {
                     <div
                       key={i}
                       className={`cal-pto-matrix-cell${booked ? " off" : ""}`}
-                      style={booked ? { background: "rgba(14,165,233,0.2)", color: "#0ea5e9" } : {}}
+                      style={booked ? { background: "rgba(14,165,233,0.2)", color: "var(--cyan)" } : {}}
                       title={booked ? projName(booking.projectId) : t("Available")}
                     >
                       {booked ? "■" : ""}
@@ -294,12 +294,12 @@ export function CalendarEquipment({ app, lang }) {
             </div>
 
             {form.equipmentId && form.startDate && form.endDate && hasConflict(form.equipmentId, form.startDate, form.endDate) && (
-              <div style={{ padding: "8px 12px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius)", color: "#ef4444", fontSize: 12 }}>
+              <div style={{ padding: "var(--space-2) var(--space-3)", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius)", color: "var(--red)", fontSize: "var(--text-label)" }}>
                 {t("Conflict: equipment already booked for those dates")}
               </div>
             )}
 
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", gap: "var(--space-2)", justifyContent: "flex-end" }}>
               <button className="secondary" onClick={() => setSubView("bookings")}>{t("Cancel")}</button>
               <button className="primary" onClick={bookEquipment}>{t("Book")}</button>
             </div>
@@ -315,8 +315,8 @@ export function CalendarEquipment({ app, lang }) {
             const currentBooking = activeBookings.find(b => b.equipmentId === eq.id && b.startDate <= toStr(new Date()) && b.endDate >= toStr(new Date()));
             return (
               <div key={eq.id} className="cal-pto-card" style={{ borderLeft: `3px solid ${currentBooking ? "#0ea5e9" : "#10b981"}` }}>
-                <div style={{ fontWeight: 600, fontSize: 13 }}>{eq.name}</div>
-                <div style={{ fontSize: 12, color: "var(--text3)" }}>
+                <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)" }}>{eq.name}</div>
+                <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>
                   {t("Type")}: {eq.type} · {t("Status")}: {currentBooking ? `${t("In use")} @ ${projName(currentBooking.projectId)}` : t("Available")}
                 </div>
               </div>

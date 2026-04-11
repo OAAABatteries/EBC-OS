@@ -222,7 +222,7 @@ export function MapView({ app }) {
 
       const marker = L.circleMarker([entry.clockInLat, entry.clockInLng], {
         radius: 6,
-        color: "#3b82f6",
+        color: "var(--blue)",
         fillColor: "#3b82f6",
         fillOpacity: 0.9,
         weight: 2,
@@ -266,7 +266,7 @@ export function MapView({ app }) {
 
       const marker = L.circleMarker([proj.lat, proj.lng], {
         radius: 8,
-        color: "#f59e0b",
+        color: "var(--amber)",
         fillColor: "#f59e0b",
         fillOpacity: 0.85,
         weight: 2,
@@ -306,7 +306,7 @@ export function MapView({ app }) {
 
       {/* AI Route Plan Panel */}
       {showRoute && routeResult && (
-        <div className="card" style={{ padding: 20, marginBottom: 16, maxHeight: 400, overflow: "auto" }}>
+        <div className="card" style={{ padding: "var(--space-5)", marginBottom: "var(--space-4)", maxHeight: 400, overflow: "auto" }}>
           <div className="flex-between mb-12">
             <div className="text-sm font-semi">AI Route & Logistics Plan</div>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowRoute(false)}>Close</button>
@@ -325,10 +325,10 @@ export function MapView({ app }) {
 
           {/* Clusters */}
           {routeResult.clusterAnalysis?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: "var(--space-3)" }}>
               <div className="text-sm font-semi mb-8">Project Clusters</div>
               {routeResult.clusterAnalysis.map((c, i) => (
-                <div key={i} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: "var(--bg3)", border: "1px solid var(--border)" }}>
+                <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: "var(--bg3)", border: "1px solid var(--border)" }}>
                   <div className="text-sm font-semi">{c.cluster} — {c.area}</div>
                   <div className="text-xs text-muted mt-2">Projects: {(c.projects || []).join(", ")} · Crew: {c.teamSize}</div>
                   <div className="text-xs mt-2" style={{ color: "var(--green)" }}>{c.recommendation}</div>
@@ -339,10 +339,10 @@ export function MapView({ app }) {
 
           {/* Material Delivery */}
           {routeResult.materialDelivery?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: "var(--space-3)" }}>
               <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Delivery Consolidation</div>
               {routeResult.materialDelivery.map((m, i) => (
-                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
                   <div className="text-sm">{m.suggestion}</div>
                   <div className="text-xs text-muted mt-2">{(m.projects || []).join(", ")} — {m.benefit}</div>
                 </div>
@@ -352,7 +352,7 @@ export function MapView({ app }) {
 
           {/* Hub Recommendation */}
           {routeResult.hubRecommendation && (
-            <div style={{ padding: 12, borderRadius: 6, background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)", marginBottom: 12 }}>
+            <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)", marginBottom: "var(--space-3)" }}>
               <div className="text-sm font-semi">Staging Hub</div>
               <div className="text-xs text-muted mt-4">{routeResult.hubRecommendation}</div>
             </div>
@@ -363,7 +363,7 @@ export function MapView({ app }) {
             <div>
               <div className="text-sm font-semi mb-8">Logistics Alerts</div>
               {routeResult.logisticsAlerts.map((a, i) => (
-                <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
                   <div className="flex-between">
                     <span className="text-sm">{a.alert}</span>
                     <span className={`badge ${a.severity === "critical" ? "badge-red" : a.severity === "warning" ? "badge-amber" : "badge-muted"}`}>{a.severity}</span>
@@ -446,13 +446,13 @@ export function MapView({ app }) {
         ))}
         {showCrew && (
           <div className="map-legend-item">
-            <span className="map-legend-dot" style={{ background: "#3b82f6", boxShadow: "0 0 6px #3b82f680", width: 8, height: 8 }} />
+            <span className="map-legend-dot" style={{ background: "var(--blue)", boxShadow: "0 0 6px #3b82f680", width: 8, height: 8 }} />
             <span>Crew</span>
           </div>
         )}
         {showDeliveries && (
           <div className="map-legend-item">
-            <span className="map-legend-dot" style={{ background: "#f59e0b", boxShadow: "0 0 6px #f59e0b80", width: 8, height: 8 }} />
+            <span className="map-legend-dot" style={{ background: "var(--amber)", boxShadow: "0 0 6px #f59e0b80", width: 8, height: 8 }} />
             <span>Delivery</span>
           </div>
         )}

@@ -123,7 +123,7 @@ export function CalendarPTO({ app, lang }) {
     <div className="cal-pto">
       {/* Sub-nav */}
       <div className="cal-pto-nav" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", gap: 4 }}>
+        <div style={{ display: "flex", gap: "var(--space-1)" }}>
           {[
             { key: "requests", label: "Requests" },
             { key: "calendar", label: "Availability" },
@@ -137,31 +137,31 @@ export function CalendarPTO({ app, lang }) {
             </button>
           ))}
         </div>
-        <button className="primary" style={{ fontSize: 11, padding: "4px 10px" }} onClick={ptoImpactLoading ? undefined : () => showPtoImpact ? setShowPtoImpact(false) : ptoImpact ? setShowPtoImpact(true) : runPtoImpact()} disabled={ptoImpactLoading}>
+        <button className="primary" style={{ fontSize: "var(--text-tab)", padding: "var(--space-1) var(--space-3)" }} onClick={ptoImpactLoading ? undefined : () => showPtoImpact ? setShowPtoImpact(false) : ptoImpact ? setShowPtoImpact(true) : runPtoImpact()} disabled={ptoImpactLoading}>
           {ptoImpactLoading ? "Analyzing..." : "AI Coverage"}
         </button>
       </div>
 
       {/* AI PTO Impact Panel */}
       {showPtoImpact && ptoImpact && (
-        <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 16, marginBottom: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "var(--space-4)", marginBottom: "var(--space-4)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
               <Shield style={{ width: 22, height: 22 }} />
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>Coverage Score: {ptoImpact.coverageScore}/100 ({ptoImpact.grade})</div>
-                <div style={{ fontSize: 12, color: "var(--text3)" }}>{ptoImpact.summary}</div>
+                <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)" }}>Coverage Score: {ptoImpact.coverageScore}/100 ({ptoImpact.grade})</div>
+                <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>{ptoImpact.summary}</div>
               </div>
             </div>
-            <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "var(--text3)" }} onClick={() => setShowPtoImpact(false)}>✕</button>
+            <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--text-card)", color: "var(--text3)" }} onClick={() => setShowPtoImpact(false)}>✕</button>
           </div>
 
           {ptoImpact.coverageGaps?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--red)", marginBottom: 6 }}>Coverage Gaps ({ptoImpact.coverageGaps.length})</div>
+            <div style={{ marginBottom: "var(--space-3)" }}>
+              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--red)", marginBottom: "var(--space-2)" }}>Coverage Gaps ({ptoImpact.coverageGaps.length})</div>
               {ptoImpact.coverageGaps.map((g, i) => (
-                <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(239,68,68,0.08)", borderRadius: "var(--radius)", borderLeft: `3px solid ${g.severity === "critical" ? "#ef4444" : g.severity === "moderate" ? "#f59e0b" : "#6b7280"}` }}>
-                  <div style={{ fontWeight: 500 }}>{g.date} — {g.project}</div>
+                <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(239,68,68,0.08)", borderRadius: "var(--radius)", borderLeft: `3px solid ${g.severity === "critical" ? "#ef4444" : g.severity === "moderate" ? "#f59e0b" : "#6b7280"}` }}>
+                  <div style={{ fontWeight: "var(--weight-medium)" }}>{g.date} — {g.project}</div>
                   <div style={{ color: "var(--text3)" }}>{g.missingRole} · {g.suggestion}</div>
                 </div>
               ))}
@@ -169,22 +169,22 @@ export function CalendarPTO({ app, lang }) {
           )}
 
           {ptoImpact.conflictAlerts?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#f59e0b", marginBottom: 6 }}>Conflict Alerts</div>
+            <div style={{ marginBottom: "var(--space-3)" }}>
+              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--amber)", marginBottom: "var(--space-2)" }}>Conflict Alerts</div>
               {ptoImpact.conflictAlerts.map((c, i) => (
-                <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(245,158,11,0.08)", borderRadius: "var(--radius)" }}>
-                  <span style={{ fontWeight: 500 }}>{c.employee}:</span> {c.issue} — <em>{c.recommendation}</em>
+                <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(245,158,11,0.08)", borderRadius: "var(--radius)" }}>
+                  <span style={{ fontWeight: "var(--weight-medium)" }}>{c.employee}:</span> {c.issue} — <em>{c.recommendation}</em>
                 </div>
               ))}
             </div>
           )}
 
           {ptoImpact.upcomingRisks?.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--blue)", marginBottom: 6 }}>Upcoming Risks</div>
+            <div style={{ marginBottom: "var(--space-3)" }}>
+              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--blue)", marginBottom: "var(--space-2)" }}>Upcoming Risks</div>
               {ptoImpact.upcomingRisks.map((r, i) => (
-                <div key={i} style={{ fontSize: 12, padding: "6px 10px", marginBottom: 4, background: "rgba(59,130,246,0.08)", borderRadius: "var(--radius)" }}>
-                  <span style={{ fontWeight: 500 }}>{r.period}:</span> {r.risk} — <em>{r.mitigation}</em>
+                <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(59,130,246,0.08)", borderRadius: "var(--radius)" }}>
+                  <span style={{ fontWeight: "var(--weight-medium)" }}>{r.period}:</span> {r.risk} — <em>{r.mitigation}</em>
                 </div>
               ))}
             </div>
@@ -192,9 +192,9 @@ export function CalendarPTO({ app, lang }) {
 
           {ptoImpact.recommendations?.length > 0 && (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--green)", marginBottom: 6 }}>Recommendations</div>
+              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--green)", marginBottom: "var(--space-2)" }}>Recommendations</div>
               {ptoImpact.recommendations.map((r, i) => (
-                <div key={i} style={{ fontSize: 12, color: "var(--text2)", paddingLeft: 8, marginBottom: 3 }}>• {r}</div>
+                <div key={i} style={{ fontSize: "var(--text-label)", color: "var(--text2)", paddingLeft: "var(--space-2)", marginBottom: "var(--space-1)" }}>• {r}</div>
               ))}
             </div>
           )}
@@ -207,21 +207,21 @@ export function CalendarPTO({ app, lang }) {
           {/* Pending first */}
           {pending.length > 0 && (
             <>
-              <div className="cal-lookahead-section-title" style={{ color: "#f59e0b" }}>{t("Pending Approval")} ({pending.length})</div>
+              <div className="cal-lookahead-section-title" style={{ color: "var(--amber)" }}>{t("Pending Approval")} ({pending.length})</div>
               {pending.map(pto => {
                 const conflict = hasCrewConflict(pto.employeeId, pto.startDate, pto.endDate);
                 return (
                   <div key={pto.id} className="cal-pto-card">
                     <div className="cal-pto-card-top">
                       <div>
-                        <div style={{ fontWeight: 600, fontSize: 13 }}>{empName(pto.employeeId)}</div>
-                        <div style={{ fontSize: 12, color: "var(--text3)" }}>
+                        <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)" }}>{empName(pto.employeeId)}</div>
+                        <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>
                           {pto.type} · {pto.startDate} → {pto.endDate} ({daysBetween(pto.startDate, pto.endDate)}d)
                         </div>
-                        {pto.reason && <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>{pto.reason}</div>}
+                        {pto.reason && <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", marginTop: "var(--space-1)" }}>{pto.reason}</div>}
                       </div>
                       {conflict && (
-                        <span style={{ fontSize: 11, color: "#ef4444", fontWeight: 500 }}>{t("Crew conflict")}</span>
+                        <span style={{ fontSize: "var(--text-tab)", color: "var(--red)", fontWeight: "var(--weight-medium)" }}>{t("Crew conflict")}</span>
                       )}
                     </div>
                     <div className="cal-pto-actions">
@@ -237,11 +237,11 @@ export function CalendarPTO({ app, lang }) {
           {/* Approved */}
           {approved.length > 0 && (
             <>
-              <div className="cal-lookahead-section-title" style={{ color: "#10b981", marginTop: 16 }}>{t("Approved")} ({approved.length})</div>
+              <div className="cal-lookahead-section-title" style={{ color: "var(--green)", marginTop: "var(--space-4)" }}>{t("Approved")} ({approved.length})</div>
               {approved.map(pto => (
                 <div key={pto.id} className="cal-pto-card" style={{ borderLeft: "3px solid #10b981" }}>
-                  <div style={{ fontWeight: 500, fontSize: 13 }}>{empName(pto.employeeId)}</div>
-                  <div style={{ fontSize: 12, color: "var(--text3)" }}>
+                  <div style={{ fontWeight: "var(--weight-medium)", fontSize: "var(--text-label)" }}>{empName(pto.employeeId)}</div>
+                  <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>
                     {pto.type} · {pto.startDate} → {pto.endDate} ({daysBetween(pto.startDate, pto.endDate)}d)
                   </div>
                 </div>
@@ -250,7 +250,7 @@ export function CalendarPTO({ app, lang }) {
           )}
 
           {pending.length === 0 && approved.length === 0 && (
-            <div style={{ color: "var(--text3)", fontSize: 13, padding: 16 }}>{t("No PTO requests")}</div>
+            <div style={{ color: "var(--text3)", fontSize: "var(--text-label)", padding: "var(--space-4)" }}>{t("No PTO requests")}</div>
           )}
         </div>
       )}
@@ -258,7 +258,7 @@ export function CalendarPTO({ app, lang }) {
       {/* ── Availability Calendar ── */}
       {subView === "calendar" && (
         <div className="cal-pto-calendar">
-          <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-3)", alignItems: "center" }}>
             <button className="cal-nav-btn" onClick={() => setWeekOffset(w => w - 1)}>←</button>
             <button className="cal-nav-btn today" onClick={() => setWeekOffset(0)}>{t("Today")}</button>
             <button className="cal-nav-btn" onClick={() => setWeekOffset(w => w + 1)}>→</button>
@@ -270,7 +270,7 @@ export function CalendarPTO({ app, lang }) {
               {calDays.map((d, i) => (
                 <div key={i} className="cal-pto-matrix-day">
                   <div>{["M", "T", "W", "T", "F"][i % 5]}</div>
-                  <div style={{ fontSize: 10, color: "var(--text3)" }}>{d.getDate()}</div>
+                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>{d.getDate()}</div>
                 </div>
               ))}
             </div>
@@ -333,12 +333,12 @@ export function CalendarPTO({ app, lang }) {
 
             {/* Conflict warning */}
             {form.employeeId && form.startDate && form.endDate && hasCrewConflict(Number(form.employeeId), form.startDate, form.endDate) && (
-              <div style={{ padding: "8px 12px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius)", color: "#ef4444", fontSize: 12 }}>
+              <div style={{ padding: "var(--space-2) var(--space-3)", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius)", color: "var(--red)", fontSize: "var(--text-label)" }}>
                 {t("Warning: This employee is on the team schedule during this period")}
               </div>
             )}
 
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", gap: "var(--space-2)", justifyContent: "flex-end" }}>
               <button className="secondary" onClick={() => setSubView("requests")}>{t("Cancel")}</button>
               <button className="primary" onClick={submitPto}>{t("Submit Request")}</button>
             </div>

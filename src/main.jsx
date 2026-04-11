@@ -18,16 +18,16 @@ function Router() {
   }, []);
 
   if (hash === '#/gc-portal') {
-    return <Suspense fallback={<div style={{padding:40,color:'#f59e0b',background:'#0a0e1a',minHeight:'100vh'}}>Loading...</div>}><GCPortal /></Suspense>;
+    return <Suspense fallback={<div style={{padding: "var(--space-10)",color: "var(--amber)",background: "var(--bg)",minHeight:'100vh'}}>Loading...</div>}><GCPortal /></Suspense>;
   }
   if (hash === '#/careers') {
-    return <Suspense fallback={<div style={{padding:40,color:'#f59e0b',background:'#0a0e1a',minHeight:'100vh'}}>Loading...</div>}><JobPortal /></Suspense>;
+    return <Suspense fallback={<div style={{padding: "var(--space-10)",color: "var(--amber)",background: "var(--bg)",minHeight:'100vh'}}>Loading...</div>}><JobPortal /></Suspense>;
   }
   if (hash === '#/customer-portal') {
-    return <Suspense fallback={<div style={{padding:40,color:'#f59e0b',background:'#0a0e1a',minHeight:'100vh'}}>Loading...</div>}><CustomerPortal /></Suspense>;
+    return <Suspense fallback={<div style={{padding: "var(--space-10)",color: "var(--amber)",background: "var(--bg)",minHeight:'100vh'}}>Loading...</div>}><CustomerPortal /></Suspense>;
   }
   if (hash.startsWith('#/takeoff/')) {
-    return <Suspense fallback={<div style={{padding:40,color:'#f59e0b',background:'#0a0e1a',minHeight:'100vh'}}>Loading takeoff...</div>}><TakeoffRoute /></Suspense>;
+    return <Suspense fallback={<div style={{padding: "var(--space-10)",color: "var(--amber)",background: "var(--bg)",minHeight:'100vh'}}>Loading takeoff...</div>}><TakeoffRoute /></Suspense>;
   }
   return <App />;
 }
@@ -38,11 +38,11 @@ class ErrorBoundary extends Component {
   componentDidCatch(error, info) { console.error('APP CRASH:', error.message, error.stack); }
   render() {
     if (this.state.error) return (
-      <div style={{padding:40,color:'#ff6b6b',background:'#111',minHeight:'100vh',fontFamily:'monospace'}}>
+      <div style={{padding: "var(--space-10)",color:'#ff6b6b',background: "var(--bg2)",minHeight:'100vh',fontFamily:'monospace'}}>
         <h2>EBC Error</h2>
         <pre style={{whiteSpace:'pre-wrap',color:'#ffa'}}>{this.state.error.message}</pre>
-        <pre style={{whiteSpace:'pre-wrap',color:'#888',fontSize:12}}>{this.state.error.stack}</pre>
-        <button onClick={()=>location.reload()} style={{marginTop:20,padding:'8px 20px',background:'#e09422',border:'none',borderRadius:6,color:'#000',fontWeight:700,cursor:'pointer'}}>Reload</button>
+        <pre style={{whiteSpace:'pre-wrap',color: "var(--text2)",fontSize: "var(--text-label)"}}>{this.state.error.stack}</pre>
+        <button onClick={()=>location.reload()} style={{marginTop: "var(--space-5)",padding:'8px 20px',background: "var(--amber)",border:'none',borderRadius: "var(--radius-control)",color:'#000',fontWeight: "var(--weight-bold)",cursor:'pointer'}}>Reload</button>
       </div>
     );
     return this.props.children;

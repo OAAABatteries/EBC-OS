@@ -171,19 +171,19 @@ function DeliveryMap({ projects, materialRequests, companyLocations, auth, t }) 
   return (
     <div>
       {/* Stats bar */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
-        <div className="card" style={{ padding: "8px 14px", display: "flex", alignItems: "center", gap: 6 }}>
+      <div style={{ display: "flex", gap: "var(--space-3)", marginBottom: "var(--space-3)", flexWrap: "wrap" }}>
+        <div className="card" style={{ padding: "var(--space-2) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
           <Package style={{ width: 16, height: 16, color: STATUS_COLORS.approved }} />
           <span className="text-sm">{deliveryCount} {t("delivery stop")}{deliveryCount !== 1 ? "s" : ""}</span>
         </div>
-        <div className="card" style={{ padding: "8px 14px", display: "flex", alignItems: "center", gap: 6 }}>
+        <div className="card" style={{ padding: "var(--space-2) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
           <Building2 style={{ width: 16, height: 16, color: STATUS_COLORS.project }} />
           <span className="text-sm">{projectCount} {t("active project")}{projectCount !== 1 ? "s" : ""}</span>
         </div>
       </div>
 
       {/* Controls */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-3)", flexWrap: "wrap" }}>
         <button
           className={`btn btn-sm ${mapStyle === "dark" ? "btn-primary" : "btn-ghost"}`}
           onClick={() => setMapStyle("dark")}
@@ -204,7 +204,7 @@ function DeliveryMap({ projects, materialRequests, companyLocations, auth, t }) 
       </div>
 
       {/* Legend */}
-      <div className="map-legend" style={{ marginBottom: 8 }}>
+      <div className="map-legend" style={{ marginBottom: "var(--space-2)" }}>
         <div className="map-legend-item">
           <span className="map-legend-dot" style={{ background: STATUS_COLORS.approved }} /> Queued
         </div>
@@ -257,10 +257,10 @@ function PodSignaturePad({ onSave }) {
 
   return (
     <div>
-      <canvas ref={canvasRef} style={{ width: "100%", height: 120, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, touchAction: "none", cursor: "crosshair" }}
+      <canvas ref={canvasRef} style={{ width: "100%", height: 120, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", touchAction: "none", cursor: "crosshair" }}
         onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
         onTouchStart={start} onTouchMove={move} onTouchEnd={end} />
-      <button type="button" onClick={clear} style={{ marginTop: 4, fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer" }}>Clear Signature</button>
+      <button type="button" onClick={clear} style={{ marginTop: "var(--space-1)", fontSize: "var(--text-tab)", color: "var(--text3)", background: "none", border: "none", cursor: "pointer" }}>Clear Signature</button>
     </div>
   );
 }
@@ -368,7 +368,7 @@ export function DeliveriesTab({ app }) {
       </div>
 
       {/* Sub-tabs */}
-      <div className="emp-tabs" style={{ marginBottom: 16 }}>
+      <div className="emp-tabs" style={{ marginBottom: "var(--space-4)" }}>
         {tabs.map(tab => (
           <button
             key={tab.key}
@@ -396,17 +396,17 @@ export function DeliveriesTab({ app }) {
       {subTab === "queue" && (
         <div>
           {queueItems.length === 0 ? (
-            <div className="empty-state" style={{ padding: "40px 20px" }}>
-              <div className="empty-icon" style={{ marginBottom: 8 }}><Package style={{ width: 40, height: 40 }} /></div>
+            <div className="empty-state" style={{ padding: "var(--space-10) var(--space-5)" }}>
+              <div className="empty-icon" style={{ marginBottom: "var(--space-2)" }}><Package style={{ width: 40, height: 40 }} /></div>
               <div className="empty-text">{t("No pending deliveries")}</div>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               {queueItems.map(req => {
                 const navLink = getNavLink(req.projectId);
                 const address = getProjectAddress(req.projectId);
                 return (
-                  <div key={req.id} className="card" style={{ padding: 16 }}>
+                  <div key={req.id} className="card" style={{ padding: "var(--space-4)" }}>
                     <div className="text-sm font-bold text-amber mb-4">{req.projectName}</div>
                     {address && <div className="text-xs text-muted mb-8">{address}</div>}
                     <div className="flex-between mb-4">
@@ -449,17 +449,17 @@ export function DeliveriesTab({ app }) {
       {subTab === "transit" && (
         <div>
           {inTransitItems.length === 0 ? (
-            <div className="empty-state" style={{ padding: "40px 20px" }}>
-              <div className="empty-icon" style={{ marginBottom: 8 }}><Truck style={{ width: 40, height: 40 }} /></div>
+            <div className="empty-state" style={{ padding: "var(--space-10) var(--space-5)" }}>
+              <div className="empty-icon" style={{ marginBottom: "var(--space-2)" }}><Truck style={{ width: 40, height: 40 }} /></div>
               <div className="empty-text">{t("No active deliveries")}</div>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               {inTransitItems.map(req => {
                 const navLink = getNavLink(req.projectId);
                 const address = getProjectAddress(req.projectId);
                 return (
-                  <div key={req.id} className="card" style={{ padding: 16, borderLeft: "3px solid var(--amber)" }}>
+                  <div key={req.id} className="card" style={{ padding: "var(--space-4)", borderLeft: "3px solid var(--amber)" }}>
                     <div className="text-sm font-bold text-amber mb-4">{req.projectName}</div>
                     {address && <div className="text-xs text-muted mb-8">{address}</div>}
                     <div className="flex-between mb-4">
@@ -501,14 +501,14 @@ export function DeliveriesTab({ app }) {
       {subTab === "completed" && (
         <div>
           {todayDelivered.length === 0 ? (
-            <div className="empty-state" style={{ padding: "40px 20px" }}>
-              <div className="empty-icon" style={{ marginBottom: 8 }}><CheckCircle style={{ width: 40, height: 40 }} /></div>
+            <div className="empty-state" style={{ padding: "var(--space-10) var(--space-5)" }}>
+              <div className="empty-icon" style={{ marginBottom: "var(--space-2)" }}><CheckCircle style={{ width: 40, height: 40 }} /></div>
               <div className="empty-text">{t("No deliveries completed today")}</div>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
               {todayDelivered.map(req => (
-                <div key={req.id} className="card" style={{ padding: 14 }}>
+                <div key={req.id} className="card" style={{ padding: "var(--space-4)" }}>
                   <div className="flex-between mb-4">
                     <span className="text-sm font-semi">{req.material}</span>
                     <span className="badge badge-green">{t("Delivered")}</span>
@@ -518,28 +518,28 @@ export function DeliveriesTab({ app }) {
                     {t("Delivered")} {fmtTime(req.deliveredAt)}
                   </div>
                   {req.podRecipientName && (
-                    <div style={{ marginTop: 8 }}>
+                    <div style={{ marginTop: "var(--space-2)" }}>
                       <button
                         onClick={() => setExpandedPod(expandedPod === req.id ? null : req.id)}
-                        style={{ fontSize: 12, color: "var(--amber)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                        style={{ fontSize: "var(--text-label)", color: "var(--amber)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
                       >
                         POD: {t("Received by")} {req.podRecipientName}, {req.podCondition === "intact" ? "Good Condition" : req.podCondition === "partial" ? "Partial" : "Damaged"}
                         {expandedPod === req.id ? " ▲" : " ▼"}
                       </button>
                       {expandedPod === req.id && (
-                        <div style={{ marginTop: 8, padding: 10, background: "var(--bg2)", borderRadius: 8, border: "1px solid var(--border)" }}>
+                        <div style={{ marginTop: "var(--space-2)", padding: "var(--space-3)", background: "var(--bg2)", borderRadius: "var(--radius-control)", border: "1px solid var(--border)" }}>
                           {req.podNotes && (
-                            <div className="text-xs text-muted" style={{ marginBottom: 8 }}>
+                            <div className="text-xs text-muted" style={{ marginBottom: "var(--space-2)" }}>
                               <strong>{t("Notes")}:</strong> {req.podNotes}
                             </div>
                           )}
                           {req.podSignature && (
                             <div>
-                              <div className="text-xs text-dim" style={{ marginBottom: 4 }}>{t("Signature")}:</div>
-                              <img src={req.podSignature} alt="Signature" style={{ maxWidth: "100%", height: 80, background: "var(--bg3)", borderRadius: 6, border: "1px solid var(--border)" }} />
+                              <div className="text-xs text-dim" style={{ marginBottom: "var(--space-1)" }}>{t("Signature")}:</div>
+                              <img src={req.podSignature} alt="Signature" style={{ maxWidth: "100%", height: 80, background: "var(--bg3)", borderRadius: "var(--radius-control)", border: "1px solid var(--border)" }} />
                             </div>
                           )}
-                          <div className="text-xs text-dim" style={{ marginTop: 6 }}>
+                          <div className="text-xs text-dim" style={{ marginTop: "var(--space-2)" }}>
                             {t("Confirmed")} {fmtTime(req.podTimestamp)}
                           </div>
                         </div>
@@ -556,29 +556,29 @@ export function DeliveriesTab({ app }) {
       {/* ═══ POD MODAL ═══ */}
       {podModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setPodModal(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: 12, padding: 24, width: "95%", maxWidth: 480 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", padding: "var(--space-6)", width: "95%", maxWidth: 480 }}>
             <h3 style={{ margin: "0 0 4px", color: "var(--amber)" }}>Proof of Delivery</h3>
-            <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 16 }}>{podModal.material} — {podModal.qty} {podModal.unit}</div>
+            <div style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-4)" }}>{podModal.material} — {podModal.qty} {podModal.unit}</div>
 
-            <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>Recipient Name</label>
-            <input value={podForm.recipientName} onChange={e => setPodForm(f => ({...f, recipientName: e.target.value}))} placeholder="Who received the delivery?" style={{ width: "100%", padding: 8, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)", marginBottom: 12, boxSizing: "border-box" }} />
+            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>Recipient Name</label>
+            <input value={podForm.recipientName} onChange={e => setPodForm(f => ({...f, recipientName: e.target.value}))} placeholder="Who received the delivery?" style={{ width: "100%", padding: "var(--space-2)", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text)", marginBottom: "var(--space-3)", boxSizing: "border-box" }} />
 
-            <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>Condition</label>
-            <select value={podForm.condition} onChange={e => setPodForm(f => ({...f, condition: e.target.value}))} style={{ width: "100%", padding: 8, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)", marginBottom: 12, boxSizing: "border-box" }}>
+            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>Condition</label>
+            <select value={podForm.condition} onChange={e => setPodForm(f => ({...f, condition: e.target.value}))} style={{ width: "100%", padding: "var(--space-2)", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text)", marginBottom: "var(--space-3)", boxSizing: "border-box" }}>
               <option value="intact">Intact - Good Condition</option>
               <option value="partial">Partial - Missing Items</option>
               <option value="damaged">Damaged</option>
             </select>
 
-            <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>Delivery Notes</label>
-            <textarea value={podForm.notes} onChange={e => setPodForm(f => ({...f, notes: e.target.value}))} rows={2} placeholder="Any notes about the delivery..." style={{ width: "100%", padding: 8, background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)", marginBottom: 12, resize: "vertical", boxSizing: "border-box" }} />
+            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>Delivery Notes</label>
+            <textarea value={podForm.notes} onChange={e => setPodForm(f => ({...f, notes: e.target.value}))} rows={2} placeholder="Any notes about the delivery..." style={{ width: "100%", padding: "var(--space-2)", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text)", marginBottom: "var(--space-3)", resize: "vertical", boxSizing: "border-box" }} />
 
-            <label style={{ fontSize: 12, color: "var(--text2)", display: "block", marginBottom: 4 }}>Recipient Signature</label>
+            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>Recipient Signature</label>
             <PodSignaturePad onSave={setPodSignature} />
 
-            <div style={{ display: "flex", gap: 8, marginTop: 16, justifyContent: "flex-end" }}>
-              <button onClick={() => { setPodModal(null); setPodForm({ recipientName: "", condition: "intact", notes: "" }); setPodSignature(null); }} style={{ padding: "8px 16px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text2)", cursor: "pointer" }}>Cancel</button>
-              <button onClick={() => confirmDelivery()} style={{ padding: "8px 20px", background: "var(--amber)", border: "none", borderRadius: 6, color: "#000", fontWeight: 600, cursor: "pointer" }}>Confirm Delivery</button>
+            <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-4)", justifyContent: "flex-end" }}>
+              <button onClick={() => { setPodModal(null); setPodForm({ recipientName: "", condition: "intact", notes: "" }); setPodSignature(null); }} style={{ padding: "var(--space-2) var(--space-4)", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text2)", cursor: "pointer" }}>Cancel</button>
+              <button onClick={() => confirmDelivery()} style={{ padding: "var(--space-2) var(--space-5)", background: "var(--amber)", border: "none", borderRadius: "var(--radius-control)", color: "#000", fontWeight: "var(--weight-semi)", cursor: "pointer" }}>Confirm Delivery</button>
             </div>
           </div>
         </div>

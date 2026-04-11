@@ -93,7 +93,7 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
           maxWidth: 480,
           width: "100%",
           background: "var(--card)",
-          borderRadius: 16,
+          borderRadius: "var(--radius-card)",
           padding: 0,
           overflow: "hidden",
         }}
@@ -102,18 +102,18 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
         <div
           style={{
             background: "var(--navy, #0f1f2e)",
-            padding: "20px 20px 16px",
+            padding: "var(--space-5) var(--space-5) var(--space-4)",
             display: "flex",
             alignItems: "center",
-            gap: 12,
+            gap: "var(--space-3)",
           }}
         >
           <AlertTriangle size={24} color="var(--amber, #f59e0b)" />
           <div style={{ flex: 1 }}>
-            <div style={{ color: "#fff", fontWeight: 700, fontSize: 17 }}>
+            <div style={{ color: "#fff", fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)" }}>
               {tr("Report Issue")}
             </div>
-            <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 12 }}>
+            <div style={{ color: "rgba(255,255,255,0.55)", fontSize: "var(--text-label)" }}>
               {delivery?.materialName || ""}
             </div>
           </div>
@@ -123,11 +123,11 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
               background: "rgba(255,255,255,0.1)",
               border: "none",
               color: "#fff",
-              borderRadius: 8,
+              borderRadius: "var(--radius-control)",
               width: 32,
               height: 32,
               cursor: "pointer",
-              fontSize: 16,
+              fontSize: "var(--text-card)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -140,10 +140,10 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
         {/* Body */}
         <div
           style={{
-            padding: "20px 20px 8px",
+            padding: "var(--space-5) var(--space-5) var(--space-2)",
             display: "flex",
             flexDirection: "column",
-            gap: 16,
+            gap: "var(--space-4)",
             maxHeight: "60vh",
             overflowY: "auto",
           }}
@@ -152,7 +152,7 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
           <div>
             <label
               className="form-label"
-              style={{ marginBottom: 8, display: "block" }}
+              style={{ marginBottom: "var(--space-2)", display: "block" }}
             >
               {tr("Issue Type")}
             </label>
@@ -160,7 +160,7 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
-                gap: 8,
+                gap: "var(--space-2)",
               }}
             >
               {ISSUE_TYPES.map((type) => {
@@ -171,8 +171,8 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
                     key={type}
                     onClick={() => setIssueType(type)}
                     style={{
-                      padding: "12px 8px",
-                      borderRadius: 8,
+                      padding: "var(--space-3) var(--space-2)",
+                      borderRadius: "var(--radius-control)",
                       border: active
                         ? `2px solid ${color}`
                         : "2px solid var(--border)",
@@ -181,7 +181,7 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
                         : "var(--bg3)",
                       color: active ? color : "var(--text2)",
                       fontWeight: active ? 700 : 500,
-                      fontSize: 13,
+                      fontSize: "var(--text-label)",
                       cursor: "pointer",
                       textAlign: "center",
                     }}
@@ -195,7 +195,7 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
 
           {/* Shortage qty fields */}
           {isShortage && (
-            <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ display: "flex", gap: "var(--space-3)" }}>
               <div style={{ flex: 1 }}>
                 <FieldInput
                   label={tr("Expected Qty")}
@@ -237,11 +237,11 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
           {gpsStatus && (
             <div
               style={{
-                fontSize: 12,
+                fontSize: "var(--text-label)",
                 color: "var(--text3)",
                 display: "flex",
                 alignItems: "center",
-                gap: 6,
+                gap: "var(--space-2)",
               }}
             >
               <span
@@ -261,14 +261,14 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: "12px 20px 20px", display: "flex", gap: 10 }}>
+        <div style={{ padding: "var(--space-3) var(--space-5) var(--space-5)", display: "flex", gap: "var(--space-3)" }}>
           <button
             className="btn"
             onClick={onClose}
             style={{
               flex: 1,
-              padding: "14px",
-              fontSize: 15,
+              padding: "var(--space-4)",
+              fontSize: "var(--text-secondary)",
               background: "var(--bg3)",
               border: "1px solid var(--border)",
               color: "var(--text2)",
@@ -281,20 +281,20 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
             disabled={!canSubmit || saving}
             style={{
               flex: 2,
-              padding: "14px",
-              fontSize: 15,
-              fontWeight: 700,
+              padding: "var(--space-4)",
+              fontSize: "var(--text-secondary)",
+              fontWeight: "var(--weight-bold)",
               background: !canSubmit
                 ? "var(--bg3)"
                 : "var(--amber, #f59e0b)",
               color: !canSubmit ? "var(--text3)" : "#0f1f2e",
               border: "none",
-              borderRadius: 10,
+              borderRadius: "var(--radius-control)",
               cursor: !canSubmit ? "not-allowed" : "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: 8,
+              gap: "var(--space-2)",
             }}
           >
             <AlertTriangle

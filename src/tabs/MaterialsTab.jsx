@@ -315,7 +315,7 @@ export function MaterialsTab({ app }) {
 
   // ── Supplier modal shared supplier selector ──
   const renderSupplierSelector = () => (
-    <div style={{ marginBottom: 16 }}>
+    <div style={{ marginBottom: "var(--space-4)" }}>
       <label className="form-label">Supplier</label>
       <select
         className="form-select"
@@ -334,7 +334,7 @@ export function MaterialsTab({ app }) {
       {!initSuppliers.find(s => s.email === supplierEmail) && (
         <input
           className="form-input"
-          style={{ marginTop: 8 }}
+          style={{ marginTop: "var(--space-2)" }}
           placeholder="Supplier email address"
           value={supplierEmail}
           onChange={e => setSupplierEmail(e.target.value)}
@@ -354,10 +354,10 @@ export function MaterialsTab({ app }) {
           <input className="search-input" placeholder="Search materials..." value={matSearch} onChange={e => setMatSearch(e.target.value)} />
         </div>
         <div className="flex gap-8">
-          <button className="btn btn-ghost btn-sm" style={{ display: "flex", alignItems: "center", gap: 6 }} onClick={openSendToSupplier}>
+          <button className="btn btn-ghost btn-sm" style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={openSendToSupplier}>
             <Send size={14} /> Send Takeoff
           </button>
-          <button className="btn btn-ghost btn-sm" style={{ display: "flex", alignItems: "center", gap: 6 }} onClick={openRequestPricing}>
+          <button className="btn btn-ghost btn-sm" style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }} onClick={openRequestPricing}>
             <RefreshCw size={14} /> Request Pricing
           </button>
           <button className="btn btn-primary" onClick={() => setEditMat({ name: "", category: "Framing", unit: "LF", matCost: 0, laborCost: 0, note: "" })}>+ Add Material</button>
@@ -416,7 +416,7 @@ export function MaterialsTab({ app }) {
                   <td className="text-sm text-dim">{m.note}</td>
                   <td>
                     {linkedSubs.length > 0 ? (
-                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", gap: "var(--space-1)", flexWrap: "wrap" }}>
                         {linkedSubs.map(s => (
                           <span key={s.id} className="sub-linked-badge" title={`${s.desc} (${s.status})`}>
                             {s.number}
@@ -524,7 +524,7 @@ export function MaterialsTab({ app }) {
 
         {/* Quick-Add Presets */}
         <div className="mb-16">
-          <label className="form-label" style={{ marginBottom: 8 }}>Quick Add</label>
+          <label className="form-label" style={{ marginBottom: "var(--space-2)" }}>Quick Add</label>
           <div className="flex gap-4 flex-wrap">
             {[
               // Studs by gauge
@@ -562,7 +562,7 @@ export function MaterialsTab({ app }) {
               { label: "Fire Caulk", id: "m44" },
               { label: "2x6 Blocking", id: "m50" },
             ].map(p => (
-              <button key={p.id} className="btn btn-sm btn-ghost" style={{ fontSize: 11, padding: "4px 10px" }}
+              <button key={p.id} className="btn btn-sm btn-ghost" style={{ fontSize: "var(--text-tab)", padding: "var(--space-1) var(--space-3)" }}
                 onClick={() => addLayer(p.id)}>{p.label}</button>
             ))}
           </div>
@@ -587,7 +587,7 @@ export function MaterialsTab({ app }) {
 
         {/* Layers */}
         {asm.layers.length === 0 ? (
-          <div className="text-sm text-dim" style={{ padding: "24px 0", textAlign: "center" }}>No layers yet. Add materials above to build the assembly.</div>
+          <div className="text-sm text-dim" style={{ padding: "var(--space-6) 0", textAlign: "center" }}>No layers yet. Add materials above to build the assembly.</div>
         ) : (
           <div className="table-wrap">
             <table className="table">
@@ -679,7 +679,7 @@ export function MaterialsTab({ app }) {
                   <span className="badge badge-blue">{a.type}</span>
                   <span className="text-xs text-dim">{a.layers.length} layer{a.layers.length !== 1 ? "s" : ""}</span>
                 </div>
-                <div className="card-title font-head" style={{ fontSize: 15, marginBottom: 4 }}>{a.name}</div>
+                <div className="card-title font-head" style={{ fontSize: "var(--text-secondary)", marginBottom: "var(--space-1)" }}>{a.name}</div>
                 {a.notes && <div className="text-sm text-dim mb-8">{a.notes}</div>}
                 <div className="flex-between mt-8">
                   <span className="font-mono font-bold text-amber">{fmt(totalCost)}</span>
@@ -688,7 +688,7 @@ export function MaterialsTab({ app }) {
                 <div className="flex gap-4 flex-wrap mt-8">
                   {[...new Set(a.layers.map(l => l.category))].map(c => {
                     const clr = MAT_CLR[c] || {};
-                    return <span key={c} className="mat-cat-pill" style={{ background: clr.bg, color: clr.color, border: `1px solid ${clr.border}`, fontSize: 10 }}>{c}</span>;
+                    return <span key={c} className="mat-cat-pill" style={{ background: clr.bg, color: clr.color, border: `1px solid ${clr.border}`, fontSize: "var(--text-xs)" }}>{c}</span>;
                   })}
                 </div>
               </div>
@@ -749,17 +749,17 @@ export function MaterialsTab({ app }) {
             const linked = getSubmittalsForMat(mat.id);
             if (linked.length === 0) return null;
             return (
-              <div style={{ marginTop: 12, padding: "10px 12px", background: "var(--bg3)", borderRadius: "var(--radius)", border: "1px solid var(--border)" }}>
-                <div className="form-label" style={{ marginBottom: 6 }}>Linked Submittals</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ marginTop: "var(--space-3)", padding: "var(--space-3) var(--space-3)", background: "var(--bg3)", borderRadius: "var(--radius)", border: "1px solid var(--border)" }}>
+                <div className="form-label" style={{ marginBottom: "var(--space-2)" }}>Linked Submittals</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
                   {linked.map(s => (
-                    <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
+                    <div key={s.id} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", fontSize: "var(--text-label)" }}>
                       <span className="sub-linked-badge">{s.number}</span>
                       <span style={{ color: "var(--text2)" }}>{s.desc}</span>
-                      <span className={`badge badge-${s.status === "approved" ? "green" : s.status === "submitted" ? "blue" : "amber"}`} style={{ fontSize: 10 }}>
+                      <span className={`badge badge-${s.status === "approved" ? "green" : s.status === "submitted" ? "blue" : "amber"}`} style={{ fontSize: "var(--text-xs)" }}>
                         {s.status}
                       </span>
-                      {s.pdfName && <span style={{ fontSize: 10, color: "var(--text3)" }}>PDF: {s.pdfName}</span>}
+                      {s.pdfName && <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>PDF: {s.pdfName}</span>}
                     </div>
                   ))}
                 </div>
@@ -808,20 +808,20 @@ export function MaterialsTab({ app }) {
             <div className="card-header"><div className="card-title">AI Material Cost Optimizer</div></div>
             <button className="btn btn-ghost btn-sm" onClick={() => { setShowOpt(false); setOptResult(null); }}>Close</button>
           </div>
-          {optLoading && <div className="text-sm text-muted" style={{ padding: 16, textAlign: "center" }}>Analyzing {materials.length} materials across {(app.projects || []).length} projects...</div>}
+          {optLoading && <div className="text-sm text-muted" style={{ padding: "var(--space-4)", textAlign: "center" }}>Analyzing {materials.length} materials across {(app.projects || []).length} projects...</div>}
           {optResult && (
-            <div style={{ marginTop: 8 }}>
-              <div style={{ padding: 12, borderRadius: 8, background: "var(--bg3)", marginBottom: 12, fontSize: 14 }}>{optResult.summary}</div>
+            <div style={{ marginTop: "var(--space-2)" }}>
+              <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "var(--bg3)", marginBottom: "var(--space-3)", fontSize: "var(--text-secondary)" }}>{optResult.summary}</div>
 
               {/* Savings Opportunities */}
               {optResult.savings?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div style={{ marginBottom: "var(--space-3)" }}>
                   <div className="text-sm font-semi mb-8">Savings Opportunities</div>
                   {optResult.savings.map((s, i) => (
-                    <div key={i} style={{ padding: "6px 10px", marginBottom: 4, borderRadius: 6, borderLeft: `3px solid ${s.difficulty === "easy" ? "var(--green)" : s.difficulty === "medium" ? "var(--amber)" : "var(--red)"}`, background: "var(--card)", fontSize: 13 }}>
+                    <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", borderRadius: "var(--radius-control)", borderLeft: `3px solid ${s.difficulty === "easy" ? "var(--green)" : s.difficulty === "medium" ? "var(--amber)" : "var(--red)"}`, background: "var(--card)", fontSize: "var(--text-label)" }}>
                       <div className="flex-between">
                         <span className="font-semi">{s.material}</span>
-                        <span style={{ color: "var(--green)", fontWeight: 600 }}>{s.estimatedSavings}</span>
+                        <span style={{ color: "var(--green)", fontWeight: "var(--weight-semi)" }}>{s.estimatedSavings}</span>
                       </div>
                       <div className="text-xs text-muted mt-2">{s.suggestedAction}</div>
                     </div>
@@ -831,10 +831,10 @@ export function MaterialsTab({ app }) {
 
               {/* Bulk Opportunities */}
               {optResult.bulkOpportunities?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div style={{ marginBottom: "var(--space-3)" }}>
                   <div className="text-sm font-semi mb-8">Bulk Purchase Opportunities</div>
                   {optResult.bulkOpportunities.map((b, i) => (
-                    <div key={i} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                    <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)", fontSize: "var(--text-label)" }}>
                       <span className="font-semi">{b.material}</span> — {b.combinedQty} across {(b.projects || []).join(", ")}
                       <div className="text-xs mt-2" style={{ color: "var(--green)" }}>Potential: {b.savingsPotential}</div>
                     </div>
@@ -844,10 +844,10 @@ export function MaterialsTab({ app }) {
 
               {/* Substitutions */}
               {optResult.substitutions?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div style={{ marginBottom: "var(--space-3)" }}>
                   <div className="text-sm font-semi mb-8">Material Substitutions</div>
                   {optResult.substitutions.map((s, i) => (
-                    <div key={i} style={{ padding: "6px 10px", marginBottom: 4, borderRadius: 6, background: "var(--card)", fontSize: 13 }}>
+                    <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", borderRadius: "var(--radius-control)", background: "var(--card)", fontSize: "var(--text-label)" }}>
                       <div className="flex-between">
                         <span>{s.current} → <span className="font-semi">{s.alternative}</span></span>
                         <span className={s.approval === "spec_compliant" ? "badge-green" : s.approval === "submittal_required" ? "badge-amber" : "badge-red"}>{s.approval}</span>
@@ -863,7 +863,7 @@ export function MaterialsTab({ app }) {
                 <div>
                   <div className="text-sm font-semi mb-8">Vendor Strategy</div>
                   {optResult.vendorStrategy.map((v, i) => (
-                    <div key={i} style={{ padding: "3px 0", fontSize: 13, color: "var(--text2)" }}>• {v}</div>
+                    <div key={i} style={{ padding: "var(--space-1) 0", fontSize: "var(--text-label)", color: "var(--text2)" }}>• {v}</div>
                   ))}
                 </div>
               )}
@@ -909,7 +909,7 @@ export function MaterialsTab({ app }) {
         return (
           <div>
             <div className="flex-between mb-16">
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                 <Database size={18} style={{ color: "var(--amber)" }} />
                 <span className="font-semi">{warehouse.length} items in inventory</span>
               </div>
@@ -949,22 +949,22 @@ export function MaterialsTab({ app }) {
                     return (
                       <tr key={item.id} className="clickable-row" onClick={() => setEditWhItem({ ...item })}>
                         <td className="font-semi">{item.name}</td>
-                        <td style={{ fontSize: 12 }}>{item.manufacturer}</td>
-                        <td><span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "var(--bg3)", color: "var(--text2)" }}>{item.category}</span></td>
+                        <td style={{ fontSize: "var(--text-label)" }}>{item.manufacturer}</td>
+                        <td><span style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", background: "var(--bg3)", color: "var(--text2)" }}>{item.category}</span></td>
                         <td style={{ textAlign: "right" }}>
-                          <span style={{ fontWeight: 700, color: low ? "var(--red)" : item.qty <= 20 ? "var(--amber)" : "var(--text1)" }}>{item.qty}</span>
-                          {low && <span style={{ fontSize: 10, color: "var(--red)", marginLeft: 4 }}>LOW</span>}
+                          <span style={{ fontWeight: "var(--weight-bold)", color: low ? "var(--red)" : item.qty <= 20 ? "var(--amber)" : "var(--text1)" }}>{item.qty}</span>
+                          {low && <span style={{ fontSize: "var(--text-xs)", color: "var(--red)", marginLeft: "var(--space-1)" }}>LOW</span>}
                         </td>
-                        <td style={{ fontSize: 12 }}>{item.unit}</td>
+                        <td style={{ fontSize: "var(--text-label)" }}>{item.unit}</td>
                         <td>
-                          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", fontSize: "var(--text-label)" }}>
                             <MapPin size={11} style={{ color: "var(--text3)" }} />
                             {item.location}
                           </div>
                         </td>
-                        <td style={{ fontSize: 11, color: "var(--text3)" }}>{item.updated}</td>
+                        <td style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{item.updated}</td>
                         <td>
-                          <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}
+                          <button className="btn btn-ghost btn-sm" style={{ fontSize: "var(--text-tab)", display: "flex", alignItems: "center", gap: "var(--space-1)" }}
                             onClick={e => { e.stopPropagation(); handleRequestFromWarehouse(item); }}>
                             <ArrowDownToLine size={12} /> Request
                           </button>
@@ -1042,9 +1042,9 @@ export function MaterialsTab({ app }) {
       {view === "Requests" && (
         <div>
           {/* Request Form */}
-          <div className="card mb-16" style={{ padding: 16 }}>
+          <div className="card mb-16" style={{ padding: "var(--space-4)" }}>
             <div className="text-sm font-semi mb-12">New Material Request</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
               <select
                 className="input"
                 value={reqForm.projectId}
@@ -1103,14 +1103,14 @@ export function MaterialsTab({ app }) {
           {/* Request List */}
           <div className="text-xs text-dim mb-8">{visibleRequests.length} request{visibleRequests.length !== 1 ? "s" : ""}</div>
           {visibleRequests.length === 0 ? (
-            <div className="empty-state" style={{ padding: "40px 20px" }}>
-              <div className="empty-icon" style={{ marginBottom: 8 }}><ClipboardList style={{ width: 40, height: 40 }} /></div>
+            <div className="empty-state" style={{ padding: "var(--space-10) var(--space-5)" }}>
+              <div className="empty-icon" style={{ marginBottom: "var(--space-2)" }}><ClipboardList style={{ width: 40, height: 40 }} /></div>
               <div className="empty-text">No material requests yet</div>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
               {visibleRequests.map(req => (
-                <div key={req.id} className="card" style={{ padding: 14, borderLeft: req.urgency === "emergency" ? "3px solid var(--red)" : req.urgency === "urgent" ? "3px solid var(--amber)" : "3px solid transparent" }}>
+                <div key={req.id} className="card" style={{ padding: "var(--space-4)", borderLeft: req.urgency === "emergency" ? "3px solid var(--red)" : req.urgency === "urgent" ? "3px solid var(--amber)" : "3px solid transparent" }}>
                   <div className="flex-between mb-4">
                     <span className="text-sm font-semi">
                       {req.urgency === "emergency" ? "🚨 " : req.urgency === "urgent" ? "⚡ " : ""}{req.material}
@@ -1158,9 +1158,9 @@ export function MaterialsTab({ app }) {
 
                   {/* Audit trail (PM only, collapsed) */}
                   {!isFieldRole && req.auditTrail?.length > 0 && (
-                    <details style={{ marginTop: 8 }}>
+                    <details style={{ marginTop: "var(--space-2)" }}>
                       <summary className="text-xs text-dim" style={{ cursor: "pointer" }}>Audit trail ({req.auditTrail.length})</summary>
-                      <div style={{ marginTop: 4 }}>
+                      <div style={{ marginTop: "var(--space-1)" }}>
                         {req.auditTrail.map((e, i) => (
                           <div key={i} className="text-xs text-dim">{new Date(e.timestamp).toLocaleString()} · {e.actor} · {e.action}{e.notes ? ` — ${e.notes}` : ""}</div>
                         ))}
@@ -1185,7 +1185,7 @@ export function MaterialsTab({ app }) {
                 <div className="modal-title">Review Material Request</div>
                 <button className="btn btn-ghost btn-sm" onClick={() => setApprovalDetail(null)}>✕</button>
               </div>
-              <div style={{ padding: 16 }}>
+              <div style={{ padding: "var(--space-4)" }}>
                 <div className="text-sm font-semi mb-8">{req.urgency === "emergency" ? "🚨 " : req.urgency === "urgent" ? "⚡ " : ""}{req.material}</div>
                 <div className="text-xs text-muted mb-4">{req.projectName} · {req.qty} {req.unit}</div>
                 <div className="text-xs text-muted mb-4">Requested by {req.employeeName} · {req.requestedAt ? new Date(req.requestedAt).toLocaleDateString() : ""}</div>
@@ -1193,7 +1193,7 @@ export function MaterialsTab({ app }) {
                 {req.notes && <div className="text-xs text-dim mb-12">{req.notes}</div>}
 
                 <div className="text-sm font-semi mb-8">Choose Fulfillment Route:</div>
-                <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+                <div style={{ display: "flex", gap: "var(--space-3)", marginBottom: "var(--space-4)" }}>
                   <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => handleApproveWithRoute(req.id, "supplier", "")}>
                     📦 Supplier Order
                   </button>
@@ -1218,7 +1218,7 @@ export function MaterialsTab({ app }) {
         <div className="modal-overlay" onClick={() => setShowSendModal(false)}>
           <div className="modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div className="modal-title" style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                 <Send size={16} /> Send Material Takeoff to Supplier
               </div>
               <button className="modal-close" onClick={() => setShowSendModal(false)}><X size={14} /></button>
@@ -1226,8 +1226,8 @@ export function MaterialsTab({ app }) {
 
             {renderSupplierSelector()}
 
-            <div className="form-label" style={{ marginBottom: 6 }}>Materials to Include</div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <div className="form-label" style={{ marginBottom: "var(--space-2)" }}>Materials to Include</div>
+            <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-2)" }}>
               <button className="btn btn-ghost btn-sm" onClick={() => setSelectedMatIds(materials.map(m => m.id))}>All</button>
               <button className="btn btn-ghost btn-sm" onClick={() => setSelectedMatIds([])}>None</button>
               {catFilter !== "All" && (
@@ -1236,14 +1236,14 @@ export function MaterialsTab({ app }) {
                 </button>
               )}
             </div>
-            <div style={{ maxHeight: 260, overflowY: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", marginBottom: 16 }}>
+            <div style={{ maxHeight: 260, overflowY: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", marginBottom: "var(--space-4)" }}>
               {materials.map(m => {
                 const checked = (selectedMatIds || []).includes(m.id);
                 const clr = MAT_CLR[m.category] || {};
                 return (
-                  <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 12px", borderBottom: "1px solid var(--border)", cursor: "pointer", background: checked ? "var(--amber-dim)" : "transparent" }}>
+                  <label key={m.id} style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-2) var(--space-3)", borderBottom: "1px solid var(--border)", cursor: "pointer", background: checked ? "var(--amber-dim)" : "transparent" }}>
                     <input type="checkbox" checked={checked} onChange={() => toggleMatId(m.id)} style={{ accentColor: "var(--amber)" }} />
-                    <span className="mat-cat-pill" style={{ background: clr.bg, color: clr.color, border: `1px solid ${clr.border}`, fontSize: 10, padding: "1px 6px" }}>{m.category}</span>
+                    <span className="mat-cat-pill" style={{ background: clr.bg, color: clr.color, border: `1px solid ${clr.border}`, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}>{m.category}</span>
                     <span className="text-sm" style={{ flex: 1 }}>{m.name}</span>
                     <span className="text-xs text-dim">{m.unit}</span>
                     {m.note && <span className="text-xs text-dim" style={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.note}</span>}
@@ -1252,14 +1252,14 @@ export function MaterialsTab({ app }) {
               })}
             </div>
 
-            <div className="text-xs text-dim" style={{ marginBottom: 12 }}>
+            <div className="text-xs text-dim" style={{ marginBottom: "var(--space-3)" }}>
               {(selectedMatIds || []).length} of {materials.length} materials selected · Opens your default email client
             </div>
 
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => setShowSendModal(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={sendTakeoffEmail} disabled={!(selectedMatIds || []).length}>
-                <Send size={14} style={{ marginRight: 6 }} /> Open in Email Client
+                <Send size={14} style={{ marginRight: "var(--space-2)" }} /> Open in Email Client
               </button>
             </div>
           </div>
@@ -1271,7 +1271,7 @@ export function MaterialsTab({ app }) {
         <div className="modal-overlay" onClick={() => setShowPricingModal(false)}>
           <div className="modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div className="modal-title" style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
                 <RefreshCw size={16} /> Request Pricing Update
               </div>
               <button className="modal-close" onClick={() => setShowPricingModal(false)}><X size={14} /></button>
@@ -1279,8 +1279,8 @@ export function MaterialsTab({ app }) {
 
             {renderSupplierSelector()}
 
-            <div className="form-label" style={{ marginBottom: 6 }}>Items for Pricing Review</div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <div className="form-label" style={{ marginBottom: "var(--space-2)" }}>Items for Pricing Review</div>
+            <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-2)" }}>
               <button className="btn btn-ghost btn-sm" onClick={() => setSelectedMatIds(materials.map(m => m.id))}>All ({materials.length})</button>
               <button className="btn btn-ghost btn-sm" onClick={() => setSelectedMatIds([])}>None</button>
               {catFilter !== "All" && (
@@ -1289,14 +1289,14 @@ export function MaterialsTab({ app }) {
                 </button>
               )}
             </div>
-            <div style={{ maxHeight: 260, overflowY: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", marginBottom: 16 }}>
+            <div style={{ maxHeight: 260, overflowY: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", marginBottom: "var(--space-4)" }}>
               {materials.map(m => {
                 const checked = (selectedMatIds || []).includes(m.id);
                 const clr = MAT_CLR[m.category] || {};
                 return (
-                  <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 12px", borderBottom: "1px solid var(--border)", cursor: "pointer", background: checked ? "var(--amber-dim)" : "transparent" }}>
+                  <label key={m.id} style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-2) var(--space-3)", borderBottom: "1px solid var(--border)", cursor: "pointer", background: checked ? "var(--amber-dim)" : "transparent" }}>
                     <input type="checkbox" checked={checked} onChange={() => toggleMatId(m.id)} style={{ accentColor: "var(--amber)" }} />
-                    <span className="mat-cat-pill" style={{ background: clr.bg, color: clr.color, border: `1px solid ${clr.border}`, fontSize: 10, padding: "1px 6px" }}>{m.category}</span>
+                    <span className="mat-cat-pill" style={{ background: clr.bg, color: clr.color, border: `1px solid ${clr.border}`, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}>{m.category}</span>
                     <span className="text-sm" style={{ flex: 1 }}>{m.name}</span>
                     <span className="text-xs font-mono" style={{ color: "var(--amber)" }}>${m.matCost.toFixed(2)}/{m.unit}</span>
                   </label>
@@ -1304,14 +1304,14 @@ export function MaterialsTab({ app }) {
               })}
             </div>
 
-            <div className="text-xs text-dim" style={{ marginBottom: 12 }}>
+            <div className="text-xs text-dim" style={{ marginBottom: "var(--space-3)" }}>
               {(selectedMatIds || []).length} items · Current pricing will be included so supplier can flag changes
             </div>
 
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => setShowPricingModal(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={sendPricingRequest} disabled={!(selectedMatIds || []).length}>
-                <RefreshCw size={14} style={{ marginRight: 6 }} /> Open in Email Client
+                <RefreshCw size={14} style={{ marginRight: "var(--space-2)" }} /> Open in Email Client
               </button>
             </div>
           </div>

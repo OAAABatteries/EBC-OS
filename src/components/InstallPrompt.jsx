@@ -57,16 +57,16 @@ export function InstallPrompt() {
 
   return (
     <div style={{
-      display: "flex", alignItems: "center", gap: 10,
-      padding: "10px 16px", margin: "0 0 8px 0",
+      display: "flex", alignItems: "center", gap: "var(--space-3)",
+      padding: "var(--space-3) var(--space-4)", margin: "0 0 8px 0",
       background: "linear-gradient(135deg, rgba(224,148,34,0.12), rgba(224,148,34,0.04))",
       border: "1px solid rgba(224,148,34,0.25)",
-      borderRadius: 8, fontSize: 13,
+      borderRadius: "var(--radius-control)", fontSize: "var(--text-label)",
     }}>
-      <span style={{ fontSize: 20 }}>&#9881;</span>
+      <span style={{ fontSize: "var(--text-subtitle)" }}>&#9881;</span>
       <div style={{ flex: 1 }}>
         <strong style={{ color: "var(--gold, #e09422)" }}>Install EBC</strong>
-        <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 2 }}>
+        <div style={{ fontSize: "var(--text-tab)", color: "var(--text2)", marginTop: "var(--space-1)" }}>
           Works offline, launches instantly, feels like a native app
         </div>
       </div>
@@ -74,8 +74,8 @@ export function InstallPrompt() {
         onClick={handleInstall}
         style={{
           background: "var(--gold, #e09422)", color: "#000",
-          border: "none", borderRadius: 6, padding: "6px 16px",
-          fontWeight: 700, fontSize: 13, cursor: "pointer",
+          border: "none", borderRadius: "var(--radius-control)", padding: "var(--space-2) var(--space-4)",
+          fontWeight: "var(--weight-bold)", fontSize: "var(--text-label)", cursor: "pointer",
         }}
       >
         Install
@@ -84,7 +84,7 @@ export function InstallPrompt() {
         onClick={handleDismiss}
         style={{
           background: "none", border: "none",
-          color: "var(--text3)", cursor: "pointer", fontSize: 16, padding: "0 4px",
+          color: "var(--text3)", cursor: "pointer", fontSize: "var(--text-card)", padding: "0 4px",
         }}
       >
         &times;
@@ -121,13 +121,13 @@ export function UpdateBanner() {
 
   return (
     <div style={{
-      display: "flex", alignItems: "center", gap: 10,
-      padding: "10px 16px", margin: "0 0 8px 0",
+      display: "flex", alignItems: "center", gap: "var(--space-3)",
+      padding: "var(--space-3) var(--space-4)", margin: "0 0 8px 0",
       background: "rgba(59,130,246,0.12)",
       border: "1px solid rgba(59,130,246,0.3)",
-      borderRadius: 8, fontSize: 13,
+      borderRadius: "var(--radius-control)", fontSize: "var(--text-label)",
     }}>
-      <span style={{ fontSize: 16 }}>&#8635;</span>
+      <span style={{ fontSize: "var(--text-card)" }}>&#8635;</span>
       <span style={{ flex: 1 }}>
         <strong>Update available</strong> — a new version of EBC is ready
       </span>
@@ -135,8 +135,8 @@ export function UpdateBanner() {
         onClick={() => window.location.reload()}
         style={{
           background: "var(--primary, #3b82f6)", color: "#fff",
-          border: "none", borderRadius: 6, padding: "6px 16px",
-          fontWeight: 700, fontSize: 13, cursor: "pointer",
+          border: "none", borderRadius: "var(--radius-control)", padding: "var(--space-2) var(--space-4)",
+          fontWeight: "var(--weight-bold)", fontSize: "var(--text-label)", cursor: "pointer",
         }}
       >
         Reload
@@ -145,7 +145,7 @@ export function UpdateBanner() {
         onClick={() => setHasUpdate(false)}
         style={{
           background: "none", border: "none",
-          color: "var(--text3)", cursor: "pointer", fontSize: 16, padding: "0 4px",
+          color: "var(--text3)", cursor: "pointer", fontSize: "var(--text-card)", padding: "0 4px",
         }}
       >
         &times;
