@@ -86,7 +86,7 @@ export function ForemanView({ app }) {
 
   const [foremanTab, setForemanTab] = useState("dashboard");
   const network = useNetworkStatus();
-  const { requestPermission, sendNotification } = useNotifications();
+  const { requestPermission, sendNotification, notifyLateArrival, notifyCertExpiry } = useNotifications();
   const [showReportProblem, setShowReportProblem] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [clockEntry, setClockEntry] = useState(null); // { clockIn, lat, lng, projectId }
@@ -456,6 +456,9 @@ export function ForemanView({ app }) {
       });
       const isRepeat = recentLates.length >= 3;
       show?.(`⚠️ ${emp?.name || "Crew"} ${t("is")} ${lateMinutes} ${t("min late")}${isRepeat ? ` — ${t("REPEAT")} (${recentLates.length}x ${t("this month")})` : ""}`, isRepeat ? 6000 : 4000);
+      // Push notification to PM/foreman
+      const proj = projects.find(p => String(p.id) === String(selectedProjectId));
+      notifyLateArrival({ employeeName: emp?.name || "Crew", projectName: proj?.name || "", minutesLate: lateMinutes, shiftStart });
     }
   };
 
@@ -931,6 +934,27 @@ export function ForemanView({ app }) {
           .in("employee_id", crewIds)
           .order("expiry_date", { ascending: true });
         setCrewCerts(data || []);
+        // Proactive cert expiry notifications (once per day)
+        const certNotifKey = `ebc_certNotifDate_${activeForeman.id}`;
+        const today = new Date().toISOString().slice(0, 10);
+        if (localStorage.getItem(certNotifKey) !== today && data?.length) {
+          localStorage.setItem(certNotifKey, today);
+          const now = new Date();
+          for (const cert of data) {
+            if (!cert.expiry_date) continue;
+            const expiry = new Date(cert.expiry_date);
+            const daysLeft = Math.ceil((expiry - now) / 86400000);
+            if (daysLeft <= 30) {
+              const emp = teamForProject.find(m => String(m.id) === String(cert.employee_id));
+              notifyCertExpiry({
+                employeeName: emp?.name || "Employee",
+                certName: cert.cert_type || cert.name || "Certification",
+                daysUntilExpiry: daysLeft,
+                expiryDate: cert.expiry_date,
+              });
+            }
+          }
+        }
       } catch (err) {
         console.error("Failed to fetch crew certs:", err);
       }

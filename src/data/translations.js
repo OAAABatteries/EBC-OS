@@ -1045,4 +1045,21 @@ export const T = {
   "recorded": { es: "registrado" },
   // Drawing revision alerts
   "New drawing": { es: "Nuevo plano" },
+  // Notification system
+  "Notifications": { es: "Notificaciones" },
+  "No notifications": { es: "Sin notificaciones" },
+  "Mark all read": { es: "Marcar todo leído" },
+  "Cert expiry warnings": { es: "Alertas de vencimiento de certificaciones" },
+  "Late arrival alerts": { es: "Alertas de llegada tardía" },
+  "Clock-in reminders": { es: "Recordatorios de entrada" },
+  "Material request updates": { es: "Actualizaciones de solicitudes de material" },
+  "Schedule change alerts": { es: "Alertas de cambio de horario" },
+  "Daily report reminder": { es: "Recordatorio de reporte diario" },
+  "Background push": { es: "Notificaciones en segundo plano" },
+  "Receive alerts even when app is closed": { es: "Recibir alertas incluso con la app cerrada" },
+  "Clock-in opens 5 min before shift": { es: "Entrada disponible 5 min antes del turno" },
+  "Available in": { es: "Disponible en" },
+  "min late": { es: "min tarde" },
+  "REPEAT": { es: "REINCIDENTE" },
+  "this month": { es: "este mes" },
 };

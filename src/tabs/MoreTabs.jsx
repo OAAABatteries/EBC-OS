@@ -7574,6 +7574,8 @@ function NotificationSettings({ userId }) {
           { key: "clockReminders", label: "Clock-in reminders" },
           { key: "materialUpdates", label: "Material request updates" },
           { key: "scheduleChanges", label: "Schedule change alerts" },
+          { key: "certExpiryWarnings", label: "Cert expiry warnings" },
+          { key: "lateArrivalAlerts", label: "Late arrival alerts" },
           { key: "dailyReportReminder", label: "Daily report reminder" },
         ].map(({ key, label }) => (
           <div key={key} className="more-toggle-row">

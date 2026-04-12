@@ -107,6 +107,22 @@
   --control-row:     52px;  /* list rows, bottom sheet items */
   --control-textarea: 120px;
 
+  /* ── ON-STATE TEXT ────────────────────────────────────────── */
+  --text-on-dark:   #ffffff;
+  --text-on-light:  #000000;
+  --text-on-accent: #000000;
+
+  /* ── SEMANTIC TINT TOKENS ────────────────────────────────── */
+  --amber-bg-subtle:     rgba(245, 158, 11, 0.10);
+  --amber-bg-dim:        rgba(245, 158, 11, 0.12);
+  --amber-bg-hover:      rgba(245, 158, 11, 0.20);
+  --amber-border-subtle: rgba(245, 158, 11, 0.35);
+  --border-subtle:       rgba(255, 255, 255, 0.05);
+  --fab-bg-dark:         rgba(0, 0, 0, 0.72);
+
+  /* ── LAYOUT ──────────────────────────────────────────────── */
+  --header-height: 54px;
+
   /* ── FOCUS RING ──────────────────────────────────────────── */
   --focus-ring: 0 0 0 2px var(--amber);
 

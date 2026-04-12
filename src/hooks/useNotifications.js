@@ -10,6 +10,8 @@ const DEFAULT_PREFS = {
   clockReminders: true,
   materialUpdates: true,
   scheduleChanges: true,
+  certExpiryWarnings: true,
+  lateArrivalAlerts: true,
   dailyReportReminder: true,
   dailyReportTime: "16:30",
 };
@@ -83,6 +85,17 @@ export function useNotifications() {
       title: "EBC · Late Arrival",
       body: `${employeeName} clocked in ${minutesLate} min late (shift ${shiftStart})${projectName ? " — " + projectName : ""}`,
       tag: `late-arrival-${employeeName}-${new Date().toISOString().slice(0, 10)}`,
+      url: "/#/foreman",
+    });
+  }, [sendNotification]);
+
+  // ── Cert expiry warning ──
+  const notifyCertExpiry = useCallback(({ employeeName, certName, daysUntilExpiry, expiryDate }) => {
+    const isExpired = daysUntilExpiry <= 0;
+    sendNotification({
+      title: `EBC · Cert ${isExpired ? "Expired" : "Expiring Soon"}`,
+      body: `${employeeName}: ${certName} ${isExpired ? "expired" : `expires in ${daysUntilExpiry} days`} (${expiryDate})`,
+      tag: `cert-expiry-${employeeName}-${certName}`,
       url: "/#/foreman",
     });
   }, [sendNotification]);
@@ -171,6 +184,7 @@ export function useNotifications() {
     notifyMaterialStatus,
     notifyScheduleChange,
     notifyLateArrival,
+    notifyCertExpiry,
     scheduleDailyReportReminder,
     cancelDailyReportReminder,
     getNextScheduledTime,
