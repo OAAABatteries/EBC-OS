@@ -107,8 +107,12 @@ export function EmployeeView({ app }) {
   const [overrideReason, setOverrideReason] = useState("");
   const [showOverride, setShowOverride] = useState(false);
 
+  // ── PPE verification + time gate ──
+  const [ppeConfirmed, setPpeConfirmed] = useState(false);
+  const [clockInBlocked, setClockInBlocked] = useState(null); // null | string reason
+
   // ── notifications ──
-  const { requestPermission, scheduleClockReminder, getNextScheduledTime, sendNotification } = useNotifications();
+  const { requestPermission, scheduleClockReminder, getNextScheduledTime, sendNotification, notifyLateArrival } = useNotifications();
   // Request notification permission on first mount
   const notifRequested = useRef(false);
   useEffect(() => {
@@ -526,8 +530,41 @@ export function EmployeeView({ app }) {
     setPerimeterPoints(prev => prev.slice(0, -1));
   };
 
+  // ── shift start lookup for time gate ──
+  const getShiftStartToday = () => {
+    const todayDay = ["sun","mon","tue","wed","thu","fri","sat"][new Date().getDay()];
+    const entry = (teamSchedule || []).find(
+      s => String(s.employeeId) === String(activeEmp?.id) && s.days?.[todayDay]
+    );
+    if (entry?.hours?.start) return entry.hours.start; // "HH:MM"
+    return "06:00"; // default construction start
+  };
+
+  const isClockInAllowed = () => {
+    const shiftStart = getShiftStartToday();
+    const [h, m] = shiftStart.split(":").map(Number);
+    const now = new Date();
+    const shiftDate = new Date(now);
+    shiftDate.setHours(h, m, 0, 0);
+    const diffMs = shiftDate.getTime() - now.getTime();
+    const diffMin = diffMs / 60000;
+    return { allowed: diffMin <= 5, minutesUntil: Math.ceil(diffMin), shiftStart };
+  };
+
   // ── clock in ──
   const handleClockIn = async () => {
+    // Time gate: block if >5 min before shift
+    const { allowed, minutesUntil, shiftStart } = isClockInAllowed();
+    if (!allowed) {
+      setClockInBlocked(`${t("Clock-in opens 5 min before shift")} (${shiftStart}). ${t("Available in")} ${minutesUntil - 5} ${t("min")}.`);
+      return;
+    }
+    setClockInBlocked(null);
+    // PPE gate
+    if (!ppeConfirmed) {
+      show(t("Confirm PPE before clocking in"), "warn");
+      return;
+    }
     // refresh location right before clocking in
     const result = await checkLocation();
     if (!result) return;
@@ -574,10 +611,28 @@ export function EmployeeView({ app }) {
       // Phase 2C: photo verification (captured in ForemanView; nullable for employees)
       photoUrl: null,
       captureStatus: null,
+      ppeConfirmed: true,
     };
     setTimeEntries((prev) => [entry, ...prev]);
     setShowOverride(false);
     setOverrideReason("");
+    setPpeConfirmed(false); // reset for next clock-in
+
+    // Late arrival notification: if 15+ min after shift start, alert PM
+    const shiftStart = getShiftStartToday();
+    const [sh, sm] = shiftStart.split(":").map(Number);
+    const shiftDate = new Date();
+    shiftDate.setHours(sh, sm, 0, 0);
+    const lateMin = Math.floor((new Date() - shiftDate) / 60000);
+    if (lateMin >= 15) {
+      notifyLateArrival({
+        employeeName: activeEmp.name,
+        projectName: target?.name || "",
+        minutesLate: lateMin,
+        shiftStart,
+      });
+    }
+
     show("Clocked in — " + (target?.name || ""), "ok");
   };
 
@@ -672,7 +727,7 @@ export function EmployeeView({ app }) {
   }, [mySchedule, projects]);
 
   // ── Auto-cache assigned project drawings for offline use ──
-  const { cacheDrawing, isCached } = useDrawingCache();
+  const { cacheDrawing, checkCached } = useDrawingCache();
   const [drawingRevisionAlerts, setDrawingRevisionAlerts] = useState([]);
 
   useEffect(() => {
@@ -685,27 +740,27 @@ export function EmployeeView({ app }) {
         if (cancelled || !drawings?.length) return;
 
         // Check for revision changes → generate alerts
-        const cachedMeta = JSON.parse(localStorage.getItem("ebc_downloadedDrawings") || "{}");
         const lastSeenRevisions = JSON.parse(localStorage.getItem("ebc_drawing_revisions") || "{}");
         const alerts = [];
+        const pid = assignedProject.id;
 
         for (const d of drawings) {
-          const path = d.storagePath || `drawings/project-${assignedProject.id}/${d.fileName}`;
+          const path = d.storagePath || `drawings/project-${pid}/${d.fileName}`;
           const prevRev = lastSeenRevisions[path];
           if (prevRev && d.revision && d.revision > prevRev) {
             alerts.push({ drawing: d.fileName?.replace(".pdf", "").replace(/_/g, " ") || "Drawing", oldRev: prevRev, newRev: d.revision, revLabel: d.revisionLabel || `Rev ${d.revision}` });
           }
-          // Update seen revisions
           if (d.revision) lastSeenRevisions[path] = d.revision;
 
           // Auto-cache current drawings that aren't cached yet (or are stale)
           if (d.isCurrent !== false) {
-            const meta = cachedMeta[path];
-            const isStale = meta?.cachedAt && d.updatedAt && new Date(d.updatedAt) > new Date(meta.cachedAt);
-            if (!meta || isStale) {
+            const status = await checkCached(pid, d.fileName, d.updatedAt);
+            if (!status.cached || status.isStale) {
               try {
                 const blob = await downloadFile(path);
-                if (!cancelled) await cacheDrawing(path, blob);
+                if (!cancelled) await cacheDrawing(pid, d.fileName, blob, {
+                  storagePath: path, revision: d.revision, updatedAt: d.updatedAt, size: blob.size,
+                });
               } catch {} // silently skip — drawing will load from network when needed
             }
           }
@@ -1104,6 +1159,7 @@ export function EmployeeView({ app }) {
                     setSelectedProject({ id: assignedProject.id, name: assignedProject.name, withinGeofence: true });
                     handleClockIn();
                   }}
+                  disabled={!ppeConfirmed}
                   t={t}
                 >
                   {t("CLOCK IN")}
@@ -1248,6 +1304,28 @@ export function EmployeeView({ app }) {
                 </div>
               )}
 
+              {/* Time gate: blocked banner */}
+              {!isClockedIn && clockInBlocked && (
+                <div className="text-sm text-amber" style={{ textAlign: "center", padding: "var(--space-3)", background: "rgba(var(--amber-rgb,245,158,11),0.08)", borderRadius: "var(--radius-2)", marginBottom: "var(--space-3)" }}>
+                  <AlertTriangle size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} />
+                  {clockInBlocked}
+                </div>
+              )}
+
+              {/* PPE confirmation checkbox */}
+              {!isClockedIn && (
+                <label className="flex items-center gap-2 text-sm" style={{ padding: "var(--space-2) 0", cursor: "pointer", userSelect: "none" }}>
+                  <input
+                    type="checkbox"
+                    checked={ppeConfirmed}
+                    onChange={(e) => setPpeConfirmed(e.target.checked)}
+                    style={{ width: 20, height: 20, accentColor: "var(--green)" }}
+                  />
+                  <Shield size={16} style={{ color: "var(--green)", flexShrink: 0 }} />
+                  <span>{t("I confirm I am wearing required PPE")}</span>
+                </label>
+              )}
+
               {isClockedIn ? (
                 <FieldButton className="clock-btn clock-out" onClick={handleClockOut}>
                   {t("Clock Out")}
@@ -1261,7 +1339,7 @@ export function EmployeeView({ app }) {
                   {t("Getting location...")}
                 </FieldButton>
               ) : (
-                <FieldButton className="clock-btn clock-in" onClick={handleClockIn}>
+                <FieldButton className="clock-btn clock-in" onClick={handleClockIn} disabled={!ppeConfirmed}>
                   {t("Clock In")}
                 </FieldButton>
               )}

@@ -77,6 +77,16 @@ export function useNotifications() {
     });
   }, [sendNotification]);
 
+  // ── Late arrival notification (15+ min past shift start → PM alert) ──
+  const notifyLateArrival = useCallback(({ employeeName, projectName, minutesLate, shiftStart }) => {
+    sendNotification({
+      title: "EBC · Late Arrival",
+      body: `${employeeName} clocked in ${minutesLate} min late (shift ${shiftStart})${projectName ? " — " + projectName : ""}`,
+      tag: `late-arrival-${employeeName}-${new Date().toISOString().slice(0, 10)}`,
+      url: "/#/foreman",
+    });
+  }, [sendNotification]);
+
   // ── Daily report reminder ──
   const scheduleDailyReportReminder = useCallback(({ employeeId, employeeName, scheduledTime }) => {
     if (Notification.permission !== "granted") return;
@@ -160,6 +170,7 @@ export function useNotifications() {
     sendNotification,
     notifyMaterialStatus,
     notifyScheduleChange,
+    notifyLateArrival,
     scheduleDailyReportReminder,
     cancelDailyReportReminder,
     getNextScheduledTime,
