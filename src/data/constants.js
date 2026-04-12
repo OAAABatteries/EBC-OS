@@ -9,137 +9,10 @@ const _demo = isDemoMode();
 // Bump this when seed data changes to bust stale localStorage caches
 export const DATA_VERSION = 24;
 
-// ── THEMES ────────────────────────────────────────────────────
+// ── THEMES (3 active — archived themes in src/archive/theme-effects.jsx) ──
 export const THEMES = {
-  steel: {
-    name: "Steel", icon: "⚙️", label: "Steel",
-    vars: {
-      "--bg":"#06080c","--bg2":"#0c0f16","--bg3":"#12161f","--bg4":"#1a1f2b",
-      "--border":"#1c2233","--border2":"#283044",
-      "--amber":"#e09422","--amber2":"#f0a83a","--amber-dim":"rgba(224,148,34,0.10)","--amber-glow":"rgba(224,148,34,0.20)",
-      "--accent":"var(--amber)",
-      "--blue":"#3b82f6","--blue-dim":"rgba(59,130,246,0.10)",
-      "--green":"#10b981","--green-dim":"rgba(16,185,129,0.10)",
-      "--red":"#ef4444","--red-dim":"rgba(239,68,68,0.10)",
-      "--yellow":"#eab308",
-      "--purple":"#8b5cf6","--purple-dim":"rgba(139,92,246,0.10)","--cyan":"#22d3ee","--cyan-dim":"rgba(34,211,238,0.10)",
-      "--text":"#d4dae6","--text2":"#8494ad","--text3":"#455068",
-      "--logo-tint":"#d4dae6",
-      "--bg2-rgb":"12,15,22",
-      "--glass-border":"rgba(255,255,255,0.06)","--glass-bg":"rgba(12,15,22,0.72)",
-      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
-      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
-      "--font-mono":"'IBM Plex Mono', monospace",
-      
-      "--shadow":"0 2px 12px rgba(0,0,0,0.3)","--card-shadow":"0 1px 8px rgba(0,0,0,0.2)",
-      "--shadow-sm":"0 1px 4px rgba(0,0,0,0.12)","--shadow-md":"0 2px 12px rgba(0,0,0,0.28)","--shadow-lg":"0 4px 32px rgba(0,0,0,0.45)",
-      "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
-      "--phase-active":"var(--green)","--phase-estimating":"var(--amber)","--phase-pre-construction":"var(--blue)","--phase-completed":"var(--text3)","--phase-warranty":"var(--yellow)","--phase-in-progress":"var(--green)",
-    }
-  },
-  blueprint: {
-    name: "Blueprint", icon: "📐", label: "Blueprint",
-    vars: {
-      "--bg":"#020a16","--bg2":"#041220","--bg3":"#061c32","--bg4":"#0a2d4a",
-      "--border":"#0c3558","--border2":"#185070",
-      "--amber":"#00bfef","--amber2":"#2ad4ff","--amber-dim":"rgba(0,191,239,0.08)","--amber-glow":"rgba(0,191,239,0.18)",
-      "--accent":"var(--amber)",
-      "--blue":"#00d4ff","--blue-dim":"rgba(0,212,255,0.08)",
-      "--green":"#00e89a","--green-dim":"rgba(0,232,154,0.08)",
-      "--red":"#ff4f7b","--red-dim":"rgba(255,79,123,0.10)",
-      "--yellow":"#ffd866",
-      "--purple":"#a78bfa","--purple-dim":"rgba(167,139,250,0.10)","--cyan":"#67e8f9","--cyan-dim":"rgba(103,232,249,0.10)",
-      "--text":"#bdddf0","--text2":"#5d98b8","--text3":"#2a5570",
-      "--logo-tint":"#00bfef",
-      "--bg2-rgb":"4,18,32",
-      "--glass-border":"rgba(0,191,239,0.08)","--glass-bg":"rgba(4,18,32,0.72)",
-      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
-      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
-      "--font-mono":"'IBM Plex Mono', monospace",
-      
-      "--shadow":"0 0 0 1px rgba(0,191,239,0.06)","--card-shadow":"0 0 12px rgba(0,191,239,0.04)",
-      "--shadow-sm":"0 0 0 1px rgba(0,191,239,0.06)","--shadow-md":"0 0 12px rgba(0,191,239,0.08)","--shadow-lg":"0 0 24px rgba(0,191,239,0.12)",
-      "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
-      "--phase-active":"var(--green)","--phase-estimating":"var(--amber)","--phase-pre-construction":"var(--blue)","--phase-completed":"var(--text3)","--phase-warranty":"var(--yellow)","--phase-in-progress":"var(--green)",
-    }
-  },
-  daylight: {
-    name: "Daylight", icon: "☀️", label: "Daylight",
-    vars: {
-      "--bg":"#f2f3f7","--bg2":"#ffffff","--bg3":"#f8f9fb","--bg4":"#eceef4",
-      "--border":"#dfe2ea","--border2":"#c8cdd8",
-      "--amber":"#c06e10","--amber2":"#a05a0a","--amber-dim":"rgba(192,110,16,0.07)","--amber-glow":"rgba(192,110,16,0.14)",
-      "--accent":"var(--amber)",
-      "--blue":"#2563eb","--blue-dim":"rgba(37,99,235,0.07)",
-      "--green":"#059669","--green-dim":"rgba(5,150,105,0.07)",
-      "--red":"#dc2626","--red-dim":"rgba(220,38,38,0.07)",
-      "--yellow":"#b45309","--purple":"#7c3aed","--purple-dim":"rgba(124,58,237,0.10)","--cyan":"#0891b2","--cyan-dim":"rgba(8,145,178,0.10)",
-      "--text":"#1a1d28","--text2":"#555d6e","--text3":"#9aa0b0",
-      "--logo-tint":"#0f1a24",
-      "--bg2-rgb":"255,255,255",
-      "--glass-border":"rgba(0,0,0,0.06)","--glass-bg":"rgba(255,255,255,0.78)",
-      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
-      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
-      "--font-mono":"'IBM Plex Mono', monospace",
-      
-      "--shadow":"0 1px 4px rgba(0,0,0,0.06)","--card-shadow":"0 1px 6px rgba(0,0,0,0.05)",
-      "--shadow-sm":"0 1px 4px rgba(0,0,0,0.06)","--shadow-md":"0 2px 8px rgba(0,0,0,0.12)","--shadow-lg":"0 4px 20px rgba(0,0,0,0.18)",
-      "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
-      "--phase-active":"var(--green)","--phase-estimating":"var(--amber)","--phase-pre-construction":"var(--blue)","--phase-completed":"var(--text3)","--phase-warranty":"var(--yellow)","--phase-in-progress":"var(--green)",
-    }
-  },
-  matrix: {
-    name: "Matrix", icon: "💊", label: "Matrix",
-    vars: {
-      "--bg":"#000400","--bg2":"#010a01","--bg3":"#011201","--bg4":"#021a02",
-      "--border":"#083808","--border2":"#124a12",
-      "--amber":"#00ff41","--amber2":"#33ff66","--amber-dim":"rgba(0,255,65,0.06)","--amber-glow":"rgba(0,255,65,0.16)",
-      "--accent":"var(--amber)",
-      "--blue":"#00ff41","--blue-dim":"rgba(0,255,65,0.06)",
-      "--green":"#00ff41","--green-dim":"rgba(0,255,65,0.08)",
-      "--red":"#ff3c00","--red-dim":"rgba(255,60,0,0.08)",
-      "--yellow":"#aaff00","--purple":"#bf7fff","--purple-dim":"rgba(191,127,255,0.10)","--cyan":"#00ffcc","--cyan-dim":"rgba(0,255,204,0.10)",
-      "--text":"#00ff41","--text2":"#009928","--text3":"#005216",
-      "--logo-tint":"#00ff41",
-      "--bg2-rgb":"1,10,1",
-      "--glass-border":"rgba(0,255,65,0.08)","--glass-bg":"rgba(1,10,1,0.85)",
-      "--font-head":"'IBM Plex Mono', monospace",
-      "--font-body":"'IBM Plex Mono', monospace",
-      "--font-mono":"'IBM Plex Mono', monospace",
-      
-      "--shadow":"none","--card-shadow":"0 0 10px rgba(0,255,65,0.04)",
-      "--shadow-sm":"none","--shadow-md":"0 0 10px rgba(0,255,65,0.04)","--shadow-lg":"0 0 20px rgba(0,255,65,0.08)",
-      "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
-      "--phase-active":"var(--green)","--phase-estimating":"var(--amber)","--phase-pre-construction":"var(--blue)","--phase-completed":"var(--text3)","--phase-warranty":"var(--yellow)","--phase-in-progress":"var(--green)",
-    }
-  },
-  anime: {
-    name: "Anime", icon: "🌸", label: "Tokyo Anime",
-    vars: {
-      "--bg":"#080414","--bg2":"#0e0820","--bg3":"#140c30","--bg4":"#1c1242",
-      "--border":"#2a1868","--border2":"#3c2690",
-      "--amber":"#ff2da0","--amber2":"#ff60c0","--amber-dim":"rgba(255,45,160,0.12)","--amber-glow":"rgba(255,45,160,0.30)",
-      "--accent":"var(--amber)",
-      "--blue":"#00e5ff","--blue-dim":"rgba(0,229,255,0.10)",
-      "--green":"#80ff60","--green-dim":"rgba(128,255,96,0.10)",
-      "--red":"#ff3070","--red-dim":"rgba(255,48,112,0.12)",
-      "--yellow":"#ffe44d","--purple":"#c084fc","--purple-dim":"rgba(192,132,252,0.10)","--cyan":"#67e8f9","--cyan-dim":"rgba(103,232,249,0.10)",
-      "--text":"#f0e4ff","--text2":"#b498d8","--text3":"#604890",
-      "--logo-tint":"#ff2da0",
-      "--bg2-rgb":"14,8,32",
-      "--glass-border":"rgba(255,45,160,0.12)","--glass-bg":"rgba(14,8,32,0.68)",
-      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
-      "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
-      "--font-mono":"'IBM Plex Mono', monospace",
-      
-      "--shadow":"0 0 20px rgba(255,45,160,0.08)","--card-shadow":"0 0 16px rgba(255,45,160,0.06)",
-      "--shadow-sm":"0 0 8px rgba(255,45,160,0.06)","--shadow-md":"0 0 16px rgba(255,45,160,0.10)","--shadow-lg":"0 0 28px rgba(255,45,160,0.16)",
-      "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
-      "--phase-active":"var(--green)","--phase-estimating":"var(--amber)","--phase-pre-construction":"var(--blue)","--phase-completed":"var(--text3)","--phase-warranty":"var(--yellow)","--phase-in-progress":"var(--green)",
-    }
-  },
   ebc: {
-    name: "EBC Brand", icon: "🦅", label: "EBC Brand",
+    name: "EBC Brand", icon: "building-2", label: "EBC Brand",
     vars: {
       "--bg":"#0f1a24","--bg2":"#152332","--bg3":"#1b2d3f","--bg4":"#1e2d3b",
       "--border":"#263d52","--border2":"#345068",
@@ -157,7 +30,7 @@ export const THEMES = {
       "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
       "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
       "--font-mono":"'SF Mono', 'IBM Plex Mono', monospace",
-      
+
       "--shadow":"0 2px 12px rgba(0,0,0,0.3)","--card-shadow":"0 2px 10px rgba(0,0,0,0.2)",
       "--shadow-sm":"0 1px 4px rgba(0,0,0,0.14)","--shadow-md":"0 2px 12px rgba(0,0,0,0.30)","--shadow-lg":"0 4px 32px rgba(0,0,0,0.45)",
       "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
@@ -165,7 +38,7 @@ export const THEMES = {
     }
   },
   midnight: {
-    name: "Midnight", icon: "🌙", label: "Midnight (Apple Dark)",
+    name: "Dark Mode", icon: "moon", label: "Dark Mode",
     vars: {
       "--bg":"#000000","--bg2":"#1c1c1e","--bg3":"#2c2c2e","--bg4":"#3a3a3c",
       "--border":"#38383a","--border2":"#48484a",
@@ -183,34 +56,34 @@ export const THEMES = {
       "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
       "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
       "--font-mono":"'SF Mono', 'Menlo', monospace",
-      
+
       "--shadow":"0 2px 10px rgba(0,0,0,0.4)","--card-shadow":"0 1px 8px rgba(0,0,0,0.3)",
       "--shadow-sm":"0 1px 4px rgba(0,0,0,0.20)","--shadow-md":"0 2px 10px rgba(0,0,0,0.35)","--shadow-lg":"0 4px 24px rgba(0,0,0,0.50)",
       "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
       "--phase-active":"var(--green)","--phase-estimating":"var(--amber)","--phase-pre-construction":"var(--blue)","--phase-completed":"var(--text3)","--phase-warranty":"var(--yellow)","--phase-in-progress":"var(--green)",
     }
   },
-  cyberpunk: {
-    name: "Cyberpunk", icon: "🏙️", label: "Tokyo Cyberpunk",
+  daylight: {
+    name: "Daylight", icon: "sun", label: "Daylight",
     vars: {
-      "--bg":"#0a0a12","--bg2":"#0e1020","--bg3":"#141830","--bg4":"#1a2040",
-      "--border":"#1e2850","--border2":"#2a3870",
-      "--amber":"#00f0ff","--amber2":"#40f8ff","--amber-dim":"rgba(0,240,255,0.08)","--amber-glow":"rgba(0,240,255,0.25)",
+      "--bg":"#f2f3f7","--bg2":"#ffffff","--bg3":"#f8f9fb","--bg4":"#eceef4",
+      "--border":"#dfe2ea","--border2":"#c8cdd8",
+      "--amber":"#c06e10","--amber2":"#a05a0a","--amber-dim":"rgba(192,110,16,0.07)","--amber-glow":"rgba(192,110,16,0.14)",
       "--accent":"var(--amber)",
-      "--blue":"#0088ff","--blue-dim":"rgba(0,136,255,0.10)",
-      "--green":"#00ff88","--green-dim":"rgba(0,255,136,0.10)",
-      "--red":"#ff0055","--red-dim":"rgba(255,0,85,0.12)",
-      "--yellow":"#ffe100","--purple":"#c084fc","--purple-dim":"rgba(192,132,252,0.10)","--cyan":"#22d3ee","--cyan-dim":"rgba(34,211,238,0.10)",
-      "--text":"#e0f0ff","--text2":"#7090b8","--text3":"#384868",
-      "--logo-tint":"#00f0ff",
-      "--bg2-rgb":"14,16,32",
-      "--glass-border":"rgba(0,240,255,0.10)","--glass-bg":"rgba(10,10,18,0.80)",
+      "--blue":"#2563eb","--blue-dim":"rgba(37,99,235,0.07)",
+      "--green":"#059669","--green-dim":"rgba(5,150,105,0.07)",
+      "--red":"#dc2626","--red-dim":"rgba(220,38,38,0.07)",
+      "--yellow":"#b45309","--purple":"#7c3aed","--purple-dim":"rgba(124,58,237,0.10)","--cyan":"#0891b2","--cyan-dim":"rgba(8,145,178,0.10)",
+      "--text":"#1a1d28","--text2":"#555d6e","--text3":"#9aa0b0",
+      "--logo-tint":"#0f1a24",
+      "--bg2-rgb":"255,255,255",
+      "--glass-border":"rgba(0,0,0,0.06)","--glass-bg":"rgba(255,255,255,0.78)",
       "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
       "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
       "--font-mono":"'IBM Plex Mono', monospace",
-      
-      "--shadow":"0 0 20px rgba(0,240,255,0.06)","--card-shadow":"0 0 12px rgba(0,240,255,0.05)",
-      "--shadow-sm":"0 0 6px rgba(0,240,255,0.05)","--shadow-md":"0 0 14px rgba(0,240,255,0.08)","--shadow-lg":"0 0 24px rgba(0,240,255,0.14)",
+
+      "--shadow":"0 1px 4px rgba(0,0,0,0.06)","--card-shadow":"0 1px 6px rgba(0,0,0,0.05)",
+      "--shadow-sm":"0 1px 4px rgba(0,0,0,0.06)","--shadow-md":"0 2px 8px rgba(0,0,0,0.12)","--shadow-lg":"0 4px 20px rgba(0,0,0,0.18)",
       "--status-approved":"var(--green)","--status-pending":"var(--amber)","--status-denied":"var(--red)","--status-in-transit":"var(--blue)","--status-project":"var(--text2)","--status-office":"var(--text3)",
       "--phase-active":"var(--green)","--phase-estimating":"var(--amber)","--phase-pre-construction":"var(--blue)","--phase-completed":"var(--text3)","--phase-warranty":"var(--yellow)","--phase-in-progress":"var(--green)",
     }

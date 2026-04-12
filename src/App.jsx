@@ -123,122 +123,7 @@ const SCOPE_ICONS = { unchecked: "○", checked: "✓", flagged: "⚑" };
 const SCOPE_CYCLE = { unchecked: "checked", checked: "flagged", flagged: "unchecked" };
 const BID_FILTERS = ["All", "Active", "Submitted", "Awarded", "Lost", "No Bid"];
 
-// ── Sakura Petals (anime theme only) ──
-const PETAL_COUNT = 28;
-const SakuraPetals = () => {
-  const petals = useMemo(() =>
-    Array.from({ length: PETAL_COUNT }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      dur: 8 + Math.random() * 12,
-      delay: Math.random() * 14,
-      drift: -60 + Math.random() * 120,
-      size: 10 + Math.random() * 14,
-      hue: Math.random() > 0.3 ? 0 : 30,
-    })), []);
-
-  return (
-    <div className="sakura-container">
-      {petals.map(p => (
-        <div
-          key={p.id}
-          className="sakura-petal"
-          style={{
-            left: `${p.left}%`,
-            "--dur": `${p.dur}s`,
-            "--delay": `${p.delay}s`,
-            "--drift": `${p.drift}px`,
-          }}
-        >
-          <svg width={p.size} height={p.size} viewBox="0 0 20 20">
-            <path
-              d="M10 0C10 0 6 5 6 10C6 13 8 15 10 17C12 15 14 13 14 10C14 5 10 0 10 0Z"
-              fill={p.hue === 0
-                ? `rgba(255,${160 + Math.floor(Math.random()*40)},${180 + Math.floor(Math.random()*40)},${0.5 + Math.random() * 0.4})`
-                : `rgba(255,${200 + Math.floor(Math.random()*30)},${210 + Math.floor(Math.random()*30)},${0.4 + Math.random() * 0.3})`
-              }
-            />
-          </svg>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// ── Tokyo Skyline (anime theme only) ──
-const TokyoSkyline = () => (
-  <div className="tokyo-skyline">
-    <svg viewBox="0 0 1400 180" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--amber)" stopOpacity="0.6"/>
-          <stop offset="100%" stopColor="var(--amber)" stopOpacity="0.1"/>
-        </linearGradient>
-      </defs>
-      <path fill="url(#skyGrad)" d={
-        // Tokyo Tower + buildings silhouette
-        "M0,180 L0,140 L30,140 L30,100 L40,100 L40,130 L50,130 L50,90 L55,90 L55,130 " +
-        "L80,130 L80,110 L90,110 L90,70 L95,70 L95,110 L100,110 L100,130 " +
-        "L130,130 L130,95 L140,95 L140,130 L160,130 L160,105 L170,105 L170,130 " +
-        "L200,130 L200,80 L205,80 L205,60 L208,45 L210,30 L212,45 L215,60 L220,80 L220,130 " +
-        "L250,130 L250,100 L260,100 L260,85 L270,85 L270,130 " +
-        "L300,130 L300,110 L310,110 L310,75 L320,75 L320,110 L330,110 L330,130 " +
-        "L360,130 L360,90 L370,90 L370,130 " +
-        "L400,130 L400,105 L410,105 L410,65 L420,65 L420,105 L430,105 L430,130 " +
-        "L460,130 L460,95 L465,95 L465,55 L470,40 L475,55 L480,95 L480,130 " +
-        "L510,130 L510,110 L520,110 L520,130 L550,130 L550,85 L560,85 L560,130 " +
-        "L590,130 L590,100 L600,100 L600,70 L610,70 L610,100 L620,100 L620,130 " +
-        "L650,130 L650,115 L660,115 L660,130 " +
-        "L690,130 L690,80 L700,80 L700,50 L705,35 L710,50 L720,80 L720,130 " +
-        "L750,130 L750,105 L760,105 L760,130 " +
-        "L790,130 L790,90 L800,90 L800,60 L810,60 L810,90 L820,90 L820,130 " +
-        "L850,130 L850,110 L860,110 L860,130 " +
-        "L890,130 L890,95 L900,95 L900,75 L910,75 L910,130 " +
-        "L940,130 L940,100 L950,100 L950,130 " +
-        "L980,130 L980,85 L985,85 L985,50 L990,35 L995,50 L1000,85 L1000,130 " +
-        "L1030,130 L1030,110 L1040,110 L1040,130 " +
-        "L1070,130 L1070,90 L1080,90 L1080,65 L1090,65 L1090,90 L1100,90 L1100,130 " +
-        "L1130,130 L1130,105 L1140,105 L1140,130 " +
-        "L1170,130 L1170,95 L1180,95 L1180,130 " +
-        "L1210,130 L1210,80 L1220,80 L1220,55 L1230,55 L1230,80 L1240,80 L1240,130 " +
-        "L1270,130 L1270,110 L1280,110 L1280,130 " +
-        "L1310,130 L1310,100 L1320,100 L1320,130 " +
-        "L1350,130 L1350,115 L1360,115 L1360,130 " +
-        "L1400,130 L1400,180 Z"
-      }/>
-    </svg>
-  </div>
-);
-
-// ── Cyber Rain (cyberpunk theme only) ──
-const RAIN_COUNT = 40;
-const CyberRain = () => {
-  const drops = useMemo(() =>
-    Array.from({ length: RAIN_COUNT }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      dur: 1.5 + Math.random() * 3,
-      delay: Math.random() * 6,
-      height: 30 + Math.random() * 80,
-    })), []);
-
-  return (
-    <div className="cyber-rain">
-      {drops.map(d => (
-        <div
-          key={d.id}
-          className="cyber-drop"
-          style={{
-            left: `${d.left}%`,
-            height: `${d.height}px`,
-            "--dur": `${d.dur}s`,
-            "--delay": `${d.delay}s`,
-          }}
-        />
-      ))}
-    </div>
-  );
-};
+// (Anime/Cyberpunk theme effects archived to src/archive/theme-effects.jsx)
 
 // ═══════════════════════════════════════════════════════════════
 // PREVIEW DEVICE FRAMES (admin impersonation / auditor QA)
@@ -901,7 +786,7 @@ function App({ auth, onLogout }) {
 
   // ── theme application ──
   useEffect(() => {
-    const t = THEMES[theme] || THEMES.steel;
+    const t = THEMES[theme] || THEMES.ebc;
     Object.entries(t.vars).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
   }, [theme]);
 
@@ -4011,8 +3896,6 @@ function App({ auth, onLogout }) {
   // ═══════════════════════════════════════════════════════════════
   //  MAIN RENDER
   // ═══════════════════════════════════════════════════════════════
-  const isAnime = theme === "anime";
-  const isCyber = theme === "cyberpunk";
 
   // ── Portal views for field roles (real login OR admin/owner impersonation) ──
   // When impersonating, wrap the portal in a device-frame bezel so the desktop
@@ -4082,11 +3965,9 @@ function App({ auth, onLogout }) {
     // For real field logins, render the portal full-bleed as before.
     if (!isImpersonatingPortal) {
       return (
-        <div className={`app${isAnime ? " anime-glow" : ""}${isCyber ? " cyber-glow" : ""}`}>
+        <div className={"app"}>
           <style>{styles}</style>
           {phonePreviewSafeArea}
-          {isAnime && <SakuraPetals />}
-          {isCyber && <CyberRain />}
           <PortalComp app={app} />
         </div>
       );
@@ -4102,10 +3983,8 @@ function App({ auth, onLogout }) {
     const orient = previewOrient === "landscape" ? "landscape" : "portrait";
     const dims = device[orient];
     return (
-      <div className={`app${isAnime ? " anime-glow" : ""}${isCyber ? " cyber-glow" : ""}`} style={{ background: "var(--bg1)", minHeight: "100vh" }}>
+      <div className={"app"} style={{ background: "var(--bg1)", minHeight: "100vh" }}>
         <style>{styles}</style>
-        {isAnime && <SakuraPetals />}
-        {isCyber && <CyberRain />}
         {/* Impersonation control bar */}
         <div style={{
           position: "sticky", top: 0, zIndex: 50,
@@ -4304,13 +4183,8 @@ function App({ auth, onLogout }) {
   if (isForemanView) return renderFieldPortal(ForemanView, "Superintendent / Foreman");
 
   return (
-    <div className={`app${isAnime ? " anime-glow" : ""}${isCyber ? " cyber-glow" : ""}`}>
+    <div className={"app"}>
       <style>{styles}</style>
-      {isAnime && <SakuraPetals />}
-      {isAnime && <TokyoSkyline />}
-      {isCyber && <CyberRain />}
-      {isCyber && <div className="cyber-scanlines" />}
-
       <header className="header">
         <div className="logo flex-center-gap-6">
           {/* EBC brand mark — masked from ebc-eagle-white.png (the only

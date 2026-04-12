@@ -1,6 +1,6 @@
 import { useState, useCallback, Fragment, lazy, Suspense } from "react";
 import { resetAllGuides } from "../components/FeatureGuide";
-import { ClipboardList, Folder, Search, Smartphone, Wrench, Shield, Download, ClipboardCopy, CheckCircle, AlertTriangle, AlertOctagon, Flame, Droplets, Heart, Globe, Wind, Zap, CheckSquare, Square } from "lucide-react";
+import { ClipboardList, Folder, Search, Smartphone, Wrench, Shield, Download, ClipboardCopy, CheckCircle, AlertTriangle, AlertOctagon, Flame, Droplets, Heart, Globe, Wind, Zap, CheckSquare, Square, Building2, Moon, Sun } from "lucide-react";
 import { THEMES, OSHA_CHECKLIST, COMPANY_DEFAULTS, ASSEMBLIES } from "../data/constants";
 import { storePdf, getPdfUrl, deletePdf, fmtSize } from "../hooks/useSubmittalPdf";
 import { softDelete, filterActive, auditDiff, CRITICAL_FIELDS, validateInvoice, findDuplicateInvoice, validateChangeOrder, findDuplicateCO, validateAPBill, findDuplicateAPBill, computeProjectLaborCost, computeProjectLaborByCode, computeProjectTotalCost, computeProjectCostForPeriod, validateAccrual, validateCommitment, computeProjectCommittedCost, computeBudgetVsActual, validatePeriod, computeWorkedHours, getAdjustedContract, DEFAULT_BURDEN } from "../utils/financialValidation";
@@ -8736,7 +8736,12 @@ function ThemeTab({ app }) {
                 transition: "border-color 0.2s",
               }}
             >
-              <div style={{ fontSize: "var(--text-stat)" }}>{theme.icon}</div>
+              <div style={{ display: "flex", justifyContent: "center" }}>{
+                theme.icon === "building-2" ? <Building2 size={32} /> :
+                theme.icon === "moon" ? <Moon size={32} /> :
+                theme.icon === "sun" ? <Sun size={32} /> :
+                <span style={{ fontSize: "var(--text-stat)" }}>{theme.icon}</span>
+              }</div>
               <div style={{ marginTop: "var(--space-2)", fontWeight: "var(--weight-semi)" }}>{theme.name}</div>
               {isActive && <div className="badge-green mt-8">Active</div>}
             </div>

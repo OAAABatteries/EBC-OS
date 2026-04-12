@@ -274,8 +274,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .ml-auto{margin-left:auto}
 /* Typography utilities — consume tokens from tokens.css */
 .text-sm{font-size:var(--text-sm)}.text-base{font-size:var(--text-base)}.text-lg{font-size:var(--text-lg)}.text-display{font-size:var(--text-display)}
-/* Legacy aliases for backward compatibility with existing JSX */
-.text-xs{font-size:var(--text-sm)}.text-md{font-size:var(--text-base)}.text-xl{font-size:var(--text-lg)}.text-2xl{font-size:var(--text-lg)}.text-3xl{font-size:var(--text-display)}
+/* Extended scale — each class uses its own token (no cross-aliasing) */
+.text-xs{font-size:var(--text-xs)}.text-md{font-size:var(--text-md)}.text-xl{font-size:var(--text-lg)}.text-2xl{font-size:var(--text-subtitle)}.text-3xl{font-size:var(--text-display)}
 .text-muted{color:var(--text2)}.text-dim{color:var(--text3)}.text-amber{color:var(--amber)}
 .text-green{color:var(--green)}.text-red{color:var(--red)}.text-blue{color:var(--blue)}
 .font-head{font-family:var(--font-head)}.font-mono{font-family:var(--font-mono)}
@@ -530,59 +530,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
   .main-content{padding:0!important;overflow:visible!important}
   .card,.kpi-card{break-inside:avoid}}
 
-/* ══ ANIME THEME — SAKURA PETALS ══ */
-.sakura-container{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
-.sakura-petal{position:absolute;top:-40px;opacity:0;pointer-events:none;will-change:transform,opacity}
-.sakura-petal svg{filter:drop-shadow(0 0 4px rgba(255,183,197,0.5))}
-@keyframes sakuraFall{
-  0%{opacity:0;transform:translateY(-20px) translateX(0) rotate(0deg) scale(0.8)}
-  8%{opacity:0.9}
-  50%{transform:translateY(45vh) translateX(var(--drift)) rotate(180deg) scale(1)}
-  100%{opacity:0;transform:translateY(105vh) translateX(calc(var(--drift) * 1.5)) rotate(360deg) scale(0.6)}
-}
-.sakura-petal{animation:sakuraFall var(--dur) var(--delay) linear infinite}
-
-/* ══ ANIME THEME — TOKYO SKYLINE ══ */
-.tokyo-skyline{position:fixed;bottom:0;left:0;right:0;height:180px;pointer-events:none;z-index:0;opacity:0.08}
-.tokyo-skyline svg{width:100%;height:100%;display:block}
-
-/* ══ ANIME THEME — NEON GLOW ACCENTS ══ */
-.anime-glow .header{box-shadow:0 1px 0 var(--glass-border),0 0 30px rgba(240,36,160,0.08)}
-.anime-glow .kpi-value{text-shadow:0 0 30px rgba(240,36,160,0.35)}
-.anime-glow .logo{text-shadow:0 0 24px rgba(240,36,160,0.4)}
-.anime-glow .nav-item.active{box-shadow:0 0 16px rgba(240,36,160,0.25)}
-.anime-glow .btn-primary{box-shadow:0 2px 12px rgba(240,36,160,0.3)}
-.anime-glow .btn-primary:hover{box-shadow:0 4px 24px rgba(240,36,160,0.4)}
-.anime-glow .badge-amber{text-shadow:0 0 8px rgba(240,36,160,0.3)}
-.anime-glow .card:hover{box-shadow:0 0 20px rgba(240,36,160,0.08)}
-.anime-glow .kpi-card:hover{box-shadow:0 0 24px rgba(240,36,160,0.15)}
-
-/* ══ CYBERPUNK THEME — SCAN LINES ══ */
-.cyber-scanlines{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,240,255,0.015) 2px,rgba(0,240,255,0.015) 4px);
-  animation:cyberScan 8s linear infinite}
-@keyframes cyberScan{0%{background-position:0 0}100%{background-position:0 100px}}
-
-/* ══ CYBERPUNK THEME — NEON RAIN ══ */
-.cyber-rain{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
-.cyber-drop{position:absolute;top:-60px;width:1px;opacity:0;will-change:transform,opacity;
-  background:linear-gradient(180deg,rgba(0,240,255,0),rgba(0,240,255,0.6),rgba(0,240,255,0));
-  animation:cyberRainFall var(--dur) var(--delay) linear infinite}
-@keyframes cyberRainFall{0%{opacity:0;transform:translateY(-20px)}5%{opacity:0.7}100%{opacity:0;transform:translateY(110vh)}}
-
-/* ══ CYBERPUNK THEME — NEON GLOW ACCENTS ══ */
-.cyber-glow .header{box-shadow:0 1px 0 var(--glass-border),0 0 30px rgba(0,240,255,0.06)}
-.cyber-glow .kpi-value{text-shadow:0 0 30px rgba(0,240,255,0.5)}
-.cyber-glow .logo{text-shadow:0 0 24px rgba(0,240,255,0.5)}
-.cyber-glow .nav-item.active{box-shadow:0 0 16px rgba(0,240,255,0.2)}
-.cyber-glow .btn-primary{box-shadow:0 2px 12px rgba(0,240,255,0.25);text-transform:uppercase;letter-spacing:1px}
-.cyber-glow .btn-primary:hover{box-shadow:0 4px 24px rgba(0,240,255,0.35)}
-.cyber-glow .badge-amber{text-shadow:0 0 8px rgba(0,240,255,0.3)}
-.cyber-glow .card:hover{box-shadow:0 0 20px rgba(0,240,255,0.06)}
-.cyber-glow .kpi-card:hover{box-shadow:0 0 24px rgba(0,240,255,0.12)}
-.cyber-glow .card{border-color:rgba(0,240,255,0.08)}
-.cyber-glow .section-title{text-transform:uppercase;letter-spacing:1.5px}
-
 /* ══ MODAL PULL HANDLE ══ */
 .modal-handle{width:36px;height:4px;background:var(--border2);border-radius:var(--radius-control);
   margin:0 auto 14px;display:none;opacity:0.5}
@@ -731,9 +678,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
   .empty-title{font-size:var(--text-secondary)}
   .empty-text{font-size:var(--text-label)}
 
-  .sakura-container{z-index:0}
-  .tokyo-skyline{height:120px}
-
   /* Reduce backdrop-filter on mobile for Safari performance */
   .header,.mobile-nav,.kpi-card,.card-glass,.nav-dropdown{
     backdrop-filter:blur(12px) saturate(1.4);-webkit-backdrop-filter:blur(12px) saturate(1.4)}
@@ -780,7 +724,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
   .toast-wrap{top:6px;right:6px}
   .toast{font-size:var(--text-tab);padding:var(--space-2) var(--space-3)}
   .gantt-header-label,.gantt-label{width:110px;font-size:var(--text-xs)}
-  .tokyo-skyline{height:80px}
 }
 
 /* ══ TABLET LANDSCAPE (768-1024px wide, landscape) ══ */
