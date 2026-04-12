@@ -4,20 +4,29 @@
 //   .field-tab-bar, .field-tab-item, .field-tab-badge
 //   .field-tab-sheet-overlay, .field-tab-sheet, .field-tab-sheet-item
 
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { MoreHorizontal } from 'lucide-react';
+
+const tabletMQ = typeof window !== 'undefined'
+  ? window.matchMedia('(min-width:768px)')
+  : { matches: false, addEventListener() {}, removeEventListener() {} };
+const subscribeMQ = (cb) => { tabletMQ.addEventListener('change', cb); return () => tabletMQ.removeEventListener('change', cb); };
+const getSnapshotMQ = () => tabletMQ.matches;
 
 export function PortalTabBar({
   tabs,
   activeTab,
   onTabChange,
   maxPrimary = 4,
+  maxPrimaryTablet = 6,
   t,
 }) {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const isTablet = useSyncExternalStore(subscribeMQ, getSnapshotMQ, () => false);
+  const effectiveMax = isTablet ? Math.max(maxPrimary, maxPrimaryTablet) : maxPrimary;
 
-  const primaryTabs = tabs.slice(0, maxPrimary);
-  const overflowTabs = tabs.slice(maxPrimary);
+  const primaryTabs = tabs.slice(0, effectiveMax);
+  const overflowTabs = tabs.slice(effectiveMax);
   const hasOverflow = overflowTabs.length > 0;
   const isActiveInOverflow = overflowTabs.some((tab) => tab.id === activeTab);
 

@@ -5439,7 +5439,7 @@ const ModalHub = ({ type, data, app }) => {
                     </div>
                     <div className="mb-8">
                       <label className="text-xs text-dim">Notes</label>
-                      <textarea className="input input-sm" rows={2} placeholder="Additional notes..." value={coForm.notes} onChange={e => setCoForm(p => ({ ...p, notes: e.target.value }))} className="resize-v" />
+                      <textarea className="input input-sm resize-v" rows={2} placeholder="Additional notes..." value={coForm.notes} onChange={e => setCoForm(p => ({ ...p, notes: e.target.value }))} />
                     </div>
                     {/* T&M Backup Selection */}
                     {(() => {
@@ -5664,7 +5664,7 @@ const ModalHub = ({ type, data, app }) => {
                     </div>
                     <div className="mb-8">
                       <label className="text-xs text-dim">Notes</label>
-                      <textarea className="input input-sm" rows={2} placeholder="Additional notes..." value={subForm.notes} onChange={e => setSubForm(p => ({ ...p, notes: e.target.value }))} className="resize-v" />
+                      <textarea className="input input-sm resize-v" rows={2} placeholder="Additional notes..." value={subForm.notes} onChange={e => setSubForm(p => ({ ...p, notes: e.target.value }))} />
                     </div>
                     <div className="flex gap-8 justify-end">
                       <button className="btn btn-ghost btn-sm" onClick={() => { setSubFormOpen(false); resetSubForm(); }}>Cancel</button>
