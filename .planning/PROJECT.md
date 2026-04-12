@@ -8,19 +8,17 @@ EBC-OS is an all-in-one construction operations platform for Eagles Brothers Con
 
 Field crews can manage their entire workday — clock in, view drawings, submit JSAs, request materials, report problems — from one app that feels fast, reliable, and professional on a phone in the field.
 
-## Current Milestone: v1.1 Premium Construction UI Overhaul
+## Current Milestone: v1.2 (Next — TBD)
 
-**Goal:** Transform all 3 field portals into presentation-ready premium construction apps with proactive scheduling, credential tracking, and universal floor plan access.
-
-**Target features:**
-- Premium Construction visual redesign (EBC Brand theme default, Midnight alternative)
-- New Employee Home tab: proactive dashboard with clock hero, stat tiles, alerts feed
-- Enhanced Schedule tab: week strip, shift cards, available shift pickup, time-off requests
-- Credential wallet: cert tracking with expiry alerts for all employees
-- Floor plans/drawings: accessible to all portal users (Employee, Driver, Foreman)
-- Foreman scheduling tools: post available shifts, approve time-off, credential dashboard
-- Proactive notification system: schedule changes, material approvals, cert warnings
-- Component library visual refresh: cards, buttons, headers, tab bars, empty states
+**Previous Milestone:** v1.1 Premium Construction UI Overhaul (Complete — 9 phases, 30+ plans)
+- Premium Construction visual redesign with EBC Brand default across 3 themes
+- Employee Home tab, Schedule tab with shift management, Credential wallet
+- Foreman portal restructure: 5-tab bottom nav, Team tab with approval queue + cert dashboard
+- Driver Home tab with alerts feed, PremiumCard upgrade
+- Universal floor plan access with IndexedDB-first offline caching
+- Proactive notification system: cert expiry, late arrival, material, schedule change alerts
+- Component library token cleanup: 60+ hard-coded colors replaced with CSS custom properties
+- Hover/active/focus states for all interactive card variants
 - Design spec: docs/superpowers/specs/2026-04-03-ui-overhaul-design.md
 
 **Previous Milestone:** v1.0 Field Portal Perfection (Complete — 6 phases, 22 plans)
@@ -32,7 +30,7 @@ Field crews can manage their entire workday — clock in, view drawings, submit 
 
 ### Validated
 
-<!-- Shipped and confirmed valuable. Inferred from existing codebase. -->
+<!-- Shipped and confirmed valuable. -->
 
 - ✓ Role-based auth routing (foreman/employee/driver → dedicated portals)
 - ✓ GPS geofence clock-in with location validation
@@ -41,23 +39,22 @@ Field crews can manage their entire workday — clock in, view drawings, submit 
 - ✓ Drawing viewer with offline caching
 - ✓ Driver route optimization with drag-and-drop reorder
 - ✓ i18n (English/Spanish) across all portals
-- ✓ 5-theme system (steel, blueprint, daylight, matrix, anime)
+- ✓ 3-theme system (EBC Brand, Midnight, Daylight)
 - ✓ Signature pad (touch-to-sign canvas)
 - ✓ Daily reports with photo documentation
 - ✓ Audit trail for COs, invoices, T&M, time entries
+- ✓ Premium Construction visual redesign with EBC Brand default (v1.1, Phases 07-09)
+- ✓ Employee Home tab with proactive dashboard (v1.1, Phase 08)
+- ✓ Enhanced Schedule tab with shift management (v1.1, Phase 08)
+- ✓ Credential wallet and cert tracking (v1.1, Phases 08-09)
+- ✓ Universal floor plan access with IndexedDB offline cache (v1.1, Phase 07)
+- ✓ Foreman crew scheduling tools — approval queue + cert dashboard (v1.1, Phase 09)
+- ✓ Proactive notification/alert system — cert expiry, late arrival, material, schedule (v1.1)
+- ✓ Component library visual refresh — tokens, hover states, focus rings (v1.1)
 
 ### Active
 
-<!-- Current scope — Premium Construction UI Overhaul milestone -->
-
-- [ ] Premium Construction visual redesign with EBC Brand as default theme
-- [ ] Employee Home tab with proactive dashboard
-- [ ] Enhanced Schedule tab with shift management
-- [ ] Credential wallet and cert tracking
-- [ ] Universal floor plan access (all portals)
-- [ ] Foreman crew scheduling tools
-- [ ] Proactive notification/alert system
-- [ ] Component library visual refresh
+<!-- Next milestone scope — TBD -->
 
 ### Out of Scope
 
@@ -74,11 +71,11 @@ Field crews can manage their entire workday — clock in, view drawings, submit 
 ## Context
 
 - **Stack:** React 18 + Vite, no CSS framework, inline styles + CSS classes + CSS custom properties
-- **Themes:** 5 complete themes in constants.js with proper CSS vars, but code bypasses them with hard-coded hex
+- **Themes:** 3 themes (EBC Brand, Midnight, Daylight) in constants.js with CSS vars; hard-coded hex eliminated
 - **Icons:** Lucide React (consistent, SVG-based)
 - **Portals:** ForemanView (2400+ lines), EmployeeView (1500+ lines), DriverView (500+ lines)
-- **Audit findings:** 768+ inline style instances, 20+ hard-coded colors, touch targets at 18-24px (should be 44px), 12+ ad-hoc font sizes, inconsistent card/button patterns, ~60% loading state coverage
-- **Design system generated:** UI UX Pro Max recommended Dark Mode OLED style, Fira Code/Fira Sans typography, navy/slate/green palette
+- **Components:** PremiumCard (hero/info/alert), PortalHeader, PortalTabBar, StatTile, AlertCard, ShiftCard, CredentialCard, FieldCard, FieldButton, EmptyState
+- **Design tokens:** tokens.css (spacing, typography, radius, shadows, semantic colors); styles.js uses CSS custom properties throughout
 - **Users:** Field crews (drywall/framing workers), foremen, drivers — use phones in field conditions
 
 ## Constraints
@@ -94,10 +91,11 @@ Field crews can manage their entire workday — clock in, view drawings, submit 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| CSS variables over Tailwind | Already have theme system, avoid migration overhead | — Pending |
-| Component library over global refactor | Incremental, testable, doesn't break existing code | — Pending |
-| Dark OLED as primary design target | Field crews use phones, battery/readability matters | — Pending |
-| Fira Code + Fira Sans typography | Recommended for dashboards/data, good readability | — Pending |
+| CSS variables over Tailwind | Already have theme system, avoid migration overhead | Validated v1.1 |
+| Component library over global refactor | Incremental, testable, doesn't break existing code | Validated v1.1 |
+| Dark OLED as primary design target | Field crews use phones, battery/readability matters | Validated v1.1 |
+| Montserrat headings + system body | Professional headings, native body text for speed | Validated v1.1 |
+| IndexedDB over Cache API for drawings | Persistent, survives eviction, large blob support | Validated v1.1 |
 
 ## Evolution
 
@@ -117,4 +115,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-03 — Milestone v1.0 complete (6 phases, 22 plans). Starting v1.1 Premium Construction UI Overhaul. Design spec at docs/superpowers/specs/2026-04-03-ui-overhaul-design.md. Inspired by Crunchtime Teamworx scheduling patterns.*
+*Last updated: 2026-04-12 — Milestone v1.1 complete (9 phases, 30+ plans). All field portals upgraded to Premium Construction UI with proactive notifications, credential tracking, and IndexedDB offline drawings.*
