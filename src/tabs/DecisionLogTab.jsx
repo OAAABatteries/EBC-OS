@@ -33,7 +33,7 @@ function isImmutable(recordedAt) {
   return now - recorded > IMMUTABLE_HOURS * 60 * 60 * 1000;
 }
 
-export function DecisionLogTab({ decisionLog = [], setDecisionLog, projectId, employees = [], t }) {
+export function DecisionLogTab({ decisionLog = [], setDecisionLog, projectId, employees = [], t, defaultRecordedBy = "" }) {
   const tr = t || ((k) => k);
 
   const [filterType, setFilterType] = useState("all");
@@ -45,7 +45,7 @@ export function DecisionLogTab({ decisionLog = [], setDecisionLog, projectId, em
   const [formType, setFormType] = useState("decision");
   const [formDesc, setFormDesc] = useState("");
   const [formAttributed, setFormAttributed] = useState("");
-  const [formRecordedBy, setFormRecordedBy] = useState("");
+  const [formRecordedBy, setFormRecordedBy] = useState(defaultRecordedBy);
 
   const projectEntries = useMemo(
     () => decisionLog.filter((d) => String(d.projectId) === String(projectId)),
@@ -63,7 +63,7 @@ export function DecisionLogTab({ decisionLog = [], setDecisionLog, projectId, em
     setFormType("decision");
     setFormDesc("");
     setFormAttributed("");
-    setFormRecordedBy("");
+    setFormRecordedBy(defaultRecordedBy);
     setEditingId(null);
     setShowForm(false);
   };

@@ -13,6 +13,8 @@ import { DrawingsTab } from "../components/field/DrawingsTab";
 import { TmCaptureTab } from "./foreman/TmCaptureTab";
 import { PunchTab } from "./foreman/PunchTab";
 import { ProductionTab } from "./foreman/ProductionTab";
+import { DeliveriesTab } from "./DeliveriesTab";
+import { DecisionLogTab } from "./DecisionLogTab";
 import {
   PPE_ITEMS, RISK_LIKELIHOOD, RISK_SEVERITY, riskColor,
   HAZARD_CATEGORIES, CONTROL_HIERARCHY, PERMIT_TYPES,
@@ -51,6 +53,7 @@ export function ForemanView({ app }) {
     punchItems, setPunchItems,
     areas, setAreas,
     productionLogs, setProductionLogs,
+    decisionLog, setDecisionLog,
   } = app;
 
   // ── i18n ──
@@ -684,6 +687,7 @@ export function ForemanView({ app }) {
 
   // ── material request form ──
   const [matForm, setMatForm] = useState({ material: "", qty: "", unit: "EA", notes: "", urgency: "normal", neededBy: "" });
+  const [matPhotos, setMatPhotos] = useState([]);
   const handleMatSubmit = () => {
     if (!selectedProjectId || !matForm.material || !matForm.qty) return;
     const proj = projects.find(p => String(p.id) === String(selectedProjectId));
@@ -700,6 +704,8 @@ export function ForemanView({ app }) {
       notes: matForm.notes,
       urgency: matForm.urgency || "normal",
       neededBy: matForm.neededBy || null,
+      photos: matPhotos || [],
+      photoUrl: matPhotos?.length > 0 ? matPhotos[0].data : null,
       status: "requested",
       requestedAt: now,
       approvedBy: null, approvedAt: null, rejectedReason: null,
@@ -709,6 +715,7 @@ export function ForemanView({ app }) {
     };
     setMaterialRequests(prev => [newReq, ...prev]);
     setMatForm({ material: "", qty: "", unit: "EA", notes: "", urgency: "normal", neededBy: "" });
+    setMatPhotos([]);
     show(t("Request Material"), "ok");
   };
   // Phase 2A: foreman confirms receipt
@@ -974,7 +981,9 @@ export function ForemanView({ app }) {
     { id: "drawings", label: "Drawings", icon: FileText, badge: false },
     { id: "punchList", label: t("Punch List"), icon: ClipboardCheck, badge: openPunchCount > 0 },
     { id: "materials", label: "Materials", icon: Package, badge: projectMatRequests.filter(r => r.status === "requested" || r.status === "pending").length > 0 },
+    { id: "deliveries", label: t("Deliveries"), icon: Package, badge: projectMatRequests.filter(r => ["assigned", "picked_up", "in-transit"].includes(r.status)).length > 0 },
     { id: "issues", label: t("Issues"), icon: AlertTriangle, badge: (problems || []).filter(p => String(p.projectId) === String(selectedProjectId) && p.status !== "resolved").length > 0 },
+    { id: "decisionLog", label: t("Decisions"), icon: FileText, badge: false },
     { id: "hours", label: t("Hours"), icon: BarChart3, badge: false },
     { id: "jsa", label: "JSA", icon: Shield, badge: activeJsaCount > 0 },
   ];
@@ -2373,6 +2382,9 @@ export function ForemanView({ app }) {
                         <input type="date" className="login-input" value={matForm.neededBy} onChange={e => setMatForm(f => ({ ...f, neededBy: e.target.value }))} />
                       </div>
                     </div>
+                    <div style={{ marginTop: "var(--space-2)" }}>
+                      <PhotoCapture photos={matPhotos} setPhotos={setMatPhotos} label={t("Attach Photo")} max={3} />
+                    </div>
                     <button className="btn btn-primary btn-sm" onClick={handleMatSubmit}>{t("Submit Request")}</button>
                   </div>
                 </div>
@@ -2406,6 +2418,24 @@ export function ForemanView({ app }) {
                           {req.fulfillmentType && <span> · {req.fulfillmentType === "supplier" ? "📦" : "🚛"}</span>}
                         </div>
                         {req.notes && <div className="text-xs text-dim mb-4">{req.notes}</div>}
+                        {(req.photoUrl || req.photos?.length > 0) && (
+                          <div className="frm-photo-thumb-row" style={{ marginBottom: "var(--space-2)" }}>
+                            {(req.photos || []).slice(0, 3).map((ph, i) => (
+                              <img key={i} src={ph.data || ph} alt="" style={{ width: 40, height: 40, borderRadius: "var(--radius-control)", objectFit: "cover" }} />
+                            ))}
+                            {!req.photos?.length && req.photoUrl && (
+                              <img src={req.photoUrl} alt="" style={{ width: 40, height: 40, borderRadius: "var(--radius-control)", objectFit: "cover" }} />
+                            )}
+                          </div>
+                        )}
+                        {/* Shortage / damage report alert */}
+                        {req.shortageReport && (
+                          <div style={{ padding: "var(--space-2) var(--space-3)", background: "var(--red-dim, rgba(239,68,68,0.08))", borderRadius: "var(--radius-control)", borderLeft: "3px solid var(--red)", marginBottom: "var(--space-2)" }}>
+                            <div className="text-xs font-semi" style={{ color: "var(--red)" }}>⚠ {req.shortageReport.type || t("Shortage Report")}</div>
+                            {req.shortageReport.description && <div className="text-xs text-muted">{req.shortageReport.description}</div>}
+                            {req.shortageReport.expectedQty != null && <div className="text-xs text-dim">Expected: {req.shortageReport.expectedQty} · Received: {req.shortageReport.receivedQty}</div>}
+                          </div>
+                        )}
                         {/* Confirm receipt when delivered */}
                         {req.status === "delivered" && !req.confirmedBy && (
                           <div className="frm-flex-row">
@@ -2423,6 +2453,25 @@ export function ForemanView({ app }) {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* ═══ DELIVERIES TAB ═══ */}
+            {foremanTab === "deliveries" && (
+              <DeliveriesTab app={{ ...app, materialRequests, setMaterialRequests, projects, auth: { ...app.auth, role: "foreman", id: activeForeman?.id, name: activeForeman?.name } }} />
+            )}
+
+            {/* ═══ DECISION LOG TAB ═══ */}
+            {foremanTab === "decisionLog" && (
+              <div className="emp-content">
+                <DecisionLogTab
+                  decisionLog={decisionLog}
+                  setDecisionLog={setDecisionLog}
+                  projectId={selectedProjectId}
+                  employees={employees}
+                  t={t}
+                  defaultRecordedBy={activeForeman?.name || ""}
+                />
               </div>
             )}
 

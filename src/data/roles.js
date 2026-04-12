@@ -31,7 +31,7 @@ export const ROLES = {
   },
   foreman: {
     label: "Superintendent / Foreman",
-    access: ["dashboard", "projects", "schedule", "reports", "safety", "jsa", "materials", "timeclock", "sds", "map", "settings"],
+    access: ["dashboard", "projects", "schedule", "reports", "safety", "jsa", "materials", "deliveries", "timeclock", "sds", "map", "settings"],
     description: "Field operations and team management"
   },
   safety: {

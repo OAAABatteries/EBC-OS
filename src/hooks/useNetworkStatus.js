@@ -60,5 +60,5 @@ export function useNetworkStatus() {
     setLastSync(getLastSync());
   }, []);
 
-  return { online, pendingCount, wasOffline, lastSync, refreshPending };
+  return { online, isOnline: online, pendingCount, wasOffline, lastSync, refreshPending };
 }

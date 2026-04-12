@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { Send, RefreshCw, X, ChevronDown, ChevronUp, Package, Search, ClipboardList, Layers, ClipboardCopy, Database, MapPin, ArrowDownToLine } from "lucide-react";
+import { Send, RefreshCw, X, ChevronDown, ChevronUp, Package, Search, ClipboardList, Layers, ClipboardCopy, Database, MapPin, ArrowDownToLine, Camera } from "lucide-react";
+import { PhotoCapture } from "../components/field/PhotoCapture";
 import { MAT_CATS, MAT_CLR, ASM_TYPES } from "../data/materials";
 import { useNotifications, getNotificationPrefs } from "../hooks/useNotifications";
 import { initSuppliers } from "../data/constants";
@@ -113,6 +114,7 @@ export function MaterialsTab({ app }) {
 
   // ── Material Request state ──
   const [reqForm, setReqForm] = useState({ projectId: "", material: "", qty: "", unit: "EA", notes: "", urgency: "normal", neededBy: "" });
+  const [reqPhotos, setReqPhotos] = useState([]);
   const [approvalDetail, setApprovalDetail] = useState(null); // req ID for approval modal
   const myRequests = useMemo(() =>
     (app.materialRequests || []).filter(r => r.employeeId === app.auth?.id),
@@ -140,6 +142,8 @@ export function MaterialsTab({ app }) {
       notes: reqForm.notes,
       urgency: reqForm.urgency || "normal",
       neededBy: reqForm.neededBy || null,
+      photos: reqPhotos,
+      photoUrl: reqPhotos.length > 0 ? reqPhotos[0].data : null,
       status: "requested",
       requestedAt: now,
       // Phase 2A fields (nullable)
@@ -151,6 +155,7 @@ export function MaterialsTab({ app }) {
     };
     app.setMaterialRequests(prev => [newReq, ...prev]);
     setReqForm({ projectId: "", material: "", qty: "", unit: "EA", notes: "", urgency: "normal", neededBy: "" });
+    setReqPhotos([]);
     show("Material request submitted", "ok");
   };
 
@@ -1092,6 +1097,9 @@ export function MaterialsTab({ app }) {
               </select>
               <input className="input" type="date" placeholder="Needed by" value={reqForm.neededBy} onChange={e => setReqForm(f => ({ ...f, neededBy: e.target.value }))} />
             </div>
+            <div style={{ marginTop: "var(--space-3)" }}>
+              <PhotoCapture photos={reqPhotos} setPhotos={setReqPhotos} label="Attach Photo" max={3} />
+            </div>
             <button
               className="btn btn-primary btn-sm mt-12"
               onClick={handleRequestSubmit}
@@ -1115,8 +1123,11 @@ export function MaterialsTab({ app }) {
                     <span className="text-sm font-semi">
                       {req.urgency === "emergency" ? "🚨 " : req.urgency === "urgent" ? "⚡ " : ""}{req.material}
                     </span>
-                    <span className={`badge ${REQ_STATUS_BADGE[req.status] || "badge-amber"}`}>
-                      {REQ_STATUS_LABEL[req.status] || req.status}
+                    <span style={{ display: "flex", gap: "var(--space-1)", alignItems: "center" }}>
+                      {req.shortageReport && <span className="badge badge-red" title="Shortage/damage reported">⚠</span>}
+                      <span className={`badge ${REQ_STATUS_BADGE[req.status] || "badge-amber"}`}>
+                        {REQ_STATUS_LABEL[req.status] || req.status}
+                      </span>
                     </span>
                   </div>
                   <div className="text-xs text-muted mb-4">
@@ -1128,6 +1139,16 @@ export function MaterialsTab({ app }) {
                     {req.employeeName} · {req.requestedAt ? new Date(req.requestedAt).toLocaleDateString() : ""}
                   </div>
                   {req.notes && <div className="text-xs text-dim mb-4">{req.notes}</div>}
+                  {(req.photoUrl || req.photos?.length > 0) && (
+                    <div className="frm-photo-thumb-row" style={{ marginBottom: "var(--space-2)" }}>
+                      {(req.photos || []).slice(0, 3).map((ph, i) => (
+                        <img key={i} src={ph.data || ph} alt="" style={{ width: 48, height: 48, borderRadius: "var(--radius-control)", objectFit: "cover" }} />
+                      ))}
+                      {!req.photos?.length && req.photoUrl && (
+                        <img src={req.photoUrl} alt="" style={{ width: 48, height: 48, borderRadius: "var(--radius-control)", objectFit: "cover" }} />
+                      )}
+                    </div>
+                  )}
 
                   {/* PM+ approval: open routing modal */}
                   {!isFieldRole && req.status === "requested" && (
@@ -1153,6 +1174,27 @@ export function MaterialsTab({ app }) {
                         const exc = prompt("Describe the issue (partial, wrong item, damaged):");
                         if (exc) handleConfirmReceipt(req.id, exc);
                       }}>⚠ Issue</button>
+                    </div>
+                  )}
+
+                  {/* Shortage / damage report (PM reader) */}
+                  {req.shortageReport && (
+                    <div className="card mt-8" style={{ padding: "var(--space-3)", background: "var(--red-dim, rgba(239,68,68,0.08))", borderLeft: "3px solid var(--red)" }}>
+                      <div className="flex-between mb-4">
+                        <span className="text-xs font-semi" style={{ color: "var(--red)" }}>⚠ {req.shortageReport.type || "Shortage Report"}</span>
+                        <span className="text-xs text-dim">{req.shortageReport.timestamp ? new Date(req.shortageReport.timestamp).toLocaleString() : ""}</span>
+                      </div>
+                      {req.shortageReport.expectedQty != null && req.shortageReport.receivedQty != null && (
+                        <div className="text-xs text-muted mb-4">Expected: {req.shortageReport.expectedQty} · Received: {req.shortageReport.receivedQty}</div>
+                      )}
+                      {req.shortageReport.description && <div className="text-xs text-muted mb-4">{req.shortageReport.description}</div>}
+                      {req.shortageReport.photos?.length > 0 && (
+                        <div className="frm-photo-thumb-row">
+                          {req.shortageReport.photos.slice(0, 3).map((ph, i) => (
+                            <img key={i} src={ph.data || ph} alt="" style={{ width: 40, height: 40, borderRadius: "var(--radius-control)", objectFit: "cover" }} />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
