@@ -66,7 +66,12 @@ const CP = `
   /* ── Header ── */
   .cp-header { background:#0a1520; border-bottom:1px solid #1e3550; padding:0 28px; display:flex; align-items:center; justify-content:space-between; height:60px; position:sticky; top:0; z-index:50; box-shadow:0 1px 8px rgba(0,0,0,0.35); }
   .cp-logo { display:flex; align-items:center; gap: var(--space-3); }
-  .cp-logo-mark { width:36px; height:36px; background:linear-gradient(135deg,#1a3a5c,#0e2035); border:1.5px solid #2a5580; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .cp-logo-mark { width:36px; height:36px; flex-shrink:0;
+    background:#d97706;
+    -webkit-mask-image:url(/ebc-eagle-white.png);mask-image:url(/ebc-eagle-white.png);
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+    -webkit-mask-position:center;mask-position:center;
+    -webkit-mask-size:contain;mask-size:contain; }
   .cp-logo-text { font-size:15px; font-weight:800; color:#e2eaf4; letter-spacing:0.2px; }
   .cp-logo-sub { font-size:11px; color:#5580a0; font-weight:500; }
   .cp-header-right { display:flex; align-items:center; gap: var(--space-3); }
@@ -166,6 +171,9 @@ const CP = `
   .cp-photo-placeholder { background:#0a1520; border:1px dashed #1e3550; border-radius:10px; aspect-ratio:4/3; display:flex; flex-direction:column; align-items:center; justify-content:center; gap: var(--space-2); color:#2a5580; }
   .cp-photo-placeholder span { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
 
+  /* ── Demo banner ── */
+  .cp-demo-banner { background:rgba(217,119,6,0.12); border-bottom:1px solid rgba(217,119,6,0.3); padding:6px 28px; text-align:center; font-size:12px; font-weight:600; color:#f59e0b; letter-spacing:0.5px; }
+
   /* ── Alert banner ── */
   .cp-alert { background:rgba(217,119,6,0.1); border:1px solid rgba(217,119,6,0.25); border-radius:10px; padding:14px 16px; margin-bottom:20px; display:flex; align-items:flex-start; gap: var(--space-3); }
   .cp-alert-text { font-size:13px; color:#d97706; font-weight:500; line-height:1.5; }
@@ -176,7 +184,12 @@ const CP = `
   /* ── Login ── */
   .cp-login-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; background:#0d1b2a; }
   .cp-login-card { width:100%; max-width:400px; background:#0f1f30; border:1px solid #1e3550; border-radius:18px; padding:36px 32px; }
-  .cp-login-eagle { width:60px; height:60px; background:linear-gradient(135deg,#1a3a5c,#0e2035); border:1.5px solid #2a5580; border-radius:16px; display:flex; align-items:center; justify-content:center; margin: "0" auto 20px; }
+  .cp-login-eagle { width:60px; height:60px; margin: 0 auto 20px;
+    background:#d97706;
+    -webkit-mask-image:url(/ebc-eagle-white.png);mask-image:url(/ebc-eagle-white.png);
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+    -webkit-mask-position:center;mask-position:center;
+    -webkit-mask-size:contain;mask-size:contain; }
   .cp-login-title { font-size:22px; font-weight:800; color:#e2eaf4; text-align:center; margin-bottom:6px; }
   .cp-login-sub { font-size:13px; color:#5580a0; text-align:center; margin-bottom:28px; line-height:1.5; }
   .cp-login-error { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:8px; padding:10px 14px; font-size:13px; color:#f87171; margin-bottom:16px; display:flex; align-items:center; gap: var(--space-2); }
@@ -299,12 +312,6 @@ function StarRating({ value, onChange }) {
   );
 }
 
-// ── EBC Eagle SVG (minimal) ───────────────────────────────────
-function EagleMark({ size = 22 }) {
-  return (
-    <HardHat size={size} color="#d97706" strokeWidth={1.8} />
-  );
-}
 
 // ═══════════════════════════════════════════════════════════════
 //  Main Component
@@ -386,9 +393,7 @@ export default function CustomerPortal() {
         <style>{CP}</style>
         <div className="cp-login-wrap">
           <div className="cp-login-card">
-            <div className="cp-login-eagle">
-              <EagleMark size={28} />
-            </div>
+            <div className="cp-login-eagle" />
             <div className="cp-login-title">Customer Portal</div>
             <div className="cp-login-sub">
               Eagles Brothers Constructors<br />
@@ -451,13 +456,12 @@ export default function CustomerPortal() {
   return (
     <div className="cp">
       <style>{CP}</style>
+      <div className="cp-demo-banner">DEMO — Sample data only. Live project sync coming soon.</div>
 
       {/* ── Header ── */}
       <div className="cp-header">
         <div className="cp-logo">
-          <div className="cp-logo-mark">
-            <EagleMark size={20} />
-          </div>
+          <div className="cp-logo-mark" />
           <div>
             <div className="cp-logo-text">Eagles Brothers Constructors</div>
             <div className="cp-logo-sub">Customer Project Portal</div>

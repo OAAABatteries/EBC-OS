@@ -10,7 +10,12 @@ const CARD_STYLES = `
   .bc-preview { width:350px;height:200px;border-radius:12px;position:relative;overflow:hidden;
     background:linear-gradient(135deg,#0a1628 0%,#132244 60%,#0d1a36 100%);
     box-shadow:0 8px 32px rgba(0,0,0,0.5);font-family:'Inter',system-ui,sans-serif;color:#e2e8f0; }
-  .bc-eagle { position:absolute;right:16px;top:50%;transform:translateY(-50%);width:80px;height:80px;opacity:0.08; }
+  .bc-eagle { position:absolute;right:16px;top:50%;transform:translateY(-50%);width:80px;height:80px;opacity:0.08;
+    background:#ffffff;
+    -webkit-mask-image:url(/ebc-eagle-white.png);mask-image:url(/ebc-eagle-white.png);
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+    -webkit-mask-position:center;mask-position:center;
+    -webkit-mask-size:contain;mask-size:contain; }
   .bc-content { position:relative;z-index:1;padding:24px;display:flex;flex-direction:column;height:100%;box-sizing:border-box; }
   .bc-name { font-size:18px;font-weight:800;color:#ffffff;letter-spacing:0.5px; }
   .bc-title { font-size:11px;color:#f59e0b;text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;font-weight:600; }
@@ -25,7 +30,6 @@ const CARD_STYLES = `
   @media print { .bc-no-print { display:none !important; } }
 `;
 
-const EAGLE_SVG = `<svg viewBox="0 0 100 100" fill="white"><path d="M50 10C40 10 30 20 25 35C20 50 25 65 35 75C40 80 45 82 50 85C55 82 60 80 65 75C75 65 80 50 75 35C70 20 60 10 50 10ZM50 25C55 25 60 30 62 40C64 50 60 60 55 65C52 68 50 70 50 70C50 70 48 68 45 65C40 60 36 50 38 40C40 30 45 25 50 25Z"/></svg>`;
 
 export default function BusinessCardGenerator({ employees, app }) {
   const [selected, setSelected] = useState(null);
@@ -101,7 +105,7 @@ export default function BusinessCardGenerator({ employees, app }) {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
           <div ref={cardRef} className="bc-preview">
             <div className="bc-accent" />
-            <div className="bc-eagle" dangerouslySetInnerHTML={{ __html: EAGLE_SVG }} />
+            <div className="bc-eagle" />
             <div className="bc-content">
               <div className="bc-name">{card.name}</div>
               <div className="bc-title">{card.title}</div>

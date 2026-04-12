@@ -14,7 +14,12 @@ const PORTAL_STYLES = `
   /* ── Header ── */
   .gcp-header { background:#ffffff;border-bottom:1px solid #e2e8f0;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:50;box-shadow:0 1px 3px rgba(0,0,0,0.04); }
   .gcp-logo { display:flex;align-items:center;gap: var(--space-3); }
-  .gcp-logo-icon { width:36px;height:36px;background:#1a2e4a;border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;letter-spacing:0.5px; }
+  .gcp-logo-icon { width:36px;height:36px;
+    background:#1a2e4a;
+    -webkit-mask-image:url(/ebc-eagle-white.png);mask-image:url(/ebc-eagle-white.png);
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+    -webkit-mask-position:center;mask-position:center;
+    -webkit-mask-size:contain;mask-size:contain; }
   .gcp-logo-text { font-size:16px;font-weight:700;color:#1a2e4a; }
   .gcp-logo-sub { font-size:11px;color:#64748b;font-weight:500; }
   .gcp-user { display:flex;align-items:center;gap: var(--space-3); }
@@ -62,6 +67,9 @@ const PORTAL_STYLES = `
   .gcp-chip { padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid #d1d5db;background:#fff;color:#64748b;transition:all 0.15s; }
   .gcp-chip.selected { background:#1a2e4a;color:#fff;border-color:#1a2e4a; }
   .gcp-chip:hover { border-color:#1a2e4a; }
+
+  /* ── Demo banner ── */
+  .gcp-demo-banner { background:#fffbeb;border-bottom:1px solid #fcd34d;padding:6px 32px;text-align:center;font-size:12px;font-weight:600;color:#92400e;letter-spacing:0.5px; }
 
   /* ── Buttons ── */
   .gcp-btn { padding:12px 24px;border-radius:8px;border:none;font-weight:700;font-size:14px;cursor:pointer;transition:all 0.2s;font-family:inherit; }
@@ -303,7 +311,7 @@ export default function GCPortal() {
         <style>{PORTAL_STYLES}</style>
         <div className="gcp-header">
           <div className="gcp-logo">
-            <div className="gcp-logo-icon">EBC</div>
+            <div className="gcp-logo-icon" />
             <div>
               <div className="gcp-logo-text">Eagles Brothers Constructors</div>
               <div className="gcp-logo-sub">GC Partner Portal</div>
@@ -313,7 +321,7 @@ export default function GCPortal() {
         <div className="gcp-login-wrap">
           <div className="gcp-card gcp-login-card" style={{ padding: "var(--space-8)" }}>
             <div style={{ textAlign: "center", marginBottom: 28 }}>
-              <div className="gcp-logo-icon" style={{ width: 56, height: 56, fontSize: "var(--text-subtitle)", margin: "0 auto 16px", borderRadius: "var(--radius-card)" }}>EBC</div>
+              <div className="gcp-logo-icon" style={{ width: 56, height: 56, margin: "0 auto 16px" }} />
               <div className="gcp-section-title">Welcome to the GC Portal</div>
               <div className="gcp-section-desc" style={{ marginBottom: "0" }}>Access your project dashboard, request teams, and track documents.</div>
             </div>
@@ -388,11 +396,12 @@ export default function GCPortal() {
   return (
     <div className="gcp">
       <style>{PORTAL_STYLES}</style>
+      <div className="gcp-demo-banner">DEMO — Sample data only. Live project sync coming soon.</div>
 
       {/* ── Header ── */}
       <div className="gcp-header">
         <div className="gcp-logo">
-          <div className="gcp-logo-icon">EBC</div>
+          <div className="gcp-logo-icon" />
           <div>
             <div className="gcp-logo-text">Eagles Brothers</div>
             <div className="gcp-logo-sub">Partner Portal</div>

@@ -315,61 +315,62 @@ export function JSATab({ app }) {
               const teamList = (jsa.teamSignOn || []).map(c => c.name);
               const teamMembersList = (jsa.teamMembers || []).map(c => c.name + (c.role ? ` (${c.role})` : ''));
               const allTeam = [...new Set([...teamList, ...teamMembersList])];
+              const stepTxt = (s) => lang === "es" && s.stepEs ? s.stepEs : s.step;
+              const hazTxt = (h) => lang === "es" && h.hazardEs ? h.hazardEs : h.hazard;
               const html = `<!DOCTYPE html><html><head><title>JSA — ${jsa.title}</title><style>
-                body{font-family:Arial,sans-serif;max-width:850px;margin: "0" auto;padding:20px;color:#111;font-size:12px}
-                h1{font-size:20px;margin: 0 0 2px} h2{font-size:14px;margin: var(--space-3) 0 6px;border-bottom:1px solid #ccc;padding-bottom:4px}
+                body{font-family:Arial,sans-serif;max-width:850px;margin:0 auto;padding:20px;color:#111;font-size:12px}
+                h1{font-size:20px;margin:0 0 2px} h2{font-size:14px;margin:12px 0 6px;border-bottom:1px solid #ccc;padding-bottom:4px}
                 .header{border-bottom:3px solid #333;padding-bottom:10px;margin-bottom:12px}
                 .company{font-size:18px;font-weight:700;color:#b45309}
-                .meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap: var(--space-1) 12px;margin-bottom:12px}
+                .meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 12px;margin-bottom:12px}
                 .meta-grid div{padding:2px 0} .meta-grid span{color:#666;font-size:11px}
                 .risk-badge{display:inline-block;padding:2px 10px;border-radius:4px;font-weight:700;color:#fff;font-size:11px}
-                table{width:100%;border-collapse:collapse;margin: var(--space-2) 0 12px}
+                table{width:100%;border-collapse:collapse;margin:8px 0 12px}
                 th,td{border:1px solid #ccc;padding:5px 8px;text-align:left;font-size:11px}
                 th{background:#f0f0f0;font-weight:600} .step-hdr{background:#f8f8f8;font-weight:600}
-                .ppe-list{display:flex;gap: var(--space-2);flex-wrap:wrap;margin: var(--space-1) 0}
+                .ppe-list{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0}
                 .ppe-item{padding:2px 8px;background:#e8f4fd;border-radius:4px;font-size:11px}
-                .sig-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap: var(--space-4);margin-top:24px}
+                .sig-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:24px}
                 .sig-box{border-top:1px solid #666;padding-top:4px;font-size:10px;color:#666;min-height:32px}
                 @media print{body{padding:8px;font-size:11px}}
               </style></head><body>
                 <div class="header"><div class="company">Eagles Brothers Constructors</div>
-                <h1>JOB SAFETY ANALYSIS (JSA)</h1>
-                <div style="font-size:11px;color:#666">OSHA-Compliant Pre-Task Hazard Planning</div></div>
+                <h1>${t("Job Safety Analysis")} (JSA)</h1>
+                <div style="font-size:11px;color:#666">${t("OSHA-Compliant Pre-Task Hazard Planning")}</div></div>
                 <div class="meta-grid">
-                  <div><span>Title:</span><br/><strong>${jsa.title}</strong></div>
-                  <div><span>Project:</span><br/>${projN}</div>
-                  <div><span>Trade:</span><br/>${tradeLabel}</div>
-                  <div><span>Location:</span><br/>${jsa.location || 'N/A'}</div>
-                  <div><span>Date:</span><br/>${jsa.date}</div>
-                  <div><span>Shift:</span><br/>${jsa.shift || 'Day'}</div>
-                  <div><span>Supervisor:</span><br/>${jsa.supervisor || 'N/A'}</div>
-                  <div><span>GC:</span><br/>${jsa.gc || 'N/A'}</div>
-                  <div><span>Risk Level:</span><br/><span class="risk-badge" style="background:${riskColor(maxR).bg}">${riskLbl} (${maxR})</span></div>
+                  <div><span>${t("Title")}:</span><br/><strong>${jsa.title}</strong></div>
+                  <div><span>${t("Project")}:</span><br/>${projN}</div>
+                  <div><span>${t("Trade")}:</span><br/>${tradeLabel}</div>
+                  <div><span>${t("Location")}:</span><br/>${jsa.location || 'N/A'}</div>
+                  <div><span>${t("Date")}:</span><br/>${jsa.date}</div>
+                  <div><span>${t("Shift")}:</span><br/>${jsa.shift || t('Day')}</div>
+                  <div><span>${t("Supervisor")}:</span><br/>${jsa.supervisor || 'N/A'}</div>
+                  <div><span>${t("GC")}:</span><br/>${jsa.gc || 'N/A'}</div>
+                  <div><span>${t("Risk Level")}:</span><br/><span class="risk-badge" style="background:${riskColor(maxR).bg}">${riskLbl} (${maxR})</span></div>
                 </div>
-                <h2>Required PPE</h2>
-                <div class="ppe-list">${ppeList ? ppeList.split(', ').map(p => '<span class="ppe-item">'+p+'</span>').join('') : 'None'}</div>
-                ${permitList ? '<h2>Permits Required</h2><div>'+permitList+'</div>' : ''}
-                <h2>Job Steps & Hazard Analysis</h2>
-                <table><thead><tr><th style="width:30px">#</th><th>Step</th><th>Hazard</th><th>Risk</th><th>Controls</th></tr></thead><tbody>
+                <h2>${t("Required PPE")}</h2>
+                <div class="ppe-list">${ppeList ? ppeList.split(', ').map(p => '<span class="ppe-item">'+p+'</span>').join('') : t('None')}</div>
+                ${permitList ? '<h2>'+t("Permits Required")+'</h2><div>'+permitList+'</div>' : ''}
+                <h2>${t("Job Steps & Hazard Analysis")}</h2>
+                <table><thead><tr><th style="width:30px">#</th><th>${t("Step")}</th><th>${t("Hazard")}</th><th>${t("Risk")}</th><th>${t("Controls")}</th></tr></thead><tbody>
                 ${jsa.steps.map((s, si) => {
-                  if (!s.hazards || s.hazards.length === 0) return '<tr><td>'+(si+1)+'</td><td>'+s.step+'</td><td colspan="3" style="color:#999">No hazards identified</td></tr>';
-                  return s.hazards.map((h, hi) => '<tr>'+(hi===0?'<td rowspan="'+s.hazards.length+'">'+(si+1)+'</td><td rowspan="'+s.hazards.length+'">'+s.step+'</td>':'')+'<td>'+h.hazard+'</td><td style="text-align:center">'+(h.likelihood||1)*(h.severity||1)+'</td><td>'+(h.controls||[]).map(c=>'- '+c).join('<br/>')+'</td></tr>').join('');
+                  if (!s.hazards || s.hazards.length === 0) return '<tr><td>'+(si+1)+'</td><td>'+stepTxt(s)+'</td><td colspan="3" style="color:#999">'+t("No hazards identified")+'</td></tr>';
+                  return s.hazards.map((h, hi) => '<tr>'+(hi===0?'<td rowspan="'+s.hazards.length+'">'+(si+1)+'</td><td rowspan="'+s.hazards.length+'">'+stepTxt(s)+'</td>':'')+'<td>'+hazTxt(h)+'</td><td style="text-align:center">'+(h.likelihood||1)*(h.severity||1)+'</td><td>'+(h.controls||[]).map(c=>'- '+c).join('<br/>')+'</td></tr>').join('');
                 }).join('')}
                 </tbody></table>
-                <h2>Crew Members / Signatures</h2>
+                <h2>${t("Crew Members")} / ${t("Signatures")}</h2>
                 <div class="sig-grid">
                   ${(() => {
-                    // Build signature map from teamSignOn and teamMembers
                     const sigMap = {};
                     (jsa.teamSignOn || []).forEach(c => { if (c.signature) sigMap[c.name] = c.signature; });
                     (jsa.teamMembers || []).forEach(c => { if (c.signature) sigMap[c.name] = c.signature; });
                     if (allTeam.length > 0) {
                       return allTeam.map(n => {
                         const sig = sigMap[n];
-                        return '<div><strong>'+n+'</strong><div class="sig-box">'+(sig ? '<img src="'+sig+'" style="width:200px;height:50px;object-fit:contain;display:block;margin: var(--space-1) 0"/>' : 'Signature: ________________')+'<br/>Date: '+jsa.date+'</div></div>';
+                        return '<div><strong>'+n+'</strong><div class="sig-box">'+(sig ? '<img src="'+sig+'" style="width:200px;height:50px;object-fit:contain;display:block;margin:4px 0"/>' : t('Signature')+': ________________')+'<br/>'+t('Date')+': '+jsa.date+'</div></div>';
                       }).join('');
                     }
-                    return '<div class="sig-box">Name: ________________<br/>Signature: ________________<br/>Date: ________</div><div class="sig-box">Name: ________________<br/>Signature: ________________<br/>Date: ________</div><div class="sig-box">Name: ________________<br/>Signature: ________________<br/>Date: ________</div>';
+                    return '<div class="sig-box">'+t('Name')+': ________________<br/>'+t('Signature')+': ________________<br/>'+t('Date')+': ________</div><div class="sig-box">'+t('Name')+': ________________<br/>'+t('Signature')+': ________________<br/>'+t('Date')+': ________</div><div class="sig-box">'+t('Name')+': ________________<br/>'+t('Signature')+': ________________<br/>'+t('Date')+': ________</div>';
                   })()}
                 </div>
               </body></html>`;
@@ -475,7 +476,7 @@ export function JSATab({ app }) {
             <div key={step.id} className="jsa-step-card">
               <div className="jsa-step-header">
                 <span className="jsa-step-num">{idx + 1}</span>
-                <span className="jsa-step-text">{step.step}</span>
+                <span className="jsa-step-text">{lang === "es" && step.stepEs ? step.stepEs : step.step}</span>
               </div>
               {(step.hazards || []).map((h, hi) => {
                 const score = (h.likelihood || 1) * (h.severity || 1);
@@ -492,7 +493,7 @@ export function JSATab({ app }) {
                         <span className="jsa-risk-score" style={{ background: hrc.bg, color: "#fff" }}>{score}</span>
                         {ctrl && <span style={{ fontSize: "var(--text-xs)", color: ctrl.color, fontWeight: "var(--weight-semi)" }}>{lang === "es" ? ctrl.labelEs : ctrl.label}</span>}
                       </div>
-                      <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-medium)", marginBottom: "var(--space-1)" }}>{h.hazard}</div>
+                      <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-medium)", marginBottom: "var(--space-1)" }}>{lang === "es" && h.hazardEs ? h.hazardEs : h.hazard}</div>
                       <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>
                         {t("L")}:{h.likelihood} × {t("S")}:{h.severity} = {score}
                       </div>
