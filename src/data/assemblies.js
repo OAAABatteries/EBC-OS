@@ -946,6 +946,123 @@ export const ASSEMBLY_LIBRARY = [
       "Required every 30' OC max in walls, and at changes in substrate/direction. Often overlooked in estimates. GA-216 requires CJs at all construction joints in structure above.",
   },
 
+  // ────────────────────────────────────────────────────────────
+  //  DEMOLITION
+  // ────────────────────────────────────────────────────────────
+
+  {
+    code: "DEMO-GWB-1S",
+    name: "Demo GWB — 1 Side (Strip & Leave Studs)",
+    category: "Demolition",
+    unit: "SF",
+    description:
+      "Remove one layer of gypsum board from one side of an existing partition, leaving studs in place. Includes screw removal, board tear-off, and debris stacking.",
+    components: [
+      { material: "Labor — Strip GWB", qty: 1.0, unit: "SF", note: "1 side removal" },
+      { material: "Debris Bag (6 mil poly)", qty: 0.015, unit: "EA", note: "~1 bag per 65 SF" },
+      { material: "Dumpster Allowance", qty: 0.004, unit: "CY", note: "~250 SF per CY loose" },
+    ],
+    notes:
+      "Strip one side only — common for re-insulation, electrical rough-in, or single-side re-board. Studs remain. Include dust barrier and PPE in JSA.",
+  },
+
+  {
+    code: "DEMO-GWB-2S",
+    name: "Demo GWB — Both Sides (Strip & Leave Studs)",
+    category: "Demolition",
+    unit: "SF",
+    description:
+      "Remove gypsum board from both sides of an existing partition, leaving studs in place.",
+    components: [
+      { material: "Labor — Strip GWB (both sides)", qty: 2.0, unit: "SF", note: "2 sides" },
+      { material: "Debris Bag (6 mil poly)", qty: 0.03, unit: "EA", note: "~1 bag per 33 SF" },
+      { material: "Dumpster Allowance", qty: 0.008, unit: "CY", note: "~125 SF per CY loose" },
+    ],
+    notes:
+      "Full strip — both sides. Studs stay for re-framing or re-board. Double the debris volume vs. single-side.",
+  },
+
+  {
+    code: "DEMO-WALL-FULL",
+    name: "Demo Full Wall (GWB + Studs + Track)",
+    category: "Demolition",
+    unit: "LF",
+    description:
+      "Complete removal of an interior partition: both sides of GWB, metal studs, top/bottom track, and insulation. Cut, pull, and stack debris.",
+    components: [
+      { material: "Labor — Full Wall Demo", qty: 1.0, unit: "LF", note: "10' wall height assumed" },
+      { material: "Debris Bag (6 mil poly)", qty: 0.1, unit: "EA", note: "~1 bag per 10 LF" },
+      { material: "Dumpster Allowance", qty: 0.04, unit: "CY", note: "Metal + GWB mixed" },
+      { material: "Fastener Removal (track anchors)", qty: 2.0, unit: "EA", note: "Hilti pins or tapcons per LF" },
+    ],
+    notes:
+      "Full wall removal to deck/slab. Includes detaching track anchors. If fire-rated, expect additional layers and longer demo time. Protect adjacent finishes.",
+  },
+
+  {
+    code: "DEMO-ACT",
+    name: "Demo Acoustical Ceiling Tile (Grid Stays)",
+    category: "Demolition",
+    unit: "SF",
+    description:
+      "Remove acoustical ceiling tiles from existing grid, leaving the grid in place. Includes tile lift-out, stacking, and disposal.",
+    components: [
+      { material: "Labor — Remove ACT", qty: 1.0, unit: "SF", note: "Tile removal only" },
+      { material: "Debris — Ceiling Tile", qty: 0.005, unit: "CY", note: "Tiles compress well" },
+    ],
+    notes:
+      "Grid remains for re-tile or as support for new ceiling. If grid is also being removed, use DEMO-ACT-FULL.",
+  },
+
+  {
+    code: "DEMO-ACT-FULL",
+    name: "Demo ACT + Grid (Full Ceiling Removal)",
+    category: "Demolition",
+    unit: "SF",
+    description:
+      "Complete removal of acoustical ceiling system: tiles, main tees, cross tees, hanger wires, and wall molding.",
+    components: [
+      { material: "Labor — Remove ACT + Grid", qty: 1.0, unit: "SF", note: "Full system removal" },
+      { material: "Debris — Grid Metal", qty: 0.008, unit: "CY", note: "Separate metal recycling" },
+      { material: "Debris — Ceiling Tile", qty: 0.005, unit: "CY", note: "Tile disposal" },
+      { material: "Hanger Wire Removal", qty: 0.25, unit: "EA", note: "~1 wire per 4 SF" },
+    ],
+    notes:
+      "Full ceiling demo. Hanger wire stubs may remain at deck — confirm scope. Metal grid is recyclable. Coordinate with MEP above ceiling before demo.",
+  },
+
+  {
+    code: "DEMO-FLOORING",
+    name: "Demo Floor Covering (VCT / Carpet / Sheet Vinyl)",
+    category: "Demolition",
+    unit: "SF",
+    description:
+      "Remove existing floor covering down to substrate. Includes scraping adhesive residue if required for new install.",
+    components: [
+      { material: "Labor — Floor Demo", qty: 1.0, unit: "SF", note: "Scrape and remove" },
+      { material: "Debris Bag", qty: 0.02, unit: "EA", note: "~1 bag per 50 SF" },
+      { material: "Floor Scraper Blades", qty: 0.01, unit: "EA", note: "Consumable allowance" },
+    ],
+    notes:
+      "VCT and sheet vinyl require adhesive removal. Carpet is faster. If asbestos is suspected, stop and test before proceeding. Include PPE costs.",
+  },
+
+  {
+    code: "DEMO-SOFFIT",
+    name: "Demo GWB Soffit / Bulkhead",
+    category: "Demolition",
+    unit: "LF",
+    description:
+      "Remove drywall soffit/bulkhead framing and GWB. Includes bottom and sides, framing members, and debris.",
+    components: [
+      { material: "Labor — Soffit Demo", qty: 1.0, unit: "LF", note: "Typical 12-24\" depth" },
+      { material: "Debris Bag", qty: 0.05, unit: "EA", note: "~1 bag per 20 LF" },
+      { material: "Dumpster Allowance", qty: 0.02, unit: "CY", note: "Mixed metal + GWB" },
+    ],
+    notes:
+      "Common in TI remodel — removing old soffits to open up ceiling. Verify nothing is running through the soffit (duct, pipe, conduit) before demo.",
+  },
+
 ];
 
 export default ASSEMBLY_LIBRARY;

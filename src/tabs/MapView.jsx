@@ -52,6 +52,7 @@ export function MapView({ app }) {
   const [showGeofences, setShowGeofences] = useState(false);
   const [showCrew, setShowCrew] = useState(true);
   const [showDeliveries, setShowDeliveries] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // ── AI Route state ──
   const [routeResult, setRouteResult] = useState(null);
@@ -290,18 +291,31 @@ export function MapView({ app }) {
     deliveryLayerRef.current = deliveryGroup;
   }, [showDeliveries, materialRequests, projects]);
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(f => !f);
+    // Let DOM reflow before telling Leaflet about the new container size
+    setTimeout(() => { if (mapInstance.current) mapInstance.current.invalidateSize(); }, 150);
+  };
+
   return (
-    <div>
+    <div style={isFullscreen ? { position: "fixed", inset: 0, zIndex: 9998, background: "var(--bg)", display: "flex", flexDirection: "column" } : undefined}>
       <div className="section-header">
         <div>
           <div className="section-title">Project Map</div>
-          <div className="section-sub">
-            {filtered.length} project{filtered.length !== 1 ? "s" : ""} — {fmtContract(filtered.reduce((s, p) => s + (p.contract || 0), 0))} total
-          </div>
+          {!isFullscreen && (
+            <div className="section-sub">
+              {filtered.length} project{filtered.length !== 1 ? "s" : ""} — {fmtContract(filtered.reduce((s, p) => s + (p.contract || 0), 0))} total
+            </div>
+          )}
         </div>
-        <button className="btn btn-ghost" onClick={() => { showRoute ? setShowRoute(false) : runRouteOptimize(); }} disabled={routeLoading}>
-          {routeLoading ? "Analyzing..." : "AI Route Plan"}
-        </button>
+        <div style={{ display: "flex", gap: "var(--space-2)" }}>
+          <button className="btn btn-ghost" onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}>
+            {isFullscreen ? "✕ Exit" : "⛶ Fullscreen"}
+          </button>
+          <button className="btn btn-ghost" onClick={() => { showRoute ? setShowRoute(false) : runRouteOptimize(); }} disabled={routeLoading}>
+            {routeLoading ? "Analyzing..." : "AI Route Plan"}
+          </button>
+        </div>
       </div>
 
       {/* AI Route Plan Panel */}
@@ -459,7 +473,7 @@ export function MapView({ app }) {
       </div>
 
       {/* Map container */}
-      <div className="map-container" ref={mapRef} />
+      <div className="map-container" ref={mapRef} style={isFullscreen ? { flex: 1, height: "auto", minHeight: 0 } : undefined} />
     </div>
   );
 }

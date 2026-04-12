@@ -1,101 +1,105 @@
-const CACHE_NAME = "ebc-drawings-v1";
+// ═══════════════════════════════════════════════════════════════
+//  EBC-OS · useDrawingCache — IndexedDB-first drawing cache hook
+//  Primary: IndexedDB (persistent, large blobs, survives eviction)
+//  Secondary: Cache API / SW (network interception layer)
+//  Cloud: Supabase (backup — fetched only on miss or stale)
+// ═══════════════════════════════════════════════════════════════
+import {
+  putDrawing,
+  getDrawing,
+  checkDrawing,
+  removeDrawing,
+  listDrawings,
+  getDrawingStats,
+  clearProjectDrawings,
+  requestPersistentStorage,
+} from "../lib/drawingStore";
 
 export function useDrawingCache() {
-  const cacheDrawing = async (path, blob) => {
+  /**
+   * Cache a drawing blob into IndexedDB
+   * @param {string} projectId
+   * @param {string} fileName
+   * @param {Blob|ArrayBuffer} data
+   * @param {object} meta — { storagePath, revision, updatedAt, size }
+   */
+  const cacheDrawing = async (projectId, fileName, data, meta = {}) => {
     try {
-      const cache = await caches.open(CACHE_NAME);
-      const response = new Response(blob, { headers: { "Content-Type": "application/pdf" } });
-      await cache.put(path, response);
-      // Also save metadata in localStorage for fast UI rendering
-      const meta = JSON.parse(localStorage.getItem("ebc_downloadedDrawings") || "{}");
-      meta[path] = { cachedAt: new Date().toISOString(), size: blob.size };
-      localStorage.setItem("ebc_downloadedDrawings", JSON.stringify(meta));
+      await putDrawing(projectId, fileName, data, meta);
     } catch (err) {
-      console.warn("[drawings] cache failed:", err.message);
+      console.warn("[drawings] IndexedDB cache failed:", err.message);
     }
   };
 
-  const getCachedDrawing = async (path) => {
+  /**
+   * Get a cached drawing as ArrayBuffer (for pdfjs)
+   * @returns {Promise<{arrayBuffer: ArrayBuffer, meta: object}|null>}
+   */
+  const getCachedDrawing = async (projectId, fileName) => {
     try {
-      const cache = await caches.open(CACHE_NAME);
-      const response = await cache.match(path);
-      if (!response) return null;
-      return await response.arrayBuffer();
-    } catch { return null; }
+      return await getDrawing(projectId, fileName);
+    } catch {
+      return null;
+    }
   };
 
-  const removeCachedDrawing = async (path) => {
+  /**
+   * Fast check: is this drawing cached, and is it stale?
+   * @param {string} cloudUpdatedAt — ISO timestamp from cloud metadata
+   */
+  const checkCached = async (projectId, fileName, cloudUpdatedAt) => {
     try {
-      const cache = await caches.open(CACHE_NAME);
-      await cache.delete(path);
-      const meta = JSON.parse(localStorage.getItem("ebc_downloadedDrawings") || "{}");
-      delete meta[path];
-      localStorage.setItem("ebc_downloadedDrawings", JSON.stringify(meta));
+      return await checkDrawing(projectId, fileName, cloudUpdatedAt);
+    } catch {
+      return { cached: false, cachedAt: null, revision: null, isStale: false };
+    }
+  };
+
+  /** Remove a single drawing from cache */
+  const removeCachedDrawing = async (projectId, fileName) => {
+    try {
+      await removeDrawing(projectId, fileName);
     } catch {}
   };
 
-  const isCached = (path) => {
+  /** List all cached drawings for a project */
+  const listCachedDrawings = async (projectId) => {
     try {
-      const meta = JSON.parse(localStorage.getItem("ebc_downloadedDrawings") || "{}");
-      return !!meta[path];
-    } catch { return false; }
+      return await listDrawings(projectId);
+    } catch {
+      return [];
+    }
   };
 
-  /** Ask the service worker to pre-cache a drawing URL (network fetch + store) */
-  const requestSwCache = (url) => {
-    try {
-      if (navigator.serviceWorker?.controller) {
-        navigator.serviceWorker.controller.postMessage({ type: "CACHE_DRAWING", url });
-      }
-    } catch {}
-  };
-
-  /** Ask the service worker to clear the entire drawings cache */
-  const clearAllCached = async () => {
-    try {
-      if (navigator.serviceWorker?.controller) {
-        navigator.serviceWorker.controller.postMessage({ type: "CLEAR_DRAWING_CACHE" });
-      }
-      await caches.delete(CACHE_NAME);
-      localStorage.removeItem("ebc_downloadedDrawings");
-    } catch {}
-  };
-
-  /** Check if a specific drawing URL is in the Cache API */
-  const isUrlCached = async (url) => {
-    try {
-      const cache = await caches.open(CACHE_NAME);
-      const match = await cache.match(url);
-      return !!match;
-    } catch { return false; }
-  };
-
-  /** Get cache stats: count of cached drawings + approximate total size */
+  /** Get overall cache stats */
   const getCacheStats = async () => {
     try {
-      const cache = await caches.open(CACHE_NAME);
-      const keys = await cache.keys();
-      const count = keys.length;
-      // Use localStorage metadata for fast size estimate
-      const meta = JSON.parse(localStorage.getItem("ebc_downloadedDrawings") || "{}");
-      let totalSize = 0;
-      for (const info of Object.values(meta)) {
-        totalSize += info.size || 0;
-      }
-      return { count, totalSize };
+      return await getDrawingStats();
     } catch {
-      return { count: 0, totalSize: 0 };
+      return { count: 0, totalSize: 0, projectCount: 0 };
     }
+  };
+
+  /** Clear all drawings for a project */
+  const clearProject = async (projectId) => {
+    try {
+      await clearProjectDrawings(projectId);
+    } catch {}
+  };
+
+  /** Request persistent storage (call once at app start) */
+  const requestPersistence = async () => {
+    return await requestPersistentStorage();
   };
 
   return {
     cacheDrawing,
     getCachedDrawing,
+    checkCached,
     removeCachedDrawing,
-    isCached,
-    requestSwCache,
-    clearAllCached,
-    isUrlCached,
+    listCachedDrawings,
     getCacheStats,
+    clearProject,
+    requestPersistence,
   };
 }

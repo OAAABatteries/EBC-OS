@@ -14,6 +14,12 @@ const PdfViewer = lazy(() =>
 /**
  * DrawingsTab — self-contained drawings list + PDF viewer
  *
+ * LOCAL-FIRST architecture:
+ *  1. On mount: show cached drawings from IndexedDB immediately
+ *  2. Background: fetch cloud metadata, merge with local state
+ *  3. Auto-cache every drawing blob on first view
+ *  4. Stale detection: compare local cachedAt vs cloud updatedAt
+ *
  * Props:
  *   readOnly       {boolean}  — hides Refresh / Download actions (default false)
  *   projectFilter  {string}   — project UUID used to query drawings
@@ -21,156 +27,232 @@ const PdfViewer = lazy(() =>
  *   t              {function}  — translation function
  */
 export function DrawingsTab({ readOnly = false, projectFilter, onDrawingSelect, t = (k) => k }) {
-  // ── Drawings list state ──
-  const [cloudDrawings, setCloudDrawings] = useState([]);
+  const [drawings, setDrawings] = useState([]);
   const [drawingsLoading, setDrawingsLoading] = useState(false);
-
-  // ── Offline cache state (metadata only — actual blob lives in Cache API) ──
-  const [downloadedDrawings, setDownloadedDrawings] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('ebc_downloadedDrawings') || '{}');
-    } catch {
-      return {};
-    }
-  });
+  const [bgSyncing, setBgSyncing] = useState(false);
 
   // ── Active PDF viewer state ──
-  const [activeDrawingId, setActiveDrawingId] = useState(null);
-  const [activeDrawingPath, setActiveDrawingPath] = useState(null);
   const [activeDrawingData, setActiveDrawingData] = useState(null);
   const [activeDrawingName, setActiveDrawingName] = useState('');
+  const [activeIsCached, setActiveIsCached] = useState(false);
 
-  const { getCachedDrawing, cacheDrawing, removeCachedDrawing } = useDrawingCache();
+  const {
+    cacheDrawing,
+    getCachedDrawing,
+    checkCached,
+    removeCachedDrawing,
+    listCachedDrawings,
+    requestPersistence,
+  } = useDrawingCache();
 
-  // ── Load drawings from Supabase ──
-  const loadCloudDrawings = useCallback(async () => {
+  // ── Request persistent storage once ──
+  useEffect(() => {
+    requestPersistence();
+  }, []);
+
+  // ── STEP 1: Load cached drawings from IndexedDB instantly ──
+  const loadLocalDrawings = useCallback(async () => {
     if (!projectFilter) return;
-    setDrawingsLoading(true);
     try {
-      // Primary: project_drawings table (has revision metadata)
-      const dbDrawings = await getDrawingsByProject(projectFilter);
-      if (dbDrawings && dbDrawings.length > 0) {
-        const cachedMeta = JSON.parse(localStorage.getItem('ebc_downloadedDrawings') || '{}');
-        const drawings = dbDrawings.map((d) => {
-          const path = d.storagePath || `drawings/project-${projectFilter}/${d.fileName}`;
-          const meta = cachedMeta[path];
-          const cachedAt = meta?.cachedAt ? new Date(meta.cachedAt) : null;
-          const updatedAt = d.updatedAt ? new Date(d.updatedAt) : null;
-          const isStale = cachedAt && updatedAt && updatedAt > cachedAt;
-          return {
-            id: d.id,
-            name: (d.fileName || '').replace('.pdf', '').replace(/_/g, ' '),
-            fileName: d.fileName,
-            path,
-            size: d.fileSize || 0,
-            uploadedAt: d.createdAt || '',
-            updatedAt: d.updatedAt || '',
-            cached: !!meta,
-            isStale,
-            revision: d.revision || 1,
-            revisionLabel: d.revisionLabel || '',
-            isCurrent: d.isCurrent !== false,
-            discipline: d.discipline || 'general',
-            notes: d.notes || '',
-          };
+      const cached = await listCachedDrawings(projectFilter);
+      if (cached.length > 0) {
+        setDrawings((prev) => {
+          // Merge: keep cloud entries, add any local-only entries
+          const byFile = new Map(prev.map((d) => [d.fileName, d]));
+          for (const c of cached) {
+            const existing = byFile.get(c.fileName);
+            if (existing) {
+              existing.cached = true;
+              existing.localCachedAt = c.cachedAt;
+            } else {
+              // Local-only (offline fallback)
+              byFile.set(c.fileName, {
+                id: c.fileName,
+                name: c.fileName.replace('.pdf', '').replace(/_/g, ' '),
+                fileName: c.fileName,
+                path: c.storagePath || `drawings/project-${projectFilter}/${c.fileName}`,
+                size: c.size || 0,
+                uploadedAt: '',
+                updatedAt: c.updatedAt || '',
+                cached: true,
+                localCachedAt: c.cachedAt,
+                isStale: false,
+                revision: c.revision,
+                revisionLabel: '',
+                isCurrent: true,
+                discipline: 'general',
+                notes: '',
+              });
+            }
+          }
+          return Array.from(byFile.values());
         });
-        setCloudDrawings(drawings);
-        setDrawingsLoading(false);
-        return;
+      }
+    } catch {}
+  }, [projectFilter, listCachedDrawings]);
+
+  // ── STEP 2: Background sync with cloud metadata ──
+  const syncCloudDrawings = useCallback(async () => {
+    if (!projectFilter) return;
+    setBgSyncing(true);
+    try {
+      // Primary: project_drawings table
+      const dbDrawings = await getDrawingsByProject(projectFilter);
+      let cloudList = [];
+
+      if (dbDrawings && dbDrawings.length > 0) {
+        // Check each drawing's cache status against IndexedDB
+        const checks = await Promise.all(
+          dbDrawings.map(async (d) => {
+            const fileName = d.fileName;
+            const status = await checkCached(projectFilter, fileName, d.updatedAt);
+            const path = d.storagePath || `drawings/project-${projectFilter}/${fileName}`;
+            return {
+              id: d.id,
+              name: (fileName || '').replace('.pdf', '').replace(/_/g, ' '),
+              fileName,
+              path,
+              size: d.fileSize || 0,
+              uploadedAt: d.createdAt || '',
+              updatedAt: d.updatedAt || '',
+              cached: status.cached,
+              localCachedAt: status.cachedAt,
+              isStale: status.isStale,
+              revision: d.revision || 1,
+              revisionLabel: d.revisionLabel || '',
+              isCurrent: d.isCurrent !== false,
+              discipline: d.discipline || 'general',
+              notes: d.notes || '',
+            };
+          })
+        );
+        cloudList = checks;
+      } else {
+        // Fallback: raw storage listing
+        const folder = `drawings/project-${projectFilter}`;
+        const files = await listFiles(folder);
+        cloudList = await Promise.all(
+          (files || [])
+            .filter((f) => f.name?.endsWith('.pdf'))
+            .map(async (f) => {
+              const fileName = f.name;
+              const status = await checkCached(projectFilter, fileName, f.updated_at);
+              return {
+                id: f.id || f.name,
+                name: fileName.replace('.pdf', '').replace(/_/g, ' '),
+                fileName,
+                path: `${folder}/${fileName}`,
+                size: f.metadata?.size || 0,
+                uploadedAt: f.created_at || f.updated_at || '',
+                updatedAt: f.updated_at || '',
+                cached: status.cached,
+                localCachedAt: status.cachedAt,
+                isStale: status.isStale,
+                revision: null,
+                revisionLabel: '',
+                isCurrent: true,
+                discipline: 'general',
+                notes: '',
+              };
+            })
+        );
       }
 
-      // Fallback: raw storage listing
-      const folder = `drawings/project-${projectFilter}`;
-      const files = await listFiles(folder);
-      const cachedMeta = JSON.parse(localStorage.getItem('ebc_downloadedDrawings') || '{}');
-      const drawings = (files || [])
-        .filter((f) => f.name?.endsWith('.pdf'))
-        .map((f) => ({
-          id: f.id || f.name,
-          name: f.name.replace('.pdf', '').replace(/_/g, ' '),
-          fileName: f.name,
-          path: `${folder}/${f.name}`,
-          size: f.metadata?.size || 0,
-          uploadedAt: f.created_at || f.updated_at || '',
-          cached: !!cachedMeta[`${folder}/${f.name}`],
-          revision: null,
-          revisionLabel: '',
-          isCurrent: true,
-          discipline: 'general',
-          isStale: false,
-          notes: '',
-        }));
-      setCloudDrawings(drawings);
+      if (cloudList.length > 0) {
+        setDrawings(cloudList);
+      }
     } catch {
-      setCloudDrawings([]);
+      // Cloud unreachable — local cache still works
     }
+    setBgSyncing(false);
+  }, [projectFilter, checkCached]);
+
+  // ── Full load: local first, then cloud ──
+  const loadDrawings = useCallback(async () => {
+    setDrawingsLoading(true);
+    await loadLocalDrawings();
+    await syncCloudDrawings();
     setDrawingsLoading(false);
-  }, [projectFilter]);
+  }, [loadLocalDrawings, syncCloudDrawings]);
 
-  // Load on mount and when project changes
   useEffect(() => {
-    if (projectFilter) loadCloudDrawings();
-  }, [projectFilter, loadCloudDrawings]);
+    if (projectFilter) loadDrawings();
+  }, [projectFilter, loadDrawings]);
 
-  // ── View a drawing (cache-first) ──
+  // ── View a drawing (IndexedDB-first) ──
   const handleViewDrawing = async (drawing) => {
     try {
+      // If stale, remove old cache first
       if (drawing.isStale) {
-        await removeCachedDrawing(drawing.path);
+        await removeCachedDrawing(projectFilter, drawing.fileName);
       }
-      const cached = !drawing.isStale ? await getCachedDrawing(drawing.path) : null;
-      if (cached) {
-        setActiveDrawingData(cached);
-        setActiveDrawingName(drawing.name);
-        setActiveDrawingId(drawing.id);
-        setActiveDrawingPath(drawing.path);
-        onDrawingSelect?.(drawing);
-        return;
+
+      // Try IndexedDB first
+      if (drawing.cached && !drawing.isStale) {
+        const result = await getCachedDrawing(projectFilter, drawing.fileName);
+        if (result?.arrayBuffer) {
+          setActiveDrawingData(result.arrayBuffer);
+          setActiveDrawingName(drawing.name);
+          setActiveIsCached(true);
+          onDrawingSelect?.(drawing);
+          return;
+        }
       }
+
+      // Miss — fetch from cloud
       const blob = await downloadFile(drawing.path);
       const arrayBuffer = await blob.arrayBuffer();
       setActiveDrawingData(arrayBuffer);
       setActiveDrawingName(drawing.name);
-      setActiveDrawingId(drawing.id);
-      setActiveDrawingPath(drawing.path);
+      setActiveIsCached(false);
       onDrawingSelect?.(drawing);
-      // Auto-cache for offline
-      cacheDrawing(drawing.path, blob)
-        .then(() => {
-          const updated = {
-            ...downloadedDrawings,
-            [drawing.path]: { cachedAt: new Date().toISOString(), size: blob.size },
-          };
-          setDownloadedDrawings(updated);
-          localStorage.setItem('ebc_downloadedDrawings', JSON.stringify(updated));
-        })
-        .catch(() => {});
+
+      // Auto-cache in background
+      cacheDrawing(projectFilter, drawing.fileName, blob, {
+        storagePath: drawing.path,
+        revision: drawing.revision,
+        updatedAt: drawing.updatedAt,
+        size: blob.size,
+      }).then(() => {
+        // Update UI to show cached status
+        setDrawings((prev) =>
+          prev.map((d) =>
+            d.fileName === drawing.fileName
+              ? { ...d, cached: true, isStale: false, localCachedAt: new Date().toISOString() }
+              : d
+          )
+        );
+        setActiveIsCached(true);
+      }).catch(() => {});
     } catch {
-      // silently fail — caller can add toast via onDrawingSelect error pattern
+      // Download failed — could be offline with no cache
     }
   };
 
-  // ── Download a drawing for offline ──
+  // ── Download a drawing for offline (explicit) ──
   const handleDownloadDrawing = async (drawing) => {
     try {
       const blob = await downloadFile(drawing.path);
-      await cacheDrawing(drawing.path, blob);
-      const updated = {
-        ...downloadedDrawings,
-        [drawing.path]: { cachedAt: new Date().toISOString(), size: blob.size },
-      };
-      setDownloadedDrawings(updated);
-      localStorage.setItem('ebc_downloadedDrawings', JSON.stringify(updated));
-    } catch {
-      // silently fail
-    }
+      await cacheDrawing(projectFilter, drawing.fileName, blob, {
+        storagePath: drawing.path,
+        revision: drawing.revision,
+        updatedAt: drawing.updatedAt,
+        size: blob.size,
+      });
+      setDrawings((prev) =>
+        prev.map((d) =>
+          d.fileName === drawing.fileName
+            ? { ...d, cached: true, isStale: false, localCachedAt: new Date().toISOString() }
+            : d
+        )
+      );
+    } catch {}
   };
 
   const handleCloseViewer = () => {
     setActiveDrawingData(null);
-    setActiveDrawingId(null);
-    setActiveDrawingPath(null);
     setActiveDrawingName('');
+    setActiveIsCached(false);
   };
 
   // ── Render ──
@@ -179,31 +261,38 @@ export function DrawingsTab({ readOnly = false, projectFilter, onDrawingSelect, 
       {/* Header row */}
       <div className="drawings-tab-header">
         <span className="drawings-tab-title">{t('Project Drawings')}</span>
-        {!readOnly && (
-          <FieldButton
-            size="sm"
-            loading={drawingsLoading}
-            onClick={loadCloudDrawings}
-            t={t}
-          >
-            <RefreshCw size={14} />
-            {t('Refresh')}
-          </FieldButton>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          {bgSyncing && (
+            <span style={{ fontSize: 'var(--text-tab)', color: 'var(--text3)' }}>
+              {t('Syncing...')}
+            </span>
+          )}
+          {!readOnly && (
+            <FieldButton
+              size="sm"
+              loading={drawingsLoading}
+              onClick={loadDrawings}
+              t={t}
+            >
+              <RefreshCw size={14} />
+              {t('Refresh')}
+            </FieldButton>
+          )}
+        </div>
       </div>
 
       {/* Loading state */}
-      {drawingsLoading && <LoadingSpinner />}
+      {drawingsLoading && drawings.length === 0 && <LoadingSpinner />}
 
       {/* Empty state */}
-      {!drawingsLoading && cloudDrawings.length === 0 && (
+      {!drawingsLoading && drawings.length === 0 && (
         <EmptyState
           icon={FileText}
           title={t('No drawings for this project')}
           body={t('Ask your PM to upload drawing sets.')}
           action={
             !readOnly && (
-              <FieldButton onClick={loadCloudDrawings} t={t}>
+              <FieldButton onClick={loadDrawings} t={t}>
                 {t('Refresh')}
               </FieldButton>
             )
@@ -212,9 +301,9 @@ export function DrawingsTab({ readOnly = false, projectFilter, onDrawingSelect, 
       )}
 
       {/* Drawing list */}
-      {!drawingsLoading && cloudDrawings.length > 0 && (
+      {drawings.length > 0 && (
         <div className="drawings-tab-list">
-          {cloudDrawings.map((d) => (
+          {drawings.map((d) => (
             <FieldCard key={d.id} className="drawings-tab-item">
               {/* Revision badge row */}
               <div className="drawings-tab-badges">
@@ -298,7 +387,7 @@ export function DrawingsTab({ readOnly = false, projectFilter, onDrawingSelect, 
                 <div className="drawings-tab-item-icon">
                   <FileText
                     size={28}
-                    style={{ color: d.isStale ? 'var(--orange)' : 'var(--text2)' }}
+                    style={{ color: d.isStale ? 'var(--orange)' : d.cached ? 'var(--green)' : 'var(--text2)' }}
                   />
                 </div>
 
@@ -309,11 +398,11 @@ export function DrawingsTab({ readOnly = false, projectFilter, onDrawingSelect, 
                     {d.uploadedAt ? ` · ${d.uploadedAt.slice(0, 10)}` : ''}
                   </div>
                   {d.cached && !d.isStale && (
-                    <div className="drawings-tab-item-cached">{t('Saved offline')}</div>
+                    <div className="drawings-tab-item-cached">{t('Saved locally')}</div>
                   )}
                   {d.cached && d.isStale && (
                     <div className="drawings-tab-item-stale">
-                      {t('Cached copy is outdated — re-download')}
+                      {t('Local copy is outdated — tap to update')}
                     </div>
                   )}
                 </div>
@@ -329,7 +418,7 @@ export function DrawingsTab({ readOnly = false, projectFilter, onDrawingSelect, 
                       onClick={() => handleDownloadDrawing(d)}
                       t={t}
                     >
-                      {d.isStale ? t('Re-download') : t('Save')}
+                      {d.isStale ? t('Update') : t('Save')}
                     </FieldButton>
                   )}
                 </div>
@@ -339,46 +428,11 @@ export function DrawingsTab({ readOnly = false, projectFilter, onDrawingSelect, 
         </div>
       )}
 
-      {/* Downloaded cache section */}
-      {Object.keys(downloadedDrawings).length > 0 && (
-        <div className="drawings-tab-offline">
-          <div className="drawings-tab-offline-title">{t('Downloaded for Offline')}</div>
-          <div className="drawings-tab-offline-list">
-            {Object.entries(downloadedDrawings).map(([path, info]) => (
-              <div key={path} className="drawings-tab-offline-row">
-                <div>
-                  <div className="drawings-tab-item-name">
-                    {path.split('/').pop().replace('.pdf', '').replace(/_/g, ' ')}
-                  </div>
-                  <div className="drawings-tab-item-meta">
-                    {t('Cached')} {new Date(info.cachedAt).toLocaleDateString()}
-                    {info.size ? ` · ${(info.size / 1048576).toFixed(1)} MB` : ''}
-                  </div>
-                </div>
-                <FieldButton
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    const updated = { ...downloadedDrawings };
-                    delete updated[path];
-                    setDownloadedDrawings(updated);
-                    localStorage.setItem('ebc_downloadedDrawings', JSON.stringify(updated));
-                  }}
-                  t={t}
-                >
-                  {t('Remove')}
-                </FieldButton>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Info footer */}
       <div className="drawings-tab-footer">
-        <div className="drawings-tab-footer-text">{t('Drawings are stored in the cloud')}</div>
+        <div className="drawings-tab-footer-text">{t('Drawings are stored locally on your device')}</div>
         <div className="drawings-tab-footer-sub">
-          {t('Download files for offline use on the jobsite. Ask the PM to upload new drawing sets.')}
+          {t('Viewed drawings are automatically saved for offline use. Cloud syncs in the background.')}
         </div>
       </div>
 
@@ -397,7 +451,7 @@ export function DrawingsTab({ readOnly = false, projectFilter, onDrawingSelect, 
                 pdfData={activeDrawingData}
                 fileName={activeDrawingName}
                 onClose={handleCloseViewer}
-                isCachedOffline={!!activeDrawingPath && !!downloadedDrawings[activeDrawingPath]}
+                isCachedOffline={activeIsCached}
               />
             </Suspense>
           </div>

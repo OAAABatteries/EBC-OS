@@ -277,14 +277,51 @@ export function ForemanView({ app }) {
       );
     });
 
-  // Phase 2C: photo capture state
+  // Phase 2C: photo capture state + PPE confirmation
   const [showPhotoCapture, setShowPhotoCapture] = useState(false);
   const [photoStream, setPhotoStream] = useState(null);
+  const [ppeConfirmed, setPpeConfirmed] = useState(false);
+  const [clockInBlocked, setClockInBlocked] = useState(null); // null | "too_early" | string reason
   const photoVideoRef = useRef(null);
   const photoCanvasRef = useRef(null);
 
+  /**
+   * Clock-in time gate: block clock-in if more than 5 min before shift start.
+   * Uses project schedule or defaults to 6:00 AM.
+   */
+  const getShiftStartToday = () => {
+    // Try to find today's shift for this project from schedule/calendar
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const projSchedule = (mySchedule || []).find(s =>
+      String(s.projectId) === String(selectedProjectId) && s.date === todayStr
+    );
+    if (projSchedule?.start_time) return projSchedule.start_time; // "HH:MM"
+    // Default construction start time
+    return "06:00";
+  };
+
+  const isClockInAllowed = () => {
+    const shiftStart = getShiftStartToday();
+    const [h, m] = shiftStart.split(":").map(Number);
+    const now = new Date();
+    const shiftDate = new Date(now);
+    shiftDate.setHours(h, m, 0, 0);
+    const diffMs = shiftDate.getTime() - now.getTime();
+    const diffMin = diffMs / 60000;
+    // Allow clock-in 5 min before shift start, or anytime after
+    return { allowed: diffMin <= 5, minutesUntil: Math.ceil(diffMin), shiftStart };
+  };
+
   const handleClockIn = async () => {
-    // Phase 2C: prompt for photo before clock-in
+    // Time gate check
+    const { allowed, minutesUntil, shiftStart } = isClockInAllowed();
+    if (!allowed) {
+      setClockInBlocked(`${t("Clock-in opens 5 min before shift")} (${shiftStart}). ${t("Available in")} ${minutesUntil - 5} ${t("min")}.`);
+      return;
+    }
+    setClockInBlocked(null);
+    setPpeConfirmed(false);
+    // Phase 2C: prompt for photo + PPE before clock-in
     setShowPhotoCapture(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: 480, height: 480 } });
@@ -341,6 +378,7 @@ export function ForemanView({ app }) {
       projectId: selectedProjectId,
       photoUrl: photoUrl || null,
       captureStatus: captureStatus || "ok",
+      ppeConfirmed: ppeConfirmed,
     };
     setClockEntry(entry);
     localStorage.setItem(CLOCK_KEY, JSON.stringify(entry));
@@ -392,10 +430,33 @@ export function ForemanView({ app }) {
 
   const handleCrewClockIn = async (empId) => {
     const loc = await getLocation();
-    const entry = { clockIn: new Date().toISOString(), lat: loc?.lat || null, lng: loc?.lng || null, projectId: selectedProjectId };
+    const now = new Date();
+    const entry = { clockIn: now.toISOString(), lat: loc?.lat || null, lng: loc?.lng || null, projectId: selectedProjectId };
     persistTeamClocks({ ...teamClocks, [empId]: entry });
     const emp = employees.find(e => e.id === empId);
     show?.(`${emp?.name || "Crew"} ${t("clocked in")} ✓`);
+
+    // Late arrival check: 15+ min after shift start → flag it
+    const shiftStart = getShiftStartToday();
+    const [h, m] = shiftStart.split(":").map(Number);
+    const shiftDate = new Date(now); shiftDate.setHours(h, m, 0, 0);
+    const lateMinutes = Math.round((now.getTime() - shiftDate.getTime()) / 60000);
+    if (lateMinutes >= 15) {
+      // Track late arrivals in localStorage for repeat-offender detection
+      const lateLog = JSON.parse(localStorage.getItem("ebc_lateArrivals") || "{}");
+      const key = empId;
+      if (!lateLog[key]) lateLog[key] = [];
+      lateLog[key].push({ date: now.toISOString().slice(0, 10), minutes: lateMinutes, projectId: selectedProjectId });
+      // Keep last 30 entries per employee
+      if (lateLog[key].length > 30) lateLog[key] = lateLog[key].slice(-30);
+      localStorage.setItem("ebc_lateArrivals", JSON.stringify(lateLog));
+      const recentLates = lateLog[key].filter(l => {
+        const d = new Date(l.date); const ago = (Date.now() - d.getTime()) / 86400000;
+        return ago <= 30;
+      });
+      const isRepeat = recentLates.length >= 3;
+      show?.(`⚠️ ${emp?.name || "Crew"} ${t("is")} ${lateMinutes} ${t("min late")}${isRepeat ? ` — ${t("REPEAT")} (${recentLates.length}x ${t("this month")})` : ""}`, isRepeat ? 6000 : 4000);
+    }
   };
 
   const handleCrewClockOut = async (empId) => {
@@ -4552,12 +4613,24 @@ export function ForemanView({ app }) {
         />
       )}
 
-      {/* Phase 2C: Photo Capture Modal */}
+      {/* Clock-in blocked message (time gate) */}
+      {clockInBlocked && (
+        <div className="modal-overlay" style={{ zIndex: 10000 }} onClick={() => setClockInBlocked(null)}>
+          <div style={{ background: "var(--bg2, #1a1a2e)", borderRadius: "var(--radius-control)", padding: "var(--space-5)", maxWidth: 360, width: "90%", textAlign: "center" }}>
+            <div style={{ fontSize: "var(--text-section)", marginBottom: "var(--space-3)" }}>⏰</div>
+            <div style={{ fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)", color: "var(--orange)", marginBottom: "var(--space-3)" }}>{t("Too Early")}</div>
+            <div style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-4)" }}>{clockInBlocked}</div>
+            <button className="btn btn-ghost" onClick={() => setClockInBlocked(null)}>{t("OK")}</button>
+          </div>
+        </div>
+      )}
+
+      {/* Phase 2C: Photo Capture Modal + PPE Confirmation */}
       {showPhotoCapture && (
         <div className="modal-overlay" style={{ zIndex: 10000 }} onClick={e => { if (e.target === e.currentTarget) skipPhoto("dismissed"); }}>
           <div style={{ background: "var(--bg2, #1a1a2e)", borderRadius: "var(--radius-control)", padding: "var(--space-5)", maxWidth: 400, width: "90%", textAlign: "center" }}>
             <div style={{ fontSize: "var(--text-card)", fontWeight: "var(--weight-bold)", color: "#fff", marginBottom: "var(--space-3)" }}>📸 {t("Clock-In Photo")}</div>
-            <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginBottom: "var(--space-4)" }}>{t("Take a photo to verify clock-in")}</div>
+            <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginBottom: "var(--space-4)" }}>{t("Take a selfie wearing your PPE to clock in")}</div>
             <div style={{ background: "var(--bg)", borderRadius: "var(--radius-control)", overflow: "hidden", marginBottom: "var(--space-4)", position: "relative", width: "100%", paddingBottom: "100%" }}>
               <video ref={photoVideoRef} autoPlay playsInline muted
                 style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
@@ -4572,12 +4645,39 @@ export function ForemanView({ app }) {
               })()}
             </div>
             <canvas ref={photoCanvasRef} className="frm-hidden" />
+
+            {/* PPE Confirmation Checkbox */}
+            <label style={{
+              display: "flex", alignItems: "center", gap: "var(--space-3)",
+              padding: "var(--space-3)", marginBottom: "var(--space-4)",
+              background: ppeConfirmed ? "rgba(34,197,94,0.12)" : "rgba(245,158,11,0.1)",
+              border: `1px solid ${ppeConfirmed ? "rgba(34,197,94,0.3)" : "rgba(245,158,11,0.3)"}`,
+              borderRadius: "var(--radius-control)", cursor: "pointer", textAlign: "left",
+              transition: "background 0.2s, border-color 0.2s",
+            }}>
+              <input
+                type="checkbox"
+                checked={ppeConfirmed}
+                onChange={e => setPpeConfirmed(e.target.checked)}
+                style={{ width: 22, height: 22, accentColor: "var(--green)", flexShrink: 0 }}
+              />
+              <span style={{ fontSize: "var(--text-label)", color: ppeConfirmed ? "var(--green)" : "var(--orange)", fontWeight: "var(--weight-semi)" }}>
+                {t("I confirm I am wearing required PPE (hard hat, vest, glasses)")}
+              </span>
+            </label>
+
             <div className="frm-flex-row" style={{ gap: "var(--space-3)", justifyContent: "center" }}>
               <button className="btn btn-ghost frm-amber" onClick={() => skipPhoto("skipped")}>
                 {t("Skip")}
               </button>
               <button className="btn btn-primary" onClick={captureAndClockIn}
-                style={{ padding: "var(--space-3) var(--space-6)", fontSize: "var(--text-secondary)", background: "var(--green)", boxShadow: "0 2px 8px rgba(34,197,94,0.3)" }}>
+                disabled={!ppeConfirmed}
+                style={{
+                  padding: "var(--space-3) var(--space-6)", fontSize: "var(--text-secondary)",
+                  background: ppeConfirmed ? "var(--green)" : "rgba(255,255,255,0.1)",
+                  boxShadow: ppeConfirmed ? "0 2px 8px rgba(34,197,94,0.3)" : "none",
+                  opacity: ppeConfirmed ? 1 : 0.5, cursor: ppeConfirmed ? "pointer" : "not-allowed",
+                }}>
                 📸 {t("Capture & Clock In")}
               </button>
             </div>

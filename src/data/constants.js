@@ -27,7 +27,7 @@ export const THEMES = {
       "--logo-tint":"#ffffff",
       "--bg2-rgb":"21,35,50",
       "--glass-border":"rgba(255,255,255,0.06)","--glass-bg":"rgba(21,35,50,0.78)",
-      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
+      "--font-head":"'Montserrat', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
       "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
       "--font-mono":"'SF Mono', 'IBM Plex Mono', monospace",
 
@@ -53,7 +53,7 @@ export const THEMES = {
       "--logo-tint":"#f5f5f7",
       "--bg2-rgb":"28,28,30",
       "--glass-border":"rgba(255,255,255,0.08)","--glass-bg":"rgba(28,28,30,0.82)",
-      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
+      "--font-head":"'Montserrat', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
       "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
       "--font-mono":"'SF Mono', 'Menlo', monospace",
 
@@ -78,7 +78,7 @@ export const THEMES = {
       "--logo-tint":"#0f1a24",
       "--bg2-rgb":"255,255,255",
       "--glass-border":"rgba(0,0,0,0.06)","--glass-bg":"rgba(255,255,255,0.78)",
-      "--font-head":"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
+      "--font-head":"'Montserrat', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Roboto', system-ui, sans-serif",
       "--font-body":"-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', system-ui, sans-serif",
       "--font-mono":"'IBM Plex Mono', monospace",
 

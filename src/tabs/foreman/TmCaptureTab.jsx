@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useMemo } from "react";
-import { Plus, ChevronDown, ChevronUp, FileText, DollarSign, Camera, Trash2, Pencil } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp, FileText, DollarSign, Camera, Trash2, Pencil, Download } from "lucide-react";
 import { FieldCard } from "../../components/field/FieldCard";
 import { FieldButton } from "../../components/field/FieldButton";
 import { FieldInput } from "../../components/field/FieldInput";
@@ -615,6 +615,19 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
                     </FieldButton>
                     <FieldButton variant="ghost" onClick={() => handleDelete(ticket)} t={t} style={{ padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-sm, 12px)", color: "var(--red)" }}>
                       <Trash2 size={12} style={{ marginRight: "var(--space-1)" }} />{tr("Delete")}
+                    </FieldButton>
+                  </div>
+                )}
+
+                {/* Generate PDF (submitted/approved/billed) */}
+                {ticket.status !== "draft" && (
+                  <div style={{ marginTop: "var(--space-1)" }}>
+                    <FieldButton variant="ghost" onClick={async () => {
+                      const { generateTmTicketPdf } = await import("../../utils/tmTicketPdf");
+                      const proj = projects.find(p => String(p.id) === String(ticket.projectId || projectId));
+                      generateTmTicketPdf(ticket, proj);
+                    }} t={t} style={{ padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-sm, 12px)" }}>
+                      <Download size={12} style={{ marginRight: "var(--space-1)" }} />{tr("Download PDF")}
                     </FieldButton>
                   </div>
                 )}
