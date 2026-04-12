@@ -7459,6 +7459,60 @@ function AccountTab({ app }) {
         </div>
       </div>
       <NotificationSettings userId={app.auth?.id} />
+      <InstallGuide />
+    </div>
+  );
+}
+
+/* ── Install Guide (iPhone / Android / Computer) ─────────────── */
+function InstallGuide() {
+  const [expanded, setExpanded] = useState(false);
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
+  if (isStandalone) return null; // already installed
+  return (
+    <div className="mt-16">
+      <div className="section-title">Install App</div>
+      <div className="card mt-8 p-16">
+        <div style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-3)" }}>
+          Install EBC-OS on your device for offline access and instant launch.
+        </div>
+        <button className="btn btn-ghost btn-sm" onClick={() => setExpanded(!expanded)}>
+          {expanded ? "Hide Guide" : "Show Install Guide"}
+        </button>
+        {expanded && (
+          <div style={{ marginTop: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+            <div>
+              <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", marginBottom: "var(--space-2)", color: "var(--text)" }}>iPhone / iPad</div>
+              <ol style={{ fontSize: "var(--text-label)", color: "var(--text2)", paddingLeft: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                <li>Open <strong>Safari</strong> (must be Safari, not Chrome)</li>
+                <li>Tap the <strong>Share</strong> button (square with arrow)</li>
+                <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
+                <li>Tap <strong>"Add"</strong> in the top right</li>
+                <li>EBC will appear on your home screen</li>
+              </ol>
+            </div>
+            <div>
+              <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", marginBottom: "var(--space-2)", color: "var(--text)" }}>Android</div>
+              <ol style={{ fontSize: "var(--text-label)", color: "var(--text2)", paddingLeft: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                <li>Open <strong>Chrome</strong></li>
+                <li>Tap the <strong>three-dot menu</strong> (top right)</li>
+                <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home Screen"</strong></li>
+                <li>Tap <strong>"Install"</strong></li>
+                <li>EBC will appear in your app drawer and home screen</li>
+              </ol>
+            </div>
+            <div>
+              <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", marginBottom: "var(--space-2)", color: "var(--text)" }}>Computer (Chrome / Edge)</div>
+              <ol style={{ fontSize: "var(--text-label)", color: "var(--text2)", paddingLeft: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                <li>Open <strong>Chrome</strong> or <strong>Edge</strong></li>
+                <li>Click the <strong>install icon</strong> in the address bar (monitor with arrow)</li>
+                <li>Click <strong>"Install"</strong></li>
+                <li>EBC will open as a standalone window</li>
+              </ol>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

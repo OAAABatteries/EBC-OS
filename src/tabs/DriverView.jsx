@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Calendar, Settings, Navigation, Package, Truck, CheckCircle, MapPin, RefreshCw, Home, AlertTriangle } from "lucide-react";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
-import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, EmptyState, StatusBadge, Skeleton, StatTile, AlertCard } from "../components/field";
+import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, EmptyState, StatusBadge, Skeleton, StatTile, AlertCard, DrawingsTab } from "../components/field";
 import { PodModal } from "../components/field/PodModal";
 import { ShortageReportModal } from "../components/field/ShortageReportModal";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
@@ -534,7 +534,8 @@ export function DriverView({ app }) {
     { id: "home", label: "Home", icon: Home, badge: false },
     { id: "route", label: "Route", icon: Navigation, badge: optimizedStops.length > 0 },
     { id: "completed", label: "Completed", icon: CheckCircle, badge: todayDelivered.length > 0 },
-    // Settings goes to More overflow (maxPrimary={3} = 3 content tabs + auto-added More trigger = 4 visible buttons)
+    // Overflow tabs (maxPrimary={3})
+    { id: "drawings", label: "Drawings", icon: FileText, badge: false },
     { id: "settings", label: "Settings", icon: Settings, badge: false },
   ];
 
@@ -961,6 +962,15 @@ export function DriverView({ app }) {
               </div>
             )}
           </div>
+        )}
+
+        {/* ═══ DRAWINGS TAB ═══ */}
+        {driverTab === "drawings" && (
+          <DrawingsTab
+            readOnly={true}
+            projectFilter={activeDriver?.currentDelivery?.projectId || null}
+            t={(k) => T[k]?.[lang === "es" ? "es" : undefined] || k}
+          />
         )}
 
         {/* ═══ SETTINGS TAB ═══ */}

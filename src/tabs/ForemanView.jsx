@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, ClipboardList, HardHat, MessageSquare, Pin, PinOff, Home, Users, Clock as ClockIcon, MoreHorizontal, FileText, Calendar, Settings, BarChart3, ClipboardCheck, PenLine } from "lucide-react";
+import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDown, ChevronUp, MapPin, Clock, StopCircle, Package, Shield, AlertTriangle, CheckCircle, ClipboardList, HardHat, MessageSquare, Pin, PinOff, Home, Users, Clock as ClockIcon, MoreHorizontal, FileText, Calendar, Settings, BarChart3, ClipboardCheck, PenLine, Map as MapIcon } from "lucide-react";
 import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, FieldInput, EmptyState, StatusBadge, StatTile, AlertCard, FieldSignaturePad, CredentialCard, PhotoCapture, Skeleton, LanguageToggle } from "../components/field";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { useNotifications } from "../hooks/useNotifications";
@@ -15,6 +15,7 @@ import { PunchTab } from "./foreman/PunchTab";
 import { ProductionTab } from "./foreman/ProductionTab";
 import { DeliveriesTab } from "./DeliveriesTab";
 import { DecisionLogTab } from "./DecisionLogTab";
+import { MapView } from "./MapView";
 import {
   PPE_ITEMS, RISK_LIKELIHOOD, RISK_SEVERITY, riskColor,
   HAZARD_CATEGORIES, CONTROL_HIERARCHY, PERMIT_TYPES,
@@ -1071,6 +1072,8 @@ export function ForemanView({ app }) {
     { id: "decisionLog", label: t("Decisions"), icon: FileText, badge: false },
     { id: "hours", label: t("Hours"), icon: BarChart3, badge: false },
     { id: "jsa", label: "JSA", icon: Shield, badge: activeJsaCount > 0 },
+    { id: "schedule", label: t("Schedule"), icon: Calendar, badge: false },
+    { id: "map", label: t("Map"), icon: MapIcon, badge: false },
   ];
 
   // FSCH-04: Pull-based in-app alert. Foreman sees pending request alerts when opening Dashboard.
@@ -4502,6 +4505,47 @@ export function ForemanView({ app }) {
                 t={t}
               />
             )}
+
+            {/* ═══ MAP TAB ═══ */}
+            {foremanTab === "map" && (
+              <MapView app={app} />
+            )}
+
+            {/* ═══ SCHEDULE TAB ═══ */}
+            {foremanTab === "schedule" && (() => {
+              const projSchedule = (app.mySchedule || []).filter(s =>
+                String(s.projectId) === String(selectedProjectId)
+              );
+              return (
+                <div>
+                  <div className="section-header">
+                    <div className="section-title">{t("Project Schedule")}</div>
+                  </div>
+                  {projSchedule.length === 0 ? (
+                    <EmptyState icon={Calendar} heading={t("No schedule entries")} message={t("No shifts scheduled for this project")} />
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                      {projSchedule.sort((a, b) => (a.date || "").localeCompare(b.date || "")).map((s, i) => {
+                        const emp = employees.find(e => String(e.id) === String(s.employeeId));
+                        return (
+                          <PremiumCard key={i} variant="info">
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <div>
+                                <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-card)" }}>{emp?.name || t("Unassigned")}</div>
+                                <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginTop: "var(--space-1)" }}>
+                                  {s.date} {s.start_time && `· ${s.start_time} - ${s.end_time || ""}`}
+                                </div>
+                              </div>
+                              <StatusBadge status={s.status || "scheduled"} t={t} />
+                            </div>
+                          </PremiumCard>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </>
         )}
       </div>

@@ -14,6 +14,7 @@
     "deploy": "npm run build && npx cap sync"
   },
   "dependencies": {
+    "@babel/runtime": "^7.29.2",
     "@capacitor/android": "^8.2.0",
     "@capacitor/app": "^8.0.1",
     "@capacitor/camera": "^8.0.2",
