@@ -13,18 +13,18 @@ const PORTAL_STYLES = `
 
   /* ── Header ── */
   .gcp-header { background:#ffffff;border-bottom:1px solid #e2e8f0;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:50;box-shadow:0 1px 3px rgba(0,0,0,0.04); }
-  .gcp-logo { display:flex;align-items:center;gap: "var(--space-3)"px; }
+  .gcp-logo { display:flex;align-items:center;gap: var(--space-3); }
   .gcp-logo-icon { width:36px;height:36px;background:#1a2e4a;border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;letter-spacing:0.5px; }
   .gcp-logo-text { font-size:16px;font-weight:700;color:#1a2e4a; }
   .gcp-logo-sub { font-size:11px;color:#64748b;font-weight:500; }
-  .gcp-user { display:flex;align-items:center;gap: "var(--space-3)"px; }
+  .gcp-user { display:flex;align-items:center;gap: var(--space-3); }
   .gcp-user-email { font-size:12px;color:#64748b; }
 
   /* ── Body ── */
   .gcp-body { max-width:960px;margin: "0" auto;padding:24px 24px 60px; }
 
   /* ── Navigation Tabs ── */
-  .gcp-nav { display:flex;gap: "var(--space-1)"px;margin-bottom:24px;background:#fff;border-radius:10px;padding:4px;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid #e2e8f0;overflow-x:auto; }
+  .gcp-nav { display:flex;gap: var(--space-1);margin-bottom:24px;background:#fff;border-radius:10px;padding:4px;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid #e2e8f0;overflow-x:auto; }
   .gcp-nav-btn { padding:10px 18px;border:none;background:none;color:#64748b;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;transition:all 0.15s;font-family:inherit;white-space:nowrap; }
   .gcp-nav-btn:hover { color:#1e293b;background:#f1f5f9; }
   .gcp-nav-btn.active { color:#fff;background:#1a2e4a;box-shadow:0 1px 3px rgba(0,0,0,0.12); }
@@ -58,7 +58,7 @@ const PORTAL_STYLES = `
   .gcp-input::placeholder { color:#9ca3af; }
   .gcp-textarea { min-height:100px;resize:vertical; }
   .gcp-select { appearance:auto; }
-  .gcp-checkbox-group { display:flex;flex-wrap:wrap;gap: "var(--space-2)"px;margin-top:4px; }
+  .gcp-checkbox-group { display:flex;flex-wrap:wrap;gap: var(--space-2);margin-top:4px; }
   .gcp-chip { padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid #d1d5db;background:#fff;color:#64748b;transition:all 0.15s; }
   .gcp-chip.selected { background:#1a2e4a;color:#fff;border-color:#1a2e4a; }
   .gcp-chip:hover { border-color:#1a2e4a; }
@@ -71,9 +71,9 @@ const PORTAL_STYLES = `
   .gcp-btn-ghost:hover { color:#1a2e4a;border-color:#1a2e4a; }
 
   /* ── Grid ── */
-  .gcp-grid { display:grid;grid-template-columns:1fr 1fr;gap: "var(--space-4)"px; }
-  .gcp-grid-3 { display:grid;grid-template-columns:1fr 1fr 1fr;gap: "var(--space-4)"px; }
-  .gcp-stat-row { display:flex;gap: "var(--space-4)"px;flex-wrap:wrap;margin-top:12px; }
+  .gcp-grid { display:grid;grid-template-columns:1fr 1fr;gap: var(--space-4); }
+  .gcp-grid-3 { display:grid;grid-template-columns:1fr 1fr 1fr;gap: var(--space-4); }
+  .gcp-stat-row { display:flex;gap: var(--space-4);flex-wrap:wrap;margin-top:12px; }
   .gcp-stat { flex:1;min-width:70px; }
   .gcp-stat-label { font-size:11px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:2px; }
   .gcp-stat-value { font-size:15px;font-weight:700;color:#0f172a; }
@@ -88,19 +88,19 @@ const PORTAL_STYLES = `
   .gcp-success { padding:16px 20px;border-radius:10px;background:#ecfdf5;border:1px solid #a7f3d0;text-align:center;color:#059669;font-weight:600;font-size:14px;margin-bottom:20px; }
 
   /* ── Contact Card ── */
-  .gcp-contact { display:flex;gap: "var(--space-4)"px;padding:16px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;align-items:center; }
+  .gcp-contact { display:flex;gap: var(--space-4);padding:16px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;align-items:center; }
   .gcp-contact-avatar { width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;flex-shrink:0; }
   .gcp-contact-info { flex:1;min-width:0; }
   .gcp-contact-name { font-weight:700;font-size:14px;color:#0f172a; }
   .gcp-contact-role { font-size:12px;color:#64748b; }
-  .gcp-contact-links { display:flex;gap: "var(--space-2)"px;margin-top:6px; }
+  .gcp-contact-links { display:flex;gap: var(--space-2);margin-top:6px; }
   .gcp-contact-link { font-size:12px;color:#2563eb;text-decoration:none;font-weight:500; }
   .gcp-contact-link:hover { text-decoration:underline; }
 
   /* ── Document row ── */
   .gcp-doc-row { display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f1f5f9; }
   .gcp-doc-row:last-child { border-bottom:none; }
-  .gcp-doc-info { display:flex;align-items:center;gap: "var(--space-3)"px; }
+  .gcp-doc-info { display:flex;align-items:center;gap: var(--space-3); }
   .gcp-doc-icon { width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0; }
 
   /* ── Login ── */
@@ -108,7 +108,7 @@ const PORTAL_STYLES = `
   .gcp-login-card { width:100%;max-width:420px; }
 
   /* ── Milestone ── */
-  .gcp-milestone-bar { display:flex;gap: "var(--space-1)"px;margin-top:10px; }
+  .gcp-milestone-bar { display:flex;gap: var(--space-1);margin-top:10px; }
   .gcp-milestone-step { flex:1;height:4px;border-radius:2px;background:#e2e8f0; }
   .gcp-milestone-step.done { background:#059669; }
   .gcp-milestone-step.current { background:#2563eb; }
@@ -120,10 +120,10 @@ const PORTAL_STYLES = `
     .gcp-grid, .gcp-grid-3 { grid-template-columns:1fr; }
     .gcp-nav { gap:0; }
     .gcp-nav-btn { padding:8px 12px;font-size:12px; }
-    .gcp-stat-row { gap: "var(--space-3)"px; }
+    .gcp-stat-row { gap: var(--space-3); }
     .gcp-table { font-size:12px; }
     .gcp-table th, .gcp-table td { padding:8px 6px; }
-    .gcp-card-header { flex-direction:column;gap: "var(--space-2)"px; }
+    .gcp-card-header { flex-direction:column;gap: var(--space-2); }
   }
   @media(max-width:480px) {
     .gcp-logo-text { font-size:14px; }

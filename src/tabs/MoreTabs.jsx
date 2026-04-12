@@ -1329,14 +1329,14 @@ function TmTicketsTab({ app }) {
                       const projN = pName(t.projectId);
                       const html = `<!DOCTYPE html><html><head><title>T&M Ticket ${t.ticketNumber}</title><style>
                         body{font-family:Arial,sans-serif;max-width:800px;margin: "0" auto;padding:24px;color:#111}
-                        h1{font-size:22px;margin: "0" 0 4px} .header{border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:16px}
-                        .meta{display:grid;grid-template-columns:1fr 1fr;gap: "var(--space-2)"px;font-size:13px;margin-bottom:16px}
-                        .meta span{color:#666} table{width:100%;border-collapse:collapse;margin: "var(--space-2)"px 0 16px}
+                        h1{font-size:22px;margin: 0 0 4px} .header{border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:16px}
+                        .meta{display:grid;grid-template-columns:1fr 1fr;gap: var(--space-2);font-size:13px;margin-bottom:16px}
+                        .meta span{color:#666} table{width:100%;border-collapse:collapse;margin: var(--space-2) 0 16px}
                         th,td{border:1px solid #ccc;padding:6px 10px;font-size:12px;text-align:left}
                         th{background:#f5f5f5;font-weight:600}
-                        .subtotal{text-align:right;font-size:12px;margin: "var(--space-1)"px 0 12px;color:#444}
+                        .subtotal{text-align:right;font-size:12px;margin: var(--space-1) 0 12px;color:#444}
                         .grand-total{font-size:16px;font-weight:700;text-align:right;border-top:2px solid #333;padding-top:8px;margin-top:8px}
-                        .sig-line{display:grid;grid-template-columns:1fr 1fr;gap: "var(--space-8)"px;margin-top:48px}
+                        .sig-line{display:grid;grid-template-columns:1fr 1fr;gap: var(--space-8);margin-top:48px}
                         .sig-line div{border-top:1px solid #666;padding-top:4px;font-size:11px;color:#666}
                         .company{font-size:18px;font-weight:700;color:#b45309} @media print{body{padding:12px}}
                       </style></head><body>

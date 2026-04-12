@@ -148,7 +148,7 @@ const nhwStyles = `
 /* ── step indicators ── */
 .nhw-steps {
   display: flex;
-  gap: "var(--space-1)"px;
+  gap: var(--space-1);
   margin-bottom: 4px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -198,12 +198,12 @@ const nhwStyles = `
 .nhw-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: "var(--space-4)"px;
+  gap: var(--space-4);
 }
 .nhw-field {
   display: flex;
   flex-direction: column;
-  gap: "var(--space-1)"px;
+  gap: var(--space-1);
 }
 .nhw-field.full {
   grid-column: 1 / -1;
@@ -239,12 +239,12 @@ const nhwStyles = `
 .nhw-checkbox-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: "var(--space-2)"px;
+  gap: var(--space-2);
 }
 .nhw-checkbox-item {
   display: flex;
   align-items: center;
-  gap: "var(--space-2)"px;
+  gap: var(--space-2);
   padding: 10px 12px;
   background: #06080c;
   border: 1px solid #1c2233;
@@ -288,7 +288,7 @@ const nhwStyles = `
 .nhw-cert-row {
   display: flex;
   align-items: center;
-  gap: "var(--space-3)"px;
+  gap: var(--space-3);
   padding: 10px 12px;
   background: #06080c;
   border: 1px solid #1c2233;
@@ -374,7 +374,7 @@ const nhwStyles = `
 .nhw-review-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: "var(--space-1)"px;
+  gap: var(--space-1);
   justify-content: flex-end;
   max-width: 60%;
 }
@@ -456,7 +456,7 @@ const nhwStyles = `
 /* ── radio group ── */
 .nhw-radio-group {
   display: flex;
-  gap: "var(--space-2)"px;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 .nhw-radio-item {
@@ -484,7 +484,7 @@ const nhwStyles = `
 .nhw-doc-item {
   display: flex;
   align-items: center;
-  gap: "var(--space-3)"px;
+  gap: var(--space-3);
   padding: 16px;
   background: #06080c;
   border: 1px solid #1c2233;
@@ -537,7 +537,7 @@ const nhwStyles = `
   .nhw-checkbox-grid { grid-template-columns: 1fr; }
   .nhw-cert-row { flex-wrap: wrap; }
   .nhw-cert-exp { width: 100%; margin-top: 4px; }
-  .nhw-steps { gap: "var(--space-1)"px; }
+  .nhw-steps { gap: var(--space-1); }
   .nhw-step-pill { font-size: 10px; padding: 5px 2px; }
   .nhw-radio-group { flex-direction: column; }
   .nhw-radio-item { text-align: center; }

@@ -46,7 +46,7 @@ import { UpdateBanner } from "./components/InstallPrompt";
 import { useNetworkStatus } from "./hooks/useNetworkStatus";
 import { useNotifications } from "./hooks/useNotifications";
 import { hasAccess, ROLES } from "./data/roles";
-import { supabase, isSupabaseConfigured, signOut as supaSignOut, onAuthStateChange, signIn as supaSignIn, signUp as supaSignUp } from "./lib/supabase";
+import { supabase, isSupabaseConfigured, signOut as supaSignOut, onAuthStateChange, signIn as supaSignIn, signUp as supaSignUp, ensureSupabaseAuth } from "./lib/supabase";
 
 import { GanttScheduleView } from "./components/GanttScheduleView";
 import { useAlertEngine } from "./hooks/useAlertEngine";
@@ -482,6 +482,17 @@ function AuthGate() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // DEV_BYPASS_LOGIN ↔ RLS bridge: persist bypass auth to localStorage and
+  // establish a real Supabase session so RLS policies see a valid JWT.
+  useEffect(() => {
+    if (!DEV_BYPASS_LOGIN || !isSupabaseConfigured() || !auth) return;
+    localStorage.setItem("ebc_auth", JSON.stringify(auth));
+    ensureSupabaseAuth().then(ok => {
+      if (ok) console.log("[dev] Supabase session established — RLS active");
+      else console.warn("[dev] Supabase session failed — RLS will block queries");
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-provision Supabase auth for users logged in via localStorage only (no supabaseId)
   useEffect(() => {
@@ -1873,7 +1884,7 @@ function App({ auth, onLogout }) {
             </ResponsiveContainer>
           </div>
           {(cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90) > 0 && (
-            <div className="card" style={{ flex: "1 1 260px", minWidth: 240 }}>
+            <div className="card" style={{ flex: "1 1 272px", minWidth: 240 }}>
               <div className="card-header"><div className="card-title font-head fs-13">{t("Receivables Aging")}</div></div>
               <ResponsiveContainer width="100%" height={170}>
                 <BarChart data={[
@@ -4033,18 +4044,33 @@ function App({ auth, onLogout }) {
   const phonePreviewSafeArea = isPhonePreview ? (
     <style>{`
       /* Kill default iframe body margin so there's no pixel crack at the edges */
-      html, body { margin: 0 !important; padding: 0 !important; background: var(--bg1) !important; overflow-x: hidden; }
+      html, body { margin: 0 !important; padding: 0 !important; background: #152332 !important; overflow-x: hidden; }
       html, body, #root { min-height: 100vh; }
       #root { background: var(--bg1); }
-      /* The portal's .app shell reserves bottom space for the home-indicator
-         area so content doesn't hide behind the pill. Matches iOS
-         safe-area-inset-bottom behavior. */
-      .app { min-height: 100vh; padding-bottom: ${previewHomeArea}px !important; background: var(--bg1); }
-      /* The portal's bottom tab bar (.field-tab-bar) and any bottom-attached
-         sheets (.field-tab-sheet) are position: fixed; push them up by the
-         home-indicator area so the pill remains visible below. */
-      .field-tab-bar, .field-nav, .bottom-nav { bottom: ${previewHomeArea}px !important; }
-      .field-tab-sheet { bottom: ${56 + previewHomeArea}px !important; }
+      /* The portal's .app shell: natural min-height, no bottom padding
+         override. */
+      .app { min-height: 100vh; padding-bottom: 0 !important; background: var(--bg1); }
+      /* The tab bar keeps its native 56px content area (labels sit at their
+         normal position — NOT drifted upward). We switch it to
+         box-sizing: content-box and add padding-bottom so the background
+         extends a little further downward into the phone's bottom area,
+         giving the home-indicator pill room to sit inside the bar.
+         CRITICAL: we override the glass/translucent background with a
+         SOLID color and disable backdrop-filter — otherwise the blur
+         picks up the transition between scroll content and empty bg
+         behind the bar, which renders as a visible horizontal seam/line
+         across the bar. Solid bg = one continuous block. */
+      .field-tab-bar, .field-nav, .bottom-nav {
+        box-sizing: content-box !important;
+        bottom: 0 !important;
+        height: 56px !important;
+        padding-bottom: 16px !important;
+        background: #152332 !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+      /* Bottom-attached sheets sit above the full tab bar (content + extended pad). */
+      .field-tab-sheet { bottom: 72px !important; }
       /* Network banner was pushed down by the header safe-area shift */
       .network-banner { position: relative; }
       /* Status-bar safe-area: push the portal header below the mock OS chrome
@@ -4175,16 +4201,17 @@ function App({ auth, onLogout }) {
             return null;
           })() : null;
 
-          // Home indicator (iOS) or nav gesture bar (Android). Lives INSIDE
-          // the reserved homeArea at the bottom of the screen so it never
-          // overlaps the portal's bottom nav. For bottom-side indicators,
-          // center the pill vertically within the homeArea strip so it's
-          // visually balanced (top of pill = haH/2 + hi.h/2 from screen bottom).
+          // Home indicator (iOS) or nav gesture bar (Android). The pill
+          // sits a small fixed distance from the screen bottom so it lands
+          // inside the grown tab-bar's bottom edge (the bar grows by the
+          // same small amount) instead of hovering in a filler strip. The
+          // old math tried to vertically center the pill in a large haH
+          // strip, which produced a visible gap below the labels.
           const hi = dims.homeIndicator;
           const homeStyle = hi ? (() => {
             if (hi.side === "bottom") {
-              const centerOffset = Math.max(6, Math.round((haH - hi.h) / 2));
-              return { position: "absolute", bottom: centerOffset, left: "50%", transform: "translateX(-50%)", width: hi.w, height: hi.h, borderRadius: hi.h / 2, background: "rgba(255,255,255,0.9)", zIndex: 3 };
+              const pillBottom = 4;
+              return { position: "absolute", bottom: pillBottom, left: "50%", transform: "translateX(-50%)", width: hi.w, height: hi.h, borderRadius: hi.h / 2, background: "rgba(255,255,255,0.9)", zIndex: 3 };
             }
             if (hi.side === "right") {
               return { position: "absolute", right: hi.offset, top: "50%", transform: "translateY(-50%)", width: hi.w, height: hi.h, borderRadius: hi.w / 2, background: "rgba(255,255,255,0.9)", zIndex: 3 };
@@ -7131,7 +7158,7 @@ const ModalHub = ({ type, data, app }) => {
                       onChange={e => setQuickContact(prev => ({ ...prev, role: e.target.value }))} />
                     <input className="form-input flex-1-120" placeholder="Phone" value={quickContact.phone}
                       onChange={e => setQuickContact(prev => ({ ...prev, phone: e.target.value }))} />
-                    <input className="form-input" style={{ flex: "1 1 160px" }} placeholder="Email" value={quickContact.email}
+                    <input className="form-input" style={{ flex: "1 1 172px" }} placeholder="Email" value={quickContact.email}
                       onChange={e => setQuickContact(prev => ({ ...prev, email: e.target.value }))} />
                   </div>
                   <div className="flex gap-8">
@@ -7882,7 +7909,7 @@ const ModalHub = ({ type, data, app }) => {
                 {showSoundForm && (
                   <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "rgba(59,130,246,0.06)", border: "1px solid var(--blue-dim)", marginBottom: "var(--space-3)" }}>
                     <div className="flex gap-8 flex-wrap mb-8">
-                      <div style={{ flex: "0 0 160px" }}>
+                      <div style={{ flex: "0 0 172px" }}>
                         <label className="text-xs text-dim">Room Label</label>
                         <input className="input input-sm" placeholder="e.g. Conf Room A" value={soundForm.roomLabel} onChange={e => setSoundForm(p => ({ ...p, roomLabel: e.target.value }))} />
                       </div>

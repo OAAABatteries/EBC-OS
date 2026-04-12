@@ -317,18 +317,18 @@ export function JSATab({ app }) {
               const allTeam = [...new Set([...teamList, ...teamMembersList])];
               const html = `<!DOCTYPE html><html><head><title>JSA — ${jsa.title}</title><style>
                 body{font-family:Arial,sans-serif;max-width:850px;margin: "0" auto;padding:20px;color:#111;font-size:12px}
-                h1{font-size:20px;margin: "0" 0 2px} h2{font-size:14px;margin: "var(--space-3)"px 0 6px;border-bottom:1px solid #ccc;padding-bottom:4px}
+                h1{font-size:20px;margin: 0 0 2px} h2{font-size:14px;margin: var(--space-3) 0 6px;border-bottom:1px solid #ccc;padding-bottom:4px}
                 .header{border-bottom:3px solid #333;padding-bottom:10px;margin-bottom:12px}
                 .company{font-size:18px;font-weight:700;color:#b45309}
-                .meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap: "var(--space-1)"px 12px;margin-bottom:12px}
+                .meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap: var(--space-1) 12px;margin-bottom:12px}
                 .meta-grid div{padding:2px 0} .meta-grid span{color:#666;font-size:11px}
                 .risk-badge{display:inline-block;padding:2px 10px;border-radius:4px;font-weight:700;color:#fff;font-size:11px}
-                table{width:100%;border-collapse:collapse;margin: "var(--space-2)"px 0 12px}
+                table{width:100%;border-collapse:collapse;margin: var(--space-2) 0 12px}
                 th,td{border:1px solid #ccc;padding:5px 8px;text-align:left;font-size:11px}
                 th{background:#f0f0f0;font-weight:600} .step-hdr{background:#f8f8f8;font-weight:600}
-                .ppe-list{display:flex;gap: "var(--space-2)"px;flex-wrap:wrap;margin: "var(--space-1)"px 0}
+                .ppe-list{display:flex;gap: var(--space-2);flex-wrap:wrap;margin: var(--space-1) 0}
                 .ppe-item{padding:2px 8px;background:#e8f4fd;border-radius:4px;font-size:11px}
-                .sig-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap: "var(--space-4)"px;margin-top:24px}
+                .sig-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap: var(--space-4);margin-top:24px}
                 .sig-box{border-top:1px solid #666;padding-top:4px;font-size:10px;color:#666;min-height:32px}
                 @media print{body{padding:8px;font-size:11px}}
               </style></head><body>
@@ -366,7 +366,7 @@ export function JSATab({ app }) {
                     if (allTeam.length > 0) {
                       return allTeam.map(n => {
                         const sig = sigMap[n];
-                        return '<div><strong>'+n+'</strong><div class="sig-box">'+(sig ? '<img src="'+sig+'" style="width:200px;height:50px;object-fit:contain;display:block;margin: "var(--space-1)"px 0"/>' : 'Signature: ________________')+'<br/>Date: '+jsa.date+'</div></div>';
+                        return '<div><strong>'+n+'</strong><div class="sig-box">'+(sig ? '<img src="'+sig+'" style="width:200px;height:50px;object-fit:contain;display:block;margin: var(--space-1) 0"/>' : 'Signature: ________________')+'<br/>Date: '+jsa.date+'</div></div>';
                       }).join('');
                     }
                     return '<div class="sig-box">Name: ________________<br/>Signature: ________________<br/>Date: ________</div><div class="sig-box">Name: ________________<br/>Signature: ________________<br/>Date: ________</div><div class="sig-box">Name: ________________<br/>Signature: ________________<br/>Date: ________</div>';

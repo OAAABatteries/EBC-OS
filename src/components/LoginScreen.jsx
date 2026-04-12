@@ -79,7 +79,7 @@ const loginStyles = `
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: "var(--space-5)"px;
+  gap: var(--space-5);
   transition: opacity 0.55s ease, transform 0.55s ease;
   pointer-events: all;
 }
@@ -91,7 +91,7 @@ const loginStyles = `
 .splash-logo-lockup {
   display: flex;
   align-items: center;
-  gap: "var(--space-4)"px;
+  gap: var(--space-4);
 }
 .splash-logo {
   width: 80px;
@@ -123,7 +123,7 @@ const loginStyles = `
 }
 .splash-loading-dots {
   display: flex;
-  gap: "var(--space-2)"px;
+  gap: var(--space-2);
   margin-top: 4px;
 }
 .splash-loading-dot {
@@ -142,7 +142,7 @@ const loginStyles = `
   z-index: 2;
   width: 100%;
   max-width: 420px;
-  margin: "var(--space-5)"px;
+  margin: var(--space-5);
   background: rgba(12,15,22,0.88);
   backdrop-filter: blur(24px) saturate(1.8);
   -webkit-backdrop-filter: blur(24px) saturate(1.8);
@@ -167,7 +167,7 @@ const loginStyles = `
 .login-logo-lockup {
   display: flex;
   align-items: center;
-  gap: "var(--space-4)"px;
+  gap: var(--space-4);
   margin-bottom: 10px;
 }
 .login-logo-eagle {
@@ -201,19 +201,19 @@ const loginStyles = `
 .login-divider-line {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(224,148,34,0.2), transparent);
-  margin: "var(--space-2)"px 0 24px;
+  margin: var(--space-2) 0 24px;
 }
 
 /* ── Form ── */
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: "var(--space-4)"px;
+  gap: var(--space-4);
 }
 .login-field {
   display: flex;
   flex-direction: column;
-  gap: "var(--space-1)"px;
+  gap: var(--space-1);
 }
 .login-label {
   font-size: 11px;
@@ -267,7 +267,7 @@ const loginStyles = `
 .login-remember {
   display: flex;
   align-items: center;
-  gap: "var(--space-2)"px;
+  gap: var(--space-2);
   font-size: 13px;
   color: #8494ad;
   cursor: pointer;
@@ -304,7 +304,7 @@ const loginStyles = `
 .login-btn-loading {
   display: inline-flex;
   align-items: center;
-  gap: "var(--space-2)"px;
+  gap: var(--space-2);
 }
 .login-btn-spinner {
   width: 14px; height: 14px;
@@ -329,7 +329,7 @@ const loginStyles = `
 .login-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, #1c2233, transparent);
-  margin: "var(--space-2)"px 0;
+  margin: var(--space-2) 0;
 }
 .login-pin-mode {
   text-align: center;
@@ -361,7 +361,7 @@ const loginStyles = `
   font-family: var(--font-body);
   display: flex;
   align-items: center;
-  gap: "var(--space-1)"px;
+  gap: var(--space-1);
 }
 .login-lang-toggle:hover { border-color: #e09422; color: #d4dae6; }
 .login-version {
@@ -402,7 +402,7 @@ const loginStyles = `
 .pin-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: "var(--space-3)"px;
+  gap: var(--space-3);
   margin-top: 4px;
 }
 .pin-key {
@@ -425,8 +425,8 @@ const loginStyles = `
 .pin-display {
   display: flex;
   justify-content: center;
-  gap: "var(--space-4)"px;
-  margin: "var(--space-4)"px 0 8px;
+  gap: var(--space-4);
+  margin: var(--space-4) 0 8px;
 }
 .pin-dot {
   width: 14px;
@@ -443,7 +443,7 @@ const loginStyles = `
 
 @media (max-width: 480px) {
   .login-card {
-    margin: "var(--space-3)"px;
+    margin: var(--space-3);
     padding: 28px 20px;
     border-radius: 14px;
   }

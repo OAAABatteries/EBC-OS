@@ -47,6 +47,9 @@
   --text-tab:      11px;
   --lh-tab:        14px;
 
+  /* Fixed 11px (metatext, timestamps, auxiliary labels) */
+  --fs-11:         11px;
+
   /* Legacy aliases (for existing class references during migration) */
   --text-xs:       10px;
   --text-sm:       11px;
@@ -100,7 +103,7 @@
 
   /* ── CONTROL HEIGHTS ────────────────────────────────────── */
   --control-primary: 48px;  /* text inputs, primary buttons, selects */
-  --touch-min:       40px;  /* secondary buttons, list rows, tab items */
+  --touch-min:       48px;  /* secondary buttons, list rows, tab items */
   --control-row:     52px;  /* list rows, bottom sheet items */
   --control-textarea: 120px;
 

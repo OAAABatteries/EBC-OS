@@ -23,15 +23,15 @@ const PORTAL_STYLES = `
   .job-btn { padding:14px 28px;border-radius:8px;border:none;font-weight:700;font-size:15px;cursor:pointer;
     background:#f59e0b;color:#0a0e1a;transition:all 0.2s;font-family:inherit;width:100%; }
   .job-btn:hover { background:#fbbf24;transform:translateY(-1px); }
-  .job-grid { display:grid;grid-template-columns:1fr 1fr;gap: "var(--space-4)"px; }
+  .job-grid { display:grid;grid-template-columns:1fr 1fr;gap: var(--space-4); }
   @media(max-width:500px) { .job-grid { grid-template-columns:1fr; } .job-body { padding:20px 16px; } .job-hero { font-size:26px; } }
   .job-success { padding:24px;border-radius:12px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);
     text-align:center;color:#10b981;margin-top:20px; }
-  .job-success h3 { margin: "0" 0 8px; }
+  .job-success h3 { margin: 0 0 8px; }
   .skill-btn { padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;
     border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;font-family:inherit; }
   .skill-btn.active { background:rgba(245,158,11,0.15);color:#f59e0b;border-color:#f59e0b; }
-  .perk { display:flex;gap: "var(--space-3)"px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05); }
+  .perk { display:flex;gap: var(--space-3);align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05); }
   .perk-icon { font-size:24px;width:40px;text-align:center; }
   .perk-text { font-size:13px; }
   .perk-title { font-weight:600;color:#e2e8f0; }
