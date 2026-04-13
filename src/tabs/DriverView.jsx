@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Calendar, Settings, Navigation, Package, Truck, CheckCircle, MapPin, RefreshCw, Home, AlertTriangle } from "lucide-react";
+import { Calendar, Settings, Navigation, Package, Truck, CheckCircle, MapPin, RefreshCw, Home, AlertTriangle, FileText } from "lucide-react";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
 import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, EmptyState, StatusBadge, Skeleton, StatTile, AlertCard, DrawingsTab } from "../components/field";
@@ -601,21 +601,21 @@ export function DriverView({ app }) {
             {/* Stat tiles row — 3 tiles */}
             <div className="driver-home-stats">
               <StatTile
-                label="PENDING"
+                label={t("Pending")}
                 value={optimizedStops.filter(s => !s.isInTransit && !s.isDelivered).length}
                 color="var(--accent)"
                 onTap={() => setDriverTab("route")}
                 t={t}
               />
               <StatTile
-                label="DELIVERED"
+                label={t("Delivered")}
                 value={todayDelivered.length}
                 color="var(--green)"
                 onTap={() => setDriverTab("completed")}
                 t={t}
               />
               <StatTile
-                label="MILES"
+                label={t("Miles")}
                 value={totalDistance > 0 ? totalDistance.toFixed(1) : "0"}
                 color="var(--text)"
                 t={t}
@@ -968,7 +968,7 @@ export function DriverView({ app }) {
         {driverTab === "drawings" && (
           <DrawingsTab
             readOnly={true}
-            projectFilter={activeDriver?.currentDelivery?.projectId || null}
+            projectFilter={optimizedStops[0]?.projectId || null}
             t={(k) => T[k]?.[lang === "es" ? "es" : undefined] || k}
           />
         )}
