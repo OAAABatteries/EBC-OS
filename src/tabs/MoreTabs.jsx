@@ -3938,7 +3938,7 @@ function RfisTab({ app }) {
 
       <div className="table-wrap mt-16">
         <table className="data-table">
-          <thead><tr><th>RFI #</th><th>Project</th><th>Subject</th><th>Status</th><th>Submitted</th><th>Assigned</th><th>Response Date</th><th></th></tr></thead>
+          <thead><tr><th>RFI #</th><th>Project</th><th>Subject</th><th>Status</th><th>Submitted</th><th>Assigned</th><th>Days / Response</th><th></th></tr></thead>
           <tbody>
             {rfiFiltered.length === 0 && <tr><td colSpan={8} className="more-text-center">{app.search ? "No matching RFIs" : "No RFIs"}</td></tr>}
             {rfiFiltered.map(rfi => (
@@ -3961,42 +3961,56 @@ function RfisTab({ app }) {
                   <td><span className={badge(rfi.status)}>{rfi.status}</span></td>
                   <td>{rfi.submitted}</td>
                   <td>{rfi.assigned}</td>
-                  <td>{rfi.responseDate || "—"}</td>
+                  <td>{rfi.responseDate ? rfi.responseDate : rfi.submitted ? (() => { const d = Math.ceil((Date.now() - new Date(rfi.submitted).getTime()) / 86400000); return <span style={{ color: d > 14 ? "var(--red)" : d > 7 ? "var(--amber)" : "var(--text2)" }}>{d}d open</span>; })() : "—"}</td>
                   <td>
                     <div className="flex gap-4">
                     {rfi.status === "open" && (
-                      <button className="btn btn-ghost btn-sm btn-table-action"
-                        onClick={() => draftId === rfi.id && draftText ? setDraftId(null) : runDraftResponse(rfi)}
-                        disabled={draftLoading && draftId === rfi.id}>
-                        {draftLoading && draftId === rfi.id ? "..." : draftId === rfi.id && draftText ? "Hide" : "Draft Response"}
-                      </button>
+                      <>
+                        <button className="btn btn-primary btn-sm btn-table-action"
+                          onClick={() => setDraftId(draftId === rfi.id ? null : rfi.id)}>
+                          {draftId === rfi.id ? "Cancel" : "Answer"}
+                        </button>
+                        <button className="btn btn-ghost btn-sm btn-table-action"
+                          onClick={() => runDraftResponse(rfi)}
+                          disabled={draftLoading && draftId === rfi.id}>
+                          {draftLoading && draftId === rfi.id ? "..." : "AI Draft"}
+                        </button>
+                      </>
                     )}
                     <button className="btn btn-ghost btn-sm btn-table-delete"
                       onClick={() => { if (confirm("Delete this RFI?")) { app.setRfis(prev => prev.filter(r => r.id !== rfi.id)); app.show("RFI deleted"); } }}>✕</button>
                     </div>
                   </td>
                 </tr>
-                {draftId === rfi.id && draftText && (
+                {draftId === rfi.id && (
                   <tr><td colSpan={8} className="more-expand-cell">
                     <div className="more-detail-panel">
-                      <div className="flex-between mb-8">
-                        <span className="font-semi text-sm">AI-Drafted Response</span>
-                        <button className="btn btn-ghost btn-sm btn-table-action" onClick={() => {
-                          navigator.clipboard.writeText(draftText);
-                          app.show("Response copied to clipboard", "ok");
-                        }}>Copy</button>
+                      <div className="form-group mb-8">
+                        <label className="form-label">Response</label>
+                        <textarea className="form-textarea" rows={4} value={draftText} onChange={e => setDraftText(e.target.value)}
+                          placeholder="Record the GC/architect response here..." />
                       </div>
-                      <div className="more-ai-text">
-                        {draftText}
+                      <div className="form-group mb-8">
+                        <label className="form-label">Ball in Court</label>
+                        <select className="form-select" defaultValue={rfi.ballInCourt || ""} onChange={e => {
+                          app.setRfis(prev => prev.map(r => r.id === rfi.id ? { ...r, ballInCourt: e.target.value } : r));
+                        }}>
+                          <option value="">Select...</option>
+                          <option value="GC">GC</option>
+                          <option value="Architect">Architect</option>
+                          <option value="EBC">EBC (Us)</option>
+                          <option value="Owner">Owner</option>
+                        </select>
                       </div>
-                      <div className="flex gap-8 mt-8">
+                      <div className="flex gap-8">
                         <button className="btn btn-primary btn-sm" onClick={() => {
+                          if (!draftText.trim()) { app.show("Response text is required", "err"); return; }
                           app.setRfis(prev => prev.map(r => r.id === rfi.id ? { ...r, status: "answered", response: draftText, responseDate: new Date().toISOString().slice(0, 10) } : r));
                           setDraftId(null);
                           setDraftText("");
-                          app.show("RFI marked as answered", "ok");
-                        }}>Accept & Close RFI</button>
-                        <button className="btn btn-ghost btn-sm" onClick={() => runDraftResponse(rfi)}>Regenerate</button>
+                          app.show("RFI answered", "ok");
+                        }}>Save Response & Close</button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => setDraftId(null)}>Cancel</button>
                       </div>
                     </div>
                   </td></tr>
@@ -6093,6 +6107,15 @@ function DailyReportsTab({ app }) {
             const a = document.createElement('a'); a.href = url; a.download = 'ebc_daily_reports.csv'; a.click(); URL.revokeObjectURL(url);
             app.show("Daily Reports CSV exported");
           }}>Export CSV</button>
+          <button className="btn btn-ghost btn-sm" onClick={async () => {
+            if (drFiltered.length === 0) { app.show("No reports to export", "err"); return; }
+            const { generateDailyReportPdf } = await import("../utils/dailyReportPdf.js");
+            for (const report of drFiltered.slice(0, 5)) {
+              const project = app.projects.find(p => p.id === report.projectId);
+              generateDailyReportPdf(report, project);
+            }
+            app.show(`${Math.min(drFiltered.length, 5)} report PDF(s) generated`);
+          }}>Export PDF</button>
           <button className="btn btn-ghost btn-sm" onClick={runDigest} disabled={digestLoading}>
             {digestLoading ? "Analyzing..." : "AI Digest"}
           </button>

@@ -1098,4 +1098,11 @@ export const T = {
   "Getting location...": { es: "Obteniendo ubicación..." },
   "Check with your foreman for today's assignment": { es: "Consulta con tu capataz la asignación de hoy" },
   "No shifts scheduled": { es: "Sin turnos programados" },
+  // Dashboard financial KPIs
+  "Active Contract": { es: "Contrato Activo" },
+  "Billed": { es: "Facturado" },
+  "Remaining": { es: "Restante" },
+  "of contract": { es: "del contrato" },
+  "pending COs": { es: "OCs pendientes" },
+  "projects": { es: "proyectos" },
 };

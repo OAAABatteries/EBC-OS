@@ -1223,6 +1223,38 @@ function App({ auth, onLogout }) {
         </div>
       )}
 
+      {/* ── Financial KPI Summary — PM's money-at-a-glance ── */}
+      {(() => {
+        const activeProjects = projects.filter(p => !p.deletedAt && p.status !== "completed");
+        const totalContract = activeProjects.reduce((s, p) => s + (p.contract || 0), 0);
+        const totalBilled = invoices.filter(inv => !inv.deletedAt).reduce((s, inv) => s + (Number(inv.amount) || 0), 0);
+        const totalPendingCOs = changeOrders.filter(co => !co.deletedAt && co.status === "pending").reduce((s, co) => s + (Math.abs(Number(co.amount)) || 0), 0);
+        const totalApprovedCOs = changeOrders.filter(co => !co.deletedAt && co.status === "approved").reduce((s, co) => s + (Number(co.amount) || 0), 0);
+        const adjustedContract = totalContract + totalApprovedCOs;
+        const remaining = adjustedContract - totalBilled;
+        const marginPct = adjustedContract > 0 ? Math.round((remaining / adjustedContract) * 100) : 0;
+        const fmt = (n) => "$" + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
+        return (
+          <div className="kpi-grid" style={{ marginBottom: "var(--space-4)" }}>
+            <div className="kpi-card">
+              <div className="kpi-label">{t("Active Contract")}</div>
+              <div className="kpi-value" style={{ fontSize: "var(--text-subtitle)" }}>{fmt(adjustedContract)}</div>
+              <div className="kpi-sub">{activeProjects.length} {t("projects")} {totalApprovedCOs > 0 && `(+${fmt(totalApprovedCOs)} COs)`}</div>
+            </div>
+            <div className="kpi-card">
+              <div className="kpi-label">{t("Billed")}</div>
+              <div className="kpi-value" style={{ fontSize: "var(--text-subtitle)", color: "var(--green)" }}>{fmt(totalBilled)}</div>
+              <div className="kpi-sub">{adjustedContract > 0 ? Math.round((totalBilled / adjustedContract) * 100) : 0}% {t("of contract")}</div>
+            </div>
+            <div className="kpi-card">
+              <div className="kpi-label">{t("Remaining")}</div>
+              <div className="kpi-value" style={{ fontSize: "var(--text-subtitle)", color: remaining < 0 ? "var(--red)" : "var(--text)" }}>{fmt(remaining)}</div>
+              <div className="kpi-sub">{totalPendingCOs > 0 && <span style={{ color: "var(--amber)" }}>{fmt(totalPendingCOs)} {t("pending COs")}</span>}</div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Today's Field Activity Summary — aggregates foreman-entered data ── */}
       {(() => {
         const todayStr = new Date().toISOString().slice(0, 10);
