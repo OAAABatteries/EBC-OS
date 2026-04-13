@@ -103,7 +103,7 @@
   --shadow-lg:  0 4px 12px rgba(0,0,0,0.25);
 
   /* ── CONTROL HEIGHTS ────────────────────────────────────── */
-  --control-primary: 48px;  /* text inputs, primary buttons, selects */
+  --control-primary: 52px;  /* text inputs, primary buttons, selects */
   --touch-min:       48px;  /* secondary buttons, list rows, tab items */
   --control-row:     52px;  /* list rows, bottom sheet items */
   --control-textarea: 120px;

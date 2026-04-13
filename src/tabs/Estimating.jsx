@@ -682,7 +682,7 @@ export function EstimatingTab({ app }) {
       <div>
         <div className="section-header flex-between">
           <div>
-            <h2 className="section-title" style={{ margin: "0" }}>Estimating</h2>
+            <h2 className="section-title" style={{ margin: 0 }}>Estimating</h2>
             <div className="section-sub">
               {takeoffs.length} takeoff{takeoffs.length !== 1 ? "s" : ""}
               {(() => {

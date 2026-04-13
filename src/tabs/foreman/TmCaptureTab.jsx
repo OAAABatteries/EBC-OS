@@ -6,6 +6,7 @@
 
 import { useState, useMemo } from "react";
 import { Plus, ChevronDown, ChevronUp, FileText, DollarSign, Camera, Trash2, Pencil, Download } from "lucide-react";
+import { queueMutation } from "../../lib/offlineQueue";
 import { FieldCard } from "../../components/field/FieldCard";
 import { FieldButton } from "../../components/field/FieldButton";
 import { FieldInput } from "../../components/field/FieldInput";
@@ -150,6 +151,7 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
     if (!window.confirm(tr("Delete this T&M ticket?"))) return;
     // Soft-delete: preserve record with audit trail
     setTmTickets((prev) => prev.map((t) => t.id === ticket.id ? { ...t, status: "deleted", deletedAt: new Date().toISOString(), deletedBy: foreman?.name || "Foreman" } : t));
+    queueMutation("tm_tickets", "update", { status: "deleted", deletedAt: new Date().toISOString(), deletedBy: foreman?.name || "Foreman" }, { column: "id", value: ticket.id });
   };
 
   const commitSave = (asDraft, gcSignatureData) => {
@@ -185,6 +187,14 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
           };
         })
       );
+      queueMutation("tm_tickets", "update", {
+        date: formDate, status: asDraft ? "draft" : "submitted",
+        description: formDesc.trim(), notes: formNotes.trim(),
+        areaId: formArea || null,
+        areaName: areaObj ? `${areaObj.name} (F${areaObj.floor} Z${areaObj.zone})` : "",
+        photos: formPhotos, laborEntries: formLabor, materialEntries: formMaterials,
+        submittedDate: asDraft ? null : now, ...signatureFields,
+      }, { column: "id", value: editingId });
     } else {
       // Create new ticket
       const ticket = {
@@ -210,6 +220,7 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
         ],
       };
       setTmTickets((prev) => [...prev, ticket]);
+      queueMutation("tm_tickets", "insert", ticket);
     }
     resetForm();
   };

@@ -6,6 +6,7 @@
 
 import { useState, useMemo } from "react";
 import { Plus, BarChart3, TrendingUp, Save, Trash2 } from "lucide-react";
+import { queueMutation } from "../../lib/offlineQueue";
 import { FieldCard } from "../../components/field/FieldCard";
 import { FieldButton } from "../../components/field/FieldButton";
 import { FieldInput } from "../../components/field/FieldInput";
@@ -116,6 +117,7 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
     };
 
     setProductionLogs((prev) => [...prev, entry]);
+    queueMutation("production_logs", "insert", entry);
 
     // Update area scope installedQty so progress bars reflect reality
     if (setAreas) {
@@ -149,6 +151,7 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
     if (!window.confirm(tr("Delete this production entry?"))) return;
     // Soft-delete: preserve record with audit trail
     setProductionLogs((prev) => prev.map((l) => l.id === log.id ? { ...l, status: "deleted", deletedAt: new Date().toISOString(), deletedBy: foreman?.name || "Foreman" } : l));
+    queueMutation("production_logs", "update", { status: "deleted", deletedAt: new Date().toISOString(), deletedBy: foreman?.name || "Foreman" }, { column: "id", value: log.id });
     // Reverse the installedQty on the area scope
     if (setAreas) {
       setAreas((prev) =>

@@ -6,6 +6,7 @@
 
 import { useState, useMemo } from "react";
 import { Plus, CheckCircle, Clock, AlertTriangle, Pencil, Trash2 } from "lucide-react";
+import { queueMutation } from "../../lib/offlineQueue";
 import { FieldCard } from "../../components/field/FieldCard";
 import { FieldButton } from "../../components/field/FieldButton";
 import { FieldInput } from "../../components/field/FieldInput";
@@ -70,6 +71,7 @@ export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees
           : p
       )
     );
+    queueMutation("punch_items", "update", { status: next, ...(next === "complete" ? { completedAt: now } : {}) }, { column: "id", value: item.id });
   };
 
   const resetForm = () => {
@@ -95,6 +97,7 @@ export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees
   const handleDelete = (item) => {
     if (!window.confirm(tr("Delete this punch item?"))) return;
     setPunchItems((prev) => prev.map((p) => p.id === item.id ? { ...p, status: "deleted", deletedAt: new Date().toISOString(), deletedBy: foreman?.name || "Foreman" } : p));
+    queueMutation("punch_items", "update", { status: "deleted", deletedAt: new Date().toISOString(), deletedBy: foreman?.name || "Foreman" }, { column: "id", value: item.id });
   };
 
   const handleAdd = () => {
@@ -117,6 +120,10 @@ export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees
             : p
         )
       );
+      queueMutation("punch_items", "update", {
+        description: formDesc.trim(), ...(location !== undefined ? { location } : {}),
+        assignedTo: formAssignee || null, priority: formPriority, photos: formPhotos,
+      }, { column: "id", value: editingId });
       resetForm();
       return;
     }
@@ -138,6 +145,7 @@ export function PunchTab({ punchItems = [], setPunchItems, areas = [], employees
       auditTrail: [{ action: "created", actor: foreman?.name || "Foreman", at: now }],
     };
     setPunchItems((prev) => [...prev, newItem]);
+    queueMutation("punch_items", "insert", newItem);
     resetForm();
   };
 

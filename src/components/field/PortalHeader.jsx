@@ -154,18 +154,32 @@ export function PortalHeader({
               maxWidth: hasTopNotch ? 128 : 200,
               paddingTop: 2,
             }}>
-              {userName && (
-                <span style={{
-                  fontSize: 11,
-                  color: 'var(--text2)',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  maxWidth: hasTopNotch ? 120 : 192,
-                }}>
-                  {userName}
-                </span>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                {/* Pending sync count badge */}
+                {network && network.pendingCount > 0 && network.online && (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 3,
+                    fontSize: 10, fontWeight: 600, color: 'var(--amber)',
+                    background: 'var(--amber-dim)', border: '1px solid var(--amber-border-subtle)',
+                    borderRadius: 'var(--radius-pill)', padding: '2px 6px', lineHeight: 1,
+                  }}>
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--amber)', flexShrink: 0 }} />
+                    {network.pendingCount}
+                  </span>
+                )}
+                {userName && (
+                  <span style={{
+                    fontSize: 11,
+                    color: 'var(--text2)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: hasTopNotch ? 120 : 192,
+                  }}>
+                    {userName}
+                  </span>
+                )}
+              </div>
               {languageToggle}
               {variant === 'foreman' && settingsAction}
             </div>
@@ -270,6 +284,28 @@ export function PortalHeader({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            {/* Pending sync count badge */}
+            {network && network.pendingCount > 0 && network.online && (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 3,
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 'var(--weight-semi)',
+                  color: 'var(--amber)',
+                  background: 'var(--amber-dim)',
+                  border: '1px solid var(--amber-border-subtle)',
+                  borderRadius: 'var(--radius-pill)',
+                  padding: '2px 8px',
+                  lineHeight: 1,
+                }}
+                title={`${network.pendingCount} change${network.pendingCount > 1 ? 's' : ''} waiting to sync`}
+              >
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--amber)', flexShrink: 0 }} />
+                {network.pendingCount}
+              </span>
+            )}
             {userName && (
               <span
                 style={{
