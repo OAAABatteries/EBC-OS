@@ -57,20 +57,20 @@ export function DailyReportTab({
         if (todayProd.length === 0 && todayTm.length === 0 && todayPunch.length === 0 && todayTime.length === 0) return null;
 
         return (
-          <div style={{ padding: "var(--space-3)", background: "var(--bg3)", borderRadius: "var(--radius-control)", marginBottom: "var(--space-4)", marginTop: "var(--space-3)", border: "1px solid var(--border)" }}>
-            <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", textTransform: "uppercase", fontWeight: "var(--weight-bold)", marginBottom: "var(--space-2)" }}>{t("Today's Activity")} ({t("Auto-Populated")})</div>
+          <div className="rounded-control mb-sp4 mt-sp3 p-sp3 bg-bg3" style={{ border: "1px solid var(--border)" }}>
+            <div className="fw-bold mb-sp2 fs-tab uppercase c-text3">{t("Today's Activity")} ({t("Auto-Populated")})</div>
 
             {todayTime.length > 0 && (
-              <div className="frm-font-13 frm-mb-6" style={{ color: "var(--text)" }}>
+              <div className="frm-font-13 frm-mb-6 c-text">
                 <strong>{todayTime.length} {t("crew")}</strong> {t("on site")} · <strong>{totalHours.toFixed(1)}h</strong> {t("total")}
               </div>
             )}
 
             {todayProd.length > 0 && (
               <div className="frm-mb-6">
-                <div className="frm-font-12" style={{ color: "var(--text2)" }}>{t("Production")}:</div>
+                <div className="frm-font-12 c-text2">{t("Production")}:</div>
                 {todayProd.map(p => (
-                  <div key={p.id} className="frm-font-12" style={{ color: "var(--text)", paddingLeft: "var(--space-2)" }}>
+                  <div key={p.id} className="frm-font-12 c-text" style={{ paddingLeft: "var(--space-2)" }}>
                     {"\u2022"} {p.trade}: {p.qtyInstalled} {p.unit} {t("in")} {(areas || []).find(a => a.id === p.areaId)?.name || "\u2014"}
                   </div>
                 ))}
@@ -79,9 +79,9 @@ export function DailyReportTab({
 
             {todayTm.length > 0 && (
               <div className="frm-mb-6">
-                <div className="frm-font-12" style={{ color: "var(--text2)" }}>{t("T&M")} {t("Tickets")}:</div>
+                <div className="frm-font-12 c-text2">{t("T&M")} {t("Tickets")}:</div>
                 {todayTm.map(tk => (
-                  <div key={tk.id} className="frm-font-12" style={{ color: "var(--text)", paddingLeft: "var(--space-2)" }}>
+                  <div key={tk.id} className="frm-font-12 c-text" style={{ paddingLeft: "var(--space-2)" }}>
                     {"\u2022"} {tk.ticketNumber}: {(tk.description || "").slice(0, 60)}
                   </div>
                 ))}
@@ -90,8 +90,8 @@ export function DailyReportTab({
 
             {todayPunch.length > 0 && (
               <div>
-                <div className="frm-font-12" style={{ color: "var(--text2)" }}>{t("Punch List")}:</div>
-                <div className="frm-font-12" style={{ color: "var(--text)", paddingLeft: "var(--space-2)" }}>
+                <div className="frm-font-12 c-text2">{t("Punch List")}:</div>
+                <div className="frm-font-12 c-text" style={{ paddingLeft: "var(--space-2)" }}>
                   {todayPunch.length} {t("new")} {t("item")}{todayPunch.length !== 1 ? "s" : ""} {t("logged")}
                 </div>
               </div>
@@ -104,12 +104,90 @@ export function DailyReportTab({
       {showReportForm && (
         <div className="card frm-report-card frm-mt-12 frm-p-16">
 
-          {/* Quick-fill from yesterday */}
+          {/* Quick-fill buttons */}
           {!editingReportId && (
-            <div className="frm-flex-row frm-mb-12">
-              <button className="btn btn-sm" style={{ fontSize: "var(--text-tab)", background: "var(--surface2)", color: "var(--text2)", border: "1px solid var(--border)" }}
+            <div className="frm-flex-row frm-mb-12 gap-sp2 flex-wrap">
+              <button className="btn btn-sm fs-tab c-text2" style={{ background: "var(--surface2)", border: "1px solid var(--border)" }}
                 onClick={fillFromYesterday}>
                 {t("Quick-fill from yesterday")}
+              </button>
+              <button className="btn btn-sm fs-tab fw-semi" style={{ background: "var(--amber-bg-subtle)", border: "1px solid var(--amber)", color: "var(--amber)" }}
+                onClick={() => {
+                  const today = reportForm.date || new Date().toISOString().slice(0, 10);
+
+                  // Crew present from time entries
+                  const todayTime = (timeEntries || []).filter(te =>
+                    String(te.projectId) === String(selectedProjectId) && (te.clockIn || "").startsWith(today)
+                  );
+                  const crewPresent = todayTime.map(te => {
+                    const emp = (employees || []).find(e => String(e.id) === String(te.employeeId));
+                    return emp ? { id: emp.id, name: emp.name } : { id: te.employeeId, name: te.employeeName || "Unknown" };
+                  }).filter((c, i, arr) => arr.findIndex(x => x.id === c.id) === i);
+
+                  // Production logs → work performed narrative
+                  const todayProd = (productionLogs || []).filter(l =>
+                    l.date === today && String(l.projectId) === String(selectedProjectId) && l.status !== "deleted"
+                  );
+                  const prodByTrade = {};
+                  todayProd.forEach(p => {
+                    const key = p.trade || "General";
+                    if (!prodByTrade[key]) prodByTrade[key] = [];
+                    const areaName = (areas || []).find(a => a.id === p.areaId)?.name || "";
+                    prodByTrade[key].push(`${p.qtyInstalled} ${p.unit || ""} ${areaName}`.trim());
+                  });
+                  const prodText = Object.entries(prodByTrade)
+                    .map(([trade, items]) => `${trade}: ${items.join(", ")}`)
+                    .join("\n");
+
+                  // T&M tickets
+                  const todayTm = (tmTickets || []).filter(tk =>
+                    tk.date === today && String(tk.projectId) === String(selectedProjectId) && tk.status !== "deleted"
+                  );
+                  const tmText = todayTm.length > 0
+                    ? todayTm.map(tk => `T&M #${tk.ticketNumber || "?"}: ${tk.description || tk.scope || ""}`).join("\n")
+                    : "";
+
+                  // Punch items created today
+                  const todayPunch = (punchItems || []).filter(p =>
+                    String(p.projectId) === String(selectedProjectId) && (p.createdAt || "").startsWith(today) && p.status !== "deleted"
+                  );
+                  const punchText = todayPunch.length > 0
+                    ? `${todayPunch.length} punch item${todayPunch.length > 1 ? "s" : ""} logged`
+                    : "";
+
+                  // Quick tasks from production trades
+                  const detectedTasks = [];
+                  todayProd.forEach(p => {
+                    const trade = (p.trade || "").toLowerCase();
+                    if (trade.includes("frame") || trade.includes("framing")) detectedTasks.push("Framing");
+                    if (trade.includes("board") || trade.includes("hang")) detectedTasks.push("Hanging board");
+                    if (trade.includes("tape") || trade.includes("finish")) detectedTasks.push("Taping");
+                    if (trade.includes("sand")) detectedTasks.push("Sanding");
+                    if (trade.includes("act") && trade.includes("grid")) detectedTasks.push("ACT grid");
+                    if (trade.includes("act") && trade.includes("tile")) detectedTasks.push("ACT tile");
+                    if (trade.includes("demo")) detectedTasks.push("Demo");
+                    if (trade.includes("clean")) detectedTasks.push("Cleanup");
+                  });
+                  const quickTasks = [...new Set(detectedTasks)];
+
+                  // Issues from punch + T&M
+                  const issues = [punchText, tmText].filter(Boolean).join("\n");
+
+                  // Build work performed narrative
+                  const totalHours = todayTime.reduce((s, te) => s + (te.totalHours || 0), 0);
+                  const workLines = [];
+                  if (crewPresent.length > 0) workLines.push(`${crewPresent.length} crew on site, ${totalHours.toFixed(1)}h total`);
+                  if (prodText) workLines.push(prodText);
+
+                  setReportForm(f => ({
+                    ...f,
+                    teamPresent: crewPresent.length > 0 ? crewPresent : f.teamPresent,
+                    quickTasks: quickTasks.length > 0 ? quickTasks : f.quickTasks,
+                    workPerformed: workLines.join("\n") || f.workPerformed,
+                    issues: issues || f.issues,
+                  }));
+                }}>
+                {t("Auto-fill from today")}
               </button>
             </div>
           )}
@@ -128,8 +206,8 @@ export function DailyReportTab({
           </div>
 
           {/* Outdoor toggle */}
-          <div className="frm-mt-10" style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer", fontSize: "var(--text-label)", color: "var(--text2)" }}>
+          <div className="frm-mt-10 flex gap-sp3">
+            <label className="flex fs-label c-text2 gap-sp2 cursor-pointer">
               <input type="checkbox"
                 checked={!!reportForm.isOutdoor}
                 onChange={e => setReportForm(f => ({ ...f, isOutdoor: e.target.checked, ...(e.target.checked ? {} : { temperature: "", weatherCondition: "Clear" }) }))} />
@@ -196,7 +274,7 @@ export function DailyReportTab({
                       {!scheduledIds.has(c.id) && <span className="text-xs text-muted">({t("added")})</span>}
                     </label>
                   )) : (
-                    <div className="text-xs text-muted" style={{ padding: "var(--space-2)" }}>{t("No team assigned to this project this week")}</div>
+                    <div className="text-xs text-muted p-sp2">{t("No team assigned to this project this week")}</div>
                   )}
                 </div>
                 {/* Manual add */}
@@ -217,8 +295,7 @@ export function DailyReportTab({
                       ))}
                     </select>
                   ) : (
-                    <button className="btn btn-sm frm-mt-8"
-                      style={{ background: "var(--surface2)", color: "var(--text2)", border: "1px solid var(--border)", fontSize: "var(--text-tab)" }}
+                    <button className="btn btn-sm frm-mt-8 fs-tab c-text2" style={{ background: "var(--surface2)", border: "1px solid var(--border)" }}
                       onClick={() => setReportCrewAdding(true)}>
                       + {t("Add employee")}
                     </button>
@@ -231,7 +308,7 @@ export function DailyReportTab({
           {/* Work Performed */}
           <div className="frm-mt-12">
             <label className="form-label">{t("Work Performed Today")} *</label>
-            <div className="frm-flex-wrap frm-mb-8" style={{ gap: "var(--space-2)" }}>
+            <div className="frm-flex-wrap frm-mb-8 gap-sp2">
               {QUICK_TASKS.map(task => {
                 const isActive = (reportForm.quickTasks || []).includes(task);
                 return (
@@ -287,7 +364,7 @@ export function DailyReportTab({
 
           {/* Safety Incidents */}
           <div style={{ marginTop: "var(--space-3)", padding: "var(--space-3)", background: reportForm.safetyIncident ? "rgba(239,68,68,0.08)" : "var(--surface1)", borderRadius: "var(--radius-control)", border: reportForm.safetyIncident ? "1px solid var(--red)" : "1px solid var(--border)" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", cursor: "pointer", fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)" }}>
+            <label className="flex fw-semi fs-label gap-sp3 cursor-pointer">
               <span>{t("Safety Incident")}</span>
               <button
                 style={{
@@ -310,7 +387,7 @@ export function DailyReportTab({
               <textarea className="form-input" rows={3} placeholder={t("Describe the safety incident...")}
                 value={reportForm.safetyDescription}
                 onChange={e => setReportForm(f => ({ ...f, safetyDescription: e.target.value }))}
-                style={{ resize: "vertical", marginTop: "var(--space-2)" }} />
+                className="mt-sp2" style={{ resize: "vertical" }} />
             )}
           </div>
 
@@ -322,6 +399,7 @@ export function DailyReportTab({
               onPhotos={(photos) => setReportForm(f => ({ ...f, photos }))}
               multiple={true}
               t={t}
+              uploadContext={{ context: "report", projectId: selectedProjectId }}
             />
           </div>
 
@@ -348,7 +426,7 @@ export function DailyReportTab({
           </div>
 
           {/* Submit / Update */}
-          <button className="btn btn-primary frm-w-full" style={{ marginTop: "var(--space-4)" }}
+          <button className="btn btn-primary frm-w-full mt-sp4"
             onClick={() => {
               if (!reportForm.workPerformed.trim()) { show(t("Describe work performed"), "warn"); return; }
               const report = {
@@ -409,7 +487,7 @@ export function DailyReportTab({
             const tempClean = String(r.temperature || "").replace(/\u00B0F/gi, "").trim();
             const teamN = (r.teamPresent || []).length || r.teamSize || 0;
             return (
-              <div key={r.id} className="card frm-report-card" style={{ cursor: "pointer" }}
+              <div key={r.id} className="card frm-report-card cursor-pointer"
                 onClick={() => setExpandedReportId(isExpanded ? null : r.id)}>
                 <div className="frm-flex-between">
                   <div>
@@ -417,15 +495,15 @@ export function DailyReportTab({
                     <div className="text-xs text-muted">{r.projectName || t("Project")} · {teamN} {t("team")} · {r.foremanName || ""}</div>
                     {r.hoursWorked && <div className="text-xs text-muted">{r.hoursWorked} hrs logged</div>}
                   </div>
-                  <div className="frm-flex-row-center" style={{ gap: "var(--space-2)" }}>
-                    {r.safetyIncident && <span style={{ fontSize: "var(--text-xs)", background: "var(--red)", color: "#fff", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)" }}>Safety</span>}
+                  <div className="frm-flex-row-center gap-sp2">
+                    {r.safetyIncident && <span className="rounded-control fs-xs c-white" style={{ background: "var(--red)", padding: "var(--space-1) var(--space-2)" }}>Safety</span>}
                     {r.photos && r.photos.length > 0 && <span className="text-xs text-muted">{r.photos.length} pic</span>}
-                    <span className="frm-font-12" style={{ color: "var(--text3)" }}>{isExpanded ? "\u25BE" : "\u25B8"}</span>
+                    <span className="frm-font-12 c-text3">{isExpanded ? "\u25BE" : "\u25B8"}</span>
                   </div>
                 </div>
                 {!isExpanded && (
                   <div className="text-xs text-muted frm-mt-4 frm-truncate">
-                    {(r.quickTasks || []).length > 0 && <span style={{ color: "var(--accent)", marginRight: "var(--space-1)" }}>{r.quickTasks.join(", ")}</span>}
+                    {(r.quickTasks || []).length > 0 && <span className="mr-sp1" style={{ color: "var(--accent)" }}>{r.quickTasks.join(", ")}</span>}
                     {r.workPerformed?.replace(/^Tasks: [^\n]*\n?/, "").slice(0, 80)}
                   </div>
                 )}
@@ -436,7 +514,7 @@ export function DailyReportTab({
                     {/* Crew Present */}
                     {(r.teamPresent || []).length > 0 && (
                       <div className="mb-8">
-                        <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: "var(--space-1)" }}>{t("Crew on Site")}</div>
+                        <div className="text-xs font-semi mb-sp1 c-text2">{t("Crew on Site")}</div>
                         <div className="frm-flex-wrap">
                           {r.teamPresent.map((c, i) => (
                             <span key={i} className="badge badge-blue frm-font-10">{typeof c === "string" ? c : c.name}</span>
@@ -448,35 +526,35 @@ export function DailyReportTab({
                     {/* Quick Tasks */}
                     {(r.quickTasks || []).length > 0 && (
                       <div className="mb-8">
-                        <div className="text-xs font-semi" style={{ color: "var(--accent)", marginBottom: "var(--space-1)" }}>{t("Tasks")}</div>
+                        <div className="text-xs font-semi mb-sp1" style={{ color: "var(--accent)" }}>{t("Tasks")}</div>
                         <div className="frm-flex-wrap">
                           {r.quickTasks.map((tk, i) => (
-                            <span key={i} style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", background: "var(--accent)", color: "#fff" }}>{tk}</span>
+                            <span key={i} className="rounded-control fs-xs c-white" style={{ padding: "var(--space-1) var(--space-2)", background: "var(--accent)" }}>{tk}</span>
                           ))}
                         </div>
                       </div>
                     )}
 
                     <div className="mb-8">
-                      <div className="text-xs font-semi" style={{ color: "var(--accent)", marginBottom: "var(--space-1)" }}>{t("Work Performed")}</div>
+                      <div className="text-xs font-semi mb-sp1" style={{ color: "var(--accent)" }}>{t("Work Performed")}</div>
                       <div className="text-sm frm-pre-wrap">{r.workPerformed}</div>
                     </div>
 
                     {r.materialsReceived && (
                       <div className="mb-8">
-                        <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: "var(--space-1)" }}>{t("Materials Received")}</div>
+                        <div className="text-xs font-semi mb-sp1 c-text2">{t("Materials Received")}</div>
                         <div className="text-sm frm-pre-wrap">{r.materialsReceived}</div>
                       </div>
                     )}
                     {r.equipmentOnSite && (
                       <div className="mb-8">
-                        <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: "var(--space-1)" }}>{t("Equipment on Site")}</div>
+                        <div className="text-xs font-semi mb-sp1 c-text2">{t("Equipment on Site")}</div>
                         <div className="text-sm frm-pre-wrap">{r.equipmentOnSite}</div>
                       </div>
                     )}
                     {r.visitors && (
                       <div className="mb-8">
-                        <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: "var(--space-1)" }}>{t("Visitors / Inspections")}</div>
+                        <div className="text-xs font-semi mb-sp1 c-text2">{t("Visitors / Inspections")}</div>
                         <div className="text-sm frm-pre-wrap">{r.visitors}</div>
                       </div>
                     )}
@@ -493,13 +571,13 @@ export function DailyReportTab({
 
                     {r.issues && (
                       <div className="mb-8">
-                        <div className="text-xs font-semi" style={{ color: "var(--amber)", marginBottom: "var(--space-1)" }}>{t("Issues / Delays")}</div>
+                        <div className="text-xs font-semi mb-sp1 c-amber">{t("Issues / Delays")}</div>
                         <div className="text-sm frm-pre-wrap">{r.issues}</div>
                       </div>
                     )}
                     {r.tomorrowPlan && (
                       <div className="mb-8">
-                        <div className="text-xs font-semi" style={{ color: "var(--accent)", marginBottom: "var(--space-1)" }}>{t("Tomorrow's Plan")}</div>
+                        <div className="text-xs font-semi mb-sp1" style={{ color: "var(--accent)" }}>{t("Tomorrow's Plan")}</div>
                         <div className="text-sm frm-pre-wrap">{r.tomorrowPlan}</div>
                       </div>
                     )}
@@ -507,11 +585,11 @@ export function DailyReportTab({
                     {/* Photos */}
                     {r.photos && r.photos.length > 0 && (
                       <div className="mb-8">
-                        <div className="text-xs font-semi" style={{ color: "var(--text2)", marginBottom: "var(--space-1)" }}>{t("Photos")} ({r.photos.length})</div>
-                        <div className="frm-flex-wrap" style={{ gap: "var(--space-2)" }}>
+                        <div className="text-xs font-semi mb-sp1 c-text2">{t("Photos")} ({r.photos.length})</div>
+                        <div className="frm-flex-wrap gap-sp2">
                           {r.photos.map((p, i) => (
                             <img key={i} src={p.data || p} alt={`Photo ${i + 1}`}
-                              className="frm-report-photo" style={{ cursor: "pointer" }}
+                              className="frm-report-photo cursor-pointer"
                               onClick={() => window.open(p.data || p, "_blank")} />
                           ))}
                         </div>
@@ -585,7 +663,7 @@ export function DailyReportTab({
                         }}>
                         {t("Copy to Clipboard")}
                       </button>
-                      <button className="btn btn-sm" style={{ fontSize: "var(--text-tab)", color: "var(--red)" }}
+                      <button className="btn btn-sm fs-tab c-red"
                         onClick={() => {
                           if (confirm(t("Delete this daily report?"))) {
                             setDailyReports(prev => prev.map(rp => rp.id === r.id ? { ...rp, status: "deleted", deletedAt: new Date().toISOString(), deletedBy: activeForeman?.name || "Foreman" } : rp));

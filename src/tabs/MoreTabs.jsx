@@ -66,7 +66,7 @@ function AttachmentsInput({ app, form, setForm }) {
 function AuditHistory({ audit }) {
   if (!audit || audit.length === 0) return null;
   return (
-    <div className="mt-8 p-8 fs-10" style={{ borderRadius: "var(--radius-control)", background: "var(--bg3)" }}>
+    <div className="mt-8 p-8 fs-10 rounded-control bg-bg3">
       <div className="fw-600 mb-3">Change History ({audit.length})</div>
       {audit.slice().reverse().slice(0, 10).map((a, i) => (
         <div key={i} className="more-list-row">
@@ -349,7 +349,7 @@ function InvoicesTab({ app }) {
           </div>
           <AttachmentsInput app={app} form={form} setForm={setForm} />
           {invoiceErrors.length > 0 && (
-            <div className="mt-8" style={{ color: "var(--red)", fontSize: "var(--fs-11)" }}>
+            <div className="mt-8 fs-tab c-red">
               {invoiceErrors.map((err, i) => <div key={i}>• {err}</div>)}
             </div>
           )}
@@ -711,7 +711,7 @@ function ChangeOrdersTab({ app }) {
           </div>
 
           {coErrors.length > 0 && (
-            <div className="mt-8" style={{ color: "var(--red)", fontSize: "var(--fs-11)" }}>
+            <div className="mt-8 fs-tab c-red">
               {coErrors.map((err, i) => <div key={i}>• {err}</div>)}
             </div>
           )}
@@ -1124,7 +1124,7 @@ function TmTicketsTab({ app }) {
               </table>
             </div>
           ) : (
-            <div className="text-sm text-muted mt-16" style={{ textAlign: "center", padding: "var(--space-4)" }}>
+            <div className="text-sm text-muted mt-16 p-sp4 text-center">
               {genProject ? "No T&M-flagged entries for this project and date range. Flag entries in Time Clock > Time Log first." : "Select a project to see flagged entries."}
             </div>
           )}
@@ -1517,7 +1517,7 @@ function JobCostingTab({ app }) {
                   ].map((kpi, i) => (
                     <div key={i} className="more-metric-card--p10">
                       <div className="text-xs text-muted">{kpi.label}</div>
-                      <div style={{ fontSize: "var(--text-card)", fontWeight: "var(--weight-bold)", color: kpi.color || "var(--amber)", marginTop: "var(--space-1)" }}>{kpi.val}</div>
+                      <div className="fw-bold fs-card mt-sp1" style={{ color: kpi.color || "var(--amber)" }}>{kpi.val}</div>
                     </div>
                   ))}
                 </div>
@@ -1618,14 +1618,14 @@ function JobCostingTab({ app }) {
               <div><span className="text2">Remaining</span><br />{app.fmt(remaining)}</div>
             </div>
             {/* Full Cost Breakdown */}
-            <div style={{ marginTop: "var(--space-2)", padding: "var(--space-2) var(--space-3)", background: "var(--bg3)", borderRadius: "var(--radius-control)" }}>
-              <div className="text-xs fw-600 mb-4" style={{ color: "var(--text2)" }}>Cost Breakdown</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "var(--space-2)", fontSize: "var(--fs-11)" }}>
+            <div className="rounded-control mt-sp2 bg-bg3" style={{ padding: "var(--space-2) var(--space-3)" }}>
+              <div className="text-xs fw-600 mb-4 c-text2">Cost Breakdown</div>
+              <div className="fs-tab gap-sp2 d-grid" style={{ gridTemplateColumns: "repeat(5, 1fr)" }}>
                 <div><span className="text2">Labor{(app.companySettings?.laborBurdenMultiplier || DEFAULT_BURDEN) > 1 ? " (burdened)" : ""}</span><br /><span className="font-mono text-amber">{app.fmt(costData.labor)}</span></div>
                 <div><span className="text2">Material</span><br /><span className="font-mono">{app.fmt(costData.material)}</span></div>
                 <div><span className="text2">Subcontractor</span><br /><span className="font-mono">{app.fmt(costData.subcontractor)}</span></div>
                 <div><span className="text2">Other</span><br /><span className="font-mono">{app.fmt(costData.otherAP)}</span></div>
-                <div><span className="text2 fw-600">Total Cost</span><br /><span className="font-mono fw-600" style={{ color: "var(--amber)" }}>{app.fmt(totalCost)}</span></div>
+                <div><span className="text2 fw-600">Total Cost</span><br /><span className="font-mono fw-600 c-amber">{app.fmt(totalCost)}</span></div>
               </div>
             </div>
             {/* Gross Margin */}
@@ -1637,7 +1637,7 @@ function JobCostingTab({ app }) {
             </div>
             {/* Cost Code Breakdown */}
             {costData.laborHours > 0 && (
-              <div style={{ marginTop: "var(--space-2)" }}>
+              <div className="mt-sp2">
                 <button className="btn btn-ghost btn-sm" style={{ fontSize: "var(--fs-10)" }}
                   onClick={() => setExpandedCostCodes(prev => ({ ...prev, [proj.id]: !prev[proj.id] }))}>
                   {expandedCostCodes[proj.id] ? "Hide" : "Show"} Cost Code Breakdown
@@ -1645,7 +1645,7 @@ function JobCostingTab({ app }) {
                 {expandedCostCodes[proj.id] && (() => {
                   const codes = getCostCodeBreakdown(proj.id, proj.name);
                   return codes.length > 0 ? (
-                    <table className="data-table mt-8" style={{ fontSize: "var(--fs-11)" }}>
+                    <table className="data-table mt-8 fs-tab">
                       <thead><tr><th>Cost Code</th><th className="num">Hours</th><th className="num">Cost</th></tr></thead>
                       <tbody>
                         {codes.map(([code, data]) => (
@@ -1882,7 +1882,7 @@ function AgingReportTab({ app }) {
     <div className="card mt-16">
       <div className="flex-between">
         <div className="card-title" style={{ color }}>{label} ({items.length})</div>
-        <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", color }}>{app.fmt(sum(items))}</div>
+        <div className="fw-bold fs-card" style={{ color }}>{app.fmt(sum(items))}</div>
       </div>
       {items.length > 0 ? (
         <table className="data-table mt-8">
@@ -1927,7 +1927,7 @@ function PeriodWarning({ date, periods }) {
   const period = periods.find(p => p.period === derivedMonth);
   if (period && period.status === "closed") {
     return (
-      <div className="mt-4" style={{ color: "var(--amber)", fontSize: "var(--fs-11)" }}>
+      <div className="mt-4 fs-tab c-amber">
         ⚠ This date falls in a closed period ({derivedMonth}). Entry will require override.
       </div>
     );
@@ -2184,13 +2184,13 @@ function APBillsTab({ app }) {
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Phase {form.costType && form.costType !== "labor" ? <span style={{ color: "var(--red)" }}>*</span> : null}</label>
+              <label className="form-label">Phase {form.costType && form.costType !== "labor" ? <span className="c-red">*</span> : null}</label>
               <select className="form-select" value={form.phase} onChange={e => setForm({ ...form, phase: e.target.value })}>
                 <option value="">Select phase...</option>
                 {COST_CODES.map(cc => <option key={cc.code || cc} value={cc.code || cc}>{cc.code ? `${cc.code} — ${cc.label || cc.description || cc.code}` : cc}</option>)}
               </select>
               {form.costType && form.costType !== "labor" && !form.phase && (
-                <div className="text-xs" style={{ color: "var(--text2)" }}>Required for non-labor bills so they roll up against the budget phase.</div>
+                <div className="text-xs c-text2">Required for non-labor bills so they roll up against the budget phase.</div>
               )}
             </div>
             <div className="form-group">
@@ -2230,7 +2230,7 @@ function APBillsTab({ app }) {
           </div>
           <AttachmentsInput app={app} form={form} setForm={setForm} />
           {billErrors.length > 0 && (
-            <div className="mt-8" style={{ color: "var(--red)", fontSize: "var(--fs-11)" }}>
+            <div className="mt-8 fs-tab c-red">
               {billErrors.map((err, i) => <div key={i}>• {err}</div>)}
             </div>
           )}
@@ -2373,7 +2373,7 @@ function APBillsTab({ app }) {
           <div key={label} className="card mt-16">
             <div className="flex-between">
               <div className="card-title" style={{ color }}>{label} ({items.length})</div>
-              <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", color }}>{app.fmt(sum(items))}</div>
+              <div className="fw-bold fs-card" style={{ color }}>{app.fmt(sum(items))}</div>
             </div>
             {items.length > 0 ? (
               <table className="data-table mt-8">
@@ -2788,7 +2788,7 @@ function CommitmentsTab({ app }) {
             <input className="form-input" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="e.g. Tape and finish scope — Project Name" />
           </div>
           {errors.length > 0 && (
-            <div className="mt-8" style={{ color: "var(--red)", fontSize: "var(--fs-11)" }}>
+            <div className="mt-8 fs-tab c-red">
               {errors.map((e, i) => <div key={i}>• {e}</div>)}
             </div>
           )}
@@ -3209,7 +3209,7 @@ function PeriodCloseTab({ app }) {
               <input className="form-input" value={accrualForm.description} onChange={e => setAccrualForm({ ...accrualForm, description: e.target.value })} />
             </div>
             {accrualErrors.length > 0 && (
-              <div className="mt-8" style={{ color: "var(--red)", fontSize: "var(--fs-11)" }}>
+              <div className="mt-8 fs-tab c-red">
                 {accrualErrors.map((err, i) => <div key={i}>• {err}</div>)}
               </div>
             )}
@@ -3245,7 +3245,7 @@ function PeriodCloseTab({ app }) {
       {/* Cutoff Report */}
       {cutoffItems.length > 0 && (
         <div className="mt-24">
-          <div className="section-title" style={{ color: "var(--red)" }}>⚠ Cutoff Report — Entries Posted After Period Close</div>
+          <div className="section-title c-red">⚠ Cutoff Report — Entries Posted After Period Close</div>
           <div className="text-xs text-dim mb-8">These entries have dates in a closed period but were created after the period was closed. Review for correctness.</div>
           <div className="table-wrap">
             <table className="data-table">
@@ -3464,7 +3464,7 @@ function BudgetTab({ app }) {
                     </td>
                   </tr>
                 ))}
-                <tr style={{ borderTop: "2px solid var(--border)", fontWeight: "var(--weight-bold)" }}>
+                <tr className="fw-bold" style={{ borderTop: "2px solid var(--border)" }}>
                   <td colSpan={2}>TOTAL</td>
                   <td className="font-mono">{app.fmt(totals.budget)}</td>
                   <td className="font-mono">{app.fmt(Math.round(totals.actual))}</td>
@@ -3670,7 +3670,7 @@ function FinReportsTab({ app }) {
                 </td>
               </tr>
             ))}
-            <tr style={{ borderTop: "2px solid var(--border)", fontWeight: "var(--weight-bold)" }}>
+            <tr className="fw-bold" style={{ borderTop: "2px solid var(--border)" }}>
               <td>TOTAL</td>
               <td className="font-mono">{app.fmt(projectMetrics.reduce((s, m) => s + (m.p.contract || 0), 0))}</td>
               <td className="font-mono">{app.fmt(totals.contract)}</td>
@@ -3752,7 +3752,7 @@ function FinReportsTab({ app }) {
         {/* Drill-down lists for the alerts with items */}
         {lowMargin.length > 0 && (
           <div className="mt-16">
-            <div className="text-sm fw-600 mb-8" style={{ color: "var(--red)" }}>Low Margin Projects ({lowMargin.length})</div>
+            <div className="text-sm fw-600 mb-8 c-red">Low Margin Projects ({lowMargin.length})</div>
             <div className="table-wrap">
               <table className="data-table">
                 <thead><tr><th>Project</th><th>Contract</th><th>Cost</th><th>Margin %</th></tr></thead>
@@ -3773,14 +3773,14 @@ function FinReportsTab({ app }) {
 
         {missingW9.length > 0 && (
           <div className="mt-16">
-            <div className="text-sm fw-600 mb-8" style={{ color: "var(--red)" }}>Vendors Missing W-9 ({missingW9.length})</div>
+            <div className="text-sm fw-600 mb-8 c-red">Vendors Missing W-9 ({missingW9.length})</div>
             <ul className="text-sm">{missingW9.map(v => <li key={v.id}>• {v.name} — status: {v.w9Status}</li>)}</ul>
           </div>
         )}
 
         {unapprovedBills.length > 0 && (
           <div className="mt-16">
-            <div className="text-sm fw-600 mb-8" style={{ color: "var(--amber)" }}>Unapproved AP Bills ({unapprovedBills.length})</div>
+            <div className="text-sm fw-600 mb-8 c-amber">Unapproved AP Bills ({unapprovedBills.length})</div>
             <div className="table-wrap">
               <table className="data-table">
                 <thead><tr><th>Vendor</th><th>Invoice #</th><th>Date</th><th>Amount</th></tr></thead>
@@ -4513,7 +4513,7 @@ function SubmittalsTab({ app }) {
                         <div className="mb-12">
                           <div className="text-sm font-semi mb-8">Recommendations</div>
                           {reviewResult.recommendations.map((r, i) => (
-                            <div key={i} style={{ padding: "var(--space-1) 0", fontSize: "var(--text-label)", borderBottom: "1px solid var(--border)" }}>{r}</div>
+                            <div key={i} className="border-b fs-label" style={{ padding: "var(--space-1) 0" }}>{r}</div>
                           ))}
                         </div>
                       )}
@@ -4841,7 +4841,7 @@ function Schedule({ app }) {
                       {laborResult.weeklyForecast.map((w, i) => (
                         <tr key={i}>
                           <td className="font-semi">{w.week}</td>
-                          <td style={{ fontWeight: "var(--weight-bold)", color: "var(--amber)" }}>{w.teamsNeeded}</td>
+                          <td className="fw-bold c-amber">{w.teamsNeeded}</td>
                           <td>{w.hoursEstimate}h</td>
                           <td className="fs-12">{(w.projects || []).join(", ")}</td>
                           <td style={{ fontSize: "var(--text-label)", color: w.bottleneck ? "var(--red)" : "var(--text3)" }}>{w.bottleneck || "None"}</td>
@@ -5126,10 +5126,10 @@ function Schedule({ app }) {
                   <td>{task.team || "—"}</td>
                   <td>{task.start}</td>
                   <td>{task.end}</td>
-                  <td style={{ fontSize: "var(--text-tab)", color: "var(--text2)" }}>{pred ? pred.task : "—"}</td>
+                  <td className="fs-tab c-text2">{pred ? pred.task : "—"}</td>
                   <td><span className={task.status === "complete" ? "badge-green" : task.status === "in-progress" ? "badge-amber" : "badge-muted"}>{task.status}</span></td>
                   <td className="more-edit-actions">
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: "var(--text-tab)", padding: "var(--space-1) var(--space-2)" }}
+                    <button className="btn btn-ghost btn-sm fs-tab" style={{ padding: "var(--space-1) var(--space-2)" }}
                       onClick={() => { setEditTaskId(task.id); setEditTask({ task: task.task, projectId: task.projectId, team: task.team || "", start: task.start, end: task.end, status: task.status, predecessorId: task.predecessorId || "" }); }}>✎</button>
                     <button className="btn btn-ghost btn-sm btn-table-delete"
                       onClick={() => { if (confirm("Delete this task?")) { app.setSchedule(prev => prev.filter(t => t.id !== task.id)); app.show("Task deleted"); } }}>✕</button>
@@ -5423,13 +5423,13 @@ function Reports({ app }) {
               {reportSummary.strengths?.length > 0 && (
                 <div className="more-info-card--green">
                   <div className="text-sm font-semi mb-8 text-green">Strengths</div>
-                  {reportSummary.strengths.map((s, i) => <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-1) 0" }}>{s}</div>)}
+                  {reportSummary.strengths.map((s, i) => <div key={i} className="fs-label" style={{ padding: "var(--space-1) 0" }}>{s}</div>)}
                 </div>
               )}
               {reportSummary.concerns?.length > 0 && (
                 <div className="more-info-card--red">
                   <div className="text-sm font-semi mb-8 text-red">Concerns</div>
-                  {reportSummary.concerns.map((c, i) => <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-1) 0" }}>{c}</div>)}
+                  {reportSummary.concerns.map((c, i) => <div key={i} className="fs-label" style={{ padding: "var(--space-1) 0" }}>{c}</div>)}
                 </div>
               )}
             </div>
@@ -5454,7 +5454,7 @@ function Reports({ app }) {
 
             {/* Forecast */}
             {reportSummary.forecast && (
-              <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "var(--bg3)", marginBottom: "var(--space-3)", fontSize: "var(--text-label)" }}>
+              <div className="rounded-control mb-sp3 fs-label p-sp3 bg-bg3">
                 <div className="font-semi mb-4">Near-Term Forecast</div>
                 {reportSummary.forecast}
               </div>
@@ -5556,7 +5556,7 @@ function Reports({ app }) {
                 <span className="bar-label">{proj.name}</span>
                 <span className="bar-value text2">{app.fmt(billed)} / {app.fmt(proj.contract)} ({app.fmt(remaining)} remaining)</span>
               </div>
-              <div className="bar-track" style={{ height: 14, background: "var(--bg4)", borderRadius: "var(--radius-control)", marginTop: "var(--space-1)" }}>
+              <div className="bar-track rounded-control mt-sp1 bg-bg4" style={{ height: 14 }}>
                 <div className="bar-fill" style={{ width: `${Math.min(pct, 100)}%`, height: "100%", background: "var(--amber)", borderRadius: "var(--radius-control)" }} />
               </div>
             </div>
@@ -5700,7 +5700,7 @@ function IncidentsTab({ app }) {
               <div className="flex gap-4 mt-6">
                 {form.photos.map((p, i) => (
                   <div key={i} className="pos-relative">
-                    <img src={p.data} alt={p.name} style={{ width: 50, height: 50, objectFit: "cover", borderRadius: "var(--radius-control)" }} />
+                    <img src={p.data} alt={p.name} className="rounded-control" style={{ width: 50, height: 50, objectFit: "cover" }} />
                     <button className="more-photo-remove"
                       onClick={() => setForm(prev => ({ ...prev, photos: prev.photos.filter((_, j) => j !== i) }))}>✕</button>
                   </div>
@@ -5756,9 +5756,9 @@ function IncidentsTab({ app }) {
                         <div className="mb-12">
                           <div className="text-sm font-semi mb-4">Contributing Factors</div>
                           {rcaResult.contributingFactors.map((f, i) => (
-                            <div key={i} style={{ padding: "var(--space-1) var(--space-3)", marginBottom: "var(--space-1)", borderRadius: "var(--radius-control)", background: "var(--card)", fontSize: "var(--text-label)", borderLeft: "3px solid var(--amber)" }}>
+                            <div key={i} className="rounded-control mb-sp1 fs-label" style={{ padding: "var(--space-1) var(--space-3)", background: "var(--card)", borderLeft: "3px solid var(--amber)" }}>
                               <span className="font-semi">{f.factor}</span>
-                              <span className="badge-muted" style={{ marginLeft: "var(--space-2)", fontSize: "var(--text-xs)" }}>{f.category}</span>
+                              <span className="badge-muted ml-sp2 fs-xs">{f.category}</span>
                               <div className="text-xs text-muted mt-2">{f.detail}</div>
                             </div>
                           ))}
@@ -5783,7 +5783,7 @@ function IncidentsTab({ app }) {
 
                       {/* OSHA + Pattern */}
                       {rcaResult.oshaRelevance && (
-                        <div style={{ padding: "var(--space-2)", borderRadius: "var(--radius-control)", background: "var(--card)", border: "1px solid var(--border)", marginBottom: "var(--space-2)", fontSize: "var(--text-label)" }}>
+                        <div className="rounded-control mb-sp2 fs-label p-sp2" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
                           <span className="font-semi">OSHA: </span>{rcaResult.oshaRelevance}
                         </div>
                       )}
@@ -5922,7 +5922,7 @@ function ToolboxTalksTab({ app }) {
               {/* Content Sections */}
               {genResult.content?.map((section, i) => (
                 <div key={i} className="more-talk-section">
-                  <div className="font-semi" style={{ marginBottom: "var(--space-2)", color: "var(--amber)" }}>{section.heading}</div>
+                  <div className="font-semi mb-sp2 c-amber">{section.heading}</div>
                   {section.points.map((p, j) => (
                     <div key={j} className="more-talk-point">• {p}</div>
                   ))}
@@ -5934,7 +5934,7 @@ function ToolboxTalksTab({ app }) {
                 <div className="mb-12">
                   <div className="text-sm font-semi mb-4">Discussion Questions</div>
                   {genResult.discussion.map((q, i) => (
-                    <div key={i} style={{ padding: "var(--space-1) 0", fontSize: "var(--text-label)", fontStyle: "italic" }}>{i + 1}. {q}</div>
+                    <div key={i} className="fs-label" style={{ padding: "var(--space-1) 0", fontStyle: "italic" }}>{i + 1}. {q}</div>
                   ))}
                 </div>
               )}
@@ -6041,7 +6041,7 @@ function ToolboxTalksTab({ app }) {
                     <td>{talk.conductor}</td>
                     <td><div className="flex gap-4">
                       <button className="btn btn-ghost btn-sm btn-table-save" onClick={() => setEditId(talk.id)}>Edit</button>
-                      <button className="btn btn-ghost btn-sm" style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", color: "var(--red)" }} onClick={() => { if (confirm("Delete this talk?")) { app.setToolboxTalks(prev => prev.filter(t => t.id !== talk.id)); app.show("Talk deleted"); } }}>✕</button>
+                      <button className="btn btn-ghost btn-sm fs-xs c-red" style={{ padding: "var(--space-1) var(--space-2)" }} onClick={() => { if (confirm("Delete this talk?")) { app.setToolboxTalks(prev => prev.filter(t => t.id !== talk.id)); app.show("Talk deleted"); } }}>✕</button>
                     </div></td>
                   </>
                 )}
@@ -6175,13 +6175,13 @@ function DailyReportsTab({ app }) {
           {/* Notes Row */}
           <div className="more-dr-detail-grid">
             {digestResult.laborNotes && (
-              <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "var(--card)", border: "1px solid var(--border)", fontSize: "var(--text-label)" }}>
+              <div className="rounded-control fs-label p-sp3" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
                 <div className="font-semi mb-4 fs-12">Labor</div>
                 {digestResult.laborNotes}
               </div>
             )}
             {digestResult.materialNotes && (
-              <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "var(--card)", border: "1px solid var(--border)", fontSize: "var(--text-label)" }}>
+              <div className="rounded-control fs-label p-sp3" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
                 <div className="font-semi mb-4 fs-12">Materials</div>
                 {digestResult.materialNotes}
               </div>
@@ -6196,7 +6196,7 @@ function DailyReportsTab({ app }) {
 
           {digestResult.safetyNotes?.length > 0 && (
             <div className="mt-8">
-              <div className="font-semi mb-4" style={{ fontSize: "var(--text-label)", color: "var(--red)" }}>Safety</div>
+              <div className="font-semi mb-4 fs-label c-red">Safety</div>
               {digestResult.safetyNotes.map((s, i) => <div key={i} className="fs-12">{s}</div>)}
             </div>
           )}
@@ -6271,7 +6271,7 @@ function DailyReportsTab({ app }) {
               <div className="more-photo-grid">
                 {form.photos.map((p, i) => (
                   <div key={i} className="pos-relative">
-                    <img src={p.data} alt={p.name} style={{ height: 60, borderRadius: "var(--radius-control)", objectFit: "cover" }} />
+                    <img src={p.data} alt={p.name} className="rounded-control" style={{ height: 60, objectFit: "cover" }} />
                     <button className="more-photo-remove"
                       onClick={() => setForm(prev => ({ ...prev, photos: prev.photos.filter((_, j) => j !== i) }))}>✕</button>
                   </div>
@@ -6312,7 +6312,7 @@ function DailyReportsTab({ app }) {
                 <strong>{rpt.date} — {pName(rpt.projectId)}</strong>
                 <div className="flex gap-8">
                   <span className="text2">{rpt.weather}</span>
-                  <button className="btn btn-ghost btn-sm" style={{ fontSize: "var(--text-tab)", padding: "var(--space-1) var(--space-2)" }} onClick={() => setEditDr({ ...rpt })}>Edit</button>
+                  <button className="btn btn-ghost btn-sm fs-tab" style={{ padding: "var(--space-1) var(--space-2)" }} onClick={() => setEditDr({ ...rpt })}>Edit</button>
                   <button className="btn btn-ghost btn-sm btn-table-delete"
                     onClick={() => { if (confirm("Delete this daily report?")) { app.setDailyReports(prev => prev.filter(r => r.id !== rpt.id)); app.show("Report deleted"); } }}>✕</button>
                 </div>
@@ -6327,7 +6327,7 @@ function DailyReportsTab({ app }) {
               {rpt.photos?.length > 0 && (
                 <div className="more-photo-grid">
                   {rpt.photos.map((p, i) => (
-                    <img key={i} src={p.data} alt={p.name || "photo"} style={{ height: 80, borderRadius: "var(--radius-control)", objectFit: "cover", cursor: "pointer", border: "1px solid var(--border)" }}
+                    <img key={i} src={p.data} alt={p.name || "photo"} className="rounded-control cursor-pointer" style={{ height: 80, objectFit: "cover", border: "1px solid var(--border)" }}
                       onClick={() => window.open(p.data, "_blank")} title="Click to view full size" />
                   ))}
                 </div>
@@ -6399,11 +6399,11 @@ function OshaChecklistTab({ app }) {
             <div className="mt-8">
               {/* Score + Grade */}
               <div className="more-grid-2">
-                <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "var(--card)", textAlign: "center" }}>
+                <div className="rounded-control p-sp3 text-center" style={{ background: "var(--card)" }}>
                   <div className="text-xs text-muted">Readiness Score</div>
                   <div style={{ fontSize: "var(--text-title)", fontWeight: "var(--weight-bold)", color: auditResult.readinessScore >= 80 ? "var(--green)" : auditResult.readinessScore >= 60 ? "var(--amber)" : "var(--red)" }}>{auditResult.readinessScore}/100</div>
                 </div>
-                <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "var(--card)", textAlign: "center" }}>
+                <div className="rounded-control p-sp3 text-center" style={{ background: "var(--card)" }}>
                   <div className="text-xs text-muted">Grade</div>
                   <div style={{ fontSize: "var(--text-title)", fontWeight: "var(--weight-bold)", color: auditResult.grade === "A" || auditResult.grade === "B" ? "var(--green)" : auditResult.grade === "C" ? "var(--amber)" : "var(--red)" }}>{auditResult.grade}</div>
                 </div>
@@ -6446,7 +6446,7 @@ function OshaChecklistTab({ app }) {
 
               {/* Strengths */}
               {auditResult.strengths?.length > 0 && (
-                <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "rgba(16,185,129,0.08)", border: "1px solid var(--green)", marginBottom: "var(--space-3)" }}>
+                <div className="rounded-control mb-sp3 p-sp3" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid var(--green)" }}>
                   <div className="font-semi mb-4 text-green">Strengths</div>
                   {auditResult.strengths.map((s, i) => <div key={i} className="more-talk-point">✓ {s}</div>)}
                 </div>
@@ -6561,7 +6561,7 @@ function CertificationsTab({ app }) {
   const matrixEmps = users.filter(u => !["driver"].includes(u.role)); // field-relevant roles
 
   const statusBadge = (s) => s === "valid" ? "badge-green" : s === "expiring" ? "badge-amber" : "badge-red";
-  const statusIcon = (s) => s === "valid" ? <CheckCircle size={14} style={{ color: "var(--green)" }} /> : s === "expiring" ? <AlertTriangle size={14} style={{ color: "var(--amber)" }} /> : <AlertOctagon size={14} style={{ color: "var(--red)" }} />;
+  const statusIcon = (s) => s === "valid" ? <CheckCircle size={14} className="c-green" /> : s === "expiring" ? <AlertTriangle size={14} className="c-amber" /> : <AlertOctagon size={14} className="c-red" />;
 
   return (
     <div className="mt-16">
@@ -6990,8 +6990,7 @@ function SDSBinder({ app }) {
         <div className="mt-16">
           <div className="mb-16">
             <input
-              className="form-input"
-              style={{ fontSize: "var(--text-section)", padding: "var(--space-4) var(--space-4)", textAlign: "center" }}
+              className="form-input fs-section text-center" style={{ padding: "var(--space-4) var(--space-4)" }}
               placeholder="Type product name or manufacturer..."
               value={search} onChange={e => setSearch(e.target.value)}
               autoFocus
@@ -7268,7 +7267,7 @@ function EquipmentTab({ app }) {
                 <td className="more-eq-td font-mono">${eq.weeklyRate}</td>
                 <td className="more-eq-td font-mono">${eq.monthlyRate}</td>
                 <td className="more-eq-td">
-                  <span style={{ color: statusColor(eq.status), fontWeight: "var(--weight-semi)" }}>{eq.status}</span>
+                  <span className="fw-semi" style={{ color: statusColor(eq.status) }}>{eq.status}</span>
                 </td>
                 <td style={{ padding: "var(--space-2) var(--space-3)", color: eq.assignedProject ? "var(--text)" : "var(--text3)" }}>
                   {eq.assignedProject || "--"}
@@ -7352,7 +7351,7 @@ function MarginTiersTab({ app }) {
           <div key={tc.key} className="card" style={{ padding: "var(--space-5)", borderLeft: `4px solid ${tc.color}`, background: tc.bg }}>
             <div className="flex-center-gap-8 mb-12">
               <div style={{ width: 12, height: 12, borderRadius: "50%", background: tc.color }} />
-              <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", color: tc.color }}>{tc.label}</div>
+              <div className="fw-bold fs-card" style={{ color: tc.color }}>{tc.label}</div>
             </div>
             <div className="form-group mb-12">
               <label className="form-label">Minimum Margin (%)</label>
@@ -7384,7 +7383,7 @@ function MarginTiersTab({ app }) {
         <div className="mt-12 flex gap-16 flex-wrap">
           {TIER_CONFIG.map(tc => (
             <div key={tc.key} className="fs-13">
-              <span style={{ color: tc.color, fontWeight: "var(--weight-bold)" }}>{tc.label}:</span>{" "}
+              <span className="fw-bold" style={{ color: tc.color }}>{tc.label}:</span>{" "}
               <span className="font-mono">{tiers[tc.key]}%+</span>
             </div>
           ))}
@@ -7521,17 +7520,17 @@ function InstallGuide() {
     <div className="mt-16">
       <div className="section-title">Install App</div>
       <div className="card mt-8 p-16">
-        <div style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-3)" }}>
+        <div className="mb-sp3 fs-label c-text2">
           Install EBC-OS on your device for offline access and instant launch.
         </div>
         <button className="btn btn-ghost btn-sm" onClick={() => setExpanded(!expanded)}>
           {expanded ? "Hide Guide" : "Show Install Guide"}
         </button>
         {expanded && (
-          <div style={{ marginTop: "var(--space-4)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div className="flex-col mt-sp4 gap-sp4">
             <div>
-              <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", marginBottom: "var(--space-2)", color: "var(--text)" }}>iPhone / iPad</div>
-              <ol style={{ fontSize: "var(--text-label)", color: "var(--text2)", paddingLeft: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              <div className="fw-bold mb-sp2 fs-card c-text">iPhone / iPad</div>
+              <ol className="flex-col fs-label c-text2 gap-sp2" style={{ paddingLeft: "var(--space-5)" }}>
                 <li>Open <strong>Safari</strong> (must be Safari, not Chrome)</li>
                 <li>Tap the <strong>Share</strong> button (square with arrow)</li>
                 <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
@@ -7540,8 +7539,8 @@ function InstallGuide() {
               </ol>
             </div>
             <div>
-              <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", marginBottom: "var(--space-2)", color: "var(--text)" }}>Android</div>
-              <ol style={{ fontSize: "var(--text-label)", color: "var(--text2)", paddingLeft: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              <div className="fw-bold mb-sp2 fs-card c-text">Android</div>
+              <ol className="flex-col fs-label c-text2 gap-sp2" style={{ paddingLeft: "var(--space-5)" }}>
                 <li>Open <strong>Chrome</strong></li>
                 <li>Tap the <strong>three-dot menu</strong> (top right)</li>
                 <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home Screen"</strong></li>
@@ -7550,8 +7549,8 @@ function InstallGuide() {
               </ol>
             </div>
             <div>
-              <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", marginBottom: "var(--space-2)", color: "var(--text)" }}>Computer (Chrome / Edge)</div>
-              <ol style={{ fontSize: "var(--text-label)", color: "var(--text2)", paddingLeft: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              <div className="fw-bold mb-sp2 fs-card c-text">Computer (Chrome / Edge)</div>
+              <ol className="flex-col fs-label c-text2 gap-sp2" style={{ paddingLeft: "var(--space-5)" }}>
                 <li>Open <strong>Chrome</strong> or <strong>Edge</strong></li>
                 <li>Click the <strong>install icon</strong> in the address bar (monitor with arrow)</li>
                 <li>Click <strong>"Install"</strong></li>
@@ -7667,7 +7666,7 @@ function NotificationSettings({ userId }) {
       <div className="section-title">Notifications</div>
       <div className="card mt-8 p-16">
         {permission !== "granted" && permission !== "unsupported" && (
-          <div style={{ marginBottom: "var(--space-3)", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", background: "rgba(224,148,34,0.1)", border: "1px solid rgba(224,148,34,0.3)", fontSize: "var(--text-label)" }}>
+          <div className="rounded-control mb-sp3 fs-label" style={{ padding: "var(--space-2) var(--space-3)", background: "rgba(224,148,34,0.1)", border: "1px solid rgba(224,148,34,0.3)" }}>
             Notifications are {permission === "denied" ? "blocked" : "not enabled"}.
             {permission === "default" && <button className="btn btn-sm ml-8" onClick={requestPerm}>Enable</button>}
           </div>
@@ -7691,7 +7690,7 @@ function NotificationSettings({ userId }) {
           <div className="more-toggle-row">
             <span className="fs-13 text-muted">Reminder time</span>
             <input type="time" value={prefs.dailyReportTime} onChange={e => setTime(e.target.value)}
-              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "var(--radius-control)", padding: "var(--space-1) var(--space-2)", color: "var(--text-primary)", fontSize: "var(--text-label)" }} />
+              className="rounded-control fs-label" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", padding: "var(--space-1) var(--space-2)", color: "var(--text-primary)" }} />
           </div>
         )}
         {"PushManager" in window && (
@@ -8203,7 +8202,7 @@ function UsersTab({ app }) {
                         <button className="btn btn-ghost btn-table-save" onClick={() => setEditId(null)}>{"\u2715"}</button>
                       </div>
                     ) : (
-                      <span className="badge badge-blue" style={{ cursor: "pointer", fontSize: "var(--text-xs)" }}
+                      <span className="badge badge-blue fs-xs cursor-pointer"
                         onClick={() => { setEditId(u.id); setEditRole(u.role); }} title="Click to change role">
                         {ROLES_IMPORT[u.role] || u.role}
                       </span>
@@ -8311,7 +8310,7 @@ function CompanyTab({ app }) {
 
       <div className="section-title mt-16">Company Logo</div>
       <div className="card mt-16 flex-center-gap-12">
-        {form.logoUrl && <img src={form.logoUrl} alt="Logo" style={{ maxHeight: 64, maxWidth: 200, borderRadius: "var(--radius-control)", objectFit: "contain" }} />}
+        {form.logoUrl && <img src={form.logoUrl} alt="Logo" className="rounded-control" style={{ maxHeight: 64, maxWidth: 200, objectFit: "contain" }} />}
         <div>
           <input type="file" accept="image/*" onChange={e => {
             const file = e.target.files?.[0];
@@ -8687,37 +8686,37 @@ function QuickBooksTab({ app }) {
 
       {/* Instructions Panel */}
       <div className="card" style={{ borderLeft: "3px solid var(--blue)" }}>
-        <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-secondary)", marginBottom: "var(--space-2)", color: "var(--text)" }}>How It Works</div>
-        <ol style={{ fontSize: "var(--text-label)", color: "var(--text2)", lineHeight: 1.8, paddingLeft: "var(--space-5)", margin: "0" }}>
+        <div className="fs-secondary fw-semi mb-sp2 c-text">How It Works</div>
+        <ol className="fs-label c-text2" style={{ lineHeight: 1.8, paddingLeft: "var(--space-5)", margin: "0" }}>
           <li>Map EBC-OS employee and project names to their <strong>exact</strong> QuickBooks Desktop names below.</li>
           <li>Export IIF files from <strong>Time Clock Admin</strong> (payroll) or <strong>Financials &gt; Invoices</strong>.</li>
           <li>Transfer the <code>.iif</code> file to Anna's computer.</li>
           <li>In QB Desktop: <em>File &gt; Utilities &gt; Import &gt; IIF Files</em> and select the file.</li>
         </ol>
-        <div style={{ marginTop: "var(--space-3)", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", background: "var(--amber-dim)", fontSize: "var(--text-label)", color: "var(--amber)" }}>
+        <div className="rounded-control fs-label mt-sp3 c-amber" style={{ padding: "var(--space-2) var(--space-3)", background: "var(--amber-dim)" }}>
           QB imports fail silently if names don't match exactly (case-sensitive). Use the Test Export button below to verify.
         </div>
       </div>
 
       {/* Employee Mappings */}
       <div className="card mt-16">
-        <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-secondary)", marginBottom: "var(--space-1)", color: "var(--text)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+        <div className="flex fs-secondary fw-semi mb-sp1 gap-sp2 c-text">
           Employee Name Mapping
           <span style={{ fontWeight: "var(--weight-normal)", fontSize: "var(--text-label)", color: empMappedCount === employeeNames.length && employeeNames.length > 0 ? "var(--green)" : "var(--text2)" }}>
             {empMappedCount}/{employeeNames.length} mapped
           </span>
         </div>
-        <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-3)" }}>
+        <p className="mb-sp3 fs-label c-text2">
           Leave blank if the EBC name matches QB exactly. Only fill in names that differ.
         </p>
         {employeeNames.length === 0 ? (
-          <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", fontStyle: "italic" }}>No employees found. Add employees in the team roster.</p>
+          <p className="fs-label c-text2" style={{ fontStyle: "italic" }}>No employees found. Add employees in the team roster.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="data-table" style={{ width: "100%" }}>
+            <table className="data-table w-full">
               <thead><tr>
-                <th style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-label)", textAlign: "left" }}>EBC-OS Name</th>
-                <th style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-label)", textAlign: "left" }}>QB Desktop Name</th>
+                <th className="fs-label text-left" style={{ padding: "var(--space-2) var(--space-3)" }}>EBC-OS Name</th>
+                <th className="fs-label text-left" style={{ padding: "var(--space-2) var(--space-3)" }}>QB Desktop Name</th>
               </tr></thead>
               <tbody>
                 {employeeNames.map(name => <MappingRow key={name} type="employees" name={name} />)}
@@ -8729,23 +8728,23 @@ function QuickBooksTab({ app }) {
 
       {/* Project/Job Mappings */}
       <div className="card mt-16">
-        <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-secondary)", marginBottom: "var(--space-1)", color: "var(--text)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+        <div className="flex fs-secondary fw-semi mb-sp1 gap-sp2 c-text">
           Project / Job Mapping
           <span style={{ fontWeight: "var(--weight-normal)", fontSize: "var(--text-label)", color: jobMappedCount === projectNames.length && projectNames.length > 0 ? "var(--green)" : "var(--text2)" }}>
             {jobMappedCount}/{projectNames.length} mapped
           </span>
         </div>
-        <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-3)" }}>
+        <p className="mb-sp3 fs-label c-text2">
           Use the QB <code>Customer:Job</code> format (e.g. "Satterfield Properties:Memorial Heights Ph2").
         </p>
         {projectNames.length === 0 ? (
-          <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", fontStyle: "italic" }}>No projects yet.</p>
+          <p className="fs-label c-text2" style={{ fontStyle: "italic" }}>No projects yet.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="data-table" style={{ width: "100%" }}>
+            <table className="data-table w-full">
               <thead><tr>
-                <th style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-label)", textAlign: "left" }}>EBC-OS Name</th>
-                <th style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-label)", textAlign: "left" }}>QB Desktop Name (Customer:Job)</th>
+                <th className="fs-label text-left" style={{ padding: "var(--space-2) var(--space-3)" }}>EBC-OS Name</th>
+                <th className="fs-label text-left" style={{ padding: "var(--space-2) var(--space-3)" }}>QB Desktop Name (Customer:Job)</th>
               </tr></thead>
               <tbody>
                 {projectNames.map(name => <MappingRow key={name} type="jobs" name={name} />)}
@@ -8757,33 +8756,33 @@ function QuickBooksTab({ app }) {
 
       {/* QB Export Defaults */}
       <div className="card mt-16">
-        <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-secondary)", marginBottom: "var(--space-2)", color: "var(--text)" }}>QB Export Defaults</div>
-        <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-3)" }}>Default service and payroll item names used when generating IIF exports.</p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "var(--space-4)" }}>
+        <div className="fs-secondary fw-semi mb-sp2 c-text">QB Export Defaults</div>
+        <p className="mb-sp3 fs-label c-text2">Default service and payroll item names used when generating IIF exports.</p>
+        <div className="gap-sp4 d-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
           <div>
-            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>Payroll Item Name</label>
-            <input className="form-input" style={{ fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-2)", width: "100%" }}
+            <label className="mb-sp1 fs-label c-text2 d-block">Payroll Item Name</label>
+            <input className="form-input fs-label w-full" style={{ padding: "var(--space-1) var(--space-2)" }}
               value={mappings.payrollItem || ""}
               placeholder="Hourly Rate"
               onChange={e => save({ ...mappings, payrollItem: e.target.value || undefined })} />
           </div>
           <div>
-            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>Service Item (Invoices)</label>
-            <input className="form-input" style={{ fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-2)", width: "100%" }}
+            <label className="mb-sp1 fs-label c-text2 d-block">Service Item (Invoices)</label>
+            <input className="form-input fs-label w-full" style={{ padding: "var(--space-1) var(--space-2)" }}
               value={mappings.serviceItem || ""}
               placeholder="Drywall Labor"
               onChange={e => save({ ...mappings, serviceItem: e.target.value || undefined })} />
           </div>
           <div>
-            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>Income Account</label>
-            <input className="form-input" style={{ fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-2)", width: "100%" }}
+            <label className="mb-sp1 fs-label c-text2 d-block">Income Account</label>
+            <input className="form-input fs-label w-full" style={{ padding: "var(--space-1) var(--space-2)" }}
               value={mappings.incomeAccount || ""}
               placeholder="Construction Income"
               onChange={e => save({ ...mappings, incomeAccount: e.target.value || undefined })} />
           </div>
           <div>
-            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>A/R Account</label>
-            <input className="form-input" style={{ fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-2)", width: "100%" }}
+            <label className="mb-sp1 fs-label c-text2 d-block">A/R Account</label>
+            <input className="form-input fs-label w-full" style={{ padding: "var(--space-1) var(--space-2)" }}
               value={mappings.arAccount || ""}
               placeholder="Accounts Receivable"
               onChange={e => save({ ...mappings, arAccount: e.target.value || undefined })} />
@@ -8792,10 +8791,10 @@ function QuickBooksTab({ app }) {
       </div>
 
       {/* Test Export */}
-      <div className="card mt-16" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-3)" }}>
+      <div className="card mt-16 gap-sp3 flex-wrap" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-secondary)", color: "var(--text)" }}>Test Export</div>
-          <div style={{ fontSize: "var(--text-label)", color: "var(--text2)", maxWidth: 480 }}>
+          <div className="fs-secondary fw-semi c-text">Test Export</div>
+          <div className="fs-label c-text2" style={{ maxWidth: 480 }}>
             Generate a sample IIF file with dummy time entries to verify the format imports correctly into QB Desktop.
           </div>
         </div>
@@ -8807,7 +8806,7 @@ function QuickBooksTab({ app }) {
       {/* Reset */}
       <div className="card mt-16 flex-between">
         <div>
-          <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)", color: "var(--text)" }}>Reset All Mappings</div>
+          <div className="fw-semi fs-label c-text">Reset All Mappings</div>
           <div className="more-account-email">Clear all QB name mappings and defaults. Start fresh.</div>
         </div>
         <button className="btn btn-ghost btn-sm more-btn-logout"
@@ -8824,7 +8823,7 @@ function ThemeTab({ app }) {
   return (
     <div className="mt-16">
       <div className="section-title">Theme</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "var(--space-4)", marginTop: "var(--space-4)" }}>
+      <div className="mt-sp4 gap-sp4 d-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
         {Object.entries(THEMES).map(([key, theme]) => {
           const isActive = app.theme === key;
           return (
@@ -8840,13 +8839,13 @@ function ThemeTab({ app }) {
                 transition: "border-color 0.2s",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "center" }}>{
+              <div className="justify-center" style={{ display: "flex" }}>{
                 theme.icon === "building-2" ? <Building2 size={32} /> :
                 theme.icon === "moon" ? <Moon size={32} /> :
                 theme.icon === "sun" ? <Sun size={32} /> :
-                <span style={{ fontSize: "var(--text-stat)" }}>{theme.icon}</span>
+                <span className="fs-stat">{theme.icon}</span>
               }</div>
-              <div style={{ marginTop: "var(--space-2)", fontWeight: "var(--weight-semi)" }}>{theme.name}</div>
+              <div className="fw-semi mt-sp2">{theme.name}</div>
               {isActive && <div className="badge-green mt-8">Active</div>}
             </div>
           );
@@ -8926,10 +8925,10 @@ function ApiTab({ app }) {
       <div className="section-title mt-16">Features</div>
       <div className="card mt-16">
         <div className="fs-13">
-          <div style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
+          <div className="border-b" style={{ padding: "var(--space-2) 0" }}>
             <strong>Gmail Bid Sync</strong> — Analyze emails for bid information and auto-populate bid tracker
           </div>
-          <div style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
+          <div className="border-b" style={{ padding: "var(--space-2) 0" }}>
             <strong>AI Appreciation Emails</strong> — Draft thank-you emails based on project performance tiers
           </div>
           <div className="py-8">

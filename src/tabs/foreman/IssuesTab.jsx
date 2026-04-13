@@ -33,7 +33,7 @@ export function IssuesTab({ problems, setProblems, selectedProjectId, setShowRep
               {p.location && <div className="text-xs text-dim mb-4"><MapPin size={10} /> {p.location}</div>}
               <div className="flex-between">
                 <span className="text-xs text-dim">{p.reportedBy || t("Unknown")} · {new Date(p.reportedAt || p.createdAt).toLocaleDateString()}</span>
-                <button className="btn btn-sm badge-green" style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", border: "none", cursor: "pointer" }}
+                <button className="btn btn-sm badge-green fs-xs cursor-pointer" style={{ padding: "var(--space-1) var(--space-2)", border: "none" }}
                   onClick={() => setProblems(prev => prev.map(pr => pr.id === p.id ? { ...pr, status: "resolved", resolvedAt: new Date().toISOString() } : pr))}>
                   {t("Resolve")}
                 </button>
@@ -53,7 +53,7 @@ export function IssuesTab({ problems, setProblems, selectedProjectId, setShowRep
               {resolvedProblems.slice(0, 5).map(p => (
                 <div key={p.id} className="frm-resolved-row">
                   <span style={{ textDecoration: "line-through" }}>{p.category}: {(p.description || "").slice(0, 50)}</span>
-                  <span className="text-xs text-dim" style={{ marginLeft: "var(--space-2)" }}>{new Date(p.resolvedAt).toLocaleDateString()}</span>
+                  <span className="text-xs text-dim ml-sp2">{new Date(p.resolvedAt).toLocaleDateString()}</span>
                 </div>
               ))}
             </div>

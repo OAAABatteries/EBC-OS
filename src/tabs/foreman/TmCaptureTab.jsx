@@ -248,9 +248,9 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
   const grandTotal = laborTotal + matTotal;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+    <div className="flex-col gap-sp4">
       {/* ── Summary ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: "var(--space-2)" }}>
+      <div className="gap-sp2 d-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))" }}>
         <StatTile label={tr("Total Tickets")} value={projectTickets.length} t={t} />
         <StatTile label={tr("Drafts")} value={projectTickets.filter((t) => t.status === "draft").length} color="var(--text2)" t={t} />
         <StatTile label={tr("Submitted")} value={projectTickets.filter((t) => t.status === "submitted").length} color="var(--amber)" t={t} />
@@ -259,17 +259,17 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
 
       {/* ── New T&M button ── */}
       <FieldButton onClick={() => setShowForm(!showForm)} t={t}>
-        <Plus size={14} style={{ marginRight: "var(--space-1)" }} />
+        <Plus size={14} className="mr-sp1" />
         {tr("New T&M Ticket")}
       </FieldButton>
 
       {/* ── Create Form ── */}
       {showForm && (
         <FieldCard>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>{editingId ? tr("Edit T&M Ticket") : tr("New T&M Ticket")}</div>
+          <div className="flex-col gap-sp3">
+            <div className="fs-label fw-bold c-text">{editingId ? tr("Edit T&M Ticket") : tr("New T&M Ticket")}</div>
 
-            <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+            <div className="gap-sp2 flex-wrap" style={{ display: "flex" }}>
               <div style={{ flex: "1 1 120px" }}>
                 <FieldInput label={tr("Date")} type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} t={t} />
               </div>
@@ -313,14 +313,14 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
 
             {/* ── Labor Entries ── */}
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-2)", gap: "var(--space-2)", flexWrap: "wrap" }}>
-                <span style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-sm, 12px)", color: "var(--text2)", textTransform: "uppercase" }}>{tr("Labor")}</span>
-                <div style={{ display: "flex", gap: "var(--space-2)" }}>
-                  <FieldButton variant="ghost" onClick={openBulkCrew} t={t} style={{ padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-sm, 12px)" }}>
-                    <Plus size={12} style={{ marginRight: "var(--space-1)" }} />{tr("Add Crew")}
+              <div className="mb-sp2 gap-sp2 flex-wrap" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span className="fs-tab fw-bold uppercase c-text2">{tr("Labor")}</span>
+                <div className="gap-sp2" style={{ display: "flex" }}>
+                  <FieldButton variant="ghost" onClick={openBulkCrew} t={t} className="fs-tab" style={{ padding: "var(--space-1) var(--space-2)" }}>
+                    <Plus size={12} className="mr-sp1" />{tr("Add Crew")}
                   </FieldButton>
-                  <FieldButton variant="ghost" onClick={addLaborRow} t={t} style={{ padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-sm, 12px)" }}>
-                    <Plus size={12} style={{ marginRight: "var(--space-1)" }} />{tr("Add Row")}
+                  <FieldButton variant="ghost" onClick={addLaborRow} t={t} className="fs-tab" style={{ padding: "var(--space-1) var(--space-2)" }}>
+                    <Plus size={12} className="mr-sp1" />{tr("Add Row")}
                   </FieldButton>
                 </div>
               </div>
@@ -333,32 +333,32 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
                   .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
                 const selectedCount = Object.values(bulkCrewSelected).filter(Boolean).length;
                 return (
-                  <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", padding: "var(--space-3)", marginBottom: "var(--space-3)" }}>
-                    <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", textTransform: "uppercase", fontWeight: "var(--weight-bold)", marginBottom: "var(--space-2)" }}>
+                  <div className="rounded-control mb-sp3 p-sp3" style={{ background: "var(--surface2)", border: "1px solid var(--border)" }}>
+                    <div className="fw-bold mb-sp2 fs-tab uppercase c-text3">
                       {tr("Select crew")} ({selectedCount})
                     </div>
                     {pool.length === 0 ? (
-                      <div style={{ fontSize: "var(--text-sm, 12px)", color: "var(--text3)", padding: "var(--space-2)" }}>
+                      <div className="fs-tab p-sp2 c-text3">
                         {tr("All active employees are already on this ticket.")}
                       </div>
                     ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", maxHeight: 240, overflowY: "auto" }}>
+                      <div className="flex-col gap-sp1" style={{ maxHeight: 240, overflowY: "auto" }}>
                         {pool.map((e) => (
-                          <label key={e.id} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-2)", cursor: "pointer", fontSize: "var(--text-card)", color: "var(--text)" }}>
+                          <label key={e.id} className="flex fs-card p-sp2 gap-sp2 c-text cursor-pointer">
                             <input type="checkbox"
                               checked={!!bulkCrewSelected[e.id]}
                               onChange={(ev) => setBulkCrewSelected((prev) => ({ ...prev, [e.id]: ev.target.checked }))} />
                             <span>{e.name}</span>
-                            {e.role && <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>— {e.role}</span>}
+                            {e.role && <span className="fs-xs c-text3">— {e.role}</span>}
                           </label>
                         ))}
                       </div>
                     )}
-                    <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)", justifyContent: "flex-end" }}>
-                      <FieldButton variant="ghost" onClick={() => { setShowBulkCrew(false); setBulkCrewSelected({}); }} t={t} style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-sm, 12px)" }}>
+                    <div className="mt-sp3 gap-sp2" style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <FieldButton variant="ghost" onClick={() => { setShowBulkCrew(false); setBulkCrewSelected({}); }} t={t} className="fs-tab" style={{ padding: "var(--space-2) var(--space-3)" }}>
                         {tr("Cancel")}
                       </FieldButton>
-                      <FieldButton onClick={confirmBulkCrew} t={t} style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-sm, 12px)" }} disabled={selectedCount === 0}>
+                      <FieldButton onClick={confirmBulkCrew} t={t} className="fs-tab" style={{ padding: "var(--space-2) var(--space-3)" }} disabled={selectedCount === 0}>
                         {tr("Add")} {selectedCount > 0 ? `(${selectedCount})` : ""}
                       </FieldButton>
                     </div>
@@ -366,7 +366,7 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
                 );
               })()}
               {formLabor.map((row) => (
-                <div key={row.id} style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-2)", flexWrap: "wrap", alignItems: "flex-end" }}>
+                <div key={row.id} className="mb-sp2 gap-sp2 flex-wrap" style={{ display: "flex", alignItems: "flex-end" }}>
                   <div style={{ flex: "2 1 140px" }}>
                     <SearchableSelect
                       value={row.employeeName}
@@ -394,18 +394,18 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
                   <div style={{ flex: "2 1 140px" }}>
                     <FieldInput label={tr("Description")} value={row.description} onChange={(e) => updateLaborRow(row.id, "description", e.target.value)} t={t} />
                   </div>
-                  <button onClick={() => removeLaborRow(row.id)} style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", padding: "var(--space-1)" }}>
+                  <button onClick={() => removeLaborRow(row.id)} className="p-sp1 c-red cursor-pointer" style={{ background: "none", border: "none" }}>
                     <Trash2 size={14} />
                   </button>
                 </div>
               ))}
               {formLabor.length > 0 && showCost && (
-                <div style={{ textAlign: "right", fontSize: "var(--text-sm, 12px)", fontWeight: "var(--weight-bold)", color: "var(--text)" }}>
+                <div className="fs-tab fw-bold c-text text-right">
                   {tr("Labor Total")}: ${laborTotal.toFixed(2)}
                 </div>
               )}
               {formLabor.length > 0 && !showCost && (
-                <div style={{ textAlign: "right", fontSize: "var(--text-sm, 12px)", fontWeight: "var(--weight-bold)", color: "var(--text2)" }}>
+                <div className="fs-tab fw-bold c-text2 text-right">
                   {tr("Total Hours")}: {formLabor.reduce((s, r) => s + (r.hours || 0), 0).toFixed(1)}h
                 </div>
               )}
@@ -413,14 +413,14 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
 
             {/* ── Material Entries ── */}
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-2)" }}>
-                <span style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-sm, 12px)", color: "var(--text2)", textTransform: "uppercase" }}>{tr("Materials")}</span>
-                <FieldButton variant="ghost" onClick={addMaterialRow} t={t} style={{ padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-sm, 12px)" }}>
-                  <Plus size={12} style={{ marginRight: "var(--space-1)" }} />{tr("Add Row")}
+              <div className="mb-sp2" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span className="fs-tab fw-bold uppercase c-text2">{tr("Materials")}</span>
+                <FieldButton variant="ghost" onClick={addMaterialRow} t={t} className="fs-tab" style={{ padding: "var(--space-1) var(--space-2)" }}>
+                  <Plus size={12} className="mr-sp1" />{tr("Add Row")}
                 </FieldButton>
               </div>
               {formMaterials.map((row) => (
-                <div key={row.id} style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-2)", flexWrap: "wrap", alignItems: "flex-end" }}>
+                <div key={row.id} className="mb-sp2 gap-sp2 flex-wrap" style={{ display: "flex", alignItems: "flex-end" }}>
                   <div style={{ flex: "2 1 140px" }}>
                     <FieldInput label={tr("Item")} value={row.item} onChange={(e) => updateMaterialRow(row.id, "item", e.target.value)} t={t} />
                   </div>
@@ -444,35 +444,35 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
                       <FieldInput label={tr("Markup%")} type="number" inputMode="decimal" value={row.markup ?? ""} onChange={(e) => updateMaterialRow(row.id, "markup", parseFloat(e.target.value) || 0)} t={t} />
                     </div>
                   )}
-                  <button onClick={() => removeMaterialRow(row.id)} style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", padding: "var(--space-1)" }}>
+                  <button onClick={() => removeMaterialRow(row.id)} className="p-sp1 c-red cursor-pointer" style={{ background: "none", border: "none" }}>
                     <Trash2 size={14} />
                   </button>
                 </div>
               ))}
               {formMaterials.length > 0 && showCost && (
-                <div style={{ textAlign: "right", fontSize: "var(--text-sm, 12px)", fontWeight: "var(--weight-bold)", color: "var(--text)" }}>
+                <div className="fs-tab fw-bold c-text text-right">
                   {tr("Material Total")}: ${matTotal.toFixed(2)}
                 </div>
               )}
             </div>
 
-            <PhotoCapture photos={formPhotos} onPhotos={setFormPhotos} t={t} />
+            <PhotoCapture photos={formPhotos} onPhotos={setFormPhotos} t={t} uploadContext={{ context: "tm", projectId }} />
 
             {/* ── Totals ── */}
             {showCost ? (
-              <div style={{ padding: "var(--space-2) var(--space-3)", background: "var(--bg3)", borderRadius: "var(--radius-sm, 6px)", display: "flex", justifyContent: "space-between", fontSize: "var(--text-base, 14px)", fontWeight: "var(--weight-bold)" }}>
+              <div className="fs-label fw-bold bg-bg3" style={{ padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-sm, 6px)", display: "flex", justifyContent: "space-between" }}>
                 <span>{tr("Grand Total")}</span>
-                <span style={{ color: "var(--amber)" }}>${grandTotal.toFixed(2)}</span>
+                <span className="c-amber">${grandTotal.toFixed(2)}</span>
               </div>
             ) : (
-              <div style={{ padding: "var(--space-2) var(--space-3)", background: "var(--bg3)", borderRadius: "var(--radius-sm, 6px)", fontSize: "var(--text-sm, 12px)", color: "var(--text2)", fontStyle: "italic" }}>
+              <div className="fs-tab bg-bg3 c-text2" style={{ padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-sm, 6px)", fontStyle: "italic" }}>
                 {tr("Office will price and finalize this ticket. Focus on capturing scope, hours, crew, and materials accurately.")}
               </div>
             )}
 
             {/* ── Actions ── */}
             {!showSignature && (
-              <div style={{ display: "flex", gap: "var(--space-2)", justifyContent: "flex-end" }}>
+              <div className="gap-sp2" style={{ display: "flex", justifyContent: "flex-end" }}>
                 <FieldButton variant="ghost" onClick={resetForm} t={t}>{tr("Cancel")}</FieldButton>
                 <FieldButton variant="ghost" onClick={() => handleSave(true)} disabled={!formDesc.trim()} t={t}>{editingId ? tr("Update Draft") : tr("Save Draft")}</FieldButton>
                 <FieldButton onClick={() => handleSave(false)} disabled={!formDesc.trim()} t={t}>{editingId ? tr("Update & Submit") : tr("Submit")}</FieldButton>
@@ -481,14 +481,14 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
 
             {/* ── GC Signature Step ── */}
             {showSignature && (
-              <div style={{ padding: "var(--space-3)", background: "var(--bg3)", borderRadius: "var(--radius-sm, 6px)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>{tr("GC Acknowledgment Signature")}</div>
-                <div style={{ fontSize: "var(--text-sm, 12px)", color: "var(--text2)" }}>{tr("Have the GC sign below to acknowledge this T&M ticket, or skip if unavailable.")}</div>
+              <div className="flex-col p-sp3 bg-bg3 gap-sp3" style={{ borderRadius: "var(--radius-sm, 6px)", border: "1px solid var(--border)" }}>
+                <div className="fs-label fw-bold c-text">{tr("GC Acknowledgment Signature")}</div>
+                <div className="fs-tab c-text2">{tr("Have the GC sign below to acknowledge this T&M ticket, or skip if unavailable.")}</div>
                 <FieldSignaturePad
                   onSignature={(dataUrl) => setPendingSignature(dataUrl)}
                   t={t}
                 />
-                <div style={{ display: "flex", gap: "var(--space-2)", justifyContent: "flex-end" }}>
+                <div className="gap-sp2" style={{ display: "flex", justifyContent: "flex-end" }}>
                   <FieldButton variant="ghost" onClick={() => { setShowSignature(false); setPendingSignature(null); }} t={t}>{tr("Back")}</FieldButton>
                   <FieldButton variant="ghost" onClick={handleSkipSignature} t={t}>{tr("Submit Without GC Signature")}</FieldButton>
                   <FieldButton onClick={handleSignatureConfirm} disabled={!pendingSignature} t={t}>{tr("Confirm & Submit")}</FieldButton>
@@ -502,8 +502,8 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
       {/* ── Existing Tickets ── */}
       {projectTickets.length === 0 && !showForm && (
         <FieldCard>
-          <div style={{ textAlign: "center", padding: "var(--space-6)", color: "var(--text3)" }}>
-            <FileText size={32} style={{ marginBottom: "var(--space-2)", opacity: 0.4 }} />
+          <div className="p-sp6 c-text3 text-center">
+            <FileText size={32} className="mb-sp2" style={{ opacity: 0.4 }} />
             <div>{tr("No T&M tickets yet")}</div>
           </div>
         </FieldCard>
@@ -518,20 +518,20 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
           <FieldCard key={ticket.id}>
             <div
               onClick={() => setExpandedId(isExpanded ? null : ticket.id)}
-              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", gap: "var(--space-2)" }}
+              className="flex-between gap-sp2 cursor-pointer"
             >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
-                  <span style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>{ticket.ticketNumber}</span>
+              <div className="flex-1" style={{ minWidth: 0 }}>
+                <div className="flex gap-sp2 flex-wrap">
+                  <span className="fs-label fw-bold c-text">{ticket.ticketNumber}</span>
                   <span className={`badge ${TM_STATUS_BADGE[ticket.status] || "badge-muted"}`}>{tr(ticket.status)}</span>
                 </div>
-                <div style={{ fontSize: "var(--text-sm, 12px)", color: "var(--text2)", marginTop: "var(--space-1)" }}>
+                <div className="fs-tab mt-sp1 c-text2">
                   {ticket.date} &middot; {ticket.description.length > 60 ? ticket.description.slice(0, 60) + "..." : ticket.description}
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+              <div className="flex gap-sp2">
                 {showCost ? (
-                  <span style={{ fontSize: "var(--text-sm, 12px)", fontWeight: "var(--weight-bold)", color: "var(--amber)" }}>${(tLabor + tMat).toFixed(0)}</span>
+                  <span className="fs-tab fw-bold c-amber">${(tLabor + tMat).toFixed(0)}</span>
                 ) : (() => {
                     const hrs = (ticket.laborEntries || []).reduce((s, r) => s + (r.hours || 0), 0);
                     const mats = (ticket.materialEntries || []).length;
@@ -539,7 +539,7 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
                     if (hrs > 0) parts.push(`${hrs.toFixed(1)}h`);
                     if (mats > 0) parts.push(`${mats} ${mats === 1 ? tr("item") : tr("items")}`);
                     return (
-                      <span style={{ fontSize: "var(--text-sm, 12px)", fontWeight: "var(--weight-bold)", color: "var(--text2)" }}>
+                      <span className="fs-tab fw-bold c-text2">
                         {parts.length ? parts.join(" · ") : "—"}
                       </span>
                     );
@@ -549,16 +549,16 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
             </div>
 
             {isExpanded && (
-              <div style={{ marginTop: "var(--space-3)", display: "flex", flexDirection: "column", gap: "var(--space-2)", fontSize: "var(--text-sm, 12px)" }}>
-                <div style={{ color: "var(--text)" }}>{ticket.description}</div>
-                {ticket.notes && <div style={{ color: "var(--text2)", fontStyle: "italic" }}>{ticket.notes}</div>}
+              <div className="flex-col fs-tab mt-sp3 gap-sp2">
+                <div className="c-text">{ticket.description}</div>
+                {ticket.notes && <div className="c-text2" style={{ fontStyle: "italic" }}>{ticket.notes}</div>}
 
                 {/* Labor */}
                 {(ticket.laborEntries || []).length > 0 && (
                   <div>
-                    <div style={{ fontWeight: "var(--weight-bold)", color: "var(--text2)", textTransform: "uppercase", marginBottom: "var(--space-1)" }}>{tr("Labor")}</div>
+                    <div className="fw-bold mb-sp1 uppercase c-text2">{tr("Labor")}</div>
                     {ticket.laborEntries.map((le, i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "var(--space-1) 0", borderBottom: "1px solid var(--border)" }}>
+                      <div key={i} className="border-b" style={{ display: "flex", justifyContent: "space-between", padding: "var(--space-1) 0" }}>
                         <span>{le.employeeName} &middot; {le.description}</span>
                         {showCost ? (
                           <span>{le.hours}h x ${le.rate} = ${(le.hours * le.rate).toFixed(2)}</span>
@@ -568,9 +568,9 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
                       </div>
                     ))}
                     {showCost ? (
-                      <div style={{ textAlign: "right", fontWeight: "var(--weight-bold)", marginTop: "var(--space-1)" }}>{tr("Labor")}: ${tLabor.toFixed(2)}</div>
+                      <div className="fw-bold mt-sp1 text-right">{tr("Labor")}: ${tLabor.toFixed(2)}</div>
                     ) : (
-                      <div style={{ textAlign: "right", fontWeight: "var(--weight-bold)", marginTop: "var(--space-1)", color: "var(--text2)" }}>
+                      <div className="fw-bold mt-sp1 c-text2 text-right">
                         {tr("Total Hours")}: {ticket.laborEntries.reduce((s, r) => s + (r.hours || 0), 0).toFixed(1)}h
                       </div>
                     )}
@@ -580,12 +580,12 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
                 {/* Materials */}
                 {(ticket.materialEntries || []).length > 0 && (
                   <div>
-                    <div style={{ fontWeight: "var(--weight-bold)", color: "var(--text2)", textTransform: "uppercase", marginBottom: "var(--space-1)" }}>{tr("Materials")}</div>
+                    <div className="fw-bold mb-sp1 uppercase c-text2">{tr("Materials")}</div>
                     {ticket.materialEntries.map((me, i) => {
                       const base = (me.qty || 0) * (me.unitCost || 0);
                       const mkup = base * ((me.markup || 0) / 100);
                       return (
-                        <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "var(--space-1) 0", borderBottom: "1px solid var(--border)" }}>
+                        <div key={i} className="border-b" style={{ display: "flex", justifyContent: "space-between", padding: "var(--space-1) 0" }}>
                           <span>{me.item} ({me.qty} {me.unit})</span>
                           {showCost && (
                             <span>${(base + mkup).toFixed(2)}{me.markup ? ` (+${me.markup}%)` : ""}</span>
@@ -594,25 +594,25 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
                       );
                     })}
                     {showCost && (
-                      <div style={{ textAlign: "right", fontWeight: "var(--weight-bold)", marginTop: "var(--space-1)" }}>{tr("Materials")}: ${tMat.toFixed(2)}</div>
+                      <div className="fw-bold mt-sp1 text-right">{tr("Materials")}: ${tMat.toFixed(2)}</div>
                     )}
                   </div>
                 )}
 
                 {/* Grand total — only visible to trusted leads */}
                 {showCost && (
-                  <div style={{ padding: "var(--space-2) 0", borderTop: "2px solid var(--border)", display: "flex", justifyContent: "space-between", fontWeight: "var(--weight-bold)", fontSize: "var(--text-base, 14px)" }}>
+                  <div className="fs-label fw-bold" style={{ padding: "var(--space-2) 0", borderTop: "2px solid var(--border)", display: "flex", justifyContent: "space-between" }}>
                     <span>{tr("Total")}</span>
-                    <span style={{ color: "var(--amber)" }}>${(tLabor + tMat).toFixed(2)}</span>
+                    <span className="c-amber">${(tLabor + tMat).toFixed(2)}</span>
                   </div>
                 )}
 
                 {/* Photos */}
                 {(ticket.photos || []).length > 0 && (
-                  <div style={{ display: "flex", gap: "var(--space-1)", flexWrap: "wrap" }}>
+                  <div className="gap-sp1 flex-wrap" style={{ display: "flex" }}>
                     {ticket.photos.map((p, i) => (
-                      <div key={i} style={{ width: 48, height: 48, borderRadius: "var(--radius-sm, 4px)", overflow: "hidden" }}>
-                        <img src={p.data} alt={p.name || "photo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <div key={i} className="overflow-hidden" style={{ width: 48, height: 48, borderRadius: "var(--radius-sm, 4px)" }}>
+                        <img src={p.data} alt={p.name || "photo"} className="h-full w-full" style={{ objectFit: "cover" }} />
                       </div>
                     ))}
                   </div>
@@ -620,46 +620,46 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
 
                 {/* Edit / Delete actions (draft only) */}
                 {ticket.status === "draft" && (
-                  <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-1)" }}>
-                    <FieldButton variant="ghost" onClick={() => startEdit(ticket)} t={t} style={{ padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-sm, 12px)" }}>
-                      <Pencil size={12} style={{ marginRight: "var(--space-1)" }} />{tr("Edit")}
+                  <div className="mt-sp1 gap-sp2" style={{ display: "flex" }}>
+                    <FieldButton variant="ghost" onClick={() => startEdit(ticket)} t={t} className="fs-tab" style={{ padding: "var(--space-1) var(--space-3)" }}>
+                      <Pencil size={12} className="mr-sp1" />{tr("Edit")}
                     </FieldButton>
-                    <FieldButton variant="ghost" onClick={() => handleDelete(ticket)} t={t} style={{ padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-sm, 12px)", color: "var(--red)" }}>
-                      <Trash2 size={12} style={{ marginRight: "var(--space-1)" }} />{tr("Delete")}
+                    <FieldButton variant="ghost" onClick={() => handleDelete(ticket)} t={t} className="fs-tab c-red" style={{ padding: "var(--space-1) var(--space-3)" }}>
+                      <Trash2 size={12} className="mr-sp1" />{tr("Delete")}
                     </FieldButton>
                   </div>
                 )}
 
                 {/* Generate PDF (submitted/approved/billed) */}
                 {ticket.status !== "draft" && (
-                  <div style={{ marginTop: "var(--space-1)" }}>
+                  <div className="mt-sp1">
                     <FieldButton variant="ghost" onClick={async () => {
                       const { generateTmTicketPdf } = await import("../../utils/tmTicketPdf");
                       const proj = projects.find(p => String(p.id) === String(ticket.projectId || projectId));
                       generateTmTicketPdf(ticket, proj);
-                    }} t={t} style={{ padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-sm, 12px)" }}>
-                      <Download size={12} style={{ marginRight: "var(--space-1)" }} />{tr("Download PDF")}
+                    }} t={t} className="fs-tab" style={{ padding: "var(--space-1) var(--space-3)" }}>
+                      <Download size={12} className="mr-sp1" />{tr("Download PDF")}
                     </FieldButton>
                   </div>
                 )}
 
                 {/* GC Signature */}
                 {ticket.gcSignature && (
-                  <div style={{ marginTop: "var(--space-1)" }}>
-                    <div style={{ fontWeight: "var(--weight-bold)", color: "var(--text2)", textTransform: "uppercase", marginBottom: "var(--space-1)", fontSize: "var(--text-sm, 12px)" }}>{tr("GC Signature")}</div>
+                  <div className="mt-sp1">
+                    <div className="fs-tab fw-bold mb-sp1 uppercase c-text2">{tr("GC Signature")}</div>
                     <img src={ticket.gcSignature} alt={tr("GC Signature")} style={{ maxWidth: 200, height: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius-sm, 4px)" }} />
                     {ticket.gcSignedAt && (
-                      <div style={{ fontSize: "var(--text-xs, 11px)", color: "var(--text3)", marginTop: "var(--space-1)" }}>{tr("Signed")}: {new Date(ticket.gcSignedAt).toLocaleString()}</div>
+                      <div className="mt-sp1 c-text3" style={{ fontSize: "var(--text-xs, 11px)" }}>{tr("Signed")}: {new Date(ticket.gcSignedAt).toLocaleString()}</div>
                     )}
                   </div>
                 )}
 
                 {/* Audit trail */}
                 {(ticket.auditTrail || []).length > 0 && (
-                  <div style={{ marginTop: "var(--space-1)" }}>
-                    <div style={{ fontWeight: "var(--weight-bold)", color: "var(--text2)", textTransform: "uppercase", marginBottom: "var(--space-1)" }}>{tr("Audit Trail")}</div>
+                  <div className="mt-sp1">
+                    <div className="fw-bold mb-sp1 uppercase c-text2">{tr("Audit Trail")}</div>
                     {ticket.auditTrail.map((a, i) => (
-                      <div key={i} style={{ color: "var(--text3)", fontSize: "var(--text-xs, 11px)" }}>
+                      <div key={i} className="c-text3" style={{ fontSize: "var(--text-xs, 11px)" }}>
                         {a.action} by {a.actor} &middot; {new Date(a.at).toLocaleString()}
                       </div>
                     ))}

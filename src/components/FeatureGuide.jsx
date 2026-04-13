@@ -265,78 +265,53 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
       {/* ── Step overlay ── */}
       {active && (
         <div
-          style={{
-            position: "fixed",
+          className="p-sp4 justify-center" style={{ position: "fixed",
             inset: 0,
             background: "rgba(4, 10, 24, 0.78)",
             backdropFilter: "blur(4px)",
             WebkitBackdropFilter: "blur(4px)",
             zIndex: 9500,
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "var(--space-4)",
-          }}
+            alignItems: "center" }}
           onClick={close}
         >
           <div
-            style={{
-              background: "var(--bg2, #0f1c2e)",
+            className="rounded-card relative w-full" style={{ background: "var(--bg2, #0f1c2e)",
               border: "1px solid var(--amber, #d4a537)",
-              borderRadius: "var(--radius-card)",
               padding: "28px 28px 20px",
               maxWidth: 440,
-              width: "100%",
               boxShadow:
-                "0 0 40px rgba(212, 165, 55, 0.18), 0 24px 64px rgba(0,0,0,0.7)",
-              position: "relative",
-            }}
+                "0 0 40px rgba(212, 165, 55, 0.18), 0 24px 64px rgba(0,0,0,0.7)" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
             <button
               onClick={close}
               title="Close guide"
-              style={{
-                position: "absolute",
-                top: 14,
+              className="rounded-control p-sp1 absolute cursor-pointer" style={{ top: 14,
                 right: 14,
                 background: "none",
                 border: "none",
                 color: "var(--text3, #6b7fa3)",
-                cursor: "pointer",
-                padding: "var(--space-1)",
-                borderRadius: "var(--radius-control)",
                 display: "flex",
-                alignItems: "center",
-              }}
+                alignItems: "center" }}
             >
               <X size={16} />
             </button>
 
             {/* Step counter */}
             <div
-              style={{
-                fontSize: "var(--text-tab)",
-                fontWeight: "var(--weight-semi)",
-                letterSpacing: "0.8px",
-                textTransform: "uppercase",
-                color: "var(--amber, #d4a537)",
-                marginBottom: "var(--space-3)",
-              }}
+              className="fw-semi mb-sp3 fs-tab uppercase" style={{ letterSpacing: "0.8px",
+                color: "var(--amber, #d4a537)" }}
             >
               Step {step + 1} of {total}
             </div>
 
             {/* Progress bar */}
             <div
-              style={{
-                height: 3,
+              className="mb-sp5 overflow-hidden" style={{ height: 3,
                 background: "var(--border, #1e2d3b)",
-                borderRadius: "var(--radius-pill)",
-                marginBottom: "var(--space-5)",
-                overflow: "hidden",
-              }}
+                borderRadius: "var(--radius-pill)" }}
             >
               <div
                 style={{
@@ -352,37 +327,25 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
 
             {/* Step title */}
             <div
-              style={{
-                fontSize: "var(--text-card)",
-                fontWeight: "var(--weight-bold)",
-                color: "var(--text, #e8edf5)",
-                marginBottom: "var(--space-3)",
+              className="fw-bold mb-sp3 fs-card" style={{ color: "var(--text, #e8edf5)",
                 letterSpacing: "0.2px",
-                lineHeight: 1.3,
-              }}
+                lineHeight: 1.3 }}
             >
               {current.title}
             </div>
 
             {/* Step description */}
             <div
-              style={{
-                fontSize: "var(--text-secondary)",
-                color: "var(--text2, #9baac4)",
-                lineHeight: 1.6,
-                marginBottom: "var(--space-6)",
-              }}
+              className="fs-secondary mb-sp6" style={{ color: "var(--text2, #9baac4)",
+                lineHeight: 1.6 }}
             >
               {current.description}
             </div>
 
             {/* Navigation row */}
             <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "var(--space-2)",
-              }}
+              className="gap-sp2" style={{ display: "flex",
+                alignItems: "center" }}
             >
               <button
                 onClick={() => setStep((s) => Math.max(0, s - 1))}
@@ -410,26 +373,19 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
                 Prev
               </button>
 
-              <div style={{ flex: 1 }} />
+              <div className="flex-1" />
 
               {step < total - 1 ? (
                 <button
                   onClick={() => setStep((s) => s + 1)}
-                  style={{
-                    display: "flex",
+                  className="rounded-control fw-semi fs-label gap-sp1 cursor-pointer" style={{ display: "flex",
                     alignItems: "center",
-                    gap: "var(--space-1)",
                     padding: "var(--space-2) var(--space-4)",
                     border: "none",
-                    borderRadius: "var(--radius-control)",
                     background: "var(--amber, #d4a537)",
                     color: "#000",
-                    cursor: "pointer",
-                    fontSize: "var(--text-label)",
-                    fontWeight: "var(--weight-semi)",
                     boxShadow: "0 2px 8px rgba(212,165,55,0.3)",
-                    transition: "all 0.15s",
-                  }}
+                    transition: "all 0.15s" }}
                 >
                   Next
                   <ChevronRight size={14} />
@@ -437,18 +393,12 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
               ) : (
                 <button
                   onClick={close}
-                  style={{
-                    padding: "var(--space-2) var(--space-4)",
+                  className="rounded-control fw-semi fs-label cursor-pointer" style={{ padding: "var(--space-2) var(--space-4)",
                     border: "none",
-                    borderRadius: "var(--radius-control)",
                     background: "var(--amber, #d4a537)",
                     color: "#000",
-                    cursor: "pointer",
-                    fontSize: "var(--text-label)",
-                    fontWeight: "var(--weight-semi)",
                     boxShadow: "0 2px 8px rgba(212,165,55,0.3)",
-                    transition: "all 0.15s",
-                  }}
+                    transition: "all 0.15s" }}
                 >
                   Done
                 </button>
@@ -457,44 +407,30 @@ export function FeatureGuide({ guideKey, autoTrigger = true }) {
 
             {/* Footer actions */}
             <div
-              style={{
-                display: "flex",
+              className="mt-sp4 gap-sp4" style={{ display: "flex",
                 alignItems: "center",
-                gap: "var(--space-4)",
-                marginTop: "var(--space-4)",
                 paddingTop: "var(--space-4)",
-                borderTop: "1px solid var(--border, #1e2d3b)",
-              }}
+                borderTop: "1px solid var(--border, #1e2d3b)" }}
             >
               <button
                 onClick={close}
-                style={{
-                  background: "none",
+                className="fs-label cursor-pointer" style={{ background: "none",
                   border: "none",
                   color: "var(--text3, #6b7fa3)",
-                  cursor: "pointer",
-                  fontSize: "var(--text-label)",
                   padding: 0,
-                  transition: "color 0.15s",
-                }}
+                  transition: "color 0.15s" }}
               >
                 Skip guide
               </button>
               <button
                 onClick={neverShow}
-                style={{
-                  display: "flex",
+                className="fs-label gap-sp1 ml-auto cursor-pointer" style={{ display: "flex",
                   alignItems: "center",
-                  gap: "var(--space-1)",
                   background: "none",
                   border: "none",
                   color: "var(--text3, #6b7fa3)",
-                  cursor: "pointer",
-                  fontSize: "var(--text-label)",
                   padding: 0,
-                  marginLeft: "auto",
-                  transition: "color 0.15s",
-                }}
+                  transition: "color 0.15s" }}
               >
                 <EyeOff size={12} />
                 Never show again

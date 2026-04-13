@@ -19,9 +19,9 @@ export function NotesTab({
       </div>
 
       {/* Compose */}
-      <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", padding: "var(--space-4)", marginBottom: "var(--space-3)" }}>
+      <div className="rounded-control mb-sp3 p-sp4 bg-bg2" style={{ border: "1px solid var(--border)" }}>
         <textarea
-          style={{ width: "100%", minHeight: 80, padding: "var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid var(--border)", background: "var(--bg3)", color: "var(--text)", fontSize: "var(--text-secondary)", resize: "vertical", marginBottom: "var(--space-3)" }}
+          className="rounded-control fs-secondary mb-sp3 p-sp3 bg-bg3 c-text w-full" style={{ minHeight: 80, border: "1px solid var(--border)", resize: "vertical" }}
           placeholder={t("Post a field note to the project team...")}
           value={foremanNoteText}
           onChange={e => setForemanNoteText(e.target.value)}
@@ -49,14 +49,14 @@ export function NotesTab({
       </div>
 
       {/* Filter bar */}
-      <div className="flex gap-4 mb-12" style={{ overflowX: "auto" }}>
+      <div className="flex gap-4 mb-12 overflow-x-auto">
         {["all", "pm", "field", "office"].map(f => {
           const projNotes = (projectNotes || []).filter(n => String(n.projectId) === String(selectedProjectId));
           const cnt = f === "all" ? projNotes.length : projNotes.filter(n => n.category === f).length;
           const label = f === "all" ? "All" : f === "pm" ? "PM" : f === "field" ? "Field" : "Office";
           return (
             <button key={f} className={`btn btn-sm ${foremanNotesFilter === f ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => setForemanNotesFilter(f)} style={{ whiteSpace: "nowrap" }}>
+              onClick={() => setForemanNotesFilter(f)} className="nowrap">
               {label} ({cnt})
             </button>
           );
@@ -90,7 +90,7 @@ export function NotesTab({
                   <div className="flex gap-8" style={{ alignItems: "center" }}>
                     {note.pinned && <Pin size={11} className="frm-amber" />}
                     <span className="font-semi text-sm">{note.author}</span>
-                    <span className={`badge ${catBadge(note.category)}`} style={{ fontSize: "var(--text-xs)" }}>{catLabel(note.category)}</span>
+                    <span className={`badge ${catBadge(note.category)} fs-xs`}>{catLabel(note.category)}</span>
                   </div>
                   <div className="flex gap-6" style={{ alignItems: "center" }}>
                     <span className="text-xs text-muted">{fmtTime(note.timestamp)}</span>

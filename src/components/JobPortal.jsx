@@ -76,7 +76,7 @@ export default function JobPortal() {
       <div className="job-body">
         {/* Perks */}
         <div className="job-card">
-          <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", marginBottom: "var(--space-3)" }}>Why EBC?</div>
+          <div className="fw-bold mb-sp3 fs-card">Why EBC?</div>
           {[
             [DollarSign, "Competitive Pay", "Top rates for skilled labor. Weekly pay."],
             [TrendingUp, "Growth", "Clear path from apprentice to foreman to PM."],
@@ -86,7 +86,7 @@ export default function JobPortal() {
           ].map(([Icon, title, desc]) => (
             <div key={title} className="perk">
               <div className="perk-icon"><Icon style={{ width: 24, height: 24 }} /></div>
-              <div className="perk-text"><div className="perk-title">{title}</div><div style={{ color: "var(--text2)", fontSize: "var(--text-label)" }}>{desc}</div></div>
+              <div className="perk-text"><div className="perk-title">{title}</div><div className="fs-label c-text2">{desc}</div></div>
             </div>
           ))}
         </div>
@@ -94,15 +94,15 @@ export default function JobPortal() {
         {submitted ? (
           <div className="job-success">
             <h3>Application Received!</h3>
-            <div style={{ fontSize: "var(--text-secondary)" }}>Thank you, {form.name}. Our team will review your application and contact you within 48 hours.</div>
-            <button className="job-btn" style={{ marginTop: "var(--space-4)", maxWidth: 200, margin: "16px auto 0" }} onClick={() => { setSubmitted(false); setForm({ name: "", phone: "", email: "", age: "", trade: "", level: "", yearsExp: "", skills: [], toolsOwned: [], driversLicense: "yes", ownTransport: "yes", availability: "immediate", notes: "" }); }}>Apply Again</button>
+            <div className="fs-secondary">Thank you, {form.name}. Our team will review your application and contact you within 48 hours.</div>
+            <button className="job-btn mt-sp4" style={{ maxWidth: 200, margin: "16px auto 0" }} onClick={() => { setSubmitted(false); setForm({ name: "", phone: "", email: "", age: "", trade: "", level: "", yearsExp: "", skills: [], toolsOwned: [], driversLicense: "yes", ownTransport: "yes", availability: "immediate", notes: "" }); }}>Apply Again</button>
           </div>
         ) : (
           <>
             {/* Personal Info */}
             <div className="job-card">
-              <div style={{ fontWeight: "var(--weight-bold)", marginBottom: "var(--space-4)" }}>Personal Information</div>
-              <div className="job-grid" style={{ marginBottom: "var(--space-4)" }}>
+              <div className="fw-bold mb-sp4">Personal Information</div>
+              <div className="job-grid mb-sp4">
                 <div><label className="job-label">Full Name *</label><input className="job-input" placeholder="First & Last Name" value={form.name} onChange={e => upd("name", e.target.value)} /></div>
                 <div><label className="job-label">Phone *</label><input className="job-input" type="tel" placeholder="713-555-0000" value={form.phone} onChange={e => upd("phone", e.target.value)} /></div>
               </div>
@@ -114,8 +114,8 @@ export default function JobPortal() {
 
             {/* Trade & Experience */}
             <div className="job-card">
-              <div style={{ fontWeight: "var(--weight-bold)", marginBottom: "var(--space-4)" }}>Trade & Experience</div>
-              <div className="job-grid" style={{ marginBottom: "var(--space-4)" }}>
+              <div className="fw-bold mb-sp4">Trade & Experience</div>
+              <div className="job-grid mb-sp4">
                 <div>
                   <label className="job-label">Primary Trade</label>
                   <select className="job-input" value={form.trade} onChange={e => upd("trade", e.target.value)}>
@@ -131,19 +131,19 @@ export default function JobPortal() {
                   </select>
                 </div>
               </div>
-              <div style={{ marginBottom: "var(--space-4)" }}>
+              <div className="mb-sp4">
                 <label className="job-label">Years of Experience</label>
                 <input className="job-input" type="number" placeholder="e.g. 5" value={form.yearsExp} onChange={e => upd("yearsExp", e.target.value)} style={{ maxWidth: 120 }} />
               </div>
-              <div style={{ marginBottom: "var(--space-4)" }}>
+              <div className="mb-sp4">
                 <label className="job-label">Skills (select all that apply)</label>
-                <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                <div className="gap-sp2 flex-wrap" style={{ display: "flex" }}>
                   {TRADES.map(s => <button key={s} className={`skill-btn ${form.skills.includes(s) ? "active" : ""}`} onClick={() => toggleSkill(s)}>{s}</button>)}
                 </div>
               </div>
               <div>
                 <label className="job-label">Tools You Own</label>
-                <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                <div className="gap-sp2 flex-wrap" style={{ display: "flex" }}>
                   {TOOLS_OWN.map(t => <button key={t} className={`skill-btn ${form.toolsOwned.includes(t) ? "active" : ""}`} onClick={() => toggleTool(t)}>{t}</button>)}
                 </div>
               </div>
@@ -151,8 +151,8 @@ export default function JobPortal() {
 
             {/* Logistics */}
             <div className="job-card">
-              <div style={{ fontWeight: "var(--weight-bold)", marginBottom: "var(--space-4)" }}>Logistics</div>
-              <div className="job-grid" style={{ marginBottom: "var(--space-4)" }}>
+              <div className="fw-bold mb-sp4">Logistics</div>
+              <div className="job-grid mb-sp4">
                 <div>
                   <label className="job-label">Driver's License?</label>
                   <select className="job-input" value={form.driversLicense} onChange={e => upd("driversLicense", e.target.value)}>
@@ -187,7 +187,7 @@ export default function JobPortal() {
           </>
         )}
 
-        <div style={{ textAlign: "center", padding: "var(--space-10) 0 var(--space-5)", color: "var(--text3)", fontSize: "var(--text-tab)" }}>
+        <div className="fs-tab c-text3 text-center" style={{ padding: "var(--space-10) 0 var(--space-5)" }}>
           Eagles Brothers Constructors · Houston, TX · Equal Opportunity Employer
         </div>
       </div>

@@ -42,16 +42,11 @@ export function SyncStatus({ syncStatus, network }) {
   if (online === false) {
     return (
       <div style={{ ...BAR, background: "var(--text3)" }}>
-        <span style={{ fontSize: "var(--text-card)" }}>&#9676;</span>
+        <span className="fs-card">&#9676;</span>
         <span><strong>Offline</strong> &mdash; changes saved locally, will sync when connected</span>
         {pendingCount > 0 && (
-          <span style={{
-            background: "rgba(255,255,255,0.25)",
-            borderRadius: "var(--radius-control)",
-            padding: "var(--space-1) var(--space-2)",
-            fontSize: "var(--text-tab)",
-            marginLeft: "auto",
-          }}>
+          <span className="rounded-control fs-tab ml-auto" style={{ background: "rgba(255,255,255,0.25)",
+            padding: "var(--space-1) var(--space-2)" }}>
             {pendingCount} pending
           </span>
         )}
@@ -66,7 +61,7 @@ export function SyncStatus({ syncStatus, network }) {
         <span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>&#8635;</span>
         <span>Syncing data...</span>
         {pendingCount > 0 && (
-          <span style={{ opacity: 0.8, marginLeft: "auto", fontSize: "var(--text-tab)" }}>
+          <span className="fs-tab ml-auto" style={{ opacity: 0.8 }}>
             {pendingCount} queued
           </span>
         )}
@@ -87,7 +82,7 @@ export function SyncStatus({ syncStatus, network }) {
             if (refreshAll) refreshAll();
             setSyncing(false);
           }}
-          style={{ ...BTN, marginLeft: "auto" }}
+          className="ml-auto" style={{ ...BTN }}
         >
           Sync Now
         </button>
@@ -103,13 +98,13 @@ export function SyncStatus({ syncStatus, network }) {
         <span>Sync error &mdash; some data may not be saved to cloud</span>
         <button
           onClick={() => { setDismissed(false); refreshAll(); }}
-          style={{ ...BTN, marginLeft: "auto" }}
+          className="ml-auto" style={{ ...BTN }}
         >
           Retry
         </button>
         <button
           onClick={() => setDismissed(true)}
-          style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontSize: "var(--text-card)", padding: "0 4px" }}
+          className="fs-card cursor-pointer" style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", padding: "0 4px" }}
         >
           &times;
         </button>

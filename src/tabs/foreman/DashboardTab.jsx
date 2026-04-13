@@ -73,12 +73,61 @@ export function DashboardTab({
         </div>
       )}
 
+      {/* Area Progress Summary */}
+      {(() => {
+        const projAreas = (areas || []).filter(a => String(a.projectId) === String(selectedProjectId));
+        if (projAreas.length === 0) return null;
+        const avgPct = Math.round(projAreas.reduce((sum, a) => {
+          const items = a.scopeItems || [];
+          let inst = 0, bud = 0;
+          items.forEach(s => { inst += s.installedQty || 0; bud += s.budgetQty || 0; });
+          return sum + (bud > 0 ? (inst / bud) * 100 : (a.progressPct || 0));
+        }, 0) / projAreas.length);
+        const complete = projAreas.filter(a => {
+          const items = a.scopeItems || [];
+          let inst = 0, bud = 0;
+          items.forEach(s => { inst += s.installedQty || 0; bud += s.budgetQty || 0; });
+          return bud > 0 ? inst >= bud : (a.progressPct || 0) >= 100;
+        }).length;
+        return (
+          <div className="frm-mt-12" style={{ cursor: "pointer" }} onClick={() => setForemanTab("production")}>
+            <div className="foreman-dashboard-section-label">{t("AREA PROGRESS")}</div>
+            <div className="flex gap-sp3 mb-sp2">
+              <div className="flex-1 rounded-control bg-bg3 p-sp3 text-center">
+                <div className="fs-subtitle fw-bold c-amber">{avgPct}%</div>
+                <div className="fs-tab c-text3">{t("Overall")}</div>
+              </div>
+              <div className="flex-1 rounded-control bg-bg3 p-sp3 text-center">
+                <div className="fs-subtitle fw-bold c-green">{complete}/{projAreas.length}</div>
+                <div className="fs-tab c-text3">{t("Complete")}</div>
+              </div>
+            </div>
+            {/* Mini progress bars for top 4 areas */}
+            {projAreas.slice(0, 4).map(a => {
+              const items = a.scopeItems || [];
+              let inst = 0, bud = 0;
+              items.forEach(s => { inst += s.installedQty || 0; bud += s.budgetQty || 0; });
+              const pct = bud > 0 ? Math.round((inst / bud) * 100) : (a.progressPct || 0);
+              return (
+                <div key={a.id} className="flex gap-sp2 mb-sp1" style={{ alignItems: "center" }}>
+                  <span className="fs-tab c-text2 truncate" style={{ width: 90 }}>{a.name}</span>
+                  <div className="flex-1 rounded-pill overflow-hidden" style={{ height: 5, background: "var(--bg4)" }}>
+                    <div className="h-full rounded-pill" style={{ width: `${Math.min(pct, 100)}%`, background: pct >= 100 ? "var(--green)" : "var(--amber)", transition: "width 0.3s" }} />
+                  </div>
+                  <span className="fs-tab fw-semi" style={{ minWidth: 32, textAlign: "right", color: pct >= 100 ? "var(--green)" : "var(--text2)" }}>{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
       {/* Today's Activity Summary */}
       <div className="frm-mt-30">
         <div className="foreman-dashboard-section-label">{t("TODAY'S ACTIVITY")}</div>
         <div className="frm-activity-grid">
           <div className="frm-activity-tile">
-            <div className="frm-activity-value" style={{ color: "var(--red)" }}>{openPunchCount}</div>
+            <div className="frm-activity-value c-red">{openPunchCount}</div>
             <div className="text-xs text-muted">{t("Open Punch")}</div>
           </div>
           <div className="frm-activity-tile">
@@ -86,13 +135,13 @@ export function DashboardTab({
             <div className="text-xs text-muted">{t("Pending T&M")}</div>
           </div>
           <div className="frm-activity-tile">
-            <div className="frm-activity-value" style={{ color: "var(--green)" }}>
+            <div className="frm-activity-value c-green">
               {(productionLogs || []).filter(pl => String(pl.projectId) === String(selectedProjectId) && pl.status !== "deleted" && (pl.date === new Date().toISOString().slice(0,10) || (pl.createdAt && pl.createdAt.startsWith(new Date().toISOString().slice(0,10))))).length}
             </div>
             <div className="text-xs text-muted">{t("Production Today")}</div>
           </div>
           <div className="frm-activity-tile">
-            <div className="frm-activity-value" style={{ color: "var(--blue)" }}>
+            <div className="frm-activity-value c-blue">
               {projectMatRequests.filter(r => r.status === "approved" || r.status === "in-transit").length}
             </div>
             <div className="text-xs text-muted">{t("Deliveries Pending")}</div>
@@ -113,7 +162,7 @@ export function DashboardTab({
             <div className="frm-mt-12">
               <div className="text-xs font-bold mb-4">{t("Upcoming")}</div>
               {upcoming.map((ev, i) => (
-                <div key={i} className="text-xs frm-flex-between" style={{ padding: "var(--space-1) 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} className="text-xs frm-flex-between border-b" style={{ padding: "var(--space-1) 0" }}>
                   <span>{ev.title || ev.type}</span>
                   <span className="text-muted">{new Date(ev.date || ev.start).toLocaleDateString(lang === "es" ? "es" : "en", { weekday: "short", month: "short", day: "numeric" })}</span>
                 </div>

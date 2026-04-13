@@ -55,7 +55,7 @@ export function ForemanJSATab({
         <div>
           <div className="flex-between frm-mb-12">
             <div className="section-title frm-section-title-md">{t("Job Safety Analysis")}</div>
-            <div className="frm-flex-row" style={{ gap: "var(--space-2)" }}>
+            <div className="frm-flex-row gap-sp2">
               <button className="btn btn-primary btn-sm" onClick={() => {
                 setJsaView("rollcall");
                 setRcStep("pick");
@@ -80,17 +80,17 @@ export function ForemanJSATab({
             const statusClr = j.status === "active" ? "var(--green)" : j.status === "draft" ? "var(--amber)" : "var(--text3)";
             const proj = projects.find(p => String(p.id) === String(j.projectId));
             return (
-              <div key={j.id} className="card frm-p-12 frm-mb-8" style={{ cursor: "pointer" }} onClick={() => { setActiveJsaId(j.id); setJsaView("detail"); }}>
+              <div key={j.id} className="card frm-p-12 frm-mb-8 cursor-pointer" onClick={() => { setActiveJsaId(j.id); setJsaView("detail"); }}>
                 <div className="flex-between frm-mb-4">
-                  <div className="frm-flex-row-center" style={{ gap: "var(--space-2)", flexWrap: "wrap" }}>
-                    <span className="jsa-status-badge" style={{ background: statusClr + "22", color: statusClr, fontSize: "var(--text-xs)" }}>{j.status.toUpperCase()}</span>
-                    <span className="jsa-risk-badge" style={{ background: rc.bg + "22", color: rc.bg, fontSize: "var(--text-xs)" }}>{rc.label}</span>
+                  <div className="frm-flex-row-center gap-sp2 flex-wrap">
+                    <span className="jsa-status-badge fs-xs" style={{ background: statusClr + "22", color: statusClr }}>{j.status.toUpperCase()}</span>
+                    <span className="jsa-risk-badge fs-xs" style={{ background: rc.bg + "22", color: rc.bg }}>{rc.label}</span>
                   </div>
-                  <span className="frm-font-11" style={{ color: "var(--text3)" }}>{(j.teamSignOn || []).length} {t("signed")}</span>
+                  <span className="frm-font-11 c-text3">{(j.teamSignOn || []).length} {t("signed")}</span>
                 </div>
                 <div className="frm-font-14">{j.title}</div>
-                <div className="frm-font-11" style={{ color: "var(--text3)" }}>{proj?.name} · {j.date}</div>
-                <div className="frm-flex-row frm-mt-8" style={{ gap: "var(--space-1)" }}>
+                <div className="frm-font-11 c-text3">{proj?.name} · {j.date}</div>
+                <div className="frm-flex-row frm-mt-8 gap-sp1">
                   {(j.ppe || []).slice(0, 6).map(k => {
                     const item = PPE_ITEMS.find(p => p.key === k);
                     return item ? <span key={k} className="frm-font-14">{item.icon}</span> : null;
@@ -125,7 +125,7 @@ export function ForemanJSATab({
 
               {selectedProjectId && (
                 <>
-                  <div className="frm-font-13" style={{ color: "var(--text2)", marginBottom: "var(--space-1)" }}>{proj?.name || "Project"}</div>
+                  <div className="frm-font-13 mb-sp1 c-text2">{proj?.name || "Project"}</div>
                   <div className="frm-font-13 frm-mb-16">{t("Pick today's task")}</div>
 
                   {/* Indoor / Outdoor toggle */}
@@ -174,8 +174,8 @@ export function ForemanJSATab({
                           setRcPendingCard(card);
                           setRcStep("hazards");
                         }}>
-                          <span style={{ fontSize: "var(--text-title)" }}>{card.icon}</span>
-                          <span style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: card.color }}>{tradeLabel}</span>
+                          <span className="fs-title">{card.icon}</span>
+                          <span className="fw-semi fs-label" style={{ color: card.color }}>{tradeLabel}</span>
                         </div>
                       );
                     })}
@@ -184,11 +184,10 @@ export function ForemanJSATab({
                   {/* Weather quick-select — only for outdoor jobs */}
                   {rcIndoorOutdoor === "outdoor" && (
                     <div className="mb-8">
-                      <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--text2)", marginBottom: "var(--space-2)" }}>{t("Weather")}</div>
-                      <div className="frm-flex-wrap" style={{ gap: "var(--space-2)" }}>
+                      <div className="fw-semi mb-sp2 fs-label c-text2">{t("Weather")}</div>
+                      <div className="frm-flex-wrap gap-sp2">
                         {WEATHER_QUICK.map(w => (
-                          <button key={w.key} className={rcWeather === w.key ? "btn btn-primary btn-sm" : "cal-nav-btn"}
-                            style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)" }}
+                          <button key={w.key} className={`rcWeather === w.key ? "btn btn-primary btn-sm" : "cal-nav-btn" fs-label`} style={{ padding: "var(--space-2) var(--space-3)" }}
                             onClick={() => setRcWeather(w.key)}>
                             {w.icon} {lang === "es" ? w.labelEs : w.label}
                           </button>
@@ -215,12 +214,12 @@ export function ForemanJSATab({
                 <span className="frm-font-16">{t("Select Hazards")}</span>
               </div>
 
-              <div className="frm-font-13" style={{ color: "var(--text2)", marginBottom: "var(--space-1)" }}>{proj?.name}</div>
-              <div className="frm-font-12" style={{ color: "var(--text3)", marginBottom: "var(--space-4)" }}>
+              <div className="frm-font-13 mb-sp1 c-text2">{proj?.name}</div>
+              <div className="frm-font-12 mb-sp4 c-text3">
                 {t("Pick as many as apply")} · {TRADE_LABELS[trade]?.label || trade}
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginBottom: "var(--space-5)" }}>
+              <div className="flex-col mb-sp5 gap-sp2">
                 {lib.map((h, idx) => {
                   const isChecked = !!rcSelectedHazardIdxs[idx];
                   const catInfo = HAZARD_CATEGORIES.find(c => c.key === h.category);
@@ -240,17 +239,17 @@ export function ForemanJSATab({
                       </div>
                       <div className="frm-flex-1">
                         <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: isChecked ? "var(--text)" : "var(--text3)" }}>{h.hazard}</div>
-                        {h.hazardEs && <div className="frm-font-11" style={{ color: "var(--text3)", fontStyle: "italic" }}>{h.hazardEs}</div>}
+                        {h.hazardEs && <div className="frm-font-11 c-text3" style={{ fontStyle: "italic" }}>{h.hazardEs}</div>}
                         {isChecked && (
                           <div className="frm-mt-4">
                             {h.controls.slice(0, 2).map((c, ci) => (
-                              <div key={ci} className="frm-font-11" style={{ color: "var(--text2)" }}>✓ {c}</div>
+                              <div key={ci} className="frm-font-11 c-text2">✓ {c}</div>
                             ))}
                           </div>
                         )}
                       </div>
                       {catInfo && (
-                        <span style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", background: catInfo.color + "22", color: catInfo.color, fontWeight: "var(--weight-bold)", flexShrink: 0 }}>
+                        <span className="rounded-control fw-bold fs-xs flex-shrink-0" style={{ padding: "var(--space-1) var(--space-2)", background: catInfo.color + "22", color: catInfo.color }}>
                           {catInfo.label}
                         </span>
                       )}
@@ -277,9 +276,9 @@ export function ForemanJSATab({
                       </div>
                       <div className="frm-flex-1">
                         <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: isChecked ? "var(--text)" : "var(--text3)" }}>{wh.hazard}</div>
-                        {wh.hazardEs && <div className="frm-font-11" style={{ color: "var(--text3)", fontStyle: "italic" }}>{wh.hazardEs}</div>}
+                        {wh.hazardEs && <div className="frm-font-11 c-text3" style={{ fontStyle: "italic" }}>{wh.hazardEs}</div>}
                       </div>
-                      <span style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", background: "#eab30822", color: "var(--amber)", fontWeight: "var(--weight-bold)", flexShrink: 0 }}>
+                      <span className="rounded-control fw-bold fs-xs c-amber flex-shrink-0" style={{ padding: "var(--space-1) var(--space-2)", background: "#eab30822" }}>
                         Weather
                       </span>
                     </div>
@@ -288,7 +287,7 @@ export function ForemanJSATab({
               </div>
 
               <button
-                className="btn btn-primary frm-w-full" style={{ padding: "var(--space-4)", fontSize: "var(--text-card)" }}
+                className="btn btn-primary frm-w-full fs-card p-sp4"
                 disabled={selectedCount === 0}
                 onClick={() => {
                   if (!tmpl) return;
@@ -356,14 +355,14 @@ export function ForemanJSATab({
                 <span className="frm-font-16">{t("Crew Roll Call")}</span>
               </div>
 
-              <div className="frm-font-13" style={{ color: "var(--text2)", marginBottom: "var(--space-1)" }}>{proj?.name} · {rcJsa?.title}</div>
-              <div className="frm-font-12" style={{ color: "var(--text3)", marginBottom: "var(--space-4)" }}>
+              <div className="frm-font-13 mb-sp1 c-text2">{proj?.name} · {rcJsa?.title}</div>
+              <div className="frm-font-12 mb-sp4 c-text3">
                 {new Date().toLocaleDateString(lang === "es" ? "es" : "en-US", { weekday: "long", month: "long", day: "numeric" })}
               </div>
 
               {/* Crew list */}
               {allTeam.length === 0 ? (
-                <div className="card frm-text-center frm-p-16" style={{ color: "var(--text3)" }}>
+                <div className="card frm-text-center frm-p-16 c-text3">
                   {t("No team scheduled. Add team members below.")}
                 </div>
               ) : allTeam.map(c => (
@@ -372,17 +371,17 @@ export function ForemanJSATab({
                   borderLeft: rcSelected[c.id] ? "4px solid #10b981" : "4px solid var(--border)",
                   opacity: rcSelected[c.id] ? 1 : 0.5,
                 }} onClick={() => setRcSelected(prev => ({ ...prev, [c.id]: !prev[c.id] }))}>
-                  <span style={{ width: 28, display: "flex", justifyContent: "center" }}>{rcSelected[c.id] ? <CheckCircle size={20} style={{ color: "var(--green)" }} /> : <Square size={20} style={{ color: "var(--text3)" }} />}</span>
+                  <span className="justify-center" style={{ width: 28, display: "flex" }}>{rcSelected[c.id] ? <CheckCircle size={20} className="c-green" /> : <Square size={20} className="c-text3" />}</span>
                   <div>
                     <div className="frm-font-14">{c.name}</div>
-                    <div className="frm-font-11" style={{ color: "var(--text3)" }}>{c.role || "Crew"}</div>
+                    <div className="frm-font-11 c-text3">{c.role || "Crew"}</div>
                   </div>
                 </div>
               ))}
 
               {/* Add team */}
               {rcAddingCrew ? (
-                <select className="form-select" style={{ fontSize: "var(--text-label)", marginTop: "var(--space-2)" }} autoFocus
+                <select className="form-select fs-label mt-sp2" autoFocus
                   onChange={e => {
                     if (!e.target.value) return;
                     const emp = employees.find(em => em.id === Number(e.target.value));
@@ -395,13 +394,13 @@ export function ForemanJSATab({
                   {(employees || []).filter(e => !teamIds.has(e.id) && e.active !== false).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                 </select>
               ) : (
-                <button className="cal-nav-btn" style={{ marginTop: "var(--space-2)", fontSize: "var(--text-label)" }} onClick={() => setRcAddingCrew(true)}>
+                <button className="cal-nav-btn fs-label mt-sp2" onClick={() => setRcAddingCrew(true)}>
                   + {t("Add Crew")}
                 </button>
               )}
 
               {/* Start Sign-On */}
-              <button className="btn btn-primary frm-w-full" style={{ marginTop: "var(--space-5)", padding: "var(--space-4)", fontSize: "var(--text-card)" }}
+              <button className="btn btn-primary frm-w-full fs-card mt-sp5 p-sp4"
                 disabled={Object.values(rcSelected).filter(Boolean).length === 0}
                 onClick={() => {
                   const queue = teamForProject.filter(c => rcSelected[c.id]).map(c => ({ employeeId: c.id, name: c.name }));
@@ -425,36 +424,36 @@ export function ForemanJSATab({
             <div>
               {/* Progress */}
               <div className="frm-mb-12">
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-label)", color: "var(--text3)", marginBottom: "var(--space-1)" }}>
+                <div className="mb-sp1 fs-label c-text3" style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>{progress} {t("of")} {total}</span>
                   <span>{t("Pass device to next person")}</span>
                 </div>
-                <div style={{ height: 4, background: "var(--border)", borderRadius: "var(--radius-control)", overflow: "hidden" }}>
+                <div className="rounded-control overflow-hidden" style={{ height: 4, background: "var(--border)" }}>
                   <div style={{ height: "100%", width: `${(progress / total) * 100}%`, background: "var(--green)", borderRadius: "var(--radius-control)", transition: "width 0.3s" }} />
                 </div>
               </div>
 
               {/* Name banner */}
-              <div className="frm-text-center" style={{ padding: "var(--space-4) 0", marginBottom: "var(--space-3)" }}>
-                <div style={{ fontSize: "var(--text-title)", fontWeight: "var(--weight-bold)" }}>{current.name}</div>
-                <div className="frm-font-13" style={{ color: "var(--text3)" }}>{proj?.name}</div>
+              <div className="frm-text-center mb-sp3" style={{ padding: "var(--space-4) 0" }}>
+                <div className="fw-bold fs-title">{current.name}</div>
+                <div className="frm-font-13 c-text3">{proj?.name}</div>
               </div>
 
               {/* Hazard cards */}
               <div className="frm-mb-16">
-                <div className="frm-jsa-label" style={{ fontSize: "var(--text-label)" }}>{t("Hazards")}</div>
+                <div className="frm-jsa-label fs-label">{t("Hazards")}</div>
                 {allHazards.map((h, i) => {
                   const score = (h.likelihood || 1) * (h.severity || 1);
                   const hrc = riskColor(score);
                   const catInfo = HAZARD_CATEGORIES[h.category];
                   return (
                     <div key={i} className="card" style={{ padding: "var(--space-3)", marginBottom: "var(--space-2)", borderLeft: `3px solid ${catInfo?.color || "var(--amber)"}` }}>
-                      <div className="frm-flex-row-center frm-mb-4" style={{ gap: "var(--space-2)" }}>
-                        <span style={{ background: hrc.bg, color: "#fff", fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", fontWeight: "var(--weight-bold)" }}>{score}</span>
-                        <span style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)" }}>{h.hazard}</span>
+                      <div className="frm-flex-row-center frm-mb-4 gap-sp2">
+                        <span className="rounded-control fw-bold fs-xs c-white" style={{ background: hrc.bg, padding: "var(--space-1) var(--space-2)" }}>{score}</span>
+                        <span className="fw-semi fs-label">{h.hazard}</span>
                       </div>
-                      {h.hazardEs && <div className="frm-font-11 frm-mb-4" style={{ color: "var(--text3)", fontStyle: "italic" }}>{h.hazardEs}</div>}
-                      <div className="frm-font-11" style={{ color: "var(--text2)" }}>
+                      {h.hazardEs && <div className="frm-font-11 frm-mb-4 c-text3" style={{ fontStyle: "italic" }}>{h.hazardEs}</div>}
+                      <div className="frm-font-11 c-text2">
                         {(h.controls || []).map((c, ci) => <div key={ci}>✓ {c}</div>)}
                       </div>
                     </div>
@@ -464,15 +463,15 @@ export function ForemanJSATab({
 
               {/* PPE */}
               <div className="frm-mb-16">
-                <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--amber)", marginBottom: "var(--space-2)" }}>{t("Required PPE")}</div>
-                <div className="frm-flex-wrap" style={{ gap: "var(--space-3)" }}>
+                <div className="fw-semi mb-sp2 fs-label c-amber">{t("Required PPE")}</div>
+                <div className="frm-flex-wrap gap-sp3">
                   {(rcJsa?.ppe || []).map(k => {
                     const item = PPE_ITEMS.find(p => p.key === k);
                     return item ? (
                       <div key={k} className="frm-text-center">
-                        <div style={{ fontSize: "var(--text-subtitle)" }}>{item.icon}</div>
-                        <div className="frm-font-10" style={{ color: "var(--text2)" }}>{item.label}</div>
-                        <div style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>{item.labelEs}</div>
+                        <div className="fs-subtitle">{item.icon}</div>
+                        <div className="frm-font-10 c-text2">{item.label}</div>
+                        <div className="fs-xs c-text3">{item.labelEs}</div>
                       </div>
                     ) : null;
                   })}
@@ -490,7 +489,7 @@ export function ForemanJSATab({
               </div>
 
               {/* Sign & Next button */}
-              <button className="btn btn-primary frm-w-full" style={{ padding: "var(--space-4)", fontSize: "var(--text-card)" }}
+              <button className="btn btn-primary frm-w-full fs-card p-sp4"
                 onClick={() => {
                   const sigData = sigRef.current?.getSig?.();
                   if (!sigData) { show(t("Please sign first"), "err"); return; }
@@ -522,10 +521,10 @@ export function ForemanJSATab({
         if (rcStep === "supervisor") {
           return (
             <div>
-              <div className="frm-text-center" style={{ padding: "var(--space-6) 0", marginBottom: "var(--space-4)" }}>
+              <div className="frm-text-center mb-sp4" style={{ padding: "var(--space-6) 0" }}>
                 <div className="frm-font-16 frm-amber">{t("Supervisor Sign-Off")}</div>
-                <div style={{ fontSize: "var(--text-title)", fontWeight: "var(--weight-bold)", marginTop: "var(--space-2)" }}>{activeForeman.name}</div>
-                <div className="frm-font-13 frm-mt-4" style={{ color: "var(--text3)" }}>
+                <div className="fw-bold fs-title mt-sp2">{activeForeman.name}</div>
+                <div className="frm-font-13 frm-mt-4 c-text3">
                   {(rcJsa?.teamSignOn || []).length} {t("team members signed")}
                 </div>
               </div>
@@ -537,7 +536,7 @@ export function ForemanJSATab({
                 onSave={(ref) => { sigRef.current = ref; }}
               />
 
-              <button className="btn btn-primary frm-w-full frm-mt-16" style={{ padding: "var(--space-4)", fontSize: "var(--text-card)" }}
+              <button className="btn btn-primary frm-w-full frm-mt-16 fs-card p-sp4"
                 onClick={() => {
                   const sigData = sigRef.current?.getSig?.();
                   if (!sigData) { show(t("Please sign first"), "err"); return; }
@@ -556,9 +555,9 @@ export function ForemanJSATab({
           const finalJsa = (jsas || []).find(j => j.id === rcJsaId);
           return (
             <div className="frm-text-center">
-              <div className="frm-mb-8" style={{ display: "flex", justifyContent: "center" }}><CheckCircle size={48} style={{ color: "var(--green)" }} /></div>
+              <div className="frm-mb-8 justify-center" style={{ display: "flex" }}><CheckCircle size={48} className="c-green" /></div>
               <div className="frm-font-20 frm-mb-4">{t("Pre-Task Safety Complete")}</div>
-              <div className="frm-font-14 frm-mb-20" style={{ color: "var(--text2)" }}>
+              <div className="frm-font-14 frm-mb-20 c-text2">
                 {(finalJsa?.teamSignOn || []).length} {t("team members signed")} · {finalJsa?.title}
               </div>
 
@@ -566,14 +565,14 @@ export function ForemanJSATab({
               <div className="frm-mb-20">
                 {(finalJsa?.teamSignOn || []).map((c, i) => (
                   <div key={i} className="flex-between frm-rfi-row" style={{ fontSize: "inherit" }}>
-                    <span className="frm-font-13" style={{ fontWeight: "var(--weight-medium)" }}>{c.name}</span>
-                    <span className="frm-font-11" style={{ color: "var(--green)" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                    <span className="frm-font-13 fw-medium">{c.name}</span>
+                    <span className="frm-font-11 c-green">✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                   </div>
                 ))}
               </div>
 
               <div className="frm-flex-row">
-                <button className="cal-nav-btn" style={{ flex: 1, padding: "var(--space-3)" }} onClick={async () => {
+                <button className="cal-nav-btn p-sp3 flex-1" onClick={async () => {
                   try {
                     const { generateJsaPdf } = await import("../../utils/jsaPdf");
                     const p = projects.find(pr => pr.id === finalJsa?.projectId);
@@ -581,7 +580,7 @@ export function ForemanJSATab({
                     show(t("PDF exported"), "ok");
                   } catch (e) { show("PDF error: " + e.message, "err"); }
                 }}>{t("Export PDF")}</button>
-                <button className="btn btn-primary" style={{ flex: 1, padding: "var(--space-3)" }} onClick={() => {
+                <button className="btn btn-primary p-sp3 flex-1" onClick={() => {
                   setJsaView("list");
                   setRcJsaId(null);
                   setRcStep("pick");
@@ -605,46 +604,46 @@ export function ForemanJSATab({
         const statusClr = jsa.status === "active" ? "var(--green)" : jsa.status === "draft" ? "var(--amber)" : "var(--text3)";
         return (
           <div>
-            <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-3)", alignItems: "center", flexWrap: "wrap" }}>
+            <div className="mb-sp3 gap-sp2 flex-wrap" style={{ display: "flex", alignItems: "center" }}>
               <button className="cal-nav-btn" onClick={() => setJsaView("list")}>{t("<- Back")}</button>
               <span className="jsa-status-badge" style={{ background: statusClr + "22", color: statusClr }}>{jsa.status.toUpperCase()}</span>
-              <div className="frm-flex-row" style={{ marginLeft: "auto", gap: "var(--space-2)" }}>
+              <div className="frm-flex-row gap-sp2 ml-auto">
                 {jsa.status === "draft" && <button className="btn btn-primary btn-sm" onClick={() => updateJsa({ status: "active" })}>{t("Activate")}</button>}
                 {jsa.status === "active" && <button className="cal-nav-btn" onClick={() => updateJsa({ status: "closed" })}>{t("Close JSA")}</button>}
               </div>
             </div>
 
             <h3 className="frm-font-16 frm-mb-4">{jsa.title}</h3>
-            <div className="frm-font-12 frm-mb-12" style={{ color: "var(--text3)" }}>
+            <div className="frm-font-12 frm-mb-12 c-text3">
               {jsa.date} · {jsa.location} · {lang === "es" ? TRADE_LABELS[jsa.trade]?.labelEs : TRADE_LABELS[jsa.trade]?.label}
             </div>
 
             {/* Risk summary */}
             <div className="frm-grid-3 frm-mb-16">
               <div className="card frm-text-center frm-p-12">
-                <div style={{ fontSize: "var(--text-subtitle)", fontWeight: "var(--weight-bold)", color: rc.bg }}>{maxRisk}</div>
-                <div className="frm-font-10" style={{ color: "var(--text3)" }}>{t("Highest Risk")}</div>
+                <div className="fs-subtitle fw-bold" style={{ color: rc.bg }}>{maxRisk}</div>
+                <div className="frm-font-10 c-text3">{t("Highest Risk")}</div>
               </div>
               <div className="card frm-text-center frm-p-12">
                 <div className="frm-font-20">{allHazards.length}</div>
-                <div className="frm-font-10" style={{ color: "var(--text3)" }}>{t("Hazards")}</div>
+                <div className="frm-font-10 c-text3">{t("Hazards")}</div>
               </div>
               <div className="card frm-text-center frm-p-12">
-                <div className="frm-activity-value" style={{ color: "var(--green)" }}>{(jsa.teamSignOn || []).length}</div>
-                <div className="frm-font-10" style={{ color: "var(--text3)" }}>{t("Crew Signed")}</div>
+                <div className="frm-activity-value c-green">{(jsa.teamSignOn || []).length}</div>
+                <div className="frm-font-10 c-text3">{t("Crew Signed")}</div>
               </div>
             </div>
 
             {/* PPE */}
             <div className="frm-mb-16">
               <div className="frm-jsa-label">{t("Required PPE")}</div>
-              <div className="frm-flex-wrap" style={{ gap: "var(--space-2)" }}>
+              <div className="frm-flex-wrap gap-sp2">
                 {(jsa.ppe || []).map(k => {
                   const item = PPE_ITEMS.find(p => p.key === k);
                   return item ? (
-                    <div key={k} style={{ textAlign: "center", fontSize: "var(--text-tab)" }}>
+                    <div key={k} className="fs-tab text-center">
                       <div className="frm-font-20">{item.icon}</div>
-                      <div style={{ color: "var(--text3)" }}>{lang === "es" ? item.labelEs : item.label}</div>
+                      <div className="c-text3">{lang === "es" ? item.labelEs : item.label}</div>
                     </div>
                   ) : null;
                 })}
@@ -655,9 +654,9 @@ export function ForemanJSATab({
             <div className="frm-mb-16">
               <div className="frm-jsa-label">{t("Job Steps & Hazards")}</div>
               {(jsa.steps || []).map((step, idx) => (
-                <div key={step.id} className="card" style={{ padding: "var(--space-3)", marginBottom: "var(--space-2)" }}>
-                  <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginBottom: "var(--space-1)" }}>
-                    <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--amber)", color: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--text-tab)", fontWeight: "var(--weight-bold)", flexShrink: 0 }}>{idx + 1}</span>
+                <div key={step.id} className="card mb-sp2 p-sp3">
+                  <div className="mb-sp1 gap-sp2" style={{ display: "flex", alignItems: "center" }}>
+                    <span className="flex fw-bold fs-tab justify-center flex-shrink-0" style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--amber)", color: "var(--bg)" }}>{idx + 1}</span>
                     <span className="frm-font-13">{step.step}</span>
                   </div>
                   {(step.hazards || []).map((h, hi) => {
@@ -665,11 +664,11 @@ export function ForemanJSATab({
                     const hrc = riskColor(score);
                     return (
                       <div key={hi} style={{ marginLeft: "var(--space-8)", padding: "var(--space-2) 0", borderTop: "1px solid var(--border)" }}>
-                        <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginBottom: "var(--space-1)" }}>
-                          <span className="jsa-risk-score" style={{ background: hrc.bg, color: "#fff", fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)" }}>{score}</span>
+                        <div className="mb-sp1 gap-sp2" style={{ display: "flex", alignItems: "center" }}>
+                          <span className="jsa-risk-score rounded-control fs-xs c-white" style={{ background: hrc.bg, padding: "var(--space-1) var(--space-2)" }}>{score}</span>
                           <span className="frm-font-12">{h.hazard}</span>
                         </div>
-                        <div className="frm-font-11" style={{ color: "var(--text3)" }}>
+                        <div className="frm-font-11 c-text3">
                           {(h.controls || []).map((c, ci) => <span key={ci}>✓ {c}{ci < h.controls.length - 1 ? " · " : ""}</span>)}
                         </div>
                       </div>
@@ -684,12 +683,12 @@ export function ForemanJSATab({
               <div className="frm-jsa-label">{t("Crew Sign-On")} ({(jsa.teamSignOn || []).length})</div>
               {(jsa.teamSignOn || []).map((c, i) => (
                 <div key={i} className="flex-between frm-rfi-row" style={{ padding: "var(--space-2) 0" }}>
-                  <span className="frm-font-13" style={{ fontWeight: "var(--weight-medium)" }}>{c.name}</span>
-                  <span className="frm-font-11" style={{ color: "var(--green)" }}>✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                  <span className="frm-font-13 fw-medium">{c.name}</span>
+                  <span className="frm-font-11 c-green">✓ {new Date(c.signedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                 </div>
               ))}
               {jsa.status === "active" && (
-                <select className="form-select" style={{ fontSize: "var(--text-label)", marginTop: "var(--space-2)" }}
+                <select className="form-select fs-label mt-sp2"
                   onChange={e => {
                     if (!e.target.value) return;
                     const emp = (employees || []).find(em => em.id === Number(e.target.value));
@@ -709,14 +708,14 @@ export function ForemanJSATab({
             <div>
               <div className="frm-jsa-label">{t("Near Misses")}</div>
               {(jsa.nearMisses || []).length === 0 ? (
-                <div className="frm-font-12" style={{ color: "var(--text3)" }}>{t("None reported")}</div>
+                <div className="frm-font-12 c-text3">{t("None reported")}</div>
               ) : (jsa.nearMisses || []).map((nm, i) => (
-                <div key={i} className="card" style={{ padding: "var(--space-2)", marginBottom: "var(--space-1)", fontSize: "var(--text-label)" }}>
+                <div key={i} className="card mb-sp1 fs-label p-sp2">
                   {nm.description} — {nm.reportedBy} ({nm.date})
                 </div>
               ))}
               {jsa.status === "active" && (
-                <button className="cal-nav-btn" style={{ marginTop: "var(--space-2)", fontSize: "var(--text-tab)" }} onClick={() => {
+                <button className="cal-nav-btn fs-tab mt-sp2" onClick={() => {
                   const desc = prompt(lang === "es" ? "Describe el casi-accidente:" : "Describe the near miss:");
                   if (!desc) return;
                   updateJsa({ nearMisses: [...(jsa.nearMisses || []), { description: desc, reportedBy: activeForeman.name, date: new Date().toISOString().slice(0, 10) }] });
@@ -828,22 +827,22 @@ export function ForemanJSATab({
 
             {weatherHazard && jsaForm.weather !== "clear" && (
               <div className="jsa-weather-warn frm-mb-12">
-                <AlertTriangle size={14} style={{ display: "inline", marginRight: "var(--space-1)", verticalAlign: "middle" }} />{lang === "es" ? weatherHazard.hazardEs : weatherHazard.hazard}
+                <AlertTriangle size={14} className="mr-sp1" style={{ display: "inline", verticalAlign: "middle" }} />{lang === "es" ? weatherHazard.hazardEs : weatherHazard.hazard}
               </div>
             )}
 
             {/* PPE */}
             <div className="frm-mb-12">
               <div className="frm-jsa-label">{t("Required PPE")}</div>
-              <div className="frm-flex-wrap" style={{ gap: "var(--space-2)" }}>
+              <div className="frm-flex-wrap gap-sp2">
                 {PPE_ITEMS.map(item => {
                   const active = jsaForm.ppe.includes(item.key);
                   return (
                     <div key={item.key} className={`jsa-ppe-pick${active ? " active" : ""}`}
                       onClick={() => updJsaForm("ppe", active ? jsaForm.ppe.filter(k => k !== item.key) : [...jsaForm.ppe, item.key])}
-                      className="frm-text-center" style={{ padding: "var(--space-1) var(--space-2)", cursor: "pointer" }}>
-                      <div style={{ fontSize: "var(--text-section)" }}>{item.icon}</div>
-                      <div style={{ fontSize: "var(--text-xs)" }}>{lang === "es" ? item.labelEs : item.label}</div>
+                      className="frm-text-center cursor-pointer" style={{ padding: "var(--space-1) var(--space-2)" }}>
+                      <div className="fs-section">{item.icon}</div>
+                      <div className="fs-xs">{lang === "es" ? item.labelEs : item.label}</div>
                     </div>
                   );
                 })}
@@ -853,7 +852,7 @@ export function ForemanJSATab({
             {/* Permits */}
             <div className="frm-mb-12">
               <div className="frm-jsa-label">{t("Permits Required")}</div>
-              <div className="frm-flex-wrap" style={{ gap: "var(--space-2)" }}>
+              <div className="frm-flex-wrap gap-sp2">
                 {PERMIT_TYPES.map(p => {
                   const active = jsaForm.permits.includes(p.key);
                   return (
@@ -871,9 +870,9 @@ export function ForemanJSATab({
             <div className="frm-mb-16">
               <div className="frm-jsa-label">{t("Job Steps & Hazards")}</div>
               {jsaForm.steps.map((step, idx) => (
-                <div key={step.id} className="card" style={{ padding: "var(--space-3)", marginBottom: "var(--space-2)" }}>
-                  <div className="frm-flex-row-center frm-mb-6" style={{ gap: "var(--space-2)" }}>
-                    <span style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--amber)", color: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--text-xs)", fontWeight: "var(--weight-bold)", flexShrink: 0 }}>{idx + 1}</span>
+                <div key={step.id} className="card mb-sp2 p-sp3">
+                  <div className="frm-flex-row-center frm-mb-6 gap-sp2">
+                    <span className="flex fw-bold fs-xs justify-center flex-shrink-0" style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--amber)", color: "var(--bg)" }}>{idx + 1}</span>
                     <input className="form-input frm-flex-1 frm-font-12" value={step.step}
                       onChange={e => updJsaForm("steps", jsaForm.steps.map((s, i) => i === idx ? { ...s, step: e.target.value } : s))}
                       placeholder={t("Describe this step...")} />
@@ -884,8 +883,8 @@ export function ForemanJSATab({
                     const score = (h.likelihood || 1) * (h.severity || 1);
                     const hrc = riskColor(score);
                     return (
-                      <div key={hi} style={{ marginLeft: 26, padding: "var(--space-1) 0", display: "flex", gap: "var(--space-2)", alignItems: "center", borderTop: "1px solid var(--border)" }}>
-                        <span className="jsa-risk-score" style={{ background: hrc.bg, color: "#fff", fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)" }}>{score}</span>
+                      <div key={hi} className="gap-sp2" style={{ marginLeft: 26, padding: "var(--space-1) 0", display: "flex", alignItems: "center", borderTop: "1px solid var(--border)" }}>
+                        <span className="jsa-risk-score rounded-control fs-xs c-white" style={{ background: hrc.bg, padding: "var(--space-1) var(--space-1)" }}>{score}</span>
                         <span className="frm-font-11 frm-flex-1">{h.hazard}</span>
                         <button className="frm-btn-unstyled--red"
                           onClick={() => {
@@ -896,7 +895,7 @@ export function ForemanJSATab({
                       </div>
                     );
                   })}
-                  <select className="form-select" style={{ fontSize: "var(--text-tab)", marginTop: "var(--space-1)", marginLeft: 26 }}
+                  <select className="form-select fs-tab mt-sp1" style={{ marginLeft: 26 }}
                     onChange={e => {
                       if (!e.target.value) return;
                       const [trade, hIdx] = e.target.value.split("|");

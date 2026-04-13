@@ -2913,22 +2913,22 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   const btnDis = { ...btn, opacity: 0.4, cursor: "default" };
 
   return (
-    <div style={{ width: "100%", height: "100%", background: "rgba(0,0,0,0.97)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div className="flex-col overflow-hidden h-full w-full" style={{ background: "rgba(0,0,0,0.97)" }}>
 
       {/* ── Top Toolbar ── */}
-      <div style={{ flexShrink: 0, borderBottom: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.85)" }}>
+      <div className="flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.85)" }}>
         {/* Row 1: Close + File info + Drawing Tools */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "var(--space-1) var(--space-3)", gap: "var(--space-2)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-            <button onClick={handleClose} style={{ ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)", background: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.4)" }}>✕ Close</button>
-            <span style={{ color: "#fff", fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div className="flex-between gap-sp2" style={{ padding: "var(--space-1) var(--space-3)" }}>
+          <div className="flex gap-sp2">
+            <button onClick={handleClose} className="fs-label" style={{ ...btn, padding: "var(--space-1) var(--space-3)", background: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.4)" }}>✕ Close</button>
+            <span className="fw-semi fs-label nowrap overflow-hidden c-white" style={{ maxWidth: 200, textOverflow: "ellipsis" }}>
               {pdfFiles.length > 1
                 ? `${(pdfFiles[activePdfIdx]?.name || "PDF").replace(/\.pdf$/i, "")} — ${getSheetName(page)}`
                 : numPages > 1 ? getSheetName(page) : (fileName || "Drawing")}
             </span>
-            {onTakeoffStateChange && lastSaved && <span style={{ color: "var(--green)", fontSize: "var(--text-xs)" }}>✓ saved</span>}
+            {onTakeoffStateChange && lastSaved && <span className="fs-xs c-green">✓ saved</span>}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+          <div className="flex gap-sp1">
             <button onClick={() => { setMode(MODE.PAN); cancelActive(); }} style={mode === MODE.PAN ? { ...btnActive, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }} title="Space">Pan</button>
             <select value={ppf ? (closestPresetLabel(ppf) || "__custom") : ""}
               onChange={e => {
@@ -2969,7 +2969,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               style={!ppf ? { ...btnDis, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : mode === MODE.MEASURE ? { ...btnActive, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)", background: "var(--amber)", color: "#000", borderColor: "var(--amber)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }}
               disabled={!ppf} title="M — Quick ruler (no condition)">📏 Measure</button>
             <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)" }} />
-            <button onClick={undo} style={{ ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }} title="Ctrl+Z">Undo</button>
+            <button onClick={undo} className="fs-label" style={{ ...btn, padding: "var(--space-1) var(--space-3)" }} title="Ctrl+Z">Undo</button>
             <button onClick={redo} style={redoStack.length ? { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : { ...btnDis, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }} disabled={!redoStack.length} title="Ctrl+Y">Redo</button>
             <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.12)" }} />
             <button onClick={() => setContinuousMode(m => !m)}
@@ -2984,38 +2984,38 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           </div>
         </div>
         {/* Row 2: Page Navigation + Zoom — prominent */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--space-1) var(--space-3) var(--space-1)", gap: "var(--space-2)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <div className="flex justify-center gap-sp2" style={{ padding: "var(--space-1) var(--space-3) var(--space-1)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
           <button onClick={prevPage} style={page <= 1 ? { ...btnDis, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }} disabled={page <= 1}>◀ Prev</button>
           <select value={page} onChange={e => { setPage(Number(e.target.value)); setActiveVertices([]); }}
-            style={{ padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.3)", background: "#1a1a2e", color: "#fff", fontSize: "var(--text-label)", minWidth: 180, maxWidth: 300, fontWeight: "var(--weight-medium)" }}>
+            className="rounded-control fw-medium fs-label c-white" style={{ padding: "var(--space-1) var(--space-2)", border: "1px solid rgba(255,255,255,0.3)", background: "#1a1a2e", minWidth: 180, maxWidth: 300 }}>
             {Array.from({ length: numPages }, (_, i) => i + 1).map(pg => {
               const pk = activePdfIdx + ":" + pg;
               const name = sheetNames[pk] || `Page ${pg}`;
               const hasMeas = (measurements[pk] || []).length > 0;
               const isComplete = completedPages[pk];
               const indicator = isComplete ? "✓ " : hasMeas ? "● " : "  ";
-              return <option key={pg} value={pg} style={{ background: "#1a1a2e", color: "#fff" }}>{indicator}{pg} - {name}</option>;
+              return <option key={pg} value={pg} className="c-white" style={{ background: "#1a1a2e" }}>{indicator}{pg} - {name}</option>;
             })}
           </select>
           <button onClick={nextPage} style={page >= numPages ? { ...btnDis, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }} disabled={page >= numPages}>Next ▶</button>
-          <span style={{ color: "#999", fontSize: "var(--text-label)" }}>Page {page} of {numPages}</span>
+          <span className="fs-label" style={{ color: "#999" }}>Page {page} of {numPages}</span>
           <button onClick={() => setCompletedPages(prev => ({ ...prev, [pageKey]: !prev[pageKey] }))}
             style={completedPages[pageKey] ? { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)", background: "rgba(34,197,94,0.2)", borderColor: "rgba(34,197,94,0.5)", color: "var(--green)" } : { ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }}
             title="Mark this page as takeoff complete">{completedPages[pageKey] ? "✓ Done" : "Mark Done"}</button>
           <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
-          <button onClick={zoomOut} style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-label)" }}>−</button>
-          <span style={{ color: "var(--text2)", fontSize: "var(--text-label)", minWidth: 36, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
-          <button onClick={zoomIn} style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-label)" }}>+</button>
-          <button onClick={resetZoom} style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)" }} title="F — Fit width">W Fit</button>
-          <button onClick={fitToPage} style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)" }} title="Fit entire page">P Fit</button>
+          <button onClick={zoomOut} className="fs-label" style={{ ...btn, padding: "var(--space-1) var(--space-2)" }}>−</button>
+          <span className="fs-label c-text2 text-center" style={{ minWidth: 36 }}>{Math.round(zoom * 100)}%</span>
+          <button onClick={zoomIn} className="fs-label" style={{ ...btn, padding: "var(--space-1) var(--space-2)" }}>+</button>
+          <button onClick={resetZoom} className="fs-xs" style={{ ...btn, padding: "var(--space-1) var(--space-2)" }} title="F — Fit width">W Fit</button>
+          <button onClick={fitToPage} className="fs-xs" style={{ ...btn, padding: "var(--space-1) var(--space-2)" }} title="Fit entire page">P Fit</button>
           <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)" }} />
           {/* Named Views */}
           <button onClick={() => { setShowSaveView(true); setSaveViewName(""); }}
-            style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)", background: "rgba(59,130,246,0.1)", borderColor: "rgba(59,130,246,0.25)", color: "#93c5fd" }}
+            className="fs-xs" style={{ ...btn, padding: "var(--space-1) var(--space-2)", background: "rgba(59,130,246,0.1)", borderColor: "rgba(59,130,246,0.25)", color: "#93c5fd" }}
             title="Save current view (page + zoom + scroll position)">📌 Save View</button>
           {namedViews.length > 0 && (
             <select value="" onChange={e => { const nv = namedViews.find(v => v.id === e.target.value); if (nv) navigateToView(nv); }}
-              style={{ padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.08)", color: "#93c5fd", fontSize: "var(--text-xs)", maxWidth: 130 }}>
+              className="rounded-control fs-xs" style={{ padding: "var(--space-1) var(--space-2)", border: "1px solid rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.08)", color: "#93c5fd", maxWidth: 130 }}>
               <option value="" disabled>Views ({namedViews.length})</option>
               {namedViews.map(nv => (
                 <option key={nv.id} value={nv.id}>{nv.name} — {sheetNames[nv.pageKey] || `P${nv.page}`}</option>
@@ -3029,13 +3029,13 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           </button>
         </div>
         {/* Row 2: Bid area + CO + Add PDF (compact, only shows when needed) */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "var(--space-1) var(--space-3) var(--space-1)", gap: "var(--space-1)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+        <div className="flex-between gap-sp1" style={{ padding: "var(--space-1) var(--space-3) var(--space-1)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="flex gap-sp1">
             <select value={activeBidAreaId} onChange={e => setActiveBidAreaId(e.target.value)}
-              style={{ padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-xs)", maxWidth: 100 }}>
+              className="rounded-control fs-xs c-white" style={{ padding: "var(--space-1) var(--space-1)", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.06)", maxWidth: 100 }}>
               {bidAreas.map(ba => <option key={ba.id} value={ba.id}>{ba.name}</option>)}
             </select>
-            <button onClick={() => setShowBidAreaAdd(true)} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)" }} title="Add bid area">+Area</button>
+            <button onClick={() => setShowBidAreaAdd(true)} className="fs-xs" style={{ ...btn, padding: "var(--space-1) var(--space-1)" }} title="Add bid area">+Area</button>
             <span style={{ width: 1, height: 12, background: "rgba(255,255,255,0.08)" }} />
             <button onClick={() => setCoMode(m => m === "add" ? null : "add")}
               style={coMode === "add" ? { ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)", background: "rgba(34,197,94,0.25)", borderColor: "rgba(34,197,94,0.5)", color: "var(--green)", fontWeight: "var(--weight-semi)" } : { ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}
@@ -3044,20 +3044,20 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               style={coMode === "delete" ? { ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)", background: "rgba(239,68,68,0.25)", borderColor: "rgba(239,68,68,0.5)", color: "var(--red)", fontWeight: "var(--weight-semi)" } : { ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}
               title="Change Order: Mark deletions">CO−</button>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
-            <button onClick={() => addPdfInputRef.current?.click()} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", background: "rgba(59,130,246,0.1)", borderColor: "rgba(59,130,246,0.25)", color: "var(--blue)" }} title="Add another PDF file">+ PDF</button>
-            <input ref={addPdfInputRef} type="file" accept=".pdf" style={{ display: "none" }}
+          <div className="flex gap-sp1">
+            <button onClick={() => addPdfInputRef.current?.click()} className="fs-xs c-blue" style={{ ...btn, padding: "var(--space-1) var(--space-1)", background: "rgba(59,130,246,0.1)", borderColor: "rgba(59,130,246,0.25)" }} title="Add another PDF file">+ PDF</button>
+            <input ref={addPdfInputRef} type="file" accept=".pdf" className="hidden"
               onChange={e => { const f = e.target.files?.[0]; if (f) handleAddPdf(f); e.target.value = ""; }} />
             {(numPages > 1 || pdfFiles.length > 1) && (
-              <button onClick={() => setShowSheets(v => !v)} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)" }}>
+              <button onClick={() => setShowSheets(v => !v)} className="fs-xs" style={{ ...btn, padding: "var(--space-1) var(--space-1)" }}>
                 {showSheets ? "Hide Sheets" : "Show Sheets"}
               </button>
             )}
           </div>
         </div>
         {/* Row 4: Annotation Tools + Style */}
-        <div style={{ display: "flex", alignItems: "center", padding: "var(--space-1) var(--space-3) var(--space-1)", gap: "var(--space-1)", borderTop: "1px solid rgba(255,255,255,0.05)", flexWrap: "wrap" }}>
-          <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)", letterSpacing: 0.5 }}>MARKUP</span>
+        <div className="flex gap-sp1 flex-wrap" style={{ padding: "var(--space-1) var(--space-3) var(--space-1)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+          <span className="fs-xs c-text3" style={{ letterSpacing: 0.5 }}>MARKUP</span>
           <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.08)" }} />
           {[
             { m: MODE.TEXT, label: "T Text", key: "T" },
@@ -3080,7 +3080,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           ))}
           <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.08)" }} />
           {/* Stroke color */}
-          <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>Stroke</span>
+          <span className="fs-xs c-text3">Stroke</span>
           {["#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7", "#fff"].map(c => (
             <div key={"s" + c} onClick={() => setAnnStyle(s => ({ ...s, strokeColor: c }))}
               style={{ width: 14, height: 14, borderRadius: "var(--radius-control)", background: c, cursor: "pointer",
@@ -3089,12 +3089,12 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           ))}
           <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.08)" }} />
           {/* Fill color (for shapes) */}
-          <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>Fill</span>
+          <span className="fs-xs c-text3">Fill</span>
           <div onClick={() => setAnnStyle(s => ({ ...s, fillColor: null }))}
             style={{ width: 14, height: 14, borderRadius: "var(--radius-control)", background: "transparent", cursor: "pointer",
               border: !annStyle.fillColor ? "2px solid #fff" : "1px solid rgba(255,255,255,0.2)",
               position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", top: 0, left: "50%", width: 1, height: "100%", background: "var(--red)", transform: "rotate(45deg)", transformOrigin: "top" }} />
+            <div className="absolute h-full" style={{ top: 0, left: "50%", width: 1, background: "var(--red)", transform: "rotate(45deg)", transformOrigin: "top" }} />
           </div>
           {["#ef444466", "#f59e0b66", "#22c55e66", "#3b82f666", "#a855f766"].map(c => (
             <div key={"f" + c} onClick={() => setAnnStyle(s => ({ ...s, fillColor: c }))}
@@ -3103,7 +3103,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           ))}
           <span style={{ width: 1, height: 14, background: "rgba(255,255,255,0.08)" }} />
           {/* Line width */}
-          <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>Wt</span>
+          <span className="fs-xs c-text3">Wt</span>
           {[1, 2, 3, 5].map(w => (
             <button key={w} onClick={() => setAnnStyle(s => ({ ...s, lineWidth: w }))}
               style={annStyle.lineWidth === w
@@ -3111,7 +3111,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                 : { ...btn, padding: "var(--space-1) var(--space-1)", fontSize: "var(--text-xs)" }}>{w}</button>
           ))}
           {/* Opacity */}
-          <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>Op</span>
+          <span className="fs-xs c-text3">Op</span>
           {[0.3, 0.5, 0.7, 1.0].map(o => (
             <button key={o} onClick={() => setAnnStyle(s => ({ ...s, opacity: o }))}
               style={annStyle.opacity === o
@@ -3120,26 +3120,26 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           ))}
           {/* Annotation count */}
           {pageAnnotations.length > 0 && (
-            <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)", marginLeft: "var(--space-1)" }}>{pageAnnotations.length} markup{pageAnnotations.length !== 1 ? "s" : ""}</span>
+            <span className="ml-sp1 fs-xs c-text3">{pageAnnotations.length} markup{pageAnnotations.length !== 1 ? "s" : ""}</span>
           )}
         </div>
       </div>
 
       {/* ── Body: sheets sidebar + canvas + conditions panel ── */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div className="overflow-hidden flex-1" style={{ display: "flex" }}>
 
         {/* ── Left Sidebar: Sheet Navigator (Multi-PDF) ── */}
         {showSheets && (numPages > 1 || pdfFiles.length > 1) && (
-          <div style={{ width: 190, flexShrink: 0, borderRight: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.9)", overflow: "auto", padding: "var(--space-2) var(--space-2)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-2)", padding: "0 4px" }}>
-              <span style={{ color: "#fff", fontSize: "var(--text-label)", fontWeight: "var(--weight-bold)" }}>Sheets</span>
-              <div style={{ display: "flex", gap: "var(--space-1)", alignItems: "center" }}>
+          <div className="overflow-auto flex-shrink-0" style={{ width: 190, borderRight: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.9)", padding: "var(--space-2) var(--space-2)" }}>
+            <div className="mb-sp2" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 4px" }}>
+              <span className="fw-bold fs-label c-white">Sheets</span>
+              <div className="gap-sp1" style={{ display: "flex", alignItems: "center" }}>
                 <button onClick={() => { const pf = pdfFiles[activePdfIdx]; if (pf) autoNamePages(pf.doc, activePdfIdx); }}
                   disabled={autoNaming}
                   style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(74,222,128,0.3)", background: autoNaming ? "rgba(74,222,128,0.2)" : "transparent", color: "#4ade80", cursor: autoNaming ? "wait" : "pointer" }}>
                   {autoNaming ? "Naming..." : "Auto Name"}
                 </button>
-                <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>{pdfFiles.reduce((s, pf) => s + pf.numPages, 0)}</span>
+                <span className="fs-xs c-text3">{pdfFiles.reduce((s, pf) => s + pf.numPages, 0)}</span>
               </div>
             </div>
             {pdfFiles.map((pf, pIdx) => {
@@ -3147,7 +3147,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               // Count total measurements across all pages of this PDF
               const pdfMeasCount = Array.from({ length: pf.numPages }, (_, i) => (measurements[pIdx + ":" + (i + 1)] || []).length).reduce((a, b) => a + b, 0);
               return (
-                <div key={pIdx} style={{ marginBottom: "var(--space-2)" }}>
+                <div key={pIdx} className="mb-sp2">
                   {/* PDF file header */}
                   {pdfFiles.length > 1 && (
                     <div onClick={() => setActivePdfIdx(pIdx)}
@@ -3157,12 +3157,12 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                         border: isActivePdf ? "1px solid rgba(59,130,246,0.25)" : "1px solid transparent",
                         display: "flex", alignItems: "center", gap: "var(--space-1)",
                       }}>
-                      <FileText size={10} style={{ color: "var(--blue)", flexShrink: 0 }} />
+                      <FileText size={10} className="c-blue flex-shrink-0" />
                       <span style={{ fontSize: "var(--text-xs)", fontWeight: "var(--weight-semi)", color: isActivePdf ? "#fff" : "#999",
                         flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {pf.name.replace(/\.pdf$/i, "")}
                       </span>
-                      {pdfMeasCount > 0 && <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>{pdfMeasCount}</span>}
+                      {pdfMeasCount > 0 && <span className="fs-xs c-text2">{pdfMeasCount}</span>}
                     </div>
                   )}
                   {/* Pages for this PDF (only show if this is the active PDF or there's only one PDF) */}
@@ -3181,7 +3181,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                           border: isCurrent ? "1px solid rgba(224,148,34,0.3)" : "1px solid transparent",
                           transition: "all 0.15s",
                         }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                        <div className="flex gap-sp2">
                           <span title={hasScale ? "Scale set" : "No scale"} style={{
                             width: 6, height: 6, borderRadius: "var(--radius-control)", flexShrink: 0,
                             background: hasScale ? "#4ade80" : "#ef4444",
@@ -3194,7 +3194,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                               onBlur={() => setEditingSheet(null)}
                               onKeyDown={e => { if (e.key === "Enter") setEditingSheet(null); }}
                               onClick={e => e.stopPropagation()}
-                              style={{ flex: 1, padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid var(--amber)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-xs)", minWidth: 0 }}
+                              className="rounded-control fs-xs c-white flex-1" style={{ padding: "var(--space-1) var(--space-1)", border: "1px solid var(--amber)", background: "rgba(255,255,255,0.06)", minWidth: 0 }}
                             />
                           ) : (
                             <span onDoubleClick={(e) => { e.stopPropagation(); setEditingSheet(pk); }}
@@ -3206,7 +3206,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                           )}
                         </div>
                         {measCount > 0 && (
-                          <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)", paddingLeft: "var(--space-3)", marginTop: "var(--space-1)" }}>
+                          <div className="mt-sp1 fs-xs c-text2" style={{ paddingLeft: "var(--space-3)" }}>
                             {measCount} measurement{measCount !== 1 ? "s" : ""}
                           </div>
                         )}
@@ -3219,7 +3219,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
             {/* Apply scale to all button */}
             {ppf && (
               <button onClick={applyScaleToAll}
-                style={{ ...btn, width: "100%", marginTop: "var(--space-2)", fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", color: "#4ade80", borderColor: "rgba(74,222,128,0.2)" }}>
+                className="mt-sp2 fs-xs w-full" style={{ ...btn, padding: "var(--space-1) var(--space-2)", color: "#4ade80", borderColor: "rgba(74,222,128,0.2)" }}>
                 Apply scale to all pages
               </button>
             )}
@@ -3234,12 +3234,12 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               cursor: draggingHandle ? "grabbing" : spaceHeld ? "grab" : mode === MODE.PAN ? (isPanning ? "grabbing" : "grab") : "crosshair" }}>
             {/* Show re-upload prompt if no PDF loaded but state exists */}
             {pdfFiles.length === 0 && _init.pdfFileNames?.length > 0 && (
-              <div style={{ textAlign: "center", padding: 60, color: "var(--text2)" }}>
-                <div style={{ fontSize: "var(--text-hero)", marginBottom: "var(--space-3)" }}>Loading plans from cache...</div>
-                <div style={{ fontSize: "var(--text-label)", marginBottom: "var(--space-4)" }}>If plans don't appear, re-upload the PDF to restore your {Object.values(measurements).flat().length} saved measurements.</div>
-                <label style={{ display: "inline-block", padding: "var(--space-3) var(--space-6)", borderRadius: "var(--radius-control)", background: "var(--amber, #e09422)", color: "#000", fontWeight: "var(--weight-bold)", cursor: "pointer", fontSize: "var(--text-secondary)" }}>
+              <div className="c-text2 text-center" style={{ padding: 60 }}>
+                <div className="mb-sp3 fs-hero">Loading plans from cache...</div>
+                <div className="mb-sp4 fs-label">If plans don't appear, re-upload the PDF to restore your {Object.values(measurements).flat().length} saved measurements.</div>
+                <label className="rounded-control fs-secondary fw-bold cursor-pointer" style={{ display: "inline-block", padding: "var(--space-3) var(--space-6)", background: "var(--amber, #e09422)", color: "#000" }}>
                   Re-upload PDF
-                  <input type="file" accept=".pdf" style={{ display: "none" }} onChange={(e) => {
+                  <input type="file" accept=".pdf" className="hidden" onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
                     const reader = new FileReader();
@@ -3261,14 +3261,14 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                 </label>
               </div>
             )}
-            <div style={{ position: "relative", display: "inline-block" }}>
+            <div className="relative" style={{ display: "inline-block" }}>
               {pdfLoading && (
-                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 10, background: "rgba(0,0,0,0.9)", padding: "var(--space-8) var(--space-12)", borderRadius: "var(--radius-control)", textAlign: "center", minWidth: 280, border: "1px solid rgba(224,148,34,0.3)" }}>
-                  <div style={{ fontSize: "var(--text-secondary)", color: "#fff", marginBottom: "var(--space-3)", fontWeight: "var(--weight-semi)" }}>Loading Drawing...</div>
-                  <div style={{ width: "100%", height: 8, background: "rgba(255,255,255,0.1)", borderRadius: "var(--radius-control)", overflow: "hidden", marginBottom: "var(--space-2)" }}>
+                <div className="rounded-control absolute text-center" style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 10, background: "rgba(0,0,0,0.9)", padding: "var(--space-8) var(--space-12)", minWidth: 280, border: "1px solid rgba(224,148,34,0.3)" }}>
+                  <div className="fs-secondary fw-semi mb-sp3 c-white">Loading Drawing...</div>
+                  <div className="rounded-control mb-sp2 overflow-hidden w-full" style={{ height: 8, background: "rgba(255,255,255,0.1)" }}>
                     <div style={{ width: `${pdfLoadProgress || 5}%`, height: "100%", background: "linear-gradient(90deg, #e09422, #f59e0b)", borderRadius: "var(--radius-control)", transition: "width 0.3s ease" }} />
                   </div>
-                  <div style={{ fontSize: "var(--text-tab)", color: "var(--text2)" }}>
+                  <div className="fs-tab c-text2">
                     {pdfLoadProgress > 0 ? `${pdfLoadProgress}% — ` : ""}Large drawings may take a moment
                   </div>
                 </div>
@@ -3376,37 +3376,34 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                 const asm = sc?.asmCode && assemblies?.find(a => a.code === sc.asmCode);
                 const cost = asm ? (sm.type === "linear" ? (sm.totalFt || 0) * ((asm.matRate || 0) + (asm.labRate || 0)) : sm.type === "area" ? (sm.totalSf || 0) * ((asm.matRate || 0) + (asm.labRate || 0)) : (sm.count || 1) * ((asm.matRate || 0) + (asm.labRate || 0))) : 0;
                 return (
-                  <div style={{ position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.92)", border: "1px solid rgba(59,130,246,0.5)", borderRadius: "var(--radius-control)", padding: "var(--space-2) var(--space-4)", zIndex: 10, display: "flex", alignItems: "center", gap: "var(--space-4)", fontSize: "var(--text-label)", color: "#fff" }}>
+                  <div className="flex rounded-control fs-label gap-sp4 absolute c-white" style={{ bottom: 8, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.92)", border: "1px solid rgba(59,130,246,0.5)", padding: "var(--space-2) var(--space-4)", zIndex: 10 }}>
                     <span style={{ width: 8, height: 8, borderRadius: "var(--radius-control)", background: sc?.color || "#3b82f6" }} />
-                    <span style={{ fontWeight: "var(--weight-semi)" }}>{sc?.name || "Unknown"}</span>
-                    <span style={{ color: "var(--text2)" }}>|</span>
+                    <span className="fw-semi">{sc?.name || "Unknown"}</span>
+                    <span className="c-text2">|</span>
                     <span>{sm.type === "linear" ? `${sm.totalFt?.toFixed(1)}' LF` : sm.type === "area" ? `${sm.totalSf?.toFixed(0)} SF` : `${sm.count || 1} EA`}</span>
-                    {cost > 0 && <><span style={{ color: "var(--text2)" }}>|</span><span style={{ color: "#4ade80" }}>${cost.toFixed(0)}</span></>}
-                    {sm.backoutOf && <span style={{ fontSize: "var(--text-xs)", color: "var(--red)", fontWeight: "var(--weight-semi)" }}>BACKOUT</span>}
+                    {cost > 0 && <><span className="c-text2">|</span><span style={{ color: "#4ade80" }}>${cost.toFixed(0)}</span></>}
+                    {sm.backoutOf && <span className="fw-semi fs-xs c-red">BACKOUT</span>}
                     {sm.type === "area" && !sm.backoutOf && (
                       <button onClick={() => { setBackoutMode(backoutMode === sm.id ? null : sm.id); setMode(MODE.AREA); setSelectedMeasId(null); }}
                         style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)", color: backoutMode === sm.id ? "#f87171" : "#f59e0b", borderColor: backoutMode === sm.id ? "rgba(239,68,68,0.4)" : "rgba(245,158,11,0.3)" }}>
                         {backoutMode === sm.id ? "Exit Backout" : "Backout"}
                       </button>
                     )}
-                    <button onClick={() => { deleteMeasurement(selectedMeasId); setSelectedMeasId(null); }} style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)", color: "var(--red)", borderColor: "rgba(239,68,68,0.3)" }}>Delete</button>
-                    <button onClick={() => setSelectedMeasId(null)} style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)" }}>✕</button>
+                    <button onClick={() => { deleteMeasurement(selectedMeasId); setSelectedMeasId(null); }} className="fs-xs c-red" style={{ ...btn, padding: "var(--space-1) var(--space-2)", borderColor: "rgba(239,68,68,0.3)" }}>Delete</button>
+                    <button onClick={() => setSelectedMeasId(null)} className="fs-xs" style={{ ...btn, padding: "var(--space-1) var(--space-2)" }}>✕</button>
                   </div>
                 );
               })()}
               {/* ── Floating Finish hint while drawing ── */}
               {(mode === MODE.LINEAR || mode === MODE.AREA) && activeVertices.length >= 2 && ppf && activeCond && !localStorage.getItem("ebc_hide_finish_hint") && (
-                <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 10, display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                <div className="flex gap-sp2 absolute" style={{ bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 10 }}>
                   <button onClick={finishMeasurement}
-                    style={{
-                      padding: "var(--space-2) var(--space-6)", borderRadius: "var(--radius-control)", fontSize: "var(--text-label)", fontWeight: "var(--weight-bold)",
-                      background: "var(--amber, #e09422)", color: "#000", border: "2px solid rgba(0,0,0,0.3)",
-                      cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
-                    }}>
+                    className="rounded-control fw-bold fs-label cursor-pointer" style={{ padding: "var(--space-2) var(--space-6)",
+                      background: "var(--amber, #e09422)", color: "#000", border: "2px solid rgba(0,0,0,0.3)", boxShadow: "0 4px 16px rgba(0,0,0,0.5)" }}>
                     Finish ({activeVertices.length} pts) — Right-click or Enter
                   </button>
                   <button onClick={() => { localStorage.setItem("ebc_hide_finish_hint", "1"); cancelActive(); }}
-                    style={{ padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(0,0,0,0.7)", border: "1px solid rgba(255,255,255,0.2)", color: "var(--text2)", fontSize: "var(--text-xs)", cursor: "pointer" }}
+                    className="rounded-control fs-xs c-text2 cursor-pointer" style={{ padding: "var(--space-1) var(--space-2)", background: "rgba(0,0,0,0.7)", border: "1px solid rgba(255,255,255,0.2)" }}
                     title="Don't show this hint again">
                     Don't show again
                   </button>
@@ -3416,12 +3413,12 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           </div>
         ) : (
           /* ── SUMMARY VIEW ── */
-          <div style={{ flex: 1, overflow: "auto", padding: "var(--space-5)", background: "rgba(10,12,18,0.95)" }}>
+          <div className="p-sp5 overflow-auto flex-1" style={{ background: "rgba(10,12,18,0.95)" }}>
             <div style={{ maxWidth: 900, margin: "0 auto" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
-                <h2 style={{ color: "#fff", fontSize: "var(--text-section)", fontWeight: "var(--weight-bold)", margin: "0" }}>Takeoff Summary</h2>
-                <div style={{ display: "flex", gap: "var(--space-1)", alignItems: "center" }}>
-                  <span style={{ fontSize: "var(--text-tab)", color: "var(--text2)", marginRight: "var(--space-2)" }}>Group by:</span>
+              <div className="mb-sp4" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h2 className="fw-bold fs-section c-white" style={{ margin: "0" }}>Takeoff Summary</h2>
+                <div className="gap-sp1" style={{ display: "flex", alignItems: "center" }}>
+                  <span className="mr-sp2 fs-tab c-text2">Group by:</span>
                   {["condition", "bidArea", "page", "folder"].map(g => (
                     <button key={g} onClick={() => setSummaryGroupBy(g)}
                       style={summaryGroupBy === g ? btnActive : { ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-3)" }}>
@@ -3429,7 +3426,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                     </button>
                   ))}
                   {summaryRows.length > 0 && (
-                    <button onClick={exportToExcel} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-3)", marginLeft: "var(--space-2)", background: "rgba(16,185,129,0.15)", borderColor: "rgba(16,185,129,0.4)", color: "var(--green)" }}>
+                    <button onClick={exportToExcel} className="ml-sp2 fs-xs c-green" style={{ ...btn, padding: "var(--space-1) var(--space-3)", background: "rgba(16,185,129,0.15)", borderColor: "rgba(16,185,129,0.4)" }}>
                       Export Excel
                     </button>
                   )}
@@ -3437,57 +3434,57 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               </div>
 
               {summaryRows.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "var(--space-10)", color: "var(--text3)" }}>
-                  <div style={{ fontSize: "var(--text-stat)", marginBottom: "var(--space-2)" }}>&#128203;</div>
-                  <div style={{ fontSize: "var(--text-secondary)" }}>No measurements yet. Switch to Drawing view and start measuring.</div>
+                <div className="p-sp10 c-text3 text-center">
+                  <div className="mb-sp2 fs-stat">&#128203;</div>
+                  <div className="fs-secondary">No measurements yet. Switch to Drawing view and start measuring.</div>
                 </div>
               ) : (
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--text-label)" }}>
+                <table className="fs-label w-full" style={{ borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ borderBottom: "2px solid rgba(255,255,255,0.15)" }}>
-                      <th style={{ textAlign: "left", padding: "var(--space-2) var(--space-3)", color: "var(--text2)", fontWeight: "var(--weight-semi)", fontSize: "var(--text-xs)", textTransform: "uppercase" }}>
+                      <th className="fw-semi fs-xs uppercase c-text2 text-left" style={{ padding: "var(--space-2) var(--space-3)" }}>
                         {summaryGroupBy === "condition" ? "Condition" : summaryGroupBy === "bidArea" ? "Bid Area" : summaryGroupBy === "page" ? "Sheet" : "Folder"}
                       </th>
-                      {summaryGroupBy === "condition" && <th style={{ textAlign: "left", padding: "var(--space-2) var(--space-2)", color: "var(--text2)", fontWeight: "var(--weight-semi)", fontSize: "var(--text-xs)", textTransform: "uppercase" }}>Folder</th>}
-                      <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)", fontWeight: "var(--weight-semi)", fontSize: "var(--text-xs)", textTransform: "uppercase" }}>Qty</th>
-                      <th style={{ textAlign: "center", padding: "var(--space-2) var(--space-2)", color: "var(--text2)", fontWeight: "var(--weight-semi)", fontSize: "var(--text-xs)", textTransform: "uppercase" }}>Unit</th>
+                      {summaryGroupBy === "condition" && <th className="fw-semi fs-xs uppercase c-text2 text-left" style={{ padding: "var(--space-2) var(--space-2)" }}>Folder</th>}
+                      <th className="fw-semi fs-xs uppercase c-text2 text-right" style={{ padding: "var(--space-2) var(--space-3)" }}>Qty</th>
+                      <th className="fw-semi fs-xs uppercase c-text2 text-center" style={{ padding: "var(--space-2) var(--space-2)" }}>Unit</th>
                       {summaryGroupBy === "condition" && <>
-                        <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)", fontWeight: "var(--weight-semi)", fontSize: "var(--text-xs)", textTransform: "uppercase" }}>Mat $</th>
-                        <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)", fontWeight: "var(--weight-semi)", fontSize: "var(--text-xs)", textTransform: "uppercase" }}>Lab $</th>
+                        <th className="fw-semi fs-xs uppercase c-text2 text-right" style={{ padding: "var(--space-2) var(--space-3)" }}>Mat $</th>
+                        <th className="fw-semi fs-xs uppercase c-text2 text-right" style={{ padding: "var(--space-2) var(--space-3)" }}>Lab $</th>
                       </>}
-                      <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)", fontWeight: "var(--weight-semi)", fontSize: "var(--text-xs)", textTransform: "uppercase" }}>Total</th>
+                      <th className="fw-semi fs-xs uppercase c-text2 text-right" style={{ padding: "var(--space-2) var(--space-3)" }}>Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {summaryRows.map(row => (
                       <tr key={row.key} style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                         <td style={{ padding: "var(--space-2) var(--space-3)", color: "#ddd" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                            <span style={{ width: 8, height: 8, borderRadius: "var(--radius-control)", background: row.color, flexShrink: 0 }} />
+                          <div className="flex gap-sp2">
+                            <span className="rounded-control flex-shrink-0" style={{ width: 8, height: 8, background: row.color }} />
                             {row.name}
                           </div>
                         </td>
-                        {summaryGroupBy === "condition" && <td style={{ padding: "var(--space-2) var(--space-2)", color: "var(--text2)", fontSize: "var(--text-tab)" }}>{row.folder}</td>}
-                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "#fff", fontWeight: "var(--weight-semi)" }}>
+                        {summaryGroupBy === "condition" && <td className="fs-tab c-text2" style={{ padding: "var(--space-2) var(--space-2)" }}>{row.folder}</td>}
+                        <td className="fw-semi text-right c-white" style={{ padding: "var(--space-2) var(--space-3)" }}>
                           {summaryGroupBy === "condition" ? Math.round(row.qty).toLocaleString() : row.measCount}
                         </td>
-                        <td style={{ textAlign: "center", padding: "var(--space-2) var(--space-2)", color: "var(--text2)" }}>{row.unit}</td>
+                        <td className="c-text2 text-center" style={{ padding: "var(--space-2) var(--space-2)" }}>{row.unit}</td>
                         {summaryGroupBy === "condition" && <>
-                          <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--green)" }}>{fmt(row.matCost)}</td>
-                          <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--blue)" }}>{fmt(row.labCost)}</td>
+                          <td className="c-green text-right" style={{ padding: "var(--space-2) var(--space-3)" }}>{fmt(row.matCost)}</td>
+                          <td className="c-blue text-right" style={{ padding: "var(--space-2) var(--space-3)" }}>{fmt(row.labCost)}</td>
                         </>}
-                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--amber, #e09422)", fontWeight: "var(--weight-semi)" }}>{fmt(row.total)}</td>
+                        <td className="fw-semi text-right" style={{ padding: "var(--space-2) var(--space-3)", color: "var(--amber, #e09422)" }}>{fmt(row.total)}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr style={{ borderTop: "2px solid rgba(224,148,34,0.4)" }}>
-                      <td colSpan={summaryGroupBy === "condition" ? 4 : 3} style={{ padding: "var(--space-3) var(--space-3)", color: "#fff", fontWeight: "var(--weight-bold)", fontSize: "var(--text-label)" }}>GRAND TOTAL</td>
+                      <td colSpan={summaryGroupBy === "condition" ? 4 : 3} className="fw-bold fs-label c-white" style={{ padding: "var(--space-3) var(--space-3)" }}>GRAND TOTAL</td>
                       {summaryGroupBy === "condition" && <>
-                        <td style={{ textAlign: "right", padding: "var(--space-3) var(--space-3)", color: "var(--green)", fontWeight: "var(--weight-semi)" }}>{fmt(summaryRows.reduce((s, r) => s + r.matCost, 0))}</td>
-                        <td style={{ textAlign: "right", padding: "var(--space-3) var(--space-3)", color: "var(--blue)", fontWeight: "var(--weight-semi)" }}>{fmt(summaryRows.reduce((s, r) => s + r.labCost, 0))}</td>
+                        <td className="fw-semi c-green text-right" style={{ padding: "var(--space-3) var(--space-3)" }}>{fmt(summaryRows.reduce((s, r) => s + r.matCost, 0))}</td>
+                        <td className="fw-semi c-blue text-right" style={{ padding: "var(--space-3) var(--space-3)" }}>{fmt(summaryRows.reduce((s, r) => s + r.labCost, 0))}</td>
                       </>}
-                      <td style={{ textAlign: "right", padding: "var(--space-3) var(--space-3)", color: "var(--amber, #e09422)", fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)" }}>{fmt(grandTotal)}</td>
+                      <td className="fs-secondary fw-bold text-right" style={{ padding: "var(--space-3) var(--space-3)", color: "var(--amber, #e09422)" }}>{fmt(grandTotal)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -3497,49 +3494,49 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         )}
 
         {/* ── Conditions Panel (right sidebar) ── */}
-        <div style={{ width: 260, flexShrink: 0, borderLeft: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.85)", display: "flex", flexDirection: "column" }}>
+        <div className="flex-col flex-shrink-0" style={{ width: 260, borderLeft: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.85)" }}>
 
           {/* Conditions list */}
-          <div style={{ flex: 1, overflow: "auto", padding: "var(--space-3) var(--space-3) var(--space-2)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-2)" }}>
-              <span style={{ color: "#fff", fontSize: "var(--text-label)", fontWeight: "var(--weight-bold)" }}>Conditions</span>
-              <div style={{ display: "flex", gap: "var(--space-1)" }}>
+          <div className="overflow-auto flex-1" style={{ padding: "var(--space-3) var(--space-3) var(--space-2)" }}>
+            <div className="mb-sp2" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span className="fw-bold fs-label c-white">Conditions</span>
+              <div className="gap-sp1" style={{ display: "flex" }}>
                 <button onClick={runPlanAnalysis} disabled={analyzing || !pdf}
                   style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", background: analyzing ? "rgba(224,148,34,0.3)" : "rgba(224,148,34,0.15)", color: "var(--amber)", border: "1px solid rgba(224,148,34,0.4)" }}>
                   {analyzing ? "Analyzing..." : "AI Analyze"}
                 </button>
-                <button onClick={() => setShowTemplatePicker(true)} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}>Template</button>
-                <button onClick={() => { setShowCondProps(true); setEditingCondId(null); }} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}>+ Add</button>
+                <button onClick={() => setShowTemplatePicker(true)} className="fs-xs" style={{ ...btn, padding: "var(--space-1) var(--space-2)" }}>Template</button>
+                <button onClick={() => { setShowCondProps(true); setEditingCondId(null); }} className="fs-xs" style={{ ...btn, padding: "var(--space-1) var(--space-2)" }}>+ Add</button>
               </div>
             </div>
 
             {/* Search conditions */}
             {conditions.length > 8 && (
               <input placeholder="Search conditions..." value={condSearch} onChange={e => setCondSearch(e.target.value)}
-                style={{ width: "100%", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: "var(--text-xs)", marginBottom: "var(--space-2)" }} />
+                className="rounded-control mb-sp2 fs-xs c-white w-full" style={{ padding: "var(--space-1) var(--space-2)", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)" }} />
             )}
 
             {/* Add condition dropdown (legacy — replaced by Insert dialog) */}
 
             {!ppf && (
-              <div style={{ fontSize: "var(--text-tab)", color: "var(--amber)", padding: "var(--space-3) var(--space-2)", background: "rgba(245,158,11,0.08)", borderRadius: "var(--radius-control)", border: "1px solid rgba(245,158,11,0.2)", marginBottom: "var(--space-2)" }}>
+              <div className="rounded-control mb-sp2 fs-tab c-amber" style={{ padding: "var(--space-3) var(--space-2)", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>
                 Set scale first (S key), then select a condition and start measuring.
               </div>
             )}
 
             {/* Empty state — no conditions yet */}
             {conditions.length === 0 && !showAddCond && !analyzing && (
-              <div style={{ fontSize: "var(--text-label)", color: "var(--text2)", padding: "var(--space-4) var(--space-2)", textAlign: "center", lineHeight: 1.5 }}>
+              <div className="fs-label c-text2 text-center" style={{ padding: "var(--space-4) var(--space-2)", lineHeight: 1.5 }}>
                 No conditions yet.<br/>
-                Click <b style={{ color: "var(--amber)" }}>AI Analyze</b> to auto-detect scope, <b style={{ color: "var(--amber)" }}>+ Add</b> to add manually, or <b style={{ color: "var(--amber)" }}>Template</b> for a preset.
+                Click <b className="c-amber">AI Analyze</b> to auto-detect scope, <b className="c-amber">+ Add</b> to add manually, or <b className="c-amber">Template</b> for a preset.
               </div>
             )}
 
             {/* AI Analysis loading */}
             {analyzing && (
-              <div style={{ fontSize: "var(--text-label)", color: "var(--amber)", padding: "var(--space-4) var(--space-2)", textAlign: "center", lineHeight: 1.5 }}>
+              <div className="fs-label c-amber text-center" style={{ padding: "var(--space-4) var(--space-2)", lineHeight: 1.5 }}>
                 Analyzing plans...<br/>
-                <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>Reading all pages and identifying EBC scope</span>
+                <span className="fs-xs c-text2">Reading all pages and identifying EBC scope</span>
               </div>
             )}
 
@@ -3548,17 +3545,17 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               const filteredConds = condSearch ? conds.filter(c => c.name.toLowerCase().includes(condSearch.toLowerCase()) || c.asmCode.toLowerCase().includes(condSearch.toLowerCase())) : conds;
               if (condSearch && filteredConds.length === 0) return null;
               return (
-              <div key={folder} style={{ marginBottom: "var(--space-2)" }}>
+              <div key={folder} className="mb-sp2">
                 <div onClick={() => setOpenFolders(prev => ({ ...prev, [folder]: !prev[folder] }))}
-                  style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-1) var(--space-2)", cursor: "pointer", borderRadius: "var(--radius-control)", background: "rgba(255,255,255,0.03)" }}>
-                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>{openFolders[folder] ? "▼" : "▶"}</span>
+                  className="flex rounded-control gap-sp2 cursor-pointer" style={{ padding: "var(--space-1) var(--space-2)", background: "rgba(255,255,255,0.03)" }}>
+                  <span className="fs-xs c-text2">{openFolders[folder] ? "▼" : "▶"}</span>
                   <span style={{ fontSize: "var(--text-tab)", color: hiddenFolders[folder] ? "#555" : "#aaa", fontWeight: "var(--weight-semi)", flex: 1, textDecoration: hiddenFolders[folder] ? "line-through" : "none" }}>{folder}</span>
                   <span onClick={(e) => { e.stopPropagation(); setHiddenFolders(prev => ({ ...prev, [folder]: !prev[folder] })); }}
                     title={hiddenFolders[folder] ? "Show layer" : "Hide layer"}
                     style={{ fontSize: "var(--text-xs)", cursor: "pointer", padding: "0 3px", color: hiddenFolders[folder] ? "#555" : "#888" }}>
                     {hiddenFolders[folder] ? "○" : "●"}
                   </span>
-                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>{conds.length}</span>
+                  <span className="fs-xs c-text3">{conds.length}</span>
                 </div>
                 {openFolders[folder] && filteredConds.map((c, ci) => {
                   const isActive = c.id === activeCondId;
@@ -3578,27 +3575,27 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                         background: isActive ? "rgba(224,148,34,0.15)" : "transparent",
                         border: isActive ? "1px solid rgba(224,148,34,0.3)" : "1px solid transparent",
                       }}>
-                      <span style={{ width: 8, height: 8, borderRadius: "var(--radius-control)", background: c.color, flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      <span className="rounded-control flex-shrink-0" style={{ width: 8, height: 8, background: c.color }} />
+                      <div className="flex-1" style={{ minWidth: 0 }}>
                         <div style={{ fontSize: "var(--text-tab)", color: isActive ? "#fff" : "#ccc", fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {c.name}
                         </div>
                         {totals.qty > 0 && (
-                          <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>
+                          <div className="fs-xs c-text2">
                             {totals.deductions > 0
-                              ? <><span style={{ textDecoration: "line-through", color: "var(--text3)" }}>{Math.round(totals.grossQty)}</span> <span style={{ color: "var(--red)" }}>{Math.round(totals.qty)}</span> {unit}</>
+                              ? <><span className="c-text3" style={{ textDecoration: "line-through" }}>{Math.round(totals.grossQty)}</span> <span className="c-red">{Math.round(totals.qty)}</span> {unit}</>
                               : <>{Math.round(totals.qty)} {unit}</>
                             } &middot; {fmt(totals.cost)} &middot; {Object.values(measurements).flat().filter(m => m.conditionId === c.id).length}&#x1f4cf;
                           </div>
                         )}
                         {c.attachTo && c.deductWidth > 0 && (
-                          <div style={{ fontSize: "var(--text-xs)", color: "var(--red)" }}>
+                          <div className="fs-xs c-red">
                             &#x2192; -{c.deductWidth}'/ea from {conditions.find(cc => cc.id === c.attachTo)?.name?.slice(0, 15) || "?"}
                           </div>
                         )}
                       </div>
                       {/* Height badge for linear conditions + delete */}
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "var(--space-1)" }}>
+                      <div className="flex-col gap-sp1" style={{ alignItems: "flex-end" }}>
                         {c.type === "linear" && c.height > 0 && (
                           <span onClick={(e) => {
                             e.stopPropagation();
@@ -3608,7 +3605,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                             }
                           }}
                           title="Click to edit height"
-                          style={{ fontSize: "var(--text-xs)", color: "var(--text2)", padding: "0 4px", borderRadius: "var(--radius-control)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
+                          className="rounded-control fs-xs c-text2 cursor-pointer" style={{ padding: "0 4px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                             {c.height}'
                           </span>
                         )}
@@ -3620,7 +3617,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                               if (activeCondId === c.id) setActiveCondId(null);
                             }
                           }}
-                          style={{ fontSize: "var(--text-xs)", color: "var(--red)", cursor: "pointer", padding: "0 3px" }} title="Delete condition">
+                          className="fs-xs c-red cursor-pointer" style={{ padding: "0 3px" }} title="Delete condition">
                             &#x2715;
                           </span>
                         )}
@@ -3634,40 +3631,40 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           </div>
 
           {/* ── Typical Groups Section ── */}
-          <div style={{ flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.08)", padding: "var(--space-2) var(--space-3)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-2)" }}>
-              <span style={{ color: "var(--cyan)", fontSize: "var(--text-tab)", fontWeight: "var(--weight-bold)", cursor: "pointer" }}
+          <div className="flex-shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "var(--space-2) var(--space-3)" }}>
+            <div className="mb-sp2" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span className="fw-bold fs-tab c-cyan cursor-pointer"
                 onClick={() => setShowTypicalPanel(!showTypicalPanel)}>
                 Typical Groups {typicalGroups.length > 0 ? `(${typicalGroups.length})` : ""} {showTypicalPanel ? "▾" : "▸"}
               </span>
               {selectedMeasIds.size > 0 && (
                 <button onClick={() => setShowTypicalCreate(true)}
-                  style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(34,211,238,0.3)", background: "rgba(34,211,238,0.1)", color: "var(--cyan)", cursor: "pointer" }}>
+                  className="rounded-control fs-xs c-cyan cursor-pointer" style={{ padding: "var(--space-1) var(--space-2)", border: "1px solid rgba(34,211,238,0.3)", background: "rgba(34,211,238,0.1)" }}>
                   Create ({selectedMeasIds.size})
                 </button>
               )}
             </div>
             {selectedMeasIds.size > 0 && !showTypicalCreate && (
-              <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)", marginBottom: "var(--space-1)" }}>
+              <div className="mb-sp1 fs-xs c-text2">
                 {selectedMeasIds.size} measurement{selectedMeasIds.size !== 1 ? "s" : ""} selected (Shift+click)
-                <span onClick={() => setSelectedMeasIds(new Set())} style={{ color: "var(--red)", cursor: "pointer", marginLeft: "var(--space-2)" }}>Clear</span>
+                <span onClick={() => setSelectedMeasIds(new Set())} className="ml-sp2 c-red cursor-pointer">Clear</span>
               </div>
             )}
             {/* Create Typical modal */}
             {showTypicalCreate && (
-              <div style={{ padding: "var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.2)", marginBottom: "var(--space-2)" }}>
-                <div style={{ fontSize: "var(--text-xs)", color: "var(--cyan)", marginBottom: "var(--space-1)", fontWeight: "var(--weight-semi)" }}>Name this Typical Group</div>
+              <div className="rounded-control mb-sp2 p-sp2" style={{ background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.2)" }}>
+                <div className="fw-semi mb-sp1 fs-xs c-cyan">Name this Typical Group</div>
                 <input autoFocus value={typicalName} onChange={e => setTypicalName(e.target.value)}
                   placeholder="e.g. Standard Patient Room"
                   onKeyDown={e => { if (e.key === "Enter" && typicalName.trim()) createTypicalGroup(typicalName.trim()); }}
-                  style={{ width: "100%", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(34,211,238,0.3)", background: "rgba(0,0,0,0.3)", color: "#fff", fontSize: "var(--text-xs)", marginBottom: "var(--space-1)" }} />
-                <div style={{ display: "flex", gap: "var(--space-1)" }}>
+                  className="rounded-control mb-sp1 fs-xs c-white w-full" style={{ padding: "var(--space-1) var(--space-2)", border: "1px solid rgba(34,211,238,0.3)", background: "rgba(0,0,0,0.3)" }} />
+                <div className="gap-sp1" style={{ display: "flex" }}>
                   <button onClick={() => { if (typicalName.trim()) createTypicalGroup(typicalName.trim()); }}
-                    style={{ flex: 1, padding: "var(--space-1) 0", borderRadius: "var(--radius-control)", border: "none", background: "#22d3ee", color: "#000", fontSize: "var(--text-xs)", fontWeight: "var(--weight-semi)", cursor: "pointer" }}>
+                    className="rounded-control fw-semi fs-xs cursor-pointer flex-1" style={{ padding: "var(--space-1) 0", border: "none", background: "#22d3ee", color: "#000" }}>
                     Create
                   </button>
                   <button onClick={() => { setShowTypicalCreate(false); setTypicalName(""); }}
-                    style={{ padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "var(--text2)", fontSize: "var(--text-xs)", cursor: "pointer" }}>
+                    className="rounded-control fs-xs c-text2 cursor-pointer" style={{ padding: "var(--space-1) var(--space-2)", border: "1px solid rgba(255,255,255,0.15)", background: "transparent" }}>
                     Cancel
                   </button>
                 </div>
@@ -3675,34 +3672,34 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
             )}
             {/* Typical Groups list */}
             {showTypicalPanel && typicalGroups.map(tg => (
-              <div key={tg.id} style={{ padding: "var(--space-1) var(--space-2)", marginBottom: "var(--space-1)", borderRadius: "var(--radius-control)", background: "rgba(34,211,238,0.04)", border: "1px solid rgba(34,211,238,0.1)" }}>
+              <div key={tg.id} className="rounded-control mb-sp1" style={{ padding: "var(--space-1) var(--space-2)", background: "rgba(34,211,238,0.04)", border: "1px solid rgba(34,211,238,0.1)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "var(--text-xs)", color: "var(--cyan)", fontWeight: "var(--weight-semi)" }}>{tg.name}</span>
-                  <div style={{ display: "flex", gap: "var(--space-1)" }}>
+                  <span className="fw-semi fs-xs c-cyan">{tg.name}</span>
+                  <div className="gap-sp1" style={{ display: "flex" }}>
                     <button onClick={() => { setPlacingTypicalId(tg.id); setMode(MODE.PAN); }}
                       style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(34,211,238,0.3)", background: placingTypicalId === tg.id ? "#22d3ee" : "transparent", color: placingTypicalId === tg.id ? "#000" : "#22d3ee", cursor: "pointer" }}>
                       {placingTypicalId === tg.id ? "Placing..." : "Place"}
                     </button>
                     <button onClick={() => deleteTypicalGroup(tg.id)}
-                      style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "var(--red)", cursor: "pointer" }}>
+                      className="rounded-control fs-xs c-red cursor-pointer" style={{ padding: "var(--space-1) var(--space-1)", border: "1px solid rgba(239,68,68,0.2)", background: "transparent" }}>
                       ✕
                     </button>
                   </div>
                 </div>
-                <div style={{ fontSize: "var(--text-xs)", color: "var(--text3)", marginTop: "var(--space-1)" }}>
+                <div className="mt-sp1 fs-xs c-text3">
                   {tg.sourceMeasurementIds.length} source meas &middot; {tg.instances.length} instance{tg.instances.length !== 1 ? "s" : ""}
                 </div>
                 {tg.instances.length > 0 && (
-                  <div style={{ marginTop: "var(--space-1)" }}>
+                  <div className="mt-sp1">
                     {tg.instances.map(inst => (
-                      <div key={inst.id} style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", padding: "var(--space-1) 0" }}>
-                        <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)", flex: 1 }}>{getKeyName(inst.pageKey)}</span>
-                        <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>×</span>
+                      <div key={inst.id} className="flex gap-sp1" style={{ padding: "var(--space-1) 0" }}>
+                        <span className="fs-xs c-text2 flex-1">{getKeyName(inst.pageKey)}</span>
+                        <span className="fs-xs c-text2">×</span>
                         <input type="number" min="0.1" step="0.5" value={inst.multiplier || 1}
                           onChange={e => updateInstanceMultiplier(tg.id, inst.id, parseFloat(e.target.value) || 1)}
-                          style={{ width: 32, padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "var(--text-xs)", textAlign: "center" }} />
+                          className="rounded-control fs-xs text-center c-white" style={{ width: 32, padding: "var(--space-1) var(--space-1)", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)" }} />
                         <button onClick={() => deleteTypicalInstance(tg.id, inst.id)}
-                          style={{ fontSize: "var(--text-xs)", padding: "0 3px", border: "none", background: "transparent", color: "var(--red)", cursor: "pointer" }}>✕</button>
+                          className="fs-xs c-red cursor-pointer" style={{ padding: "0 3px", border: "none", background: "transparent" }}>✕</button>
                       </div>
                     ))}
                   </div>
@@ -3710,45 +3707,45 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               </div>
             ))}
             {showTypicalPanel && typicalGroups.length === 0 && (
-              <div style={{ fontSize: "var(--text-xs)", color: "var(--text3)", fontStyle: "italic", padding: "var(--space-1) 0" }}>
+              <div className="fs-xs c-text3" style={{ fontStyle: "italic", padding: "var(--space-1) 0" }}>
                 Shift+click measurements to select, then "Create" a typical group
               </div>
             )}
           </div>
 
           {/* ── Change Order Panel ── */}
-          <div style={{ flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.08)", padding: "var(--space-2) var(--space-3)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-1)" }}>
-              <span style={{ fontSize: "var(--text-tab)", fontWeight: "var(--weight-bold)", color: "var(--amber)" }}>Change Orders</span>
+          <div className="flex-shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "var(--space-2) var(--space-3)" }}>
+            <div className="mb-sp1" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span className="fw-bold fs-tab c-amber">Change Orders</span>
               <button onClick={() => revisionInputRef.current?.click()}
-                style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.08)", color: "var(--amber)", cursor: "pointer" }}>
+                className="rounded-control fs-xs c-amber cursor-pointer" style={{ padding: "var(--space-1) var(--space-2)", border: "1px solid rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.08)" }}>
                 {revisionDocs[pageKey] ? "Replace Rev" : "Upload Rev"}
               </button>
-              <input ref={revisionInputRef} type="file" accept=".pdf" style={{ display: "none" }}
+              <input ref={revisionInputRef} type="file" accept=".pdf" className="hidden"
                 onChange={e => { const f = e.target.files?.[0]; if (f) handleRevisionUpload(f); e.target.value = ""; }} />
             </div>
             {revisionDocs[pageKey] && (
-              <div style={{ marginBottom: "var(--space-1)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", marginBottom: "var(--space-1)" }}>
+              <div className="mb-sp1">
+                <div className="flex mb-sp1 gap-sp1">
                   <input type="checkbox" checked={showRevision} onChange={e => setShowRevision(e.target.checked)}
                     style={{ width: 12, height: 12 }} />
-                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)", flex: 1 }}>
+                  <span className="fs-xs c-text2 flex-1">
                     {revisionDocs[pageKey].name?.replace(/\.pdf$/i, "") || "Revision"}
                   </span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
-                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)", width: 40 }}>Opacity</span>
+                <div className="flex gap-sp1">
+                  <span className="fs-xs c-text3" style={{ width: 40 }}>Opacity</span>
                   <input type="range" min="0" max="1" step="0.05" value={revisionOpacity}
                     onChange={e => setRevisionOpacity(parseFloat(e.target.value))}
-                    style={{ flex: 1, height: 4 }} />
-                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)", width: 24 }}>{Math.round(revisionOpacity * 100)}%</span>
+                    className="flex-1" style={{ height: 4 }} />
+                  <span className="fs-xs c-text2" style={{ width: 24 }}>{Math.round(revisionOpacity * 100)}%</span>
                 </div>
                 {revisionDocs[pageKey].numPages > 1 && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", marginTop: "var(--space-1)" }}>
-                    <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>Rev page:</span>
+                  <div className="flex mt-sp1 gap-sp1">
+                    <span className="fs-xs c-text3">Rev page:</span>
                     <select value={revisionDocs[pageKey].revPage || 1}
                       onChange={e => setRevisionDocs(prev => ({ ...prev, [pageKey]: { ...prev[pageKey], revPage: Number(e.target.value) } }))}
-                      style={{ padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "var(--text-xs)" }}>
+                      className="rounded-control fs-xs c-white" style={{ padding: "var(--space-1) var(--space-1)", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)" }}>
                       {Array.from({ length: revisionDocs[pageKey].numPages }, (_, i) => (
                         <option key={i + 1} value={i + 1}>Page {i + 1}</option>
                       ))}
@@ -3759,16 +3756,16 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
             )}
             {/* CO Summary */}
             {coSummary.total > 0 && (
-              <div style={{ padding: "var(--space-2) var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", marginTop: "var(--space-1)" }}>
-                <div style={{ fontSize: "var(--text-xs)", fontWeight: "var(--weight-semi)", color: "var(--amber)", marginBottom: "var(--space-1)" }}>CO Net Delta</div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-xs)" }}>
-                  <span style={{ color: "var(--green)" }}>+ {fmt(coSummary.adds.cost)}</span>
-                  <span style={{ color: "var(--red)" }}>− {fmt(coSummary.dels.cost)}</span>
+              <div className="rounded-control mt-sp1" style={{ padding: "var(--space-2) var(--space-2)", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)" }}>
+                <div className="fw-semi mb-sp1 fs-xs c-amber">CO Net Delta</div>
+                <div className="fs-xs" style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span className="c-green">+ {fmt(coSummary.adds.cost)}</span>
+                  <span className="c-red">− {fmt(coSummary.dels.cost)}</span>
                   <span style={{ color: coSummary.net >= 0 ? "#22c55e" : "#ef4444", fontWeight: "var(--weight-bold)" }}>
                     Net: {coSummary.net >= 0 ? "+" : ""}{fmt(coSummary.net)}
                   </span>
                 </div>
-                <div style={{ fontSize: "var(--text-xs)", color: "var(--text3)", marginTop: "var(--space-1)" }}>
+                <div className="mt-sp1 fs-xs c-text3">
                   {coSummary.total} CO measurement{coSummary.total !== 1 ? "s" : ""}
                   {coSummary.adds.lf > 0 && ` · +${Math.round(coSummary.adds.lf)} LF`}
                   {coSummary.dels.lf > 0 && ` · −${Math.round(coSummary.dels.lf)} LF`}
@@ -3780,22 +3777,22 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
           </div>
 
           {/* ── Live Cost Bar (bottom of sidebar) ── */}
-          <div style={{ flexShrink: 0, borderTop: "1px solid rgba(255,255,255,0.1)", padding: "var(--space-3) var(--space-3)", background: "rgba(0,0,0,0.9)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-1)" }}>
-              <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.5 }}>Takeoff Total</span>
-              <span style={{ fontSize: "var(--text-card)", fontWeight: "var(--weight-bold)", color: "var(--amber, #e09422)" }}>{fmtK(grandTotal)}</span>
+          <div className="flex-shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.1)", padding: "var(--space-3) var(--space-3)", background: "rgba(0,0,0,0.9)" }}>
+            <div className="mb-sp1" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span className="fs-xs uppercase c-text2" style={{ letterSpacing: 0.5 }}>Takeoff Total</span>
+              <span className="fw-bold fs-card" style={{ color: "var(--amber, #e09422)" }}>{fmtK(grandTotal)}</span>
             </div>
-            <div style={{ display: "flex", gap: "var(--space-2)", fontSize: "var(--text-xs)", color: "var(--text3)" }}>
-              <span style={{ color: "var(--green)" }}>Mat {fmtK(totalMat)}</span>
-              <span style={{ color: "var(--blue)" }}>Lab {fmtK(totalLab)}</span>
+            <div className="fs-xs c-text3 gap-sp2" style={{ display: "flex" }}>
+              <span className="c-green">Mat {fmtK(totalMat)}</span>
+              <span className="c-blue">Lab {fmtK(totalLab)}</span>
               <span>&middot;</span>
               <span>{Object.values(measurements).reduce((s, pm) => s + pm.length, 0)} meas</span>
             </div>
             {activeCond && (
               <div style={{ marginTop: "var(--space-2)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(255,255,255,0.04)", border: `1px solid ${activeCond.color}33` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontSize: "var(--text-xs)", color: activeCond.color, fontWeight: "var(--weight-semi)" }}>{activeCond.name}</div>
-                  <div style={{ display: "flex", gap: "var(--space-1)" }}>
+                  <div className="fw-semi fs-xs" style={{ color: activeCond.color }}>{activeCond.name}</div>
+                  <div className="gap-sp1" style={{ display: "flex" }}>
                     {activeCond.type === "linear" && (
                       <button onClick={() => { setShowLinkSetup(!showLinkSetup); setShowAttachSetup(false); }}
                         style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.15)", background: (condLinks[activeCond.id]?.length > 0) ? "rgba(74,222,128,0.15)" : "transparent", color: (condLinks[activeCond.id]?.length > 0) ? "#4ade80" : "#888", cursor: "pointer" }}>
@@ -3810,24 +3807,24 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                     )}
                   </div>
                 </div>
-                <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>
+                <div className="fs-xs c-text2">
                   {(() => {
                     const t = condTotals[activeCond.id];
                     const unit = activeCond.type === "count" ? "EA" : activeCond.type === "area" ? "SF" : "LF";
                     const hasDeductions = t && t.deductions > 0;
                     return hasDeductions
-                      ? <><span style={{ textDecoration: "line-through", color: "var(--text3)" }}>{Math.round(t.grossQty)} {unit}</span> <span style={{ color: "var(--red)" }}>{Math.round(t.qty)} {unit} net</span> &middot; {fmt(t.cost)}</>
+                      ? <><span className="c-text3" style={{ textDecoration: "line-through" }}>{Math.round(t.grossQty)} {unit}</span> <span className="c-red">{Math.round(t.qty)} {unit} net</span> &middot; {fmt(t.cost)}</>
                       : <>{Math.round(t?.qty || 0)} {unit} &middot; {fmt(t?.cost || 0)}</>;
                   })()}
                 </div>
                 {/* Multi-Condition Link Setup */}
                 {showLinkSetup && activeCond.type === "linear" && (
-                  <div style={{ marginTop: "var(--space-2)", padding: "var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)", marginBottom: "var(--space-1)" }}>When drawing this wall, also create:</div>
+                  <div className="rounded-control mt-sp2 p-sp2" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <div className="mb-sp1 fs-xs c-text2">When drawing this wall, also create:</div>
                     {conditions.filter(c => c.id !== activeCond.id && (c.type === "area" || c.type === "linear")).map(c => {
                       const existingLink = (condLinks[activeCond.id] || []).find(l => l.condId === c.id);
                       return (
-                        <div key={c.id} style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", padding: "var(--space-1) 0" }}>
+                        <div key={c.id} className="flex gap-sp1" style={{ padding: "var(--space-1) 0" }}>
                           <input type="checkbox" checked={!!existingLink}
                             onChange={e => {
                               setCondLinks(prev => {
@@ -3842,8 +3839,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                               });
                             }}
                             style={{ width: 12, height: 12 }} />
-                          <span style={{ width: 6, height: 6, borderRadius: "var(--radius-control)", background: c.color }} />
-                          <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)", flex: 1 }}>{c.name}</span>
+                          <span className="rounded-control" style={{ width: 6, height: 6, background: c.color }} />
+                          <span className="fs-xs c-text2 flex-1">{c.name}</span>
                           {existingLink && (
                             <select value={existingLink.calcType}
                               onChange={e => {
@@ -3852,7 +3849,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                                   return { ...prev, [activeCond.id]: links };
                                 });
                               }}
-                              style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "var(--text2)" }}>
+                              className="rounded-control fs-xs c-text2" style={{ padding: "var(--space-1) var(--space-1)", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)" }}>
                               <option value="sf_both_sides">SF both sides</option>
                               <option value="sf_one_side">SF one side</option>
                               <option value="match_lf">Same LF</option>
@@ -3868,14 +3865,14 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                   const parentCond = activeCond.attachTo ? conditions.find(c => c.id === activeCond.attachTo) : null;
                   const isAreaParent = parentCond?.type === "area";
                   return (
-                  <div style={{ marginTop: "var(--space-2)", padding: "var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.15)" }}>
-                    <div style={{ fontSize: "var(--text-xs)", color: "var(--red)", marginBottom: "var(--space-1)" }}>Deduct from parent:</div>
+                  <div className="rounded-control mt-sp2 p-sp2" style={{ background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.15)" }}>
+                    <div className="mb-sp1 fs-xs c-red">Deduct from parent:</div>
                     <select value={activeCond.attachTo || ""}
                       onChange={e => {
                         const val = e.target.value || null;
                         setConditions(prev => prev.map(c => c.id === activeCond.id ? { ...c, attachTo: val, deductHeight: 0 } : c));
                       }}
-                      style={{ width: "100%", fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "var(--text2)", marginBottom: "var(--space-1)" }}>
+                      className="rounded-control mb-sp1 fs-xs c-text2 w-full" style={{ padding: "var(--space-1) var(--space-1)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)" }}>
                       <option value="">None (no deduction)</option>
                       <optgroup label="Linear (LF)">
                         {conditions.filter(c => c.type === "linear" && c.id !== activeCond.id).map(c => (
@@ -3889,43 +3886,43 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                       </optgroup>
                     </select>
                     {activeCond.attachTo && !isAreaParent && (
-                      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
-                        <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>Width per count:</span>
+                      <div className="flex gap-sp1">
+                        <span className="fs-xs c-text2">Width per count:</span>
                         <input type="number" value={activeCond.deductWidth || 0} min={0} step={0.5}
                           onChange={e => {
                             const w = Math.max(0, parseFloat(e.target.value) || 0);
                             setConditions(prev => prev.map(c => c.id === activeCond.id ? { ...c, deductWidth: w } : c));
                           }}
-                          style={{ width: 44, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#fff", textAlign: "center" }} />
-                        <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>ft</span>
+                          className="rounded-control fs-xs text-center c-white" style={{ width: 44, padding: "var(--space-1) var(--space-1)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)" }} />
+                        <span className="fs-xs c-text2">ft</span>
                       </div>
                     )}
                     {activeCond.attachTo && isAreaParent && (
-                      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", flexWrap: "wrap" }}>
-                        <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>Size per count:</span>
+                      <div className="flex gap-sp1 flex-wrap">
+                        <span className="fs-xs c-text2">Size per count:</span>
                         <input type="number" value={activeCond.deductWidth || 0} min={0} step={0.5}
                           onChange={e => {
                             const w = Math.max(0, parseFloat(e.target.value) || 0);
                             setConditions(prev => prev.map(c => c.id === activeCond.id ? { ...c, deductWidth: w } : c));
                           }}
-                          style={{ width: 36, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#fff", textAlign: "center" }} />
-                        <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>×</span>
+                          className="rounded-control fs-xs text-center c-white" style={{ width: 36, padding: "var(--space-1) var(--space-1)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)" }} />
+                        <span className="fs-xs c-text2">×</span>
                         <input type="number" value={activeCond.deductHeight || 0} min={0} step={0.5}
                           onChange={e => {
                             const h = Math.max(0, parseFloat(e.target.value) || 0);
                             setConditions(prev => prev.map(c => c.id === activeCond.id ? { ...c, deductHeight: h } : c));
                           }}
-                          style={{ width: 36, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#fff", textAlign: "center" }} />
-                        <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>ft</span>
+                          className="rounded-control fs-xs text-center c-white" style={{ width: 36, padding: "var(--space-1) var(--space-1)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)" }} />
+                        <span className="fs-xs c-text2">ft</span>
                       </div>
                     )}
                     {activeCond.attachTo && activeCond.deductWidth > 0 && !isAreaParent && (
-                      <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)", marginTop: "var(--space-1)" }}>
+                      <div className="mt-sp1 fs-xs c-text2">
                         Each count deducts {activeCond.deductWidth}' LF from {parentCond?.name || "parent"}
                       </div>
                     )}
                     {activeCond.attachTo && activeCond.deductWidth > 0 && isAreaParent && (
-                      <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)", marginTop: "var(--space-1)" }}>
+                      <div className="mt-sp1 fs-xs c-text2">
                         Each count deducts {activeCond.deductWidth}' × {activeCond.deductHeight || 1}' = {Math.round(activeCond.deductWidth * (activeCond.deductHeight || 1) * 100) / 100} SF from {parentCond?.name || "parent"}
                       </div>
                     )}
@@ -3949,7 +3946,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                 Object.values(agg).forEach(item => {
                   onAddToTakeoff({ ...item, qty: Math.round(item.qty) });
                 });
-              }} style={{ ...btn, width: "100%", marginTop: "var(--space-2)", background: "rgba(74,222,128,0.12)", borderColor: "rgba(74,222,128,0.3)", color: "#4ade80", fontSize: "var(--text-tab)" }}>
+              }} className="fs-tab mt-sp2 w-full" style={{ ...btn, background: "rgba(74,222,128,0.12)", borderColor: "rgba(74,222,128,0.3)", color: "#4ade80" }}>
                 Send to Estimate ({Object.values(measurements).flat().length} measurements)
               </button>
             )}
@@ -3959,14 +3956,14 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
       {/* Right-click context menu */}
       {contextMenu && (
-        <div style={{ position: "fixed", left: contextMenu.x, top: contextMenu.y, background: "rgba(0,0,0,0.95)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "var(--radius-control)", padding: "var(--space-1)", zIndex: 10002, minWidth: 140 }}
+        <div className="rounded-control p-sp1" style={{ position: "fixed", left: contextMenu.x, top: contextMenu.y, background: "rgba(0,0,0,0.95)", border: "1px solid rgba(255,255,255,0.2)", zIndex: 10002, minWidth: 140 }}
           onClick={() => setContextMenu(null)}>
           <div onClick={() => {
               if (contextMenu.isCo) deleteCoMeasurement(contextMenu.measurementId);
               else deleteMeasurement(contextMenu.measurementId);
               setContextMenu(null);
             }}
-            style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", color: "var(--red)", cursor: "pointer", borderRadius: "var(--radius-control)" }}
+            className="rounded-control fs-tab c-red cursor-pointer" style={{ padding: "var(--space-2) var(--space-3)" }}
             onMouseEnter={e => e.target.style.background = "rgba(239,68,68,0.1)"}
             onMouseLeave={e => e.target.style.background = "transparent"}>
             Delete {contextMenu.isCo ? "CO " : ""}Measurement
@@ -3984,7 +3981,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               setRedoStack([]);
               setContextMenu(null);
             }}
-            style={{ padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", color: "var(--blue)", cursor: "pointer", borderRadius: "var(--radius-control)" }}
+            className="rounded-control fs-tab c-blue cursor-pointer" style={{ padding: "var(--space-2) var(--space-3)" }}
             onMouseEnter={e => e.target.style.background = "rgba(96,165,250,0.1)"}
             onMouseLeave={e => e.target.style.background = "transparent"}>
             Copy Measurement
@@ -4005,10 +4002,10 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               }));
               setContextMenu(null);
             }}
-            style={{ padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-xs)", color: "var(--text2)", cursor: "pointer", borderRadius: "var(--radius-control)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}
+            className="flex rounded-control fs-xs c-text2 gap-sp2 cursor-pointer" style={{ padding: "var(--space-1) var(--space-3)" }}
             onMouseEnter={e => e.target.style.background = "rgba(255,255,255,0.05)"}
             onMouseLeave={e => e.target.style.background = "transparent"}>
-              <span style={{ width: 6, height: 6, borderRadius: "var(--radius-control)", background: c.color }} />
+              <span className="rounded-control" style={{ width: 6, height: 6, background: c.color }} />
               Move to {c.name}
             </div>
           ))}
@@ -4045,14 +4042,14 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
       {/* Template picker modal */}
       {showTemplatePicker && (
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.97)", border: "1px solid var(--amber)", borderRadius: "var(--radius-control)", padding: "var(--space-6)", zIndex: 10001, minWidth: 420, maxWidth: 520, maxHeight: "80vh", overflow: "auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-4)" }}>
-            <div style={{ color: "#fff", fontSize: "var(--text-card)", fontWeight: "var(--weight-bold)" }}>Condition Templates</div>
-            <button onClick={() => setShowTemplatePicker(false)} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-3)" }}>Close</button>
+        <div className="rounded-control p-sp6 absolute overflow-auto" style={{ top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.97)", border: "1px solid var(--amber)", zIndex: 10001, minWidth: 420, maxWidth: 520, maxHeight: "80vh" }}>
+          <div className="mb-sp4" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div className="fw-bold fs-card c-white">Condition Templates</div>
+            <button onClick={() => setShowTemplatePicker(false)} className="fs-xs" style={{ ...btn, padding: "var(--space-1) var(--space-3)" }}>Close</button>
           </div>
-          <div style={{ color: "var(--text2)", fontSize: "var(--text-tab)", marginBottom: "var(--space-4)" }}>Apply a template to replace or add conditions. Choose a trade package that matches your project scope.</div>
+          <div className="mb-sp4 fs-tab c-text2">Apply a template to replace or add conditions. Choose a trade package that matches your project scope.</div>
           {Object.entries(TEMPLATES).map(([name, tmpl]) => (
-            <div key={name} style={{ padding: "var(--space-3) var(--space-4)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}
+            <div key={name} className="rounded-control mb-sp2 cursor-pointer" style={{ padding: "var(--space-3) var(--space-4)", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
               onClick={() => {
                 const newConds = tmpl.items.map((t, i) => createCondition(t, conditions.length + i));
                 if (tmpl.items.length === 0) {
@@ -4068,32 +4065,32 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                   return next;
                 });
               }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-1)" }}>
-                <span style={{ color: "#fff", fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)" }}>{name}</span>
-                <span style={{ fontSize: "var(--text-xs)", color: "var(--text2)" }}>{tmpl.items.length} conditions</span>
+              <div className="mb-sp1" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span className="fs-secondary fw-semi c-white">{name}</span>
+                <span className="fs-xs c-text2">{tmpl.items.length} conditions</span>
               </div>
-              <div style={{ fontSize: "var(--text-tab)", color: "var(--text2)", marginBottom: "var(--space-2)" }}>{tmpl.description}</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)" }}>
+              <div className="mb-sp2 fs-tab c-text2">{tmpl.description}</div>
+              <div className="gap-sp1 flex-wrap" style={{ display: "flex" }}>
                 {tmpl.items.slice(0, 8).map((it, i) => (
-                  <span key={i} style={{ fontSize: "var(--text-xs)", color: "var(--text2)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <span key={i} className="rounded-control fs-xs c-text2" style={{ padding: "var(--space-1) var(--space-1)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
                     {it.asmCode}
                   </span>
                 ))}
-                {tmpl.items.length > 8 && <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>+{tmpl.items.length - 8} more</span>}
+                {tmpl.items.length > 8 && <span className="fs-xs c-text3">+{tmpl.items.length - 8} more</span>}
               </div>
             </div>
           ))}
-          <div style={{ marginTop: "var(--space-3)", padding: "var(--space-3) var(--space-4)", borderRadius: "var(--radius-control)", border: "1px dashed rgba(255,255,255,0.15)", textAlign: "center" }}>
-            <div style={{ fontSize: "var(--text-tab)", color: "var(--text2)" }}>Or add individual conditions with the + Add button in the panel</div>
+          <div className="rounded-control mt-sp3 text-center" style={{ padding: "var(--space-3) var(--space-4)", border: "1px dashed rgba(255,255,255,0.15)" }}>
+            <div className="fs-tab c-text2">Or add individual conditions with the + Add button in the panel</div>
           </div>
         </div>
       )}
 
       {/* Bid Area add dialog */}
       {showBidAreaAdd && (
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.95)", border: "1px solid var(--amber)", borderRadius: "var(--radius-control)", padding: "var(--space-5)", zIndex: 10000, minWidth: 300 }}>
-          <div style={{ color: "#fff", fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)", marginBottom: "var(--space-3)" }}>Add Bid Area</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", marginBottom: "var(--space-3)" }}>
+        <div className="rounded-control p-sp5 absolute" style={{ top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.95)", border: "1px solid var(--amber)", zIndex: 10000, minWidth: 300 }}>
+          <div className="fs-secondary fw-semi mb-sp3 c-white">Add Bid Area</div>
+          <div className="mb-sp3 gap-sp1 flex-wrap" style={{ display: "flex" }}>
             {["1st Floor", "2nd Floor", "3rd Floor", "Mezzanine", "Basement", "Roof", "Exterior", "Common Areas"].map(name => (
               <button key={name} onClick={() => {
                 const ba = { id: "ba_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5), name };
@@ -4101,10 +4098,10 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                 setActiveBidAreaId(ba.id);
                 setShowBidAreaAdd(false);
                 setNewBidAreaName("");
-              }} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}>{name}</button>
+              }} className="fs-xs" style={{ ...btn, padding: "var(--space-1) var(--space-2)" }}>{name}</button>
             ))}
           </div>
-          <div style={{ display: "flex", gap: "var(--space-2)" }}>
+          <div className="gap-sp2" style={{ display: "flex" }}>
             <input placeholder="Custom area name..." value={newBidAreaName} onChange={e => setNewBidAreaName(e.target.value)}
               onKeyDown={e => {
                 if (e.key === "Enter" && newBidAreaName.trim()) {
@@ -4112,12 +4109,12 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                   setBidAreas(prev => [...prev, ba]); setActiveBidAreaId(ba.id); setShowBidAreaAdd(false); setNewBidAreaName("");
                 }
               }}
-              style={{ flex: 1, padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-label)" }} />
+              className="rounded-control fs-label c-white flex-1" style={{ padding: "var(--space-2) var(--space-3)", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.06)" }} />
             <button onClick={() => {
               if (!newBidAreaName.trim()) return;
               const ba = { id: "ba_" + Date.now(), name: newBidAreaName.trim() };
               setBidAreas(prev => [...prev, ba]); setActiveBidAreaId(ba.id); setShowBidAreaAdd(false); setNewBidAreaName("");
-            }} style={{ ...btn, background: "var(--amber)", color: "#000", fontWeight: "var(--weight-semi)" }}>Add</button>
+            }} className="fw-semi" style={{ ...btn, background: "var(--amber)", color: "#000" }}>Add</button>
             <button onClick={() => { setShowBidAreaAdd(false); setNewBidAreaName(""); }} style={btn}>Cancel</button>
           </div>
         </div>
@@ -4125,11 +4122,11 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
       {/* Calibration prompt */}
       {showCalPrompt && (
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.95)", border: "1px solid var(--amber)", borderRadius: "var(--radius-control)", padding: "var(--space-6)", zIndex: 10000, minWidth: 320, textAlign: "center" }}>
-          <div style={{ color: "#fff", fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)", marginBottom: "var(--space-2)" }}>Set Scale</div>
-          <div style={{ color: "var(--text2)", fontSize: "var(--text-label)", marginBottom: "var(--space-3)" }}>Pick a preset or enter the known distance:</div>
-          <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)", marginBottom: "var(--space-2)", textAlign: "center" }}>Common scales (click if printed on drawing):</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", justifyContent: "center", marginBottom: "var(--space-4)" }}>
+        <div className="rounded-control p-sp6 absolute text-center" style={{ top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.95)", border: "1px solid var(--amber)", zIndex: 10000, minWidth: 320 }}>
+          <div className="fs-secondary fw-semi mb-sp2 c-white">Set Scale</div>
+          <div className="mb-sp3 fs-label c-text2">Pick a preset or enter the known distance:</div>
+          <div className="mb-sp2 fs-xs c-text2 text-center">Common scales (click if printed on drawing):</div>
+          <div className="mb-sp4 justify-center gap-sp1 flex-wrap" style={{ display: "flex" }}>
             {[
               { label: '1/8"', ratio: 96 }, { label: '3/16"', ratio: 64 }, { label: '1/4"', ratio: 48 },
               { label: '3/8"', ratio: 32 }, { label: '1/2"', ratio: 24 }, { label: '3/4"', ratio: 16 }, { label: '1"', ratio: 12 },
@@ -4142,70 +4139,69 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                   const realFeet = pixDist * sc.ratio / (72 * 12);
                   setCalInput(realFeet.toFixed(2));
                 }
-              }} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", minWidth: 42 }}>{sc.label}=1'</button>
+              }} className="fs-xs" style={{ ...btn, padding: "var(--space-1) var(--space-2)", minWidth: 42 }}>{sc.label}=1'</button>
             ))}
           </div>
-          <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)", marginBottom: "var(--space-2)", textAlign: "center" }}>Or enter the real distance between your two clicks:</div>
+          <div className="mb-sp2 fs-xs c-text2 text-center">Or enter the real distance between your two clicks:</div>
           <input autoFocus type="number" step="0.1" placeholder="Distance in feet" value={calInput}
             onChange={e => setCalInput(e.target.value)} onKeyDown={e => e.key === "Enter" && confirmCalibration()}
-            style={{ width: "100%", padding: "var(--space-3) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid var(--amber)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-card)", textAlign: "center" }} />
-          <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-4)", justifyContent: "center" }}>
+            className="rounded-control fs-card text-center c-white w-full" style={{ padding: "var(--space-3) var(--space-3)", border: "1px solid var(--amber)", background: "rgba(255,255,255,0.06)" }} />
+          <div className="mt-sp4 justify-center gap-sp2" style={{ display: "flex" }}>
             <button onClick={() => { setCalPoints([]); setShowCalPrompt(false); }} style={{ ...btn, borderColor: "rgba(239,68,68,0.4)" }}>Cancel</button>
-            <button onClick={confirmCalibration} style={{ ...btn, background: "var(--amber)", color: "#000", fontWeight: "var(--weight-semi)" }}>Confirm</button>
+            <button onClick={confirmCalibration} className="fw-semi" style={{ ...btn, background: "var(--amber)", color: "#000" }}>Confirm</button>
           </div>
         </div>
       )}
 
       {/* Scale verification prompt */}
       {showVerify && (
-        <div style={{ position: "absolute", bottom: 60, left: "50%", transform: "translateX(-50%)",
-          background: "rgba(0,0,0,0.9)", border: "1px solid rgba(74,222,128,0.4)", borderRadius: "var(--radius-control)",
-          padding: "var(--space-3) var(--space-5)", zIndex: 10000, display: "flex", alignItems: "center", gap: "var(--space-3)", maxWidth: 500 }}>
-          <span style={{ fontSize: "var(--text-card)" }}>&#9989;</span>
+        <div className="flex rounded-control gap-sp3 absolute" style={{ bottom: 60, left: "50%", transform: "translateX(-50%)",
+          background: "rgba(0,0,0,0.9)", border: "1px solid rgba(74,222,128,0.4)",
+          padding: "var(--space-3) var(--space-5)", zIndex: 10000, maxWidth: 500 }}>
+          <span className="fs-card">&#9989;</span>
           <div>
-            <div style={{ color: "#4ade80", fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)" }}>Scale set!</div>
-            <div style={{ color: "var(--text2)", fontSize: "var(--text-tab)" }}>Verify by measuring a known dimension (door = ~3', window = ~4'). If it's off, re-calibrate.</div>
+            <div className="fw-semi fs-label" style={{ color: "#4ade80" }}>Scale set!</div>
+            <div className="fs-tab c-text2">Verify by measuring a known dimension (door = ~3', window = ~4'). If it's off, re-calibrate.</div>
           </div>
-          <button onClick={() => setShowVerify(false)} style={{ ...btn, fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-3)", flexShrink: 0 }}>OK</button>
+          <button onClick={() => setShowVerify(false)} className="fs-xs flex-shrink-0" style={{ ...btn, padding: "var(--space-1) var(--space-3)" }}>OK</button>
         </div>
       )}
 
       {/* Save Named View dialog */}
       {showSaveView && (
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-          background: "rgba(0,0,0,0.95)", border: "1px solid rgba(59,130,246,0.5)", borderRadius: "var(--radius-control)",
-          padding: "var(--space-5)", zIndex: 10001, minWidth: 300, textAlign: "center" }}>
-          <div style={{ color: "#93c5fd", fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", marginBottom: "var(--space-2)" }}>📌 Save Named View</div>
-          <div style={{ color: "var(--text2)", fontSize: "var(--text-tab)", marginBottom: "var(--space-3)" }}>Saves current page, zoom level, and scroll position.</div>
+        <div className="rounded-control p-sp5 absolute text-center" style={{ top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+          background: "rgba(0,0,0,0.95)", border: "1px solid rgba(59,130,246,0.5)", zIndex: 10001, minWidth: 300 }}>
+          <div className="fw-semi mb-sp2 fs-label" style={{ color: "#93c5fd" }}>📌 Save Named View</div>
+          <div className="mb-sp3 fs-tab c-text2">Saves current page, zoom level, and scroll position.</div>
           <input autoFocus value={saveViewName} onChange={e => setSaveViewName(e.target.value)}
             placeholder={`View ${namedViews.length + 1}`}
             onKeyDown={e => {
               if (e.key === "Enter") { saveNamedView(saveViewName || `View ${namedViews.length + 1}`); setShowSaveView(false); }
               if (e.key === "Escape") setShowSaveView(false);
             }}
-            style={{ width: "100%", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid rgba(59,130,246,0.4)",
-              background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-secondary)", outline: "none" }} />
+            className="rounded-control fs-secondary c-white w-full" style={{ padding: "var(--space-2) var(--space-3)", border: "1px solid rgba(59,130,246,0.4)",
+              background: "rgba(255,255,255,0.06)", outline: "none" }} />
           {/* Existing views list with delete */}
           {namedViews.length > 0 && (
-            <div style={{ marginTop: "var(--space-3)", maxHeight: 140, overflow: "auto", textAlign: "left" }}>
-              <div style={{ fontSize: "var(--text-xs)", color: "var(--text3)", marginBottom: "var(--space-1)" }}>Existing views:</div>
+            <div className="mt-sp3 text-left overflow-auto" style={{ maxHeight: 140 }}>
+              <div className="mb-sp1 fs-xs c-text3">Existing views:</div>
               {namedViews.map(nv => (
-                <div key={nv.id} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-1) 0", fontSize: "var(--text-tab)" }}>
-                  <span style={{ color: "#93c5fd", flex: 1 }}>{nv.name}</span>
-                  <span style={{ color: "var(--text3)", fontSize: "var(--text-xs)" }}>{sheetNames[nv.pageKey] || `P${nv.page}`}</span>
+                <div key={nv.id} className="flex fs-tab gap-sp2" style={{ padding: "var(--space-1) 0" }}>
+                  <span className="flex-1" style={{ color: "#93c5fd" }}>{nv.name}</span>
+                  <span className="fs-xs c-text3">{sheetNames[nv.pageKey] || `P${nv.page}`}</span>
                   <button onClick={() => { navigateToView(nv); setShowSaveView(false); }}
-                    style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(59,130,246,0.3)", background: "transparent", color: "var(--blue)", cursor: "pointer" }}>Go</button>
+                    className="rounded-control fs-xs c-blue cursor-pointer" style={{ padding: "var(--space-1) var(--space-1)", border: "1px solid rgba(59,130,246,0.3)", background: "transparent" }}>Go</button>
                   <button onClick={() => deleteNamedView(nv.id)}
-                    style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-1)", borderRadius: "var(--radius-control)", border: "1px solid rgba(239,68,68,0.3)", background: "transparent", color: "var(--red)", cursor: "pointer" }}>✕</button>
+                    className="rounded-control fs-xs c-red cursor-pointer" style={{ padding: "var(--space-1) var(--space-1)", border: "1px solid rgba(239,68,68,0.3)", background: "transparent" }}>✕</button>
                 </div>
               ))}
             </div>
           )}
-          <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)", justifyContent: "center" }}>
+          <div className="mt-sp3 justify-center gap-sp2" style={{ display: "flex" }}>
             <button onClick={() => setShowSaveView(false)}
-              style={{ ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-tab)", borderColor: "rgba(59,130,246,0.3)" }}>Close</button>
+              className="fs-tab" style={{ ...btn, padding: "var(--space-1) var(--space-3)", borderColor: "rgba(59,130,246,0.3)" }}>Close</button>
             <button onClick={() => { saveNamedView(saveViewName || `View ${namedViews.length + 1}`); setShowSaveView(false); }}
-              style={{ ...btn, padding: "var(--space-1) var(--space-4)", fontSize: "var(--text-tab)", background: "rgba(59,130,246,0.3)", borderColor: "rgba(59,130,246,0.5)", color: "#fff", fontWeight: "var(--weight-semi)" }}>
+              className="fw-semi fs-tab c-white" style={{ ...btn, padding: "var(--space-1) var(--space-4)", background: "rgba(59,130,246,0.3)", borderColor: "rgba(59,130,246,0.5)" }}>
               Save View
             </button>
           </div>
@@ -4214,27 +4210,26 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
       {/* Hot Link target selector (shown when HOTLINK mode active) */}
       {mode === MODE.HOTLINK && (
-        <div style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)",
-          background: "rgba(0,0,0,0.9)", border: "1px solid rgba(59,130,246,0.5)", borderRadius: "var(--radius-control)",
-          padding: "var(--space-2) var(--space-4)", zIndex: 10000, display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-          <span style={{ color: "#93c5fd", fontSize: "var(--text-tab)", fontWeight: "var(--weight-semi)" }}>🔗 Place Hot Link to:</span>
+        <div className="flex rounded-control gap-sp2 absolute" style={{ top: 12, left: "50%", transform: "translateX(-50%)",
+          background: "rgba(0,0,0,0.9)", border: "1px solid rgba(59,130,246,0.5)",
+          padding: "var(--space-2) var(--space-4)", zIndex: 10000 }}>
+          <span className="fw-semi fs-tab" style={{ color: "#93c5fd" }}>🔗 Place Hot Link to:</span>
           <select value={hotlinkTargetId || ""} onChange={e => setHotlinkTargetId(e.target.value)}
-            style={{ padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(59,130,246,0.4)", background: "rgba(59,130,246,0.08)", color: "#fff", fontSize: "var(--text-tab)" }}>
+            className="rounded-control fs-tab c-white" style={{ padding: "var(--space-1) var(--space-2)", border: "1px solid rgba(59,130,246,0.4)", background: "rgba(59,130,246,0.08)" }}>
             <option value="" disabled>Select a view...</option>
             {namedViews.map(nv => <option key={nv.id} value={nv.id}>{nv.name} — {sheetNames[nv.pageKey] || `P${nv.page}`}</option>)}
           </select>
-          <span style={{ color: "var(--text3)", fontSize: "var(--text-xs)" }}>Click on plan to place</span>
+          <span className="fs-xs c-text3">Click on plan to place</span>
           <button onClick={() => { setMode(MODE.PAN); setHotlinkTargetId(null); }}
-            style={{ ...btn, padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)" }}>Cancel</button>
+            className="fs-xs" style={{ ...btn, padding: "var(--space-1) var(--space-2)" }}>Cancel</button>
         </div>
       )}
 
       {/* Annotation text input overlay */}
       {showAnnTextInput && (
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-          background: "rgba(0,0,0,0.95)", border: "1px solid rgba(239,68,68,0.5)", borderRadius: "var(--radius-control)",
-          padding: "var(--space-5)", zIndex: 10001, minWidth: 280, textAlign: "center" }}>
-          <div style={{ color: "var(--red)", fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", marginBottom: "var(--space-2)" }}>
+        <div className="rounded-control p-sp5 absolute text-center" style={{ top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+          background: "rgba(0,0,0,0.95)", border: "1px solid rgba(239,68,68,0.5)", zIndex: 10001, minWidth: 280 }}>
+          <div className="fw-semi mb-sp2 fs-label c-red">
             {showAnnTextInput.type === "callout" ? "Callout Text" : "Text Annotation"}
           </div>
           <input ref={annTextRef} value={annTextValue} onChange={e => setAnnTextValue(e.target.value)}
@@ -4260,11 +4255,11 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               }
               if (e.key === "Escape") { setShowAnnTextInput(null); setAnnTextValue(""); }
             }}
-            style={{ width: "100%", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid rgba(239,68,68,0.4)",
-              background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-secondary)", outline: "none" }} />
-          <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-3)", justifyContent: "center" }}>
+            className="rounded-control fs-secondary c-white w-full" style={{ padding: "var(--space-2) var(--space-3)", border: "1px solid rgba(239,68,68,0.4)",
+              background: "rgba(255,255,255,0.06)", outline: "none" }} />
+          <div className="mt-sp3 justify-center gap-sp2" style={{ display: "flex" }}>
             <button onClick={() => { setShowAnnTextInput(null); setAnnTextValue(""); }}
-              style={{ ...btn, padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-tab)", borderColor: "rgba(239,68,68,0.3)" }}>Cancel</button>
+              className="fs-tab" style={{ ...btn, padding: "var(--space-1) var(--space-3)", borderColor: "rgba(239,68,68,0.3)" }}>Cancel</button>
             <button onClick={() => {
               if (!annTextValue.trim()) return;
               const base = {
@@ -4283,7 +4278,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
               setShowAnnTextInput(null);
               setAnnTextValue("");
               if (!continuousMode) setMode(MODE.PAN);
-            }} style={{ ...btn, padding: "var(--space-1) var(--space-4)", fontSize: "var(--text-tab)", background: "rgba(239,68,68,0.3)", borderColor: "rgba(239,68,68,0.5)", color: "#fff", fontWeight: "var(--weight-semi)" }}>
+            }} className="fw-semi fs-tab c-white" style={{ ...btn, padding: "var(--space-1) var(--space-4)", background: "rgba(239,68,68,0.3)", borderColor: "rgba(239,68,68,0.5)" }}>
               Place
             </button>
           </div>
@@ -4291,7 +4286,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
       )}
 
       {rendering && (
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", color: "#fff", fontSize: "var(--text-secondary)", background: "rgba(0,0,0,0.7)", padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-control)" }}>
+        <div className="rounded-control fs-secondary absolute c-white" style={{ top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.7)", padding: "var(--space-2) var(--space-4)" }}>
           Loading page...
         </div>
       )}

@@ -269,7 +269,7 @@ function ReadOnlyPhaseTracker({ project }) {
   }
 
   return (
-    <div className="cp-phases" style={{ overflowX: "auto" }}>
+    <div className="cp-phases overflow-x-auto">
       {phases.map((ph) => {
         const done = ph.status === "completed";
         const current = ph.status === "in progress";
@@ -407,7 +407,7 @@ export default function CustomerPortal() {
               </div>
             )}
 
-            <div style={{ marginBottom: "var(--space-5)" }}>
+            <div className="mb-sp5">
               <label className="cp-form-label">Project Access Code</label>
               <input
                 className="cp-input"
@@ -418,11 +418,11 @@ export default function CustomerPortal() {
                 onKeyDown={e => e.key === "Enter" && handleLogin()}
                 autoComplete="off"
                 spellCheck={false}
-                style={{ letterSpacing: "0.05em", textTransform: "uppercase" }}
+                className="uppercase" style={{ letterSpacing: "0.05em" }}
               />
             </div>
 
-            <button className="cp-btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={handleLogin}>
+            <button className="cp-btn-primary justify-center w-full" onClick={handleLogin}>
               <Lock size={15} />
               Access My Project
             </button>
@@ -493,13 +493,13 @@ export default function CustomerPortal() {
           <>
             {/* Project header card */}
             <div className="cp-card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "var(--space-3)", marginBottom: "var(--space-4)" }}>
+              <div className="mb-sp4 items-start gap-sp3 flex-wrap" style={{ display: "flex", justifyContent: "space-between" }}>
                 <div>
                   <div className="cp-card-title">
                     <Building2 size={18} color="#d97706" />
                     {project.name}
                   </div>
-                  <div style={{ fontSize: "var(--text-label)", color: "#5580a0", marginTop: "var(--space-1)" }}>{project.address}</div>
+                  <div className="fs-label mt-sp1" style={{ color: "#5580a0" }}>{project.address}</div>
                 </div>
                 <StatusBadge status={project.status} label={STATUS_LABELS[project.status] || project.status} />
               </div>
@@ -512,7 +512,7 @@ export default function CustomerPortal() {
                 </div>
                 <div className="cp-stat-block">
                   <div className="cp-label">Current Stage</div>
-                  <div className="cp-value" style={{ color: "var(--amber)" }}>{currentMS}</div>
+                  <div className="cp-value c-amber">{currentMS}</div>
                 </div>
                 <div className="cp-stat-block">
                   <div className="cp-label">Next Milestone</div>
@@ -523,8 +523,8 @@ export default function CustomerPortal() {
               {/* Progress bar */}
               <div className="cp-progress-wrap">
                 <div className="cp-progress-label">
-                  <span style={{ fontSize: "var(--text-label)", color: "#5580a0", fontWeight: "var(--weight-semi)" }}>Overall Progress</span>
-                  <span style={{ fontSize: "var(--text-label)", color: "var(--amber)", fontWeight: "var(--weight-bold)" }}>{progress}%</span>
+                  <span className="fw-semi fs-label" style={{ color: "#5580a0" }}>Overall Progress</span>
+                  <span className="fw-bold fs-label c-amber">{progress}%</span>
                 </div>
                 <div className="cp-progress-bar">
                   <div className="cp-progress-fill" style={{ width: `${progress}%` }} />
@@ -535,7 +535,7 @@ export default function CustomerPortal() {
             {/* Key dates */}
             <div className="cp-card">
               <div className="cp-card-title"><CalendarDays size={16} color="#d97706" />Key Dates</div>
-              <div className="cp-grid-2" style={{ marginTop: "var(--space-1)" }}>
+              <div className="cp-grid-2 mt-sp1">
                 <div className="cp-stat-block">
                   <div className="cp-label">Start Date</div>
                   <div className="cp-value">{fmtDate(project.start)}</div>
@@ -558,7 +558,7 @@ export default function CustomerPortal() {
             {project.scope && project.scope.length > 0 && (
               <div className="cp-card">
                 <div className="cp-card-title"><HardHat size={16} color="#d97706" />Scope of Work</div>
-                <div className="cp-scope-pills" style={{ marginTop: "var(--space-2)" }}>
+                <div className="cp-scope-pills mt-sp2">
                   {project.scope.map(s => (
                     <span key={s} className="cp-scope-pill">{s}</span>
                   ))}
@@ -569,18 +569,18 @@ export default function CustomerPortal() {
             {/* EBC contact */}
             <div className="cp-card">
               <div className="cp-card-title"><Phone size={16} color="#d97706" />Your EBC Contact</div>
-              <div style={{ display: "flex", gap: "var(--space-4)", alignItems: "center", marginTop: "var(--space-2)" }}>
-                <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#1a3a5c,#0e2035)", border: "1.5px solid #2a5580", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div className="mt-sp2 gap-sp4" style={{ display: "flex", alignItems: "center" }}>
+                <div className="flex justify-center flex-shrink-0" style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#1a3a5c,#0e2035)", border: "1.5px solid #2a5580" }}>
                   <HardHat size={20} color="#d97706" />
                 </div>
                 <div>
-                  <div style={{ fontSize: "var(--text-secondary)", fontWeight: "var(--weight-bold)", color: "#c8daf0" }}>{project.pm || "Abner Aguilar"}</div>
-                  <div style={{ fontSize: "var(--text-label)", color: "#5580a0" }}>Project Manager · Eagles Brothers Constructors</div>
-                  <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "var(--space-2)" }}>
-                    <a href="tel:+12817629999" style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", fontSize: "var(--text-label)", color: "var(--amber)", textDecoration: "none", fontWeight: "var(--weight-semi)" }}>
+                  <div className="fs-secondary fw-bold" style={{ color: "#c8daf0" }}>{project.pm || "Abner Aguilar"}</div>
+                  <div className="fs-label" style={{ color: "#5580a0" }}>Project Manager · Eagles Brothers Constructors</div>
+                  <div className="mt-sp2 gap-sp3" style={{ display: "flex" }}>
+                    <a href="tel:+12817629999" className="flex fw-semi fs-label c-amber gap-sp1" style={{ textDecoration: "none" }}>
                       <Phone size={11} /> (281) 762-9999
                     </a>
-                    <a href="mailto:info@eaglesbrothers.com" style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", fontSize: "var(--text-label)", color: "var(--amber)", textDecoration: "none", fontWeight: "var(--weight-semi)" }}>
+                    <a href="mailto:info@eaglesbrothers.com" className="flex fw-semi fs-label c-amber gap-sp1" style={{ textDecoration: "none" }}>
                       <Mail size={11} /> Email
                     </a>
                   </div>
@@ -610,18 +610,18 @@ export default function CustomerPortal() {
                   {changeOrders.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="cp-table-empty">
-                        <FileText size={28} color="#1e3550" style={{ marginBottom: "var(--space-2)" }} />
+                        <FileText size={28} color="#1e3550" className="mb-sp2" />
                         <div>No change orders on record for this project.</div>
                       </td>
                     </tr>
                   ) : (
                     changeOrders.map(co => (
                       <tr key={co.id}>
-                        <td style={{ fontWeight: "var(--weight-bold)", color: "#c8daf0", whiteSpace: "nowrap" }}>{co.number}</td>
+                        <td className="fw-bold nowrap" style={{ color: "#c8daf0" }}>{co.number}</td>
                         <td style={{ maxWidth: 280 }}>{co.desc}</td>
                         <td style={{ whiteSpace: "nowrap", fontWeight: "var(--weight-semi)", color: co.amount < 0 ? "#10b981" : "#e2eaf4" }}>{fmt$(co.amount)}</td>
                         <td><StatusBadge status={co.status} /></td>
-                        <td style={{ whiteSpace: "nowrap", color: "#5580a0" }}>{fmtDate(co.submitted)}</td>
+                        <td className="nowrap" style={{ color: "#5580a0" }}>{fmtDate(co.submitted)}</td>
                       </tr>
                     ))
                   )}
@@ -630,9 +630,9 @@ export default function CustomerPortal() {
             </div>
 
             {changeOrders.length > 0 && (
-              <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid #131f2e", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: "var(--text-label)", color: "#5580a0" }}>Total Change Orders: {changeOrders.length}</span>
-                <span style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-bold)", color: "var(--amber)" }}>
+              <div className="mt-sp4" style={{ paddingTop: "var(--space-4)", borderTop: "1px solid #131f2e", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span className="fs-label" style={{ color: "#5580a0" }}>Total Change Orders: {changeOrders.length}</span>
+                <span className="fw-bold fs-label c-amber">
                   Net: {fmt$(changeOrders.reduce((sum, co) => sum + (co.amount || 0), 0))}
                 </span>
               </div>
@@ -660,17 +660,17 @@ export default function CustomerPortal() {
                   {rfis.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="cp-table-empty">
-                        <ClipboardList size={28} color="#1e3550" style={{ marginBottom: "var(--space-2)" }} />
+                        <ClipboardList size={28} color="#1e3550" className="mb-sp2" />
                         <div>No RFIs on record for this project.</div>
                       </td>
                     </tr>
                   ) : (
                     rfis.map(r => (
                       <tr key={r.id}>
-                        <td style={{ fontWeight: "var(--weight-bold)", color: "#c8daf0", whiteSpace: "nowrap" }}>{r.number}</td>
+                        <td className="fw-bold nowrap" style={{ color: "#c8daf0" }}>{r.number}</td>
                         <td style={{ maxWidth: 280 }}>{r.subject}</td>
                         <td><StatusBadge status={r.status} /></td>
-                        <td style={{ whiteSpace: "nowrap", color: "#5580a0" }}>{fmtDate(r.submitted)}</td>
+                        <td className="nowrap" style={{ color: "#5580a0" }}>{fmtDate(r.submitted)}</td>
                         <td style={{ color: "#5580a0" }}>{r.assigned || "—"}</td>
                       </tr>
                     ))
@@ -700,18 +700,18 @@ export default function CustomerPortal() {
                   {submittals.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="cp-table-empty">
-                        <Layers size={28} color="#1e3550" style={{ marginBottom: "var(--space-2)" }} />
+                        <Layers size={28} color="#1e3550" className="mb-sp2" />
                         <div>No submittals on record for this project.</div>
-                        <div style={{ marginTop: "var(--space-2)", fontSize: "var(--text-label)", color: "#2a5580" }}>Submittals will appear here once processed by your EBC PM.</div>
+                        <div className="fs-label mt-sp2" style={{ color: "#2a5580" }}>Submittals will appear here once processed by your EBC PM.</div>
                       </td>
                     </tr>
                   ) : (
                     submittals.map(s => (
                       <tr key={s.id}>
-                        <td style={{ fontWeight: "var(--weight-bold)", color: "#c8daf0", whiteSpace: "nowrap" }}>{s.number}</td>
+                        <td className="fw-bold nowrap" style={{ color: "#c8daf0" }}>{s.number}</td>
                         <td style={{ maxWidth: 300 }}>{s.description || s.desc || s.name}</td>
                         <td><StatusBadge status={s.status} /></td>
-                        <td style={{ whiteSpace: "nowrap", color: "#5580a0" }}>{fmtDate(s.submitted || s.date)}</td>
+                        <td className="nowrap" style={{ color: "#5580a0" }}>{fmtDate(s.submitted || s.date)}</td>
                       </tr>
                     ))
                   )}
@@ -736,17 +736,17 @@ export default function CustomerPortal() {
                 </div>
               )}
 
-              <div style={{ marginBottom: "var(--space-4)" }}>
+              <div className="mb-sp4">
                 <div className="cp-form-label">Overall Rating</div>
                 <StarRating value={fbRating} onChange={setFbRating} />
                 {fbRating > 0 && (
-                  <div style={{ fontSize: "var(--text-label)", color: "var(--amber)", marginTop: "var(--space-1)" }}>
+                  <div className="fs-label mt-sp1 c-amber">
                     {["", "Poor", "Fair", "Good", "Very Good", "Excellent"][fbRating]}
                   </div>
                 )}
               </div>
 
-              <div style={{ marginBottom: "var(--space-4)" }}>
+              <div className="mb-sp4">
                 <label className="cp-form-label">Your Name (optional)</label>
                 <input
                   className="cp-input"
@@ -757,7 +757,7 @@ export default function CustomerPortal() {
                 />
               </div>
 
-              <div style={{ marginBottom: "var(--space-5)" }}>
+              <div className="mb-sp5">
                 <label className="cp-form-label">Comments</label>
                 <textarea
                   className="cp-textarea"
@@ -792,7 +792,7 @@ export default function CustomerPortal() {
                       {[1, 2, 3, 4, 5].map(n => (
                         <Star key={n} size={14} fill={f.rating >= n ? "#d97706" : "none"} color={f.rating >= n ? "#d97706" : "#2a5580"} strokeWidth={1.5} />
                       ))}
-                      <span style={{ fontSize: "var(--text-tab)", color: "#5580a0", marginLeft: "var(--space-2)", alignSelf: "center" }}>
+                      <span className="ml-sp2 fs-tab" style={{ color: "#5580a0", alignSelf: "center" }}>
                         {["", "Poor", "Fair", "Good", "Very Good", "Excellent"][f.rating]}
                       </span>
                     </div>
@@ -803,10 +803,10 @@ export default function CustomerPortal() {
             )}
 
             {projectFeedback.length === 0 && !fbSuccess && (
-              <div className="cp-card" style={{ textAlign: "center", padding: "var(--space-8) var(--space-5)" }}>
-                <Star size={32} color="#1e3550" style={{ marginBottom: "var(--space-3)" }} />
-                <div style={{ color: "#3a5470", fontSize: "var(--text-label)" }}>No feedback submitted yet for this project.</div>
-                <div style={{ color: "#2a5580", fontSize: "var(--text-label)", marginTop: "var(--space-2)" }}>Be the first to rate the team above.</div>
+              <div className="cp-card text-center" style={{ padding: "var(--space-8) var(--space-5)" }}>
+                <Star size={32} color="#1e3550" className="mb-sp3" />
+                <div className="fs-label" style={{ color: "#3a5470" }}>No feedback submitted yet for this project.</div>
+                <div className="fs-label mt-sp2" style={{ color: "#2a5580" }}>Be the first to rate the team above.</div>
               </div>
             )}
           </>
@@ -818,8 +818,8 @@ export default function CustomerPortal() {
             <div className="cp-card-title"><Image size={16} color="#d97706" />Daily Report Photos</div>
             <div className="cp-card-sub">Progress photos from the field — updated daily by your foreman</div>
 
-            <div className="cp-alert" style={{ marginBottom: "var(--space-5)" }}>
-              <AlertCircle size={18} color="#d97706" style={{ flexShrink: 0 }} />
+            <div className="cp-alert mb-sp5">
+              <AlertCircle size={18} color="#d97706" className="flex-shrink-0" />
               <div className="cp-alert-text">
                 <strong>Coming Soon</strong> — Daily report photos will be available here once EBC activates photo uploads for your project. Contact your PM to enable this feature.
               </div>
@@ -834,14 +834,14 @@ export default function CustomerPortal() {
               ))}
             </div>
 
-            <div style={{ marginTop: "var(--space-5)", paddingTop: "var(--space-4)", borderTop: "1px solid #131f2e" }}>
-              <div className="cp-label" style={{ marginBottom: "var(--space-2)" }}>Request Photo Updates</div>
-              <p style={{ fontSize: "var(--text-label)", color: "#5580a0", margin: "0 0 12px", lineHeight: 1.6 }}>
+            <div className="mt-sp5" style={{ paddingTop: "var(--space-4)", borderTop: "1px solid #131f2e" }}>
+              <div className="cp-label mb-sp2">Request Photo Updates</div>
+              <p className="fs-label" style={{ color: "#5580a0", margin: "0 0 12px", lineHeight: 1.6 }}>
                 To receive daily progress photos directly to your email, contact your EBC project manager.
               </p>
               <a
                 href="mailto:info@eaglesbrothers.com?subject=Photo Updates Request"
-                style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-2)", fontSize: "var(--text-label)", color: "var(--amber)", textDecoration: "none", fontWeight: "var(--weight-semi)" }}
+                className="fw-semi fs-label d-inline-flex c-amber gap-sp2" style={{ alignItems: "center", textDecoration: "none" }}
               >
                 <Mail size={14} />
                 Request Photo Access

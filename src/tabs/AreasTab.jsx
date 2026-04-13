@@ -96,9 +96,9 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
       .sort((a, b) => b.date.localeCompare(a.date));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+    <div className="flex-col gap-sp4">
       {/* ── Summary Stats ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: "var(--space-2)" }}>
+      <div className="gap-sp2 d-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))" }}>
         <StatTile label={tr("Total Areas")} value={stats.total} t={t} />
         <StatTile label={tr("Complete")} value={stats.complete} color="var(--green)" t={t} />
         <StatTile label={tr("In Progress")} value={stats.inProgress} color="var(--amber)" t={t} />
@@ -107,7 +107,7 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
       </div>
 
       {/* ── Filters ── */}
-      <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+      <div className="gap-sp2 flex-wrap" style={{ display: "flex" }}>
         <div style={{ flex: "1 1 140px" }}>
           <FieldSelect label={tr("Floor")} value={filterFloor} onChange={(e) => setFilterFloor(e.target.value)} t={t}>
             <option value="all">{tr("All Floors")}</option>
@@ -129,8 +129,8 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
       {/* ── Area Cards ── */}
       {filtered.length === 0 && (
         <FieldCard>
-          <div style={{ textAlign: "center", padding: "var(--space-6)", color: "var(--text3)" }}>
-            <MapPin size={32} style={{ marginBottom: "var(--space-2)", opacity: 0.4 }} />
+          <div className="p-sp6 c-text3 text-center">
+            <MapPin size={32} className="mb-sp2" style={{ opacity: 0.4 }} />
             <div>{tr("No areas found for this project")}</div>
           </div>
         </FieldCard>
@@ -150,20 +150,20 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
             {/* Header row */}
             <div
               onClick={() => setExpandedId(isExpanded ? null : area.id)}
-              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", gap: "var(--space-2)" }}
+              className="flex-between gap-sp2 cursor-pointer"
             >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
-                  <span style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>{area.name}</span>
+              <div className="flex-1" style={{ minWidth: 0 }}>
+                <div className="flex gap-sp2 flex-wrap">
+                  <span className="fs-label fw-bold c-text">{area.name}</span>
                   <span className={`badge ${STATUS_BADGE_MAP[area.status] || "badge-muted"}`}>
                     {tr(area.status)}
                   </span>
                 </div>
-                <div style={{ fontSize: "var(--text-sm, 12px)", color: "var(--text2)", marginTop: "var(--space-1)" }}>
+                <div className="fs-tab mt-sp1 c-text2">
                   {tr("Floor")} {area.floor || "—"} &middot; {tr("Zone")} {area.zone || "—"} &middot; {empName(area.assignedTo)}
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+              <div className="flex gap-sp2">
                 <span style={{ fontSize: "var(--text-sm, 12px)", fontWeight: "var(--weight-bold)", color: pct >= 100 ? "var(--green)" : "var(--text)" }}>
                   {pct}%
                 </span>
@@ -172,45 +172,45 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
             </div>
 
             {/* Progress bar */}
-            <div style={{ height: 4, background: "var(--bg3)", borderRadius: "var(--radius-control)", marginTop: "var(--space-2)", overflow: "hidden" }}>
+            <div className="rounded-control mt-sp2 bg-bg3 overflow-hidden" style={{ height: 4 }}>
               <div style={{ height: "100%", width: `${Math.min(pct, 100)}%`, background: pct >= 100 ? "var(--green)" : "var(--amber)", borderRadius: "var(--radius-control)", transition: "width 0.3s" }} />
             </div>
 
             {/* Labor burn rate */}
             {budgetHrs > 0 && (
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
-                <span style={{ fontSize: "var(--text-sm, 12px)", color: "var(--text2)", minWidth: 70 }}>
+              <div className="flex mt-sp2 gap-sp2">
+                <span className="fs-tab c-text2" style={{ minWidth: 70 }}>
                   {tr("Labor")}: {actualHrs}/{budgetHrs}h
                 </span>
-                <div style={{ flex: 1, height: 4, background: "var(--bg3)", borderRadius: "var(--radius-control)", overflow: "hidden" }}>
+                <div className="rounded-control bg-bg3 overflow-hidden flex-1" style={{ height: 4 }}>
                   <div style={{ height: "100%", width: `${Math.min(laborBurnPct, 100)}%`, background: isOverBurning ? "var(--red)" : "var(--green)", borderRadius: "var(--radius-control)", transition: "width 0.3s" }} />
                 </div>
                 <span style={{ fontSize: "var(--text-sm, 12px)", fontWeight: "var(--weight-semi)", color: isOverBurning ? "var(--red)" : "var(--text2)", minWidth: 36, textAlign: "right" }}>
                   {laborBurnPct}%
                 </span>
                 {isOverBurning && (
-                  <AlertTriangle size={12} style={{ color: "var(--red)", flexShrink: 0 }} title={tr("Labor burn exceeds production")} />
+                  <AlertTriangle size={12} className="c-red flex-shrink-0" title={tr("Labor burn exceeds production")} />
                 )}
               </div>
             )}
 
             {/* Expanded: Scope Items */}
             {isExpanded && (
-              <div style={{ marginTop: "var(--space-3)", display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              <div className="flex-col mt-sp3 gap-sp2">
                 {/* Scope items */}
-                <div style={{ fontSize: "var(--text-sm, 12px)", fontWeight: "var(--weight-bold)", color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  <Layers size={12} style={{ marginRight: "var(--space-1)", verticalAlign: "middle" }} />
+                <div className="fs-tab fw-bold uppercase c-text2" style={{ letterSpacing: "0.05em" }}>
+                  <Layers size={12} className="mr-sp1" style={{ verticalAlign: "middle" }} />
                   {tr("Scope Items")}
                 </div>
                 {(area.scopeItems || []).map((si, idx) => {
                   const siPct = si.budgetQty > 0 ? Math.round((si.installedQty / si.budgetQty) * 100) : 0;
                   return (
-                    <div key={idx} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                      <span style={{ flex: "0 0 120px", fontSize: "var(--text-sm, 12px)", color: "var(--text)" }}>{si.trade}</span>
-                      <div style={{ flex: 1, height: 6, background: "var(--bg3)", borderRadius: "var(--radius-control)", overflow: "hidden" }}>
+                    <div key={idx} className="flex gap-sp2">
+                      <span className="fs-tab c-text" style={{ flex: "0 0 120px" }}>{si.trade}</span>
+                      <div className="rounded-control bg-bg3 overflow-hidden flex-1" style={{ height: 6 }}>
                         <div style={{ height: "100%", width: `${Math.min(siPct, 100)}%`, background: siPct >= 100 ? "var(--green)" : "var(--blue)", borderRadius: "var(--radius-control)", transition: "width 0.3s" }} />
                       </div>
-                      <span style={{ flex: "0 0 80px", fontSize: "var(--text-sm, 12px)", color: "var(--text2)", textAlign: "right" }}>
+                      <span className="fs-tab c-text2 text-right" style={{ flex: "0 0 80px" }}>
                         {si.installedQty}/{si.budgetQty} {si.unit}
                       </span>
                     </div>
@@ -220,20 +220,20 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
                 {/* Production log entries */}
                 {logs.length > 0 && (
                   <>
-                    <div style={{ fontSize: "var(--text-sm, 12px)", fontWeight: "var(--weight-bold)", color: "var(--text2)", textTransform: "uppercase", letterSpacing: "0.05em", marginTop: "var(--space-2)" }}>
-                      <BarChart3 size={12} style={{ marginRight: "var(--space-1)", verticalAlign: "middle" }} />
+                    <div className="fs-tab fw-bold mt-sp2 uppercase c-text2" style={{ letterSpacing: "0.05em" }}>
+                      <BarChart3 size={12} className="mr-sp1" style={{ verticalAlign: "middle" }} />
                       {tr("Production Log")}
                     </div>
                     {logs.map((log) => (
-                      <div key={log.id} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)", fontSize: "var(--text-sm, 12px)" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text)" }}>
+                      <div key={log.id} className="border-b fs-tab" style={{ padding: "var(--space-2) 0" }}>
+                        <div className="c-text" style={{ display: "flex", justifyContent: "space-between" }}>
                           <span>{log.date} &middot; {log.trade}</span>
-                          <span style={{ fontWeight: "var(--weight-semi)" }}>{log.qtyInstalled} {log.unit}</span>
+                          <span className="fw-semi">{log.qtyInstalled} {log.unit}</span>
                         </div>
-                        <div style={{ color: "var(--text3)", marginTop: "var(--space-1)" }}>
+                        <div className="mt-sp1 c-text3">
                           {log.laborHours}h &middot; {log.crewSize} crew &middot; {log.enteredBy}
                         </div>
-                        {log.notes && <div style={{ color: "var(--text2)", marginTop: "var(--space-1)", fontStyle: "italic" }}>{log.notes}</div>}
+                        {log.notes && <div className="mt-sp1 c-text2" style={{ fontStyle: "italic" }}>{log.notes}</div>}
                       </div>
                     ))}
                   </>
@@ -241,7 +241,7 @@ export function AreasTab({ areas = [], productionLogs = [], employees = [], proj
 
                 {/* Area notes */}
                 {area.notes && (
-                  <div style={{ fontSize: "var(--text-sm, 12px)", color: "var(--text2)", fontStyle: "italic", marginTop: "var(--space-1)" }}>
+                  <div className="fs-tab mt-sp1 c-text2" style={{ fontStyle: "italic" }}>
                     {area.notes}
                   </div>
                 )}

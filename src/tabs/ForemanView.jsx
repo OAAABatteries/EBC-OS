@@ -51,7 +51,7 @@ function getWeekStart(d = new Date()) {
 
 export function ForemanView({ app }) {
   const {
-    employees, projects, setProjects, teamSchedule, timeEntries, setTimeEntries,
+    employees, projects, setProjects, teamSchedule, setCrewSchedule, timeEntries, setTimeEntries,
     materialRequests, setMaterialRequests,
     changeOrders, rfis, setRfis, submittals,
     calendarEvents,
@@ -1218,6 +1218,7 @@ export function ForemanView({ app }) {
                 teamAddRef={teamAddRef}
                 extraCrewIds={extraCrewIds} setExtraCrewIds={setExtraCrewIds}
                 selectedProjectId={selectedProjectId} areas={areas} COST_CODES={COST_CODES}
+                teamSchedule={teamSchedule} setTeamSchedule={setCrewSchedule}
                 pendingRequests={pendingRequests} pendingLoading={pendingLoading}
                 setApprovalSheet={setApprovalSheet} setApprovalComment={setApprovalComment}
                 filteredCrewCerts={filteredCrewCerts} certFilter={certFilter} setCertFilter={setCertFilter}
@@ -1404,16 +1405,16 @@ export function ForemanView({ app }) {
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowRfiModal(false); }}>
           <div className="modal-content frm-rfi-modal">
             <div className="frm-flex-between frm-mb-20">
-              <div className="frm-flex-row-center" style={{ gap: "var(--space-3)" }}>
+              <div className="frm-flex-row-center gap-sp3">
                 <FileQuestion size={20} className="frm-amber" />
-                <span className="frm-font-16" style={{ fontSize: "var(--text-card)" }}>{t("Submit RFI")}</span>
+                <span className="frm-font-16 fs-card">{t("Submit RFI")}</span>
               </div>
-              <button onClick={() => setShowRfiModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", padding: "var(--space-1)" }}>
+              <button onClick={() => setShowRfiModal(false)} className="p-sp1 c-text3 cursor-pointer" style={{ background: "none", border: "none" }}>
                 <X size={18} />
               </button>
             </div>
 
-            <div className="frm-font-12" style={{ color: "var(--text3)", marginBottom: "var(--space-4)" }}>
+            <div className="frm-font-12 mb-sp4 c-text3">
               {selectedProject?.name} · {t("Assigned to PM")}: {selectedProject?.pm || "PM"}
             </div>
 
@@ -1428,7 +1429,7 @@ export function ForemanView({ app }) {
                   placeholder={t("e.g., Clarification needed on wall type at Grid A")}
                   value={rfiFormData.subject}
                   onChange={e => setRfiFormData(f => ({ ...f, subject: e.target.value }))}
-                  className="frm-w-full" style={{ fontSize: "var(--text-secondary)" }}
+                  className="frm-w-full fs-secondary"
                 />
               </div>
 
@@ -1442,7 +1443,7 @@ export function ForemanView({ app }) {
                   value={rfiFormData.description}
                   onChange={e => setRfiFormData(f => ({ ...f, description: e.target.value }))}
                   rows={4}
-                  className="frm-w-full frm-resize-v" style={{ fontSize: "var(--text-secondary)", fontFamily: "inherit" }}
+                  className="frm-w-full frm-resize-v fs-secondary" style={{ fontFamily: "inherit" }}
                 />
               </div>
 
@@ -1456,7 +1457,7 @@ export function ForemanView({ app }) {
                   placeholder={t("e.g., A-201, Spec 09 21 16")}
                   value={rfiFormData.drawingRef}
                   onChange={e => setRfiFormData(f => ({ ...f, drawingRef: e.target.value }))}
-                  className="frm-w-full" style={{ fontSize: "var(--text-secondary)" }}
+                  className="frm-w-full fs-secondary"
                 />
               </div>
 
@@ -1474,13 +1475,12 @@ export function ForemanView({ app }) {
               </div>
             </div>
 
-            <div className="frm-flex-row" style={{ gap: "var(--space-3)", marginTop: 22 }}>
-              <button className="btn" style={{ flex: 1, fontSize: "var(--text-secondary)" }} onClick={() => setShowRfiModal(false)}>
+            <div className="frm-flex-row gap-sp3" style={{ marginTop: 22 }}>
+              <button className="btn fs-secondary flex-1" onClick={() => setShowRfiModal(false)}>
                 {t("Cancel")}
               </button>
               <button
-                className="btn btn-primary"
-                style={{ flex: 2, fontSize: "var(--text-secondary)", display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)" }}
+                className="btn btn-primary flex fs-secondary justify-center gap-sp2" style={{ flex: 2 }}
                 disabled={!rfiFormData.subject.trim() || !rfiFormData.description.trim()}
                 onClick={() => {
                   if (!rfiFormData.subject.trim() || !rfiFormData.description.trim()) return;
@@ -1534,10 +1534,10 @@ export function ForemanView({ app }) {
       {/* Clock-in blocked message (time gate) */}
       {clockInBlocked && (
         <div className="modal-overlay" style={{ zIndex: 10000 }} onClick={() => setClockInBlocked(null)}>
-          <div style={{ background: "var(--bg2, #1a1a2e)", borderRadius: "var(--radius-control)", padding: "var(--space-5)", maxWidth: 360, width: "90%", textAlign: "center" }}>
-            <div style={{ fontSize: "var(--text-section)", marginBottom: "var(--space-3)" }}>⏰</div>
-            <div style={{ fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)", color: "var(--orange)", marginBottom: "var(--space-3)" }}>{t("Too Early")}</div>
-            <div style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-4)" }}>{clockInBlocked}</div>
+          <div className="rounded-control p-sp5 text-center" style={{ background: "var(--bg2, #1a1a2e)", maxWidth: 360, width: "90%" }}>
+            <div className="fs-section mb-sp3">⏰</div>
+            <div className="fs-secondary fw-semi mb-sp3" style={{ color: "var(--orange)" }}>{t("Too Early")}</div>
+            <div className="mb-sp4 fs-label c-text2">{clockInBlocked}</div>
             <button className="btn btn-ghost" onClick={() => setClockInBlocked(null)}>{t("OK")}</button>
           </div>
         </div>
@@ -1546,12 +1546,12 @@ export function ForemanView({ app }) {
       {/* Phase 2C: Photo Capture Modal + PPE Confirmation */}
       {showPhotoCapture && (
         <div className="modal-overlay" style={{ zIndex: 10000 }} onClick={e => { if (e.target === e.currentTarget) skipPhoto("dismissed"); }}>
-          <div style={{ background: "var(--bg2, #1a1a2e)", borderRadius: "var(--radius-control)", padding: "var(--space-5)", maxWidth: 400, width: "90%", textAlign: "center" }}>
-            <div style={{ fontSize: "var(--text-card)", fontWeight: "var(--weight-bold)", color: "#fff", marginBottom: "var(--space-3)" }}>📸 {t("Clock-In Photo")}</div>
-            <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginBottom: "var(--space-4)" }}>{t("Take a selfie wearing your PPE to clock in")}</div>
-            <div style={{ background: "var(--bg)", borderRadius: "var(--radius-control)", overflow: "hidden", marginBottom: "var(--space-4)", position: "relative", width: "100%", paddingBottom: "100%" }}>
+          <div className="rounded-control p-sp5 text-center" style={{ background: "var(--bg2, #1a1a2e)", maxWidth: 400, width: "90%" }}>
+            <div className="fw-bold mb-sp3 fs-card c-white">📸 {t("Clock-In Photo")}</div>
+            <div className="mb-sp4 fs-label c-text3">{t("Take a selfie wearing your PPE to clock in")}</div>
+            <div className="rounded-control mb-sp4 relative overflow-hidden w-full" style={{ background: "var(--bg)", paddingBottom: "100%" }}>
               <video ref={photoVideoRef} autoPlay playsInline muted
-                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                className="absolute h-full w-full" style={{ top: 0, left: 0, objectFit: "cover" }}
                 onLoadedMetadata={() => { if (photoVideoRef.current) photoVideoRef.current.play(); }}
               />
               {photoStream && (() => {
@@ -1577,14 +1577,14 @@ export function ForemanView({ app }) {
                 type="checkbox"
                 checked={ppeConfirmed}
                 onChange={e => setPpeConfirmed(e.target.checked)}
-                style={{ width: 22, height: 22, accentColor: "var(--green)", flexShrink: 0 }}
+                className="flex-shrink-0" style={{ width: 22, height: 22, accentColor: "var(--green)" }}
               />
               <span style={{ fontSize: "var(--text-label)", color: ppeConfirmed ? "var(--green)" : "var(--orange)", fontWeight: "var(--weight-semi)" }}>
                 {t("I confirm I am wearing required PPE (hard hat, vest, glasses)")}
               </span>
             </label>
 
-            <div className="frm-flex-row" style={{ gap: "var(--space-3)", justifyContent: "center" }}>
+            <div className="frm-flex-row justify-center gap-sp3">
               <button className="btn btn-ghost frm-amber" onClick={() => skipPhoto("skipped")}>
                 {t("Skip")}
               </button>

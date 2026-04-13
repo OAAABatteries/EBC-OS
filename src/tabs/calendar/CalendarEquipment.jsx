@@ -113,7 +113,7 @@ export function CalendarEquipment({ app, lang }) {
     <div className="cal-equipment">
       {/* Sub-nav */}
       <div className="cal-pto-nav" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", gap: "var(--space-1)" }}>
+        <div className="gap-sp1" style={{ display: "flex" }}>
           {[
             { key: "bookings", label: "Bookings" },
             { key: "availability", label: "Availability" },
@@ -125,54 +125,54 @@ export function CalendarEquipment({ app, lang }) {
             </button>
           ))}
         </div>
-        <button className="primary" style={{ fontSize: "var(--text-tab)", padding: "var(--space-1) var(--space-3)" }} onClick={eqOptLoading ? undefined : () => showEqOpt ? setShowEqOpt(false) : eqOptResult ? setShowEqOpt(true) : runEqOptimize()} disabled={eqOptLoading}>
+        <button className="primary fs-tab" style={{ padding: "var(--space-1) var(--space-3)" }} onClick={eqOptLoading ? undefined : () => showEqOpt ? setShowEqOpt(false) : eqOptResult ? setShowEqOpt(true) : runEqOptimize()} disabled={eqOptLoading}>
           {eqOptLoading ? "Analyzing..." : "AI Optimize"}
         </button>
       </div>
 
       {/* AI Equipment Optimizer Panel */}
       {showEqOpt && eqOptResult && (
-        <div style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "var(--space-4)", marginBottom: "var(--space-4)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-3)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+        <div className="mb-sp4 p-sp4" style={{ background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: "var(--radius)" }}>
+          <div className="mb-sp3" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div className="flex gap-sp3">
               <Wrench style={{ width: 22, height: 22 }} />
               <div>
-                <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)" }}>Utilization: {eqOptResult.utilizationScore}/100 ({eqOptResult.grade})</div>
-                <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>{eqOptResult.summary}</div>
+                <div className="fs-secondary fw-bold">Utilization: {eqOptResult.utilizationScore}/100 ({eqOptResult.grade})</div>
+                <div className="fs-label c-text3">{eqOptResult.summary}</div>
               </div>
             </div>
-            <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--text-card)", color: "var(--text3)" }} onClick={() => setShowEqOpt(false)}>✕</button>
+            <button className="fs-card c-text3 cursor-pointer" style={{ background: "none", border: "none" }} onClick={() => setShowEqOpt(false)}>✕</button>
           </div>
 
           {eqOptResult.underutilized?.length > 0 && (
-            <div style={{ marginBottom: "var(--space-3)" }}>
-              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--amber)", marginBottom: "var(--space-2)" }}>Underutilized Equipment</div>
+            <div className="mb-sp3">
+              <div className="fw-semi mb-sp2 fs-label c-amber">Underutilized Equipment</div>
               {eqOptResult.underutilized.map((u, i) => (
-                <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(245,158,11,0.08)", borderRadius: "var(--radius)" }}>
-                  <span style={{ fontWeight: "var(--weight-medium)" }}>{u.equipment}:</span> {u.currentUsage} — <em>{u.suggestion}</em>
+                <div key={i} className="mb-sp1 fs-label" style={{ padding: "var(--space-2) var(--space-3)", background: "rgba(245,158,11,0.08)", borderRadius: "var(--radius)" }}>
+                  <span className="fw-medium">{u.equipment}:</span> {u.currentUsage} — <em>{u.suggestion}</em>
                 </div>
               ))}
             </div>
           )}
 
           {eqOptResult.bookingSuggestions?.length > 0 && (
-            <div style={{ marginBottom: "var(--space-3)" }}>
-              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--blue)", marginBottom: "var(--space-2)" }}>Booking Suggestions</div>
+            <div className="mb-sp3">
+              <div className="fw-semi mb-sp2 fs-label c-blue">Booking Suggestions</div>
               {eqOptResult.bookingSuggestions.map((b, i) => (
-                <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(59,130,246,0.08)", borderRadius: "var(--radius)" }}>
-                  <span style={{ fontWeight: "var(--weight-medium)" }}>{b.equipment} → {b.project}</span> ({b.dates}) — {b.reason}
+                <div key={i} className="mb-sp1 fs-label" style={{ padding: "var(--space-2) var(--space-3)", background: "rgba(59,130,246,0.08)", borderRadius: "var(--radius)" }}>
+                  <span className="fw-medium">{b.equipment} → {b.project}</span> ({b.dates}) — {b.reason}
                 </div>
               ))}
             </div>
           )}
 
           {eqOptResult.costSavings?.length > 0 && (
-            <div style={{ marginBottom: "var(--space-3)" }}>
-              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--green)", marginBottom: "var(--space-2)" }}>Cost Savings</div>
+            <div className="mb-sp3">
+              <div className="fw-semi mb-sp2 fs-label c-green">Cost Savings</div>
               {eqOptResult.costSavings.map((c, i) => (
-                <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", background: "rgba(16,185,129,0.08)", borderRadius: "var(--radius)", display: "flex", justifyContent: "space-between" }}>
+                <div key={i} className="mb-sp1 fs-label" style={{ padding: "var(--space-2) var(--space-3)", background: "rgba(16,185,129,0.08)", borderRadius: "var(--radius)", display: "flex", justifyContent: "space-between" }}>
                   <span>{c.action}</span>
-                  <span style={{ fontWeight: "var(--weight-semi)", color: "var(--green)" }}>{c.estimatedSaving}</span>
+                  <span className="fw-semi c-green">{c.estimatedSaving}</span>
                 </div>
               ))}
             </div>
@@ -180,9 +180,9 @@ export function CalendarEquipment({ app, lang }) {
 
           {eqOptResult.maintenanceAlerts?.length > 0 && (
             <div>
-              <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--red)", marginBottom: "var(--space-2)" }}>Maintenance Alerts</div>
+              <div className="fw-semi mb-sp2 fs-label c-red">Maintenance Alerts</div>
               {eqOptResult.maintenanceAlerts.map((m, i) => (
-                <div key={i} style={{ fontSize: "var(--text-label)", color: "var(--text2)", paddingLeft: "var(--space-2)", marginBottom: "var(--space-1)", display: "flex", alignItems: "center", gap: "var(--space-1)" }}><AlertTriangle style={{ width: 14, height: 14, color: "var(--amber)" }} /> <strong>{m.equipment}:</strong> {m.alert}</div>
+                <div key={i} className="flex mb-sp1 fs-label c-text2 gap-sp1" style={{ paddingLeft: "var(--space-2)" }}><AlertTriangle className="c-amber" style={{ width: 14, height: 14 }} /> <strong>{m.equipment}:</strong> {m.alert}</div>
               ))}
             </div>
           )}
@@ -193,7 +193,7 @@ export function CalendarEquipment({ app, lang }) {
       {subView === "bookings" && (
         <div className="cal-pto-list">
           {activeBookings.length === 0 && (
-            <div style={{ color: "var(--text3)", fontSize: "var(--text-label)", padding: "var(--space-4)" }}>{t("No active bookings")}</div>
+            <div className="fs-label p-sp4 c-text3">{t("No active bookings")}</div>
           )}
           {activeBookings.map(b => {
             const eq = (equipment || []).find(e => String(e.id) === String(b.equipmentId));
@@ -201,13 +201,13 @@ export function CalendarEquipment({ app, lang }) {
               <div key={b.id} className="cal-pto-card" style={{ borderLeft: "3px solid #0ea5e9" }}>
                 <div className="cal-pto-card-top">
                   <div>
-                    <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)" }}>{eq?.name || b.equipmentId}</div>
-                    <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>
+                    <div className="fw-semi fs-label">{eq?.name || b.equipmentId}</div>
+                    <div className="fs-label c-text3">
                       {projName(b.projectId)} · {b.startDate} → {b.endDate}
                     </div>
-                    {b.notes && <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", marginTop: "var(--space-1)" }}>{b.notes}</div>}
+                    {b.notes && <div className="fs-tab mt-sp1 c-text3">{b.notes}</div>}
                   </div>
-                  <button className="cal-pto-btn deny" style={{ fontSize: "var(--text-tab)" }} onClick={() => cancelBooking(b.id)}>{t("Cancel")}</button>
+                  <button className="cal-pto-btn deny fs-tab" onClick={() => cancelBooking(b.id)}>{t("Cancel")}</button>
                 </div>
               </div>
             );
@@ -218,7 +218,7 @@ export function CalendarEquipment({ app, lang }) {
       {/* ── Availability Matrix ── */}
       {subView === "availability" && (
         <div className="cal-pto-calendar">
-          <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-3)", alignItems: "center" }}>
+          <div className="mb-sp3 gap-sp2" style={{ display: "flex", alignItems: "center" }}>
             <button className="cal-nav-btn" onClick={() => setWeekOffset(w => w - 1)}>←</button>
             <button className="cal-nav-btn today" onClick={() => setWeekOffset(0)}>{t("Today")}</button>
             <button className="cal-nav-btn" onClick={() => setWeekOffset(w => w + 1)}>→</button>
@@ -229,13 +229,13 @@ export function CalendarEquipment({ app, lang }) {
               {days.map((d, i) => (
                 <div key={i} className="cal-pto-matrix-day">
                   <div>{["M", "T", "W", "T", "F", "S", "S"][d.getDay() === 0 ? 6 : d.getDay() - 1]}</div>
-                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>{d.getDate()}</div>
+                  <div className="fs-xs c-text3">{d.getDate()}</div>
                 </div>
               ))}
             </div>
             {(equipment || []).map(eq => (
               <div key={eq.id} className="cal-pto-matrix-row">
-                <div className="cal-pto-matrix-name" style={{ fontSize: "var(--text-tab)" }}>{eq.name}</div>
+                <div className="cal-pto-matrix-name fs-tab">{eq.name}</div>
                 {days.map((d, i) => {
                   const ds = toStr(d);
                   const booked = isBooked(eq.id, ds);
@@ -294,12 +294,12 @@ export function CalendarEquipment({ app, lang }) {
             </div>
 
             {form.equipmentId && form.startDate && form.endDate && hasConflict(form.equipmentId, form.startDate, form.endDate) && (
-              <div style={{ padding: "var(--space-2) var(--space-3)", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius)", color: "var(--red)", fontSize: "var(--text-label)" }}>
+              <div className="fs-label c-red" style={{ padding: "var(--space-2) var(--space-3)", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius)" }}>
                 {t("Conflict: equipment already booked for those dates")}
               </div>
             )}
 
-            <div style={{ display: "flex", gap: "var(--space-2)", justifyContent: "flex-end" }}>
+            <div className="gap-sp2" style={{ display: "flex", justifyContent: "flex-end" }}>
               <button className="secondary" onClick={() => setSubView("bookings")}>{t("Cancel")}</button>
               <button className="primary" onClick={bookEquipment}>{t("Book")}</button>
             </div>
@@ -315,8 +315,8 @@ export function CalendarEquipment({ app, lang }) {
             const currentBooking = activeBookings.find(b => b.equipmentId === eq.id && b.startDate <= toStr(new Date()) && b.endDate >= toStr(new Date()));
             return (
               <div key={eq.id} className="cal-pto-card" style={{ borderLeft: `3px solid ${currentBooking ? "#0ea5e9" : "#10b981"}` }}>
-                <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)" }}>{eq.name}</div>
-                <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>
+                <div className="fw-semi fs-label">{eq.name}</div>
+                <div className="fs-label c-text3">
                   {t("Type")}: {eq.type} · {t("Status")}: {currentBooking ? `${t("In use")} @ ${projName(currentBooking.projectId)}` : t("Available")}
                 </div>
               </div>

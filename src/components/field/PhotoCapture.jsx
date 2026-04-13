@@ -5,7 +5,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 import React, { useRef } from "react";
-import { Camera, X } from "lucide-react";
+import { Camera, X, Cloud, CloudOff } from "lucide-react";
+import { uploadPhoto, isSupabaseConfigured } from "../../lib/supabase";
 
 /**
  * @param {Object} props
@@ -14,8 +15,9 @@ import { Camera, X } from "lucide-react";
  * @param {boolean} [props.multiple=true] — allow multiple photos
  * @param {string}  [props.label]   — label text (default "Photos")
  * @param {Function} [props.t]      — translation function
+ * @param {Object}  [props.uploadContext] — Supabase upload context { context, projectId, entityId }
  */
-export function PhotoCapture({ photos = [], onPhotos, multiple = true, label, t }) {
+export function PhotoCapture({ photos = [], onPhotos, multiple = true, label, t, uploadContext }) {
   const inputRef = useRef(null);
   const tr = (s) => (t ? t(s) : s);
 
@@ -73,6 +75,22 @@ export function PhotoCapture({ photos = [], onPhotos, multiple = true, label, t 
     for (const file of files) {
       const data = await compressPhoto(file);
       const entry = { name: file.name, data, capturedAt: new Date().toISOString(), gps };
+
+      // Upload to Supabase in background if configured
+      if (isSupabaseConfigured() && uploadContext) {
+        uploadPhoto(data, uploadContext).then((result) => {
+          if (result) {
+            onPhotos((prev) =>
+              prev.map((p) =>
+                p.capturedAt === entry.capturedAt && p.name === entry.name
+                  ? { ...p, storagePath: result.path, storageUrl: result.url }
+                  : p
+              )
+            );
+          }
+        }).catch(() => { /* keep base64 fallback */ });
+      }
+
       onPhotos((prev) => (multiple ? [...prev, entry] : [entry]));
     }
     // Reset input so same file can be re-selected
@@ -84,9 +102,9 @@ export function PhotoCapture({ photos = [], onPhotos, multiple = true, label, t 
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+    <div className="flex-col gap-sp2">
       {label !== false && (
-        <label style={{ fontSize: "var(--text-sm)", color: "var(--text2)", fontWeight: "var(--weight-semi)", textTransform: "uppercase" }}>
+        <label className="fw-semi fs-tab uppercase c-text2">
           {tr(label || "Photos")}
         </label>
       )}
@@ -98,39 +116,38 @@ export function PhotoCapture({ photos = [], onPhotos, multiple = true, label, t 
         capture="environment"
         multiple={multiple}
         onChange={handleCapture}
-        style={{ display: "none" }}
+        className="hidden"
       />
 
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        style={{
-          display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)",
-          padding: "var(--space-3) var(--space-4)", minHeight: "var(--touch-min, 44px)",
-          background: "var(--bg3)", border: "2px dashed var(--border2)",
-          borderRadius: "var(--radius-sm, 6px)", color: "var(--text2)",
-          cursor: "pointer", fontSize: "var(--text-base, 13px)", fontWeight: "var(--weight-semi)",
-        }}
+        className="flex fs-label fw-semi bg-bg3 justify-center c-text2 gap-sp2 cursor-pointer" style={{ padding: "var(--space-3) var(--space-4)", minHeight: "var(--touch-min, 44px)", border: "2px dashed var(--border2)",
+          borderRadius: "var(--radius-sm, 6px)" }}
       >
         <Camera size={18} />
         {tr(photos.length > 0 ? "Add More Photos" : "Take Photo")}
       </button>
 
       {photos.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(64px, 1fr))", gap: "var(--space-2)", marginTop: "var(--space-1)" }}>
+        <div className="mt-sp1 gap-sp2 d-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(64px, 1fr))" }}>
           {photos.map((p, i) => (
-            <div key={i} style={{ position: "relative", aspectRatio: "1", borderRadius: "var(--radius-sm, 6px)", overflow: "hidden" }}>
-              <img src={p.data} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <div key={i} className="relative overflow-hidden" style={{ aspectRatio: "1", borderRadius: "var(--radius-sm, 6px)" }}>
+              <img src={p.storageUrl || p.data} alt={p.name} className="h-full w-full" style={{ objectFit: "cover" }} />
+              {/* Cloud sync indicator */}
+              {isSupabaseConfigured() && uploadContext && (
+                <div className="absolute flex justify-center" style={{ bottom: 2, left: 2, width: 20, height: 20, borderRadius: "50%", background: "rgba(0,0,0,0.6)" }}>
+                  {p.storagePath
+                    ? <Cloud size={12} color="var(--green)" />
+                    : <CloudOff size={12} color="var(--text3)" />}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => removePhoto(i)}
-                style={{
-                  position: "absolute", top: 2, right: 2,
+                className="flex justify-center absolute cursor-pointer c-white" style={{ top: 2, right: 2,
                   width: 36, height: 36, borderRadius: "50%",
-                  background: "rgba(0,0,0,0.7)", border: "none",
-                  color: "#fff", cursor: "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center", padding: 0,
-                }}
+                  background: "rgba(0,0,0,0.7)", border: "none", padding: 0 }}
               >
                 <X size={18} />
               </button>

@@ -23,7 +23,7 @@ export default function TakeoffRoute() {
   const auth = readLS("ebc_auth");
   if (!auth) {
     window.location.hash = "#/";
-    return <div style={{ padding: "var(--space-10)", color: "var(--amber)", background: "var(--bg)", minHeight: "100vh" }}>Redirecting to login...</div>;
+    return <div className="p-sp10 c-amber" style={{ background: "var(--bg)", minHeight: "100vh" }}>Redirecting to login...</div>;
   }
 
   // ── Extract takeoff ID from hash: #/takeoff/:id ──
@@ -212,9 +212,9 @@ export default function TakeoffRoute() {
   // ── Error state ──
   if (error) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", background: "var(--bg)", color: "#fff", gap: "var(--space-4)" }}>
-        <div style={{ fontSize: "var(--text-section)", color: "var(--red)" }}>{error}</div>
-        <button onClick={handleClose} style={{ padding: "var(--space-2) var(--space-6)", background: "var(--amber)", color: "#000", border: "none", borderRadius: "var(--radius-control)", fontWeight: "var(--weight-bold)", cursor: "pointer" }}>Back to Estimating</button>
+      <div className="flex-col justify-center gap-sp4 c-white" style={{ alignItems: "center", height: "100vh", background: "var(--bg)" }}>
+        <div className="fs-section c-red">{error}</div>
+        <button onClick={handleClose} className="rounded-control fw-bold cursor-pointer" style={{ padding: "var(--space-2) var(--space-6)", background: "var(--amber)", color: "#000", border: "none" }}>Back to Estimating</button>
       </div>
     );
   }
@@ -222,13 +222,13 @@ export default function TakeoffRoute() {
   // ── Loading state ──
   if (loading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", background: "var(--bg)", color: "#fff", gap: "var(--space-5)" }}>
-        <div style={{ fontSize: "var(--text-section)", fontWeight: "var(--weight-semi)" }}>Loading Drawing...</div>
-        <div style={{ width: 280, height: 8, background: "rgba(255,255,255,0.1)", borderRadius: "var(--radius-control)", overflow: "hidden" }}>
-          <div style={{ width: "60%", height: "100%", background: "linear-gradient(90deg, #e09422, #f59e0b)", borderRadius: "var(--radius-control)", animation: "pulse 1.5s ease-in-out infinite" }} />
+      <div className="flex-col justify-center gap-sp5 c-white" style={{ alignItems: "center", height: "100vh", background: "var(--bg)" }}>
+        <div className="fw-semi fs-section">Loading Drawing...</div>
+        <div className="rounded-control overflow-hidden" style={{ width: 280, height: 8, background: "rgba(255,255,255,0.1)" }}>
+          <div className="rounded-control h-full" style={{ width: "60%", background: "linear-gradient(90deg, #e09422, #f59e0b)", animation: "pulse 1.5s ease-in-out infinite" }} />
         </div>
-        <div style={{ fontSize: "var(--text-label)", color: "var(--text2)" }}>{takeoff?.name || "Takeoff"}</div>
-        <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>Checking cloud storage, then local cache...</div>
+        <div className="fs-label c-text2">{takeoff?.name || "Takeoff"}</div>
+        <div className="fs-tab c-text3">Checking cloud storage, then local cache...</div>
       </div>
     );
   }
@@ -236,17 +236,17 @@ export default function TakeoffRoute() {
   // ── No PDF yet — upload prompt ──
   if (!storageUrl && !pdfData) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", background: "var(--bg)", color: "#fff", gap: "var(--space-5)" }}>
-        <div style={{ fontSize: "var(--text-subtitle)", fontWeight: "var(--weight-bold)" }}>{takeoff?.name || "Takeoff"}</div>
-        <div style={{ color: "var(--text2)" }}>No drawing uploaded yet</div>
+      <div className="flex-col justify-center gap-sp5 c-white" style={{ alignItems: "center", height: "100vh", background: "var(--bg)" }}>
+        <div className="fs-subtitle fw-bold">{takeoff?.name || "Takeoff"}</div>
+        <div className="c-text2">No drawing uploaded yet</div>
         <button onClick={() => fileRef.current?.click()}
-          style={{ padding: "var(--space-3) var(--space-8)", background: "var(--amber)", color: "#000", border: "none", borderRadius: "var(--radius-control)", fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)", cursor: "pointer" }}>
+          className="rounded-control fs-secondary fw-bold cursor-pointer" style={{ padding: "var(--space-3) var(--space-8)", background: "var(--amber)", color: "#000", border: "none" }}>
           Upload Drawing PDF
         </button>
-        <input ref={fileRef} type="file" accept=".pdf" style={{ display: "none" }}
+        <input ref={fileRef} type="file" accept=".pdf" className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) handleUpload(f); }} />
         <button onClick={handleClose}
-          style={{ padding: "var(--space-2) var(--space-5)", background: "transparent", color: "var(--text2)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "var(--radius-control)", cursor: "pointer" }}>
+          className="rounded-control c-text2 cursor-pointer" style={{ padding: "var(--space-2) var(--space-5)", background: "transparent", border: "1px solid rgba(255,255,255,0.15)" }}>
           Back to Estimating
         </button>
       </div>
@@ -255,7 +255,7 @@ export default function TakeoffRoute() {
 
   // ── Full-screen DrawingViewer ──
   return (
-    <div style={{ width: "100vw", height: "100vh", overflow: "hidden", background: "var(--bg)" }}>
+    <div className="overflow-hidden" style={{ width: "100vw", height: "100vh", background: "var(--bg)" }}>
       <DrawingViewer
         pdfData={pdfData}
         storageUrl={storageUrl}

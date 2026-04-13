@@ -46,16 +46,14 @@ export function LookAheadTab({ lookAheadEvents, lang, t }) {
                     const color = typeColors[ev.type] || "var(--text2)";
                     return (
                       <div key={ev.id} className="card frm-mt-4" style={{ padding: "var(--space-3) var(--space-4)" }}>
-                        <div className="frm-flex-row-center" style={{ gap: "var(--space-3)" }}>
-                          <div style={{
-                            width: 4, height: 32, borderRadius: "var(--radius-control)", background: color, flexShrink: 0,
-                          }} />
+                        <div className="frm-flex-row-center gap-sp3">
+                          <div className="rounded-control flex-shrink-0" style={{ width: 4, height: 32, background: color }} />
                           <div className="frm-flex-1">
                             <div className="text-sm font-semi frm-truncate">
                               {ev.title}
                             </div>
                             <div className="text-xs text-muted">
-                              {ev.type && <span style={{ textTransform: "capitalize" }}>{t(ev.type)}</span>}
+                              {ev.type && <span className="capitalize">{t(ev.type)}</span>}
                               {ev.startTime ? ` · ${ev.startTime}` : ""}
                               {ev.start_time ? ` · ${ev.start_time}` : ""}
                               {ev.location ? ` · ${ev.location}` : ""}
@@ -63,7 +61,7 @@ export function LookAheadTab({ lookAheadEvents, lang, t }) {
                             {ev.notes && <div className="text-xs text-dim frm-mt-2">{ev.notes.length > 80 ? ev.notes.slice(0, 80) + "..." : ev.notes}</div>}
                           </div>
                           {ev.status && ev.status !== "scheduled" && (
-                            <span className={`badge ${ev.status === "completed" ? "badge-green" : "badge-amber"}`} style={{ fontSize: "var(--text-xs)" }}>
+                            <span className={`badge ${ev.status === "completed" ? "badge-green" : "badge-amber"} fs-xs`}>
                               {t(ev.status)}
                             </span>
                           )}

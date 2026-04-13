@@ -40,7 +40,7 @@ export function LanguageToggle({ lang, onChange, compact = false }) {
       }}
     >
       <Globe size={size} aria-hidden="true" style={{ opacity: 0.85 }} />
-      <span style={{ color: "var(--text)" }}>{isEn ? "EN" : "ES"}</span>
+      <span className="c-text">{isEn ? "EN" : "ES"}</span>
       <span style={{ opacity: 0.4 }}>/</span>
       <span style={{ opacity: 0.6 }}>{isEn ? "ES" : "EN"}</span>
     </button>

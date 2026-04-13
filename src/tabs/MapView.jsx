@@ -308,7 +308,7 @@ export function MapView({ app }) {
             </div>
           )}
         </div>
-        <div style={{ display: "flex", gap: "var(--space-2)" }}>
+        <div className="gap-sp2" style={{ display: "flex" }}>
           <button className="btn btn-ghost" onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}>
             {isFullscreen ? "✕ Exit" : "⛶ Fullscreen"}
           </button>
@@ -320,7 +320,7 @@ export function MapView({ app }) {
 
       {/* AI Route Plan Panel */}
       {showRoute && routeResult && (
-        <div className="card" style={{ padding: "var(--space-5)", marginBottom: "var(--space-4)", maxHeight: 400, overflow: "auto" }}>
+        <div className="card mb-sp4 p-sp5 overflow-auto" style={{ maxHeight: 400 }}>
           <div className="flex-between mb-12">
             <div className="text-sm font-semi">AI Route & Logistics Plan</div>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowRoute(false)}>Close</button>
@@ -339,13 +339,13 @@ export function MapView({ app }) {
 
           {/* Clusters */}
           {routeResult.clusterAnalysis?.length > 0 && (
-            <div style={{ marginBottom: "var(--space-3)" }}>
+            <div className="mb-sp3">
               <div className="text-sm font-semi mb-8">Project Clusters</div>
               {routeResult.clusterAnalysis.map((c, i) => (
-                <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: "var(--bg3)", border: "1px solid var(--border)" }}>
+                <div key={i} className="rounded-control mb-sp2 bg-bg3" style={{ padding: "var(--space-2) var(--space-3)", border: "1px solid var(--border)" }}>
                   <div className="text-sm font-semi">{c.cluster} — {c.area}</div>
                   <div className="text-xs text-muted mt-2">Projects: {(c.projects || []).join(", ")} · Crew: {c.teamSize}</div>
-                  <div className="text-xs mt-2" style={{ color: "var(--green)" }}>{c.recommendation}</div>
+                  <div className="text-xs mt-2 c-green">{c.recommendation}</div>
                 </div>
               ))}
             </div>
@@ -353,10 +353,10 @@ export function MapView({ app }) {
 
           {/* Material Delivery */}
           {routeResult.materialDelivery?.length > 0 && (
-            <div style={{ marginBottom: "var(--space-3)" }}>
-              <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Delivery Consolidation</div>
+            <div className="mb-sp3">
+              <div className="text-sm font-semi mb-8 c-amber">Delivery Consolidation</div>
               {routeResult.materialDelivery.map((m, i) => (
-                <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} className="border-b" style={{ padding: "var(--space-2) 0" }}>
                   <div className="text-sm">{m.suggestion}</div>
                   <div className="text-xs text-muted mt-2">{(m.projects || []).join(", ")} — {m.benefit}</div>
                 </div>
@@ -366,7 +366,7 @@ export function MapView({ app }) {
 
           {/* Hub Recommendation */}
           {routeResult.hubRecommendation && (
-            <div style={{ padding: "var(--space-3)", borderRadius: "var(--radius-control)", background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)", marginBottom: "var(--space-3)" }}>
+            <div className="rounded-control mb-sp3 p-sp3" style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)" }}>
               <div className="text-sm font-semi">Staging Hub</div>
               <div className="text-xs text-muted mt-4">{routeResult.hubRecommendation}</div>
             </div>
@@ -377,7 +377,7 @@ export function MapView({ app }) {
             <div>
               <div className="text-sm font-semi mb-8">Logistics Alerts</div>
               {routeResult.logisticsAlerts.map((a, i) => (
-                <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} className="border-b" style={{ padding: "var(--space-2) 0" }}>
                   <div className="flex-between">
                     <span className="text-sm">{a.alert}</span>
                     <span className={`badge ${a.severity === "critical" ? "badge-red" : a.severity === "warning" ? "badge-amber" : "badge-muted"}`}>{a.severity}</span>

@@ -161,20 +161,20 @@ export function IncentiveTab({ app }) {
 
       {/* ── Live Project Margins (single source of truth: computeProjectTotalCost) ── */}
       {liveProjectMargins.length > 0 && (
-        <div style={{ marginBottom: "var(--space-6)" }}>
-          <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--amber)", marginBottom: "var(--space-2)" }}>Live Project Margins (burdened labor + AP bills + accruals)</div>
+        <div className="mb-sp6">
+          <div className="fw-semi mb-sp2 fs-label c-amber">Live Project Margins (burdened labor + AP bills + accruals)</div>
           <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
                   <th>Project</th>
                   <th>GC</th>
-                  <th style={{ textAlign: "right" }}>Contract</th>
-                  <th style={{ textAlign: "right" }}>Labor</th>
-                  <th style={{ textAlign: "right" }}>Material</th>
-                  <th style={{ textAlign: "right" }}>Sub/Other</th>
-                  <th style={{ textAlign: "right" }}>Total Cost</th>
-                  <th style={{ textAlign: "right" }}>Margin</th>
+                  <th className="text-right">Contract</th>
+                  <th className="text-right">Labor</th>
+                  <th className="text-right">Material</th>
+                  <th className="text-right">Sub/Other</th>
+                  <th className="text-right">Total Cost</th>
+                  <th className="text-right">Margin</th>
                   <th>Tier</th>
                 </tr>
               </thead>
@@ -185,26 +185,26 @@ export function IncentiveTab({ app }) {
                     <tr key={p.id}>
                       <td className="font-semi">{p.name}</td>
                       <td>{p.gc}</td>
-                      <td style={{ textAlign: "right" }} className="font-mono">{fmt(p.revenue)}</td>
-                      <td style={{ textAlign: "right" }} className="font-mono">{fmt(p.laborCost)}</td>
-                      <td style={{ textAlign: "right" }} className="font-mono">{fmt(p.materialCost)}</td>
-                      <td style={{ textAlign: "right" }} className="font-mono">{fmt(p.subCost + p.otherCost)}</td>
-                      <td style={{ textAlign: "right" }} className="font-mono font-bold">{fmt(p.totalCost)}</td>
-                      <td style={{ textAlign: "right" }}>
+                      <td className="text-right font-mono">{fmt(p.revenue)}</td>
+                      <td className="text-right font-mono">{fmt(p.laborCost)}</td>
+                      <td className="text-right font-mono">{fmt(p.materialCost)}</td>
+                      <td className="text-right font-mono">{fmt(p.subCost + p.otherCost)}</td>
+                      <td className="text-right font-mono font-bold">{fmt(p.totalCost)}</td>
+                      <td className="text-right">
                         <span className="font-mono" style={{ color: tier ? tier.color : p.margin > 0 ? "#10b981" : "var(--red)" }}>{p.margin}%</span>
                       </td>
-                      <td>{tier ? <span style={{ color: tier.color, fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)" }}>{tier.name}</span> : <span className="text-dim text-xs">—</span>}</td>
+                      <td>{tier ? <span className="fw-semi fs-label" style={{ color: tier.color }}>{tier.name}</span> : <span className="text-dim text-xs">—</span>}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-          <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", marginTop: "var(--space-1)" }}>Burdened labor from time entries ({((app.companySettings?.laborBurdenMultiplier || 1.35) * 100 - 100).toFixed(0)}% burden) + AP bills + accruals. Matches Job Costing and Dashboard.</div>
+          <div className="fs-tab mt-sp1 c-text3">Burdened labor from time entries ({((app.companySettings?.laborBurdenMultiplier || 1.35) * 100 - 100).toFixed(0)}% burden) + AP bills + accruals. Matches Job Costing and Dashboard.</div>
         </div>
       )}
 
-      <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--text2)", marginBottom: "var(--space-2)", marginTop: "var(--space-2)" }}>Manual Project Tracking</div>
+      <div className="fw-semi mb-sp2 fs-label mt-sp2 c-text2">Manual Project Tracking</div>
       {incentiveProjects.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon"><Award style={{ width: 40, height: 40 }} /></div>
@@ -218,9 +218,9 @@ export function IncentiveTab({ app }) {
               <tr>
                 <th>GC</th>
                 <th>Project</th>
-                <th style={{ textAlign: "right" }}>Revenue</th>
-                <th style={{ textAlign: "right" }}>Cost</th>
-                <th style={{ textAlign: "right" }}>Margin</th>
+                <th className="text-right">Revenue</th>
+                <th className="text-right">Cost</th>
+                <th className="text-right">Margin</th>
                 <th>Tier</th>
                 <th>Reward</th>
               </tr>
@@ -232,14 +232,14 @@ export function IncentiveTab({ app }) {
                   <tr key={p.id} className="clickable-row" onClick={() => setEditProj({ ...p })}>
                     <td className="font-semi">{p.gc}</td>
                     <td>{p.project}</td>
-                    <td style={{ textAlign: "right" }} className="font-mono">{fmt(p.revenue)}</td>
-                    <td style={{ textAlign: "right" }} className="font-mono">{fmt(p.cost)}</td>
-                    <td style={{ textAlign: "right" }}>
+                    <td className="text-right font-mono">{fmt(p.revenue)}</td>
+                    <td className="text-right font-mono">{fmt(p.cost)}</td>
+                    <td className="text-right">
                       <span className="font-mono" style={{ color: tier ? tier.color : "var(--text2)" }}>{p.margin}%</span>
                     </td>
                     <td>
                       {tier ? (
-                        <span style={{ color: tier.color, fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)" }}>{tier.name}</span>
+                        <span className="fw-semi fs-label" style={{ color: tier.color }}>{tier.name}</span>
                       ) : (
                         <span className="text-dim text-xs">Below 5%</span>
                       )}
@@ -278,11 +278,11 @@ export function IncentiveTab({ app }) {
           return (
             <div key={tier.name} className="bid-card" style={{ borderTop: `3px solid ${tier.color}` }}>
               <div className="flex-between mb-8">
-                <span style={{ color: tier.color, fontWeight: "var(--weight-bold)", fontSize: "var(--text-section)" }}>{tier.name}</span>
+                <span className="fw-bold fs-section" style={{ color: tier.color }}>{tier.name}</span>
                 <span className="text-xs text-dim">{tier.min}%+ margin</span>
               </div>
               <div className="text-sm text-dim mb-12">{count} project{count !== 1 ? "s" : ""} at this tier</div>
-              <div style={{ fontSize: "var(--text-label)" }}>
+              <div className="fs-label">
                 {tier.perks.map((perk, i) => (
                   <div key={i} style={{ padding: "var(--space-1) 0", borderBottom: i < tier.perks.length - 1 ? "1px solid var(--border)" : "none" }}>
                     {perk}
@@ -327,7 +327,7 @@ export function IncentiveTab({ app }) {
 
           {/* Tier progress bar */}
           <div className="mt-24">
-            <div style={{ position: "relative", height: 32, background: "var(--bg4)", borderRadius: "var(--radius-control)" }}>
+            <div className="rounded-control bg-bg4 relative" style={{ height: 32 }}>
               <div style={{
                 position: "absolute", left: 0, top: 0, height: "100%",
                 width: `${Math.min(Math.max(margin, 0), 25) / 25 * 100}%`,
@@ -402,7 +402,7 @@ export function IncentiveTab({ app }) {
             </div>
           </div>
           <div className="modal-actions">
-            {!isNew && <button className="btn btn-ghost" style={{ color: "var(--red)" }} onClick={() => deleteProject(editProj.id)}>Delete</button>}
+            {!isNew && <button className="btn btn-ghost c-red" onClick={() => deleteProject(editProj.id)}>Delete</button>}
             {!isNew && tier && apiKey && (
               <button className="btn btn-ghost" disabled={aiLoading} onClick={async () => {
                 setAiLoading(true);
@@ -444,7 +444,7 @@ export function IncentiveTab({ app }) {
 
       {/* AI Strategy Panel */}
       {showStrat && stratResult && (
-        <div className="card" style={{ padding: "var(--space-5)", marginBottom: "var(--space-4)", maxHeight: 500, overflow: "auto" }}>
+        <div className="card mb-sp4 p-sp5 overflow-auto" style={{ maxHeight: 500 }}>
           <div className="flex-between mb-12">
             <div className="text-sm font-semi">Incentive Strategy Analysis</div>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowStrat(false)}>Close</button>
@@ -453,13 +453,13 @@ export function IncentiveTab({ app }) {
           {/* Program Health */}
           {stratResult.programHealth && (
             <div className="flex gap-16 mb-16" style={{ alignItems: "center" }}>
-              <div style={{ textAlign: "center" }}>
+              <div className="text-center">
                 <div className="text-xs text-muted">Program Score</div>
                 <div style={{ fontSize: "var(--text-stat)", fontWeight: "var(--weight-bold)", color: stratResult.programHealth.score >= 70 ? "var(--green)" : stratResult.programHealth.score >= 40 ? "var(--amber)" : "var(--red)" }}>
                   {stratResult.programHealth.score}/100
                 </div>
               </div>
-              <div className="flex gap-12 flex-wrap" style={{ flex: 1 }}>
+              <div className="flex gap-12 flex-wrap flex-1">
                 <div><span className="text-xs text-muted">Avg Margin:</span> <span className="font-semi">{stratResult.programHealth.avgMargin}%</span></div>
                 <div><span className="text-xs text-muted">Top Tier:</span> <span className="font-semi">{stratResult.programHealth.topTier}</span></div>
                 <div><span className="text-xs text-muted">GCs:</span> <span className="font-semi">{stratResult.programHealth.gcCount}</span></div>
@@ -471,10 +471,10 @@ export function IncentiveTab({ app }) {
 
           {/* Upsell Opportunities */}
           {stratResult.upsellOpportunities?.length > 0 && (
-            <div style={{ marginBottom: "var(--space-3)" }}>
-              <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Tier Upgrade Opportunities</div>
+            <div className="mb-sp3">
+              <div className="text-sm font-semi mb-8 c-amber">Tier Upgrade Opportunities</div>
               {stratResult.upsellOpportunities.map((u, i) => (
-                <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: "var(--bg3)", border: "1px solid var(--border)" }}>
+                <div key={i} className="rounded-control mb-sp2 bg-bg3" style={{ padding: "var(--space-2) var(--space-3)", border: "1px solid var(--border)" }}>
                   <div className="flex-between">
                     <span className="text-sm font-semi">{u.gc}</span>
                     <div className="flex gap-4">
@@ -491,10 +491,10 @@ export function IncentiveTab({ app }) {
 
           {/* Program Suggestions */}
           {stratResult.programSuggestions?.length > 0 && (
-            <div style={{ marginBottom: "var(--space-3)" }}>
+            <div className="mb-sp3">
               <div className="text-sm font-semi mb-8">Program Improvements</div>
               {stratResult.programSuggestions.map((s, i) => (
-                <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} className="border-b" style={{ padding: "var(--space-2) 0" }}>
                   <div className="flex-between">
                     <span className="text-sm">{s.suggestion}</span>
                     <span className={`badge ${s.effort === "easy" ? "badge-green" : s.effort === "medium" ? "badge-amber" : "badge-red"}`}>{s.effort}</span>
@@ -507,19 +507,19 @@ export function IncentiveTab({ app }) {
 
           {/* At Risk */}
           {stratResult.atRiskRelationships?.length > 0 && (
-            <div style={{ marginBottom: "var(--space-3)" }}>
-              <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>At-Risk Relationships</div>
+            <div className="mb-sp3">
+              <div className="text-sm font-semi mb-8 c-red">At-Risk Relationships</div>
               {stratResult.atRiskRelationships.map((r, i) => (
-                <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
+                <div key={i} className="border-b" style={{ padding: "var(--space-2) 0" }}>
                   <span className="text-sm font-semi">{r.gc}</span>
                   <div className="text-xs text-muted mt-2">{r.concern}</div>
-                  <div className="text-xs mt-2" style={{ color: "var(--green)" }}>{r.action}</div>
+                  <div className="text-xs mt-2 c-green">{r.action}</div>
                 </div>
               ))}
             </div>
           )}
 
-          {stratResult.roi && <div className="text-sm" style={{ padding: "var(--space-2)", color: "var(--green)" }}>ROI: {stratResult.roi}</div>}
+          {stratResult.roi && <div className="text-sm p-sp2 c-green">ROI: {stratResult.roi}</div>}
         </div>
       )}
 
@@ -545,7 +545,7 @@ export function IncentiveTab({ app }) {
               <div className="modal-title">AI-Drafted Appreciation Email</div>
               <button className="modal-close" onClick={() => setAiDraft(null)}>✕</button>
             </div>
-            <div style={{ whiteSpace: "pre-wrap", fontSize: "var(--text-secondary)", lineHeight: 1.6, padding: "var(--space-2) 0" }}>
+            <div className="fs-secondary" style={{ whiteSpace: "pre-wrap", lineHeight: 1.6, padding: "var(--space-2) 0" }}>
               {aiDraft}
             </div>
             <div className="modal-actions">

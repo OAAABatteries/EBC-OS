@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Pencil, Type, ArrowRight, Square as SquareIcon, Circle, Eraser, Save } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -15,7 +16,17 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
  *  - On gesture end, re-render canvas at final zoom level for sharpness
  *  - Debounced re-render prevents mid-gesture thrash
  */
-export function PdfViewer({ pdfData, fileName, onClose, isCachedOffline }) {
+const MARKUP_COLORS = ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e", "#fff"];
+const MARKUP_TOOLS = [
+  { id: "pen", icon: Pencil, label: "Draw" },
+  { id: "arrow", icon: ArrowRight, label: "Arrow" },
+  { id: "rect", icon: SquareIcon, label: "Rectangle" },
+  { id: "circle", icon: Circle, label: "Circle" },
+  { id: "text", icon: Type, label: "Text" },
+  { id: "eraser", icon: Eraser, label: "Erase" },
+];
+
+export function PdfViewer({ pdfData, fileName, onClose, isCachedOffline, onSaveAnnotations, annotations: savedAnnotations }) {
   const [pdf, setPdf] = useState(null);
   const [page, setPage] = useState(1);
   const [numPages, setNumPages] = useState(0);
@@ -26,6 +37,19 @@ export function PdfViewer({ pdfData, fileName, onClose, isCachedOffline }) {
   const [cssScale, setCssScale] = useState(1);       // live CSS transform scale (relative to renderScale)
   const [panX, setPanX] = useState(0);
   const [panY, setPanY] = useState(0);
+
+  // Annotation state
+  const [markupMode, setMarkupMode] = useState(false);
+  const [markupTool, setMarkupTool] = useState("pen");
+  const [markupColor, setMarkupColor] = useState("#ef4444");
+  const [annotations, setAnnotations] = useState(savedAnnotations || {}); // { pageNum: [elements] }
+  const [drawing, setDrawing] = useState(false);
+  const [currentPath, setCurrentPath] = useState([]);
+  const [shapeStart, setShapeStart] = useState(null);
+  const [textInput, setTextInput] = useState(null); // { x, y } or null
+  const svgRef = useRef(null);
+
+  const pageAnnotations = annotations[page] || [];
 
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -177,6 +201,114 @@ export function PdfViewer({ pdfData, fileName, onClose, isCachedOffline }) {
   const prevPage = () => { setPage((p) => Math.max(1, p - 1)); setCssScale(1); setPanX(0); setPanY(0); };
   const nextPage = () => { setPage((p) => Math.min(numPages, p + 1)); setCssScale(1); setPanX(0); setPanY(0); };
 
+  // ── Annotation handlers ──
+  const getSvgPoint = (e) => {
+    const svg = svgRef.current;
+    if (!svg) return { x: 0, y: 0 };
+    const rect = svg.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+
+  const addAnnotation = (element) => {
+    setAnnotations(prev => ({
+      ...prev,
+      [page]: [...(prev[page] || []), { ...element, id: crypto.randomUUID(), color: markupColor, timestamp: new Date().toISOString() }],
+    }));
+  };
+
+  const handleMarkupPointerDown = (e) => {
+    if (!markupMode) return;
+    if (markupTool === "text") {
+      const pt = getSvgPoint(e);
+      setTextInput(pt);
+      return;
+    }
+    if (markupTool === "eraser") return;
+    setDrawing(true);
+    const pt = getSvgPoint(e);
+    if (markupTool === "pen") {
+      setCurrentPath([pt]);
+    } else {
+      setShapeStart(pt);
+    }
+  };
+
+  const handleMarkupPointerMove = (e) => {
+    if (!drawing || !markupMode) return;
+    const pt = getSvgPoint(e);
+    if (markupTool === "pen") {
+      setCurrentPath(prev => [...prev, pt]);
+    }
+  };
+
+  const handleMarkupPointerUp = (e) => {
+    if (!drawing || !markupMode) return;
+    setDrawing(false);
+    const pt = getSvgPoint(e);
+
+    if (markupTool === "pen" && currentPath.length > 1) {
+      addAnnotation({ type: "path", points: currentPath, strokeWidth: 3 });
+    } else if (markupTool === "arrow" && shapeStart) {
+      addAnnotation({ type: "arrow", x1: shapeStart.x, y1: shapeStart.y, x2: pt.x, y2: pt.y, strokeWidth: 3 });
+    } else if (markupTool === "rect" && shapeStart) {
+      addAnnotation({ type: "rect", x: Math.min(shapeStart.x, pt.x), y: Math.min(shapeStart.y, pt.y), w: Math.abs(pt.x - shapeStart.x), h: Math.abs(pt.y - shapeStart.y), strokeWidth: 2 });
+    } else if (markupTool === "circle" && shapeStart) {
+      const rx = Math.abs(pt.x - shapeStart.x) / 2;
+      const ry = Math.abs(pt.y - shapeStart.y) / 2;
+      addAnnotation({ type: "ellipse", cx: (shapeStart.x + pt.x) / 2, cy: (shapeStart.y + pt.y) / 2, rx, ry, strokeWidth: 2 });
+    }
+
+    setCurrentPath([]);
+    setShapeStart(null);
+  };
+
+  const handleTextSubmit = (text) => {
+    if (text && textInput) {
+      addAnnotation({ type: "text", x: textInput.x, y: textInput.y, text, fontSize: 16 });
+    }
+    setTextInput(null);
+  };
+
+  const handleErase = (id) => {
+    if (markupTool !== "eraser" || !markupMode) return;
+    setAnnotations(prev => ({
+      ...prev,
+      [page]: (prev[page] || []).filter(el => el.id !== id),
+    }));
+  };
+
+  const handleSaveAnnotations = () => {
+    if (onSaveAnnotations) onSaveAnnotations(annotations);
+  };
+
+  // Render SVG elements for annotations
+  const renderAnnotation = (el) => {
+    const cursorStyle = markupTool === "eraser" && markupMode ? "pointer" : "default";
+    const clickHandler = () => handleErase(el.id);
+    switch (el.type) {
+      case "path": {
+        const d = el.points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x} ${p.y}`).join(" ");
+        return <path key={el.id} d={d} stroke={el.color} strokeWidth={el.strokeWidth} fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: cursorStyle }} onClick={clickHandler} />;
+      }
+      case "arrow": {
+        const angle = Math.atan2(el.y2 - el.y1, el.x2 - el.x1);
+        const headLen = 12;
+        return <g key={el.id} style={{ cursor: cursorStyle }} onClick={clickHandler}>
+          <line x1={el.x1} y1={el.y1} x2={el.x2} y2={el.y2} stroke={el.color} strokeWidth={el.strokeWidth} />
+          <line x1={el.x2} y1={el.y2} x2={el.x2 - headLen * Math.cos(angle - 0.5)} y2={el.y2 - headLen * Math.sin(angle - 0.5)} stroke={el.color} strokeWidth={el.strokeWidth} />
+          <line x1={el.x2} y1={el.y2} x2={el.x2 - headLen * Math.cos(angle + 0.5)} y2={el.y2 - headLen * Math.sin(angle + 0.5)} stroke={el.color} strokeWidth={el.strokeWidth} />
+        </g>;
+      }
+      case "rect":
+        return <rect key={el.id} x={el.x} y={el.y} width={el.w} height={el.h} stroke={el.color} strokeWidth={el.strokeWidth} fill="none" style={{ cursor: cursorStyle }} onClick={clickHandler} />;
+      case "ellipse":
+        return <ellipse key={el.id} cx={el.cx} cy={el.cy} rx={el.rx} ry={el.ry} stroke={el.color} strokeWidth={el.strokeWidth} fill="none" style={{ cursor: cursorStyle }} onClick={clickHandler} />;
+      case "text":
+        return <text key={el.id} x={el.x} y={el.y} fill={el.color} fontSize={el.fontSize} fontWeight="bold" style={{ cursor: cursorStyle }} onClick={clickHandler}>{el.text}</text>;
+      default: return null;
+    }
+  };
+
   const btnStyle = {
     padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.2)",
     background: "rgba(255,255,255,0.1)", color: "#fff", cursor: "pointer", fontSize: "var(--text-secondary)",
@@ -185,30 +317,20 @@ export function PdfViewer({ pdfData, fileName, onClose, isCachedOffline }) {
   const btnDisabled = { ...btnStyle, opacity: 0.4, cursor: "default" };
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.95)",
-      display: "flex", flexDirection: "column", overflow: "hidden",
-    }}>
+    <div className="flex-col overflow-hidden" style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.95)" }}>
       {/* Header */}
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "var(--space-3) var(--space-4)", borderBottom: "1px solid rgba(255,255,255,0.1)",
-        background: "rgba(0,0,0,0.8)", flexShrink: 0, flexWrap: "wrap", gap: "var(--space-2)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+      <div className="flex-between gap-sp2 flex-wrap flex-shrink-0" style={{ padding: "var(--space-3) var(--space-4)", borderBottom: "1px solid rgba(255,255,255,0.1)",
+        background: "rgba(0,0,0,0.8)" }}>
+        <div className="flex gap-sp3">
           <button onClick={onClose} style={{ ...btnStyle, background: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.4)" }}>
             Close
           </button>
-          <span style={{ color: "#fff", fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)", maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span className="fs-secondary fw-semi nowrap overflow-hidden c-white" style={{ maxWidth: 300, textOverflow: "ellipsis" }}>
             {fileName || "Drawing"}
           </span>
           {isCachedOffline && (
-            <span title="Available offline" style={{
-              display: "inline-flex", alignItems: "center", gap: "var(--space-1)",
-              fontSize: "var(--text-tab)", color: "#4ade80", background: "rgba(74,222,128,0.12)",
-              padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(74,222,128,0.25)",
-              whiteSpace: "nowrap",
-            }}>
+            <span title="Available offline" className="rounded-control fs-tab d-inline-flex gap-sp1 nowrap" style={{ alignItems: "center", color: "#4ade80", background: "rgba(74,222,128,0.12)",
+              padding: "var(--space-1) var(--space-2)", border: "1px solid rgba(74,222,128,0.25)" }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" />
@@ -220,22 +342,53 @@ export function PdfViewer({ pdfData, fileName, onClose, isCachedOffline }) {
         </div>
 
         {/* Page nav */}
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+        <div className="flex gap-sp2">
           <button onClick={prevPage} style={page <= 1 ? btnDisabled : btnStyle} disabled={page <= 1}>Prev</button>
-          <span style={{ color: "var(--text2)", fontSize: "var(--text-label)", minWidth: 80, textAlign: "center" }}>
+          <span className="fs-label c-text2 text-center" style={{ minWidth: 80 }}>
             {page} / {numPages}
           </span>
           <button onClick={nextPage} style={page >= numPages ? btnDisabled : btnStyle} disabled={page >= numPages}>Next</button>
         </div>
 
-        {/* Zoom controls */}
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+        {/* Zoom + Markup toggle */}
+        <div className="flex gap-sp2">
           <button onClick={zoomOut} style={btnStyle} aria-label="Zoom out">&minus;</button>
-          <span style={{ color: "var(--text2)", fontSize: "var(--text-label)", minWidth: 48, textAlign: "center" }}>{Math.round(effectiveScale * 100)}%</span>
+          <span className="fs-label c-text2 text-center" style={{ minWidth: 48 }}>{Math.round(effectiveScale * 100)}%</span>
           <button onClick={zoomIn} style={btnStyle} aria-label="Zoom in">+</button>
-          <button onClick={resetZoom} style={{ ...btnStyle, fontSize: "var(--text-label)" }}>Fit</button>
+          <button onClick={resetZoom} className="fs-label" style={{ ...btnStyle }}>Fit</button>
+          <button onClick={() => setMarkupMode(!markupMode)} style={{ ...btnStyle, background: markupMode ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.1)", borderColor: markupMode ? "rgba(239,68,68,0.5)" : "rgba(255,255,255,0.2)" }}>
+            <Pencil size={16} />
+          </button>
+          {markupMode && onSaveAnnotations && (
+            <button onClick={handleSaveAnnotations} style={{ ...btnStyle, background: "rgba(34,197,94,0.2)", borderColor: "rgba(34,197,94,0.4)" }}>
+              <Save size={16} />
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Markup toolbar */}
+      {markupMode && (
+        <div className="flex gap-sp2 flex-shrink-0 flex-wrap" style={{ padding: "var(--space-2) var(--space-4)", borderBottom: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.85)" }}>
+          {MARKUP_TOOLS.map(tool => (
+            <button key={tool.id} onClick={() => setMarkupTool(tool.id)}
+              style={{ ...btnStyle, padding: "var(--space-1) var(--space-3)", minHeight: 36, minWidth: 36,
+                background: markupTool === tool.id ? "rgba(239,68,68,0.25)" : "rgba(255,255,255,0.08)",
+                borderColor: markupTool === tool.id ? "rgba(239,68,68,0.5)" : "rgba(255,255,255,0.15)" }}>
+              <tool.icon size={14} />
+            </button>
+          ))}
+          <div style={{ width: 1, background: "rgba(255,255,255,0.15)", margin: "0 var(--space-1)" }} />
+          {MARKUP_COLORS.map(c => (
+            <button key={c} onClick={() => setMarkupColor(c)}
+              style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: markupColor === c ? "3px solid #fff" : "2px solid rgba(255,255,255,0.3)", cursor: "pointer", padding: 0 }} />
+          ))}
+          <div style={{ width: 1, background: "rgba(255,255,255,0.15)", margin: "0 var(--space-1)" }} />
+          <span className="fs-tab c-text2" style={{ alignSelf: "center" }}>
+            {pageAnnotations.length} mark{pageAnnotations.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+      )}
 
       {/* Canvas area — overflow:auto for pan, CSS transform for live zoom */}
       <div
@@ -243,28 +396,77 @@ export function PdfViewer({ pdfData, fileName, onClose, isCachedOffline }) {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{
-          flex: 1, overflow: "auto", display: "flex", justifyContent: "center",
-          padding: "var(--space-4)", WebkitOverflowScrolling: "touch",
-          touchAction: "pan-x pan-y",
-        }}
+        className="p-sp4 justify-center overflow-auto flex-1" style={{ display: "flex", WebkitOverflowScrolling: "touch",
+          touchAction: "pan-x pan-y" }}
       >
         <div style={{
           transform: `scale(${cssScale}) translate(${panX}px, ${panY}px)`,
           transformOrigin: "center top",
           transition: cssScale === 1 ? "none" : undefined,
           willChange: "transform",
+          position: "relative",
         }}>
           <canvas ref={canvasRef} style={{ display: "block", maxWidth: cssScale > 1 ? "none" : "100%", height: "auto" }} />
+          {/* Annotation SVG overlay */}
+          {markupMode && canvasRef.current && (
+            <svg
+              ref={svgRef}
+              onPointerDown={handleMarkupPointerDown}
+              onPointerMove={handleMarkupPointerMove}
+              onPointerUp={handleMarkupPointerUp}
+              style={{
+                position: "absolute", top: 0, left: 0,
+                width: canvasRef.current.style.width,
+                height: canvasRef.current.style.height,
+                cursor: markupTool === "eraser" ? "crosshair" : markupTool === "text" ? "text" : "crosshair",
+                touchAction: "none",
+              }}
+            >
+              {pageAnnotations.map(renderAnnotation)}
+              {/* Live drawing preview */}
+              {drawing && markupTool === "pen" && currentPath.length > 1 && (
+                <path d={currentPath.map((p, i) => `${i === 0 ? "M" : "L"}${p.x} ${p.y}`).join(" ")}
+                  stroke={markupColor} strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" opacity={0.7} />
+              )}
+              {drawing && markupTool === "rect" && shapeStart && (
+                <rect x={Math.min(shapeStart.x, currentPath[currentPath.length - 1]?.x || shapeStart.x)}
+                  y={Math.min(shapeStart.y, currentPath[currentPath.length - 1]?.y || shapeStart.y)}
+                  width={Math.abs((currentPath[currentPath.length - 1]?.x || shapeStart.x) - shapeStart.x)}
+                  height={Math.abs((currentPath[currentPath.length - 1]?.y || shapeStart.y) - shapeStart.y)}
+                  stroke={markupColor} strokeWidth={2} fill="none" opacity={0.7} />
+              )}
+            </svg>
+          )}
+          {/* Always show saved annotations even when not in markup mode */}
+          {!markupMode && pageAnnotations.length > 0 && canvasRef.current && (
+            <svg style={{
+              position: "absolute", top: 0, left: 0,
+              width: canvasRef.current.style.width,
+              height: canvasRef.current.style.height,
+              pointerEvents: "none",
+            }}>
+              {pageAnnotations.map(renderAnnotation)}
+            </svg>
+          )}
+          {/* Text input overlay */}
+          {textInput && (
+            <div style={{ position: "absolute", left: textInput.x, top: textInput.y, zIndex: 10 }}>
+              <input
+                autoFocus
+                className="rounded-control"
+                style={{ background: "rgba(0,0,0,0.8)", color: markupColor, border: `2px solid ${markupColor}`, padding: "var(--space-1) var(--space-2)", fontSize: 16, fontWeight: "bold", minWidth: 120 }}
+                placeholder="Type..."
+                onKeyDown={e => { if (e.key === "Enter") handleTextSubmit(e.target.value); if (e.key === "Escape") setTextInput(null); }}
+                onBlur={e => handleTextSubmit(e.target.value)}
+              />
+            </div>
+          )}
         </div>
       </div>
 
       {rendering && (
-        <div style={{
-          position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-          color: "#fff", fontSize: "var(--text-secondary)", background: "rgba(0,0,0,0.7)", padding: "var(--space-2) var(--space-4)", borderRadius: "var(--radius-control)",
-          pointerEvents: "none",
-        }}>
+        <div className="rounded-control fs-secondary absolute c-white" style={{ top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.7)", padding: "var(--space-2) var(--space-4)",
+          pointerEvents: "none" }}>
           Rendering...
         </div>
       )}

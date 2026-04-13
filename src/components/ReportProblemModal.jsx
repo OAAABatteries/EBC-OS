@@ -97,33 +97,33 @@ export function ReportProblemModal({ reporter, projects, defaultProjectId, areas
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
       onTouchEnd={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="modal-content" style={{ maxWidth: 480, width: "100%", background: "var(--card)", borderRadius: "var(--radius-card)", padding: 0, overflow: "hidden" }}>
+      <div className="modal-content rounded-card overflow-hidden w-full" style={{ maxWidth: 480, background: "var(--card)", padding: 0 }}>
         {/* Header */}
-        <div style={{ background: "var(--navy, #0f1f2e)", padding: "var(--space-5) var(--space-5) var(--space-4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+        <div className="flex gap-sp3" style={{ background: "var(--navy, #0f1f2e)", padding: "var(--space-5) var(--space-5) var(--space-4)" }}>
           <AlertTriangleIcon size={24} color="var(--amber, #f59e0b)" />
-          <div style={{ flex: 1 }}>
-            <div style={{ color: "#fff", fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)" }}>{tr("Report a Problem")}</div>
-            <div style={{ color: "rgba(255,255,255,0.55)", fontSize: "var(--text-label)" }}>{reporter}</div>
+          <div className="flex-1">
+            <div className="fw-bold fs-card c-white">{tr("Report a Problem")}</div>
+            <div className="fs-label" style={{ color: "rgba(255,255,255,0.55)" }}>{reporter}</div>
           </div>
           <button
             onClick={onClose}
-            style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: "var(--radius-control)", width: 44, height: 44, cursor: "pointer", fontSize: "var(--text-card)", display: "flex", alignItems: "center", justifyContent: "center" }}
+            className="flex rounded-control fs-card justify-center cursor-pointer c-white" style={{ background: "rgba(255,255,255,0.1)", border: "none", width: 44, height: 44 }}
           >
             ✕
           </button>
         </div>
 
         {/* Body */}
-        <div style={{ padding: "var(--space-5) var(--space-5) var(--space-2)", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        <div className="flex-col gap-sp4" style={{ padding: "var(--space-5) var(--space-5) var(--space-2)" }}>
           {/* Project */}
           {projects && projects.length > 0 && (
             <div>
-              <label className="form-label" style={{ marginBottom: "var(--space-2)", display: "block" }}>{tr("Project")}</label>
+              <label className="form-label mb-sp2 d-block">{tr("Project")}</label>
               <select
                 className="form-select"
                 value={String(projectId)}
                 onChange={(e) => setProjectId(e.target.value)}
-                style={{ fontSize: "var(--text-secondary)" }}
+                className="fs-secondary"
               >
                 {projects.map((p) => (
                   <option key={p.id} value={String(p.id)}>{p.name}</option>
@@ -134,8 +134,8 @@ export function ReportProblemModal({ reporter, projects, defaultProjectId, areas
 
           {/* Category */}
           <div>
-            <label className="form-label" style={{ marginBottom: "var(--space-2)", display: "block" }}>{tr("Category")}</label>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
+            <label className="form-label mb-sp2 d-block">{tr("Category")}</label>
+            <div className="gap-sp2 d-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat}
@@ -160,8 +160,8 @@ export function ReportProblemModal({ reporter, projects, defaultProjectId, areas
 
           {/* Priority */}
           <div>
-            <label className="form-label" style={{ marginBottom: "var(--space-2)", display: "block" }}>{tr("Priority")}</label>
-            <div style={{ display: "flex", gap: "var(--space-2)" }}>
+            <label className="form-label mb-sp2 d-block">{tr("Priority")}</label>
+            <div className="gap-sp2" style={{ display: "flex" }}>
               {PRIORITIES.map((p) => (
                 <button
                   key={p}
@@ -188,12 +188,12 @@ export function ReportProblemModal({ reporter, projects, defaultProjectId, areas
           {/* Area / Location */}
           {projectAreas.length > 0 && (
             <div>
-              <label className="form-label" style={{ marginBottom: "var(--space-2)", display: "block" }}>{tr("Location")}</label>
+              <label className="form-label mb-sp2 d-block">{tr("Location")}</label>
               <select
                 className="form-select"
                 value={areaId}
                 onChange={(e) => setAreaId(e.target.value)}
-                style={{ fontSize: "var(--text-secondary)" }}
+                className="fs-secondary"
               >
                 <option value="">{tr("Select area...")}</option>
                 {projectAreas.map((a) => (
@@ -205,14 +205,14 @@ export function ReportProblemModal({ reporter, projects, defaultProjectId, areas
 
           {/* Description */}
           <div>
-            <label className="form-label" style={{ marginBottom: "var(--space-2)", display: "block" }}>{tr("Description (optional with photo)")}</label>
+            <label className="form-label mb-sp2 d-block">{tr("Description (optional with photo)")}</label>
             <textarea
               className="form-textarea"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={tr("Quick note (optional if photo attached)...")}
               rows={2}
-              style={{ width: "100%", resize: "vertical", fontSize: "var(--text-secondary)", minHeight: 60 }}
+              className="fs-secondary w-full" style={{ resize: "vertical", minHeight: 60 }}
             />
           </div>
 
@@ -220,7 +220,7 @@ export function ReportProblemModal({ reporter, projects, defaultProjectId, areas
           <PhotoCapture photos={photos} onPhotos={setPhotos} t={tr} />
 
           {gpsStatus && (
-            <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+            <div className="flex fs-label c-text3 gap-sp2">
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: gpsStatus.includes("captured") ? "var(--green)" : "var(--amber)", display: "inline-block" }} />
               {gpsStatus}
             </div>
@@ -228,11 +228,11 @@ export function ReportProblemModal({ reporter, projects, defaultProjectId, areas
         </div>
 
         {/* Footer */}
-        <div style={{ padding: "var(--space-3) var(--space-5) var(--space-5)", display: "flex", gap: "var(--space-3)" }}>
+        <div className="gap-sp3" style={{ padding: "var(--space-3) var(--space-5) var(--space-5)", display: "flex" }}>
           <button
             className="btn"
             onClick={onClose}
-            style={{ flex: 1, padding: "var(--space-4)", fontSize: "var(--text-secondary)", background: "var(--bg3)", border: "1px solid var(--border)", color: "var(--text2)" }}
+            className="fs-secondary p-sp4 bg-bg3 c-text2 flex-1" style={{ border: "1px solid var(--border)" }}
           >
             {tr("Cancel")}
           </button>

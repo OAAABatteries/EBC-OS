@@ -184,9 +184,9 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
   }, [projectAreas, projectLogs]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+    <div className="flex-col gap-sp4">
       {/* ── Summary ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: "var(--space-2)" }}>
+      <div className="gap-sp2 d-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))" }}>
         <StatTile label={tr("Overall %")} value={`${projectStats.pct}%`} color="var(--blue)" t={t} />
         <StatTile label={tr("Areas")} value={projectStats.totalAreas} t={t} />
         <StatTile label={tr("Today's Entries")} value={projectStats.todayEntries} color="var(--green)" t={t} />
@@ -194,16 +194,16 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
 
       {/* ── New Entry Toggle ── */}
       <FieldButton onClick={() => setShowForm(!showForm)} t={t}>
-        <Plus size={14} style={{ marginRight: "var(--space-1)" }} />
+        <Plus size={14} className="mr-sp1" />
         {tr("Log Production")}
       </FieldButton>
 
       {/* ── Entry Form ── */}
       {showForm && (
         <FieldCard>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>
-              <TrendingUp size={14} style={{ marginRight: "var(--space-1)", verticalAlign: "middle" }} />
+          <div className="flex-col gap-sp3">
+            <div className="fs-label fw-bold c-text">
+              <TrendingUp size={14} className="mr-sp1" style={{ verticalAlign: "middle" }} />
               {tr("Daily Production Entry")}
             </div>
 
@@ -227,11 +227,11 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
               <>
                 {/* Running total bar */}
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-sm, 12px)", color: "var(--text2)", marginBottom: "var(--space-1)" }}>
+                  <div className="fs-tab mb-sp1 c-text2" style={{ display: "flex", justifyContent: "space-between" }}>
                     <span>{tr("Installed-to-Date")}</span>
                     <span>{runningTotal.installed} / {runningTotal.budget} {selectedScope?.unit || ""}</span>
                   </div>
-                  <div style={{ height: 8, background: "var(--bg3)", borderRadius: "var(--radius-control)", overflow: "hidden" }}>
+                  <div className="rounded-control bg-bg3 overflow-hidden" style={{ height: 8 }}>
                     <div style={{
                       height: "100%",
                       width: `${runningTotal.budget > 0 ? Math.min(Math.round((runningTotal.installed / runningTotal.budget) * 100), 100) : 0}%`,
@@ -241,7 +241,7 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                <div className="gap-sp2 flex-wrap" style={{ display: "flex" }}>
                   <div style={{ flex: "1 1 100px" }}>
                     <FieldInput
                       label={`${tr("Qty Installed")} (${selectedScope?.unit || ""})`}
@@ -260,22 +260,22 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
                 </div>
 
                 {/* Productivity rate */}
-                <div style={{ padding: "var(--space-2) var(--space-3)", background: "var(--bg3)", borderRadius: "var(--radius-sm, 6px)", display: "flex", justifyContent: "space-between", fontSize: "var(--text-sm, 12px)" }}>
-                  <span style={{ color: "var(--text2)" }}>{tr("Productivity Rate")}</span>
-                  <span style={{ fontWeight: "var(--weight-bold)", color: "var(--amber)" }}>{productivityRate} {selectedScope?.unit || ""}/hr</span>
+                <div className="fs-tab bg-bg3" style={{ padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-sm, 6px)", display: "flex", justifyContent: "space-between" }}>
+                  <span className="c-text2">{tr("Productivity Rate")}</span>
+                  <span className="fw-bold c-amber">{productivityRate} {selectedScope?.unit || ""}/hr</span>
                 </div>
 
                 <FieldInput label={tr("Notes")} value={entryNotes} onChange={(e) => setEntryNotes(e.target.value)} t={t} />
 
-                <PhotoCapture photos={formPhotos} onPhotos={setFormPhotos} t={tr} />
+                <PhotoCapture photos={formPhotos} onPhotos={setFormPhotos} t={tr} uploadContext={{ context: "production", projectId }} />
 
-                <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
-                  <FieldButton onClick={handleSave} disabled={!(parseFloat(qtyInstalled) > 0)} t={t} style={{ flex: 1, minHeight: 48 }}>
-                    <Save size={14} style={{ marginRight: "var(--space-1)" }} />
+                <div className="gap-sp2" style={{ display: "flex", alignItems: "center" }}>
+                  <FieldButton onClick={handleSave} disabled={!(parseFloat(qtyInstalled) > 0)} t={t} className="flex-1" style={{ minHeight: 48 }}>
+                    <Save size={14} className="mr-sp1" />
                     {tr("Save Entry")}
                   </FieldButton>
                   {saveMsg && (
-                    <span style={{ color: "var(--green)", fontWeight: "var(--weight-bold)", fontSize: "var(--text-sm, 12px)" }}>{saveMsg}</span>
+                    <span className="fs-tab fw-bold c-green">{saveMsg}</span>
                   )}
                 </div>
               </>
@@ -287,41 +287,36 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
       {/* ── Recent logs for selected area ── */}
       {selectedAreaId && areaLogs.length > 0 && (
         <FieldCard>
-          <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-sm, 12px)", color: "var(--text2)", textTransform: "uppercase", marginBottom: "var(--space-2)" }}>
-            <BarChart3 size={12} style={{ marginRight: "var(--space-1)", verticalAlign: "middle" }} />
+          <div className="fs-tab fw-bold mb-sp2 uppercase c-text2">
+            <BarChart3 size={12} className="mr-sp1" style={{ verticalAlign: "middle" }} />
             {tr("Recent Entries")} &middot; {selectedArea?.name}
           </div>
           {areaLogs.map((log) => (
-            <div key={log.id} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)", fontSize: "var(--text-sm, 12px)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text)" }}>
+            <div key={log.id} className="border-b fs-tab" style={{ padding: "var(--space-2) 0" }}>
+              <div className="c-text" style={{ display: "flex", justifyContent: "space-between" }}>
                 <span>{log.date} &middot; {log.trade}</span>
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                  <span style={{ fontWeight: "var(--weight-semi)" }}>{log.qtyInstalled} {log.unit}</span>
+                <div className="flex gap-sp2">
+                  <span className="fw-semi">{log.qtyInstalled} {log.unit}</span>
                   {log.date === todayStr && (
                     <button
                       onClick={() => handleDeleteEntry(log)}
                       title={tr("Delete")}
-                      style={{
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        width: 24, height: 24, padding: 0, border: "1px solid var(--border)",
-                        borderRadius: "var(--radius-control)", background: "var(--bg3)", color: "var(--red)",
-                        cursor: "pointer",
-                      }}
+                      className="flex rounded-control bg-bg3 justify-center c-red cursor-pointer" style={{ width: 24, height: 24, padding: 0, border: "1px solid var(--border)" }}
                     >
                       <Trash2 size={12} />
                     </button>
                   )}
                 </div>
               </div>
-              <div style={{ color: "var(--text3)", marginTop: "var(--space-1)" }}>
+              <div className="mt-sp1 c-text3">
                 {log.laborHours}h &middot; {log.crewSize} crew &middot; Rate: {log.laborHours > 0 ? (log.qtyInstalled / log.laborHours).toFixed(1) : "—"}/{tr("hr")}
               </div>
-              {log.notes && <div style={{ color: "var(--text2)", fontStyle: "italic", marginTop: "var(--space-1)" }}>{log.notes}</div>}
+              {log.notes && <div className="mt-sp1 c-text2" style={{ fontStyle: "italic" }}>{log.notes}</div>}
               {log.photos && log.photos.length > 0 && (
-                <div style={{ display: "flex", gap: "var(--space-1)", marginTop: "var(--space-1)" }}>
+                <div className="mt-sp1 gap-sp1" style={{ display: "flex" }}>
                   {log.photos.map((p, i) => (
-                    <div key={i} style={{ width: 36, height: 36, borderRadius: "var(--radius-control)", overflow: "hidden" }}>
-                      <img src={p.data} alt={p.name || "photo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <div key={i} className="rounded-control overflow-hidden" style={{ width: 36, height: 36 }}>
+                      <img src={p.data} alt={p.name || "photo"} className="h-full w-full" style={{ objectFit: "cover" }} />
                     </div>
                   ))}
                 </div>
@@ -333,28 +328,28 @@ export function ProductionTab({ productionLogs = [], setProductionLogs, areas = 
 
       {/* ── All Areas Summary ── */}
       <FieldCard>
-        <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-sm, 12px)", color: "var(--text2)", textTransform: "uppercase", marginBottom: "var(--space-3)" }}>
+        <div className="fs-tab fw-bold mb-sp3 uppercase c-text2">
           {tr("All Areas Progress")}
         </div>
         {areaSummaries.length === 0 && (
-          <div style={{ color: "var(--text3)", fontSize: "var(--text-sm, 12px)", textAlign: "center", padding: "var(--space-4)" }}>
+          <div className="fs-tab p-sp4 c-text3 text-center">
             {tr("No areas for this project")}
           </div>
         )}
         {areaSummaries.map((a) => (
           <div
             key={a.id}
-            style={{ marginBottom: "var(--space-3)", cursor: "pointer" }}
+            className="mb-sp3 cursor-pointer"
             onClick={() => { setSelectedAreaId(a.id); setSelectedTrade(""); setShowForm(true); }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-sm, 12px)", marginBottom: "var(--space-1)" }}>
-              <span style={{ color: "var(--text)", fontWeight: "var(--weight-semi)" }}>
+            <div className="fs-tab mb-sp1" style={{ display: "flex", justifyContent: "space-between" }}>
+              <span className="fw-semi c-text">
                 {a.name}
-                <span style={{ fontWeight: "var(--weight-normal)", color: "var(--text3)", marginLeft: "var(--space-1)" }}>F{a.floor} Z{a.zone}</span>
+                <span className="fw-normal ml-sp1 c-text3">F{a.floor} Z{a.zone}</span>
               </span>
               <span style={{ fontWeight: "var(--weight-bold)", color: a.pct >= 100 ? "var(--green)" : "var(--text)" }}>{a.pct}%</span>
             </div>
-            <div style={{ height: 6, background: "var(--bg3)", borderRadius: "var(--radius-control)", overflow: "hidden" }}>
+            <div className="rounded-control bg-bg3 overflow-hidden" style={{ height: 6 }}>
               <div style={{
                 height: "100%",
                 width: `${Math.min(a.pct, 100)}%`,

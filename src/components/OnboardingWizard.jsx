@@ -586,7 +586,7 @@ function AdminStepWelcome({ userName }) {
         style={{ width: 80, height: "auto" }}
         onError={(e) => { e.target.src = "/eagle-white.png"; e.target.onerror = () => { e.target.style.display = "none"; }; }}
       />
-      <div className="wizard-title" style={{ marginTop: "var(--space-2)" }}>
+      <div className="wizard-title mt-sp2">
         Welcome to EBC-OS{userName ? `, ${userName.split(" ")[0]}` : ""}
       </div>
       <div className="wizard-desc">
@@ -597,7 +597,7 @@ function AdminStepWelcome({ userName }) {
         <div className="wizard-feature-chips" style={{ marginTop: "var(--space-8)" }}>
           {["Bid Pipeline","Project Management","Team Management","Profit Alerts","Estimating","Safety & JSA","Deliveries","Reports"].map(f => (
             <div key={f} className="wizard-chip">
-              <Zap style={{ width: 11, height: 11, color: "var(--amber)" }} />
+              <Zap className="c-amber" style={{ width: 11, height: 11 }} />
               {f}
             </div>
           ))}
@@ -616,12 +616,12 @@ function AdminStepDashboard() {
       <div className="wizard-illustration">
         <div className="wiz-kpi-grid">
           {[
-            { icon: <BarChart2 style={{ width: 18, height: 18, color: "var(--blue)" }} />, iconBg: "rgba(59,130,246,0.12)", value: "8",    label: "Active Bids" },
-            { icon: <DollarSign style={{ width: 18, height: 18, color: "var(--green)" }} />, iconBg: "rgba(16,185,129,0.12)",  value: "$2.4M", label: "Bid Volume" },
-            { icon: <Building2 style={{ width: 18, height: 18, color: "var(--amber)" }} />,  iconBg: "rgba(224,148,34,0.12)", value: "12",   label: "Active Projects" },
-            { icon: <CheckCircle style={{ width: 18, height: 18, color: "var(--green)" }} />, iconBg: "rgba(16,185,129,0.12)", value: "94%",  label: "On Schedule" },
-            { icon: <TrendingUp style={{ width: 18, height: 18, color: "var(--amber)" }} />,  iconBg: "rgba(224,148,34,0.12)", value: "+18%", label: "Win Rate" },
-            { icon: <Clock style={{ width: 18, height: 18, color: "var(--purple)" }} />,       iconBg: "rgba(139,92,246,0.12)", value: "312h", label: "This Week" },
+            { icon: <BarChart2 className="c-blue" style={{ width: 18, height: 18 }} />, iconBg: "rgba(59,130,246,0.12)", value: "8",    label: "Active Bids" },
+            { icon: <DollarSign className="c-green" style={{ width: 18, height: 18 }} />, iconBg: "rgba(16,185,129,0.12)",  value: "$2.4M", label: "Bid Volume" },
+            { icon: <Building2 className="c-amber" style={{ width: 18, height: 18 }} />,  iconBg: "rgba(224,148,34,0.12)", value: "12",   label: "Active Projects" },
+            { icon: <CheckCircle className="c-green" style={{ width: 18, height: 18 }} />, iconBg: "rgba(16,185,129,0.12)", value: "94%",  label: "On Schedule" },
+            { icon: <TrendingUp className="c-amber" style={{ width: 18, height: 18 }} />,  iconBg: "rgba(224,148,34,0.12)", value: "+18%", label: "Win Rate" },
+            { icon: <Clock className="c-purple" style={{ width: 18, height: 18 }} />,       iconBg: "rgba(139,92,246,0.12)", value: "312h", label: "This Week" },
           ].map((kpi, i) => (
             <div key={i} className="wiz-kpi-card">
               <div className="wiz-kpi-icon" style={{ background: kpi.iconBg }}>{kpi.icon}</div>
@@ -646,7 +646,7 @@ function AdminStepBidPipeline() {
       <div className="wizard-illustration">
         <div className="wiz-pipeline">
           {PIPELINE_STAGES.map((s, i) => (
-            <div key={s.label} style={{ display: "flex", alignItems: "center" }}>
+            <div key={s.label} className="flex">
               <div className="wiz-pipeline-stage">
                 <div className="wiz-pipeline-dot" style={{ background: s.bg, borderColor: s.border, color: s.color }}>
                   <FileText style={{ width: 18, height: 18 }} />
@@ -659,11 +659,11 @@ function AdminStepBidPipeline() {
             </div>
           ))}
         </div>
-        <div className="wiz-info-list" style={{ marginTop: "var(--space-4)" }}>
+        <div className="wiz-info-list mt-sp4">
           {[
-            { icon: <FileText style={{ width: 14, height: 14, color: "var(--amber)" }} />, bg: "rgba(224,148,34,0.1)", title: "Bid documents & scope tracking" },
-            { icon: <Users style={{ width: 14, height: 14, color: "var(--blue)" }} />,    bg: "rgba(59,130,246,0.1)", title: "GC & customer contact management" },
-            { icon: <TrendingUp style={{ width: 14, height: 14, color: "var(--green)" }} />, bg: "rgba(16,185,129,0.1)", title: "Win/loss analytics and trends" },
+            { icon: <FileText className="c-amber" style={{ width: 14, height: 14 }} />, bg: "rgba(224,148,34,0.1)", title: "Bid documents & scope tracking" },
+            { icon: <Users className="c-blue" style={{ width: 14, height: 14 }} />,    bg: "rgba(59,130,246,0.1)", title: "GC & customer contact management" },
+            { icon: <TrendingUp className="c-green" style={{ width: 14, height: 14 }} />, bg: "rgba(16,185,129,0.1)", title: "Win/loss analytics and trends" },
           ].map((f, i) => (
             <div key={i} className="wiz-info-row">
               <div className="wiz-info-row-icon" style={{ background: f.bg }}>{f.icon}</div>
@@ -694,9 +694,9 @@ function AdminStepProjects() {
             </div>
           ))}
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", marginTop: "var(--space-4)" }}>
+        <div className="mt-sp4 gap-sp2 flex-wrap" style={{ display: "flex" }}>
           {["RFIs","Submittals","Change Orders","Punch Lists","Daily Reports","T&M Tickets"].map(tag => (
-            <span key={tag} style={{ fontSize: "var(--text-tab)", background: "rgba(28,34,51,0.6)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "var(--radius-control)", padding: "3px 9px", color: "var(--text2)" }}>{tag}</span>
+            <span key={tag} className="rounded-control fs-tab c-text2" style={{ background: "rgba(28,34,51,0.6)", border: "1px solid rgba(255,255,255,0.06)", padding: "3px 9px" }}>{tag}</span>
           ))}
         </div>
       </div>
@@ -743,7 +743,7 @@ function AdminStepTeam({ teamMembers, onAddMember, onRemoveMember }) {
           </div>
         </div>
         <div className="wizard-team-actions">
-          <button className="wizard-btn" style={{ padding: "var(--space-2) var(--space-4)", fontSize: "var(--text-label)" }} onClick={handleAdd}>
+          <button className="wizard-btn fs-label" style={{ padding: "var(--space-2) var(--space-4)" }} onClick={handleAdd}>
             <UserPlus style={{ width: 14, height: 14 }} /> Add
           </button>
         </div>
@@ -772,10 +772,10 @@ function AdminStepProfitAlerts() {
       <div className="wizard-illustration">
         <div className="wiz-info-list">
           {[
-            { icon: <TrendingUp style={{ width: 16, height: 16, color: "var(--green)" }} />, bg: "rgba(16,185,129,0.1)",  title: "Gross Margin Tracker", sub: "Live % vs. target on every project" },
-            { icon: <AlertTriangle style={{ width: 16, height: 16, color: "var(--amber)" }} />, bg: "rgba(224,148,34,0.1)", title: "Budget Overrun Warnings", sub: "Alerts when costs exceed approved budget" },
-            { icon: <DollarSign style={{ width: 16, height: 16, color: "var(--purple)" }} />, bg: "rgba(139,92,246,0.1)", title: "Change Order Impact", sub: "See how COs shift your bottom line instantly" },
-            { icon: <BarChart2 style={{ width: 16, height: 16, color: "var(--blue)" }} />, bg: "rgba(59,130,246,0.1)", title: "Labor vs. Revenue Ratio", sub: "Weekly burn-rate vs. billed amounts" },
+            { icon: <TrendingUp className="c-green" style={{ width: 16, height: 16 }} />, bg: "rgba(16,185,129,0.1)",  title: "Gross Margin Tracker", sub: "Live % vs. target on every project" },
+            { icon: <AlertTriangle className="c-amber" style={{ width: 16, height: 16 }} />, bg: "rgba(224,148,34,0.1)", title: "Budget Overrun Warnings", sub: "Alerts when costs exceed approved budget" },
+            { icon: <DollarSign className="c-purple" style={{ width: 16, height: 16 }} />, bg: "rgba(139,92,246,0.1)", title: "Change Order Impact", sub: "See how COs shift your bottom line instantly" },
+            { icon: <BarChart2 className="c-blue" style={{ width: 16, height: 16 }} />, bg: "rgba(59,130,246,0.1)", title: "Labor vs. Revenue Ratio", sub: "Weekly burn-rate vs. billed amounts" },
           ].map((item, i) => (
             <div key={i} className="wiz-info-row">
               <div className="wiz-info-row-icon" style={{ background: item.bg }}>{item.icon}</div>
@@ -796,12 +796,12 @@ function AdminStepSettings({ onComplete }) {
     <div className="wizard-slide">
       <div className="wizard-ready-wrap">
         <div className="wizard-ready-ring">
-          <CheckCircle style={{ width: 44, height: 44, color: "var(--amber)" }} />
+          <CheckCircle className="c-amber" style={{ width: 44, height: 44 }} />
         </div>
         <div className="wizard-title">You're All Set!</div>
         <div className="wizard-desc" style={{ maxWidth: 340, margin: "0 auto" }}>
           EBC-OS is ready. Your data, your team, your way.<br />
-          <span style={{ color: "var(--text3)", fontSize: "var(--text-label)" }}>You can revisit this tour anytime in Settings.</span>
+          <span className="fs-label c-text3">You can revisit this tour anytime in Settings.</span>
         </div>
         <button className="wizard-btn wizard-launch" onClick={onComplete}>
           Launch EBC-OS
@@ -823,7 +823,7 @@ function PMStepWelcome({ userName }) {
         style={{ width: 80, height: "auto" }}
         onError={(e) => { e.target.src = "/eagle-white.png"; e.target.onerror = () => { e.target.style.display = "none"; }; }}
       />
-      <div className="wizard-title" style={{ marginTop: "var(--space-2)" }}>
+      <div className="wizard-title mt-sp2">
         Welcome, {userName ? userName.split(" ")[0] : "PM"}
       </div>
       <div className="wizard-desc">
@@ -834,7 +834,7 @@ function PMStepWelcome({ userName }) {
         <div className="wizard-feature-chips" style={{ marginTop: 28 }}>
           {["Bid Pipeline","Project Details","COs & RFIs","Submittals","Assign Foremen","Takeoffs","Notifications"].map(f => (
             <div key={f} className="wizard-chip">
-              <Target style={{ width: 11, height: 11, color: "var(--amber)" }} />
+              <Target className="c-amber" style={{ width: 11, height: 11 }} />
               {f}
             </div>
           ))}
@@ -853,12 +853,12 @@ function PMStepDashboard() {
       <div className="wizard-illustration">
         <div className="wiz-kpi-grid">
           {[
-            { icon: <FileText style={{ width: 18, height: 18, color: "var(--amber)" }} />,    iconBg: "rgba(224,148,34,0.12)", value: "4",    label: "My Bids" },
-            { icon: <Building2 style={{ width: 18, height: 18, color: "var(--blue)" }} />,   iconBg: "rgba(59,130,246,0.12)",  value: "6",    label: "My Projects" },
-            { icon: <ClipboardList style={{ width: 18, height: 18, color: "var(--purple)" }} />, iconBg: "rgba(139,92,246,0.12)", value: "3",   label: "Open RFIs" },
-            { icon: <CheckCircle style={{ width: 18, height: 18, color: "var(--green)" }} />, iconBg: "rgba(16,185,129,0.12)",  value: "11",   label: "Pending Submittals" },
-            { icon: <DollarSign style={{ width: 18, height: 18, color: "var(--green)" }} />,  iconBg: "rgba(16,185,129,0.12)",  value: "$84K", label: "Pending COs" },
-            { icon: <TrendingUp style={{ width: 18, height: 18, color: "var(--amber)" }} />,  iconBg: "rgba(224,148,34,0.12)", value: "92%",  label: "On Schedule" },
+            { icon: <FileText className="c-amber" style={{ width: 18, height: 18 }} />,    iconBg: "rgba(224,148,34,0.12)", value: "4",    label: "My Bids" },
+            { icon: <Building2 className="c-blue" style={{ width: 18, height: 18 }} />,   iconBg: "rgba(59,130,246,0.12)",  value: "6",    label: "My Projects" },
+            { icon: <ClipboardList className="c-purple" style={{ width: 18, height: 18 }} />, iconBg: "rgba(139,92,246,0.12)", value: "3",   label: "Open RFIs" },
+            { icon: <CheckCircle className="c-green" style={{ width: 18, height: 18 }} />, iconBg: "rgba(16,185,129,0.12)",  value: "11",   label: "Pending Submittals" },
+            { icon: <DollarSign className="c-green" style={{ width: 18, height: 18 }} />,  iconBg: "rgba(16,185,129,0.12)",  value: "$84K", label: "Pending COs" },
+            { icon: <TrendingUp className="c-amber" style={{ width: 18, height: 18 }} />,  iconBg: "rgba(224,148,34,0.12)", value: "92%",  label: "On Schedule" },
           ].map((kpi, i) => (
             <div key={i} className="wiz-kpi-card">
               <div className="wiz-kpi-icon" style={{ background: kpi.iconBg }}>{kpi.icon}</div>
@@ -880,7 +880,7 @@ function PMStepBidPipeline() {
       <div className="wizard-illustration">
         <div className="wiz-pipeline">
           {PIPELINE_STAGES.map((s, i) => (
-            <div key={s.label} style={{ display: "flex", alignItems: "center" }}>
+            <div key={s.label} className="flex">
               <div className="wiz-pipeline-stage">
                 <div className="wiz-pipeline-dot" style={{ background: s.bg, borderColor: s.border, color: s.color }}>
                   <FileText style={{ width: 18, height: 18 }} />
@@ -893,11 +893,11 @@ function PMStepBidPipeline() {
             </div>
           ))}
         </div>
-        <div className="wiz-info-list" style={{ marginTop: "var(--space-4)" }}>
+        <div className="wiz-info-list mt-sp4">
           {[
-            { icon: <FileText style={{ width: 14, height: 14, color: "var(--amber)" }} />, bg: "rgba(224,148,34,0.1)", text: "Claim bids and lock your estimating queue" },
-            { icon: <Layers style={{ width: 14, height: 14, color: "var(--blue)" }} />,   bg: "rgba(59,130,246,0.1)", text: "Attach plans, scope sheets, and addenda" },
-            { icon: <Target style={{ width: 14, height: 14, color: "var(--green)" }} />,   bg: "rgba(16,185,129,0.1)", text: "Track bid deadlines and submission status" },
+            { icon: <FileText className="c-amber" style={{ width: 14, height: 14 }} />, bg: "rgba(224,148,34,0.1)", text: "Claim bids and lock your estimating queue" },
+            { icon: <Layers className="c-blue" style={{ width: 14, height: 14 }} />,   bg: "rgba(59,130,246,0.1)", text: "Attach plans, scope sheets, and addenda" },
+            { icon: <Target className="c-green" style={{ width: 14, height: 14 }} />,   bg: "rgba(16,185,129,0.1)", text: "Track bid deadlines and submission status" },
           ].map((f, i) => (
             <div key={i} className="wiz-info-row">
               <div className="wiz-info-row-icon" style={{ background: f.bg }}>{f.icon}</div>
@@ -920,7 +920,7 @@ function PMStepProjectDetail() {
         <div className="wiz-field-cards">
           <div className="wiz-field-card">
             <div className="wiz-field-card-icon" style={{ background: "rgba(224,148,34,0.1)" }}>
-              <DollarSign style={{ width: 26, height: 26, color: "var(--amber)" }} />
+              <DollarSign className="c-amber" style={{ width: 26, height: 26 }} />
             </div>
             <div className="wiz-field-card-title">Change Orders</div>
             <ul className="wiz-field-bullets">
@@ -931,7 +931,7 @@ function PMStepProjectDetail() {
           </div>
           <div className="wiz-field-card">
             <div className="wiz-field-card-icon" style={{ background: "rgba(59,130,246,0.1)" }}>
-              <ClipboardList style={{ width: 26, height: 26, color: "var(--blue)" }} />
+              <ClipboardList className="c-blue" style={{ width: 26, height: 26 }} />
             </div>
             <div className="wiz-field-card-title">RFIs & Submittals</div>
             <ul className="wiz-field-bullets">
@@ -955,10 +955,10 @@ function PMStepForemen() {
       <div className="wizard-illustration">
         <div className="wiz-info-list">
           {[
-            { icon: <HardHat style={{ width: 16, height: 16, color: "var(--amber)" }} />,   bg: "rgba(224,148,34,0.1)", title: "Assign to Projects", sub: "Tie a foreman to each active project" },
-            { icon: <Users style={{ width: 16, height: 16, color: "var(--blue)" }} />,     bg: "rgba(59,130,246,0.1)", title: "Crew Visibility",    sub: "See who's on-site and team hours in real time" },
-            { icon: <ClipboardCheck style={{ width: 16, height: 16, color: "var(--green)" }} />, bg: "rgba(16,185,129,0.1)", title: "Daily Reports",  sub: "Review foreman reports submitted each day" },
-            { icon: <Bell style={{ width: 16, height: 16, color: "var(--purple)" }} />,      bg: "rgba(139,92,246,0.1)", title: "Alerts",             sub: "Get notified if no report is filed by EOD" },
+            { icon: <HardHat className="c-amber" style={{ width: 16, height: 16 }} />,   bg: "rgba(224,148,34,0.1)", title: "Assign to Projects", sub: "Tie a foreman to each active project" },
+            { icon: <Users className="c-blue" style={{ width: 16, height: 16 }} />,     bg: "rgba(59,130,246,0.1)", title: "Crew Visibility",    sub: "See who's on-site and team hours in real time" },
+            { icon: <ClipboardCheck className="c-green" style={{ width: 16, height: 16 }} />, bg: "rgba(16,185,129,0.1)", title: "Daily Reports",  sub: "Review foreman reports submitted each day" },
+            { icon: <Bell className="c-purple" style={{ width: 16, height: 16 }} />,      bg: "rgba(139,92,246,0.1)", title: "Alerts",             sub: "Get notified if no report is filed by EOD" },
           ].map((item, i) => (
             <div key={i} className="wiz-info-row">
               <div className="wiz-info-row-icon" style={{ background: item.bg }}>{item.icon}</div>
@@ -980,10 +980,10 @@ function PMStepTakeoffs() {
       <div className="wizard-illustration">
         <div className="wiz-info-list">
           {[
-            { icon: <Package style={{ width: 16, height: 16, color: "var(--amber)" }} />,   bg: "rgba(224,148,34,0.1)", title: "Line-item takeoffs", sub: "Qty, unit cost, and total per material" },
-            { icon: <Layers style={{ width: 16, height: 16, color: "var(--blue)" }} />,    bg: "rgba(59,130,246,0.1)", title: "Phase breakdowns",   sub: "Organize by construction phase" },
-            { icon: <DollarSign style={{ width: 16, height: 16, color: "var(--green)" }} />, bg: "rgba(16,185,129,0.1)", title: "Cost roll-up",       sub: "Automatic totals feed into bid pricing" },
-            { icon: <TrendingUp style={{ width: 16, height: 16, color: "var(--purple)" }} />, bg: "rgba(139,92,246,0.1)", title: "AI Analyzer",        sub: "Flag risk items and missing scope" },
+            { icon: <Package className="c-amber" style={{ width: 16, height: 16 }} />,   bg: "rgba(224,148,34,0.1)", title: "Line-item takeoffs", sub: "Qty, unit cost, and total per material" },
+            { icon: <Layers className="c-blue" style={{ width: 16, height: 16 }} />,    bg: "rgba(59,130,246,0.1)", title: "Phase breakdowns",   sub: "Organize by construction phase" },
+            { icon: <DollarSign className="c-green" style={{ width: 16, height: 16 }} />, bg: "rgba(16,185,129,0.1)", title: "Cost roll-up",       sub: "Automatic totals feed into bid pricing" },
+            { icon: <TrendingUp className="c-purple" style={{ width: 16, height: 16 }} />, bg: "rgba(139,92,246,0.1)", title: "AI Analyzer",        sub: "Flag risk items and missing scope" },
           ].map((item, i) => (
             <div key={i} className="wiz-info-row">
               <div className="wiz-info-row-icon" style={{ background: item.bg }}>{item.icon}</div>
@@ -1001,12 +1001,12 @@ function PMStepReady({ onComplete }) {
     <div className="wizard-slide">
       <div className="wizard-ready-wrap">
         <div className="wizard-ready-ring">
-          <CheckCircle style={{ width: 44, height: 44, color: "var(--amber)" }} />
+          <CheckCircle className="c-amber" style={{ width: 44, height: 44 }} />
         </div>
         <div className="wizard-title">You're All Set!</div>
         <div className="wizard-desc" style={{ maxWidth: 340, margin: "0 auto" }}>
           EBC-OS is ready. Manage your projects with confidence.<br />
-          <span style={{ color: "var(--text3)", fontSize: "var(--text-label)" }}>You can revisit this tour anytime in Settings.</span>
+          <span className="fs-label c-text3">You can revisit this tour anytime in Settings.</span>
         </div>
         <button className="wizard-btn wizard-launch" onClick={onComplete}>
           Launch EBC-OS
@@ -1028,7 +1028,7 @@ function ForemanStep1({ userName }) {
         style={{ width: 80, height: "auto" }}
         onError={(e) => { e.target.src = "/eagle-white.png"; e.target.onerror = () => { e.target.style.display = "none"; }; }}
       />
-      <div className="wizard-title" style={{ marginTop: "var(--space-2)" }}>
+      <div className="wizard-title mt-sp2">
         Bienvenido{userName ? `, ${userName.split(" ")[0]}` : ""}
       </div>
       <div className="wizard-title-sub">Welcome to EBC-OS</div>
@@ -1037,10 +1037,10 @@ function ForemanStep1({ userName }) {
       <div className="wizard-illustration">
         <div className="wiz-big-icon-grid">
           {[
-            { icon: <HardHat style={{ width: 28, height: 28, color: "var(--amber)" }} />,      bg: "rgba(224,148,34,0.12)",  label: "Cuadrilla",      sub: "Crew" },
-            { icon: <Clock style={{ width: 28, height: 28, color: "var(--green)" }} />,         bg: "rgba(16,185,129,0.12)",  label: "Tiempo",         sub: "Time" },
-            { icon: <ShieldCheck style={{ width: 28, height: 28, color: "var(--blue)" }} />,   bg: "rgba(59,130,246,0.12)",  label: "Seguridad",      sub: "Safety" },
-            { icon: <ClipboardList style={{ width: 28, height: 28, color: "var(--purple)" }} />, bg: "rgba(139,92,246,0.12)", label: "Reportes",       sub: "Reports" },
+            { icon: <HardHat className="c-amber" style={{ width: 28, height: 28 }} />,      bg: "rgba(224,148,34,0.12)",  label: "Cuadrilla",      sub: "Crew" },
+            { icon: <Clock className="c-green" style={{ width: 28, height: 28 }} />,         bg: "rgba(16,185,129,0.12)",  label: "Tiempo",         sub: "Time" },
+            { icon: <ShieldCheck className="c-blue" style={{ width: 28, height: 28 }} />,   bg: "rgba(59,130,246,0.12)",  label: "Seguridad",      sub: "Safety" },
+            { icon: <ClipboardList className="c-purple" style={{ width: 28, height: 28 }} />, bg: "rgba(139,92,246,0.12)", label: "Reportes",       sub: "Reports" },
           ].map((c, i) => (
             <div key={i} className="wiz-big-icon-cell">
               <div className="wiz-big-icon-cell-icon" style={{ background: c.bg }}>{c.icon}</div>
@@ -1065,16 +1065,16 @@ function ForemanStep2() {
       <div className="wizard-illustration">
         <div className="wiz-big-icon-wrap">
           <div className="wiz-big-icon" style={{ background: "rgba(16,185,129,0.12)", border: "2px solid rgba(16,185,129,0.2)" }}>
-            <Clock style={{ width: 54, height: 54, color: "var(--green)" }} />
+            <Clock className="c-green" style={{ width: 54, height: 54 }} />
           </div>
-          <div className="wiz-info-list" style={{ width: "100%" }}>
+          <div className="wiz-info-list w-full">
             {[
               { label: "Pulsa → Entrada",  sub: "Tap → Clock In",   color: "var(--green)" },
               { label: "Selecciona proyecto", sub: "Select your project", color: "var(--amber)" },
               { label: "Al salir → Salida", sub: "At end → Clock Out", color: "var(--red)" },
             ].map((r, i) => (
               <div key={i} className="wiz-info-row">
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: r.color, flexShrink: 0 }} />
+                <div className="flex-shrink-0" style={{ width: 10, height: 10, borderRadius: "50%", background: r.color }} />
                 <div className="wiz-info-row-text"><strong>{r.label}</strong>{r.sub}</div>
               </div>
             ))}
@@ -1096,16 +1096,16 @@ function ForemanStep3() {
       <div className="wizard-illustration">
         <div className="wiz-big-icon-wrap">
           <div className="wiz-big-icon" style={{ background: "rgba(224,148,34,0.12)", border: "2px solid rgba(224,148,34,0.2)" }}>
-            <Users style={{ width: 54, height: 54, color: "var(--amber)" }} />
+            <Users className="c-amber" style={{ width: 54, height: 54 }} />
           </div>
-          <div className="wiz-info-list" style={{ width: "100%" }}>
+          <div className="wiz-info-list w-full">
             {[
               { label: "Ver cuadrilla activa",  sub: "See active team on-site", color: "var(--amber)" },
               { label: "Horas por trabajador",  sub: "Hours per worker today",  color: "var(--blue)" },
               { label: "Solicitar materiales",  sub: "Request materials",        color: "var(--green)" },
             ].map((r, i) => (
               <div key={i} className="wiz-info-row">
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: r.color, flexShrink: 0 }} />
+                <div className="flex-shrink-0" style={{ width: 10, height: 10, borderRadius: "50%", background: r.color }} />
                 <div className="wiz-info-row-text"><strong>{r.label}</strong>{r.sub}</div>
               </div>
             ))}
@@ -1127,16 +1127,16 @@ function ForemanStep4() {
       <div className="wizard-illustration">
         <div className="wiz-big-icon-wrap">
           <div className="wiz-big-icon" style={{ background: "rgba(59,130,246,0.12)", border: "2px solid rgba(59,130,246,0.2)" }}>
-            <ShieldCheck style={{ width: 54, height: 54, color: "var(--blue)" }} />
+            <ShieldCheck className="c-blue" style={{ width: 54, height: 54 }} />
           </div>
-          <div className="wiz-info-list" style={{ width: "100%" }}>
+          <div className="wiz-info-list w-full">
             {[
               { label: "JSA diario",          sub: "Daily job safety analysis",   color: "var(--blue)" },
               { label: "Reporte de incidente", sub: "File an incident report",     color: "var(--red)" },
               { label: "Hojas SDS",            sub: "Access material SDS sheets",  color: "var(--amber)" },
             ].map((r, i) => (
               <div key={i} className="wiz-info-row">
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: r.color, flexShrink: 0 }} />
+                <div className="flex-shrink-0" style={{ width: 10, height: 10, borderRadius: "50%", background: r.color }} />
                 <div className="wiz-info-row-text"><strong>{r.label}</strong>{r.sub}</div>
               </div>
             ))}
@@ -1153,7 +1153,7 @@ function ForemanStep5({ onComplete }) {
       <div className="wizard-step-label">Paso 5 · Step 5</div>
       <div className="wizard-ready-wrap">
         <div className="wiz-big-icon" style={{ background: "rgba(139,92,246,0.12)", border: "2px solid rgba(139,92,246,0.2)", width: 96, height: 96, borderRadius: "50%" }}>
-          <ClipboardList style={{ width: 48, height: 48, color: "var(--purple)" }} />
+          <ClipboardList className="c-purple" style={{ width: 48, height: 48 }} />
         </div>
         <div className="wizard-title">Reporte Diario</div>
         <div className="wizard-title-sub">Daily Report</div>
@@ -1179,18 +1179,18 @@ function EmployeeStep1({ userName }) {
         style={{ width: 80, height: "auto" }}
         onError={(e) => { e.target.src = "/eagle-white.png"; e.target.onerror = () => { e.target.style.display = "none"; }; }}
       />
-      <div className="wizard-title" style={{ marginTop: "var(--space-2)" }}>
+      <div className="wizard-title mt-sp2">
         Bienvenido{userName ? `, ${userName.split(" ")[0]}` : ""}
       </div>
       <div className="wizard-title-sub">Welcome</div>
-      <div className="wizard-desc" style={{ fontSize: "var(--text-card)" }}>Estás en EBC-OS.<br />Tu app de trabajo.</div>
+      <div className="wizard-desc fs-card">Estás en EBC-OS.<br />Tu app de trabajo.</div>
       <div className="wizard-desc-sub">You're on EBC-OS — your work app.</div>
       <div className="wizard-illustration">
         <div className="wiz-big-icon-grid">
           {[
-            { icon: <Clock style={{ width: 32, height: 32, color: "var(--green)" }} />,          bg: "rgba(16,185,129,0.12)", label: "Entrada/Salida", sub: "Clock In/Out" },
-            { icon: <AlertTriangle style={{ width: 32, height: 32, color: "var(--red)" }} />,  bg: "rgba(239,68,68,0.12)",  label: "Problema",       sub: "Report Issue" },
-            { icon: <Calendar style={{ width: 32, height: 32, color: "var(--blue)" }} />,       bg: "rgba(59,130,246,0.12)", label: "Horario",        sub: "Schedule" },
+            { icon: <Clock className="c-green" style={{ width: 32, height: 32 }} />,          bg: "rgba(16,185,129,0.12)", label: "Entrada/Salida", sub: "Clock In/Out" },
+            { icon: <AlertTriangle className="c-red" style={{ width: 32, height: 32 }} />,  bg: "rgba(239,68,68,0.12)",  label: "Problema",       sub: "Report Issue" },
+            { icon: <Calendar className="c-blue" style={{ width: 32, height: 32 }} />,       bg: "rgba(59,130,246,0.12)", label: "Horario",        sub: "Schedule" },
           ].map((c, i) => (
             <div key={i} className="wiz-big-icon-cell" style={{ ...(i === 2 ? { gridColumn: "1 / -1", maxWidth: 160, margin: "0 auto", width: "100%" } : {}) }}>
               <div className="wiz-big-icon-cell-icon" style={{ background: c.bg }}>{c.icon}</div>
@@ -1211,25 +1211,25 @@ function EmployeeStep2() {
       <div className="wizard-title">Entrada / Salida</div>
       <div className="wizard-title-sub">Clock In / Clock Out</div>
       <div className="wizard-illustration">
-        <div className="wiz-big-icon-wrap" style={{ gap: "var(--space-4)" }}>
+        <div className="wiz-big-icon-wrap gap-sp4">
           <div className="wiz-big-icon" style={{ background: "rgba(16,185,129,0.12)", border: "2px solid rgba(16,185,129,0.2)", width: 110, height: 110, borderRadius: "var(--radius-sheet)" }}>
-            <Clock style={{ width: 60, height: 60, color: "var(--green)" }} />
+            <Clock className="c-green" style={{ width: 60, height: 60 }} />
           </div>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "var(--font-head)", fontSize: "var(--text-subtitle)", fontWeight: "var(--weight-bold)", color: "#f0f4fa" }}>Pulsa el botón</div>
-            <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginTop: "var(--space-1)" }}>Tap the button</div>
+          <div className="text-center">
+            <div className="fs-subtitle fw-bold font-head" style={{ color: "#f0f4fa" }}>Pulsa el botón</div>
+            <div className="fs-label mt-sp1 c-text3">Tap the button</div>
           </div>
-          <div style={{ display: "flex", gap: "var(--space-3)" }}>
-            <div style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: "var(--radius-control)", padding: "var(--space-3) var(--space-6)", textAlign: "center" }}>
-              <div style={{ fontFamily: "var(--font-head)", fontSize: "var(--text-section)", fontWeight: "var(--weight-bold)", color: "var(--green)" }}>ENTRADA</div>
-              <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>Clock In</div>
+          <div className="gap-sp3" style={{ display: "flex" }}>
+            <div className="rounded-control text-center" style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.2)", padding: "var(--space-3) var(--space-6)" }}>
+              <div className="fw-bold fs-section font-head c-green">ENTRADA</div>
+              <div className="fs-tab c-text3">Clock In</div>
             </div>
-            <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "var(--radius-control)", padding: "var(--space-3) var(--space-6)", textAlign: "center" }}>
-              <div style={{ fontFamily: "var(--font-head)", fontSize: "var(--text-section)", fontWeight: "var(--weight-bold)", color: "var(--red)" }}>SALIDA</div>
-              <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>Clock Out</div>
+            <div className="rounded-control text-center" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", padding: "var(--space-3) var(--space-6)" }}>
+              <div className="fw-bold fs-section font-head c-red">SALIDA</div>
+              <div className="fs-tab c-text3">Clock Out</div>
             </div>
           </div>
-          <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", textAlign: "center" }}>Necesitas tu PIN · You need your PIN</div>
+          <div className="fs-label c-text3 text-center">Necesitas tu PIN · You need your PIN</div>
         </div>
       </div>
     </div>
@@ -1247,19 +1247,19 @@ function EmployeeStep3() {
       <div className="wizard-illustration">
         <div className="wiz-big-icon-wrap">
           <div className="wiz-big-icon" style={{ background: "rgba(239,68,68,0.1)", border: "2px solid rgba(239,68,68,0.2)", width: 100, height: 100, borderRadius: "var(--radius-sheet)" }}>
-            <AlertTriangle style={{ width: 54, height: 54, color: "var(--red)" }} />
+            <AlertTriangle className="c-red" style={{ width: 54, height: 54 }} />
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", width: "100%" }}>
+          <div className="flex-col gap-sp2 w-full">
             {[
               { es: "Peligro en el sitio",   en: "Site hazard" },
               { es: "Equipo dañado",         en: "Damaged equipment" },
               { es: "Necesito ayuda",        en: "I need help" },
             ].map((r, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", background: "rgba(28,34,51,0.4)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: "var(--radius-control)", padding: "11px 14px" }}>
-                <AlertTriangle style={{ width: 16, height: 16, color: "var(--red)", flexShrink: 0 }} />
+              <div key={i} className="flex rounded-control gap-sp3" style={{ background: "rgba(28,34,51,0.4)", border: "1px solid rgba(255,255,255,0.04)", padding: "11px 14px" }}>
+                <AlertTriangle className="c-red flex-shrink-0" style={{ width: 16, height: 16 }} />
                 <div>
-                  <div style={{ fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)", color: "#f0f4fa" }}>{r.es}</div>
-                  <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{r.en}</div>
+                  <div className="fs-secondary fw-semi" style={{ color: "#f0f4fa" }}>{r.es}</div>
+                  <div className="fs-tab c-text3">{r.en}</div>
                 </div>
               </div>
             ))}
@@ -1275,15 +1275,15 @@ function EmployeeStep4({ onComplete }) {
     <div className="wizard-slide" style={{ alignItems: "center" }}>
       <div className="wizard-ready-wrap">
         <div className="wiz-big-icon" style={{ background: "rgba(59,130,246,0.12)", border: "2px solid rgba(59,130,246,0.2)", width: 96, height: 96, borderRadius: "50%" }}>
-          <Calendar style={{ width: 48, height: 48, color: "var(--blue)" }} />
+          <Calendar className="c-blue" style={{ width: 48, height: 48 }} />
         </div>
         <div className="wizard-title">Tu Horario</div>
         <div className="wizard-title-sub">Your Schedule</div>
-        <div className="wizard-desc" style={{ fontSize: "var(--text-secondary)" }}>
+        <div className="wizard-desc fs-secondary">
           Ve cuándo y dónde trabajas cada semana.
         </div>
         <div className="wizard-desc-sub">See when and where you work each week.</div>
-        <button className="wizard-btn wizard-launch" onClick={onComplete} style={{ marginTop: "var(--space-3)" }}>
+        <button className="wizard-btn wizard-launch" onClick={onComplete} className="mt-sp3">
           Comenzar · Start
         </button>
       </div>
@@ -1303,7 +1303,7 @@ function DriverStep1({ userName }) {
         style={{ width: 80, height: "auto" }}
         onError={(e) => { e.target.src = "/eagle-white.png"; e.target.onerror = () => { e.target.style.display = "none"; }; }}
       />
-      <div className="wizard-title" style={{ marginTop: "var(--space-2)" }}>
+      <div className="wizard-title mt-sp2">
         Bienvenido{userName ? `, ${userName.split(" ")[0]}` : ""}
       </div>
       <div className="wizard-title-sub">Welcome, Driver</div>
@@ -1312,10 +1312,10 @@ function DriverStep1({ userName }) {
       <div className="wizard-illustration">
         <div className="wiz-big-icon-grid">
           {[
-            { icon: <Truck style={{ width: 30, height: 30, color: "var(--amber)" }} />,         bg: "rgba(224,148,34,0.12)", label: "Entregas",  sub: "Deliveries" },
-            { icon: <MapPin style={{ width: 30, height: 30, color: "var(--blue)" }} />,        bg: "rgba(59,130,246,0.12)", label: "Ruta",      sub: "Route" },
-            { icon: <CheckSquare style={{ width: 30, height: 30, color: "var(--green)" }} />,   bg: "rgba(16,185,129,0.12)", label: "Completado",sub: "Done" },
-            { icon: <Bell style={{ width: 30, height: 30, color: "var(--purple)" }} />,          bg: "rgba(139,92,246,0.12)",label: "Alertas",   sub: "Alerts" },
+            { icon: <Truck className="c-amber" style={{ width: 30, height: 30 }} />,         bg: "rgba(224,148,34,0.12)", label: "Entregas",  sub: "Deliveries" },
+            { icon: <MapPin className="c-blue" style={{ width: 30, height: 30 }} />,        bg: "rgba(59,130,246,0.12)", label: "Ruta",      sub: "Route" },
+            { icon: <CheckSquare className="c-green" style={{ width: 30, height: 30 }} />,   bg: "rgba(16,185,129,0.12)", label: "Completado",sub: "Done" },
+            { icon: <Bell className="c-purple" style={{ width: 30, height: 30 }} />,          bg: "rgba(139,92,246,0.12)",label: "Alertas",   sub: "Alerts" },
           ].map((c, i) => (
             <div key={i} className="wiz-big-icon-cell">
               <div className="wiz-big-icon-cell-icon" style={{ background: c.bg }}>{c.icon}</div>
@@ -1340,16 +1340,16 @@ function DriverStep2() {
       <div className="wizard-illustration">
         <div className="wiz-big-icon-wrap">
           <div className="wiz-big-icon" style={{ background: "rgba(224,148,34,0.12)", border: "2px solid rgba(224,148,34,0.2)", width: 100, height: 100, borderRadius: "var(--radius-sheet)" }}>
-            <Truck style={{ width: 56, height: 56, color: "var(--amber)" }} />
+            <Truck className="c-amber" style={{ width: 56, height: 56 }} />
           </div>
-          <div className="wiz-info-list" style={{ width: "100%" }}>
+          <div className="wiz-info-list w-full">
             {[
               { es: "Lista de entregas pendientes", en: "Pending delivery queue",   color: "var(--amber)" },
               { es: "Dirección en mapa",            en: "Address on map",           color: "var(--blue)" },
               { es: "Material y cantidad",          en: "Material & quantity",      color: "var(--green)" },
             ].map((r, i) => (
               <div key={i} className="wiz-info-row">
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: r.color, flexShrink: 0 }} />
+                <div className="flex-shrink-0" style={{ width: 10, height: 10, borderRadius: "50%", background: r.color }} />
                 <div className="wiz-info-row-text"><strong>{r.es}</strong>{r.en}</div>
               </div>
             ))}
@@ -1371,16 +1371,16 @@ function DriverStep3() {
       <div className="wizard-illustration">
         <div className="wiz-big-icon-wrap">
           <div className="wiz-big-icon" style={{ background: "rgba(59,130,246,0.12)", border: "2px solid rgba(59,130,246,0.2)", width: 100, height: 100, borderRadius: "var(--radius-sheet)" }}>
-            <Navigation style={{ width: 52, height: 52, color: "var(--blue)" }} />
+            <Navigation className="c-blue" style={{ width: 52, height: 52 }} />
           </div>
-          <div className="wiz-info-list" style={{ width: "100%" }}>
+          <div className="wiz-info-list w-full">
             {[
               { es: "Acepta la entrega",       en: "Accept the delivery",    color: "var(--green)" },
               { es: "Confirma horario",        en: "Confirm the schedule",   color: "var(--amber)" },
               { es: "Navega al sitio",         en: "Navigate to site",       color: "var(--blue)" },
             ].map((r, i) => (
               <div key={i} className="wiz-info-row">
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: r.color, flexShrink: 0 }} />
+                <div className="flex-shrink-0" style={{ width: 10, height: 10, borderRadius: "50%", background: r.color }} />
                 <div className="wiz-info-row-text"><strong>{r.es}</strong>{r.en}</div>
               </div>
             ))}
@@ -1396,15 +1396,15 @@ function DriverStep4({ onComplete }) {
     <div className="wizard-slide" style={{ alignItems: "center" }}>
       <div className="wizard-ready-wrap">
         <div className="wiz-big-icon" style={{ background: "rgba(16,185,129,0.12)", border: "2px solid rgba(16,185,129,0.2)", width: 96, height: 96, borderRadius: "50%" }}>
-          <CheckSquare style={{ width: 48, height: 48, color: "var(--green)" }} />
+          <CheckSquare className="c-green" style={{ width: 48, height: 48 }} />
         </div>
         <div className="wizard-title">Marcar Entregado</div>
         <div className="wizard-title-sub">Mark as Delivered</div>
-        <div className="wizard-desc" style={{ fontSize: "var(--text-secondary)" }}>
+        <div className="wizard-desc fs-secondary">
           Confirma cuando termines cada entrega.<br />El sistema se actualiza automáticamente.
         </div>
         <div className="wizard-desc-sub">Confirm when done. System updates automatically.</div>
-        <button className="wizard-btn wizard-launch" onClick={onComplete} style={{ marginTop: "var(--space-3)" }}>
+        <button className="wizard-btn wizard-launch" onClick={onComplete} className="mt-sp3">
           Comenzar · Start
         </button>
       </div>
@@ -1581,7 +1581,7 @@ export function OnboardingWizard({ onComplete, currentUser }) {
 
         {/* Slide */}
         <div className="wizard-content">
-          <div key={animKey} className={slideClass} style={{ flex: 1 }}>
+          <div key={animKey} className={`slideClass flex-1`}>
             {stepContent[step]}
           </div>
         </div>

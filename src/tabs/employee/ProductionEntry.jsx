@@ -113,32 +113,20 @@ export function ProductionEntry({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+    <div className="flex-col gap-sp4">
       {/* Area header */}
       {currentArea ? (
         <div
-          style={{
-            background: "var(--bg3)",
-            borderRadius: "var(--radius-control)",
-            padding: "var(--space-4) var(--space-4)",
-            borderLeft: "4px solid var(--accent, #3b82f6)",
-          }}
+          className="rounded-control bg-bg3" style={{ padding: "var(--space-4) var(--space-4)",
+            borderLeft: "4px solid var(--accent, #3b82f6)" }}
         >
           <div
-            style={{
-              fontSize: "var(--text-lg, 16px)",
-              fontWeight: "var(--weight-bold)",
-              color: "var(--text)",
-            }}
+            className="fw-bold c-text" style={{ fontSize: "var(--text-lg, 16px)" }}
           >
             {currentArea.name}
           </div>
           <div
-            style={{
-              fontSize: "var(--text-sm, 12px)",
-              color: "var(--text2)",
-              marginTop: "var(--space-1)",
-            }}
+            className="fs-tab mt-sp1 c-text2"
           >
             {tr("Floor")} {currentArea.floor} &middot; {tr("Zone")}{" "}
             {currentArea.zone}
@@ -146,13 +134,9 @@ export function ProductionEntry({
         </div>
       ) : (
         <div
-          style={{
-            background: "var(--bg3)",
-            borderRadius: "var(--radius-control)",
-            padding: "var(--space-4) var(--space-4)",
-          }}
+          className="rounded-control bg-bg3" style={{ padding: "var(--space-4) var(--space-4)" }}
         >
-          <div style={{ color: "var(--text2)", fontSize: "var(--text-sm, 12px)", marginBottom: "var(--space-2)" }}>
+          <div className="fs-tab mb-sp2 c-text2">
             {tr("No area assigned for today")}
           </div>
           <FieldSelect
@@ -172,33 +156,21 @@ export function ProductionEntry({
       {/* Confirmation banner */}
       {confirmation && (
         <div
-          style={{
-            background: "rgba(34,197,94,0.12)",
+          className="rounded-control gap-sp3" style={{ background: "rgba(34,197,94,0.12)",
             border: "1px solid var(--green, #22c55e)",
-            borderRadius: "var(--radius-control)",
             padding: "var(--space-3) var(--space-4)",
             display: "flex",
-            alignItems: "center",
-            gap: "var(--space-3)",
-          }}
+            alignItems: "center" }}
         >
           <CheckCircle size={22} color="var(--green, #22c55e)" />
           <div>
             <div
-              style={{
-                fontWeight: "var(--weight-bold)",
-                color: "var(--green, #22c55e)",
-                fontSize: "var(--text-base, 14px)",
-              }}
+              className="fs-label fw-bold" style={{ color: "var(--green, #22c55e)" }}
             >
               {tr("Logged!")} {confirmation.qty} {confirmation.unit}
             </div>
             <div
-              style={{
-                fontSize: "var(--text-sm, 12px)",
-                color: "var(--text2)",
-                marginTop: "var(--space-1)",
-              }}
+              className="fs-tab mt-sp1 c-text2"
             >
               {confirmation.scopeItem} &mdash; {confirmation.totalInstalled}
               {confirmation.budgetQty
@@ -214,17 +186,12 @@ export function ProductionEntry({
       {scopeItems.length > 0 && (
         <div>
           <label
-            className="form-label"
-            style={{ marginBottom: "var(--space-2)", display: "block" }}
+            className="form-label mb-sp2 d-block"
           >
             {tr("What did you install?")}
           </label>
           <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "var(--space-2)",
-            }}
+            className="gap-sp2 d-grid" style={{ gridTemplateColumns: "1fr 1fr" }}
           >
             {scopeItems.map((item, idx) => (
               <button
@@ -254,11 +221,7 @@ export function ProductionEntry({
                 {tr(item.name)}
                 {item.unit && (
                   <div
-                    style={{
-                      fontSize: "var(--text-xs, 11px)",
-                      color: "var(--text3)",
-                      marginTop: "var(--space-1)",
-                    }}
+                    className="mt-sp1 c-text3" style={{ fontSize: "var(--text-xs, 11px)" }}
                   >
                     {item.unit}
                   </div>
@@ -295,11 +258,8 @@ export function ProductionEntry({
         onClick={handleSubmit}
         disabled={selectedScopeIdx === null || !qty || Number(qty) <= 0}
         loading={saving}
-        style={{
-          fontSize: "var(--text-lg, 16px)",
-          minHeight: 56,
-          fontWeight: "var(--weight-bold)",
-        }}
+        className="fw-bold" style={{ fontSize: "var(--text-lg, 16px)",
+          minHeight: 56 }}
         t={tr}
       >
         {tr("Log Production")}
@@ -307,41 +267,29 @@ export function ProductionEntry({
 
       {/* Today's entries */}
       {todaysLogs.length > 0 && (
-        <div style={{ marginTop: "var(--space-2)" }}>
+        <div className="mt-sp2">
           <label
-            className="form-label"
-            style={{ marginBottom: "var(--space-2)", display: "block" }}
+            className="form-label mb-sp2 d-block"
           >
             {tr("Today's Entries")}
           </label>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+          <div className="flex-col gap-sp2">
             {todaysLogs.map((log) => (
               <div
                 key={log.id}
-                style={{
-                  background: "var(--bg3)",
-                  borderRadius: "var(--radius-control)",
-                  padding: "var(--space-3) var(--space-4)",
+                className="rounded-control bg-bg3" style={{ padding: "var(--space-3) var(--space-4)",
                   display: "flex",
                   justifyContent: "space-between",
-                  alignItems: "center",
-                }}
+                  alignItems: "center" }}
               >
                 <div>
                   <div
-                    style={{
-                      fontWeight: "var(--weight-semi)",
-                      fontSize: "var(--text-base, 14px)",
-                      color: "var(--text)",
-                    }}
+                    className="fs-label fw-semi c-text"
                   >
                     {log.scopeItem}
                   </div>
                   <div
-                    style={{
-                      fontSize: "var(--text-sm, 12px)",
-                      color: "var(--text3)",
-                    }}
+                    className="fs-tab c-text3"
                   >
                     {log.areaName} &middot;{" "}
                     {new Date(log.loggedAt).toLocaleTimeString([], {
@@ -351,11 +299,8 @@ export function ProductionEntry({
                   </div>
                 </div>
                 <div
-                  style={{
-                    fontWeight: "var(--weight-bold)",
-                    fontSize: "var(--text-lg, 16px)",
-                    color: "var(--accent, #3b82f6)",
-                  }}
+                  className="fw-bold" style={{ fontSize: "var(--text-lg, 16px)",
+                    color: "var(--accent, #3b82f6)" }}
                 >
                   {log.qtyInstalled} {log.unit}
                 </div>

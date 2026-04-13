@@ -158,9 +158,9 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+    <div className="flex-col gap-sp4">
       {/* ── Summary Stats ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: "var(--space-2)" }}>
+      <div className="gap-sp2 d-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))" }}>
         <StatTile label={tr("Total")} value={stats.total} t={t} />
         <StatTile label={tr("Open")} value={stats.open} color="var(--red)" t={t} />
         <StatTile label={tr("In Progress")} value={stats.inProg} color="var(--amber)" t={t} />
@@ -169,7 +169,7 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
       </div>
 
       {/* ── Filters + Add ── */}
-      <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", alignItems: "flex-end" }}>
+      <div className="gap-sp2 flex-wrap" style={{ display: "flex", alignItems: "flex-end" }}>
         <div style={{ flex: "1 1 120px" }}>
           <FieldSelect label={tr("Status")} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} t={t}>
             <option value="all">{tr("All")}</option>
@@ -187,7 +187,7 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
           </FieldSelect>
         </div>
         <FieldButton onClick={() => { if (showForm && editingId) { resetForm(); } else { setShowForm(!showForm); } }} t={t}>
-          <Plus size={14} style={{ marginRight: "var(--space-1)" }} />
+          <Plus size={14} className="mr-sp1" />
           {tr("Add Punch Item")}
         </FieldButton>
       </div>
@@ -195,8 +195,8 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
       {/* ── Add Form ── */}
       {showForm && (
         <FieldCard>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>{editingId ? tr("Edit Punch Item") : tr("New Punch Item")}</div>
+          <div className="flex-col gap-sp3">
+            <div className="fs-label fw-bold c-text">{editingId ? tr("Edit Punch Item") : tr("New Punch Item")}</div>
             <FieldInput label={tr("Description")} value={formDesc} onChange={(e) => setFormDesc(e.target.value)} t={t} />
             <FieldSelect label={tr("Area")} value={formArea} onChange={(e) => setFormArea(e.target.value)} t={t}>
               <option value="">{tr("Select Area")}</option>
@@ -216,7 +216,7 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
               ))}
             </FieldSelect>
             <PhotoCapture photos={formPhotos} onPhotos={setFormPhotos} t={t} />
-            <div style={{ display: "flex", gap: "var(--space-2)", justifyContent: "flex-end" }}>
+            <div className="gap-sp2" style={{ display: "flex", justifyContent: "flex-end" }}>
               <FieldButton variant="ghost" onClick={resetForm} t={t}>{tr("Cancel")}</FieldButton>
               <FieldButton onClick={handleAdd} disabled={!formDesc.trim()} t={t}>{editingId ? tr("Update") : tr("Save")}</FieldButton>
             </div>
@@ -227,8 +227,8 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
       {/* ── Punch Items ── */}
       {filtered.length === 0 && (
         <FieldCard>
-          <div style={{ textAlign: "center", padding: "var(--space-6)", color: "var(--text3)" }}>
-            <CheckCircle size={32} style={{ marginBottom: "var(--space-2)", opacity: 0.4 }} />
+          <div className="p-sp6 c-text3 text-center">
+            <CheckCircle size={32} className="mb-sp2" style={{ opacity: 0.4 }} />
             <div>{tr("No punch items found")}</div>
           </div>
         </FieldCard>
@@ -236,7 +236,7 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
 
       {filtered.map((item) => (
         <FieldCard key={item.id}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-2)" }}>
+          <div className="items-start gap-sp2" style={{ display: "flex" }}>
             {/* Status advance button */}
             <div style={{ flex: "0 0 auto", paddingTop: "var(--space-1)" }}>
               {item.status !== "complete" ? (
@@ -252,30 +252,30 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
                   {item.status === "open" ? <Clock size={14} /> : <AlertTriangle size={14} />}
                 </button>
               ) : (
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--green-dim)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <CheckCircle size={14} style={{ color: "var(--green)" }} />
+                <div className="flex justify-center" style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--green-dim)" }}>
+                  <CheckCircle size={14} className="c-green" />
                 </div>
               )}
             </div>
 
             {/* Content */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-base, 14px)", color: "var(--text)" }}>{item.description}</div>
-              <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", marginTop: "var(--space-1)" }}>
+            <div className="flex-1" style={{ minWidth: 0 }}>
+              <div className="fs-label fw-semi c-text">{item.description}</div>
+              <div className="mt-sp1 gap-sp2 flex-wrap" style={{ display: "flex" }}>
                 <span className={`badge ${PRIORITY_BADGE[item.priority] || "badge-muted"}`}>{tr(item.priority)}</span>
                 <span className={`badge ${STATUS_BADGE[item.status] || "badge-muted"}`}>{tr(item.status)}</span>
               </div>
-              <div style={{ fontSize: "var(--text-sm, 12px)", color: "var(--text2)", marginTop: "var(--space-1)" }}>
+              <div className="fs-tab mt-sp1 c-text2">
                 {item.location && <span>{item.location} &middot; </span>}
                 {item.assignedTo || tr("Unassigned")} &middot; {new Date(item.createdAt).toLocaleDateString()}
               </div>
 
               {/* Photos */}
               {item.photos && item.photos.length > 0 && (
-                <div style={{ display: "flex", gap: "var(--space-1)", marginTop: "var(--space-2)", flexWrap: "wrap" }}>
+                <div className="mt-sp2 gap-sp1 flex-wrap" style={{ display: "flex" }}>
                   {item.photos.map((p, i) => (
-                    <div key={i} style={{ width: 40, height: 40, borderRadius: "var(--radius-sm, 4px)", overflow: "hidden" }}>
-                      <img src={p.data} alt={p.name || "photo"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <div key={i} className="overflow-hidden" style={{ width: 40, height: 40, borderRadius: "var(--radius-sm, 4px)" }}>
+                      <img src={p.data} alt={p.name || "photo"} className="h-full w-full" style={{ objectFit: "cover" }} />
                     </div>
                   ))}
                 </div>
@@ -283,10 +283,10 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
 
               {/* Sign-off inline form */}
               {signOffId === item.id && (
-                <div style={{ marginTop: "var(--space-2)", padding: "var(--space-2)", background: "var(--bg3)", borderRadius: "var(--radius-sm, 4px)", border: "1px solid var(--border)" }}>
-                  <div style={{ fontSize: "var(--text-sm, 12px)", fontWeight: "var(--weight-semi)", color: "var(--text)", marginBottom: "var(--space-2)" }}>{tr("Sign Off to Complete")}</div>
-                  <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "flex-end" }}>
-                    <div style={{ flex: 1 }}>
+                <div className="mt-sp2 p-sp2 bg-bg3" style={{ borderRadius: "var(--radius-sm, 4px)", border: "1px solid var(--border)" }}>
+                  <div className="fs-tab fw-semi mb-sp2 c-text">{tr("Sign Off to Complete")}</div>
+                  <div className="gap-sp2" style={{ display: "flex", alignItems: "flex-end" }}>
+                    <div className="flex-1">
                       <FieldInput label={tr("Signed Off By")} value={signOffName} onChange={(e) => setSignOffName(e.target.value)} placeholder={tr("Name of verifier")} t={t} />
                     </div>
                     <FieldButton onClick={() => confirmSignOff(item.id)} disabled={!signOffName.trim()} t={t}>{tr("Complete")}</FieldButton>
@@ -297,31 +297,25 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
 
               {/* Sign-off info on completed items */}
               {item.status === "complete" && item.signedOffBy && (
-                <div style={{ marginTop: "var(--space-2)", fontSize: "var(--text-sm, 12px)", color: "var(--green)", display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+                <div className="flex fs-tab mt-sp2 c-green gap-sp1">
                   <Lock size={10} />
                   {tr("Signed off by")} {item.signedOffBy} &middot; {new Date(item.signedOffAt).toLocaleDateString()}
                 </div>
               )}
 
               {/* Edit / Delete */}
-              <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
+              <div className="mt-sp2 gap-sp2" style={{ display: "flex" }}>
                 <button
                   onClick={() => startEdit(item)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: "var(--space-1)", padding: "var(--space-1) var(--space-3)",
-                    fontSize: "var(--text-sm, 12px)", background: "var(--bg3)", border: "1px solid var(--border)",
-                    borderRadius: "var(--radius-sm, 4px)", color: "var(--text2)", cursor: "pointer",
-                  }}
+                  className="flex fs-tab bg-bg3 c-text2 gap-sp1 cursor-pointer" style={{ padding: "var(--space-1) var(--space-3)", border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-sm, 4px)" }}
                 >
                   <Pencil size={12} /> {tr("Edit")}
                 </button>
                 <button
                   onClick={() => handleDelete(item)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: "var(--space-1)", padding: "var(--space-1) var(--space-3)",
-                    fontSize: "var(--text-sm, 12px)", background: "var(--bg3)", border: "1px solid var(--border)",
-                    borderRadius: "var(--radius-sm, 4px)", color: "var(--red)", cursor: "pointer",
-                  }}
+                  className="flex fs-tab bg-bg3 gap-sp1 c-red cursor-pointer" style={{ padding: "var(--space-1) var(--space-3)", border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-sm, 4px)" }}
                 >
                   <Trash2 size={12} /> {tr("Delete")}
                 </button>

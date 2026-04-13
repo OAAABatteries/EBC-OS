@@ -24,7 +24,7 @@ export function ClockTab({
         {/* Project Lookup for Clock-In */}
         {!isClockedIn && (
           <div className="frm-project-search-wrap">
-            <label className="form-label frm-text-center" style={{ display: "block", marginBottom: "var(--space-2)" }}>{t("Select Project")}</label>
+            <label className="form-label frm-text-center mb-sp2 d-block">{t("Select Project")}</label>
             <input
               className="form-input frm-text-center frm-mb-6"
               type="text"
@@ -60,7 +60,7 @@ export function ClockTab({
                       <div className="text-sm font-semi">{p.name}</div>
                       <div className="text-xs text-muted">{p.address || p.gc || ""}</div>
                     </div>
-                    {selectedProjectId === p.id && <span style={{ color: "var(--green)", fontSize: "var(--text-section)" }}>✓</span>}
+                    {selectedProjectId === p.id && <span className="fs-section c-green">✓</span>}
                   </div>
                 ))}
             </div>
@@ -85,7 +85,7 @@ export function ClockTab({
           <>
             <div className="frm-mb-16">
               <div className="text-xs text-muted">{t("Clocked in at")}</div>
-              <div className="frm-font-20" style={{ color: "var(--green)" }}>
+              <div className="frm-font-20 c-green">
                 {new Date(clockEntry.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </div>
               <div className="text-xs text-muted frm-mt-4">
@@ -112,7 +112,7 @@ export function ClockTab({
           <div className="frm-mt-30">
             <div className="section-title frm-font-14 frm-mb-8">{t("Today's Time Log")}</div>
             {myTodayEntries.map((te, i) => (
-              <div key={i} className="foreman-team-row" style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)" }}>
+              <div key={i} className="foreman-team-row mb-sp1" style={{ padding: "var(--space-2) var(--space-3)" }}>
                 <div>
                   <div className="text-sm font-semi">
                     {new Date(te.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} → {new Date(te.clockOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}

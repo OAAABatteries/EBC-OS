@@ -100,7 +100,7 @@ export function SearchableSelect({
     <div
       ref={wrapRef}
       className={`field-searchable-wrapper${className ? ` ${className}` : ""}`}
-      style={{ position: "relative" }}
+      className="relative"
     >
       {label && <label className="form-label">{tr(label)}</label>}
 
@@ -138,7 +138,7 @@ export function SearchableSelect({
           </span>
           <ChevronDown
             size={14}
-            style={{ color: "var(--text3)", marginLeft: 8, flexShrink: 0 }}
+            className="c-text3 flex-shrink-0" style={{ marginLeft: 8 }}
           />
         </div>
       ) : (
@@ -155,28 +155,19 @@ export function SearchableSelect({
 
       {open && (
         <div
-          style={{
-            position: "absolute",
-            left: 0,
+          className="bg-bg2 absolute" style={{ left: 0,
             right: 0,
             top: "calc(100% + 2px)",
             zIndex: 100,
-            background: "var(--bg2)",
             border: "1px solid var(--border)",
             borderRadius: "var(--radius-sm, 6px)",
             boxShadow: "0 4px 12px rgba(0,0,0,0.28)",
             maxHeight: 260,
-            overflowY: "auto",
-          }}
+            overflowY: "auto" }}
         >
           {filtered.length === 0 && !showAddRow && (
             <div
-              style={{
-                padding: "var(--space-3)",
-                color: "var(--text3)",
-                fontSize: "var(--text-sm, 12px)",
-                textAlign: "center",
-              }}
+              className="fs-tab p-sp3 c-text3 text-center"
             >
               {tr("No matches")}
             </div>
@@ -188,18 +179,12 @@ export function SearchableSelect({
                 e.preventDefault();
                 handleSelect(o.value);
               }}
-              style={{
-                padding: "var(--space-2) var(--space-3)",
-                cursor: "pointer",
+              className="border-b gap-sp2 c-text cursor-pointer" style={{ padding: "var(--space-2) var(--space-3)",
                 fontSize: "var(--text-sm, 13px)",
-                color: "var(--text)",
-                borderBottom: "1px solid var(--border)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                gap: "var(--space-2)",
-                minHeight: 44,
-              }}
+                minHeight: 44 }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.background = "var(--bg3)")
               }
@@ -208,21 +193,13 @@ export function SearchableSelect({
               }
             >
               <span
-                style={{
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
+                className="nowrap overflow-hidden" style={{ textOverflow: "ellipsis" }}
               >
                 {o.label}
               </span>
               {o.sublabel && (
                 <span
-                  style={{
-                    color: "var(--text3)",
-                    fontSize: "var(--text-xs, 11px)",
-                    flexShrink: 0,
-                  }}
+                  className="c-text3 flex-shrink-0" style={{ fontSize: "var(--text-xs, 11px)" }}
                 >
                   {o.sublabel}
                 </span>
@@ -235,27 +212,17 @@ export function SearchableSelect({
                 e.preventDefault();
                 handleAddNew();
               }}
-              style={{
-                padding: "var(--space-2) var(--space-3)",
-                cursor: "pointer",
+              className="fw-bold bg-bg3 gap-sp2 cursor-pointer" style={{ padding: "var(--space-2) var(--space-3)",
                 fontSize: "var(--text-sm, 13px)",
                 color: "var(--accent, #3b82f6)",
-                fontWeight: "var(--weight-bold)",
                 display: "flex",
                 alignItems: "center",
-                gap: "var(--space-2)",
                 minHeight: 44,
-                borderTop: "1px solid var(--border)",
-                background: "var(--bg3)",
-              }}
+                borderTop: "1px solid var(--border)" }}
             >
               <Plus size={14} />
               <span
-                style={{
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
+                className="nowrap overflow-hidden" style={{ textOverflow: "ellipsis" }}
               >
                 {tr(addNewLabel)}: “{q.trim()}”
               </span>

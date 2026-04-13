@@ -31,13 +31,13 @@ export function DocumentsTab({
           return myRfis.length === 0
             ? <div className="text-xs text-muted" style={{ padding: "var(--space-2) 0" }}>{t("No RFIs submitted")}</div>
             : myRfis.map(r => (
-              <div key={r.id} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)", fontSize: "var(--text-label)" }}>
+              <div key={r.id} className="border-b fs-label" style={{ padding: "var(--space-2) 0" }}>
                 <div className="frm-flex-between">
                   <span className="font-bold">{r.number}</span>
                   <span className={`badge ${r.status === "open" || r.status === "submitted" ? "badge-amber" : r.status === "Answered" ? "badge-green" : "badge-muted"} frm-font-10`}>{r.status}</span>
                 </div>
                 <div className="text-muted frm-mt-2">{r.subject}</div>
-                {r.response && <div style={{ marginTop: "var(--space-1)", padding: "var(--space-1) var(--space-2)", background: "var(--green-dim, rgba(16,185,129,0.1))", borderRadius: "var(--radius-control)", color: "var(--green)", fontSize: "var(--text-tab)" }}>{t("Answer")}: {r.response}</div>}
+                {r.response && <div className="rounded-control fs-tab mt-sp1 c-green" style={{ padding: "var(--space-1) var(--space-2)", background: "var(--green-dim, rgba(16,185,129,0.1))" }}>{t("Answer")}: {r.response}</div>}
                 {r.daysOut > 0 && !r.response && <div className="text-dim frm-mt-2">{r.daysOut}d {t("outstanding")}</div>}
               </div>
             ));
@@ -54,7 +54,7 @@ export function DocumentsTab({
           projectSubmittals.length === 0
             ? <div className="text-xs text-muted" style={{ padding: "var(--space-2) 0" }}>{t("No submittals")}</div>
             : projectSubmittals.map(s => (
-              <div key={s.id} className="card frm-mt-8" style={{ padding: "var(--space-3)" }}>
+              <div key={s.id} className="card frm-mt-8 p-sp3">
                 <div className="flex-between">
                   <span className="text-sm font-semi">{s.name || s.title}</span>
                   <span className={`badge ${s.status === "approved" ? "badge-green" : "badge-amber"}`}>{s.status}</span>
@@ -75,7 +75,7 @@ export function DocumentsTab({
           projectCOs.length === 0
             ? <div className="text-xs text-muted" style={{ padding: "var(--space-2) 0" }}>{t("No change orders")}</div>
             : projectCOs.map(c => (
-              <div key={c.id} className="card frm-mt-8" style={{ padding: "var(--space-3)" }}>
+              <div key={c.id} className="card frm-mt-8 p-sp3">
                 <div className="flex-between">
                   <span className="text-sm font-semi">{c.title || c.description}</span>
                   <span className="text-sm font-mono frm-amber">{fmt(c.amount)}</span>
@@ -89,7 +89,7 @@ export function DocumentsTab({
       {/* RFIs */}
       <div className="project-section">
         <div className="project-section-header frm-flex-between">
-          <div className="frm-flex-row-center frm-flex-1" style={{ cursor: "pointer" }} onClick={() => toggleSection("rfis")}>
+          <div className="frm-flex-row-center frm-flex-1 cursor-pointer" onClick={() => toggleSection("rfis")}>
             <span>{t("RFIs")} ({projectRFIs.length})</span>
             <span>{openSections.rfis ? "\u25BE" : "\u25B8"}</span>
           </div>
@@ -105,7 +105,7 @@ export function DocumentsTab({
           projectRFIs.length === 0
             ? <div className="text-xs text-muted" style={{ padding: "var(--space-2) 0" }}>{t("No RFIs")}</div>
             : projectRFIs.map(r => (
-              <div key={r.id} className="card frm-mt-8" style={{ padding: "var(--space-3)" }}>
+              <div key={r.id} className="card frm-mt-8 p-sp3">
                 <div className="flex-between">
                   <span className="text-sm font-semi">{r.subject || r.title || r.question}</span>
                   <span className={`badge ${r.status === "answered" ? "badge-green" : r.status === "submitted" ? "badge-blue" : "badge-amber"}`}>{r.status}</span>

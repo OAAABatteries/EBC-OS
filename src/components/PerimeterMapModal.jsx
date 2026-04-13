@@ -189,36 +189,29 @@ export function PerimeterMapModal({ project, onSave, onClose }) {
       onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        style={{
-          width: "min(96vw, 740px)",
+        className="rounded-control overflow-hidden" style={{ width: "min(96vw, 740px)",
           maxHeight: "92vh",
           display: "flex",
           flexDirection: "column",
           background: "var(--bg2, #1a1f2e)",
-          borderRadius: "var(--radius-control)",
           border: "1px solid var(--border, rgba(255,255,255,0.1))",
-          overflow: "hidden",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.7)",
-        }}
+          boxShadow: "0 24px 80px rgba(0,0,0,0.7)" }}
       >
         {/* ── Header ── */}
-        <div style={{
-          padding: "14px 18px",
+        <div className="flex-shrink-0" style={{ padding: "14px 18px",
           borderBottom: "1px solid var(--border, rgba(255,255,255,0.08))",
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          flexShrink: 0,
-        }}>
+          justifyContent: "space-between" }}>
           <div>
-            <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)", color: "var(--text)" }}>
+            <div className="fs-secondary fw-bold c-text">
               Set Job Site Perimeter
             </div>
-            <div style={{ fontSize: "var(--text-label)", color: "var(--text-muted, #9ca3af)", marginTop: "var(--space-1)" }}>
+            <div className="fs-label mt-sp1" style={{ color: "var(--text-muted, #9ca3af)" }}>
               {project.name}
             </div>
           </div>
-          <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
+          <div className="gap-sp2" style={{ display: "flex", alignItems: "center" }}>
             <button
               style={{
                 padding: "var(--space-1) var(--space-3)",
@@ -244,39 +237,31 @@ export function PerimeterMapModal({ project, onSave, onClose }) {
               onClick={() => setMapStyle("satellite")}
             >Satellite</button>
             <button
-              style={{ padding: "var(--space-1) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid var(--border)", background: "transparent", color: "var(--text-muted)", fontSize: "var(--text-card)", cursor: "pointer", lineHeight: 1 }}
+              className="rounded-control fs-card cursor-pointer" style={{ padding: "var(--space-1) var(--space-3)", border: "1px solid var(--border)", background: "transparent", color: "var(--text-muted)", lineHeight: 1 }}
               onClick={onClose}
             >✕</button>
           </div>
         </div>
 
         {/* ── Instruction strip ── */}
-        <div style={{
-          padding: "8px 18px",
+        <div className="flex-shrink-0" style={{ padding: "8px 18px",
           background: "rgba(59,130,246,0.08)",
-          borderBottom: "1px solid rgba(59,130,246,0.15)",
-          flexShrink: 0,
-        }}>
-          <div style={{ fontSize: "var(--text-label)", color: "#93c5fd" }}>
+          borderBottom: "1px solid rgba(59,130,246,0.15)" }}>
+          <div className="fs-label" style={{ color: "#93c5fd" }}>
             Tap/click to place points · Drag blue dots to adjust · Orange dot = project center
           </div>
         </div>
 
         {/* ── Map ── */}
-        <div ref={mapRef} style={{ flex: 1, minHeight: 380 }} />
+        <div ref={mapRef} className="flex-1" style={{ minHeight: 380 }} />
 
         {/* ── Controls ── */}
-        <div style={{
-          padding: "var(--space-3) var(--space-4)",
+        <div className="gap-sp2 flex-wrap flex-shrink-0" style={{ padding: "var(--space-3) var(--space-4)",
           borderTop: "1px solid var(--border, rgba(255,255,255,0.08))",
           display: "flex",
           alignItems: "center",
-          gap: "var(--space-2)",
-          flexWrap: "wrap",
-          flexShrink: 0,
-          background: "var(--bg3, #111827)",
-        }}>
-          <div style={{ flex: 1, minWidth: 140, fontSize: "var(--text-label)", color: "var(--text-muted, #9ca3af)" }}>
+          background: "var(--bg3, #111827)" }}>
+          <div className="fs-label flex-1" style={{ minWidth: 140, color: "var(--text-muted, #9ca3af)" }}>
             {statusMsg}
           </div>
           <button

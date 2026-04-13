@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Search, MapPin, Calendar, Clock, AlertTriangle, Shield, Package, ClipboardList, FileText, PenLine, Settings, Home, ShieldCheck, BarChart3, Binoculars } from "lucide-react";
+import { Search, MapPin, Calendar, Clock, AlertTriangle, Shield, Package, ClipboardList, FileText, PenLine, Settings, Home, ShieldCheck, BarChart3, Binoculars, TrendingUp } from "lucide-react";
 import { PortalHeader, PortalTabBar, FieldButton, FieldInput, FieldSelect, EmptyState, StatusBadge, DrawingsTab, PhotoCapture, LanguageToggle } from "../components/field";
 import { HomeTab } from './employee/HomeTab';
 import { ProductionEntry } from './employee/ProductionEntry';
 import { ScheduleTab } from './employee/ScheduleTab';
 import { CredentialsTab } from './employee/CredentialsTab';
+import { ProgressReportTab } from './employee/ProgressReportTab';
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { useNotifications } from "../hooks/useNotifications";
@@ -66,7 +67,7 @@ export function EmployeeView({ app }) {
     materialRequests, setMaterialRequests,
     jsas, setJsas,
     problems, setProblems,
-    areas, productionLogs, setProductionLogs,
+    areas, setAreas, productionLogs, setProductionLogs,
     theme, setTheme, show
   } = app;
 
@@ -814,6 +815,7 @@ export function EmployeeView({ app }) {
     { id: "drawings", label: t("Drawings"), icon: FileText, badge: false },
     // ── More overflow (ranked by crew use frequency) ──
     { id: "production", label: t("Log Work"), icon: BarChart3, badge: false },
+    { id: "progress", label: t("Progress"), icon: TrendingUp, badge: false },
     { id: "materials", label: t("Materials"), icon: Package, badge: myMatRequests?.some(r => r.status === "requested") },
     { id: "jsa", label: t("JSA"), icon: ShieldCheck, badge: false },
     { id: "log", label: t("My Hours"), icon: ClipboardList, badge: false },
@@ -1150,12 +1152,12 @@ export function EmployeeView({ app }) {
             {!isClockedIn && assignedProject && (
               <div className="clock-in-hero">
                 <div className="text-xs text-muted mb-4">{t("Scheduled today")}</div>
-                <div className="text-base font-bold mb-8" style={{ color: "var(--green)" }}>{assignedProject.name}</div>
+                <div className="text-base font-bold mb-8 c-green">{assignedProject.name}</div>
                 {/* PPE confirmation — right above the button so it's visible */}
-                <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-3) 0", cursor: "pointer", userSelect: "none", minHeight: 44 }}>
+                <label className="flex gap-sp2 cursor-pointer" style={{ padding: "var(--space-3) 0", userSelect: "none", minHeight: 44 }}>
                   <input type="checkbox" checked={ppeConfirmed} onChange={(e) => setPpeConfirmed(e.target.checked)} style={{ width: 24, height: 24, accentColor: "var(--green)" }} />
-                  <Shield size={18} style={{ color: "var(--green)", flexShrink: 0 }} />
-                  <span style={{ fontSize: "var(--text-secondary)" }}>{t("I confirm I am wearing required PPE")}</span>
+                  <Shield size={18} className="c-green flex-shrink-0" />
+                  <span className="fs-secondary">{t("I confirm I am wearing required PPE")}</span>
                 </label>
                 <FieldButton
                   variant="primary"
@@ -1169,7 +1171,7 @@ export function EmployeeView({ app }) {
                 >
                   {t("CLOCK IN")}
                 </FieldButton>
-                <div className="text-xs text-muted" style={{ marginTop: "var(--space-2)" }}>{t("GPS check runs in background")}</div>
+                <div className="text-xs text-muted mt-sp2">{t("GPS check runs in background")}</div>
               </div>
             )}
 
@@ -1206,7 +1208,7 @@ export function EmployeeView({ app }) {
                 </div>
               )}
               {geoStatus?.nearest && !geoStatus.nearest.withinGeofence && geoStatus.nearest.distance > 2000 && (
-                <div className="text-xs text-muted" style={{ textAlign: "center", marginBottom: "var(--space-3)" }}>
+                <div className="text-xs text-muted mb-sp3 text-center">
                   No nearby jobsites — search manually below
                 </div>
               )}
@@ -1311,7 +1313,7 @@ export function EmployeeView({ app }) {
 
               {/* Time gate: blocked banner */}
               {!isClockedIn && clockInBlocked && (
-                <div className="text-sm text-amber" style={{ textAlign: "center", padding: "var(--space-3)", background: "rgba(var(--amber-rgb,245,158,11),0.08)", borderRadius: "var(--radius-2)", marginBottom: "var(--space-3)" }}>
+                <div className="text-sm text-amber mb-sp3 p-sp3 text-center" style={{ background: "rgba(var(--amber-rgb,245,158,11),0.08)", borderRadius: "var(--radius-2)" }}>
                   <AlertTriangle size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} />
                   {clockInBlocked}
                 </div>
@@ -1319,10 +1321,10 @@ export function EmployeeView({ app }) {
 
               {/* PPE confirmation — above the clock-in button, not below */}
               {!isClockedIn && (
-                <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-3) 0", cursor: "pointer", userSelect: "none", minHeight: 44, marginBottom: "var(--space-2)" }}>
+                <label className="flex mb-sp2 gap-sp2 cursor-pointer" style={{ padding: "var(--space-3) 0", userSelect: "none", minHeight: 44 }}>
                   <input type="checkbox" checked={ppeConfirmed} onChange={(e) => setPpeConfirmed(e.target.checked)} style={{ width: 24, height: 24, accentColor: "var(--green)" }} />
-                  <Shield size={18} style={{ color: "var(--green)", flexShrink: 0 }} />
-                  <span style={{ fontSize: "var(--text-secondary)" }}>{t("I confirm I am wearing required PPE")}</span>
+                  <Shield size={18} className="c-green flex-shrink-0" />
+                  <span className="fs-secondary">{t("I confirm I am wearing required PPE")}</span>
                 </label>
               )}
 
@@ -1534,10 +1536,10 @@ export function EmployeeView({ app }) {
                         {/* Day header with total */}
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--space-2) 0 var(--space-1)", borderBottom: "2px solid var(--border)" }}>
                           <span className="text-sm font-bold">{dayLabel}</span>
-                          <span className="text-sm font-bold" style={{ color: "var(--amber)" }}>{dayTotal.toFixed(1)}h</span>
+                          <span className="text-sm font-bold c-amber">{dayTotal.toFixed(1)}h</span>
                         </div>
                         {entries.map((entry) => (
-                          <div key={entry.id} className="card emp-log-entry" style={{ marginTop: "var(--space-1)" }}>
+                          <div key={entry.id} className="card emp-log-entry mt-sp1">
                             <div className="flex-between mb-4">
                               <span className="text-xs text-muted">{entry.projectName}</span>
                               <span className={`badge ${entry.geofenceStatus === "inside" ? "badge-green" : entry.geofenceStatus === "override" ? "badge-amber" : "badge-red"}`}>
@@ -1805,9 +1807,9 @@ export function EmployeeView({ app }) {
                 </FieldSelect>
               </div>
               <div className="mb-12">
-                <label className="form-label" style={{ fontSize: "var(--text-tab)", fontWeight: "var(--weight-semi)", marginBottom: "var(--space-2)" }}>{t("Material")}</label>
+                <label className="form-label fw-semi mb-sp2 fs-tab">{t("Material")}</label>
                 {/* Common materials quick-select */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", marginBottom: "var(--space-2)" }}>
+                <div className="mb-sp2 gap-sp1 flex-wrap" style={{ display: "flex" }}>
                   {['5/8" GWB', '1/2" GWB', '3-5/8" Studs', '1-5/8" Track', 'Screws', 'Tape', 'Mud/JDL', 'Corner Bead', 'ACT Tile', 'Grid Wire', 'Insulation', 'Other'].map(item => (
                     <button key={item} type="button"
                       style={{ padding: "var(--space-2) var(--space-4)", fontSize: "var(--text-label)", fontWeight: matForm.material === item ? 700 : 500, borderRadius: "var(--radius-control)", border: matForm.material === item ? "2px solid var(--accent)" : "1px solid var(--border)", background: matForm.material === item ? "var(--accent)" : "var(--bg3)", color: matForm.material === item ? "#fff" : "var(--text)", cursor: "pointer", minHeight: 36 }}
@@ -1931,6 +1933,20 @@ export function EmployeeView({ app }) {
             employeeId={activeEmp?.id}
             employeeName={activeEmp?.name}
             projectId={assignedProject?.id}
+            t={t}
+          />
+        )}
+
+        {/* ═══ PROGRESS REPORTING TAB ═══ */}
+        {empTab === "progress" && (
+          <ProgressReportTab
+            areas={areas}
+            setAreas={setAreas}
+            productionLogs={productionLogs}
+            employeeId={activeEmp?.id}
+            employeeName={activeEmp?.name}
+            projectId={assignedProject?.id}
+            schedule={teamSchedule}
             t={t}
           />
         )}

@@ -17,7 +17,7 @@ export function HoursTab({
           </div>
           <div className="frm-text-right">
             <div className="foreman-kpi-label">{t("Hours Used")}</div>
-            <div className="foreman-kpi-value" style={{ fontSize: "var(--text-subtitle)", color: budgetColor }}>{hoursUsed.toFixed(1)} {t("hrs")}</div>
+            <div className="foreman-kpi-value fs-subtitle" style={{ color: budgetColor }}>{hoursUsed.toFixed(1)} {t("hrs")}</div>
           </div>
         </div>
         <div className="foreman-budget-bar">

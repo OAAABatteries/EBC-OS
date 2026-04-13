@@ -688,30 +688,30 @@ export function EstimatingTab({ app }) {
               {(() => {
                 const withItems = takeoffs.filter(t => (t.rooms || []).some(r => (r.items || []).length > 0)).length;
                 const totalValue = takeoffs.reduce((sum, t) => sum + calcSummary(t, assemblies).grandTotal, 0);
-                return <>{withItems > 0 && <span style={{ marginLeft: "var(--space-2)" }}>{withItems} active</span>}{totalValue > 0 && <span style={{ marginLeft: "var(--space-2)" }}>Pipeline: {fmtK(totalValue)}</span>}</>;
+                return <>{withItems > 0 && <span className="ml-sp2">{withItems} active</span>}{totalValue > 0 && <span className="ml-sp2">Pipeline: {fmtK(totalValue)}</span>}</>;
               })()}
             </div>
           </div>
           <div className="flex gap-8">
-            <input type="file" ref={ostFileRef} accept=".csv,.txt" style={{ display: "none" }} onChange={handleOstFile} />
-            <button className="btn btn-ghost" onClick={() => ostFileRef.current?.click()} style={{ fontSize: "var(--text-label)" }}>Import OST</button>
-            <input type="file" ref={scanPdfRef} accept=".pdf" style={{ display: "none" }} onChange={handleScanPdf} />
-            <button className="btn btn-ghost" onClick={() => scanPdfRef.current?.click()} style={{ fontSize: "var(--text-label)" }}>Scan Bid PDF</button>
+            <input type="file" ref={ostFileRef} accept=".csv,.txt" className="hidden" onChange={handleOstFile} />
+            <button className="btn btn-ghost" onClick={() => ostFileRef.current?.click()} className="fs-label">Import OST</button>
+            <input type="file" ref={scanPdfRef} accept=".pdf" className="hidden" onChange={handleScanPdf} />
+            <button className="btn btn-ghost" onClick={() => scanPdfRef.current?.click()} className="fs-label">Scan Bid PDF</button>
             <FeatureGuide guideKey="estimating" />
-            <button className="btn btn-ghost" onClick={() => setShowQuickProposal(true)} style={{ fontSize: "var(--text-label)" }}>Quick Proposal</button>
+            <button className="btn btn-ghost" onClick={() => setShowQuickProposal(true)} className="fs-label">Quick Proposal</button>
             <button className="btn btn-primary" onClick={createTakeoff}>+ New Takeoff</button>
           </div>
         </div>
 
         {/* ── Search & Bid Browser ── */}
-        <div style={{ marginBottom: "var(--space-4)" }}>
-          <div className="flex gap-8" style={{ alignItems: "center", marginBottom: "var(--space-2)" }}>
+        <div className="mb-sp4">
+          <div className="flex gap-8 mb-sp2" style={{ alignItems: "center" }}>
             <input
               className="form-input"
               placeholder="Search takeoffs & bids by name, GC, phase, scope..."
               value={localSearch}
               onChange={e => setLocalSearch(e.target.value)}
-              style={{ flex: 1, maxWidth: 480 }}
+              className="flex-1" style={{ maxWidth: 480 }}
             />
             <button
               className={`btn btn-sm ${showBidBrowser ? "btn-primary" : "btn-ghost"}`}
@@ -723,14 +723,14 @@ export function EstimatingTab({ app }) {
 
           {/* Bid browser / search results */}
           {(showBidBrowser || (localSearch && bidSearchResults.length > 0)) && (
-            <div className="card" style={{ padding: "var(--space-3)", marginBottom: "var(--space-3)", maxHeight: 320, overflowY: "auto" }}>
+            <div className="card mb-sp3 p-sp3" style={{ maxHeight: 320, overflowY: "auto" }}>
               <div className="flex-between mb-8">
                 <div className="text-sm font-semi">
                   {localSearch ? `${bidSearchResults.length} bid${bidSearchResults.length !== 1 ? "s" : ""} matching "${localSearch}"` : "Recent Bids"}
                 </div>
                 <div className="text-xs text-muted">Click a bid to create a new takeoff from it</div>
               </div>
-              <table className="data-table" style={{ fontSize: "var(--text-label)" }}>
+              <table className="data-table fs-label">
                 <thead>
                   <tr>
                     <th>Bid Name</th>
@@ -746,23 +746,23 @@ export function EstimatingTab({ app }) {
                     const hasTakeoff = takeoffs.some(t => t.bidId === b.id);
                     return (
                       <tr key={b.id}>
-                        <td style={{ fontWeight: "var(--weight-medium)" }}>{b.name}</td>
-                        <td style={{ color: "var(--text2)" }}>{b.gc || "—"}</td>
-                        <td><span className="badge badge-blue" style={{ fontSize: "var(--text-xs)" }}>{b.phase || "—"}</span></td>
-                        <td style={{ fontWeight: "var(--weight-semi)" }}>{b.value ? fmtK(b.value) : "—"}</td>
+                        <td className="fw-medium">{b.name}</td>
+                        <td className="c-text2">{b.gc || "—"}</td>
+                        <td><span className="badge badge-blue fs-xs">{b.phase || "—"}</span></td>
+                        <td className="fw-semi">{b.value ? fmtK(b.value) : "—"}</td>
                         <td>
-                          <span className={`badge ${b.status === "awarded" ? "badge-green" : b.status === "lost" ? "badge-red" : b.status === "submitted" ? "badge-blue" : "badge-amber"}`} style={{ fontSize: "var(--text-xs)" }}>
+                          <span className={`badge ${b.status === "awarded" ? "badge-green" : b.status === "lost" ? "badge-red" : b.status === "submitted" ? "badge-blue" : "badge-amber"} fs-xs`}>
                             {b.status}
                           </span>
                         </td>
                         <td>
                           {hasTakeoff ? (
-                            <button className="btn btn-ghost btn-sm" style={{ fontSize: "var(--text-tab)" }}
+                            <button className="btn btn-ghost btn-sm fs-tab"
                               onClick={() => { const t = takeoffs.find(t => t.bidId === b.id); if (t) setActiveTk(t.id); }}>
                               Open Takeoff
                             </button>
                           ) : (
-                            <button className="btn btn-primary btn-sm" style={{ fontSize: "var(--text-tab)" }}
+                            <button className="btn btn-primary btn-sm fs-tab"
                               onClick={() => {
                                 const tk = {
                                   id: crypto.randomUUID(),
@@ -798,17 +798,17 @@ export function EstimatingTab({ app }) {
         </div>
 
         {filtered.length === 0 && (
-          <div className="card" style={{ padding: "var(--space-8)", textAlign: "center" }}>
-            <div style={{ fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)", marginBottom: "var(--space-2)" }}>No takeoffs yet</div>
-            <div style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-4)" }}>Create a takeoff from a bid, import from OST, or scan a bid PDF to get started.</div>
-            <div className="flex gap-8" style={{ justifyContent: "center" }}>
+          <div className="card p-sp8 text-center">
+            <div className="fs-secondary fw-semi mb-sp2">No takeoffs yet</div>
+            <div className="mb-sp4 fs-label c-text2">Create a takeoff from a bid, import from OST, or scan a bid PDF to get started.</div>
+            <div className="flex gap-8 justify-center">
               <button className="btn btn-primary" onClick={createTakeoff}>+ New Takeoff</button>
               <button className="btn btn-ghost" onClick={() => setShowBidBrowser(true)}>Browse Bids</button>
             </div>
           </div>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "var(--space-3)" }}>
+        <div className="gap-sp3 d-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
           {filtered.map((tk) => {
             const s = calcSummary(tk, assemblies);
             const linkedBid = bids.find((b) => b.id === tk.bidId);
@@ -830,47 +830,47 @@ export function EstimatingTab({ app }) {
                 onClick={() => setActiveTk(tk.id)}
               >
                 {/* Name + linked bid */}
-                <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-secondary)", marginBottom: "var(--space-1)", lineHeight: 1.3 }}>{tk.name}</div>
+                <div className="fs-secondary fw-semi mb-sp1" style={{ lineHeight: 1.3 }}>{tk.name}</div>
                 {linkedBid && (
-                  <div style={{ fontSize: "var(--text-tab)", color: "var(--text2)", marginBottom: "var(--space-1)" }}>
-                    <span className={`badge ${linkedBid.status === "awarded" ? "badge-green" : linkedBid.status === "submitted" ? "badge-blue" : "badge-amber"}`} style={{ fontSize: "var(--text-xs)", marginRight: "var(--space-1)" }}>{linkedBid.status}</span>
+                  <div className="mb-sp1 fs-tab c-text2">
+                    <span className={`badge ${linkedBid.status === "awarded" ? "badge-green" : linkedBid.status === "submitted" ? "badge-blue" : "badge-amber"} mr-sp1 fs-xs`}>{linkedBid.status}</span>
                     {linkedBid.gc}
                   </div>
                 )}
-                {!linkedBid && <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", fontStyle: "italic", marginBottom: "var(--space-1)" }}>No linked bid</div>}
+                {!linkedBid && <div className="mb-sp1 fs-tab c-text3" style={{ fontStyle: "italic" }}>No linked bid</div>}
 
                 {/* Stats row */}
-                <div className="flex gap-8" style={{ fontSize: "var(--text-tab)", color: "var(--text2)", marginTop: "var(--space-2)", flexWrap: "wrap" }}>
+                <div className="flex gap-8 fs-tab mt-sp2 c-text2 flex-wrap">
                   <span>{roomCount} area{roomCount !== 1 ? "s" : ""}</span>
                   <span>{lineItemCount} item{lineItemCount !== 1 ? "s" : ""}</span>
-                  {hasDrawing && <span style={{ color: "var(--green)" }}>Drawing{measCount > 0 ? ` (${measCount})` : ""}</span>}
-                  {!hasDrawing && <span style={{ color: "var(--text3)" }}>No drawing</span>}
-                  {scopeDone && <span style={{ color: "var(--green)" }}>Scope reviewed</span>}
+                  {hasDrawing && <span className="c-green">Drawing{measCount > 0 ? ` (${measCount})` : ""}</span>}
+                  {!hasDrawing && <span className="c-text3">No drawing</span>}
+                  {scopeDone && <span className="c-green">Scope reviewed</span>}
                 </div>
 
                 {/* Value + completion bar */}
-                <div className="flex-between" style={{ marginTop: "var(--space-2)", alignItems: "center" }}>
+                <div className="flex-between mt-sp2" style={{ alignItems: "center" }}>
                   {hasValue ? (
-                    <span style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", color: "var(--amber)" }}>{fmtK(s.grandTotal)}</span>
+                    <span className="fw-bold fs-card c-amber">{fmtK(s.grandTotal)}</span>
                   ) : (
-                    <span style={{ fontSize: "var(--text-label)", color: "var(--text3)", fontStyle: "italic" }}>No estimate yet</span>
+                    <span className="fs-label c-text3" style={{ fontStyle: "italic" }}>No estimate yet</span>
                   )}
-                  <span style={{ fontSize: "var(--text-tab)", color: "var(--text2)" }}>{tk.created}</span>
+                  <span className="fs-tab c-text2">{tk.created}</span>
                 </div>
 
                 {/* Completeness bar */}
-                <div style={{ marginTop: "var(--space-2)", display: "flex", gap: "var(--space-1)", alignItems: "center" }}>
+                <div className="mt-sp2 gap-sp1" style={{ display: "flex", alignItems: "center" }}>
                   {Array.from({ length: 5 }, (_, i) => (
                     <div key={i} style={{ flex: 1, height: 3, borderRadius: "var(--radius-control)", background: i < completeness ? "var(--green)" : "var(--border)" }} />
                   ))}
-                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)", marginLeft: "var(--space-1)" }}>{completeness}/5</span>
+                  <span className="ml-sp1 fs-xs c-text3">{completeness}/5</span>
                 </div>
 
                 {/* Actions */}
-                <div className="flex-between" style={{ marginTop: "var(--space-2)" }}>
+                <div className="flex-between mt-sp2">
                   <span className="flex gap-4">
-                    <button className="btn btn-ghost btn-sm" title="Clone" onClick={e => { e.stopPropagation(); cloneTakeoff(tk.id); }} style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}>Clone</button>
-                    <button className="btn btn-ghost btn-sm" title="Delete" onClick={e => { e.stopPropagation(); if (confirm(`Delete takeoff "${tk.name}"?`)) setTakeoffs(prev => prev.filter(t => t.id !== tk.id)); }} style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", color: "var(--red)" }}>Delete</button>
+                    <button className="btn btn-ghost btn-sm" title="Clone" onClick={e => { e.stopPropagation(); cloneTakeoff(tk.id); }} className="fs-xs" style={{ padding: "var(--space-1) var(--space-2)" }}>Clone</button>
+                    <button className="btn btn-ghost btn-sm" title="Delete" onClick={e => { e.stopPropagation(); if (confirm(`Delete takeoff "${tk.name}"?`)) setTakeoffs(prev => prev.filter(t => t.id !== tk.id)); }} className="fs-xs c-red" style={{ padding: "var(--space-1) var(--space-2)" }}>Delete</button>
                   </span>
                 </div>
               </div>
@@ -881,11 +881,11 @@ export function EstimatingTab({ app }) {
         {/* ═══ SCAN BID PDF MODAL ═══ */}
         {scanModal && (
           <div className="modal-overlay" onClick={() => !scanLoading && setScanModal(false)}>
-            <div className="modal-content" style={{ maxWidth: 800, maxHeight: "85vh", overflow: "auto" }} onClick={e => e.stopPropagation()}>
-              <div className="flex-between" style={{ marginBottom: "var(--space-4)" }}>
+            <div className="modal-content overflow-auto" style={{ maxWidth: 800, maxHeight: "85vh" }} onClick={e => e.stopPropagation()}>
+              <div className="flex-between mb-sp4">
                 <div>
-                  <h3 style={{ margin: "0", fontSize: "var(--text-section)" }}>Scan Bid PDF</h3>
-                  <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginTop: "var(--space-1)" }}>
+                  <h3 className="fs-section" style={{ margin: "0" }}>Scan Bid PDF</h3>
+                  <div className="fs-label mt-sp1 c-text3">
                     Extract bid data from an old proposal PDF and re-estimate with current assemblies
                   </div>
                 </div>
@@ -893,18 +893,18 @@ export function EstimatingTab({ app }) {
               </div>
 
               {scanLoading && (
-                <div style={{ textAlign: "center", padding: "var(--space-10)" }}>
-                  <div style={{ fontSize: "var(--text-stat)", animation: "spin 1s linear infinite", display: "inline-block" }}>&#8635;</div>
-                  <div style={{ marginTop: "var(--space-3)", color: "var(--text2)" }}>Extracting text from PDF...</div>
+                <div className="p-sp10 text-center">
+                  <div className="fs-stat" style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>&#8635;</div>
+                  <div className="mt-sp3 c-text2">Extracting text from PDF...</div>
                 </div>
               )}
 
               {scanResult && (
                 <div>
                   {/* Extracted bid info */}
-                  <div className="card" style={{ padding: "var(--space-4)", marginBottom: "var(--space-4)" }}>
+                  <div className="card mb-sp4 p-sp4">
                     <div className="text-sm font-semi mb-12" style={{ color: "var(--primary)" }}>Extracted Bid Data</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+                    <div className="gap-sp3 d-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
                       <div className="form-group">
                         <label className="form-label">Project Name</label>
                         <input className="form-input" value={scanResult.name || ""} onChange={e => setScanResult(prev => ({ ...prev, name: e.target.value }))} />
@@ -932,10 +932,10 @@ export function EstimatingTab({ app }) {
                       </div>
                     </div>
                     {scanResult.scope?.length > 0 && (
-                      <div style={{ marginTop: "var(--space-2)" }}>
+                      <div className="mt-sp2">
                         <span className="text-xs text-muted">Scope: </span>
                         {scanResult.scope.map((s, i) => (
-                          <span key={i} className="badge badge-blue" style={{ fontSize: "var(--text-xs)", marginRight: "var(--space-1)" }}>{s}</span>
+                          <span key={i} className="badge badge-blue mr-sp1 fs-xs">{s}</span>
                         ))}
                       </div>
                     )}
@@ -943,22 +943,22 @@ export function EstimatingTab({ app }) {
 
                   {/* Extracted line items */}
                   {scanResult.lineItems?.length > 0 && (
-                    <div className="card" style={{ padding: "var(--space-4)", marginBottom: "var(--space-4)" }}>
+                    <div className="card mb-sp4 p-sp4">
                       <div className="text-sm font-semi mb-8">Line Items ({scanResult.lineItems.length})</div>
-                      <table className="data-table" style={{ fontSize: "var(--text-label)" }}>
+                      <table className="data-table fs-label">
                         <thead>
-                          <tr><th>Item</th><th style={{ textAlign: "right" }}>Amount</th></tr>
+                          <tr><th>Item</th><th className="text-right">Amount</th></tr>
                         </thead>
                         <tbody>
                           {scanResult.lineItems.map((li, i) => (
                             <tr key={i}>
                               <td>{li.label}</td>
-                              <td style={{ textAlign: "right", fontWeight: "var(--weight-semi)" }}>${li.amount.toLocaleString()}</td>
+                              <td className="fw-semi text-right">${li.amount.toLocaleString()}</td>
                             </tr>
                           ))}
-                          <tr style={{ borderTop: "2px solid var(--border)", fontWeight: "var(--weight-bold)" }}>
+                          <tr className="fw-bold" style={{ borderTop: "2px solid var(--border)" }}>
                             <td>Total</td>
-                            <td style={{ textAlign: "right", color: "var(--amber)" }}>
+                            <td className="c-amber text-right">
                               ${(scanResult.value || scanResult.lineItems.reduce((s, li) => s + li.amount, 0)).toLocaleString()}
                             </td>
                           </tr>
@@ -969,17 +969,17 @@ export function EstimatingTab({ app }) {
 
                   {/* Alternates */}
                   {scanResult.alternates?.length > 0 && (
-                    <div className="card" style={{ padding: "var(--space-4)", marginBottom: "var(--space-4)" }}>
-                      <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>Alternates ({scanResult.alternates.length})</div>
-                      <table className="data-table" style={{ fontSize: "var(--text-label)" }}>
+                    <div className="card mb-sp4 p-sp4">
+                      <div className="text-sm font-semi mb-8 c-amber">Alternates ({scanResult.alternates.length})</div>
+                      <table className="data-table fs-label">
                         <thead>
-                          <tr><th>Description</th><th style={{ width: 80 }}>Type</th><th style={{ textAlign: "right", width: 100 }}>Amount</th><th style={{ width: 32 }}></th></tr>
+                          <tr><th>Description</th><th style={{ width: 80 }}>Type</th><th className="text-right" style={{ width: 100 }}>Amount</th><th style={{ width: 32 }}></th></tr>
                         </thead>
                         <tbody>
                           {scanResult.alternates.map((alt, i) => (
                             <tr key={alt.id || i}>
                               <td>
-                                <input className="form-input" value={alt.description} style={{ fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-2)" }}
+                                <input className="form-input" value={alt.description} className="fs-label" style={{ padding: "var(--space-1) var(--space-2)" }}
                                   onChange={e => setScanResult(prev => {
                                     const updated = [...prev.alternates];
                                     updated[i] = { ...updated[i], description: e.target.value };
@@ -987,7 +987,7 @@ export function EstimatingTab({ app }) {
                                   })} />
                               </td>
                               <td>
-                                <select className="form-input" value={alt.type} style={{ fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-1)" }}
+                                <select className="form-input" value={alt.type} className="fs-label" style={{ padding: "var(--space-1) var(--space-1)" }}
                                   onChange={e => setScanResult(prev => {
                                     const updated = [...prev.alternates];
                                     updated[i] = { ...updated[i], type: e.target.value };
@@ -998,7 +998,7 @@ export function EstimatingTab({ app }) {
                                 </select>
                               </td>
                               <td>
-                                <input className="form-input" type="number" value={alt.amount} style={{ fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-2)", textAlign: "right" }}
+                                <input className="form-input" type="number" value={alt.amount} className="fs-label text-right" style={{ padding: "var(--space-1) var(--space-2)" }}
                                   onChange={e => setScanResult(prev => {
                                     const updated = [...prev.alternates];
                                     updated[i] = { ...updated[i], amount: parseFloat(e.target.value) || 0 };
@@ -1006,7 +1006,7 @@ export function EstimatingTab({ app }) {
                                   })} />
                               </td>
                               <td>
-                                <button className="btn btn-ghost" style={{ padding: 0, fontSize: "var(--text-secondary)", color: "var(--red)" }}
+                                <button className="btn btn-ghost fs-secondary c-red" style={{ padding: 0 }}
                                   onClick={() => setScanResult(prev => ({
                                     ...prev,
                                     alternates: prev.alternates.filter((_, j) => j !== i)
@@ -1021,21 +1021,21 @@ export function EstimatingTab({ app }) {
 
                   {/* Includes / Excludes */}
                   {(scanResult.includes?.length > 0 || scanResult.excludes?.length > 0) && (
-                    <div className="card" style={{ padding: "var(--space-4)", marginBottom: "var(--space-4)" }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)" }}>
+                    <div className="card mb-sp4 p-sp4">
+                      <div className="gap-sp4 d-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
                         {scanResult.includes?.length > 0 && (
                           <div>
-                            <div className="text-sm font-semi mb-8" style={{ color: "var(--green)" }}>Includes</div>
+                            <div className="text-sm font-semi mb-8 c-green">Includes</div>
                             {scanResult.includes.map((item, i) => (
-                              <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-1) 0", color: "var(--text2)" }}>{i + 1}. {item}</div>
+                              <div key={i} className="fs-label c-text2" style={{ padding: "var(--space-1) 0" }}>{i + 1}. {item}</div>
                             ))}
                           </div>
                         )}
                         {scanResult.excludes?.length > 0 && (
                           <div>
-                            <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Excludes</div>
+                            <div className="text-sm font-semi mb-8 c-red">Excludes</div>
                             {scanResult.excludes.map((item, i) => (
-                              <div key={i} style={{ fontSize: "var(--text-label)", padding: "var(--space-1) 0", color: "var(--text2)" }}>{i + 1}. {item}</div>
+                              <div key={i} className="fs-label c-text2" style={{ padding: "var(--space-1) 0" }}>{i + 1}. {item}</div>
                             ))}
                           </div>
                         )}
@@ -1044,7 +1044,7 @@ export function EstimatingTab({ app }) {
                   )}
 
                   {/* Actions */}
-                  <div className="flex gap-8" style={{ justifyContent: "flex-end", flexWrap: "wrap" }}>
+                  <div className="flex gap-8 flex-wrap" style={{ justifyContent: "flex-end" }}>
                     <button className="btn btn-ghost" onClick={() => setScanModal(false)}>Cancel</button>
                     <button className="btn btn-ghost" onClick={() => {
                       const bidId = createBidFromScan();
@@ -1069,29 +1069,29 @@ export function EstimatingTab({ app }) {
         {/* ═══ OST IMPORT MODAL ═══ */}
         {ostModal && (
           <div className="modal-overlay" onClick={() => setOstModal(false)}>
-            <div className="modal-content" style={{ maxWidth: 900, maxHeight: "85vh", overflow: "auto" }} onClick={e => e.stopPropagation()}>
-              <div className="flex-between" style={{ marginBottom: "var(--space-4)" }}>
+            <div className="modal-content overflow-auto" style={{ maxWidth: 900, maxHeight: "85vh" }} onClick={e => e.stopPropagation()}>
+              <div className="flex-between mb-sp4">
                 <div>
-                  <h3 style={{ margin: "0", fontSize: "var(--text-section)" }}>Import from OST</h3>
-                  <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginTop: "var(--space-1)" }}>Map your OST conditions to EBC assemblies for pricing</div>
+                  <h3 className="fs-section" style={{ margin: "0" }}>Import from OST</h3>
+                  <div className="fs-label mt-sp1 c-text3">Map your OST conditions to EBC assemblies for pricing</div>
                 </div>
                 <button className="btn btn-ghost" onClick={() => setOstModal(false)}>✕</button>
               </div>
 
               {/* Takeoff name */}
-              <div style={{ marginBottom: "var(--space-4)" }}>
-                <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>Takeoff Name</label>
-                <input className="form-input" value={ostName} onChange={e => setOstName(e.target.value)} style={{ width: "100%" }} />
+              <div className="mb-sp4">
+                <label className="mb-sp1 fs-label c-text2 d-block">Takeoff Name</label>
+                <input className="form-input" value={ostName} onChange={e => setOstName(e.target.value)} className="w-full" />
               </div>
 
               {/* Column mapping info */}
-              <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginBottom: "var(--space-3)", padding: "var(--space-2) var(--space-3)", background: "rgba(59,130,246,0.08)", borderRadius: "var(--radius)" }}>
+              <div className="mb-sp3 fs-label c-text3" style={{ padding: "var(--space-2) var(--space-3)", background: "rgba(59,130,246,0.08)", borderRadius: "var(--radius)" }}>
                 Detected columns: {ostHeaders.length} · Data rows: {ostRows.length} · Auto-matched: {ostItemMappings.filter(m => m.assemblyCode).length} items
               </div>
 
               {/* Import table */}
-              <div style={{ overflowX: "auto", marginBottom: "var(--space-4)" }}>
-                <table className="data-table" style={{ fontSize: "var(--text-label)" }}>
+              <div className="mb-sp4 overflow-x-auto">
+                <table className="data-table fs-label">
                   <thead>
                     <tr>
                       <th style={{ width: 30 }}>Use</th>
@@ -1110,16 +1110,16 @@ export function EstimatingTab({ app }) {
                             setOstItemMappings(prev => prev.map((p, j) => j === i ? { ...p, include: e.target.checked } : p));
                           }} />
                         </td>
-                        <td style={{ fontWeight: "var(--weight-medium)" }}>{m.condName || <span style={{ color: "var(--text3)" }}>—</span>}</td>
+                        <td className="fw-medium">{m.condName || <span className="c-text3">—</span>}</td>
                         <td>
-                          <input className="form-input" type="number" value={m.qty} style={{ width: 70, fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-1)" }} onChange={e => {
+                          <input className="form-input" type="number" value={m.qty} className="fs-label" style={{ width: 70, padding: "var(--space-1) var(--space-1)" }} onChange={e => {
                             setOstItemMappings(prev => prev.map((p, j) => j === i ? { ...p, qty: parseFloat(e.target.value) || 0 } : p));
                           }} />
                         </td>
-                        <td style={{ color: "var(--text3)" }}>{m.unit}</td>
-                        <td style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{m.page || "—"}</td>
+                        <td className="c-text3">{m.unit}</td>
+                        <td className="fs-tab c-text3">{m.page || "—"}</td>
                         <td>
-                          <select className="form-input" value={m.assemblyCode} style={{ fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-1)", width: "100%" }} onChange={e => {
+                          <select className="form-input" value={m.assemblyCode} className="fs-label w-full" style={{ padding: "var(--space-1) var(--space-1)" }} onChange={e => {
                             const code = e.target.value;
                             const asm = assemblies.find(a => a.code === code);
                             setOstItemMappings(prev => prev.map((p, j) => j === i ? { ...p, assemblyCode: code, unit: asm?.unit || p.unit } : p));
@@ -1138,7 +1138,7 @@ export function EstimatingTab({ app }) {
 
               {/* Summary & actions */}
               <div className="flex-between">
-                <div style={{ fontSize: "var(--text-label)", color: "var(--text2)" }}>
+                <div className="fs-label c-text2">
                   {ostItemMappings.filter(m => m.include && m.assemblyCode).length} items ready to import
                 </div>
                 <div className="flex gap-8">
@@ -1186,11 +1186,11 @@ export function EstimatingTab({ app }) {
           <EditableText
             value={tk.name}
             onChange={(v) => updateTakeoff(tk.id, { name: v })}
-            style={{ fontSize: "var(--text-section)", fontWeight: "var(--weight-bold)" }}
+            className="fw-bold fs-section"
           />
-          <span style={{ fontSize: "var(--text-tab)", color: "var(--text3)", opacity: 0.7 }}>Auto-saved</span>
+          <span className="fs-tab c-text3" style={{ opacity: 0.7 }}>Auto-saved</span>
         </div>
-        <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
+        <div className="flex gap-8 flex-wrap">
           {/* Upload: sync click for file picker. Open: async cache/cloud lookup */}
           {drawingLoading ? (
             <button className="btn btn-ghost btn-sm" disabled style={{ opacity: 0.7 }}>
@@ -1202,7 +1202,7 @@ export function EstimatingTab({ app }) {
             </button>
           )}
           {tk.drawingState && (
-            <button className="btn btn-ghost btn-sm" style={{ color: "var(--green)" }} onClick={() => { window.location.hash = `#/takeoff/${tk.id}`; }}>
+            <button className="btn btn-ghost btn-sm c-green" onClick={() => { window.location.hash = `#/takeoff/${tk.id}`; }}>
               Resume Takeoff ({Object.values(tk.drawingState.measurements || {}).flat().length} meas)
             </button>
           )}
@@ -1210,7 +1210,7 @@ export function EstimatingTab({ app }) {
             ref={drawingFileRef}
             type="file"
             accept=".pdf"
-            style={{ display: "none" }}
+            className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (!file) return;
@@ -1246,7 +1246,7 @@ export function EstimatingTab({ app }) {
             setScopeModalTkId(tk.id);
             setScopeModalStep(tk.scopeChecklistCompleted ? 2 : 1);
           }}>Scope Review</button>
-          <button className="btn btn-sm" style={{ background: "var(--gold)", color: "#fff" }} onClick={async () => {
+          <button className="btn btn-sm c-white" style={{ background: "var(--gold)" }} onClick={async () => {
             if (!tk.scopeChecklistCompleted) {
               setScopeModalTkId(tk.id);
               setScopeModalStep(1);
@@ -1269,8 +1269,8 @@ export function EstimatingTab({ app }) {
       </div>
 
       {/* bid link + date */}
-      <div className="flex gap-8" style={{ marginBottom: "var(--space-3)", alignItems: "center", flexWrap: "wrap" }}>
-        <label style={{ fontSize: "var(--text-label)", color: "var(--text2)" }}>Bid:</label>
+      <div className="flex gap-8 mb-sp3 flex-wrap" style={{ alignItems: "center" }}>
+        <label className="fs-label c-text2">Bid:</label>
         <select
           className="form-select"
           style={{ maxWidth: 280 }}
@@ -1282,13 +1282,13 @@ export function EstimatingTab({ app }) {
             <option key={b.id} value={b.id}>{b.name}</option>
           ))}
         </select>
-        <span style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginLeft: "var(--space-2)" }}>Created: {tk.created}</span>
+        <span className="fs-label ml-sp2 c-text2">Created: {tk.created}</span>
       </div>
 
       {/* Markups moved to Bid Summary section below — takeoff phase is about scope & measurements */}
 
       {/* ── Gap Analysis (standalone) ── */}
-      <div style={{ marginBottom: "var(--space-4)" }}>
+      <div className="mb-sp4">
         <button
           className={`btn ${showScopePanel ? "btn-primary" : "btn-ghost"} btn-sm`}
           onClick={() => setShowScopePanel(!showScopePanel)}
@@ -1298,24 +1298,24 @@ export function EstimatingTab({ app }) {
       </div>
 
       {showScopePanel && (
-        <div className="card" style={{ padding: "var(--space-5)", marginBottom: "var(--space-5)" }}>
+        <div className="card mb-sp5 p-sp5">
           <div className="flex-between mb-12">
-            <div className="section-title" style={{ fontSize: "var(--text-card)" }}>AI Gap Analysis</div>
+            <div className="section-title fs-card">AI Gap Analysis</div>
             <button className="btn btn-ghost btn-sm" onClick={() => setShowScopePanel(false)}>Close</button>
           </div>
           <div>
             <div className="text-sm font-semi mb-8">Paste your bid scope and contract/spec scope below. AI will identify gaps, extras, and risks.</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+            <div className="gap-sp3 d-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
               <div className="form-group">
                 <label className="form-label">Bid Scope (what EBC priced)</label>
                 <textarea className="form-input" rows={6} placeholder="Paste your bid scope, line items, or proposal scope description..."
-                  value={gapBidScope} onChange={e => setGapBidScope(e.target.value)} style={{ resize: "vertical", fontFamily: "inherit", fontSize: "var(--text-label)" }} />
+                  value={gapBidScope} onChange={e => setGapBidScope(e.target.value)} className="fs-label" style={{ resize: "vertical", fontFamily: "inherit" }} />
                 <div className="text-xs text-dim mt-4">{gapBidScope.length} chars</div>
               </div>
               <div className="form-group">
                 <label className="form-label">Contract Scope (specs / drawings notes)</label>
                 <textarea className="form-input" rows={6} placeholder="Paste contract scope, spec sections, or drawing notes..."
-                  value={gapContractScope} onChange={e => setGapContractScope(e.target.value)} style={{ resize: "vertical", fontFamily: "inherit", fontSize: "var(--text-label)" }} />
+                  value={gapContractScope} onChange={e => setGapContractScope(e.target.value)} className="fs-label" style={{ resize: "vertical", fontFamily: "inherit" }} />
                 <div className="text-xs text-dim mt-4">{gapContractScope.length} chars</div>
               </div>
             </div>
@@ -1324,8 +1324,8 @@ export function EstimatingTab({ app }) {
             </button>
 
             {gapResult && (
-              <div style={{ marginTop: "var(--space-4)" }}>
-                <div className="card" style={{ padding: "var(--space-4)", marginBottom: "var(--space-3)" }}>
+              <div className="mt-sp4">
+                <div className="card mb-sp3 p-sp4">
                   <div className="flex-between mb-8">
                     <div className="text-sm font-semi">Coverage Score</div>
                     <div style={{ fontSize: "var(--text-title)", fontWeight: "var(--weight-bold)", color: gapResult.score >= 80 ? "var(--green)" : gapResult.score >= 50 ? "var(--amber)" : "var(--red)" }}>
@@ -1336,10 +1336,10 @@ export function EstimatingTab({ app }) {
                 </div>
 
                 {gapResult.gaps?.length > 0 && (
-                  <div className="card" style={{ padding: "var(--space-4)", marginBottom: "var(--space-3)" }}>
-                    <div className="text-sm font-semi mb-8" style={{ color: "var(--red)" }}>Missing from Bid ({gapResult.gaps.length})</div>
+                  <div className="card mb-sp3 p-sp4">
+                    <div className="text-sm font-semi mb-8 c-red">Missing from Bid ({gapResult.gaps.length})</div>
                     {gapResult.gaps.map((g, i) => (
-                      <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
+                      <div key={i} className="border-b" style={{ padding: "var(--space-2) 0" }}>
                         <div className="flex-between">
                           <span className="text-sm font-semi">{g.item}</span>
                           <span className={`badge ${SEV_BADGE[g.severity] || "badge-muted"}`}>{g.severity}</span>
@@ -1351,10 +1351,10 @@ export function EstimatingTab({ app }) {
                 )}
 
                 {gapResult.extras?.length > 0 && (
-                  <div className="card" style={{ padding: "var(--space-4)", marginBottom: "var(--space-3)" }}>
-                    <div className="text-sm font-semi mb-8" style={{ color: "var(--amber)" }}>In Bid but Not in Contract ({gapResult.extras.length})</div>
+                  <div className="card mb-sp3 p-sp4">
+                    <div className="text-sm font-semi mb-8 c-amber">In Bid but Not in Contract ({gapResult.extras.length})</div>
                     {gapResult.extras.map((g, i) => (
-                      <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
+                      <div key={i} className="border-b" style={{ padding: "var(--space-2) 0" }}>
                         <span className="text-sm font-semi">{g.item}</span>
                         <div className="text-xs text-muted mt-4">{g.detail}</div>
                       </div>
@@ -1363,10 +1363,10 @@ export function EstimatingTab({ app }) {
                 )}
 
                 {gapResult.risks?.length > 0 && (
-                  <div className="card" style={{ padding: "var(--space-4)", marginBottom: "var(--space-3)" }}>
-                    <div className="text-sm font-semi mb-8" style={{ color: "var(--blue)" }}>Risks & Ambiguities ({gapResult.risks.length})</div>
+                  <div className="card mb-sp3 p-sp4">
+                    <div className="text-sm font-semi mb-8 c-blue">Risks & Ambiguities ({gapResult.risks.length})</div>
                     {gapResult.risks.map((g, i) => (
-                      <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
+                      <div key={i} className="border-b" style={{ padding: "var(--space-2) 0" }}>
                         <div className="flex-between">
                           <span className="text-sm font-semi">{g.item}</span>
                           <span className={`badge ${SEV_BADGE[g.severity] || "badge-muted"}`}>{g.severity}</span>
@@ -1400,8 +1400,8 @@ export function EstimatingTab({ app }) {
               />
               {isOpen && (
                 <div className="room-body">
-                  <div style={{ overflowX: "auto" }}>
-                    <table className="data-table" style={{ width: "100%", fontSize: "var(--text-label)" }}>
+                  <div className="overflow-x-auto">
+                    <table className="data-table fs-label w-full">
                       <thead>
                         <tr>
                           <th>Assembly</th>
@@ -1410,11 +1410,11 @@ export function EstimatingTab({ app }) {
                           <th style={{ width: 56 }}>Height</th>
                           <th style={{ width: 48 }}>HF</th>
                           <th style={{ width: 56 }}>Diff</th>
-                          <th style={{ textAlign: "right" }}>Mat Rate</th>
-                          <th style={{ textAlign: "right" }}>Lab Rate</th>
-                          <th style={{ textAlign: "right" }}>Mat Total</th>
-                          <th style={{ textAlign: "right" }}>Lab Total</th>
-                          <th style={{ textAlign: "right" }}>Total</th>
+                          <th className="text-right">Mat Rate</th>
+                          <th className="text-right">Lab Rate</th>
+                          <th className="text-right">Mat Total</th>
+                          <th className="text-right">Lab Total</th>
+                          <th className="text-right">Total</th>
                           <th style={{ width: 36 }}></th>
                         </tr>
                       </thead>
@@ -1426,7 +1426,7 @@ export function EstimatingTab({ app }) {
                           const isEditing = editingItem === item.id;
 
                           return (
-                            <tr key={item.id} onClick={() => setEditingItem(item.id)} style={{ cursor: "pointer" }}>
+                            <tr key={item.id} onClick={() => setEditingItem(item.id)} className="cursor-pointer">
                               <td>
                                 {isEditing ? (
                                   <select
@@ -1434,7 +1434,7 @@ export function EstimatingTab({ app }) {
                                     value={item.code}
                                     onClick={(e) => e.stopPropagation()}
                                     onChange={(e) => handleAssemblyChange(tk.id, rm.id, item.id, e.target.value)}
-                                    style={{ fontSize: "var(--text-label)", maxWidth: 220 }}
+                                    className="fs-label" style={{ maxWidth: 220 }}
                                   >
                                     {assemblies.map((a) => (
                                       <option key={a.code} value={a.code}>
@@ -1443,8 +1443,8 @@ export function EstimatingTab({ app }) {
                                     ))}
                                   </select>
                                 ) : (
-                                  <span style={{ display: "flex", alignItems: "center", gap: "var(--space-1)", flexWrap: "wrap" }}>
-                                    <span className={asm?.verified ? "badge-green" : "badge-amber"} style={{ marginRight: "var(--space-1)", fontSize: "var(--text-xs)" }}>
+                                  <span className="flex gap-sp1 flex-wrap">
+                                    <span className={`asm?.verified ? "badge-green" : "badge-amber" mr-sp1 fs-xs`}>
                                       {item.code}
                                     </span>
                                     {item.desc}
@@ -1506,15 +1506,14 @@ export function EstimatingTab({ app }) {
                                   item.diff.toFixed(2)
                                 )}
                               </td>
-                              <td style={{ textAlign: "right" }}>{fmt(asm?.matRate || 0)}</td>
-                              <td style={{ textAlign: "right" }}>{fmt(asm?.labRate || 0)}</td>
-                              <td style={{ textAlign: "right" }}>{fmt(c.mat)}</td>
-                              <td style={{ textAlign: "right" }}>{fmt(c.lab)}</td>
-                              <td style={{ textAlign: "right", fontWeight: "var(--weight-semi)" }}>{fmt(c.total)}</td>
+                              <td className="text-right">{fmt(asm?.matRate || 0)}</td>
+                              <td className="text-right">{fmt(asm?.labRate || 0)}</td>
+                              <td className="text-right">{fmt(c.mat)}</td>
+                              <td className="text-right">{fmt(c.lab)}</td>
+                              <td className="fw-semi text-right">{fmt(c.total)}</td>
                               <td>
                                 <button
-                                  className="btn btn-danger btn-sm"
-                                  style={{ padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-tab)" }}
+                                  className="btn btn-danger btn-sm fs-tab" style={{ padding: "var(--space-1) var(--space-2)" }}
                                   onClick={(e) => { e.stopPropagation(); deleteLineItem(tk.id, rm.id, item.id); }}
                                   title="Delete line item"
                                 >
@@ -1526,7 +1525,7 @@ export function EstimatingTab({ app }) {
                         })}
                         {(rm.items || []).length === 0 && (
                           <tr>
-                            <td colSpan={12} style={{ textAlign: "center", color: "var(--text3)", padding: "var(--space-4)" }}>
+                            <td colSpan={12} className="p-sp4 c-text3 text-center">
                               No line items. Click "Add Item" to begin.
                             </td>
                           </tr>
@@ -1534,7 +1533,7 @@ export function EstimatingTab({ app }) {
                       </tbody>
                     </table>
                   </div>
-                  <div style={{ marginTop: "var(--space-2)" }}>
+                  <div className="mt-sp2">
                     <button className="btn btn-ghost btn-sm" onClick={() => addLineItem(tk.id, rm.id)}>+ Add Item</button>
                   </div>
                 </div>
@@ -1544,33 +1543,33 @@ export function EstimatingTab({ app }) {
         })}
       </div>
 
-      <div style={{ marginTop: "var(--space-3)", display: "flex", gap: "var(--space-2)" }}>
+      <div className="mt-sp3 gap-sp2" style={{ display: "flex" }}>
         <button className="btn btn-primary btn-sm" onClick={() => addRoom(tk.id)}>+ Add Area</button>
         {(tk.rooms || []).length === 0 && (
-          <span style={{ fontSize: "var(--text-label)", color: "var(--text3)", alignSelf: "center" }}>Add areas (floors, zones, rooms) to start building your estimate</span>
+          <span className="fs-label c-text3" style={{ alignSelf: "center" }}>Add areas (floors, zones, rooms) to start building your estimate</span>
         )}
       </div>
 
       {/* bid summary — only show when there's actual data */}
       {/* ── Takeoff Totals (raw measurements — no markups) ── */}
       {summary.subtotal > 0 && (
-        <div className="takeoff-summary" style={{ marginTop: "var(--space-6)" }}>
-          <h3 style={{ marginBottom: "var(--space-3)", fontSize: "var(--text-secondary)" }}>Takeoff Totals</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+        <div className="takeoff-summary mt-sp6">
+          <h3 className="fs-secondary mb-sp3">Takeoff Totals</h3>
+          <div className="d-grid" style={{ gridTemplateColumns: "1fr 1fr", gap: 0 }}>
             <div className="summary-row"><span>Materials</span><span>{fmt(summary.matSub)}</span></div>
             <div className="summary-row"><span>Labor</span><span>{fmt(summary.labSub)}</span></div>
           </div>
-          <div className="summary-row" style={{ borderTop: "1px solid var(--border)", marginTop: "var(--space-1)", paddingTop: "var(--space-1)" }}>
-            <span>Raw Subtotal</span><span style={{ fontWeight: "var(--weight-bold)" }}>{fmt(summary.subtotal)}</span>
+          <div className="summary-row mt-sp1" style={{ borderTop: "1px solid var(--border)", paddingTop: "var(--space-1)" }}>
+            <span>Raw Subtotal</span><span className="fw-bold">{fmt(summary.subtotal)}</span>
           </div>
         </div>
       )}
 
       {/* ── Bid Pricing (markups — this is the proposal/bid phase) ── */}
       {summary.subtotal > 0 && (
-        <div className="takeoff-summary" style={{ marginTop: "var(--space-4)" }}>
-          <h3 style={{ marginBottom: "var(--space-3)", fontSize: "var(--text-secondary)" }}>Bid Pricing</h3>
-          <div className="flex gap-8" style={{ marginBottom: "var(--space-3)", flexWrap: "wrap", alignItems: "center" }}>
+        <div className="takeoff-summary mt-sp4">
+          <h3 className="fs-secondary mb-sp3">Bid Pricing</h3>
+          <div className="flex gap-8 mb-sp3 flex-wrap" style={{ alignItems: "center" }}>
             {[
               { label: "Waste %", key: "wastePct" },
               { label: "Tax %", key: "taxRate" },
@@ -1578,7 +1577,7 @@ export function EstimatingTab({ app }) {
               { label: "Profit %", key: "profitPct" },
             ].map(({ label, key }) => (
               <div key={key} className="flex gap-8" style={{ alignItems: "center" }}>
-                <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", whiteSpace: "nowrap" }}>{label}</label>
+                <label className="fs-label c-text2 nowrap">{label}</label>
                 <input
                   className="form-input"
                   type="number"
@@ -1599,65 +1598,65 @@ export function EstimatingTab({ app }) {
       )}
 
       {(tk.rooms || []).length > 0 && summary.subtotal === 0 && (
-        <div style={{ marginTop: "var(--space-6)", padding: "var(--space-3) var(--space-4)", borderRadius: "var(--radius-control)", background: "var(--bg3)", border: "1px solid var(--border)", fontSize: "var(--text-label)", color: "var(--text2)" }}>
+        <div className="rounded-control fs-label mt-sp6 bg-bg3 c-text2" style={{ padding: "var(--space-3) var(--space-4)", border: "1px solid var(--border)" }}>
           Add quantities to your line items to see totals. Markups and bid pricing appear after you have measurements.
         </div>
       )}
 
       {/* Historical Comparison Panel */}
       {showHist && (
-        <div className="takeoff-summary" style={{ marginTop: "var(--space-4)" }}>
-          <div className="flex-between" style={{ marginBottom: "var(--space-3)" }}>
-            <h3 style={{ fontSize: "var(--text-secondary)" }}>Historical Comparison</h3>
+        <div className="takeoff-summary mt-sp4">
+          <div className="flex-between mb-sp3">
+            <h3 className="fs-secondary">Historical Comparison</h3>
             <button className="btn btn-ghost btn-sm" onClick={() => { setShowHist(false); setHistResult(null); }}>Close</button>
           </div>
-          {histLoading && <div className="text-sm text-muted" style={{ padding: "var(--space-4)", textAlign: "center" }}>Analyzing against {projects.length} historical projects...</div>}
+          {histLoading && <div className="text-sm text-muted p-sp4 text-center">Analyzing against {projects.length} historical projects...</div>}
           {histResult && (
             <div>
               {/* Summary */}
-              <div style={{ padding: "var(--space-3)", marginBottom: "var(--space-3)", background: "var(--card)", borderRadius: "var(--radius-control)", border: "1px solid var(--border)" }}>
+              <div className="rounded-control mb-sp3 p-sp3" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
                 <div className="text-sm">{histResult.summary}</div>
               </div>
 
               {/* Margin Forecast */}
               {histResult.marginForecast && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "var(--space-2)", marginBottom: "var(--space-3)" }}>
-                  <div className="card" style={{ padding: "var(--space-3)", textAlign: "center" }}>
+                <div className="mb-sp3 gap-sp2 d-grid" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
+                  <div className="card p-sp3 text-center">
                     <div className="text-xs text-muted">Pessimistic</div>
-                    <div style={{ fontSize: "var(--text-subtitle)", fontWeight: "var(--weight-bold)", color: "var(--red)" }}>{histResult.marginForecast.pessimistic}%</div>
+                    <div className="fs-subtitle fw-bold c-red">{histResult.marginForecast.pessimistic}%</div>
                   </div>
-                  <div className="card" style={{ padding: "var(--space-3)", textAlign: "center" }}>
+                  <div className="card p-sp3 text-center">
                     <div className="text-xs text-muted">Expected</div>
-                    <div style={{ fontSize: "var(--text-subtitle)", fontWeight: "var(--weight-bold)", color: "var(--amber)" }}>{histResult.marginForecast.expected}%</div>
+                    <div className="fs-subtitle fw-bold c-amber">{histResult.marginForecast.expected}%</div>
                   </div>
-                  <div className="card" style={{ padding: "var(--space-3)", textAlign: "center" }}>
+                  <div className="card p-sp3 text-center">
                     <div className="text-xs text-muted">Optimistic</div>
-                    <div style={{ fontSize: "var(--text-subtitle)", fontWeight: "var(--weight-bold)", color: "var(--green)" }}>{histResult.marginForecast.optimistic}%</div>
+                    <div className="fs-subtitle fw-bold c-green">{histResult.marginForecast.optimistic}%</div>
                   </div>
                 </div>
               )}
 
               {/* Warnings */}
               {histResult.laborWarning && (
-                <div style={{ padding: "var(--space-3)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(239,68,68,0.1)", border: "1px solid var(--red)", fontSize: "var(--text-label)" }}>
+                <div className="rounded-control mb-sp2 fs-label p-sp3" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid var(--red)" }}>
                   <strong>Labor:</strong> {histResult.laborWarning}
                 </div>
               )}
               {histResult.materialWarning && (
-                <div style={{ padding: "var(--space-3)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(245,158,11,0.1)", border: "1px solid var(--amber)", fontSize: "var(--text-label)" }}>
+                <div className="rounded-control mb-sp2 fs-label p-sp3" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid var(--amber)" }}>
                   <strong>Material:</strong> {histResult.materialWarning}
                 </div>
               )}
 
               {/* Similar Projects */}
               {histResult.similarProjects?.length > 0 && (
-                <div style={{ marginBottom: "var(--space-3)" }}>
+                <div className="mb-sp3">
                   <div className="text-sm font-semi mb-8">Similar Past Projects</div>
                   {histResult.similarProjects.map((sp, i) => (
-                    <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)", fontSize: "var(--text-label)" }}>
+                    <div key={i} className="border-b fs-label" style={{ padding: "var(--space-2) 0" }}>
                       <div className="flex-between">
                         <span className="font-semi">{sp.name}</span>
-                        <span style={{ color: "var(--amber)", fontWeight: "var(--weight-semi)" }}>{sp.similarity}% match</span>
+                        <span className="fw-semi c-amber">{sp.similarity}% match</span>
                       </div>
                       <div className="text-xs text-muted mt-4">{sp.reason}</div>
                     </div>
@@ -1670,8 +1669,8 @@ export function EstimatingTab({ app }) {
                 <div>
                   <div className="text-sm font-semi mb-8">Insights</div>
                   {histResult.insights.map((ins, i) => (
-                    <div key={i} style={{ padding: "var(--space-2)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: "var(--card)", border: "1px solid var(--border)", fontSize: "var(--text-label)" }}>
-                      <div className="font-semi" style={{ color: "var(--blue)" }}>{ins.category}</div>
+                    <div key={i} className="rounded-control mb-sp2 fs-label p-sp2" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+                      <div className="font-semi c-blue">{ins.category}</div>
                       <div className="mt-4">{ins.finding}</div>
                       <div className="text-xs text-muted mt-4">{ins.recommendation}</div>
                     </div>
@@ -1684,9 +1683,9 @@ export function EstimatingTab({ app }) {
       )}
 
       {/* PDF options: tax breakout */}
-      <div className="takeoff-summary" style={{ marginTop: "var(--space-4)" }}>
-        <h3 style={{ marginBottom: "var(--space-3)", fontSize: "var(--text-secondary)" }}>Proposal PDF Options</h3>
-        <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", fontSize: "var(--text-label)", cursor: "pointer" }}>
+      <div className="takeoff-summary mt-sp4">
+        <h3 className="fs-secondary mb-sp3">Proposal PDF Options</h3>
+        <label className="flex fs-label gap-sp2 cursor-pointer">
           <input
             type="checkbox"
             checked={tk.showTaxBreakout || false}
@@ -1713,9 +1712,9 @@ export function EstimatingTab({ app }) {
         const addOnCodes = new Set((tk.addOns || []).map(ao => ao.code));
 
         return (
-          <div className="takeoff-summary" style={{ marginTop: "var(--space-4)", border: "1px dashed var(--amber-dim)", background: "rgba(224,148,34,0.03)" }}>
-            <div className="flex-between" style={{ marginBottom: "var(--space-3)" }}>
-              <h3 style={{ fontSize: "var(--text-secondary)", color: "var(--amber)" }}>$ Profit Suggestions</h3>
+          <div className="takeoff-summary mt-sp4" style={{ border: "1px dashed var(--amber-dim)", background: "rgba(224,148,34,0.03)" }}>
+            <div className="flex-between mb-sp3">
+              <h3 className="fs-secondary c-amber">$ Profit Suggestions</h3>
               <span className="text-xs text-muted">Commonly forgotten add-ons</span>
             </div>
             {PROFIT_SUGGESTIONS.map(sg => {
@@ -1733,20 +1732,19 @@ export function EstimatingTab({ app }) {
                   borderRadius: "var(--radius-control)", background: alreadyIn ? "var(--bg3)" : "var(--card)",
                   border: "1px solid var(--border)", opacity: alreadyIn ? 0.5 : 1,
                 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)" }}>{sg.name} <span className="text-xs text-muted">({sg.code})</span></div>
+                  <div className="flex-1">
+                    <div className="fw-semi fs-label">{sg.name} <span className="text-xs text-muted">({sg.code})</span></div>
                     <div className="text-xs text-muted">{sg.desc}</div>
                   </div>
-                  <div style={{ textAlign: "right", minWidth: 80 }}>
-                    <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", color: "var(--green)" }}>{fmt(estCost)}</div>
+                  <div className="text-right" style={{ minWidth: 80 }}>
+                    <div className="fw-semi fs-label c-green">{fmt(estCost)}</div>
                     <div className="text-xs text-muted">{sg.basis === "subtotal" ? "lump sum" : `${autoQty} ${sg.unit}`}</div>
                   </div>
                   {alreadyIn ? (
-                    <span className="badge badge-muted" style={{ fontSize: "var(--text-xs)" }}>Added</span>
+                    <span className="badge badge-muted fs-xs">Added</span>
                   ) : (
                     <button
-                      className="btn btn-ghost btn-sm"
-                      style={{ fontSize: "var(--text-tab)", color: "var(--amber)", borderColor: "var(--amber-dim)" }}
+                      className="btn btn-ghost btn-sm fs-tab c-amber" style={{ borderColor: "var(--amber-dim)" }}
                       onClick={() => {
                         if (sg.basis === "subtotal") {
                           updateTakeoff(tk.id, (prev) => ({
@@ -1776,24 +1774,24 @@ export function EstimatingTab({ app }) {
       })()}
 
       {/* alternates */}
-      <div className="takeoff-summary" style={{ marginTop: "var(--space-4)" }}>
-        <div className="flex-between" style={{ marginBottom: "var(--space-3)" }}>
-          <h3 style={{ fontSize: "var(--text-secondary)" }}>Alternates</h3>
+      <div className="takeoff-summary mt-sp4">
+        <div className="flex-between mb-sp3">
+          <h3 className="fs-secondary">Alternates</h3>
           <button className="btn btn-ghost btn-sm" onClick={() => updateTakeoff(tk.id, (prev) => ({
             ...prev,
             alternates: [...(prev.alternates || []), { id: "alt_" + Date.now(), description: "", amount: 0, type: "add" }]
           }))}>+ Add Alternate</button>
         </div>
         {(tk.alternates || []).length === 0 && (
-          <p style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>No alternates. These appear as separate pricing options on the proposal.</p>
+          <p className="fs-label c-text3">No alternates. These appear as separate pricing options on the proposal.</p>
         )}
         {(tk.alternates || []).map((alt, i) => (
-          <div key={alt.id} className="flex gap-8" style={{ marginBottom: "var(--space-2)", alignItems: "center", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", minWidth: 80 }}>Alt {i + 1}:</span>
+          <div key={alt.id} className="flex gap-8 mb-sp2 flex-wrap" style={{ alignItems: "center" }}>
+            <span className="fw-semi fs-label" style={{ minWidth: 80 }}>Alt {i + 1}:</span>
             <select
               className="form-select"
               value={alt.type}
-              style={{ width: 90, fontSize: "var(--text-label)" }}
+              className="fs-label" style={{ width: 90 }}
               onChange={(e) => updateTakeoff(tk.id, (prev) => ({
                 ...prev,
                 alternates: prev.alternates.map(a => a.id === alt.id ? { ...a, type: e.target.value } : a)
@@ -1806,7 +1804,7 @@ export function EstimatingTab({ app }) {
               className="form-input"
               placeholder="Description"
               value={alt.description}
-              style={{ flex: 1, minWidth: 180, fontSize: "var(--text-label)" }}
+              className="fs-label flex-1" style={{ minWidth: 180 }}
               onChange={(e) => updateTakeoff(tk.id, (prev) => ({
                 ...prev,
                 alternates: prev.alternates.map(a => a.id === alt.id ? { ...a, description: e.target.value } : a)
@@ -1817,15 +1815,14 @@ export function EstimatingTab({ app }) {
               type="number"
               placeholder="Amount"
               value={alt.amount}
-              style={{ width: 100, fontSize: "var(--text-label)" }}
+              className="fs-label" style={{ width: 100 }}
               onChange={(e) => updateTakeoff(tk.id, (prev) => ({
                 ...prev,
                 alternates: prev.alternates.map(a => a.id === alt.id ? { ...a, amount: parseFloat(e.target.value) || 0 } : a)
               }))}
             />
             <button
-              className="btn btn-danger btn-sm"
-              style={{ padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-tab)" }}
+              className="btn btn-danger btn-sm fs-tab" style={{ padding: "var(--space-1) var(--space-2)" }}
               onClick={() => updateTakeoff(tk.id, (prev) => ({
                 ...prev,
                 alternates: prev.alternates.filter(a => a.id !== alt.id)
@@ -1836,25 +1833,25 @@ export function EstimatingTab({ app }) {
       </div>
 
       {/* add-ons */}
-      <div className="takeoff-summary" style={{ marginTop: "var(--space-4)" }}>
-        <div className="flex-between" style={{ marginBottom: "var(--space-3)" }}>
-          <h3 style={{ fontSize: "var(--text-secondary)" }}>Add-Ons (Optional Scope)</h3>
+      <div className="takeoff-summary mt-sp4">
+        <div className="flex-between mb-sp3">
+          <h3 className="fs-secondary">Add-Ons (Optional Scope)</h3>
           <button className="btn btn-ghost btn-sm" onClick={() => updateTakeoff(tk.id, (prev) => ({
             ...prev,
             addOns: [...(prev.addOns || []), { id: "ao_" + Date.now(), description: "", amount: 0 }]
           }))}>+ Add Add-On</button>
         </div>
         {(tk.addOns || []).length === 0 && (
-          <p style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>No add-ons. These appear as optional extras the client can choose to include.</p>
+          <p className="fs-label c-text3">No add-ons. These appear as optional extras the client can choose to include.</p>
         )}
         {(tk.addOns || []).map((ao, i) => (
-          <div key={ao.id} className="flex gap-8" style={{ marginBottom: "var(--space-2)", alignItems: "center", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-semi)", minWidth: 80 }}>Add-On {i + 1}:</span>
+          <div key={ao.id} className="flex gap-8 mb-sp2 flex-wrap" style={{ alignItems: "center" }}>
+            <span className="fw-semi fs-label" style={{ minWidth: 80 }}>Add-On {i + 1}:</span>
             <input
               className="form-input"
               placeholder="Description"
               value={ao.description}
-              style={{ flex: 1, minWidth: 180, fontSize: "var(--text-label)" }}
+              className="fs-label flex-1" style={{ minWidth: 180 }}
               onChange={(e) => updateTakeoff(tk.id, (prev) => ({
                 ...prev,
                 addOns: prev.addOns.map(a => a.id === ao.id ? { ...a, description: e.target.value } : a)
@@ -1865,15 +1862,14 @@ export function EstimatingTab({ app }) {
               type="number"
               placeholder="Amount"
               value={ao.amount}
-              style={{ width: 100, fontSize: "var(--text-label)" }}
+              className="fs-label" style={{ width: 100 }}
               onChange={(e) => updateTakeoff(tk.id, (prev) => ({
                 ...prev,
                 addOns: prev.addOns.map(a => a.id === ao.id ? { ...a, amount: parseFloat(e.target.value) || 0 } : a)
               }))}
             />
             <button
-              className="btn btn-danger btn-sm"
-              style={{ padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-tab)" }}
+              className="btn btn-danger btn-sm fs-tab" style={{ padding: "var(--space-1) var(--space-2)" }}
               onClick={() => updateTakeoff(tk.id, (prev) => ({
                 ...prev,
                 addOns: prev.addOns.filter(a => a.id !== ao.id)
@@ -1897,19 +1893,19 @@ export function EstimatingTab({ app }) {
         const uncovered = [...allCodes].filter(c => !coveredCodes.has(c));
         if (total === 0) return null;
         return (
-          <div className="takeoff-summary" style={{ marginTop: "var(--space-4)" }}>
-            <h3 style={{ marginBottom: "var(--space-3)", fontSize: "var(--text-secondary)" }}>Submittal Coverage</h3>
+          <div className="takeoff-summary mt-sp4">
+            <h3 className="fs-secondary mb-sp3">Submittal Coverage</h3>
             <div className="summary-row">
               <span>Assembly codes with submittals</span>
               <span>{covered} / {total} ({pct}%)</span>
             </div>
-            <div style={{ marginTop: "var(--space-2)", height: 6, borderRadius: "var(--radius-control)", background: "var(--bg4)", overflow: "hidden" }}>
+            <div className="rounded-control mt-sp2 bg-bg4 overflow-hidden" style={{ height: 6 }}>
               <div style={{ width: `${pct}%`, height: "100%", borderRadius: "var(--radius-control)", background: pct === 100 ? "var(--green)" : "var(--amber)", transition: "width 0.3s" }} />
             </div>
             {uncovered.length > 0 && (
-              <div style={{ marginTop: "var(--space-2)", fontSize: "var(--text-label)", color: "var(--text3)" }}>
+              <div className="fs-label mt-sp2 c-text3">
                 Missing: {uncovered.map(c => (
-                  <span key={c} className="badge-amber" style={{ marginRight: "var(--space-1)", fontSize: "var(--text-xs)" }}>{c}</span>
+                  <span key={c} className="badge-amber mr-sp1 fs-xs">{c}</span>
                 ))}
               </div>
             )}
@@ -2082,23 +2078,22 @@ function ScopeReviewModal({ tk, bid, step, setStep, onClose, onSave, updateTakeo
     <div style={overlayStyle} onClick={onClose}>
       <div style={modalStyle} onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div style={{ padding: "var(--space-4) var(--space-5)", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div className="border-b" style={{ padding: "var(--space-4) var(--space-5)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <div style={{ fontSize: "var(--text-card)", fontWeight: "var(--weight-bold)" }}>Scope Review — {tk.name}</div>
-            <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginTop: "var(--space-1)" }}>Step {step} of 2</div>
+            <div className="fw-bold fs-card">Scope Review — {tk.name}</div>
+            <div className="fs-label mt-sp1 c-text3">Step {step} of 2</div>
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ fontSize: "var(--text-card)", padding: "var(--space-1) var(--space-2)" }}>X</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} className="fs-card" style={{ padding: "var(--space-1) var(--space-2)" }}>X</button>
         </div>
 
         {/* ── STEP 1: Checklist ── */}
         {step === 1 && (
-          <div style={{ padding: "var(--space-5)" }}>
+          <div className="p-sp5">
             {/* Template selector */}
-            <div style={{ marginBottom: "var(--space-3)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-              <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", whiteSpace: "nowrap" }}>Quick template:</label>
+            <div className="flex mb-sp3 gap-sp2">
+              <label className="fs-label c-text2 nowrap">Quick template:</label>
               <select
-                className="form-select"
-                style={{ fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-2)", maxWidth: 200 }}
+                className="form-select fs-label" style={{ padding: "var(--space-1) var(--space-2)", maxWidth: 200 }}
                 defaultValue=""
                 onChange={(e) => {
                   const tmpl = SCOPE_TEMPLATES[e.target.value];
@@ -2118,18 +2113,18 @@ function ScopeReviewModal({ tk, bid, step, setStep, onClose, onSave, updateTakeo
             </div>
 
             {/* Progress bar */}
-            <div style={{ marginBottom: "var(--space-4)" }}>
-              <div className="flex-between" style={{ fontSize: "var(--text-label)", marginBottom: "var(--space-2)" }}>
+            <div className="mb-sp4">
+              <div className="flex-between mb-sp2 fs-label">
                 <span>{reviewed}/{total} reviewed</span>
                 <span style={{ color: reviewed === total ? "var(--green)" : "var(--amber)" }}>{Math.round((reviewed / total) * 100)}%</span>
               </div>
-              <div style={{ height: 6, borderRadius: "var(--radius-control)", background: "var(--bg4)", overflow: "hidden" }}>
+              <div className="rounded-control bg-bg4 overflow-hidden" style={{ height: 6 }}>
                 <div style={{ width: `${(reviewed / total) * 100}%`, height: "100%", borderRadius: "var(--radius-control)", background: reviewed === total ? "var(--green)" : "var(--amber)", transition: "width 0.3s" }} />
               </div>
             </div>
 
             {/* Checklist items */}
-            <div style={{ maxHeight: "55vh", overflowY: "auto", marginBottom: "var(--space-4)" }}>
+            <div className="mb-sp4" style={{ maxHeight: "55vh", overflowY: "auto" }}>
               {localChecklist.map(s => {
                 const mapEntry = SCOPE_ITEM_MAP[s.id];
                 return (
@@ -2143,13 +2138,13 @@ function ScopeReviewModal({ tk, bid, step, setStep, onClose, onSave, updateTakeo
                       cursor: "pointer", transition: "all 0.15s",
                     }}
                   >
-                    <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
-                      <span style={{ fontSize: "var(--text-section)", lineHeight: 1, flexShrink: 0 }}>{SCOPE_ICONS[s.status]}</span>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-secondary)" }}>{s.title}</div>
-                        <div style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginTop: "var(--space-1)" }}>{s.desc}</div>
+                    <div className="items-start gap-sp3" style={{ display: "flex" }}>
+                      <span className="fs-section flex-shrink-0" style={{ lineHeight: 1 }}>{SCOPE_ICONS[s.status]}</span>
+                      <div className="flex-1">
+                        <div className="fs-secondary fw-semi">{s.title}</div>
+                        <div className="fs-label mt-sp1 c-text2">{s.desc}</div>
                         {mapEntry && (
-                          <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)", marginTop: "var(--space-1)", fontStyle: "italic" }}>
+                          <div className="fs-tab mt-sp1 c-text3" style={{ fontStyle: "italic" }}>
                             {s.status === "checked" ? `Include: ${mapEntry.includeText}` :
                              s.status === "flagged" ? `Assumption: ${mapEntry.includeText} (pending clarification)` :
                              `Exclude: ${mapEntry.excludeText}`}
@@ -2163,13 +2158,13 @@ function ScopeReviewModal({ tk, bid, step, setStep, onClose, onSave, updateTakeo
             </div>
 
             {/* Continue button */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
+            <div className="gap-sp2" style={{ display: "flex", justifyContent: "flex-end" }}>
               {reviewed < total && (
-                <div style={{ fontSize: "var(--text-label)", color: "var(--amber)", alignSelf: "center", marginRight: "auto" }}>
+                <div className="fs-label c-amber" style={{ alignSelf: "center", marginRight: "auto" }}>
                   {total - reviewed} item{total - reviewed !== 1 ? "s" : ""} still unchecked
                 </div>
               )}
-              <button className="btn btn-primary" onClick={goToStep2} style={{ fontSize: "var(--text-secondary)", padding: "var(--space-2) var(--space-5)" }}>
+              <button className="btn btn-primary" onClick={goToStep2} className="fs-secondary" style={{ padding: "var(--space-2) var(--space-5)" }}>
                 Continue &rarr;
               </button>
             </div>
@@ -2178,71 +2173,71 @@ function ScopeReviewModal({ tk, bid, step, setStep, onClose, onSave, updateTakeo
 
         {/* ── STEP 2: Edit Proposal Scope ── */}
         {step === 2 && editLines && (
-          <div style={{ padding: "var(--space-5)" }}>
+          <div className="p-sp5">
             {/* Section renderer */}
             {[
               { key: "includes", label: "INCLUDES", color: "var(--green)" },
               { key: "excludes", label: "EXCLUDES", color: "var(--red)" },
               { key: "assumptions", label: "ASSUMPTIONS / QUALIFICATIONS", color: "var(--amber)" },
             ].map(({ key, label, color }) => (
-              <div key={key} style={{ marginBottom: "var(--space-5)" }}>
-                <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)", color, marginBottom: "var(--space-2)", letterSpacing: 0.5 }}>{label}</div>
+              <div key={key} className="mb-sp5">
+                <div className="fs-secondary fw-bold mb-sp2" style={{ color, letterSpacing: 0.5 }}>{label}</div>
                 {editLines[key].map((line, i) => (
-                  <div key={i} style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-1)", alignItems: "center" }}>
-                    <span style={{ fontSize: "var(--text-tab)", color: "var(--text3)", minWidth: 20, textAlign: "right" }}>{i + 1}.</span>
+                  <div key={i} className="mb-sp1 gap-sp2" style={{ display: "flex", alignItems: "center" }}>
+                    <span className="fs-tab c-text3 text-right" style={{ minWidth: 20 }}>{i + 1}.</span>
                     <input
                       className="form-input"
                       value={line}
                       onChange={e => updateLine(key, i, e.target.value)}
-                      style={{ flex: 1, fontSize: "var(--text-label)", padding: "var(--space-1) var(--space-2)" }}
+                      className="fs-label flex-1" style={{ padding: "var(--space-1) var(--space-2)" }}
                     />
                     <button
                       className="btn btn-ghost btn-sm"
                       onClick={() => deleteLine(key, i)}
-                      style={{ padding: "var(--space-1) var(--space-2)", color: "var(--red)", fontSize: "var(--text-secondary)", lineHeight: 1 }}
+                      className="fs-secondary c-red" style={{ padding: "var(--space-1) var(--space-2)", lineHeight: 1 }}
                       title="Remove"
                     >x</button>
                   </div>
                 ))}
-                <button className="btn btn-ghost btn-sm" onClick={() => addLine(key)} style={{ fontSize: "var(--text-label)", marginTop: "var(--space-1)" }}>+ Add</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => addLine(key)} className="fs-label mt-sp1">+ Add</button>
               </div>
             ))}
 
             {/* Proposal metadata fields */}
-            <div style={{ borderTop: "1px solid var(--border)", paddingTop: "var(--space-4)", marginTop: "var(--space-2)" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+            <div className="mt-sp2" style={{ borderTop: "1px solid var(--border)", paddingTop: "var(--space-4)" }}>
+              <div className="gap-sp3 d-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: "var(--text-label)" }}>Proposal Number</label>
-                  <input className="form-input" value={proposalNum} onChange={e => setProposalNum(e.target.value)} style={{ fontSize: "var(--text-label)" }} />
+                  <label className="form-label fs-label">Proposal Number</label>
+                  <input className="form-input" value={proposalNum} onChange={e => setProposalNum(e.target.value)} className="fs-label" />
                 </div>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: "var(--text-label)" }}>Drawing Reference</label>
-                  <input className="form-input" value={drawingRef} onChange={e => setDrawingRef(e.target.value)} placeholder="e.g. A1.01 - A4.02, Rev 3" style={{ fontSize: "var(--text-label)" }} />
+                  <label className="form-label fs-label">Drawing Reference</label>
+                  <input className="form-input" value={drawingRef} onChange={e => setDrawingRef(e.target.value)} placeholder="e.g. A1.01 - A4.02, Rev 3" className="fs-label" />
                 </div>
               </div>
-              <div className="form-group" style={{ marginTop: "var(--space-2)" }}>
-                <label className="form-label" style={{ fontSize: "var(--text-label)" }}>Payment Terms</label>
-                <input className="form-input" value={terms.paymentTerms} onChange={e => setTerms(t => ({ ...t, paymentTerms: e.target.value }))} style={{ fontSize: "var(--text-label)" }} />
+              <div className="form-group mt-sp2">
+                <label className="form-label fs-label">Payment Terms</label>
+                <input className="form-input" value={terms.paymentTerms} onChange={e => setTerms(t => ({ ...t, paymentTerms: e.target.value }))} className="fs-label" />
               </div>
-              <div className="form-group" style={{ marginTop: "var(--space-2)" }}>
-                <label className="form-label" style={{ fontSize: "var(--text-label)" }}>Warranty</label>
-                <input className="form-input" value={terms.warranty} onChange={e => setTerms(t => ({ ...t, warranty: e.target.value }))} style={{ fontSize: "var(--text-label)" }} />
+              <div className="form-group mt-sp2">
+                <label className="form-label fs-label">Warranty</label>
+                <input className="form-input" value={terms.warranty} onChange={e => setTerms(t => ({ ...t, warranty: e.target.value }))} className="fs-label" />
               </div>
-              <div className="form-group" style={{ marginTop: "var(--space-2)" }}>
-                <label className="form-label" style={{ fontSize: "var(--text-label)" }}>Change Order Language</label>
-                <input className="form-input" value={terms.changeOrders} onChange={e => setTerms(t => ({ ...t, changeOrders: e.target.value }))} style={{ fontSize: "var(--text-label)" }} />
+              <div className="form-group mt-sp2">
+                <label className="form-label fs-label">Change Order Language</label>
+                <input className="form-input" value={terms.changeOrders} onChange={e => setTerms(t => ({ ...t, changeOrders: e.target.value }))} className="fs-label" />
               </div>
             </div>
 
             {/* Action buttons */}
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "var(--space-5)", gap: "var(--space-2)" }}>
-              <button className="btn btn-ghost" onClick={() => setStep(1)} style={{ fontSize: "var(--text-label)" }}>
+            <div className="mt-sp5 gap-sp2" style={{ display: "flex", justifyContent: "space-between" }}>
+              <button className="btn btn-ghost" onClick={() => setStep(1)} className="fs-label">
                 &larr; Back to Checklist
               </button>
               <button
                 className="btn"
                 onClick={handleSaveExport}
-                style={{ background: "var(--amber)", color: "#fff", fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)", padding: "var(--space-3) var(--space-6)" }}
+                className="fs-secondary fw-bold c-white" style={{ background: "var(--amber)", padding: "var(--space-3) var(--space-6)" }}
               >
                 Save & Export PDF
               </button>
@@ -2277,7 +2272,7 @@ function EditableText({ value, onChange, style }) {
 
   return (
     <span
-      style={{ ...style, cursor: "pointer", borderBottom: "1px dashed var(--border2)" }}
+      className="cursor-pointer" style={{ ...style, borderBottom: "1px dashed var(--border2)" }}
       onClick={() => { setDraft(value); setEditing(true); }}
       title="Click to edit"
     >
@@ -2297,7 +2292,7 @@ function RoomHeader({ rm, isOpen, roomTotal, onToggle, onUpdateRoom, onDelete, f
   }
 
   return (
-    <div className="room-header flex-between" onClick={onToggle} style={{ cursor: "pointer" }}>
+    <div className="room-header flex-between" onClick={onToggle} className="cursor-pointer">
       <div className="flex gap-8" style={{ alignItems: "center" }}>
         <span style={{ fontSize: "var(--text-secondary)", fontWeight: "var(--weight-semi)", transform: isOpen ? "rotate(90deg)" : "none", display: "inline-block", transition: "transform 0.15s" }}>
           &#9654;
@@ -2326,13 +2321,13 @@ function RoomHeader({ rm, isOpen, roomTotal, onToggle, onUpdateRoom, onDelete, f
         ) : (
           <span>
             <strong>{rm.name}</strong>
-            {rm.floor && <span style={{ color: "var(--text2)", marginLeft: "var(--space-2)", fontSize: "var(--text-label)" }}>({rm.floor})</span>}
+            {rm.floor && <span className="fs-label ml-sp2 c-text2">({rm.floor})</span>}
           </span>
         )}
       </div>
-      <div className="flex gap-8" style={{ alignItems: "center", fontSize: "var(--text-label)" }}>
-        <span style={{ color: "var(--text2)" }}>{(rm.items || []).length} item{(rm.items || []).length !== 1 ? "s" : ""}</span>
-        <span style={{ fontWeight: "var(--weight-semi)", color: "var(--amber)", minWidth: 80, textAlign: "right" }}>{fmt(roomTotal)}</span>
+      <div className="flex gap-8 fs-label" style={{ alignItems: "center" }}>
+        <span className="c-text2">{(rm.items || []).length} item{(rm.items || []).length !== 1 ? "s" : ""}</span>
+        <span className="fw-semi c-amber text-right" style={{ minWidth: 80 }}>{fmt(roomTotal)}</span>
         <button
           className="btn btn-ghost btn-sm"
           title="Edit room"
@@ -2452,7 +2447,7 @@ function QuickProposalModal({ bids, show, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 720, maxHeight: "92vh", overflow: "auto" }}>
+      <div className="modal-content" onClick={e => e.stopPropagation()} className="overflow-auto" style={{ maxWidth: 720, maxHeight: "92vh" }}>
         <div className="flex-between mb-12">
           <h3 className="section-title" style={{ margin: "0" }}>Quick Proposal</h3>
           <button className="btn btn-ghost" onClick={onClose}>✕</button>
@@ -2492,7 +2487,7 @@ function QuickProposalModal({ bids, show, onClose }) {
         {/* Line items */}
         <div className="mb-12">
           <div className="flex-between mb-8">
-            <label className="form-label" style={{ margin: "0", fontWeight: "var(--weight-bold)" }}>Scope Line Items</label>
+            <label className="form-label fw-bold" style={{ margin: "0" }}>Scope Line Items</label>
             <button className="btn btn-sm btn-ghost" onClick={addLineItem}>+ Add Line</button>
           </div>
           {lineItems.map((item, i) => (
@@ -2500,7 +2495,7 @@ function QuickProposalModal({ bids, show, onClose }) {
               <input className="form-input" style={{ flex: 2 }} value={item.description}
                 onChange={e => updateLineItem(i, "description", e.target.value)}
                 placeholder="e.g. Demolition" />
-              <input className="form-input" style={{ flex: 1, textAlign: "right" }} value={item.amount}
+              <input className="form-input text-right flex-1" value={item.amount}
                 onChange={e => updateLineItem(i, "amount", e.target.value)}
                 placeholder="$0" type="number" />
               {lineItems.length > 1 && (
@@ -2508,7 +2503,7 @@ function QuickProposalModal({ bids, show, onClose }) {
               )}
             </div>
           ))}
-          <div style={{ textAlign: "right", fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)", color: "var(--accent)", marginTop: "var(--space-2)" }}>
+          <div className="fw-bold fs-card mt-sp2 text-right" style={{ color: "var(--accent)" }}>
             Total: {fmtMoney(total)}
           </div>
         </div>
@@ -2516,7 +2511,7 @@ function QuickProposalModal({ bids, show, onClose }) {
         {/* Alternates */}
         <div className="mb-12">
           <div className="flex-between mb-8">
-            <label className="form-label" style={{ margin: "0", fontWeight: "var(--weight-bold)" }}>Alternates</label>
+            <label className="form-label fw-bold" style={{ margin: "0" }}>Alternates</label>
             <button className="btn btn-sm btn-ghost" onClick={addAlternate}>+ Add Alternate</button>
           </div>
           {alternates.map((alt, i) => (
@@ -2529,7 +2524,7 @@ function QuickProposalModal({ bids, show, onClose }) {
                 <option value="add">ADD</option>
                 <option value="deduct">DEDUCT</option>
               </select>
-              <input className="form-input" style={{ flex: 1, textAlign: "right" }} value={alt.amount}
+              <input className="form-input text-right flex-1" value={alt.amount}
                 onChange={e => updateAlternate(i, "amount", e.target.value)}
                 placeholder="$0" type="number" />
               <button className="btn btn-sm btn-danger" onClick={() => removeAlternate(i)} style={{ padding: "var(--space-1) var(--space-2)" }}>✕</button>
@@ -2551,36 +2546,36 @@ function QuickProposalModal({ bids, show, onClose }) {
           </div>
 
           {editSection === "includes" && (
-            <div className="card" style={{ padding: "var(--space-3)", maxHeight: 240, overflowY: "auto" }}>
+            <div className="card p-sp3" style={{ maxHeight: 240, overflowY: "auto" }}>
               <div className="flex-between mb-8">
                 <span className="text-sm font-semi">Includes</span>
                 <button className="btn btn-sm btn-ghost" onClick={() => setIncludes(prev => [...prev, ""])}>+ Add</button>
               </div>
               {includes.map((line, i) => (
                 <div key={i} className="flex gap-4 mb-4" style={{ alignItems: "center" }}>
-                  <span className="text-xs" style={{ width: 20, textAlign: "right", opacity: 0.5 }}>{i + 1}.</span>
-                  <input className="form-input" style={{ flex: 1, fontSize: "var(--text-label)" }} value={line}
+                  <span className="text-xs text-right opacity-50" style={{ width: 20 }}>{i + 1}.</span>
+                  <input className="form-input fs-label flex-1" value={line}
                     onChange={e => setIncludes(prev => prev.map((l, idx) => idx === i ? e.target.value : l))} />
                   <button className="btn btn-sm btn-danger" onClick={() => setIncludes(prev => prev.filter((_, idx) => idx !== i))}
-                    style={{ padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-tab)" }}>✕</button>
+                    className="fs-tab" style={{ padding: "var(--space-1) var(--space-2)" }}>✕</button>
                 </div>
               ))}
             </div>
           )}
 
           {editSection === "excludes" && (
-            <div className="card" style={{ padding: "var(--space-3)", maxHeight: 240, overflowY: "auto" }}>
+            <div className="card p-sp3" style={{ maxHeight: 240, overflowY: "auto" }}>
               <div className="flex-between mb-8">
                 <span className="text-sm font-semi">Excludes</span>
                 <button className="btn btn-sm btn-ghost" onClick={() => setExcludes(prev => [...prev, ""])}>+ Add</button>
               </div>
               {excludes.map((line, i) => (
                 <div key={i} className="flex gap-4 mb-4" style={{ alignItems: "center" }}>
-                  <span className="text-xs" style={{ width: 20, textAlign: "right", opacity: 0.5 }}>{i + 1}.</span>
-                  <input className="form-input" style={{ flex: 1, fontSize: "var(--text-label)" }} value={line}
+                  <span className="text-xs text-right opacity-50" style={{ width: 20 }}>{i + 1}.</span>
+                  <input className="form-input fs-label flex-1" value={line}
                     onChange={e => setExcludes(prev => prev.map((l, idx) => idx === i ? e.target.value : l))} />
                   <button className="btn btn-sm btn-danger" onClick={() => setExcludes(prev => prev.filter((_, idx) => idx !== i))}
-                    style={{ padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-tab)" }}>✕</button>
+                    className="fs-tab" style={{ padding: "var(--space-1) var(--space-2)" }}>✕</button>
                 </div>
               ))}
             </div>
@@ -2596,11 +2591,11 @@ function QuickProposalModal({ bids, show, onClose }) {
 
         {/* Post-generation actions */}
         {generatedPdf && (
-          <div className="mb-12" style={{ background: "var(--bg-success, #f0fdf4)", border: "1px solid var(--border-success, #bbf7d0)", borderRadius: "var(--radius-control)", padding: "var(--space-3)" }}>
+          <div className="mb-12 rounded-control p-sp3" style={{ background: "var(--bg-success, #f0fdf4)", border: "1px solid var(--border-success, #bbf7d0)" }}>
             <div className="text-sm font-semi mb-8" style={{ color: "var(--accent)" }}>
               PDF Ready: {generatedPdf.fileName}
             </div>
-            <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
+            <div className="flex gap-8 flex-wrap">
               <button className="btn btn-sm btn-ghost" onClick={handleOpenPdf} title="Open PDF in a new tab">
                 Open PDF
               </button>

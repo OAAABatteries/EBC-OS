@@ -112,29 +112,29 @@ export function CalendarConflicts({ app, lang, conflicts }) {
   return (
     <div className="cal-conflicts">
       {/* Stats */}
-      <div className="cal-lookahead-kpis" style={{ marginBottom: "var(--space-4)" }}>
-        <div className="cal-lookahead-kpi" onClick={() => setFilterSeverity("error")} style={{ cursor: "pointer" }}>
-          <div className="cal-lookahead-kpi-val" style={{ color: "var(--red)" }}>{stats.error}</div>
+      <div className="cal-lookahead-kpis mb-sp4">
+        <div className="cal-lookahead-kpi" onClick={() => setFilterSeverity("error")} className="cursor-pointer">
+          <div className="cal-lookahead-kpi-val c-red">{stats.error}</div>
           <div className="cal-lookahead-kpi-lbl">{t("Critical")}</div>
         </div>
-        <div className="cal-lookahead-kpi" onClick={() => setFilterSeverity("warning")} style={{ cursor: "pointer" }}>
-          <div className="cal-lookahead-kpi-val" style={{ color: "var(--amber)" }}>{stats.warning}</div>
+        <div className="cal-lookahead-kpi" onClick={() => setFilterSeverity("warning")} className="cursor-pointer">
+          <div className="cal-lookahead-kpi-val c-amber">{stats.warning}</div>
           <div className="cal-lookahead-kpi-lbl">{t("Warnings")}</div>
         </div>
-        <div className="cal-lookahead-kpi" onClick={() => setFilterSeverity("info")} style={{ cursor: "pointer" }}>
-          <div className="cal-lookahead-kpi-val" style={{ color: "var(--blue)" }}>{stats.info}</div>
+        <div className="cal-lookahead-kpi" onClick={() => setFilterSeverity("info")} className="cursor-pointer">
+          <div className="cal-lookahead-kpi-val c-blue">{stats.info}</div>
           <div className="cal-lookahead-kpi-lbl">{t("Info")}</div>
         </div>
-        <div className="cal-lookahead-kpi" onClick={() => { setFilterSeverity("all"); setShowResolved(false); }} style={{ cursor: "pointer" }}>
+        <div className="cal-lookahead-kpi" onClick={() => { setFilterSeverity("all"); setShowResolved(false); }} className="cursor-pointer">
           <div className="cal-lookahead-kpi-val">{stats.total - stats.resolved}</div>
           <div className="cal-lookahead-kpi-lbl">{t("Unresolved")}</div>
         </div>
       </div>
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-3)", flexWrap: "wrap", alignItems: "center" }}>
+      <div className="mb-sp3 gap-sp2 flex-wrap" style={{ display: "flex", alignItems: "center" }}>
         <select
-          style={{ background: "var(--bg3)", border: "1px solid var(--border)", color: "var(--text)", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius)", fontSize: "var(--text-label)" }}
+          className="fs-label bg-bg3 c-text" style={{ border: "1px solid var(--border)", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius)" }}
           value={filterSeverity}
           onChange={e => setFilterSeverity(e.target.value)}
         >
@@ -144,7 +144,7 @@ export function CalendarConflicts({ app, lang, conflicts }) {
           <option value="info">{t("Info")}</option>
         </select>
         <select
-          style={{ background: "var(--bg3)", border: "1px solid var(--border)", color: "var(--text)", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius)", fontSize: "var(--text-label)" }}
+          className="fs-label bg-bg3 c-text" style={{ border: "1px solid var(--border)", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius)" }}
           value={filterType}
           onChange={e => setFilterType(e.target.value)}
         >
@@ -153,7 +153,7 @@ export function CalendarConflicts({ app, lang, conflicts }) {
             <option key={type} value={type}>{typeLabel(type)}</option>
           ))}
         </select>
-        <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
+        <label className="flex fs-label c-text2 gap-sp1">
           <input type="checkbox" checked={showResolved} onChange={e => setShowResolved(e.target.checked)} />
           {t("Show resolved")}
         </label>
@@ -162,36 +162,33 @@ export function CalendarConflicts({ app, lang, conflicts }) {
       {/* Conflict list */}
       <div className="cal-pto-list">
         {filtered.length === 0 && (
-          <div style={{ color: "var(--text3)", fontSize: "var(--text-label)", padding: "var(--space-4)" }}>
+          <div className="fs-label p-sp4 c-text3">
             {stats.total === 0 ? t("No conflicts detected") : t("No conflicts match filters")}
           </div>
         )}
         {filtered.map(c => (
           <div key={c.id} className="cal-pto-card" style={{ borderLeft: `3px solid ${SEVERITY_COLORS[c.severity] || "#94a3b8"}` }}>
             <div className="cal-pto-card-top">
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center", marginBottom: "var(--space-1)" }}>
-                  <span style={{
-                    fontSize: "var(--text-xs)", fontWeight: "var(--weight-semi)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)",
+              <div className="flex-1">
+                <div className="mb-sp1 gap-sp2" style={{ display: "flex", alignItems: "center" }}>
+                  <span className="rounded-control fw-semi fs-xs uppercase" style={{ padding: "var(--space-1) var(--space-2)",
                     background: SEVERITY_COLORS[c.severity] + "22",
-                    color: SEVERITY_COLORS[c.severity],
-                    textTransform: "uppercase",
-                  }}>
+                    color: SEVERITY_COLORS[c.severity] }}>
                     {SEVERITY_LABELS[c.severity]}
                   </span>
-                  <span style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{typeLabel(c.type)}</span>
+                  <span className="fs-tab c-text3">{typeLabel(c.type)}</span>
                 </div>
-                <div style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-medium)", marginBottom: "var(--space-1)" }}>{c.description}</div>
-                <div style={{ fontSize: "var(--text-tab)", color: "var(--text3)" }}>{c.date}</div>
+                <div className="fw-medium mb-sp1 fs-label">{c.description}</div>
+                <div className="fs-tab c-text3">{c.date}</div>
                 {c.resolved && (
-                  <div style={{ fontSize: "var(--text-tab)", color: "var(--green)", marginTop: "var(--space-1)" }}>
+                  <div className="fs-tab mt-sp1 c-green">
                     Resolved by {c.resolvedBy} — {c.resolution === "reassign" ? "Reassigned" : c.resolution === "override" ? "Override approved" : "Dismissed"}
-                    {c.resolveNote && <span style={{ color: "var(--text3)" }}> — {c.resolveNote}</span>}
+                    {c.resolveNote && <span className="c-text3"> — {c.resolveNote}</span>}
                   </div>
                 )}
               </div>
               {!c.resolved && (
-                <button onClick={() => handleResolve(c)} style={{ padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-tab)", fontWeight: "var(--weight-semi)", background: "var(--amber-dim)", border: "1px solid var(--amber)", color: "var(--amber)", borderRadius: "var(--radius-control)", cursor: "pointer", whiteSpace: "nowrap", alignSelf: "flex-start" }}>
+                <button onClick={() => handleResolve(c)} className="rounded-control fw-semi fs-tab c-amber nowrap cursor-pointer" style={{ padding: "var(--space-1) var(--space-3)", background: "var(--amber-dim)", border: "1px solid var(--amber)", alignSelf: "flex-start" }}>
                   {t("Resolve")}
                 </button>
               )}
@@ -202,24 +199,24 @@ export function CalendarConflicts({ app, lang, conflicts }) {
 
       {/* Resolve Modal */}
       {resolveModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setResolveModal(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", padding: "var(--space-6)", width: "95%", maxWidth: 420 }}>
-            <h3 style={{ margin: "0 0 4px", color: "var(--amber)" }}>{t("Resolve Conflict")}</h3>
-            <div style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-4)" }}>{resolveModal.description}</div>
+        <div className="flex justify-center" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9999 }} onClick={() => setResolveModal(null)}>
+          <div onClick={e => e.stopPropagation()} className="rounded-control p-sp6 bg-bg3" style={{ border: "1px solid var(--border)", width: "95%", maxWidth: 420 }}>
+            <h3 className="c-amber" style={{ margin: "0 0 4px" }}>{t("Resolve Conflict")}</h3>
+            <div className="mb-sp4 fs-label c-text2">{resolveModal.description}</div>
 
-            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>{t("Resolution Action")}</label>
-            <select value={resolveAction} onChange={e => setResolveAction(e.target.value)} style={{ width: "100%", padding: "var(--space-2)", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text)", marginBottom: "var(--space-3)" }}>
+            <label className="mb-sp1 fs-label c-text2 d-block">{t("Resolution Action")}</label>
+            <select value={resolveAction} onChange={e => setResolveAction(e.target.value)} className="rounded-control mb-sp3 p-sp2 bg-bg2 c-text w-full" style={{ border: "1px solid var(--border)" }}>
               <option value="dismiss">{t("Dismiss — Not applicable")}</option>
               <option value="reassign">{t("Reassign team / equipment")}</option>
               <option value="override">{t("Approve override")}</option>
             </select>
 
-            <label style={{ fontSize: "var(--text-label)", color: "var(--text2)", display: "block", marginBottom: "var(--space-1)" }}>{t("Notes (optional)")}</label>
-            <textarea value={resolveNote} onChange={e => setResolveNote(e.target.value)} rows={2} placeholder={t("Add context for this resolution...")} style={{ width: "100%", padding: "var(--space-2)", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text)", marginBottom: "var(--space-4)", resize: "vertical" }} />
+            <label className="mb-sp1 fs-label c-text2 d-block">{t("Notes (optional)")}</label>
+            <textarea value={resolveNote} onChange={e => setResolveNote(e.target.value)} rows={2} placeholder={t("Add context for this resolution...")} className="rounded-control mb-sp4 p-sp2 bg-bg2 c-text w-full" style={{ border: "1px solid var(--border)", resize: "vertical" }} />
 
-            <div style={{ display: "flex", gap: "var(--space-2)", justifyContent: "flex-end" }}>
-              <button onClick={() => setResolveModal(null)} style={{ padding: "var(--space-2) var(--space-4)", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text2)", cursor: "pointer" }}>{t("Cancel")}</button>
-              <button onClick={confirmResolve} style={{ padding: "var(--space-2) var(--space-5)", background: "var(--amber)", border: "none", borderRadius: "var(--radius-control)", color: "#000", fontWeight: "var(--weight-semi)", cursor: "pointer" }}>{t("Confirm")}</button>
+            <div className="gap-sp2" style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button onClick={() => setResolveModal(null)} className="rounded-control bg-bg2 c-text2 cursor-pointer" style={{ padding: "var(--space-2) var(--space-4)", border: "1px solid var(--border)" }}>{t("Cancel")}</button>
+              <button onClick={confirmResolve} className="rounded-control fw-semi cursor-pointer" style={{ padding: "var(--space-2) var(--space-5)", background: "var(--amber)", border: "none", color: "#000" }}>{t("Confirm")}</button>
             </div>
           </div>
         </div>

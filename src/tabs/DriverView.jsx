@@ -870,14 +870,14 @@ export function DriverView({ app }) {
               const todayReturns = returnTrips.filter(rt => rt.driverId === activeDriver?.id && new Date(rt.createdAt).toDateString() === new Date().toDateString() && rt.status === "pending");
               if (todayReturns.length === 0) return null;
               return (
-                <div style={{ marginTop: "var(--space-4)" }}>
-                  <div className="section-header" style={{ marginBottom: "var(--space-2)" }}>
-                    <div className="section-title driver-section-title" style={{ color: "var(--amber)" }}>
-                      <RefreshCw size={14} style={{ marginRight: "var(--space-2)" }} />{t("Return Pickup")}s ({todayReturns.length})
+                <div className="mt-sp4">
+                  <div className="section-header mb-sp2">
+                    <div className="section-title driver-section-title c-amber">
+                      <RefreshCw size={14} className="mr-sp2" />{t("Return Pickup")}s ({todayReturns.length})
                     </div>
                   </div>
                   {todayReturns.map(rt => (
-                    <PremiumCard key={rt.id} variant="info" style={{ marginBottom: "var(--space-2)", borderLeft: "3px solid var(--amber)" }}>
+                    <PremiumCard key={rt.id} variant="info" className="mb-sp2" style={{ borderLeft: "3px solid var(--amber)" }}>
                       <div className="flex-between mb-4">
                         <span className="text-sm font-semi">{rt.material}</span>
                         <span className="driver-return-chip">{t("Return")}</span>
@@ -926,10 +926,10 @@ export function DriverView({ app }) {
                       <div className="text-xs text-muted mb-4">{req.projectName} — {req.qty} {req.unit}</div>
                       <div className="text-xs text-dim">{t("Delivered")} {fmtTime(req.deliveredAt)}</div>
                       {req.pod && (
-                        <div style={{ marginTop: "var(--space-2)", padding: "var(--space-2)", background: "var(--bg3)", borderRadius: "var(--radius-control)", fontSize: "var(--text-label)" }}>
-                          <div style={{ color: "var(--green)", fontWeight: "var(--weight-bold)" }}>POD: {req.pod.recipientName} — {req.pod.condition}</div>
-                          {req.pod.photos?.length > 0 && <div style={{ color: "var(--text3)" }}>{req.pod.photos.length} photo(s)</div>}
-                          <div style={{ color: "var(--blue)", fontSize: "var(--text-tab)", marginTop: "var(--space-1)", fontWeight: "var(--weight-semi)" }}>{t("Tap to view full POD")} →</div>
+                        <div className="rounded-control fs-label mt-sp2 p-sp2 bg-bg3">
+                          <div className="fw-bold c-green">POD: {req.pod.recipientName} — {req.pod.condition}</div>
+                          {req.pod.photos?.length > 0 && <div className="c-text3">{req.pod.photos.length} photo(s)</div>}
+                          <div className="fw-semi fs-tab mt-sp1 c-blue">{t("Tap to view full POD")} →</div>
                         </div>
                       )}
                     </PremiumCard>
@@ -946,14 +946,14 @@ export function DriverView({ app }) {
               </FieldButton>
             </div>
             {returnTrips.filter(rt => rt.driverId === activeDriver?.id && new Date(rt.createdAt).toDateString() === new Date().toDateString()).length === 0 ? (
-              <div className="text-xs text-muted" style={{padding: "var(--space-4)", textAlign: "center"}}>{t("No return trips today")}</div>
+              <div className="text-xs text-muted p-sp4 text-center">{t("No return trips today")}</div>
             ) : (
               <div className="driver-route-list">
                 {returnTrips.filter(rt => rt.driverId === activeDriver?.id && new Date(rt.createdAt).toDateString() === new Date().toDateString()).map(rt => (
                   <PremiumCard key={rt.id} variant="info" className="driver-completed-card">
                     <div className="flex-between mb-4">
                       <span className="text-sm font-semi">{rt.material}</span>
-                      <span style={{fontSize: "var(--text-xs)", fontWeight: "var(--weight-bold)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", background: "var(--amber-dim)", color: "var(--amber)", textTransform: "uppercase"}}>{t("Return")}</span>
+                      <span className="rounded-control fw-bold fs-xs uppercase c-amber" style={{ padding: "var(--space-1) var(--space-2)", background: "var(--amber-dim)" }}>{t("Return")}</span>
                     </div>
                     <div className="text-xs text-muted mb-4">{rt.reason} → {t(rt.destination)} &middot; {rt.qty} {t("items")}</div>
                     {rt.notes && <div className="text-xs text-dim">{rt.notes}</div>}
@@ -1046,7 +1046,7 @@ export function DriverView({ app }) {
               <h3 className="text-base font-bold">{t("Confirm Load")}</h3>
               <button className="modal-close touch-target" onClick={() => setLoadVerifyStop(null)}>&times;</button>
             </div>
-            <div style={{padding: "var(--space-4)"}}>
+            <div className="p-sp4">
               <div className="text-sm mb-4">
                 <strong>{loadVerifyStop.materialName || loadVerifyStop.material}</strong>
               </div>
@@ -1056,11 +1056,11 @@ export function DriverView({ app }) {
               <div className="text-xs text-muted mb-8">
                 {t("Pickup")}: <strong>{loadVerifyStop.pickupName || "EBC Yard"}</strong>
               </div>
-              <label className="text-xs font-semi mb-2" style={{display: "block"}}>{t("Loaded Qty")} ({t("expected")}: {loadVerifyStop.qty} {loadVerifyStop.unit})</label>
-              <input type="number" className="form-input field-input mb-8" value={loadQty} onChange={e => setLoadQty(e.target.value)} style={{fontSize: "var(--text-card)", height: 48}} />
-              <label className="text-xs font-semi mb-2" style={{display: "block"}}>{t("Notes")} ({t("optional")})</label>
+              <label className="text-xs font-semi mb-2 d-block">{t("Loaded Qty")} ({t("expected")}: {loadVerifyStop.qty} {loadVerifyStop.unit})</label>
+              <input type="number" className="form-input field-input mb-8" value={loadQty} onChange={e => setLoadQty(e.target.value)} className="fs-card" style={{ height: 48 }} />
+              <label className="text-xs font-semi mb-2 d-block">{t("Notes")} ({t("optional")})</label>
               <input type="text" className="form-input field-input mb-8" value={loadNote} onChange={e => setLoadNote(e.target.value)} placeholder={t("e.g. 10 sheets short")} />
-              <FieldButton variant="primary" onClick={confirmLoadAndStart} t={t} style={{width: "100%", height: 48}}>
+              <FieldButton variant="primary" onClick={confirmLoadAndStart} t={t} className="w-full" style={{ height: 48 }}>
                 <CheckCircle size={16} /> {t("Confirm & Start")}
               </FieldButton>
             </div>
@@ -1076,27 +1076,27 @@ export function DriverView({ app }) {
               <h3 className="text-base font-bold">{t("Add Return Trip")}</h3>
               <button className="modal-close touch-target" onClick={() => setShowReturnForm(false)}>&times;</button>
             </div>
-            <div style={{padding: "var(--space-4)"}}>
-              <label className="text-xs font-semi mb-2" style={{display: "block"}}>{t("Material / Item")}</label>
-              <input type="text" className="form-input field-input mb-8" value={returnForm.material} onChange={e => setReturnForm(p => ({...p, material: e.target.value}))} placeholder={t("e.g. Leftover ceiling tiles")} style={{fontSize: "var(--text-secondary)"}} />
-              <label className="text-xs font-semi mb-2" style={{display: "block"}}>{t("Qty")}</label>
-              <input type="number" className="form-input field-input mb-8" value={returnForm.qty} onChange={e => setReturnForm(p => ({...p, qty: e.target.value}))} style={{fontSize: "var(--text-secondary)"}} />
-              <label className="text-xs font-semi mb-2" style={{display: "block"}}>{t("Return reason")}</label>
+            <div className="p-sp4">
+              <label className="text-xs font-semi mb-2 d-block">{t("Material / Item")}</label>
+              <input type="text" className="form-input field-input mb-8" value={returnForm.material} onChange={e => setReturnForm(p => ({...p, material: e.target.value}))} placeholder={t("e.g. Leftover ceiling tiles")} className="fs-secondary" />
+              <label className="text-xs font-semi mb-2 d-block">{t("Qty")}</label>
+              <input type="number" className="form-input field-input mb-8" value={returnForm.qty} onChange={e => setReturnForm(p => ({...p, qty: e.target.value}))} className="fs-secondary" />
+              <label className="text-xs font-semi mb-2 d-block">{t("Return reason")}</label>
               <select className="form-input field-input mb-8" value={returnForm.reason} onChange={e => setReturnForm(p => ({...p, reason: e.target.value}))}>
                 <option value="Material Return">{t("Material Return")}</option>
                 <option value="Equipment Return">{t("Equipment Return")}</option>
                 <option value="Trash/Debris">{t("Trash/Debris")}</option>
                 <option value="Tool Pickup">{t("Tool Pickup")}</option>
               </select>
-              <label className="text-xs font-semi mb-2" style={{display: "block"}}>{t("Destination")}</label>
+              <label className="text-xs font-semi mb-2 d-block">{t("Destination")}</label>
               <select className="form-input field-input mb-8" value={returnForm.destination} onChange={e => setReturnForm(p => ({...p, destination: e.target.value}))}>
                 <option value="Yard">{t("Yard")}</option>
                 <option value="Warehouse">{t("Warehouse")}</option>
                 <option value="Next Jobsite">{t("Next Jobsite")}</option>
               </select>
-              <label className="text-xs font-semi mb-2" style={{display: "block"}}>{t("Notes")} ({t("optional")})</label>
-              <input type="text" className="form-input field-input mb-8" value={returnForm.notes} onChange={e => setReturnForm(p => ({...p, notes: e.target.value}))} style={{fontSize: "var(--text-secondary)"}} />
-              <FieldButton variant="primary" onClick={handleAddReturn} t={t} style={{width: "100%", height: 48}}>
+              <label className="text-xs font-semi mb-2 d-block">{t("Notes")} ({t("optional")})</label>
+              <input type="text" className="form-input field-input mb-8" value={returnForm.notes} onChange={e => setReturnForm(p => ({...p, notes: e.target.value}))} className="fs-secondary" />
+              <FieldButton variant="primary" onClick={handleAddReturn} t={t} className="w-full" style={{ height: 48 }}>
                 <RefreshCw size={16} /> {t("Add Return Trip")}
               </FieldButton>
             </div>
@@ -1124,19 +1124,19 @@ export function DriverView({ app }) {
       {/* Refuse delivery confirmation */}
       {refusedStop && (
         <div className="field-tab-sheet-overlay" onClick={() => setRefusedStop(null)}>
-          <div className="field-tab-sheet" onClick={e => e.stopPropagation()} style={{ maxWidth: 400, padding: "var(--space-6)" }}>
-            <h3 style={{ margin: "0 0 12px", fontSize: "var(--text-card)", color: "var(--red)" }}>{t("Refuse Delivery")}</h3>
-            <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", margin: "0 0 12px" }}>
+          <div className="field-tab-sheet" onClick={e => e.stopPropagation()} className="p-sp6" style={{ maxWidth: 400 }}>
+            <h3 className="fs-card c-red" style={{ margin: "0 0 12px" }}>{t("Refuse Delivery")}</h3>
+            <p className="fs-label c-text2" style={{ margin: "0 0 12px" }}>
               {refusedStop.projectName} — {refusedStop.material || refusedStop.materialName}
             </p>
-            <label style={{ fontSize: "var(--text-label)", fontWeight: "var(--weight-bold)", color: "var(--text2)", display: "block", marginBottom: "var(--space-2)" }}>{t("Reason")}</label>
+            <label className="fw-bold mb-sp2 fs-label c-text2 d-block">{t("Reason")}</label>
             <textarea
               value={refuseReason}
               onChange={e => setRefuseReason(e.target.value)}
               placeholder={t("Site not ready, wrong material, no one to receive...")}
-              style={{ width: "100%", minHeight: 80, padding: "var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid var(--border)", background: "var(--bg2)", color: "var(--text1)", fontSize: "var(--text-secondary)", resize: "vertical" }}
+              className="rounded-control fs-secondary p-sp3 bg-bg2 w-full" style={{ minHeight: 80, border: "1px solid var(--border)", color: "var(--text1)", resize: "vertical" }}
             />
-            <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-4)" }}>
+            <div className="mt-sp4 gap-sp2" style={{ display: "flex" }}>
               <FieldButton variant="ghost" className="flex-1" onClick={() => setRefusedStop(null)} t={t}>{t("Cancel")}</FieldButton>
               <FieldButton variant="danger" className="flex-1" onClick={confirmRefuseDelivery} t={t}>{t("Confirm Refusal")}</FieldButton>
             </div>
@@ -1168,16 +1168,16 @@ export function DriverView({ app }) {
               </div>
               {/* GPS */}
               {viewPod.pod.gps && (
-                <div><div className="pod-label">{t("GPS Location")}</div><div style={{ fontSize: "var(--text-label)" }}>{viewPod.pod.gps.lat.toFixed(5)}, {viewPod.pod.gps.lng.toFixed(5)} <span style={{ color: "var(--text3)", fontSize: "var(--text-tab)" }}>(±{viewPod.pod.gps.accuracy}m)</span></div></div>
+                <div><div className="pod-label">{t("GPS Location")}</div><div className="fs-label">{viewPod.pod.gps.lat.toFixed(5)}, {viewPod.pod.gps.lng.toFixed(5)} <span className="fs-tab c-text3">(±{viewPod.pod.gps.accuracy}m)</span></div></div>
               )}
               {/* Notes */}
               {viewPod.pod.notes && (
-                <div><div className="pod-label">{t("Notes")}</div><div style={{ fontSize: "var(--text-label)" }}>{viewPod.pod.notes}</div></div>
+                <div><div className="pod-label">{t("Notes")}</div><div className="fs-label">{viewPod.pod.notes}</div></div>
               )}
               {/* Photos */}
               {viewPod.pod.photos?.length > 0 && (
                 <div>
-                  <div className="pod-label" style={{ marginBottom: "var(--space-2)" }}>{t("Photos")} ({viewPod.pod.photos.length})</div>
+                  <div className="pod-label mb-sp2">{t("Photos")} ({viewPod.pod.photos.length})</div>
                   <div className="pod-photo-grid">
                     {viewPod.pod.photos.map((p, i) => <img key={i} src={p.data} alt={p.name} />)}
                   </div>
@@ -1186,7 +1186,7 @@ export function DriverView({ app }) {
               {/* Signature */}
               {viewPod.pod.signature && (
                 <div>
-                  <div className="pod-label" style={{ marginBottom: "var(--space-2)" }}>{t("Signature")}</div>
+                  <div className="pod-label mb-sp2">{t("Signature")}</div>
                   <div className="pod-signature">
                     <img src={viewPod.pod.signature} alt="Signature" />
                   </div>

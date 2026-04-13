@@ -1,4 +1,5 @@
-import { UserPlus, X, Search, CheckSquare, Square, CheckCircle, Clock, PenLine, Users, Shield } from "lucide-react";
+import { useState } from "react";
+import { UserPlus, X, Search, CheckSquare, Square, CheckCircle, Clock, PenLine, Users, Shield, ArrowRightLeft } from "lucide-react";
 import { PremiumCard, FieldButton, EmptyState, Skeleton, CredentialCard } from "../../components/field";
 
 const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri"];
@@ -15,7 +16,7 @@ export function TeamTab({
   handleEditLabor, handleDeleteLabor, clearLaborDraft,
   showCrewAdd, setShowCrewAdd, teamAddSearch, setCrewAddSearch, teamAddRef,
   extraCrewIds, setExtraCrewIds,
-  selectedProjectId, areas, COST_CODES,
+  selectedProjectId, areas, COST_CODES, teamSchedule, setTeamSchedule,
   pendingRequests, pendingLoading,
   setApprovalSheet, setApprovalComment,
   filteredCrewCerts, certFilter, setCertFilter, certsLoading,
@@ -26,6 +27,11 @@ export function TeamTab({
     .map(id => employees.find(e => String(e.id) === String(id)))
     .filter(Boolean);
   const allDisplayCrew = [...teamForProject, ...extraCrew];
+
+  // Crew reassignment state
+  const [reassignMode, setReassignMode] = useState(false);
+  const [selectedCrew, setSelectedCrew] = useState({});
+  const [targetArea, setTargetArea] = useState("");
 
   const teamAddFiltered = (() => {
     const q = teamAddSearch.toLowerCase().trim();
@@ -68,14 +74,14 @@ export function TeamTab({
           {allDisplayCrew.map(c => (
             <label key={c.id} style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)", cursor: teamClocks[c.id] ? "default" : "pointer", opacity: teamClocks[c.id] ? 0.5 : 1 }}>
               {teamClocks[c.id] ? (
-                <CheckCircle size={18} style={{ color: "var(--green)", flexShrink: 0 }} />
+                <CheckCircle size={18} className="c-green flex-shrink-0" />
               ) : (
                 rollCallSelected[c.id]
-                  ? <CheckSquare size={18} style={{ color: "var(--accent)", flexShrink: 0 }} onClick={() => setRollCallSelected(p => ({ ...p, [c.id]: false }))} />
-                  : <Square size={18} style={{ color: "var(--text3)", flexShrink: 0 }} onClick={() => setRollCallSelected(p => ({ ...p, [c.id]: true }))} />
+                  ? <CheckSquare size={18} className="flex-shrink-0" style={{ color: "var(--accent)" }} onClick={() => setRollCallSelected(p => ({ ...p, [c.id]: false }))} />
+                  : <Square size={18} className="c-text3 flex-shrink-0" onClick={() => setRollCallSelected(p => ({ ...p, [c.id]: true }))} />
               )}
               <span className="text-sm frm-flex-1">{c.name}</span>
-              {teamClocks[c.id] && <span className="text-xs" style={{ color: "var(--green)" }}>{"\u2713"} {t("Clocked In")}</span>}
+              {teamClocks[c.id] && <span className="text-xs c-green">{"\u2713"} {t("Clocked In")}</span>}
             </label>
           ))}
           <button
@@ -93,7 +99,7 @@ export function TeamTab({
         <div className="frm-roll-call-card">
           <div className="frm-flex-between frm-mb-10">
             <div className="text-sm font-bold">{t("Labor Entry")}</div>
-            <div className="frm-flex-row" style={{ gap: "var(--space-1)" }}>
+            <div className="frm-flex-row gap-sp1">
               <button className={`btn btn-sm ${bulkLaborMode ? "btn-primary" : "btn-ghost"} frm-font-11`} style={{ padding: "var(--space-1) var(--space-3)" }} onClick={() => setBulkLaborMode(true)}>{t("Bulk")}</button>
               <button className={`btn btn-sm ${!bulkLaborMode ? "btn-primary" : "btn-ghost"} frm-font-11`} style={{ padding: "var(--space-1) var(--space-3)" }} onClick={() => setBulkLaborMode(false)}>{t("Single")}</button>
             </div>
@@ -112,8 +118,8 @@ export function TeamTab({
               {allDisplayCrew.map(c => (
                 <label key={c.id} className="frm-labor-crew-row">
                   {bulkLaborSelected[c.id]
-                    ? <CheckSquare size={16} style={{ color: "var(--accent)", flexShrink: 0 }} onClick={() => setBulkLaborSelected(p => ({ ...p, [c.id]: false }))} />
-                    : <Square size={16} style={{ color: "var(--text3)", flexShrink: 0 }} onClick={() => setBulkLaborSelected(p => ({ ...p, [c.id]: true }))} />
+                    ? <CheckSquare size={16} className="flex-shrink-0" style={{ color: "var(--accent)" }} onClick={() => setBulkLaborSelected(p => ({ ...p, [c.id]: false }))} />
+                    : <Square size={16} className="c-text3 flex-shrink-0" onClick={() => setBulkLaborSelected(p => ({ ...p, [c.id]: true }))} />
                   }
                   <span className="text-sm">{c.name}</span>
                 </label>
@@ -135,7 +141,7 @@ export function TeamTab({
             {COST_CODES.map(cc => <option key={cc} value={cc}>{t(cc.charAt(0).toUpperCase() + cc.slice(1))}</option>)}
           </select>
           <div className="frm-flex-row">
-            <input type="number" className="form-input field-input mb-8" placeholder={t("Hours")} value={laborForm.hours} onChange={e => setLaborForm(p => ({ ...p, hours: e.target.value }))} style={{ flex: 1, fontSize: "var(--text-card)", height: 48 }} />
+            <input type="number" className="form-input field-input mb-8" placeholder={t("Hours")} value={laborForm.hours} onChange={e => setLaborForm(p => ({ ...p, hours: e.target.value }))} className="fs-card flex-1" style={{ height: 48 }} />
             <select className="form-input field-input mb-8 frm-flex-1" value={laborForm.payType} onChange={e => setLaborForm(p => ({ ...p, payType: e.target.value }))}>
               <option value="regular">{t("Regular")}</option>
               <option value="overtime">{t("Overtime")}</option>
@@ -166,7 +172,7 @@ export function TeamTab({
                   <span className="frm-flex-1 frm-truncate">{le.employeeName}</span>
                   <span className="text-muted">{le.costCode}</span>
                   {editingLaborId === le.id ? (
-                    <div className="frm-flex-row-center" style={{ gap: "var(--space-1)" }}>
+                    <div className="frm-flex-row-center gap-sp1">
                       <input type="number" value={editingLaborHours} onChange={e => setEditingLaborHours(e.target.value)}
                         className="frm-labor-edit-input"
                         autoFocus onKeyDown={e => { if (e.key === "Enter") { handleEditLabor(le.id, editingLaborHours); setEditingLaborId(null); } if (e.key === "Escape") setEditingLaborId(null); }} />
@@ -210,7 +216,7 @@ export function TeamTab({
       {showCrewAdd && (
         <div className="frm-crew-add-wrap">
           <div className="frm-crew-add-header">
-            <Search size={14} style={{ color: "var(--text3)", flexShrink: 0 }} />
+            <Search size={14} className="c-text3 flex-shrink-0" />
             <input
               ref={teamAddRef}
               autoFocus
@@ -241,8 +247,8 @@ export function TeamTab({
                   {emp.name.split(" ").map(n => n[0]).join("")}
                 </div>
                 <div className="frm-flex-1">
-                  <div className="frm-font-14" style={{ color: "var(--text)" }}>{emp.name}</div>
-                  <div className="frm-font-11" style={{ color: "var(--text3)" }}>{emp.role || ""}</div>
+                  <div className="frm-font-14 c-text">{emp.name}</div>
+                  <div className="frm-font-11 c-text3">{emp.role || ""}</div>
                 </div>
                 <UserPlus size={14} className="frm-amber" />
               </div>
@@ -253,7 +259,7 @@ export function TeamTab({
 
       {allDisplayCrew.length === 0 ? (
         <div className="empty-state" style={{ padding: "var(--space-8) var(--space-5)" }}>
-          <div style={{ fontSize: "var(--text-stat)", marginBottom: "var(--space-2)", opacity: 0.5 }}><UserPlus size={36} /></div>
+          <div className="mb-sp2 fs-stat opacity-50"><UserPlus size={36} /></div>
           <div className="empty-text">{t("No team assigned")}</div>
           <div className="text-xs text-muted frm-mt-8">{t("Tap Add Crew to add members")}</div>
         </div>
@@ -285,7 +291,7 @@ export function TeamTab({
                 <div className="text-xs frm-mt-2 frm-amber">+ {t("Added today")}</div>
               </div>
               <button
-                className="frm-btn-unstyled--text3" style={{ padding: "var(--space-2)" }}
+                className="frm-btn-unstyled--text3 p-sp2"
                 onClick={() => setExtraCrewIds(prev => prev.filter(id => String(id) !== String(c.id)))}
               >
                 <X size={16} />
@@ -336,6 +342,109 @@ export function TeamTab({
         )}
       </div>
 
+      {/* Crew Reassignment section */}
+      {(() => {
+        const projAreas = (areas || []).filter(a => String(a.projectId) === String(selectedProjectId));
+        if (projAreas.length === 0 && allDisplayCrew.length === 0) return null;
+
+        // Build current assignments from schedule
+        const todayKey = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][new Date().getDay()];
+        const todayAssignments = (teamSchedule || []).filter(s =>
+          String(s.projectId) === String(selectedProjectId) && s.days?.[todayKey]
+        );
+
+        const handleReassign = () => {
+          const ids = Object.entries(selectedCrew).filter(([, v]) => v).map(([id]) => id);
+          if (!ids.length || !targetArea) return;
+          const targetAreaObj = projAreas.find(a => a.id === targetArea);
+
+          if (setTeamSchedule) {
+            setTeamSchedule(prev => {
+              const updated = [...prev];
+              ids.forEach(empId => {
+                // Find existing schedule entry for today
+                const existIdx = updated.findIndex(s =>
+                  String(s.employeeId) === String(empId) &&
+                  String(s.projectId) === String(selectedProjectId) &&
+                  s.days?.[todayKey]
+                );
+                if (existIdx >= 0) {
+                  updated[existIdx] = { ...updated[existIdx], areaId: targetArea, task: targetAreaObj?.name || "" };
+                } else {
+                  // Create new schedule entry for today
+                  updated.push({
+                    id: crypto.randomUUID(),
+                    employeeId: empId,
+                    projectId: selectedProjectId,
+                    areaId: targetArea,
+                    task: targetAreaObj?.name || "",
+                    days: { [todayKey]: true },
+                    weekStart: new Date().toISOString().slice(0, 10),
+                  });
+                }
+              });
+              return updated;
+            });
+          }
+
+          setReassignMode(false);
+          setSelectedCrew({});
+          setTargetArea("");
+        };
+
+        return (
+          <div className="foreman-team-section">
+            <div className="foreman-team-section-label flex-between">
+              <span>{t("CREW ASSIGNMENTS")}</span>
+              <button className={`btn btn-sm ${reassignMode ? "btn-ghost" : ""}`}
+                style={{ fontSize: "var(--text-tab)", padding: "var(--space-1) var(--space-2)" }}
+                onClick={() => { setReassignMode(!reassignMode); setSelectedCrew({}); setTargetArea(""); }}>
+                <ArrowRightLeft size={12} /> {reassignMode ? t("Cancel") : t("Reassign")}
+              </button>
+            </div>
+
+            {/* Current assignments */}
+            <div className="flex-col gap-sp1 mt-sp2">
+              {allDisplayCrew.map(c => {
+                const assignment = todayAssignments.find(s => String(s.employeeId) === String(c.id));
+                const area = assignment?.areaId ? projAreas.find(a => a.id === assignment.areaId) : null;
+                return (
+                  <div key={c.id} className="flex gap-sp2 rounded-control" style={{ padding: "var(--space-2) var(--space-3)", background: "var(--bg2)", border: "1px solid var(--border)" }}>
+                    {reassignMode && (
+                      <span className="cursor-pointer flex-shrink-0" onClick={() => setSelectedCrew(p => ({ ...p, [c.id]: !p[c.id] }))}>
+                        {selectedCrew[c.id]
+                          ? <CheckSquare size={16} style={{ color: "var(--accent)" }} />
+                          : <Square size={16} className="c-text3" />}
+                      </span>
+                    )}
+                    <span className="fs-label fw-semi c-text flex-1">{c.name}</span>
+                    <span className={`fs-tab ${area ? "c-amber fw-semi" : "c-text3"}`}>
+                      {area ? area.name : t("Unassigned")}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Reassignment controls */}
+            {reassignMode && (
+              <div className="mt-sp3 rounded-control p-sp3" style={{ background: "var(--amber-bg-subtle)", border: "1px solid var(--amber)" }}>
+                <div className="fs-label fw-semi c-text mb-sp2">{t("Move selected crew to")}:</div>
+                <select className="form-input mb-sp2" value={targetArea} onChange={e => setTargetArea(e.target.value)}>
+                  <option value="">{t("Select Area")}</option>
+                  {projAreas.map(a => <option key={a.id} value={a.id}>{a.name} (F{a.floor} Z{a.zone})</option>)}
+                </select>
+                <button className="btn btn-primary btn-sm w-full"
+                  disabled={!targetArea || !Object.values(selectedCrew).some(Boolean)}
+                  onClick={handleReassign}>
+                  {t("Reassign")} ({Object.values(selectedCrew).filter(Boolean).length} {t("crew")})
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Crew Certifications section */}
       <div className="foreman-team-section">
         <div className="foreman-team-section-label">{t("CREW CERTIFICATIONS")}</div>
@@ -353,7 +462,7 @@ export function TeamTab({
         </div>
 
         {certsLoading ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
+          <div className="flex-col mt-sp2 gap-sp2">
             {[1,2,3].map(i => <Skeleton key={i} width="100%" height="56px" style={{ borderRadius: "var(--radius)" }} />)}
           </div>
         ) : filteredCrewCerts.length === 0 ? (

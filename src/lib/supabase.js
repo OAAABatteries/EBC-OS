@@ -386,6 +386,87 @@ export async function listFiles(folder = "", bucket = DEFAULT_BUCKET) {
 }
 
 // ═════════════════════════════════════════════════════════════
+//  PHOTO STORAGE (field photos: T&M, punch, production, reports)
+// ═════════════════════════════════════════════════════════════
+
+const PHOTO_BUCKET = "ebc-files";
+const PHOTO_PREFIX = "photos";
+
+/**
+ * Convert a base64 data URL to a Blob.
+ */
+function dataUrlToBlob(dataUrl) {
+  const [header, b64] = dataUrl.split(",");
+  const mime = header.match(/:(.*?);/)?.[1] || "image/jpeg";
+  const bytes = atob(b64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
+/**
+ * Upload a field photo to Supabase Storage.
+ * Accepts a base64 data URL (from PhotoCapture) and returns the storage path + public URL.
+ *
+ * @param {string} dataUrl  - base64 data URL from canvas compression
+ * @param {Object} options  - { context, projectId, entityId }
+ *   context: "tm" | "punch" | "production" | "report" | "material" | "progress" | "general"
+ *   projectId: optional project association
+ *   entityId: optional entity (ticket, report, etc.) ID
+ * @returns {{ path: string, url: string }} or null if Supabase not configured
+ */
+export async function uploadPhoto(dataUrl, options = {}) {
+  if (!supabase) return null;
+  const { context = "general", projectId = "unassigned", entityId } = options;
+  const blob = dataUrlToBlob(dataUrl);
+  const ext = blob.type === "image/png" ? "png" : "jpg";
+  const uuid = crypto.randomUUID();
+  const folder = entityId
+    ? `${PHOTO_PREFIX}/${context}/${projectId}/${entityId}`
+    : `${PHOTO_PREFIX}/${context}/${projectId}`;
+  const path = `${folder}/${uuid}.${ext}`;
+
+  const { error } = await supabase.storage.from(PHOTO_BUCKET).upload(path, blob, {
+    upsert: false,
+    cacheControl: "86400",
+    contentType: blob.type,
+  });
+  if (error) {
+    console.warn(`[Photo] Upload failed: ${path}`, error.message);
+    return null;
+  }
+
+  // Try public URL first, fall back to signed URL for private buckets
+  const publicUrl = getFileUrl(path, PHOTO_BUCKET);
+  const url = publicUrl || await getSignedFileUrl(path, PHOTO_BUCKET, 86400);
+
+  return { path, url };
+}
+
+/**
+ * Upload multiple photos, returning enriched photo entries with storage URLs.
+ * Non-blocking: if upload fails, the base64 data URL is kept as fallback.
+ */
+export async function uploadPhotos(photos, options = {}) {
+  if (!supabase || !photos?.length) return photos;
+  return Promise.all(
+    photos.map(async (photo) => {
+      if (photo.storagePath) return photo; // already uploaded
+      if (!photo.data) return photo; // no data to upload
+      try {
+        const result = await uploadPhoto(photo.data, options);
+        if (result) {
+          return { ...photo, storagePath: result.path, storageUrl: result.url };
+        }
+      } catch (e) {
+        console.warn("[Photo] Upload error:", e.message);
+      }
+      return photo; // keep original base64 as fallback
+    })
+  );
+}
+
+// ═════════════════════════════════════════════════════════════
 //  TAKEOFF PDF STORAGE (cloud persistence for drawing PDFs)
 // ═════════════════════════════════════════════════════════════
 

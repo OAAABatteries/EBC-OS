@@ -21,10 +21,10 @@ export function SiteTab({
       </div>
 
       {criticalUnchecked.length > 0 && (
-        <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid var(--red)", borderRadius: "var(--radius-control)", padding: "var(--space-3) var(--space-3)", marginBottom: "var(--space-3)" }}>
+        <div className="rounded-control mb-sp3" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid var(--red)", padding: "var(--space-3) var(--space-3)" }}>
           <div className="flex gap-8 mb-4" style={{ alignItems: "center" }}>
-            <AlertTriangle size={14} style={{ color: "var(--red)" }} />
-            <span className="text-sm font-semi" style={{ color: "var(--red)" }}>{t("Critical items need attention — PM notified")}</span>
+            <AlertTriangle size={14} className="c-red" />
+            <span className="text-sm font-semi c-red">{t("Critical items need attention — PM notified")}</span>
           </div>
           {criticalUnchecked.map(i => (
             <div key={i.id} className="text-xs text-muted" style={{ marginLeft: 22 }}>{"\u2022"} {i.label}</div>
@@ -50,12 +50,12 @@ export function SiteTab({
                 }
               }}
             >
-              {checked ? <CheckSquare size={20} style={{ color: "var(--green)", flexShrink: 0 }} /> : <Square size={20} style={{ color: "var(--text3)", flexShrink: 0 }} />}
+              {checked ? <CheckSquare size={20} className="c-green flex-shrink-0" /> : <Square size={20} className="c-text3 flex-shrink-0" />}
               <span className="frm-font-20">{item.icon}</span>
               <div className="frm-flex-1">
                 <span className="text-sm" style={{ textDecoration: checked ? "line-through" : "none", opacity: checked ? 0.7 : 1 }}>{item.label}</span>
                 {item.critical && !checked && (
-                  <span className="badge badge-red" style={{ fontSize: "var(--text-xs)", marginLeft: "var(--space-2)" }}>Critical</span>
+                  <span className="badge badge-red ml-sp2 fs-xs">Critical</span>
                 )}
               </div>
               <span className={`badge ${checked ? "badge-green" : item.critical ? "badge-red" : "badge-muted"} frm-font-10`}>

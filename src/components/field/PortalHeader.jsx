@@ -80,10 +80,8 @@ function EbcWordmark({ size = "normal" }) {
       <div
         role="img"
         aria-label="Eagles Brothers Constructors"
-        style={{
-          width: w,
+        className="flex-shrink-0" style={{ width: w,
           height: h,
-          flexShrink: 0,
           backgroundColor: "var(--logo-tint, #ffffff)",
           WebkitMaskImage: "url(/ebc-eagle-white.png)",
           maskImage: "url(/ebc-eagle-white.png)",
@@ -92,8 +90,7 @@ function EbcWordmark({ size = "normal" }) {
           WebkitMaskPosition: "center",
           maskPosition: "center",
           WebkitMaskSize: "contain",
-          maskSize: "contain",
-        }}
+          maskSize: "contain" }}
       />
     </div>
   );
@@ -142,7 +139,7 @@ export function PortalHeader({
               <EbcWordmark size="small" />
             </div>
             {/* Reserved notch gap — ONLY when the host frame has a top notch */}
-            {hasTopNotch && <div style={{ width: 124, flexShrink: 0 }} aria-hidden />}
+            {hasTopNotch && <div className="flex-shrink-0" style={{ width: 124 }} aria-hidden />}
             {/* RIGHT — user name + language toggle stacked */}
             <div style={{
               display: 'flex',
@@ -157,13 +154,11 @@ export function PortalHeader({
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 {/* Pending sync count badge */}
                 {network && network.pendingCount > 0 && network.online && (
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 3,
-                    fontSize: 10, fontWeight: 600, color: 'var(--amber)',
+                  <span className="fw-semi" style={{ display: 'inline-flex', alignItems: 'center', gap: 3,
+                    fontSize: 10, color: 'var(--amber)',
                     background: 'var(--amber-dim)', border: '1px solid var(--amber-border-subtle)',
-                    borderRadius: 'var(--radius-pill)', padding: '2px 6px', lineHeight: 1,
-                  }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--amber)', flexShrink: 0 }} />
+                    borderRadius: 'var(--radius-pill)', padding: '2px 6px', lineHeight: 1 }}>
+                    <span className="flex-shrink-0" style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--amber)' }} />
                     {network.pendingCount}
                   </span>
                 )}
@@ -224,7 +219,7 @@ export function PortalHeader({
             <WifiOff size={14} />
             <span><strong>{t ? t("Offline Mode") : "Offline Mode"}</strong> — {t ? t("your work is saved locally") : "your work is saved locally"}</span>
             {network.pendingCount > 0 && (
-              <span style={{ marginLeft: "auto", fontSize: "var(--text-tab)", opacity: 0.9 }}>
+              <span className="fs-tab ml-auto" style={{ opacity: 0.9 }}>
                 {network.pendingCount} {t ? t("changes will sync when connected") : "changes will sync when connected"}
               </span>
             )}
@@ -232,7 +227,7 @@ export function PortalHeader({
         )}
         {network && network.wasOffline && network.online && (
           <div className="network-banner network-banner--reconnecting">
-            <span style={{ fontSize: "var(--text-secondary)" }}>&#10003;</span>
+            <span className="fs-secondary">&#10003;</span>
             <span><strong>{t ? t("Back online") : "Back online"}</strong> — {network.pendingCount > 0 ? `${t ? t("syncing") : "syncing"} ${network.pendingCount} ${t ? t("changes") : "changes"}` : (t ? t("all changes synced") : "all changes synced")}</span>
           </div>
         )}
@@ -261,13 +256,10 @@ export function PortalHeader({
         {/* CENTER — foreman title (optional) */}
         {variant === 'foreman' && title && (
           <span
-            style={{
-              flex: 1,
-              textAlign: 'center',
+            className="flex-1" style={{ textAlign: 'center',
               fontSize: 'var(--text-base)',
               fontWeight: 'var(--weight-bold)',
-              color: 'var(--text)',
-            }}
+              color: 'var(--text)' }}
           >
             {title}
           </span>
@@ -302,7 +294,7 @@ export function PortalHeader({
                 }}
                 title={`${network.pendingCount} change${network.pendingCount > 1 ? 's' : ''} waiting to sync`}
               >
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--amber)', flexShrink: 0 }} />
+                <span className="flex-shrink-0" style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--amber)' }} />
                 {network.pendingCount}
               </span>
             )}
@@ -349,7 +341,7 @@ export function PortalHeader({
           <WifiOff size={14} />
           <span><strong>{t ? t("Offline Mode") : "Offline Mode"}</strong> — {t ? t("your work is saved locally") : "your work is saved locally"}</span>
           {network.pendingCount > 0 && (
-            <span style={{ marginLeft: "auto", fontSize: "var(--text-tab)", opacity: 0.9 }}>
+            <span className="fs-tab ml-auto" style={{ opacity: 0.9 }}>
               {network.pendingCount} {t ? t("changes will sync when connected") : "changes will sync when connected"}
             </span>
           )}
@@ -357,7 +349,7 @@ export function PortalHeader({
       )}
       {network && network.wasOffline && network.online && (
         <div className="network-banner network-banner--reconnecting">
-          <span style={{ fontSize: "var(--text-secondary)" }}>&#10003;</span>
+          <span className="fs-secondary">&#10003;</span>
           <span><strong>{t ? t("Back online") : "Back online"}</strong> — {network.pendingCount > 0 ? `${t ? t("syncing") : "syncing"} ${network.pendingCount} ${t ? t("changes") : "changes"}` : (t ? t("all changes synced") : "all changes synced")}</span>
         </div>
       )}

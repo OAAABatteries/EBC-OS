@@ -52,7 +52,7 @@ export function MaterialsTab({
               <input type="date" className="login-input" value={matForm.neededBy} onChange={e => setMatForm(f => ({ ...f, neededBy: e.target.value }))} />
             </div>
           </div>
-          <div style={{ marginTop: "var(--space-2)" }}>
+          <div className="mt-sp2">
             <PhotoCapture photos={matPhotos} setPhotos={setMatPhotos} label={t("Attach Photo")} max={3} />
           </div>
           <button className="btn btn-primary btn-sm" onClick={handleMatSubmit}>{t("Submit Request")}</button>
@@ -63,7 +63,7 @@ export function MaterialsTab({
         <div className="section-title frm-font-14">{t("Material Requests")}</div>
       </div>
       {projectMatRequests.length === 0 ? (
-        <div className="empty-state" style={{ padding: "var(--space-5)" }}>
+        <div className="empty-state p-sp5">
           <div className="empty-icon"><Package size={32} /></div>
           <div className="empty-text">{t("No material requests yet")}</div>
         </div>
@@ -89,19 +89,19 @@ export function MaterialsTab({
               </div>
               {req.notes && <div className="text-xs text-dim mb-4">{req.notes}</div>}
               {(req.photoUrl || req.photos?.length > 0) && (
-                <div className="frm-photo-thumb-row" style={{ marginBottom: "var(--space-2)" }}>
+                <div className="frm-photo-thumb-row mb-sp2">
                   {(req.photos || []).slice(0, 3).map((ph, i) => (
-                    <img key={i} src={ph.data || ph} alt="" style={{ width: 40, height: 40, borderRadius: "var(--radius-control)", objectFit: "cover" }} />
+                    <img key={i} src={ph.data || ph} alt="" className="rounded-control" style={{ width: 40, height: 40, objectFit: "cover" }} />
                   ))}
                   {!req.photos?.length && req.photoUrl && (
-                    <img src={req.photoUrl} alt="" style={{ width: 40, height: 40, borderRadius: "var(--radius-control)", objectFit: "cover" }} />
+                    <img src={req.photoUrl} alt="" className="rounded-control" style={{ width: 40, height: 40, objectFit: "cover" }} />
                   )}
                 </div>
               )}
               {/* Shortage / damage report alert */}
               {req.shortageReport && (
-                <div style={{ padding: "var(--space-2) var(--space-3)", background: "var(--red-dim, rgba(239,68,68,0.08))", borderRadius: "var(--radius-control)", borderLeft: "3px solid var(--red)", marginBottom: "var(--space-2)" }}>
-                  <div className="text-xs font-semi" style={{ color: "var(--red)" }}>{"\u26A0"} {req.shortageReport.type || t("Shortage Report")}</div>
+                <div className="rounded-control mb-sp2" style={{ padding: "var(--space-2) var(--space-3)", background: "var(--red-dim, rgba(239,68,68,0.08))", borderLeft: "3px solid var(--red)" }}>
+                  <div className="text-xs font-semi c-red">{"\u26A0"} {req.shortageReport.type || t("Shortage Report")}</div>
                   {req.shortageReport.description && <div className="text-xs text-muted">{req.shortageReport.description}</div>}
                   {req.shortageReport.expectedQty != null && <div className="text-xs text-dim">Expected: {req.shortageReport.expectedQty} · Received: {req.shortageReport.receivedQty}</div>}
                 </div>

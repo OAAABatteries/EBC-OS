@@ -755,8 +755,8 @@ export function NewHireWizard({ onSubmit, onClose }) {
           />
         </div>
       </div>
-      <div style={{ marginTop: "var(--space-5)" }}>
-        <label className="nhw-label" style={{ marginBottom: "var(--space-3)", display: "block" }}>
+      <div className="mt-sp5">
+        <label className="nhw-label mb-sp3 d-block">
           Trade Skills * (select all that apply)
         </label>
         <div className="nhw-checkbox-grid">
@@ -781,7 +781,7 @@ export function NewHireWizard({ onSubmit, onClose }) {
   const renderCertifications = () => (
     <div key="step-2">
       <div className="nhw-section-title">Certifications</div>
-      <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-4)" }}>
+      <p className="mb-sp4 fs-label c-text2">
         Toggle on any certifications you hold and enter the expiration date.
       </p>
       {CERT_LIST.map((cert) => {
@@ -802,7 +802,7 @@ export function NewHireWizard({ onSubmit, onClose }) {
                   type="date"
                   value={form.certifications[cert.key]?.expires || ""}
                   onChange={(e) => setCertExp(cert.key, e.target.value)}
-                  style={{ padding: "var(--space-2) var(--space-2)", fontSize: "var(--text-label)" }}
+                  className="fs-label" style={{ padding: "var(--space-2) var(--space-2)" }}
                 />
               </div>
             )}
@@ -815,8 +815,8 @@ export function NewHireWizard({ onSubmit, onClose }) {
   const renderLogistics = () => (
     <div key="step-3">
       <div className="nhw-section-title">Logistics</div>
-      <div style={{ marginBottom: "var(--space-5)" }}>
-        <label className="nhw-label" style={{ marginBottom: "var(--space-2)", display: "block" }}>Shirt Size</label>
+      <div className="mb-sp5">
+        <label className="nhw-label mb-sp2 d-block">Shirt Size</label>
         <div className="nhw-radio-group">
           {SHIRT_SIZES.map((sz) => (
             <div
@@ -829,8 +829,8 @@ export function NewHireWizard({ onSubmit, onClose }) {
           ))}
         </div>
       </div>
-      <div style={{ marginBottom: "var(--space-5)" }}>
-        <label className="nhw-label" style={{ marginBottom: "var(--space-2)", display: "block" }}>Transportation</label>
+      <div className="mb-sp5">
+        <label className="nhw-label mb-sp2 d-block">Transportation</label>
         <div className="nhw-radio-group">
           {TRANSPORT_OPTIONS.map((opt) => (
             <div
@@ -843,8 +843,8 @@ export function NewHireWizard({ onSubmit, onClose }) {
           ))}
         </div>
       </div>
-      <div style={{ marginBottom: "var(--space-5)" }}>
-        <label className="nhw-label" style={{ marginBottom: "var(--space-2)", display: "block" }}>Tool Ownership</label>
+      <div className="mb-sp5">
+        <label className="nhw-label mb-sp2 d-block">Tool Ownership</label>
         <div className="nhw-radio-group">
           {TOOL_OPTIONS.map((opt) => (
             <div
@@ -858,7 +858,7 @@ export function NewHireWizard({ onSubmit, onClose }) {
         </div>
       </div>
       <div>
-        <label className="nhw-label" style={{ marginBottom: "var(--space-2)", display: "block" }}>Preferred Language</label>
+        <label className="nhw-label mb-sp2 d-block">Preferred Language</label>
         <div className="nhw-radio-group">
           {LANG_OPTIONS.map((opt) => (
             <div
@@ -877,7 +877,7 @@ export function NewHireWizard({ onSubmit, onClose }) {
   const renderDocuments = () => (
     <div key="step-4">
       <div className="nhw-section-title">Document Checklist</div>
-      <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-4)" }}>
+      <p className="mb-sp4 fs-label c-text2">
         Mark each document as submitted. Actual forms are handled by HR &mdash; this is just a status tracker.
       </p>
       <div
@@ -920,7 +920,7 @@ export function NewHireWizard({ onSubmit, onClose }) {
     return (
       <div key="step-5">
         <div className="nhw-section-title">Review & Submit</div>
-        <p style={{ fontSize: "var(--text-label)", color: "var(--text2)", marginBottom: "var(--space-4)" }}>
+        <p className="mb-sp4 fs-label c-text2">
           Please review all information before submitting. You can go back to make changes.
         </p>
 
@@ -1066,7 +1066,7 @@ export function NewHireWizard({ onSubmit, onClose }) {
               </button>
             )}
           </div>
-          <div style={{ display: "flex", gap: "var(--space-2)" }}>
+          <div className="gap-sp2" style={{ display: "flex" }}>
             {step < TOTAL - 1 ? (
               <button className="nhw-btn" onClick={next} disabled={!canProceed()}>
                 Next

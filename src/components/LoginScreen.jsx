@@ -796,9 +796,9 @@ export function LoginScreen({ onLogin }) {
               <div className="login-success">{t("Password updated!")} ✓</div>
             ) : (
               <form onSubmit={handleChangePassword} className="login-form">
-                <div style={{ textAlign: "center", color: "var(--text2)", fontSize: "var(--text-label)", marginBottom: "var(--space-1)" }}>
-                  Logged in as: <strong style={{ color: "var(--text)" }}>{changingUser.name}</strong>
-                  <span style={{ color: "var(--amber)", marginLeft: "var(--space-2)", fontSize: "var(--text-tab)" }}>{ROLES[changingUser.role]?.label}</span>
+                <div className="mb-sp1 fs-label c-text2 text-center">
+                  Logged in as: <strong className="c-text">{changingUser.name}</strong>
+                  <span className="ml-sp2 fs-tab c-amber">{ROLES[changingUser.role]?.label}</span>
                 </div>
                 <div className="login-field">
                   <label className="login-label">{t("New Password")}</label>
@@ -814,7 +814,7 @@ export function LoginScreen({ onLogin }) {
                 </div>
                 {error && <div className="login-error">{error}</div>}
                 <button className="login-btn" type="submit">{t("Update & Continue")}</button>
-                <button type="button" className="login-pin-link" onClick={handleSkipChange} style={{ marginTop: "var(--space-1)" }}>{t("Skip for Now")}</button>
+                <button type="button" className="login-pin-link" onClick={handleSkipChange} className="mt-sp1">{t("Skip for Now")}</button>
               </form>
             )}
           </div>
@@ -823,13 +823,13 @@ export function LoginScreen({ onLogin }) {
         {/* ── PIN LOGIN MODE ── */}
         {mode === "pin" && (
           <div>
-            <div style={{ textAlign: "center", color: "var(--text2)", fontSize: "var(--text-label)", letterSpacing: 1, textTransform: "uppercase", marginBottom: "var(--space-2)" }}>{t("PIN")}</div>
+            <div className="mb-sp2 fs-label uppercase c-text2 text-center" style={{ letterSpacing: 1 }}>{t("PIN")}</div>
             <div className="pin-display">
               {[0,1,2,3].map(i => (
                 <div key={i} className={`pin-dot${pinValue.length > i ? " filled" : ""}`} />
               ))}
             </div>
-            {error && <div className="login-error" style={{ marginBottom: "var(--space-3)" }}>{error}</div>}
+            {error && <div className="login-error mb-sp3">{error}</div>}
             <div className="pin-grid">
               {["1","2","3","4","5","6","7","8","9","","0","del"].map((k, i) => (
                 k === "" ? <div key={i} /> :
@@ -838,7 +838,7 @@ export function LoginScreen({ onLogin }) {
                 </button>
               ))}
             </div>
-            <div className="login-pin-mode" style={{ marginTop: "var(--space-4)" }}>
+            <div className="login-pin-mode mt-sp4">
               <button type="button" className="login-pin-link" onClick={() => { setMode("login"); setError(""); setPinValue(""); }}>
                 {t("Sign in with Email")}
               </button>

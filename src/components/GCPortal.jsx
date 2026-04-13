@@ -319,29 +319,29 @@ export default function GCPortal() {
           </div>
         </div>
         <div className="gcp-login-wrap">
-          <div className="gcp-card gcp-login-card" style={{ padding: "var(--space-8)" }}>
-            <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div className="gcp-card gcp-login-card p-sp8">
+            <div className="text-center" style={{ marginBottom: 28 }}>
               <div className="gcp-logo-icon" style={{ width: 56, height: 56, margin: "0 auto 16px" }} />
               <div className="gcp-section-title">Welcome to the GC Portal</div>
               <div className="gcp-section-desc" style={{ marginBottom: "0" }}>Access your project dashboard, request teams, and track documents.</div>
             </div>
-            <div style={{ marginBottom: "var(--space-4)" }}>
+            <div className="mb-sp4">
               <label className="gcp-label">Your Email</label>
               <input className="gcp-input" type="email" placeholder="pm@generalcontractor.com"
                 value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && loginEmail && loginCompany && setAuthed(true)} />
             </div>
-            <div style={{ marginBottom: "var(--space-6)" }}>
+            <div className="mb-sp6">
               <label className="gcp-label">Company Name</label>
               <input className="gcp-input" placeholder="e.g. Forney Construction"
                 value={loginCompany} onChange={e => setLoginCompany(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && loginEmail && loginCompany && setAuthed(true)} />
             </div>
-            <button className="gcp-btn gcp-btn-primary" style={{ width: "100%" }}
+            <button className="gcp-btn gcp-btn-primary w-full"
               onClick={() => { if (loginEmail && loginCompany) setAuthed(true); }}>
               Access Portal
             </button>
-            <div style={{ textAlign: "center", marginTop: "var(--space-4)", fontSize: "var(--text-label)", color: "var(--text2)" }}>
+            <div className="fs-label mt-sp4 c-text2 text-center">
               No account needed. Enter your email and company to view your projects.
             </div>
           </div>
@@ -409,16 +409,16 @@ export default function GCPortal() {
         </div>
         <div className="gcp-user">
           <span className="gcp-user-email">{loginEmail}</span>
-          <button className="gcp-btn gcp-btn-ghost" style={{ padding: "var(--space-2) var(--space-4)", fontSize: "var(--text-label)" }}
+          <button className="gcp-btn gcp-btn-ghost fs-label" style={{ padding: "var(--space-2) var(--space-4)" }}
             onClick={() => setAuthed(false)}>Sign Out</button>
         </div>
       </div>
 
       <div className="gcp-body">
         {/* ── Company Welcome ── */}
-        <div style={{ marginBottom: "var(--space-5)" }}>
-          <div style={{ fontSize: "var(--text-subtitle)", fontWeight: "var(--weight-bold)", color: "var(--bg)" }}>{loginCompany}</div>
-          <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>{activeCount} active project{activeCount !== 1 ? "s" : ""} with EBC</div>
+        <div className="mb-sp5">
+          <div className="fs-subtitle fw-bold" style={{ color: "var(--bg)" }}>{loginCompany}</div>
+          <div className="fs-label c-text3">{activeCount} active project{activeCount !== 1 ? "s" : ""} with EBC</div>
         </div>
 
         {/* ── Navigation ── */}
@@ -442,28 +442,28 @@ export default function GCPortal() {
         {tab === "dashboard" && (
           <div>
             {/* Summary Cards */}
-            <div className="gcp-grid-3" style={{ marginBottom: "var(--space-5)" }}>
-              <div className="gcp-card" style={{ textAlign: "center" }}>
+            <div className="gcp-grid-3 mb-sp5">
+              <div className="gcp-card text-center">
                 <div className="gcp-stat-label">Active Projects</div>
-                <div style={{ fontSize: "var(--text-stat)", fontWeight: "var(--weight-bold)", color: "#1a2e4a" }}>{activeCount}</div>
+                <div className="fw-bold fs-stat" style={{ color: "#1a2e4a" }}>{activeCount}</div>
               </div>
-              <div className="gcp-card" style={{ textAlign: "center" }}>
+              <div className="gcp-card text-center">
                 <div className="gcp-stat-label">Crew on Site Today</div>
-                <div style={{ fontSize: "var(--text-stat)", fontWeight: "var(--weight-bold)", color: "var(--green)" }}>{totalCrewOnSite}</div>
+                <div className="fw-bold fs-stat c-green">{totalCrewOnSite}</div>
               </div>
-              <div className="gcp-card" style={{ textAlign: "center" }}>
+              <div className="gcp-card text-center">
                 <div className="gcp-stat-label">Open Documents</div>
-                <div style={{ fontSize: "var(--text-stat)", fontWeight: "var(--weight-bold)", color: "var(--blue)" }}>
+                <div className="fw-bold fs-stat c-blue">
                   {allDocuments.filter(d => d.status === "open" || d.status === "pending").length}
                 </div>
               </div>
             </div>
 
             {/* Project List */}
-            <div className="gcp-section-title" style={{ marginBottom: "var(--space-4)" }}>Your Active Projects</div>
+            <div className="gcp-section-title mb-sp4">Your Active Projects</div>
             {gcProjects.length === 0 ? (
               <div className="gcp-card">
-                <div style={{ textAlign: "center", color: "var(--text3)", padding: "var(--space-5)" }}>
+                <div className="p-sp5 c-text3 text-center">
                   No active projects found for <strong>{loginCompany}</strong>. Request a bid to get started.
                 </div>
               </div>
@@ -471,12 +471,12 @@ export default function GCPortal() {
               const msIdx = getMilestoneIndex(p);
               const isExpanded = expandedProject === p.id;
               return (
-                <div key={p.id} className="gcp-card" style={{ cursor: "pointer" }}
+                <div key={p.id} className="gcp-card cursor-pointer"
                   onClick={() => setExpandedProject(isExpanded ? null : p.id)}>
                   <div className="gcp-card-header">
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)", color: "var(--bg)", marginBottom: "var(--space-1)" }}>{p.name}</div>
-                      <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>
+                    <div className="flex-1">
+                      <div className="fs-secondary fw-bold mb-sp1" style={{ color: "var(--bg)" }}>{p.name}</div>
+                      <div className="fs-label c-text3">
                         {p.address || "Address TBD"}{p.suite ? ` \u00B7 ${p.suite}` : ""}
                       </div>
                     </div>
@@ -492,7 +492,7 @@ export default function GCPortal() {
                       background: (p.progress || 0) >= 90 ? "#059669" : (p.progress || 0) >= 50 ? "#2563eb" : "#f59e0b",
                     }} />
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: "var(--space-1)", fontSize: "var(--text-tab)", color: "var(--text2)" }}>
+                  <div className="fs-tab mt-sp1 c-text2" style={{ display: "flex", justifyContent: "space-between" }}>
                     <span>{p.progress || 0}% Complete</span>
                     <span>Next: {getNextMilestone(p)}</span>
                   </div>
@@ -505,15 +505,15 @@ export default function GCPortal() {
                     </div>
                     <div className="gcp-stat">
                       <div className="gcp-stat-label">PM</div>
-                      <div className="gcp-stat-value" style={{ fontSize: "var(--text-label)" }}>{p.pm || "TBD"}</div>
+                      <div className="gcp-stat-value fs-label">{p.pm || "TBD"}</div>
                     </div>
                     <div className="gcp-stat">
                       <div className="gcp-stat-label">Start</div>
-                      <div className="gcp-stat-value" style={{ fontSize: "var(--text-label)" }}>{p.start || "TBD"}</div>
+                      <div className="gcp-stat-value fs-label">{p.start || "TBD"}</div>
                     </div>
                     <div className="gcp-stat">
                       <div className="gcp-stat-label">End</div>
-                      <div className="gcp-stat-value" style={{ fontSize: "var(--text-label)" }}>{p.end || "TBD"}</div>
+                      <div className="gcp-stat-value fs-label">{p.end || "TBD"}</div>
                     </div>
                   </div>
 
@@ -524,28 +524,28 @@ export default function GCPortal() {
                         title={m} />
                     ))}
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-xs)", color: "var(--text2)", marginTop: "var(--space-1)", padding: "0 2px" }}>
+                  <div className="mt-sp1 fs-xs c-text2" style={{ display: "flex", justifyContent: "space-between", padding: "0 2px" }}>
                     {MS.map(m => <span key={m}>{m}</span>)}
                   </div>
 
                   {/* Expanded Detail */}
                   {isExpanded && (
-                    <div style={{ marginTop: "var(--space-4)", paddingTop: "var(--space-4)", borderTop: "1px solid #e2e8f0" }}
+                    <div className="mt-sp4" style={{ paddingTop: "var(--space-4)", borderTop: "1px solid #e2e8f0" }}
                       onClick={e => e.stopPropagation()}>
-                      <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)", color: "var(--bg)", marginBottom: "var(--space-2)" }}>Latest Daily Report</div>
-                      <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", background: "#f8fafc", padding: "var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid #e2e8f0" }}>
+                      <div className="fw-semi mb-sp2 fs-label" style={{ color: "var(--bg)" }}>Latest Daily Report</div>
+                      <div className="rounded-control fs-label p-sp3 c-text3" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                         {getDailyReportSummary(p)}
                       </div>
-                      <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)", color: "var(--bg)", marginBottom: "var(--space-2)", marginTop: "var(--space-4)" }}>Scope</div>
-                      <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                      <div className="fw-semi mb-sp2 fs-label mt-sp4" style={{ color: "var(--bg)" }}>Scope</div>
+                      <div className="gap-sp2 flex-wrap" style={{ display: "flex" }}>
                         {(p.scope || []).map(s => (
                           <span key={s} className="gcp-badge gcp-badge-gray">{s}</span>
                         ))}
                       </div>
                       {p.contract && (
                         <>
-                          <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)", color: "var(--bg)", marginBottom: "var(--space-1)", marginTop: "var(--space-4)" }}>Contract</div>
-                          <div style={{ fontSize: "var(--text-secondary)", fontWeight: "var(--weight-bold)", color: "var(--green)" }}>${(p.contract).toLocaleString()}</div>
+                          <div className="fw-semi mb-sp1 fs-label mt-sp4" style={{ color: "var(--bg)" }}>Contract</div>
+                          <div className="fs-secondary fw-bold c-green">${(p.contract).toLocaleString()}</div>
                         </>
                       )}
                     </div>
@@ -564,7 +564,7 @@ export default function GCPortal() {
 
             {allDocuments.length === 0 ? (
               <div className="gcp-card">
-                <div style={{ textAlign: "center", color: "var(--text3)", padding: "var(--space-5)" }}>No documents found for your projects.</div>
+                <div className="p-sp5 c-text3 text-center">No documents found for your projects.</div>
               </div>
             ) : (
               <div className="gcp-card">
@@ -575,11 +575,11 @@ export default function GCPortal() {
                       <div className="gcp-doc-info">
                         <div className="gcp-doc-icon" style={{ background: iconDef.bg }}>{iconDef.icon}</div>
                         <div>
-                          <div style={{ fontWeight: "var(--weight-semi)", fontSize: "var(--text-label)", color: "var(--bg)" }}>{d.name}</div>
-                          <div style={{ fontSize: "var(--text-tab)", color: "var(--text2)" }}>{d.projectName} &middot; {d.date}</div>
+                          <div className="fw-semi fs-label" style={{ color: "var(--bg)" }}>{d.name}</div>
+                          <div className="fs-tab c-text2">{d.projectName} &middot; {d.date}</div>
                         </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                      <div className="flex gap-sp3">
                         <span className={`gcp-badge ${DOC_STATUS_BADGE[d.status] || "gcp-badge-gray"}`}>{d.status}</span>
                       </div>
                     </div>
@@ -597,22 +597,22 @@ export default function GCPortal() {
             <div className="gcp-section-desc">Billing history across all your EBC projects.</div>
 
             {/* Invoice summary cards */}
-            <div className="gcp-grid-3" style={{ marginBottom: "var(--space-5)" }}>
-              <div className="gcp-card" style={{ textAlign: "center" }}>
+            <div className="gcp-grid-3 mb-sp5">
+              <div className="gcp-card text-center">
                 <div className="gcp-stat-label">Total Billed</div>
-                <div style={{ fontSize: "var(--text-title)", fontWeight: "var(--weight-bold)", color: "var(--bg)" }}>
+                <div className="fw-bold fs-title" style={{ color: "var(--bg)" }}>
                   ${allInvoices.reduce((s, i) => s + i.amount, 0).toLocaleString()}
                 </div>
               </div>
-              <div className="gcp-card" style={{ textAlign: "center" }}>
+              <div className="gcp-card text-center">
                 <div className="gcp-stat-label">Paid</div>
-                <div style={{ fontSize: "var(--text-title)", fontWeight: "var(--weight-bold)", color: "var(--green)" }}>
+                <div className="fw-bold fs-title c-green">
                   ${allInvoices.filter(i => i.status === "paid").reduce((s, i) => s + i.amount, 0).toLocaleString()}
                 </div>
               </div>
-              <div className="gcp-card" style={{ textAlign: "center" }}>
+              <div className="gcp-card text-center">
                 <div className="gcp-stat-label">Outstanding</div>
-                <div style={{ fontSize: "var(--text-title)", fontWeight: "var(--weight-bold)", color: "var(--amber)" }}>
+                <div className="fw-bold fs-title c-amber">
                   ${allInvoices.filter(i => i.status !== "paid").reduce((s, i) => s + i.amount, 0).toLocaleString()}
                 </div>
               </div>
@@ -620,27 +620,27 @@ export default function GCPortal() {
 
             {allInvoices.length === 0 ? (
               <div className="gcp-card">
-                <div style={{ textAlign: "center", color: "var(--text3)", padding: "var(--space-5)" }}>No invoices yet for your projects.</div>
+                <div className="p-sp5 c-text3 text-center">No invoices yet for your projects.</div>
               </div>
             ) : (
-              <div className="gcp-card" style={{ overflowX: "auto" }}>
+              <div className="gcp-card overflow-x-auto">
                 <table className="gcp-table">
                   <thead>
                     <tr>
                       <th>Invoice #</th>
                       <th>Project</th>
                       <th>Description</th>
-                      <th style={{ textAlign: "right" }}>Amount</th>
+                      <th className="text-right">Amount</th>
                       <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {allInvoices.map((inv, i) => (
                       <tr key={i}>
-                        <td style={{ fontWeight: "var(--weight-semi)", color: "var(--bg)" }}>{inv.number}</td>
+                        <td className="fw-semi" style={{ color: "var(--bg)" }}>{inv.number}</td>
                         <td>{inv.projectName}</td>
                         <td>{inv.desc}</td>
-                        <td style={{ textAlign: "right", fontWeight: "var(--weight-semi)" }}>${inv.amount.toLocaleString()}</td>
+                        <td className="fw-semi text-right">${inv.amount.toLocaleString()}</td>
                         <td>
                           <span className={`gcp-badge ${inv.status === "paid" ? "gcp-badge-green" : inv.status === "overdue" ? "gcp-badge-red" : "gcp-badge-amber"}`}>
                             {inv.status}
@@ -661,7 +661,7 @@ export default function GCPortal() {
             <div className="gcp-section-title">Request Manpower</div>
             <div className="gcp-section-desc">Need additional team? Fill out the details and we will confirm availability.</div>
             <div className="gcp-card">
-              <div className="gcp-grid" style={{ marginBottom: "var(--space-4)" }}>
+              <div className="gcp-grid mb-sp4">
                 <div>
                   <label className="gcp-label">Project *</label>
                   <select className="gcp-input gcp-select" value={manpowerForm.project}
@@ -679,14 +679,14 @@ export default function GCPortal() {
                   </select>
                 </div>
               </div>
-              <div className="gcp-grid" style={{ marginBottom: "var(--space-4)" }}>
+              <div className="gcp-grid mb-sp4">
                 <div>
                   <label className="gcp-label">Number of Workers *</label>
                   <input className="gcp-input" type="number" min="1" placeholder="e.g. 4"
                     value={manpowerForm.teamSize}
                     onChange={e => setManpowerForm(f => ({ ...f, teamSize: e.target.value }))} />
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
+                <div className="gap-sp2 d-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
                   <div>
                     <label className="gcp-label">Start Date</label>
                     <input className="gcp-input" type="date" value={manpowerForm.startDate}
@@ -700,7 +700,7 @@ export default function GCPortal() {
                 </div>
               </div>
 
-              <div style={{ marginBottom: "var(--space-4)" }}>
+              <div className="mb-sp4">
                 <label className="gcp-label">Special Certifications Required</label>
                 <div className="gcp-checkbox-group">
                   {CERT_OPTIONS.map(c => (
@@ -710,7 +710,7 @@ export default function GCPortal() {
                 </div>
               </div>
 
-              <div style={{ marginBottom: "var(--space-5)" }}>
+              <div className="mb-sp5">
                 <label className="gcp-label">Additional Notes</label>
                 <textarea className="gcp-input gcp-textarea"
                   placeholder="e.g. 6:30 AM start, after-hours work, specific site access requirements..."
@@ -728,7 +728,7 @@ export default function GCPortal() {
             <div className="gcp-section-title">Request a Bid</div>
             <div className="gcp-section-desc">Send us your project details and we will have a proposal ready within 48 hours.</div>
             <div className="gcp-card">
-              <div className="gcp-grid" style={{ marginBottom: "var(--space-4)" }}>
+              <div className="gcp-grid mb-sp4">
                 <div>
                   <label className="gcp-label">Project Name *</label>
                   <input className="gcp-input" placeholder="e.g. Memorial Hermann 4th Floor"
@@ -742,7 +742,7 @@ export default function GCPortal() {
                     onChange={e => setBidForm(f => ({ ...f, address: e.target.value }))} />
                 </div>
               </div>
-              <div style={{ marginBottom: "var(--space-4)" }}>
+              <div className="mb-sp4">
                 <label className="gcp-label">Scope of Work</label>
                 <div className="gcp-checkbox-group">
                   {SCOPE_OPTIONS.map(s => (
@@ -751,7 +751,7 @@ export default function GCPortal() {
                   ))}
                 </div>
               </div>
-              <div className="gcp-grid" style={{ marginBottom: "var(--space-4)" }}>
+              <div className="gcp-grid mb-sp4">
                 <div>
                   <label className="gcp-label">Bid Due Date</label>
                   <input className="gcp-input" type="date" value={bidForm.timeline}
@@ -763,7 +763,7 @@ export default function GCPortal() {
                     onChange={e => setBidForm(f => ({ ...f, plans: e.target.files?.[0] || null }))} />
                 </div>
               </div>
-              <div style={{ marginBottom: "var(--space-5)" }}>
+              <div className="mb-sp5">
                 <label className="gcp-label">Notes / Special Requirements</label>
                 <textarea className="gcp-input gcp-textarea" placeholder="Any additional details..."
                   value={bidForm.notes}
@@ -781,7 +781,7 @@ export default function GCPortal() {
             <div className="gcp-section-desc">Reach our team directly.</div>
 
             {/* EBC Team */}
-            <div style={{ display: "grid", gap: "var(--space-3)", marginBottom: "var(--space-6)" }}>
+            <div className="mb-sp6 gap-sp3 d-grid">
               {[
                 { name: "Abner Aguilar", role: "Project Manager / Estimating", phone: "(346) 970-7093", email: "abner@ebconstructors.com", color: "#1a2e4a" },
                 { name: "Emmanuel Aguilar", role: "Owner / Senior PM", phone: "(713) 820-6868", email: "emmanuel@ebconstructors.com", color: "var(--green)" },
@@ -806,9 +806,9 @@ export default function GCPortal() {
             {/* Your Contacts at Company */}
             {gcContacts.length > 0 && (
               <>
-                <div className="gcp-section-title" style={{ fontSize: "var(--text-secondary)" }}>Your Team at {loginCompany}</div>
+                <div className="gcp-section-title fs-secondary">Your Team at {loginCompany}</div>
                 <div className="gcp-section-desc">Contacts we have on file for your company.</div>
-                <div style={{ display: "grid", gap: "var(--space-3)" }}>
+                <div className="gap-sp3 d-grid">
                   {gcContacts.map(c => (
                     <div key={c.id} className="gcp-contact">
                       <div className="gcp-contact-avatar" style={{ background: c.color || "#64748b" }}>
@@ -829,21 +829,21 @@ export default function GCPortal() {
             )}
 
             {/* Office Info */}
-            <div className="gcp-card" style={{ marginTop: "var(--space-6)" }}>
-              <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-secondary)", color: "var(--bg)", marginBottom: "var(--space-2)" }}>Eagles Brothers Constructors</div>
-              <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginBottom: "var(--space-1)" }}>Drywall, Metal Framing & Interior Finishing Subcontractor</div>
-              <div style={{ fontSize: "var(--text-label)", color: "var(--text3)" }}>{COMPANY_DEFAULTS.address}</div>
-              <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginTop: "var(--space-1)" }}>
-                <a href={`tel:${COMPANY_DEFAULTS.phone.replace(/\D/g, "")}`} style={{ color: "var(--blue)", textDecoration: "none" }}>{COMPANY_DEFAULTS.phone}</a>
+            <div className="gcp-card mt-sp6">
+              <div className="fs-secondary fw-bold mb-sp2" style={{ color: "var(--bg)" }}>Eagles Brothers Constructors</div>
+              <div className="mb-sp1 fs-label c-text3">Drywall, Metal Framing & Interior Finishing Subcontractor</div>
+              <div className="fs-label c-text3">{COMPANY_DEFAULTS.address}</div>
+              <div className="fs-label mt-sp1 c-text3">
+                <a href={`tel:${COMPANY_DEFAULTS.phone.replace(/\D/g, "")}`} className="c-blue" style={{ textDecoration: "none" }}>{COMPANY_DEFAULTS.phone}</a>
                 {" \u00B7 "}
-                <a href={`mailto:${COMPANY_DEFAULTS.email}`} style={{ color: "var(--blue)", textDecoration: "none" }}>{COMPANY_DEFAULTS.email}</a>
+                <a href={`mailto:${COMPANY_DEFAULTS.email}`} className="c-blue" style={{ textDecoration: "none" }}>{COMPANY_DEFAULTS.email}</a>
               </div>
             </div>
           </div>
         )}
 
         {/* ── Footer ── */}
-        <div style={{ textAlign: "center", padding: "var(--space-10) 0 var(--space-5)", color: "var(--text2)", fontSize: "var(--text-tab)" }}>
+        <div className="fs-tab c-text2 text-center" style={{ padding: "var(--space-10) 0 var(--space-5)" }}>
           Eagles Brothers Constructors &middot; Houston, TX &middot; Quality. Dependability.
         </div>
       </div>

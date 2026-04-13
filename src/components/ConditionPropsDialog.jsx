@@ -131,29 +131,29 @@ export function ConditionPropsDialog({ assemblies, conditions, editingCond, onSa
   const favAssemblies = favorites.map(code => (assemblies || []).find(a => a.code === code)).filter(Boolean);
 
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 10002, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }}
+    <div className="flex justify-center absolute" style={{ inset: 0, zIndex: 10002, background: "rgba(0,0,0,0.6)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       onKeyDown={handleKeyDown}>
-      <div style={{ width: 620, maxHeight: "85vh", background: "#12151f", border: "1px solid rgba(224,148,34,0.4)", borderRadius: "var(--radius-control)", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(0,0,0,0.7)" }}
+      <div className="flex-col rounded-control overflow-hidden" style={{ width: 620, maxHeight: "85vh", background: "#12151f", border: "1px solid rgba(224,148,34,0.4)", boxShadow: "0 24px 64px rgba(0,0,0,0.7)" }}
         onClick={e => e.stopPropagation()}>
 
         {/* ── Header ── */}
         <div style={{ padding: "var(--space-4) var(--space-5) var(--space-3)", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: "var(--text-secondary)", fontWeight: "var(--weight-bold)", color: "#fff" }}>{isEdit ? "Edit Condition" : "New Condition"}</div>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--text2)", fontSize: "var(--text-section)", cursor: "pointer", padding: "var(--space-1) var(--space-2)" }}>x</button>
+          <div className="fs-secondary fw-bold c-white">{isEdit ? "Edit Condition" : "New Condition"}</div>
+          <button onClick={onClose} className="fs-section c-text2 cursor-pointer" style={{ background: "none", border: "none", padding: "var(--space-1) var(--space-2)" }}>x</button>
         </div>
 
         {/* ── Search ── */}
         <div style={{ padding: "var(--space-3) var(--space-5) var(--space-2)" }}>
           <input ref={searchRef} value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search assemblies..."
-            style={{ width: "100%", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-label)", outline: "none" }} />
+            className="rounded-control fs-label c-white w-full" style={{ padding: "var(--space-2) var(--space-3)", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.06)", outline: "none" }} />
         </div>
 
         {/* ── Favorites row ── */}
         {favAssemblies.length > 0 && !search && (
-          <div style={{ padding: "var(--space-1) var(--space-5) var(--space-2)", display: "flex", gap: "var(--space-2)", flexWrap: "wrap", alignItems: "center" }}>
-            <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>Recent</span>
+          <div className="gap-sp2 flex-wrap" style={{ padding: "var(--space-1) var(--space-5) var(--space-2)", display: "flex", alignItems: "center" }}>
+            <span className="fs-xs c-text3">Recent</span>
             {favAssemblies.slice(0, 5).map(a => (
               <button key={a.code} onClick={() => selectAssembly(a)}
                 style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: selectedCode === a.code ? "1px solid var(--amber, #e09422)" : "1px solid rgba(255,255,255,0.1)", background: selectedCode === a.code ? "rgba(224,148,34,0.15)" : "rgba(255,255,255,0.04)", color: selectedCode === a.code ? "#e09422" : "#aaa", cursor: "pointer", whiteSpace: "nowrap" }}>
@@ -164,20 +164,20 @@ export function ConditionPropsDialog({ assemblies, conditions, editingCond, onSa
         )}
 
         {/* ── Main body: Tree + Config ── */}
-        <div style={{ display: "flex", flex: 1, overflow: "hidden", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <div className="overflow-hidden flex-1" style={{ display: "flex", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
 
           {/* ── Left: Assembly tree ── */}
-          <div style={{ width: 240, borderRight: "1px solid rgba(255,255,255,0.06)", overflow: "auto", padding: "var(--space-2) 0" }}>
+          <div className="overflow-auto" style={{ width: 240, borderRight: "1px solid rgba(255,255,255,0.06)", padding: "var(--space-2) 0" }}>
             {categories.length === 0 && (
-              <div style={{ padding: "var(--space-5) var(--space-4)", color: "var(--text3)", fontSize: "var(--text-label)", textAlign: "center" }}>No assemblies match "{search}"</div>
+              <div className="fs-label c-text3 text-center" style={{ padding: "var(--space-5) var(--space-4)" }}>No assemblies match "{search}"</div>
             )}
             {categories.map(([cat, items]) => (
               <div key={cat}>
                 <div onClick={() => setTreeOpen(p => ({ ...p, [cat]: !p[cat] }))}
-                  style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-1) var(--space-3)", cursor: "pointer", fontSize: "var(--text-tab)", color: "var(--text2)", fontWeight: "var(--weight-semi)" }}>
-                  <span style={{ fontSize: "var(--text-xs)" }}>{treeOpen[cat] ? "▾" : "▸"}</span>
-                  <span style={{ flex: 1 }}>{cat}</span>
-                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>{items.length}</span>
+                  className="flex fw-semi fs-tab c-text2 gap-sp2 cursor-pointer" style={{ padding: "var(--space-1) var(--space-3)" }}>
+                  <span className="fs-xs">{treeOpen[cat] ? "▾" : "▸"}</span>
+                  <span className="flex-1">{cat}</span>
+                  <span className="fs-xs c-text3">{items.length}</span>
                 </div>
                 {treeOpen[cat] && items.map(a => {
                   const isSel = a.code === selectedCode;
@@ -187,9 +187,9 @@ export function ConditionPropsDialog({ assemblies, conditions, editingCond, onSa
                         background: isSel ? "rgba(224,148,34,0.12)" : "transparent",
                         color: isSel ? "#fff" : "#bbb",
                         borderLeft: isSel ? "2px solid #e09422" : "2px solid transparent" }}>
-                      <span style={{ color: "var(--text3)", fontSize: "var(--text-xs)", minWidth: 32 }}>{a.code}</span>
-                      <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.name}</span>
-                      <span style={{ fontSize: "var(--text-xs)", color: "var(--text3)" }}>{a.unit}</span>
+                      <span className="fs-xs c-text3" style={{ minWidth: 32 }}>{a.code}</span>
+                      <span className="nowrap overflow-hidden flex-1" style={{ textOverflow: "ellipsis" }}>{a.name}</span>
+                      <span className="fs-xs c-text3">{a.unit}</span>
                     </div>
                   );
                 })}
@@ -198,29 +198,29 @@ export function ConditionPropsDialog({ assemblies, conditions, editingCond, onSa
           </div>
 
           {/* ── Right: Configuration ── */}
-          <div style={{ flex: 1, padding: "14px 18px", display: "flex", flexDirection: "column", gap: "var(--space-4)", overflow: "auto" }}>
+          <div className="flex-col gap-sp4 overflow-auto flex-1" style={{ padding: "14px 18px" }}>
 
             {/* Name */}
             <div>
-              <label style={{ fontSize: "var(--text-xs)", color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.5 }}>Condition Name</label>
+              <label className="fs-xs uppercase c-text2" style={{ letterSpacing: 0.5 }}>Condition Name</label>
               <input value={name} onChange={e => setName(e.target.value)}
                 placeholder={selectedAsm?.name || "Enter name..."}
-                style={{ width: "100%", padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-label)", marginTop: "var(--space-1)", outline: "none" }} />
+                className="rounded-control fs-label mt-sp1 c-white w-full" style={{ padding: "var(--space-2) var(--space-3)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", outline: "none" }} />
             </div>
 
             {/* Height (linear only) */}
             {condType === "linear" && (
               <div>
-                <label style={{ fontSize: "var(--text-xs)", color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.5 }}>Wall Height (ft)</label>
+                <label className="fs-xs uppercase c-text2" style={{ letterSpacing: 0.5 }}>Wall Height (ft)</label>
                 <input type="number" value={height} onChange={e => setHeight(parseFloat(e.target.value) || 0)} min={1} max={40} step={1}
-                  style={{ width: 80, padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-label)", marginTop: "var(--space-1)", outline: "none" }} />
+                  className="rounded-control fs-label mt-sp1 c-white" style={{ width: 80, padding: "var(--space-2) var(--space-3)", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", outline: "none" }} />
               </div>
             )}
 
             {/* Color grid */}
             <div>
-              <label style={{ fontSize: "var(--text-xs)", color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: "var(--space-1)", display: "block" }}>Color</label>
-              <div style={{ display: "flex", gap: "var(--space-1)", flexWrap: "wrap" }}>
+              <label className="mb-sp1 fs-xs uppercase c-text2 d-block" style={{ letterSpacing: 0.5 }}>Color</label>
+              <div className="gap-sp1 flex-wrap" style={{ display: "flex" }}>
                 {COND_COLORS.map(c => (
                   <div key={c} onClick={() => setColor(c)}
                     style={{ width: 22, height: 22, borderRadius: "var(--radius-control)", background: c, cursor: "pointer",
@@ -232,53 +232,53 @@ export function ConditionPropsDialog({ assemblies, conditions, editingCond, onSa
 
             {/* Preview strip */}
             <div>
-              <label style={{ fontSize: "var(--text-xs)", color: "var(--text2)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: "var(--space-1)", display: "block" }}>Preview</label>
-              <div style={{ padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+              <label className="mb-sp1 fs-xs uppercase c-text2 d-block" style={{ letterSpacing: 0.5 }}>Preview</label>
+              <div className="flex rounded-control gap-sp3" style={{ padding: "var(--space-2) var(--space-3)", background: "rgba(0,0,0,0.4)" }}>
                 {condType === "linear" && (
                   <>
                     <svg width="80" height="12"><line x1="0" y1="6" x2="80" y2="6" stroke={color} strokeWidth="3" /></svg>
-                    <span style={{ fontSize: "var(--text-tab)", color: "var(--text2)" }}>{height || 10}' LF</span>
+                    <span className="fs-tab c-text2">{height || 10}' LF</span>
                   </>
                 )}
                 {condType === "area" && (
                   <>
                     <svg width="40" height="30"><rect x="2" y="2" width="36" height="26" fill={color + "33"} stroke={color} strokeWidth="2" rx="2" /></svg>
-                    <span style={{ fontSize: "var(--text-tab)", color: "var(--text2)" }}>SF</span>
+                    <span className="fs-tab c-text2">SF</span>
                   </>
                 )}
                 {condType === "count" && (
                   <>
                     <svg width="24" height="24"><circle cx="12" cy="12" r="8" fill={color + "44"} stroke={color} strokeWidth="2" /><circle cx="12" cy="12" r="3" fill={color} /></svg>
-                    <span style={{ fontSize: "var(--text-tab)", color: "var(--text2)" }}>EA (count)</span>
+                    <span className="fs-tab c-text2">EA (count)</span>
                   </>
                 )}
-                <span style={{ width: 8, height: 8, borderRadius: "var(--radius-control)", background: color }} />
-                <span style={{ fontSize: "var(--text-tab)", color: "var(--text2)", fontWeight: "var(--weight-semi)" }}>{name || selectedAsm?.name || "—"}</span>
+                <span className="rounded-control" style={{ width: 8, height: 8, background: color }} />
+                <span className="fw-semi fs-tab c-text2">{name || selectedAsm?.name || "—"}</span>
               </div>
             </div>
 
             {/* Rate info */}
             {selectedAsm && (
-              <div style={{ padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                <div style={{ fontSize: "var(--text-xs)", color: "var(--text2)", marginBottom: "var(--space-1)" }}>Rate per {selectedAsm.unit}</div>
-                <div style={{ display: "flex", gap: "var(--space-4)", fontSize: "var(--text-label)" }}>
-                  <span style={{ color: "var(--green)" }}>Mat ${selectedAsm.matRate?.toFixed(2)}</span>
-                  <span style={{ color: "var(--blue)" }}>Lab ${selectedAsm.labRate?.toFixed(2)}</span>
-                  <span style={{ color: "#fff", fontWeight: "var(--weight-semi)" }}>= ${totalRate.toFixed(2)}/{selectedAsm.unit}</span>
+              <div className="rounded-control" style={{ padding: "var(--space-2) var(--space-3)", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                <div className="mb-sp1 fs-xs c-text2">Rate per {selectedAsm.unit}</div>
+                <div className="fs-label gap-sp4" style={{ display: "flex" }}>
+                  <span className="c-green">Mat ${selectedAsm.matRate?.toFixed(2)}</span>
+                  <span className="c-blue">Lab ${selectedAsm.labRate?.toFixed(2)}</span>
+                  <span className="fw-semi c-white">= ${totalRate.toFixed(2)}/{selectedAsm.unit}</span>
                 </div>
               </div>
             )}
 
             {/* Type / Folder info */}
-            <div style={{ display: "flex", gap: "var(--space-4)", fontSize: "var(--text-tab)", color: "var(--text3)" }}>
-              <span>Type: <span style={{ color: "var(--text2)" }}>{condType === "linear" ? "Linear" : condType === "area" ? "Area" : "Count"}</span></span>
-              <span>UOM: <span style={{ color: "var(--text2)" }}>{selectedAsm?.unit || "—"}</span></span>
-              <span>Folder: <span style={{ color: "var(--text2)" }}>{condFolder}</span></span>
+            <div className="fs-tab c-text3 gap-sp4" style={{ display: "flex" }}>
+              <span>Type: <span className="c-text2">{condType === "linear" ? "Linear" : condType === "area" ? "Area" : "Count"}</span></span>
+              <span>UOM: <span className="c-text2">{selectedAsm?.unit || "—"}</span></span>
+              <span>Folder: <span className="c-text2">{condFolder}</span></span>
             </div>
 
             {/* Round Quantity toggle */}
-            <div style={{ padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+            <div className="rounded-control" style={{ padding: "var(--space-2) var(--space-3)", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="flex gap-sp3">
                 <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", cursor: "pointer", fontSize: "var(--text-label)", color: roundQty ? "#f59e0b" : "#888" }}>
                   <input type="checkbox" checked={roundQty} onChange={e => setRoundQty(e.target.checked)}
                     style={{ width: 14, height: 14, accentColor: "#f59e0b" }} />
@@ -286,13 +286,13 @@ export function ConditionPropsDialog({ assemblies, conditions, editingCond, onSa
                 </label>
                 {roundQty && (
                   <select value={roundMode} onChange={e => setRoundMode(e.target.value)}
-                    style={{ padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: "var(--text-tab)", outline: "none" }}>
+                    className="rounded-control fs-tab c-white" style={{ padding: "var(--space-1) var(--space-2)", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.06)", outline: "none" }}>
                     <option value="up">Round Up (ceil)</option>
                     <option value="nearest">Round Nearest</option>
                   </select>
                 )}
               </div>
-              <div style={{ fontSize: "var(--text-xs)", color: "var(--text3)", marginTop: "var(--space-1)" }}>
+              <div className="mt-sp1 fs-xs c-text3">
                 {roundQty ? `Quantities will be rounded ${roundMode === "up" ? "up" : "to nearest whole number"} in summary + exports` : "Show exact fractional quantities"}
               </div>
             </div>
@@ -300,9 +300,9 @@ export function ConditionPropsDialog({ assemblies, conditions, editingCond, onSa
         </div>
 
         {/* ── Footer buttons ── */}
-        <div style={{ padding: "var(--space-3) var(--space-5) var(--space-4)", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
+        <div className="gap-sp2" style={{ padding: "var(--space-3) var(--space-5) var(--space-4)", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", justifyContent: "flex-end" }}>
           <button onClick={onClose}
-            style={{ padding: "7px 18px", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "var(--text2)", fontSize: "var(--text-label)", cursor: "pointer" }}>
+            className="rounded-control fs-label c-text2 cursor-pointer" style={{ padding: "7px 18px", border: "1px solid rgba(255,255,255,0.15)", background: "transparent" }}>
             Cancel
           </button>
           {!isEdit && (

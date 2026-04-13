@@ -56,36 +56,26 @@ export function InstallPrompt() {
   };
 
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: "var(--space-3)",
-      padding: "var(--space-3) var(--space-4)", margin: "0 0 8px 0",
+    <div className="flex rounded-control fs-label gap-sp3" style={{ padding: "var(--space-3) var(--space-4)", margin: "0 0 8px 0",
       background: "linear-gradient(135deg, rgba(224,148,34,0.12), rgba(224,148,34,0.04))",
-      border: "1px solid rgba(224,148,34,0.25)",
-      borderRadius: "var(--radius-control)", fontSize: "var(--text-label)",
-    }}>
-      <span style={{ fontSize: "var(--text-subtitle)" }}>&#9881;</span>
-      <div style={{ flex: 1 }}>
+      border: "1px solid rgba(224,148,34,0.25)" }}>
+      <span className="fs-subtitle">&#9881;</span>
+      <div className="flex-1">
         <strong style={{ color: "var(--gold, #e09422)" }}>Install EBC</strong>
-        <div style={{ fontSize: "var(--text-tab)", color: "var(--text2)", marginTop: "var(--space-1)" }}>
+        <div className="fs-tab mt-sp1 c-text2">
           Works offline, launches instantly, feels like a native app
         </div>
       </div>
       <button
         onClick={handleInstall}
-        style={{
-          background: "var(--gold, #e09422)", color: "#000",
-          border: "none", borderRadius: "var(--radius-control)", padding: "var(--space-2) var(--space-4)",
-          fontWeight: "var(--weight-bold)", fontSize: "var(--text-label)", cursor: "pointer",
-        }}
+        className="rounded-control fw-bold fs-label cursor-pointer" style={{ background: "var(--gold, #e09422)", color: "#000",
+          border: "none", padding: "var(--space-2) var(--space-4)" }}
       >
         Install
       </button>
       <button
         onClick={handleDismiss}
-        style={{
-          background: "none", border: "none",
-          color: "var(--text3)", cursor: "pointer", fontSize: "var(--text-card)", padding: "0 4px",
-        }}
+        className="fs-card c-text3 cursor-pointer" style={{ background: "none", border: "none", padding: "0 4px" }}
       >
         &times;
       </button>
@@ -120,33 +110,23 @@ export function UpdateBanner() {
   if (!hasUpdate) return null;
 
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: "var(--space-3)",
-      padding: "var(--space-3) var(--space-4)", margin: "0 0 8px 0",
+    <div className="flex rounded-control fs-label gap-sp3" style={{ padding: "var(--space-3) var(--space-4)", margin: "0 0 8px 0",
       background: "rgba(59,130,246,0.12)",
-      border: "1px solid rgba(59,130,246,0.3)",
-      borderRadius: "var(--radius-control)", fontSize: "var(--text-label)",
-    }}>
-      <span style={{ fontSize: "var(--text-card)" }}>&#8635;</span>
-      <span style={{ flex: 1 }}>
+      border: "1px solid rgba(59,130,246,0.3)" }}>
+      <span className="fs-card">&#8635;</span>
+      <span className="flex-1">
         <strong>Update available</strong> — a new version of EBC is ready
       </span>
       <button
         onClick={() => window.location.reload()}
-        style={{
-          background: "var(--primary, #3b82f6)", color: "#fff",
-          border: "none", borderRadius: "var(--radius-control)", padding: "var(--space-2) var(--space-4)",
-          fontWeight: "var(--weight-bold)", fontSize: "var(--text-label)", cursor: "pointer",
-        }}
+        className="rounded-control fw-bold fs-label cursor-pointer c-white" style={{ background: "var(--primary, #3b82f6)",
+          border: "none", padding: "var(--space-2) var(--space-4)" }}
       >
         Reload
       </button>
       <button
         onClick={() => setHasUpdate(false)}
-        style={{
-          background: "none", border: "none",
-          color: "var(--text3)", cursor: "pointer", fontSize: "var(--text-card)", padding: "0 4px",
-        }}
+        className="fs-card c-text3 cursor-pointer" style={{ background: "none", border: "none", padding: "0 4px" }}
       >
         &times;
       </button>

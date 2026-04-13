@@ -88,50 +88,34 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
       }}
     >
       <div
-        className="modal-content"
-        style={{
-          maxWidth: 480,
-          width: "100%",
+        className="modal-content rounded-card overflow-hidden w-full" style={{ maxWidth: 480,
           background: "var(--card)",
-          borderRadius: "var(--radius-card)",
-          padding: 0,
-          overflow: "hidden",
-        }}
+          padding: 0 }}
       >
         {/* Header */}
         <div
-          style={{
-            background: "var(--navy, #0f1f2e)",
+          className="gap-sp3" style={{ background: "var(--navy, #0f1f2e)",
             padding: "var(--space-5) var(--space-5) var(--space-4)",
             display: "flex",
-            alignItems: "center",
-            gap: "var(--space-3)",
-          }}
+            alignItems: "center" }}
         >
           <AlertTriangle size={24} color="var(--amber, #f59e0b)" />
-          <div style={{ flex: 1 }}>
-            <div style={{ color: "#fff", fontWeight: "var(--weight-bold)", fontSize: "var(--text-card)" }}>
+          <div className="flex-1">
+            <div className="fw-bold fs-card c-white">
               {tr("Report Issue")}
             </div>
-            <div style={{ color: "rgba(255,255,255,0.55)", fontSize: "var(--text-label)" }}>
+            <div className="fs-label" style={{ color: "rgba(255,255,255,0.55)" }}>
               {delivery?.materialName || ""}
             </div>
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: "rgba(255,255,255,0.1)",
+            className="rounded-control fs-card justify-center cursor-pointer c-white" style={{ background: "rgba(255,255,255,0.1)",
               border: "none",
-              color: "#fff",
-              borderRadius: "var(--radius-control)",
               width: 32,
               height: 32,
-              cursor: "pointer",
-              fontSize: "var(--text-card)",
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+              alignItems: "center" }}
           >
             ✕
           </button>
@@ -139,29 +123,21 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
 
         {/* Body */}
         <div
-          style={{
-            padding: "var(--space-5) var(--space-5) var(--space-2)",
+          className="gap-sp4" style={{ padding: "var(--space-5) var(--space-5) var(--space-2)",
             display: "flex",
             flexDirection: "column",
-            gap: "var(--space-4)",
             maxHeight: "60vh",
-            overflowY: "auto",
-          }}
+            overflowY: "auto" }}
         >
           {/* Issue type buttons */}
           <div>
             <label
-              className="form-label"
-              style={{ marginBottom: "var(--space-2)", display: "block" }}
+              className="form-label mb-sp2 d-block"
             >
               {tr("Issue Type")}
             </label>
             <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "var(--space-2)",
-              }}
+              className="gap-sp2 d-grid" style={{ gridTemplateColumns: "1fr 1fr" }}
             >
               {ISSUE_TYPES.map((type) => {
                 const active = issueType === type;
@@ -195,8 +171,8 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
 
           {/* Shortage qty fields */}
           {isShortage && (
-            <div style={{ display: "flex", gap: "var(--space-3)" }}>
-              <div style={{ flex: 1 }}>
+            <div className="gap-sp3" style={{ display: "flex" }}>
+              <div className="flex-1">
                 <FieldInput
                   label={tr("Expected Qty")}
                   type="number"
@@ -207,7 +183,7 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
                   t={tr}
                 />
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="flex-1">
                 <FieldInput
                   label={tr("Received Qty")}
                   type="number"
@@ -236,13 +212,8 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
 
           {gpsStatus && (
             <div
-              style={{
-                fontSize: "var(--text-label)",
-                color: "var(--text3)",
-                display: "flex",
-                alignItems: "center",
-                gap: "var(--space-2)",
-              }}
+              className="fs-label c-text3 gap-sp2" style={{ display: "flex",
+                alignItems: "center" }}
             >
               <span
                 style={{
@@ -261,18 +232,11 @@ export function ShortageReportModal({ delivery, onReport, onClose, t }) {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: "var(--space-3) var(--space-5) var(--space-5)", display: "flex", gap: "var(--space-3)" }}>
+        <div className="gap-sp3" style={{ padding: "var(--space-3) var(--space-5) var(--space-5)", display: "flex" }}>
           <button
             className="btn"
             onClick={onClose}
-            style={{
-              flex: 1,
-              padding: "var(--space-4)",
-              fontSize: "var(--text-secondary)",
-              background: "var(--bg3)",
-              border: "1px solid var(--border)",
-              color: "var(--text2)",
-            }}
+            className="fs-secondary p-sp4 bg-bg3 c-text2 flex-1" style={{ border: "1px solid var(--border)" }}
           >
             {tr("Cancel")}
           </button>
