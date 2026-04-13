@@ -988,8 +988,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 @media(min-width:768px){
   .emp-tabs{max-width:none;gap:var(--space-1);justify-content:center}
   .emp-tab{padding:var(--space-3) var(--space-4);font-size:var(--text-label)}
-  .emp-content{max-width:960px;display:grid;grid-template-columns:1fr 280px;grid-template-rows:auto;gap:0 var(--space-5);align-content:start}
-  .employee-body{padding:var(--space-5) var(--space-6)}
+  .emp-content{max-width:720px;margin:0 auto}
+  .employee-body{padding:var(--space-5) var(--space-6);align-items:center}
+  .employee-body > *{width:100%;max-width:720px}
   .foreman-kpi-grid{grid-template-columns:repeat(4,1fr)}
   .foreman-project-select{max-width:500px;margin:0 auto 16px;display:block;font-size:var(--text-base);padding:var(--space-3) var(--space-3)}
 }
