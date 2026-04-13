@@ -23,7 +23,7 @@ export function useNetworkStatus() {
   const [online, setOnline] = useState(() =>
     typeof navigator !== "undefined" ? navigator.onLine : true
   );
-  const [pendingCount, setPendingCount] = useState(getQueueCount);
+  const [pendingCount, setPendingCount] = useState(getLegacyQueueCount);
   const [wasOffline, setWasOffline] = useState(false);
   const [lastSync, setLastSync] = useState(getLastSync);
 
