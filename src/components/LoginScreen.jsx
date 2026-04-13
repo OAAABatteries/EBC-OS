@@ -507,6 +507,59 @@ export function LoginScreen({ onLogin }) {
     }
   };
 
+  // ── Device binding (anti-cheating) ──
+  // Generates a unique device fingerprint and binds it to the user account.
+  // If a user logs in from a new device, we flag it for PM review.
+  const getDeviceFingerprint = () => {
+    let fp = localStorage.getItem("ebc_device_fp");
+    if (!fp) {
+      // Generate a stable device fingerprint from available signals
+      const raw = [
+        navigator.userAgent,
+        navigator.language,
+        screen.width + "x" + screen.height,
+        screen.colorDepth,
+        new Date().getTimezoneOffset(),
+        navigator.hardwareConcurrency || 0,
+      ].join("|");
+      fp = "dev_" + Array.from(new TextEncoder().encode(raw)).reduce((h, b) => ((h << 5) - h + b) | 0, 0).toString(36);
+      localStorage.setItem("ebc_device_fp", fp);
+    }
+    return fp;
+  };
+
+  const checkDeviceBinding = (user) => {
+    const fp = getDeviceFingerprint();
+    const bindingKey = `ebc_device_bind_${user.id}`;
+    const stored = localStorage.getItem(bindingKey);
+
+    if (!stored) {
+      // First login — bind this device
+      localStorage.setItem(bindingKey, JSON.stringify({ fp, boundAt: new Date().toISOString(), deviceInfo: navigator.userAgent.slice(0, 80) }));
+      return { bound: true, isNewDevice: false };
+    }
+
+    const binding = JSON.parse(stored);
+    if (binding.fp === fp) return { bound: true, isNewDevice: false };
+
+    // Different device detected — log the event and allow with warning
+    const alertKey = `ebc_device_alerts`;
+    const alerts = JSON.parse(localStorage.getItem(alertKey) || "[]");
+    alerts.push({
+      userId: user.id,
+      userName: user.name,
+      oldDevice: binding.deviceInfo,
+      newDevice: navigator.userAgent.slice(0, 80),
+      timestamp: new Date().toISOString(),
+    });
+    if (alerts.length > 50) alerts.splice(0, alerts.length - 50);
+    localStorage.setItem(alertKey, JSON.stringify(alerts));
+
+    // Re-bind to new device but flag it
+    localStorage.setItem(bindingKey, JSON.stringify({ fp, boundAt: new Date().toISOString(), deviceInfo: navigator.userAgent.slice(0, 80) }));
+    return { bound: true, isNewDevice: true };
+  };
+
   // Password change
   const [changingUser, setChangingUser] = useState(null);
   const [newPassword, setNewPassword] = useState("");
@@ -605,7 +658,12 @@ export function LoginScreen({ onLogin }) {
       const supaUser = await authenticateWithSupabase(candidate.email, loginPassword, candidate);
       const authUser = { id: candidate.id, name: candidate.name, email: candidate.email, role: candidate.role, title: candidate.title, ...(supaUser?.supabaseId ? { supabaseId: supaUser.supabaseId } : {}) };
       setFailedAttempts(0); setLockoutUntil(0);
-      setTimeout(() => { setLoading(false); onLogin(authUser); }, 300);
+      const { isNewDevice } = checkDeviceBinding(authUser);
+      setTimeout(() => {
+        setLoading(false);
+        onLogin(authUser);
+        if (isNewDevice) setTimeout(() => window.dispatchEvent(new CustomEvent("ebc:device-alert", { detail: { user: authUser.name, type: "new-device" } })), 500);
+      }, 300);
     } catch { setLoading(false); recordFailure(); setError(t("Invalid credentials")); }
   };
 
@@ -623,7 +681,12 @@ export function LoginScreen({ onLogin }) {
       if (user.mustChangePassword) { setLoading(false); setChangingUser(user); setMode("changePassword"); return; }
       const authUser = { id: user.id, name: user.name, email: user.email, role: user.role, title: user.title };
       setFailedAttempts(0); setLockoutUntil(0);
-      setTimeout(() => { setLoading(false); onLogin(authUser); }, 300);
+      const { isNewDevice } = checkDeviceBinding(authUser);
+      setTimeout(() => {
+        setLoading(false);
+        onLogin(authUser);
+        if (isNewDevice) setTimeout(() => window.dispatchEvent(new CustomEvent("ebc:device-alert", { detail: { user: authUser.name, type: "new-device" } })), 500);
+      }, 300);
     } catch { setLoading(false); recordFailure(); setError(t("Invalid PIN")); }
   };
 
