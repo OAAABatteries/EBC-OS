@@ -12,6 +12,7 @@ import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { useFormDraft } from "../hooks/useFormDraft";
 import { useDrawingCache } from "../hooks/useDrawingCache";
 import { getDrawingsByProject, downloadFile } from "../lib/supabase";
+import { queueMutation } from "../lib/offlineQueue";
 import { findNearestGeofence, getLocationsInRange, pointInPolygon, polygonAreaSqFt } from "../utils/geofence";
 import { T } from "../data/translations";
 import { THEMES } from "../data/constants";
@@ -584,13 +585,11 @@ export function EmployeeView({ app }) {
       const clockOut = new Date();
       const diffMs = clockOut - clockIn;
       const totalHours = +(diffMs / 3600000).toFixed(2);
+      const clockOutData = { clockOut: clockOut.toISOString(), totalHours, notes: activeEntry.notes ? activeEntry.notes + " [auto-closed]" : "[auto-closed]" };
       setTimeEntries((prev) =>
-        prev.map((e) =>
-          e.id === activeEntry.id
-            ? { ...e, clockOut: clockOut.toISOString(), totalHours, notes: e.notes ? e.notes + " [auto-closed]" : "[auto-closed]" }
-            : e
-        )
+        prev.map((e) => e.id === activeEntry.id ? { ...e, ...clockOutData } : e)
       );
+      queueMutation("time_entries", "update", clockOutData, { column: "id", value: activeEntry.id });
     }
     const entry = {
       id: crypto.randomUUID(),
@@ -614,6 +613,7 @@ export function EmployeeView({ app }) {
       ppeConfirmed: true,
     };
     setTimeEntries((prev) => [entry, ...prev]);
+    queueMutation("time_entries", "insert", entry);
     setShowOverride(false);
     setOverrideReason("");
     setPpeConfirmed(false); // reset for next clock-in
@@ -663,13 +663,11 @@ export function EmployeeView({ app }) {
     // Auto-deduct 30-min unpaid lunch for shifts over 6 hours
     const lunchDeducted = rawHours >= 6 ? 0.5 : 0;
     const totalHours = Math.round((rawHours - lunchDeducted) * 100) / 100;
+    const clockOutData = { clockOut: clockOut.toISOString(), clockOutLat: outLat, clockOutLng: outLng, totalHours, lunchDeducted };
     setTimeEntries((prev) =>
-      prev.map((e) =>
-        e.id === activeEntry.id
-          ? { ...e, clockOut: clockOut.toISOString(), clockOutLat: outLat, clockOutLng: outLng, totalHours, lunchDeducted }
-          : e
-      )
+      prev.map((e) => e.id === activeEntry.id ? { ...e, ...clockOutData } : e)
     );
+    queueMutation("time_entries", "update", clockOutData, { column: "id", value: activeEntry.id });
     const lunchNote = lunchDeducted > 0 ? ` (${rawHours.toFixed(1)}h - 30m ${t("lunch")} = ${totalHours.toFixed(2)}h)` : "";
     show(`${t("Clocked out")} — ${totalHours.toFixed(2)} ${t("hours")}${lunchNote}`, "ok");
   };
@@ -851,6 +849,7 @@ export function EmployeeView({ app }) {
       driverId: null,
     };
     setMaterialRequests(prev => [newReq, ...prev]);
+    queueMutation("material_requests", "insert", newReq);
     clearMatDraft();
     show(t("Request Material") + " — " + newReq.material, "ok");
   };

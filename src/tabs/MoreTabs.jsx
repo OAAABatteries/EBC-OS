@@ -1319,6 +1319,11 @@ function TmTicketsTab({ app }) {
                         app.show(`Invoice ${invNum} created for ${app.fmt(total)}`);
                       }}>Generate Invoice</button>
                     )}
+                    <button className="btn btn-ghost btn-sm" onClick={async () => {
+                      const { generateTmTicketPdf } = await import("../utils/tmTicketPdf");
+                      const proj = app.projects.find(p => p.id === t.projectId);
+                      generateTmTicketPdf(t, proj);
+                    }}>Download PDF</button>
                     <button className="btn btn-ghost btn-sm" onClick={() => runJustify(t)} disabled={justifyLoading && justifyId === t.id}>
                       {justifyLoading && justifyId === t.id ? "Drafting..." : "AI Justify"}
                     </button>
@@ -3617,6 +3622,26 @@ function FinReportsTab({ app }) {
             const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `ebc_wip_schedule${wipPeriod ? "_" + wipPeriod : ""}.csv`; a.click(); URL.revokeObjectURL(url);
             app.show("WIP schedule exported");
           }}>Export CSV</button>
+          <button className="btn btn-ghost btn-sm" onClick={async () => {
+            const { jsPDF } = await import("jspdf");
+            const doc = new jsPDF({ orientation: "landscape" });
+            doc.setFontSize(16); doc.text("EBC — WIP Schedule", 14, 15);
+            doc.setFontSize(9); doc.text(`Period: ${wipPeriod || "All-time"} · Generated: ${new Date().toLocaleDateString()}`, 14, 22);
+            const headers = ["Project", "Contract", "Adj Contract", "Cost", "% Complete", "Earned", "Billed", "Over/Under"];
+            const rows = projectMetrics.map(m => [
+              (m.p.name || "").slice(0, 30),
+              "$" + (m.p.contract || 0).toLocaleString(), "$" + Math.round(m.adjustedContract).toLocaleString(),
+              "$" + Math.round(m.costs.total).toLocaleString(), Math.round(m.percentComplete * 100) + "%",
+              "$" + Math.round(m.earnedRevenue).toLocaleString(), "$" + Math.round(m.billed).toLocaleString(),
+              (m.overUnder >= 0 ? "$" : "-$") + Math.abs(Math.round(m.overUnder)).toLocaleString(),
+            ]);
+            let y = 30; doc.setFontSize(8);
+            headers.forEach((h, i) => doc.text(h, 14 + i * 34, y));
+            y += 5; doc.setDrawColor(200); doc.line(14, y, 280, y); y += 4;
+            rows.forEach(row => { row.forEach((c, i) => doc.text(String(c), 14 + i * 34, y)); y += 5; if (y > 190) { doc.addPage(); y = 15; } });
+            doc.save(`ebc_wip_schedule${wipPeriod ? "_" + wipPeriod : ""}.pdf`);
+            app.show("WIP PDF exported");
+          }}>Export PDF</button>
         </div>
       </div>
 

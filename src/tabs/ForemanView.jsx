@@ -4,6 +4,7 @@ import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, FieldInput, Empty
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { useNotifications } from "../hooks/useNotifications";
 import { useFormDraft } from "../hooks/useFormDraft";
+import { queueMutation } from "../lib/offlineQueue";
 import { FeatureGuide } from "../components/FeatureGuide";
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { T } from "../data/translations";
@@ -985,7 +986,17 @@ export function ForemanView({ app }) {
       setApprovalComment("");
       show(newStatus === "approved" ? t("Request approved") : t("Request denied"), "ok");
     } catch (err) {
-      show(t("Failed to update request"), "error");
+      // Queue for offline replay if Supabase write fails
+      queueMutation("shift_requests", "update", {
+        status: approvalSheet.action === "approve" ? "approved" : "denied",
+        reviewed_by: activeForeman.id,
+        review_comment: approvalComment || null,
+        reviewed_at: new Date().toISOString(),
+      }, { column: "id", value: approvalSheet.request.id });
+      setPendingRequests(prev => prev.filter(r => r.id !== approvalSheet.request.id));
+      setApprovalSheet(null);
+      setApprovalComment("");
+      show(t("Saved offline — will sync when connected"), "ok");
     } finally {
       setApprovalLoading(false);
     }
