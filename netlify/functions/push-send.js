@@ -12,6 +12,19 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL ||
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
+// Simple in-memory rate limiter (per function instance)
+const rateBuckets = new Map();
+function checkRateLimit(ip, max = 10, windowSec = 60) {
+  const now = Date.now();
+  const key = ip || "unknown";
+  const bucket = rateBuckets.get(key) || [];
+  const recent = bucket.filter(t => now - t < windowSec * 1000);
+  rateBuckets.set(key, recent);
+  if (recent.length >= max) return false;
+  recent.push(now);
+  return true;
+}
+
 export async function handler(event) {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers: corsHeaders() };
@@ -19,6 +32,16 @@ export async function handler(event) {
 
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers: corsHeaders(), body: "Method Not Allowed" };
+  }
+
+  // Rate limit: 10 push sends per IP per minute
+  const clientIp = event.headers["x-forwarded-for"] || event.headers["client-ip"] || "unknown";
+  if (!checkRateLimit(clientIp, 10, 60)) {
+    return {
+      statusCode: 429,
+      headers: { ...corsHeaders(), "Retry-After": "60" },
+      body: JSON.stringify({ ok: false, message: "Rate limit exceeded. Try again in 60 seconds." }),
+    };
   }
 
   if (!VAPID_PUBLIC || !VAPID_PRIVATE) {

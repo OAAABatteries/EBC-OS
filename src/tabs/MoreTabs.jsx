@@ -738,7 +738,15 @@ function ChangeOrdersTab({ app }) {
                 <tr style={co.status === "deleted" ? { opacity: 0.5, textDecoration: "line-through" } : {}}>
                   <td>{co.number}</td>
                   <td>{pName(co.projectId)}</td>
-                  <td>{co.desc}</td>
+                  <td>
+                    {co.desc}
+                    {(() => {
+                      const linked = (app.tmTickets || []).filter(t => t.changeOrderId === co.id);
+                      if (!linked.length) return null;
+                      const tmTotal = linked.reduce((s, t) => s + calcTicketTotal(t), 0);
+                      return <div className="fs-12 text-muted mt-4">{linked.length} T&M ticket{linked.length > 1 ? "s" : ""} linked ({app.fmt(tmTotal)})</div>;
+                    })()}
+                  </td>
                   <td>{app.fmt(co.amount)}</td>
                   <td><span className={`${badge(co.status)} more-cursor-pointer`} title="Click to change status" onClick={() => {
                     const next = co.status === "pending" ? "approved" : co.status === "approved" ? "rejected" : "pending";
@@ -1235,6 +1243,10 @@ function TmTicketsTab({ app }) {
                 </div>
               </div>
               <div className="text2 fs-12 mt-4">{t.date} — {t.description}</div>
+              {t.changeOrderId && (() => {
+                const co = (app.changeOrders || []).find(c => c.id === t.changeOrderId);
+                return co ? <div className="fs-12 mt-4"><span className="badge badge-blue">CO #{co.number}</span> <span className="text2">{app.fmt(co.amount)} — {co.status}</span></div> : null;
+              })()}
 
               {isExpanded && (
                 <div className="more-ticket-expanded" onClick={e => e.stopPropagation()}>

@@ -62,10 +62,44 @@ export const registerAppEvents = async (onResume) => {
   } catch {}
 };
 
+// Configure keyboard behavior (scroll inputs into view)
+export const configureKeyboard = async () => {
+  if (!isNative()) return;
+  try {
+    const { Keyboard } = await import("@capacitor/keyboard");
+    Keyboard.addListener("keyboardWillShow", (info) => {
+      document.body.style.setProperty("--keyboard-height", `${info.keyboardHeight}px`);
+      document.body.classList.add("keyboard-open");
+    });
+    Keyboard.addListener("keyboardWillHide", () => {
+      document.body.style.setProperty("--keyboard-height", "0px");
+      document.body.classList.remove("keyboard-open");
+    });
+  } catch {}
+};
+
+// Haptic feedback variants
+export const hapticSuccess = async () => {
+  if (!isNative()) return;
+  try {
+    const { Haptics, NotificationType } = await import("@capacitor/haptics");
+    await Haptics.notification({ type: NotificationType.Success });
+  } catch {}
+};
+
+export const hapticWarning = async () => {
+  if (!isNative()) return;
+  try {
+    const { Haptics, NotificationType } = await import("@capacitor/haptics");
+    await Haptics.notification({ type: NotificationType.Warning });
+  } catch {}
+};
+
 // Initialize all native features
 export const initNative = async () => {
   if (!isNative()) return;
   await configureStatusBar();
+  await configureKeyboard();
   await hideSplash();
   registerAppEvents();
   console.log(`[EBC-OS] Native platform: ${getPlatform()}`);

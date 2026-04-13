@@ -50,6 +50,7 @@ import { supabase, isSupabaseConfigured, signOut as supaSignOut, onAuthStateChan
 
 import { GanttScheduleView } from "./components/GanttScheduleView";
 import { useAlertEngine } from "./hooks/useAlertEngine";
+import { useSessionTimeout } from "./hooks/useSessionTimeout";
 import { NotificationPanel } from "./components/NotificationPanel";
 import { PerimeterMapModal } from "./components/PerimeterMapModal";
 import { polygonAreaSqFt } from "./utils/geofence";
@@ -482,6 +483,9 @@ function App({ auth, onLogout }) {
     if (_overlayDown.current && e.target === e.currentTarget) closeFn();
     _overlayDown.current = false;
   };
+
+  // ── Session timeout (30m idle → auto-logout) ──
+  const { showWarning: showTimeoutWarning, remainingSec: timeoutSec, extendSession } = useSessionTimeout(onLogout);
 
   // ── Business data (synced to localStorage + Supabase) ──
   const [bids, setBids, _syncBids] = useSyncedState("bids", initBids);
@@ -4464,6 +4468,22 @@ function App({ auth, onLogout }) {
       </div>
 
       {modal && <ModalHub type={modal.type} data={modal.data} app={app} />}
+
+      {/* Session timeout warning */}
+      {showTimeoutWarning && (
+        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+          <div className="modal" style={{ maxWidth: 360, textAlign: "center", padding: "var(--space-6)" }}>
+            <div className="fs-card fw-bold mb-sp3">Session Expiring</div>
+            <div className="fs-secondary c-text2 mb-sp4">
+              You've been inactive. Your session will end in <strong className="c-amber">{timeoutSec}s</strong>.
+            </div>
+            <div className="flex gap-8 justify-center">
+              <button className="btn btn-primary" onClick={extendSession}>Stay Logged In</button>
+              <button className="btn btn-ghost" onClick={onLogout}>Log Out</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* PWA Install Banner */}
       {installPrompt && !window.matchMedia("(display-mode: standalone)").matches && (

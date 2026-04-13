@@ -41,7 +41,7 @@ function calcMaterialTotal(entries) {
   }, 0);
 }
 
-export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], employees = [], projectId, areas = [], setAreas, foreman, t }) {
+export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], employees = [], projectId, areas = [], setAreas, foreman, t, changeOrders = [] }) {
   const tr = t || ((k) => k);
   // Cost visibility policy (ADR: foreman trustedLead flag).
   // Default: foremen do NOT see $ amounts, rates, markup — only scope, hours, crew, qty.
@@ -528,6 +528,10 @@ export function TmCaptureTab({ tmTickets = [], setTmTickets, projects = [], empl
                 <div className="fs-tab mt-sp1 c-text2">
                   {ticket.date} &middot; {ticket.description.length > 60 ? ticket.description.slice(0, 60) + "..." : ticket.description}
                 </div>
+                {ticket.changeOrderId && (() => {
+                  const co = changeOrders.find(c => c.id === ticket.changeOrderId);
+                  return co ? <div className="fs-tab mt-sp1"><span className="badge badge-blue" style={{ fontSize: "10px" }}>CO #{co.number}</span></div> : null;
+                })()}
               </div>
               <div className="flex gap-sp2">
                 {showCost ? (

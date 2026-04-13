@@ -3,9 +3,10 @@
 //  Offline banner, sync progress, error retry, pending queue
 // ═══════════════════════════════════════════════════════════════
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { flushSyncQueue } from "../hooks/useSyncedState";
+import { getConflicts, clearConflicts } from "../lib/offlineQueue";
 
 const BAR = {
   display: "flex",
@@ -85,6 +86,27 @@ export function SyncStatus({ syncStatus, network }) {
           className="ml-auto" style={{ ...BTN }}
         >
           Sync Now
+        </button>
+      </div>
+    );
+  }
+
+  // ── Conflict resolution banner ──
+  const conflicts = getConflicts();
+  if (conflicts.length > 0) {
+    return (
+      <div style={{ ...BAR, background: "#d97706", opacity: 0.95 }}>
+        <span>&#9888;</span>
+        <span><strong>{conflicts.length} conflict{conflicts.length !== 1 ? "s" : ""}</strong> — another device updated the same records while you were offline</span>
+        <button
+          onClick={() => {
+            // For v1: accept server version (discard local conflicts)
+            clearConflicts();
+            if (refreshAll) refreshAll();
+          }}
+          className="ml-auto" style={{ ...BTN }}
+        >
+          Keep Server Version
         </button>
       </div>
     );

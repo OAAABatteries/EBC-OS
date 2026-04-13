@@ -135,7 +135,7 @@ export function ForemanView({ app }) {
 
   // ── Submit RFI modal ──
   const [showRfiModal, setShowRfiModal] = useState(false);
-  const [rfiFormData, setRfiFormData] = useState({ subject: "", description: "", drawingRef: "" });
+  const [rfiFormData, setRfiFormData] = useState({ subject: "", description: "", drawingRef: "", priority: "normal" });
 
   // ── daily report form state ──
   const EMPTY_REPORT_FORM = {
@@ -1368,6 +1368,7 @@ export function ForemanView({ app }) {
                 projects={projects} employees={employees} projectId={selectedProjectId}
                 areas={(areas || []).filter(a => String(a.projectId) === String(selectedProjectId))}
                 setAreas={setAreas} foreman={activeForeman} t={t}
+                changeOrders={changeOrders}
               />
             )}
 
@@ -1473,6 +1474,22 @@ export function ForemanView({ app }) {
                 />
               </div>
 
+              <div>
+                <label className="frm-form-label-upper">
+                  {t("Priority")}
+                </label>
+                <select
+                  className="frm-w-full fs-secondary"
+                  value={rfiFormData.priority}
+                  onChange={e => setRfiFormData(f => ({ ...f, priority: e.target.value }))}
+                  style={{ padding: "8px 12px", borderRadius: "var(--radius-sm, 6px)", border: "1px solid var(--border)", background: "var(--bg2)", color: "var(--text)" }}
+                >
+                  <option value="low">{t("Low")}</option>
+                  <option value="normal">{t("Normal")}</option>
+                  <option value="urgent">{t("Urgent — Blocking Work")}</option>
+                </select>
+              </div>
+
               {/* Photo attachment for RFI */}
               <div>
                 <label className="frm-form-label-upper">
@@ -1509,7 +1526,7 @@ export function ForemanView({ app }) {
                     drawingRef: rfiFormData.drawingRef.trim(),
                     specRef: rfiFormData.drawingRef.trim(),
                     status: "submitted",
-                    priority: "normal",
+                    priority: rfiFormData.priority || "normal",
                     assigned: proj?.pm || "PM",
                     submittedBy: activeForeman.name,
                     dateSubmitted: new Date().toISOString().slice(0, 10),
@@ -1520,7 +1537,7 @@ export function ForemanView({ app }) {
                   if (setRfis) setRfis(prev => [...prev, newRfi]);
                   queueMutation("rfis", "insert", newRfi);
                   setShowRfiModal(false);
-                  setRfiFormData({ subject: "", description: "", drawingRef: "", photos: [] });
+                  setRfiFormData({ subject: "", description: "", drawingRef: "", photos: [], priority: "normal" });
                   show(`${t("RFI submitted")} · ${rfiNum}`, "ok");
                   setOpenSections(prev => ({ ...prev, rfis: true }));
                 }}

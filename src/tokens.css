@@ -140,6 +140,39 @@
   --transition-state: var(--duration-state) var(--ease-standard);
 }
 
+/* ── iOS / WEBKIT INPUT NORMALIZATION ─────────────────────── */
+/* Remove iOS default input styling that overrides our theme */
+input, textarea, select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border-radius: var(--radius-control);
+}
+
+/* Prevent iOS zoom on focus (requires 16px minimum) */
+@supports (-webkit-touch-callout: none) {
+  input, textarea, select {
+    font-size: max(16px, var(--text-secondary));
+  }
+}
+
+/* ── SAFE AREA INSETS (notch / home indicator) ───────────── */
+/* Applied to root-level containers */
+.safe-area-top    { padding-top:    env(safe-area-inset-top, 0px); }
+.safe-area-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-area-all {
+  padding-top:    env(safe-area-inset-top, 0px);
+  padding-right:  env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left:   env(safe-area-inset-left, 0px);
+}
+
+/* ── KEYBOARD-AWARE VIEWPORT ─────────────────────────────── */
+/* When soft keyboard opens, prevent fixed bottom bars from hiding behind it */
+@supports (height: 100dvh) {
+  .app-shell { min-height: 100dvh; }
+}
+
 /* ── TABLET TIER (≥768px) ─────────────────────────────────── */
 /* Tighter radius, denser spacing — utilitarian workspace feel */
 @media (min-width: 768px) {

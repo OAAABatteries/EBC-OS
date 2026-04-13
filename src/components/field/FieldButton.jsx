@@ -2,6 +2,7 @@
 // Extends existing .btn / .btn-primary / .btn-ghost / .btn-danger CSS classes
 // Zero hex literals. Direct Lucide import (avoids circular dependency with LoadingSpinner).
 import { Loader2 } from 'lucide-react';
+import { hapticTap } from '../../utils/native';
 
 const VARIANT_CLASS_MAP = {
   primary: 'btn-primary',
@@ -37,6 +38,10 @@ export function FieldButton({
           : undefined
       }
       {...props}
+      onClick={(e) => {
+        hapticTap();
+        if (props.onClick) props.onClick(e);
+      }}
     >
       {loading ? (
         <Loader2 size={13} className="animate-spin" aria-hidden="true" />
