@@ -260,7 +260,7 @@ export function ScheduleTab({ activeEmp, mySchedule, projects, setEmpTab, t, lan
           })
         ) : !selectedDayTimeOff ? (
           <EmptyState icon={Calendar} heading={t("No shifts scheduled")}
-            action={<FieldButton variant="ghost" onClick={() => {}} t={t}>{t("Contact your foreman")}</FieldButton>} t={t} />
+            message={t("Check with your foreman for today's assignment")} t={t} />
         ) : null;
       })()}
 

@@ -809,13 +809,13 @@ export function EmployeeView({ app }) {
   // ── portal tab bar definition ──
   const isCrewRole = !!activeEmp && (activeEmp.role === "Crew" || activeEmp.role === "Employee");
   const portalTabs = [
-    // ── Primary (4 + More) — frequency-driven: Home, Clock, Log Work, Drawings ──
+    // ── Primary (4 + More) — frequency-driven: Home, Clock, Schedule, Drawings ──
     { id: "home", label: t("Home"), icon: Home, badge: false },
     { id: "clock", label: t("Clock"), icon: Clock, badge: isClockedIn },
-    { id: "production", label: t("Log Work"), icon: BarChart3, badge: false },
+    { id: "schedule", label: t("Schedule"), icon: Calendar, badge: false },
     { id: "drawings", label: t("Drawings"), icon: FileText, badge: false },
     // ── More overflow (ranked by crew use frequency) ──
-    { id: "schedule", label: t("Schedule"), icon: Calendar, badge: false },
+    { id: "production", label: t("Log Work"), icon: BarChart3, badge: false },
     { id: "materials", label: t("Materials"), icon: Package, badge: myMatRequests?.some(r => r.status === "requested") },
     { id: "jsa", label: t("JSA"), icon: ShieldCheck, badge: false },
     { id: "log", label: t("My Hours"), icon: ClipboardList, badge: false },
@@ -1152,6 +1152,12 @@ export function EmployeeView({ app }) {
               <div className="clock-in-hero">
                 <div className="text-xs text-muted mb-4">{t("Scheduled today")}</div>
                 <div className="text-base font-bold mb-8" style={{ color: "var(--green)" }}>{assignedProject.name}</div>
+                {/* PPE confirmation — right above the button so it's visible */}
+                <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-3) 0", cursor: "pointer", userSelect: "none", minHeight: 44 }}>
+                  <input type="checkbox" checked={ppeConfirmed} onChange={(e) => setPpeConfirmed(e.target.checked)} style={{ width: 24, height: 24, accentColor: "var(--green)" }} />
+                  <Shield size={18} style={{ color: "var(--green)", flexShrink: 0 }} />
+                  <span style={{ fontSize: "var(--text-secondary)" }}>{t("I confirm I am wearing required PPE")}</span>
+                </label>
                 <FieldButton
                   variant="primary"
                   className="clock-in-cta"
@@ -1312,17 +1318,12 @@ export function EmployeeView({ app }) {
                 </div>
               )}
 
-              {/* PPE confirmation checkbox */}
+              {/* PPE confirmation — above the clock-in button, not below */}
               {!isClockedIn && (
-                <label className="flex items-center gap-2 text-sm" style={{ padding: "var(--space-2) 0", cursor: "pointer", userSelect: "none" }}>
-                  <input
-                    type="checkbox"
-                    checked={ppeConfirmed}
-                    onChange={(e) => setPpeConfirmed(e.target.checked)}
-                    style={{ width: 20, height: 20, accentColor: "var(--green)" }}
-                  />
-                  <Shield size={16} style={{ color: "var(--green)", flexShrink: 0 }} />
-                  <span>{t("I confirm I am wearing required PPE")}</span>
+                <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-3) 0", cursor: "pointer", userSelect: "none", minHeight: 44, marginBottom: "var(--space-2)" }}>
+                  <input type="checkbox" checked={ppeConfirmed} onChange={(e) => setPpeConfirmed(e.target.checked)} style={{ width: 24, height: 24, accentColor: "var(--green)" }} />
+                  <Shield size={18} style={{ color: "var(--green)", flexShrink: 0 }} />
+                  <span style={{ fontSize: "var(--text-secondary)" }}>{t("I confirm I am wearing required PPE")}</span>
                 </label>
               )}
 

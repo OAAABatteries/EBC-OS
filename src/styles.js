@@ -48,8 +48,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 
 /* ══ CARDS ══ */
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-card);padding:var(--space-4);
-  transition:all 0.25s cubic-bezier(.4,0,.2,1);box-shadow:var(--shadow-sm)}
-.card:hover{border-color:var(--border2);box-shadow:var(--shadow-md)}
+  transition:border-color 0.25s cubic-bezier(.4,0,.2,1), box-shadow 0.25s cubic-bezier(.4,0,.2,1);box-shadow:var(--shadow-sm)}
+@media(hover:hover){.card:hover{border-color:var(--border2);box-shadow:var(--shadow-md)}}
 .card-glass{backdrop-filter:blur(20px) saturate(1.6);-webkit-backdrop-filter:blur(20px) saturate(1.6);
   background:var(--glass-bg);border:1px solid var(--glass-border)}
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4)}
@@ -113,7 +113,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
 .btn-outline:hover{background:var(--bg3);border-color:var(--text3)}
 .btn-sm{padding:var(--space-1) var(--space-3);font-size:var(--text-label);min-height:var(--touch-min)}
-.btn-icon{width:36px;height:36px;padding:0;display:flex;align-items:center;justify-content:center;
+.btn-icon{width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;
   border-radius:var(--radius-control);background:none;border:1px solid var(--border);color:var(--text2);
   cursor:pointer;font-size:var(--text-secondary);transition:all 0.15s;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .btn-icon:hover{border-color:var(--text3);color:var(--text)}
