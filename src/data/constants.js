@@ -12,7 +12,7 @@ export const DATA_VERSION = 24;
 // ── THEMES (3 active — archived themes in src/archive/theme-effects.jsx) ──
 export const THEMES = {
   ebc: {
-    name: "EBC Brand", icon: "building-2", label: "EBC Brand",
+    name: "EBC", icon: "logo", label: "EBC",
     vars: {
       "--bg":"#0f1a24","--bg2":"#152332","--bg3":"#1b2d3f","--bg4":"#1e2d3b",
       "--border":"#263d52","--border2":"#345068",

@@ -105,7 +105,7 @@ export function detectDoubleBooking(teamSchedule, employees, projects, dateRange
   for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
     const teamList = getCrewForDate(d, teamSchedule);
     const byEmployee = {};
-    for (const cs of team) {
+    for (const cs of teamList) {
       if (!byEmployee[cs.employeeId]) byEmployee[cs.employeeId] = [];
       byEmployee[cs.employeeId].push(cs);
     }
@@ -254,7 +254,7 @@ export function detectRatioViolation(teamSchedule, employees, projects, dateRang
   for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
     const teamList = getCrewForDate(d, teamSchedule);
     const byProject = {};
-    for (const cs of team) {
+    for (const cs of teamList) {
       if (!byProject[cs.projectId]) byProject[cs.projectId] = [];
       byProject[cs.projectId].push(cs);
     }

@@ -1,4 +1,4 @@
-import { useState, Fragment } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback, Fragment } from "react";
 import { AlertTriangle, Camera, CheckSquare, Square, Clipboard, ClipboardList, FileDown, FileText, FolderOpen, HardHat, Image, MapPin, MessageSquare, Paperclip, Pin, PinOff, Search } from "lucide-react";
 import { softDelete, filterActive } from "../utils/financialValidation";
 import { AreasTab } from "../tabs/AreasTab";
