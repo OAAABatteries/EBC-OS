@@ -1062,4 +1062,12 @@ export const T = {
   "min late": { es: "min tarde" },
   "REPEAT": { es: "REINCIDENTE" },
   "this month": { es: "este mes" },
+  // Stat tiles
+  "Miles": { es: "Millas" },
+  "Project Schedule": { es: "Horario del Proyecto" },
+  "No schedule entries": { es: "Sin entradas de horario" },
+  "No shifts scheduled for this project": { es: "No hay turnos programados para este proyecto" },
+  "Unassigned": { es: "Sin asignar" },
+  "Map": { es: "Mapa" },
+  "Install App": { es: "Instalar App" },
 };
