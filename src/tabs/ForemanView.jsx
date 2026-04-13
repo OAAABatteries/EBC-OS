@@ -3,6 +3,7 @@ import { UserPlus, X, Search, CheckSquare, Square, Send, FileQuestion, ChevronDo
 import { PortalHeader, PortalTabBar, PremiumCard, FieldButton, FieldInput, EmptyState, StatusBadge, StatTile, AlertCard, FieldSignaturePad, CredentialCard, PhotoCapture, Skeleton, LanguageToggle } from "../components/field";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { useNotifications } from "../hooks/useNotifications";
+import { useFormDraft } from "../hooks/useFormDraft";
 import { FeatureGuide } from "../components/FeatureGuide";
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { T } from "../data/translations";
