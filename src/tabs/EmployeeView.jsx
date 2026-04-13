@@ -710,6 +710,56 @@ export function EmployeeView({ app }) {
     return teamSchedule.filter(s => s.employeeId === activeEmp.id && s.weekStart === weekStr);
   }, [activeEmp, teamSchedule]);
 
+  // ── 7.1 Schedule change detection + alert ──
+  const [scheduleChangeAlerts, setScheduleChangeAlerts] = useState([]);
+  useEffect(() => {
+    if (!activeEmp || mySchedule.length === 0) return;
+    const cacheKey = `ebc_schedule_snapshot_${activeEmp.id}`;
+    try {
+      const prev = JSON.parse(localStorage.getItem(cacheKey) || "[]");
+      const changes = [];
+      const prevMap = {};
+      prev.forEach(s => { prevMap[`${s.projectId}_${s.weekStart}`] = s; });
+      mySchedule.forEach(s => {
+        const key = `${s.projectId}_${s.weekStart}`;
+        const old = prevMap[key];
+        if (!old) {
+          const proj = projects.find(p => p.id === s.projectId);
+          changes.push({ type: "added", project: proj?.name || "New Project", schedule: s });
+        } else {
+          // Check day-level changes
+          const dayKeys = ["mon","tue","wed","thu","fri","sat","sun"];
+          dayKeys.forEach(dk => {
+            const hadDay = old.days?.[dk];
+            const hasDay = s.days?.[dk];
+            if (hadDay && !hasDay) {
+              const proj = projects.find(p => p.id === s.projectId);
+              changes.push({ type: "removed_day", day: dk, project: proj?.name || "" });
+            } else if (!hadDay && hasDay) {
+              const proj = projects.find(p => p.id === s.projectId);
+              changes.push({ type: "added_day", day: dk, project: proj?.name || "" });
+            }
+          });
+          // Check time changes
+          if (old.hours?.start !== s.hours?.start || old.hours?.end !== s.hours?.end) {
+            const proj = projects.find(p => p.id === s.projectId);
+            changes.push({ type: "time_change", project: proj?.name || "", oldStart: old.hours?.start, newStart: s.hours?.start, oldEnd: old.hours?.end, newEnd: s.hours?.end });
+          }
+          delete prevMap[key];
+        }
+      });
+      // Remaining in prevMap = removed assignments
+      Object.values(prevMap).forEach(s => {
+        const proj = projects.find(p => p.id === s.projectId);
+        changes.push({ type: "removed", project: proj?.name || "Removed Project" });
+      });
+      if (changes.length > 0) setScheduleChangeAlerts(changes);
+      localStorage.setItem(cacheKey, JSON.stringify(mySchedule));
+    } catch {
+      localStorage.setItem(cacheKey, JSON.stringify(mySchedule));
+    }
+  }, [mySchedule, activeEmp, projects]);
+
   // ── my assigned project IDs (from schedule) ──
   const myScheduledProjectIds = useMemo(() => {
     const ids = new Set();
@@ -1140,6 +1190,7 @@ export function EmployeeView({ app }) {
             areas={areas}
             schedule={teamSchedule}
             drawingRevisionAlerts={drawingRevisionAlerts}
+            scheduleChangeAlerts={scheduleChangeAlerts}
             t={t}
             lang={lang}
           />

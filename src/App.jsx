@@ -1569,6 +1569,56 @@ function App({ auth, onLogout }) {
         );
       })()}
 
+      {/* ── 7.6 Multi-project PM KPI Grid ── */}
+      {dashCfg.showKPIs && (() => {
+        const activeProjs = (projects || []).filter(p => p.status === "in-progress" || p.status === "active");
+        if (activeProjs.length < 2) return null;
+        const fmt = (v) => typeof v === "number" ? (v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v.toFixed(0)}`) : "$0";
+        return (
+          <div className="card mb-12" style={{ padding: "var(--space-3) var(--space-4)" }}>
+            <div className="text-sm font-semi mb-8" style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+              Multi-Project KPIs
+              <span className="badge badge-blue fs-xs" style={{ padding: "0 6px" }}>{activeProjs.length}</span>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--text-label)" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                    <th style={{ textAlign: "left", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)", fontWeight: "var(--weight-semi)" }}>Project</th>
+                    <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Contract</th>
+                    <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Billed</th>
+                    <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Labor</th>
+                    <th style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Margin</th>
+                    <th style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Crew</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeProjs.slice(0, 10).map(p => {
+                    const contract = (p.contractAmount || 0) + (changeOrders || []).filter(c => c.projectId === p.id && c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
+                    const billed = (invoices || []).filter(i => i.projectId === p.id).reduce((s, i) => s + (i.amount || 0), 0);
+                    const labor = (timeEntries || []).filter(te => te.projectId === p.id).reduce((s, te) => s + ((te.totalHours || 0) * (te.rate || 45)), 0);
+                    const margin = contract > 0 ? Math.round(((contract - labor) / contract) * 100) : 0;
+                    const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+                    const crewToday = (teamSchedule || []).filter(s => String(s.projectId) === String(p.id) && s.days?.[todayKey]).length;
+                    return (
+                      <tr key={p.id} style={{ borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+                        onClick={() => setModal({ type: "editProject", data: p })}>
+                        <td style={{ padding: "var(--space-2) var(--space-3)", fontWeight: "var(--weight-medium)", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</td>
+                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)" }}>{fmt(contract)}</td>
+                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--green)" }}>{fmt(billed)}</td>
+                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)" }}>{fmt(labor)}</td>
+                        <td style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)", color: margin < 20 ? "var(--red)" : margin < 40 ? "var(--amber)" : "var(--green)", fontWeight: "var(--weight-semi)" }}>{margin}%</td>
+                        <td style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)" }}>{crewToday || "\u2014"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Section 1: Action Items — what needs attention NOW ── */}
       {dashCfg.showKPIs && (dashActions.bidsDueSoon.length > 0 || dashActions.cosPending.length > 0 || dashActions.rfisOpen.length > 0 || dashActions.subsDueSoon.length > 0 || dashActions.overdueInv.length > 0 || dashActions.tmPending.length > 0 || dashActions.profitAlerts.length > 0) && (
         <div className="grid-auto-200 mb-16">

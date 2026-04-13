@@ -300,6 +300,45 @@ export function DrawingsTab({ readOnly = false, projectFilter, onDrawingSelect, 
         />
       )}
 
+      {/* 7.2 — Stale drawing revision red banner */}
+      {drawings.some(d => d.isStale || d.isCurrent === false) && (
+        <div style={{
+          background: 'rgba(239, 68, 68, 0.12)',
+          border: '1px solid rgba(239, 68, 68, 0.4)',
+          borderRadius: 'var(--radius-control)',
+          padding: 'var(--space-3) var(--space-4)',
+          marginBottom: 'var(--space-3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-2)',
+        }}>
+          <span style={{ color: 'var(--red)', fontWeight: 'var(--weight-bold)', fontSize: 'var(--text-secondary)' }}>
+            {'\u26A0'} {t('Drawing revisions available')}
+          </span>
+          <span style={{ color: 'var(--text2)', fontSize: 'var(--text-label)' }}>
+            {' — '}{drawings.filter(d => d.isStale).length > 0
+              ? `${drawings.filter(d => d.isStale).length} ${t('stale')}`
+              : ''
+            }
+            {drawings.filter(d => d.isCurrent === false).length > 0
+              ? `${drawings.filter(d => d.isStale).length > 0 ? ', ' : ''}${drawings.filter(d => d.isCurrent === false).length} ${t('superseded')}`
+              : ''
+            }
+          </span>
+          {!readOnly && (
+            <button style={{
+              marginLeft: 'auto', background: 'var(--red)', color: '#fff',
+              border: 'none', borderRadius: 'var(--radius-control)',
+              padding: 'var(--space-1) var(--space-3)',
+              fontSize: 'var(--text-label)', fontWeight: 'var(--weight-semi)',
+              cursor: 'pointer',
+            }} onClick={loadDrawings}>
+              {t('Refresh All')}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Drawing list */}
       {drawings.length > 0 && (
         <div className="drawings-tab-list">

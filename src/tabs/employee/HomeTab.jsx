@@ -19,7 +19,7 @@ import { supabase } from '../../lib/supabase';
  *   t                — translation function
  *   lang             — 'en' | 'es'
  */
-export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, mySchedule, myMatRequests, projects, areas, setEmpTab, setSelectedInfoProject, onReportProblem, drawingRevisionAlerts, t, lang }) {
+export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, mySchedule, myMatRequests, projects, areas, setEmpTab, setSelectedInfoProject, onReportProblem, drawingRevisionAlerts, scheduleChangeAlerts, t, lang }) {
   // --- Greeting (time-of-day based) ---
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -136,6 +136,24 @@ export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, m
         sourceTab: 'drawings',
       });
     });
+    // 7.1 — Schedule change alerts
+    (scheduleChangeAlerts || []).forEach((c, i) => {
+      let msg = '';
+      if (c.type === 'added') msg = `${t("New assignment")}: ${c.project}`;
+      else if (c.type === 'removed') msg = `${t("Removed")}: ${c.project}`;
+      else if (c.type === 'added_day') msg = `${c.project} — ${t("added")} ${c.day.toUpperCase()}`;
+      else if (c.type === 'removed_day') msg = `${c.project} — ${c.day.toUpperCase()} ${t("removed")}`;
+      else if (c.type === 'time_change') msg = `${c.project} — ${t("time changed")} ${c.newStart || '?'}–${c.newEnd || '?'}`;
+      if (msg) {
+        alerts.push({
+          id: `sched-change-${i}`,
+          type: c.type === 'removed' || c.type === 'removed_day' ? 'warning' : 'info',
+          message: msg,
+          timestamp: new Date().toISOString(),
+          sourceTab: 'schedule',
+        });
+      }
+    });
     // Sort newest first
     return alerts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   }, [credentials, myMatRequests, lang]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -239,6 +257,35 @@ export function HomeTab({ activeEmp, isClockedIn, activeEntry, now, weekTotal, m
           </button>
         </div>
       )}
+
+      {/* ═══ B2. TOMORROW PREVIEW — 7.4 ═══ */}
+      {(() => {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowKey = ['sun','mon','tue','wed','thu','fri','sat'][tomorrow.getDay()];
+        const tomorrowAssignments = mySchedule.filter(s => s.days?.[tomorrowKey] && s.projectId);
+        if (tomorrowAssignments.length === 0) return null;
+        return (
+          <div className="card" style={{ padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-3)', borderLeft: '3px solid var(--accent, #3b82f6)' }}>
+            <div style={{ fontSize: 'var(--text-label)', color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 'var(--space-1)', fontWeight: 'var(--weight-semi)' }}>
+              {t("Tomorrow")} — {tomorrow.toLocaleDateString(lang === 'es' ? 'es' : 'en', { weekday: 'short', month: 'short', day: 'numeric' })}
+            </div>
+            {tomorrowAssignments.map((s, i) => {
+              const proj = projects.find(p => p.id === s.projectId);
+              return (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--space-1) 0' }}>
+                  <span style={{ fontSize: 'var(--text-secondary)', fontWeight: 'var(--weight-medium)', color: 'var(--text)' }}>
+                    {proj?.name || t("Project")}
+                  </span>
+                  <span style={{ fontSize: 'var(--text-label)', color: 'var(--text2)' }}>
+                    {s.hours?.start || '06:30'} — {s.hours?.end || '15:00'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* ═══ C. QUICK INFO — one dense row, not three cards ═══ */}
       <div className="hs-quick">

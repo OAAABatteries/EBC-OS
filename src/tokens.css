@@ -1,4 +1,7 @@
-/* ── SPACING SCALE (4-point grid only) ─────────────────────── */
+/* ── SPACING SCALE (4-point grid only — 7.8 enforced) ──────── */
+/* RULE: All spacing values MUST be multiples of 4px.           */
+/* Use --space-N tokens. Never use raw px values (3, 5, 7, etc) */
+/* Allowed: 4, 8, 12, 16, 20, 24, 32, 40, 48                  */
 :root {
   --space-1:   4px;
   --space-2:   8px;
@@ -102,10 +105,12 @@
   --shadow-md:  0 2px 6px rgba(0,0,0,0.15);
   --shadow-lg:  0 4px 12px rgba(0,0,0,0.25);
 
-  /* ── CONTROL HEIGHTS ────────────────────────────────────── */
-  --control-primary: 52px;  /* text inputs, primary buttons, selects */
-  --touch-min:       48px;  /* secondary buttons, list rows, tab items */
-  --control-row:     52px;  /* list rows, bottom sheet items */
+  /* ── CONTROL HEIGHTS (7.7 — 52/44/56 compliance) ───────── */
+  --control-primary:   52px;  /* text inputs, primary buttons, selects */
+  --control-secondary: 44px;  /* icon buttons, ghost buttons, compact controls */
+  --touch-min:         44px;  /* minimum touch target (WCAG AA) — was 48, snapped to 44 */
+  --control-row:       52px;  /* list rows, bottom sheet items */
+  --tab-bar-height:    56px;  /* bottom tab bar — the third tier */
   --control-textarea: 120px;
 
   /* ── ON-STATE TEXT ────────────────────────────────────────── */

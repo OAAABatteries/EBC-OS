@@ -6,7 +6,8 @@ export function DashboardTab({
   teamForProject, teamClocks, foremanAlerts,
   openPunchCount, pendingTmCount, productionLogs, areas,
   selectedProjectId, projectMatRequests,
-  calendarEvents, upcomingEventCount, lang, t,
+  calendarEvents, upcomingEventCount, teamSchedule, projects,
+  lang, t,
   setShowLaborEntry, setBulkLaborSelected,
 }) {
   return (
@@ -55,6 +56,37 @@ export function DashboardTab({
       <FieldButton variant="ghost" className="foreman-action-btn foreman-action-btn--full" onClick={() => setForemanTab("lookahead")} t={t}>
         <Calendar size={15} /> {t("Look-Ahead")} {upcomingEventCount > 0 && <span className="foreman-action-badge">{upcomingEventCount}</span>}
       </FieldButton>
+
+      {/* 7.4 — Tomorrow Preview Card */}
+      {(() => {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowKey = ['sun','mon','tue','wed','thu','fri','sat'][tomorrow.getDay()];
+        const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
+        const tomorrowCrew = (teamSchedule || []).filter(s => s.days?.[tomorrowKey] && String(s.projectId) === String(selectedProjectId));
+        const tomorrowEvents = (calendarEvents || []).filter(e => e.date === tomorrowStr);
+        if (tomorrowCrew.length === 0 && tomorrowEvents.length === 0) return null;
+        const employees = (projects || []).length > 0 ? [] : []; // placeholder — crew names come from schedule
+        return (
+          <div className="card" style={{ padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-3)', borderLeft: '3px solid var(--accent, #3b82f6)' }}>
+            <div style={{ fontSize: 'var(--text-label)', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 'var(--weight-semi)', marginBottom: 'var(--space-1)' }}>
+              {t("Tomorrow")} — {tomorrow.toLocaleDateString(lang === 'es' ? 'es' : 'en', { weekday: 'short', month: 'short', day: 'numeric' })}
+            </div>
+            {tomorrowCrew.length > 0 && (
+              <div style={{ fontSize: 'var(--text-secondary)', color: 'var(--text)', marginBottom: 'var(--space-1)' }}>
+                {tomorrowCrew.length} {t("crew scheduled")}
+              </div>
+            )}
+            {tomorrowEvents.map((ev, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-1) 0' }}>
+                <span style={{ width: 4, height: 16, borderRadius: 2, background: ev.type === 'inspection' ? 'var(--red)' : ev.type === 'delivery' ? 'var(--accent)' : 'var(--text3)', flexShrink: 0 }} />
+                <span style={{ fontSize: 'var(--text-label)', color: 'var(--text)' }}>{ev.title}</span>
+                {ev.startTime && <span style={{ fontSize: 'var(--text-tab)', color: 'var(--text3)', marginLeft: 'auto' }}>{ev.startTime}</span>}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Alerts feed */}
       {foremanAlerts.length > 0 && (

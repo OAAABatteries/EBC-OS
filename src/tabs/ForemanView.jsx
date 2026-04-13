@@ -1189,6 +1189,7 @@ export function ForemanView({ app }) {
                 productionLogs={productionLogs} areas={areas}
                 selectedProjectId={selectedProjectId} projectMatRequests={projectMatRequests}
                 calendarEvents={calendarEvents} upcomingEventCount={upcomingEventCount}
+                teamSchedule={app.teamSchedule} projects={projects}
                 lang={lang} t={t}
                 setShowLaborEntry={setShowLaborEntry} setBulkLaborSelected={setBulkLaborSelected}
               />
@@ -1273,7 +1274,18 @@ export function ForemanView({ app }) {
 
             {/* ═══ LOOK-AHEAD TAB ═══ */}
             {foremanTab === "lookahead" && (
-              <LookAheadTab lookAheadEvents={lookAheadEvents} lang={lang} t={t} />
+              <LookAheadTab lookAheadEvents={lookAheadEvents} lang={lang} t={t}
+                onUpdateEvent={(updated) => {
+                  // Update calendar events with inspection result
+                  const events = app.calendarEvents || [];
+                  const idx = events.findIndex(e => e.id === updated.id);
+                  if (idx >= 0) {
+                    const next = [...events];
+                    next[idx] = { ...next[idx], ...updated };
+                    if (app.setCalendarEvents) app.setCalendarEvents(next);
+                  }
+                  if (show) show(updated.inspectionResult === "passed" ? t("Inspection PASSED") : t("Inspection FAILED"), updated.inspectionResult === "passed" ? "ok" : "err");
+                }} />
             )}
 
             {/* ═══ DAILY REPORT TAB ═══ */}

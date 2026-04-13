@@ -6332,6 +6332,36 @@ function DailyReportsTab({ app }) {
                   ))}
                 </div>
               )}
+              {/* 7.5 — PM Daily Report Review Workflow */}
+              <div style={{ marginTop: "var(--space-3)", paddingTop: "var(--space-3)", borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                {rpt.reviewedBy ? (
+                  <span style={{ fontSize: "var(--text-label)", color: rpt.reviewStatus === "flagged" ? "var(--red)" : "var(--green)", fontWeight: "var(--weight-semi)" }}>
+                    {rpt.reviewStatus === "flagged" ? "\u26A0 Flagged" : "\u2713 Reviewed"} by {rpt.reviewedBy} {rpt.reviewedAt ? `\u00B7 ${new Date(rpt.reviewedAt).toLocaleDateString()}` : ""}
+                  </span>
+                ) : (
+                  <>
+                    <span style={{ fontSize: "var(--text-tab)", color: "var(--amber)", fontWeight: "var(--weight-semi)", textTransform: "uppercase" }}>Pending Review</span>
+                    <button className="btn btn-sm" style={{ background: "var(--green)", color: "#fff", border: "none", padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }}
+                      onClick={() => {
+                        app.setDailyReports(prev => prev.map(r => r.id === rpt.id ? { ...r, reviewedBy: app.auth?.name || "PM", reviewedAt: new Date().toISOString(), reviewStatus: "approved" } : r));
+                        app.show("Report approved");
+                      }}>{"\u2713"} Approve</button>
+                    <button className="btn btn-sm" style={{ background: "var(--red)", color: "#fff", border: "none", padding: "var(--space-1) var(--space-3)", fontSize: "var(--text-label)" }}
+                      onClick={() => {
+                        const note = prompt("Flag reason:");
+                        if (note !== null) {
+                          app.setDailyReports(prev => prev.map(r => r.id === rpt.id ? { ...r, reviewedBy: app.auth?.name || "PM", reviewedAt: new Date().toISOString(), reviewStatus: "flagged", reviewNote: note } : r));
+                          app.show("Report flagged");
+                        }
+                      }}>{"\u26A0"} Flag</button>
+                  </>
+                )}
+                {rpt.reviewNote && (
+                  <div style={{ width: "100%", marginTop: "var(--space-1)", fontSize: "var(--text-label)", color: "var(--text2)", fontStyle: "italic" }}>
+                    {"\u{1F4AC}"} {rpt.reviewNote}
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
