@@ -303,9 +303,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 .field-input,.field-select{min-height:var(--touch-min);padding:var(--space-3) var(--space-4)}
 .field-input-error{border-color:var(--red);box-shadow:0 0 0 2px var(--red-dim)}
 .field-input-error-msg{font-size:var(--text-sm);color:var(--red);margin-top:var(--space-1)}
-.field-tab-bar{position:fixed;bottom:0;left:0;right:0;height:56px;padding-bottom:env(safe-area-inset-bottom);background:var(--glass-bg);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);border-top:1px solid var(--glass-border);display:flex;align-items:stretch;z-index:100}
+.field-tab-bar{position:fixed;bottom:0;left:0;right:0;height:calc(56px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:var(--glass-bg);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);border-top:1px solid var(--glass-border);display:flex;align-items:stretch;z-index:100}
 .field-tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-1);min-height:var(--touch-min);min-width:var(--touch-min);cursor:pointer;border:none;background:none;color:var(--text);opacity:0.55;font-size:var(--text-tab);line-height:var(--lh-tab);font-weight:var(--weight-medium);font-family:var(--font-body);transition:all var(--transition-micro);touch-action:manipulation;-webkit-tap-highlight-color:transparent;position:relative}
-.field-tab-item.active{color:var(--accent);font-weight:var(--weight-medium);opacity:1}
+.field-tab-item.active{color:var(--accent);font-weight:var(--weight-bold);opacity:1}
+.field-tab-item.active::after{content:'';position:absolute;top:4px;left:50%;transform:translateX(-50%);width:32px;height:3px;background:var(--accent);border-radius:var(--radius-pill)}
 .field-tab-item:active{transform:scale(0.92)}
 .field-tab-badge{position:absolute;top:6px;right:calc(50% - 14px);width:6px;height:6px;border-radius:50%;background:var(--red)}
 .field-tab-sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:150}

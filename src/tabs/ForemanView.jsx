@@ -1054,26 +1054,25 @@ export function ForemanView({ app }) {
   }).length;
 
   const foremanTabDefs = [
-    // Primary (4 field-critical tabs)
+    // ── Primary (5 tabs visible in bottom bar) ──
     { id: "dashboard", label: t("Home"), icon: Home, badge: false },
     { id: "production", label: t("Production"), icon: BarChart3, badge: false },
-    { id: "tm", label: t("T&M"), icon: FileText, badge: pendingTmCount > 0 },
     { id: "team", label: t("Team"), icon: Users, badge: pendingRequestCount > 0 },
-    // Promoted daily-use tabs (R15 auditor: "daily-use features shouldn't require 3+ taps")
-    { id: "documents", label: t("Documents"), icon: FileText, badge: answeredRfiCount > 0 },
-    { id: "lookahead", label: t("Look-Ahead"), icon: Calendar, badge: upcomingEventCount > 0 },
-    // Overflow (frequency-driven)
-    { id: "reports", label: t("Daily Report"), icon: ClipboardList, badge: (dailyReports || []).filter(r => r.projectId === selectedProjectId && r.date === new Date().toISOString().slice(0,10)).length > 0 },
-    { id: "drawings", label: t("Drawings"), icon: FileText, badge: false },
+    { id: "documents", label: t("Docs"), icon: FileText, badge: answeredRfiCount > 0 },
+    // ── Overflow (ranked by daily use frequency) ──
+    { id: "tm", label: t("T&M"), icon: FileText, badge: pendingTmCount > 0 },
     { id: "punchList", label: t("Punch List"), icon: ClipboardCheck, badge: openPunchCount > 0 },
     { id: "materials", label: t("Materials"), icon: Package, badge: projectMatRequests.filter(r => r.status === "requested" || r.status === "pending").length > 0 },
-    { id: "deliveries", label: t("Deliveries"), icon: Package, badge: projectMatRequests.filter(r => ["assigned", "picked_up", "in-transit"].includes(r.status)).length > 0 },
-    { id: "issues", label: t("Issues"), icon: AlertTriangle, badge: (problems || []).filter(p => String(p.projectId) === String(selectedProjectId) && p.status !== "resolved").length > 0 },
-    { id: "decisionLog", label: t("Decisions"), icon: FileText, badge: false },
-    { id: "hours", label: t("Hours"), icon: BarChart3, badge: false },
+    { id: "reports", label: t("Daily Report"), icon: ClipboardList, badge: (dailyReports || []).filter(r => r.projectId === selectedProjectId && r.date === new Date().toISOString().slice(0,10)).length > 0 },
+    { id: "drawings", label: t("Drawings"), icon: FileText, badge: false },
     { id: "jsa", label: "JSA", icon: Shield, badge: activeJsaCount > 0 },
+    { id: "lookahead", label: t("Look-Ahead"), icon: Calendar, badge: upcomingEventCount > 0 },
+    { id: "hours", label: t("Hours"), icon: BarChart3, badge: false },
+    { id: "issues", label: t("Issues"), icon: AlertTriangle, badge: (problems || []).filter(p => String(p.projectId) === String(selectedProjectId) && p.status !== "resolved").length > 0 },
     { id: "schedule", label: t("Schedule"), icon: Calendar, badge: false },
     { id: "map", label: t("Map"), icon: MapIcon, badge: false },
+    { id: "deliveries", label: t("Deliveries"), icon: Package, badge: projectMatRequests.filter(r => ["assigned", "picked_up", "in-transit"].includes(r.status)).length > 0 },
+    { id: "decisionLog", label: t("Decisions"), icon: FileText, badge: false },
     { id: "settings", label: t("Settings"), icon: Settings, badge: false },
   ];
 
@@ -4677,7 +4676,7 @@ export function ForemanView({ app }) {
           tabs={foremanTabDefs}
           activeTab={foremanTab}
           onTabChange={setForemanTab}
-          maxPrimary={5}
+          maxPrimary={4}
           t={t}
         />
       )}

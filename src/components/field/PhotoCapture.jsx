@@ -19,33 +19,62 @@ export function PhotoCapture({ photos = [], onPhotos, multiple = true, label, t 
   const inputRef = useRef(null);
   const tr = (s) => (t ? t(s) : s);
 
-  const handleCapture = (e) => {
+  /**
+   * Compress an image file via canvas: resize to max 1200px edge, JPEG quality 0.6
+   * Reduces ~3MB iPhone photo to ~80-150KB data URL
+   */
+  const compressPhoto = (file) =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1200;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          const ratio = Math.min(MAX / w, MAX / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", 0.6));
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = () => {
+        // Fallback: read as-is if compression fails
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+        URL.revokeObjectURL(img.src);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+
+  const handleCapture = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
     // Capture GPS location at time of photo
-    const gpsPromise = new Promise((resolve) => {
+    let gps = null;
+    try {
       if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
-          () => resolve(null),
-          { enableHighAccuracy: true, timeout: 5000 }
-        );
-      } else {
-        resolve(null);
+        gps = await new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+            () => resolve(null),
+            { enableHighAccuracy: true, timeout: 5000 }
+          );
+        });
       }
-    });
+    } catch { /* ignore */ }
 
-    gpsPromise.then((gps) => {
-      files.forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const entry = { name: file.name, data: reader.result, capturedAt: new Date().toISOString(), gps };
-          onPhotos((prev) => (multiple ? [...prev, entry] : [entry]));
-        };
-        reader.readAsDataURL(file);
-      });
-    });
+    for (const file of files) {
+      const data = await compressPhoto(file);
+      const entry = { name: file.name, data, capturedAt: new Date().toISOString(), gps };
+      onPhotos((prev) => (multiple ? [...prev, entry] : [entry]));
+    }
     // Reset input so same file can be re-selected
     e.target.value = "";
   };
