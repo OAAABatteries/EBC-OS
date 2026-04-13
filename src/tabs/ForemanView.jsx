@@ -5,6 +5,7 @@ import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { useNotifications } from "../hooks/useNotifications";
 import { useFormDraft } from "../hooks/useFormDraft";
 import { queueMutation } from "../lib/offlineQueue";
+import { hapticSuccess } from "../utils/native";
 import { FeatureGuide } from "../components/FeatureGuide";
 import { ReportProblemModal } from "../components/ReportProblemModal";
 import { T } from "../data/translations";
@@ -126,7 +127,7 @@ export function ForemanView({ app }) {
   const [laborEntries, setLaborEntries] = useState(() => {
     try { return JSON.parse(localStorage.getItem("ebc_laborEntries") || "[]"); } catch { return []; }
   });
-  const [laborForm, setLaborForm, { clearDraft: clearLaborDraft }] = useFormDraft(
+  const [laborForm, setLaborForm, { clearDraft: clearLaborDraft, hasDraft: hasLaborDraft, draftAge: laborDraftAge }] = useFormDraft(
     `labor_entry_${activeForeman?.id || "anon"}`,
     { employeeId: "", areaId: "", costCode: "framing", hours: "", payType: "regular", notes: "" }
   );
@@ -155,11 +156,21 @@ export function ForemanView({ app }) {
     issues: "",
     tomorrowPlan: "",
   };
-  const [reportForm, setReportForm, { clearDraft: clearReportDraft }] = useFormDraft(
+  const [reportForm, setReportForm, { clearDraft: clearReportDraft, hasDraft: hasReportDraft, draftAge: reportDraftAge }] = useFormDraft(
     `daily_report_${activeForeman?.id || "anon"}_${selectedProjectId || "none"}`,
     { ...EMPTY_REPORT_FORM }
   );
   const [showReportForm, setShowReportForm] = useState(false);
+
+  // 9.7 — Draft recovery toast: notify foreman when unsaved work is detected
+  useEffect(() => {
+    const drafts = [];
+    if (hasLaborDraft) drafts.push(`${t("Labor entry")} (${laborDraftAge}m ago)`);
+    if (hasReportDraft) drafts.push(`${t("Daily report")} (${reportDraftAge}m ago)`);
+    if (drafts.length > 0) {
+      show?.(`📝 ${t("Draft recovered")}: ${drafts.join(", ")}`, 5000);
+    }
+  }, []); // mount-only
   const [teamSearch, setCrewSearch] = useState("");
   const [expandedReportId, setExpandedReportId] = useState(null);
   const [editingReportId, setEditingReportId] = useState(null);
@@ -366,6 +377,7 @@ export function ForemanView({ app }) {
     };
     setClockEntry(entry);
     localStorage.setItem(CLOCK_KEY, JSON.stringify(entry));
+    hapticSuccess();
     show?.(`${t("Clocked in")} ${captureStatus === "ok" ? "📸" : "⚠️"} ✓`);
   };
 
@@ -1275,6 +1287,7 @@ export function ForemanView({ app }) {
             {/* ═══ LOOK-AHEAD TAB ═══ */}
             {foremanTab === "lookahead" && (
               <LookAheadTab lookAheadEvents={lookAheadEvents} lang={lang} t={t}
+                project={selectedProject} preparedBy={activeForeman?.name}
                 onUpdateEvent={(updated) => {
                   // Update calendar events with inspection result
                   const events = app.calendarEvents || [];

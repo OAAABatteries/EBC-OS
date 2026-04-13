@@ -146,7 +146,7 @@ export function PhotoCapture({ photos = [], onPhotos, multiple = true, label, t,
                 type="button"
                 onClick={() => removePhoto(i)}
                 className="flex justify-center absolute cursor-pointer c-white" style={{ top: 2, right: 2,
-                  width: 36, height: 36, borderRadius: "50%",
+                  width: 44, height: 44, borderRadius: "50%",
                   background: "rgba(0,0,0,0.7)", border: "none", padding: 0 }}
               >
                 <X size={18} />

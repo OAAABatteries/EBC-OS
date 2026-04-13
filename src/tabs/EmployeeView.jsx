@@ -7,6 +7,7 @@ import { ScheduleTab } from './employee/ScheduleTab';
 import { CredentialsTab } from './employee/CredentialsTab';
 import { ProgressReportTab } from './employee/ProgressReportTab';
 import { ReportProblemModal } from "../components/ReportProblemModal";
+import { hapticSuccess } from "../utils/native";
 import { useGeolocation } from "../hooks/useGeolocation";
 import { useNotifications } from "../hooks/useNotifications";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
@@ -151,10 +152,18 @@ export function EmployeeView({ app }) {
   const [showProjectSearch, setShowProjectSearch] = useState(false);
 
   // ── material request state ──
-  const [matForm, setMatForm, { clearDraft: clearMatDraft, hasDraft: hasMatDraft }] = useFormDraft(
+  const [matForm, setMatForm, { clearDraft: clearMatDraft, hasDraft: hasMatDraft, draftAge: matDraftAge }] = useFormDraft(
     `mat_request_${activeEmp?.id || "anon"}`,
     { material: "", qty: "", unit: "EA", notes: "", photo: null, photos: [] }
   );
+
+  // 9.7 — Draft recovery toast: notify employee when unsaved material request is detected
+  useEffect(() => {
+    if (hasMatDraft) {
+      show?.(`📝 ${t("Draft recovered")}: ${t("Material request")} (${matDraftAge}m ago)`, 5000);
+    }
+  }, []); // mount-only
+
   const [matProjectId, setMatProjectId] = useState(() => {
     // Auto-select today's assigned project
     const todayDay = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
@@ -615,6 +624,7 @@ export function EmployeeView({ app }) {
     };
     setTimeEntries((prev) => [entry, ...prev]);
     queueMutation("time_entries", "insert", entry);
+    hapticSuccess();
     setShowOverride(false);
     setOverrideReason("");
     setPpeConfirmed(false); // reset for next clock-in

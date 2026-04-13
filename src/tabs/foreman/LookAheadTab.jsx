@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { FileDown } from "lucide-react";
 
-export function LookAheadTab({ lookAheadEvents, onUpdateEvent, lang, t }) {
+export function LookAheadTab({ lookAheadEvents, onUpdateEvent, lang, t, project, preparedBy }) {
   // 7.9 — Inspection pass/fail logging state
   const [inspectionNotes, setInspectionNotes] = useState({});
   const [showInspectionForm, setShowInspectionForm] = useState(null);
@@ -21,8 +22,20 @@ export function LookAheadTab({ lookAheadEvents, onUpdateEvent, lang, t }) {
 
   return (
     <div className="emp-content">
-      <div className="section-header">
+      <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div className="section-title frm-section-title-md">{t("14-Day Look-Ahead")}</div>
+        {lookAheadEvents.length > 0 && (
+          <button
+            className="btn btn-sm flex gap-sp1"
+            style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-3)" }}
+            onClick={async () => {
+              const { generateLookAheadPdf } = await import("../../utils/lookAheadPdf");
+              generateLookAheadPdf({ project, events: lookAheadEvents, preparedBy });
+            }}
+          >
+            <FileDown size={14} /> {t("Export PDF")}
+          </button>
+        )}
       </div>
       <div className="text-xs text-muted frm-mb-12">
         {t("Upcoming milestones, inspections, and deadlines for this project.")}
