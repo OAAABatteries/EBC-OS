@@ -88,7 +88,8 @@ export async function ensureSupabaseAuth() {
     if (authStr) {
       const auth = JSON.parse(authStr);
       const email = auth.email || `${(auth.username || auth.name || "user").toLowerCase().replace(/\s+/g, ".")}@ebconstructors.local`;
-      const password = auth.passwordHash || auth.pin || "ebc_default_2024";
+      const password = auth.passwordHash || auth.pin;
+      if (!password) return false; // no credentials — require explicit login
       try {
         await signIn(email, password);
         return true;

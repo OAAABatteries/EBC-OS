@@ -479,6 +479,34 @@ export function LoginScreen({ onLogin }) {
   // PIN login
   const [pinValue, setPinValue] = useState("");
 
+  // Rate limiting — 5 attempts max, 60s lockout
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState(0);
+  const MAX_ATTEMPTS = 5;
+  const LOCKOUT_MS = 60000; // 60 seconds
+
+  const checkLockout = () => {
+    if (lockoutUntil && Date.now() < lockoutUntil) {
+      const secsLeft = Math.ceil((lockoutUntil - Date.now()) / 1000);
+      setError(`Too many attempts. Try again in ${secsLeft}s`);
+      return true;
+    }
+    if (lockoutUntil && Date.now() >= lockoutUntil) {
+      setLockoutUntil(0);
+      setFailedAttempts(0);
+    }
+    return false;
+  };
+
+  const recordFailure = () => {
+    const next = failedAttempts + 1;
+    setFailedAttempts(next);
+    if (next >= MAX_ATTEMPTS) {
+      setLockoutUntil(Date.now() + LOCKOUT_MS);
+      setError(`Account locked for 60 seconds after ${MAX_ATTEMPTS} failed attempts`);
+    }
+  };
+
   // Password change
   const [changingUser, setChangingUser] = useState(null);
   const [newPassword, setNewPassword] = useState("");
@@ -559,14 +587,15 @@ export function LoginScreen({ onLogin }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    if (checkLockout()) return;
     if (!loginEmail || !loginPassword) { setError(t("All fields are required")); return; }
     setLoading(true);
     try {
       const users = JSON.parse(localStorage.getItem("ebc_users") || "[]");
       const candidate = users.find(u => u.email.toLowerCase() === loginEmail.toLowerCase() || u.name.toLowerCase() === loginEmail.toLowerCase());
-      if (!candidate) { setLoading(false); setError(t("Invalid credentials")); return; }
+      if (!candidate) { setLoading(false); recordFailure(); setError(t("Invalid credentials")); return; }
       const { match, newHash } = await verifyAndMigrate(loginPassword, candidate.password);
-      if (!match) { setLoading(false); setError(t("Invalid credentials")); return; }
+      if (!match) { setLoading(false); recordFailure(); setError(t("Invalid credentials")); return; }
       if (newHash) {
         const idx = users.findIndex(u => u.id === candidate.id);
         if (idx >= 0) { users[idx].password = newHash; localStorage.setItem("ebc_users", JSON.stringify(users)); }
@@ -575,24 +604,27 @@ export function LoginScreen({ onLogin }) {
       if (candidate.mustChangePassword) { setLoading(false); setChangingUser(candidate); setMode("changePassword"); return; }
       const supaUser = await authenticateWithSupabase(candidate.email, loginPassword, candidate);
       const authUser = { id: candidate.id, name: candidate.name, email: candidate.email, role: candidate.role, title: candidate.title, ...(supaUser?.supabaseId ? { supabaseId: supaUser.supabaseId } : {}) };
+      setFailedAttempts(0); setLockoutUntil(0);
       setTimeout(() => { setLoading(false); onLogin(authUser); }, 300);
-    } catch { setLoading(false); setError(t("Invalid credentials")); }
+    } catch { setLoading(false); recordFailure(); setError(t("Invalid credentials")); }
   };
 
   const handlePinLogin = async (pin) => {
     const code = pin || pinValue;
     if (code.length < 4) return;
     setError("");
+    if (checkLockout()) return;
     setLoading(true);
     try {
       const users = JSON.parse(localStorage.getItem("ebc_users") || "[]");
       let user = null;
       for (const u of users) { const ok = await verifyPassword(code, u.pin); if (ok) { user = u; break; } }
-      if (!user) { setLoading(false); setError(t("Invalid PIN")); setPinValue(""); return; }
+      if (!user) { setLoading(false); recordFailure(); setError(t("Invalid PIN")); setPinValue(""); return; }
       if (user.mustChangePassword) { setLoading(false); setChangingUser(user); setMode("changePassword"); return; }
       const authUser = { id: user.id, name: user.name, email: user.email, role: user.role, title: user.title };
+      setFailedAttempts(0); setLockoutUntil(0);
       setTimeout(() => { setLoading(false); onLogin(authUser); }, 300);
-    } catch { setLoading(false); setError(t("Invalid PIN")); }
+    } catch { setLoading(false); recordFailure(); setError(t("Invalid PIN")); }
   };
 
   const handlePinKey = (key) => {
