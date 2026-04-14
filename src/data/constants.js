@@ -756,7 +756,7 @@ export const initCompanyLocations = _demoCompanyLocations; // always load — of
 export const initMaterialRequests = _demoMaterialRequests; // always load — foreman portal needs this
 export const initCrewSchedule = _demoCrewSchedule; // always load — foreman portal needs this
 export const initTimeEntries = _demoTimeEntries; // always load — foreman portal needs this
-export const initAreas = _demoAreas; // always load — area-based work model
+export const initAreas = []; // Sprint 10.2: empty by default — areas are created per project
 export const initProductionLogs = _demoProductionLogs; // always load — production tracking
 export const initDecisionLog = _demoDecisionLog; // always load — PM decision/communication log
 

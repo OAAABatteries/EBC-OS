@@ -1918,7 +1918,7 @@ const ModalHub = ({ type, data, app }) => {
 
             {/* ── Areas ── */}
             {projTab === "areas" && (
-              <AreasTab areas={app.areas} productionLogs={app.productionLogs} employees={app.employees} projectId={draft.id} t={app.t} />
+              <AreasTab areas={app.areas} setAreas={app.setAreas} productionLogs={app.productionLogs} employees={app.employees} projectId={draft.id} t={app.t} takeoffs={app.takeoffs} bids={app.bids} project={draft} userRole={app.auth?.role} />
             )}
 
             {/* ── Punch List ── */}
