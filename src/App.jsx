@@ -972,8 +972,8 @@ function App({ auth, onLogout }) {
               </select>
             )}
             {dashActions.urgentCount > 0 && <span className="text-red fw-700">{dashActions.urgentCount} items need attention</span>}
-            <span className="ml-sp2 fs-xs c-text3">
-              {t("Data")}: {new Date().toLocaleTimeString([], {hour: "numeric", minute: "2-digit"})} ({t("local")})
+            <span className="ml-sp2 fs-xs" style={{ color: isSupabaseConfigured() ? "var(--green)" : "var(--text3)" }}>
+              {isSupabaseConfigured() ? "● " + t("Live") : "○ " + t("Local")} — {new Date().toLocaleTimeString([], {hour: "numeric", minute: "2-digit"})}
             </span>
           </div>
         </div>
@@ -992,8 +992,14 @@ function App({ auth, onLogout }) {
       {showBrief && briefResult && (
         <div className="card mb-sp4 p-sp5 overflow-auto" style={{ maxHeight: 450 }}>
           <div className="flex-between mb-12">
-            <div className="text-sm font-semi">{briefResult.greeting || "Good morning!"}</div>
-            <button className="btn btn-ghost btn-sm" onClick={() => setShowBrief(false)}>{t("Close")}</button>
+            <div>
+              <div className="text-sm font-semi">{briefResult.greeting || "Good morning!"}</div>
+              {briefTimestamp && <div className="text-xs text-dim">{t("Generated")} {briefTimestamp.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</div>}
+            </div>
+            <div className="flex gap-8">
+              <button className="btn btn-ghost btn-sm" onClick={runMorningBrief}>{t("Refresh")}</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowBrief(false)}>{t("Close")}</button>
+            </div>
           </div>
 
           <div className="text-sm text-muted mb-12">{briefResult.summary}</div>
@@ -1065,17 +1071,17 @@ function App({ auth, onLogout }) {
         const fmt = (n) => "$" + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
         return (
           <div className="kpi-grid mb-sp4">
-            <div className="kpi-card">
+            <div className="kpi-card cursor-pointer" onClick={() => handleTabClick("projects")}>
               <div className="kpi-label">{t("Active Contract")}</div>
               <div className="kpi-value fs-subtitle">{fmt(adjustedContract)}</div>
               <div className="kpi-sub">{activeProjects.length} {t("projects")} {totalApprovedCOs > 0 && `(+${fmt(totalApprovedCOs)} COs)`}</div>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card cursor-pointer" onClick={() => handleTabClick("financials")}>
               <div className="kpi-label">{t("Billed")}</div>
               <div className="kpi-value fs-subtitle c-green">{fmt(totalBilled)}</div>
               <div className="kpi-sub">{adjustedContract > 0 ? Math.round((totalBilled / adjustedContract) * 100) : 0}% {t("of contract")}</div>
             </div>
-            <div className="kpi-card">
+            <div className="kpi-card cursor-pointer" onClick={() => handleTabClick("financials")}>
               <div className="kpi-label">{t("Remaining")}</div>
               <div className="kpi-value" style={{ fontSize: "var(--text-subtitle)", color: remaining < 0 ? "var(--red)" : "var(--text)" }}>{fmt(remaining)}</div>
               <div className="kpi-sub">{totalPendingCOs > 0 && <span className="c-amber">{fmt(totalPendingCOs)} {t("pending COs")}</span>}</div>
@@ -1104,34 +1110,34 @@ function App({ auth, onLogout }) {
             </div>
             <div className="grid-auto-180">
               {todayProd.length > 0 && (
-                <div className="activity-tile">
+                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("reports")}>
                   <div className="text-lg font-bold text-green">{todayProd.length}</div>
                   <div className="text-xs text-muted">{t("Production logged")}</div>
                   <div className="text-xs text-dim">{todayProd.length} {t("entries today")}</div>
                 </div>
               )}
               {todayTm.length > 0 && (
-                <div className="activity-tile">
+                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("financials")}>
                   <div className="text-lg font-bold text-amber">{todayTm.length}</div>
                   <div className="text-xs text-muted">{t("T&M tickets")}</div>
                   <div className="text-xs text-dim">{todayTm.length} {t("created today")}</div>
                 </div>
               )}
               {(punchCreated > 0 || punchResolved > 0) && (
-                <div className="activity-tile">
+                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("projects")}>
                   <div className="text-lg font-bold text-red">{punchCreated}</div>
                   <div className="text-xs text-muted">{t("Punch items")}</div>
                   <div className="text-xs text-dim">{punchResolved} {t("resolved today")}</div>
                 </div>
               )}
               {todayProblems.length > 0 && (
-                <div className="activity-tile">
+                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("reports")}>
                   <div className="text-lg font-bold text-red">{todayProblems.length}</div>
                   <div className="text-xs text-muted">{t("Problems reported")}</div>
                 </div>
               )}
               {todayReports.length > 0 && (
-                <div className="activity-tile">
+                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("reports")}>
                   <div className="text-lg font-bold text-blue">{todayReports.length}</div>
                   <div className="text-xs text-muted">{t("Daily reports")}</div>
                   {unreviewed > 0 && <div className="text-xs text-amber fw-700">{unreviewed} {t("un-reviewed")}</div>}
@@ -1203,7 +1209,7 @@ function App({ auth, onLogout }) {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(weekDays.length, 7)}, 1fr)`, gap: "var(--space-1)", fontSize: "var(--text-tab)" }}>
               {days.map((d, i) => (
-                <div key={i} style={{ padding: "var(--space-2) var(--space-1)", borderRadius: "var(--radius-control)", background: i === 0 ? "rgba(16,185,129,0.08)" : "var(--bg3)", textAlign: "center", border: i === 0 ? "1px solid var(--green)" : "1px solid transparent" }}>
+                <div key={i} style={{ padding: "var(--space-2) var(--space-1)", borderRadius: "var(--radius-control)", background: i === 0 ? "rgba(16,185,129,0.08)" : "var(--bg3)", textAlign: "center", border: i === 0 ? "1px solid var(--green)" : "1px solid transparent", cursor: "pointer" }} onClick={() => handleTabClick("calendar")}>
                   <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-xs)", color: i === 0 ? "var(--green)" : "var(--text3)", marginBottom: "var(--space-1)" }}>
                     {d.label.split(",")[0]}
                   </div>
@@ -1244,7 +1250,7 @@ function App({ auth, onLogout }) {
         if (entries.length === 0) return null;
         const totalCrew = new Set(entries.flatMap(([, v]) => [...v.crew])).size;
         return (
-          <div className="card card dash-card dash-card--blue">
+          <div className="card dash-card dash-card--blue">
             <div className="text-sm font-semi mb-8 flex-center-gap-6">
               <HardHat size={15} /> {t("Today's Manpower")} — {totalCrew} {t("crew")} {t("across")} {entries.length} {t("sites")}
             </div>
@@ -1269,7 +1275,7 @@ function App({ auth, onLogout }) {
         if (mySites.length === 0) return null;
         const PROXIMITY_M = 200;
         return (
-          <div className="card card dash-card dash-card--blue">
+          <div className="card dash-card dash-card--blue">
             <div className="text-sm font-semi mb-8 flex-center-gap-6">
               <MapPin size={15} /> Today's Sites
               <span className="text-xs text-muted fw-400">({mySites.length} active)</span>
@@ -1314,6 +1320,151 @@ function App({ auth, onLogout }) {
         );
       })()}
 
+      {/* ── Safety & Compliance Summary ── */}
+      {(() => {
+        const now2 = new Date();
+        const openIncidents = (incidents || []).filter(i => i.status === "open" || !i.status);
+        const recentTalks = (toolboxTalks || []).filter(tt => {
+          const d = tt.date ? new Date(tt.date) : null;
+          return d && (now2 - d) < 7 * 86400000;
+        });
+        const expiringCerts = (certifications || []).filter(c => {
+          const exp = c.expirationDate ? new Date(c.expirationDate) : null;
+          return exp && exp > now2 && (exp - now2) < 30 * 86400000;
+        });
+        const expiredCerts = (certifications || []).filter(c => {
+          const exp = c.expirationDate ? new Date(c.expirationDate) : null;
+          return exp && exp <= now2;
+        });
+        const safetyCount = openIncidents.length + expiringCerts.length + expiredCerts.length;
+        if (safetyCount === 0 && recentTalks.length === 0) return null;
+        return (
+          <div className="card dash-card" style={{ borderLeft: expiredCerts.length > 0 || openIncidents.length > 0 ? "3px solid var(--red)" : "3px solid var(--green)" }}>
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
+              🛡️ {t("Safety & Compliance")}
+              {(expiredCerts.length > 0 || openIncidents.length > 0) && <span className="badge badge-red fs-xs">{t("Action needed")}</span>}
+            </div>
+            <div className="grid-auto-180">
+              {openIncidents.length > 0 && (
+                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("safety")}>
+                  <div className="text-lg font-bold text-red">{openIncidents.length}</div>
+                  <div className="text-xs text-muted">{t("Open Incidents")}</div>
+                </div>
+              )}
+              <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("jsa")}>
+                <div className="text-lg font-bold text-green">{recentTalks.length}</div>
+                <div className="text-xs text-muted">{t("Toolbox Talks (7d)")}</div>
+              </div>
+              {expiredCerts.length > 0 && (
+                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("projects")}>
+                  <div className="text-lg font-bold text-red">{expiredCerts.length}</div>
+                  <div className="text-xs text-muted">{t("Expired Certs")}</div>
+                </div>
+              )}
+              {expiringCerts.length > 0 && (
+                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("projects")}>
+                  <div className="text-lg font-bold text-amber">{expiringCerts.length}</div>
+                  <div className="text-xs text-muted">{t("Expiring (30d)")}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Crew & Workforce Health ── */}
+      {dashCfg.showKPIs && (() => {
+        const now3 = new Date();
+        const activeEmps = (employees || []).filter(e => e.status !== "terminated" && e.status !== "inactive" && !e.deletedAt);
+        const todayKey3 = ['sun','mon','tue','wed','thu','fri','sat'][now3.getDay()];
+        const scheduledToday = new Set((teamSchedule || []).filter(s => s.days?.[todayKey3]).map(s => s.employeeId)).size;
+        const clockedIn = (timeEntries || []).filter(te => te.clockIn && !te.clockOut && new Date(te.clockIn).toDateString() === now3.toDateString()).length;
+        // Scheduling conflicts: employees double-booked on 2+ projects today
+        const empProjects = {};
+        (teamSchedule || []).filter(s => s.days?.[todayKey3]).forEach(s => {
+          if (!empProjects[s.employeeId]) empProjects[s.employeeId] = new Set();
+          empProjects[s.employeeId].add(s.projectId);
+        });
+        const conflicts = Object.values(empProjects).filter(pSet => pSet.size > 1).length;
+        const expiringCerts3 = (certifications || []).filter(c => {
+          const exp = c.expirationDate ? new Date(c.expirationDate) : null;
+          return exp && exp > now3 && (exp - now3) < 30 * 86400000;
+        });
+        if (activeEmps.length === 0) return null;
+        return (
+          <div className="card dash-card dash-card--blue">
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
+              👷 {t("Workforce Health")}
+              {conflicts > 0 && <span className="badge badge-red fs-xs">{conflicts} {t("conflict")}{conflicts > 1 ? "s" : ""}</span>}
+            </div>
+            <div className="grid-auto-180">
+              <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("timeclock")}>
+                <div className="text-lg font-bold text-blue">{activeEmps.length}</div>
+                <div className="text-xs text-muted">{t("Active Employees")}</div>
+              </div>
+              <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("schedule")}>
+                <div className="text-lg font-bold text-green">{scheduledToday}</div>
+                <div className="text-xs text-muted">{t("Scheduled Today")}</div>
+              </div>
+              <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("timeclock")}>
+                <div className="text-lg font-bold" style={{ color: clockedIn > 0 ? "var(--green)" : "var(--text3)" }}>{clockedIn}</div>
+                <div className="text-xs text-muted">{t("Clocked In")}</div>
+              </div>
+              {conflicts > 0 && (
+                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("schedule")}>
+                  <div className="text-lg font-bold text-red">{conflicts}</div>
+                  <div className="text-xs text-muted">{t("Double-Booked")}</div>
+                </div>
+              )}
+              {expiringCerts3.length > 0 && (
+                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("projects")}>
+                  <div className="text-lg font-bold text-amber">{expiringCerts3.length}</div>
+                  <div className="text-xs text-muted">{t("Certs Expiring")}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Drawing / Plan Revision Alerts ── */}
+      {dashCfg.showKPIs && (() => {
+        // Check for recently revised drawings (plans uploaded/revised in last 7 days)
+        const now4 = new Date();
+        const recentRevisions = [];
+        (projects || []).forEach(p => {
+          if (p.deletedAt || (p.status === "completed")) return;
+          (p.drawings || p.planSets || []).forEach(d => {
+            const rev = d.revisedAt || d.updatedAt;
+            if (rev && (now4 - new Date(rev)) < 7 * 86400000) {
+              recentRevisions.push({ project: p.name, projectId: p.id, drawing: d.number || d.name || "Plan", revision: d.revision || "New", date: rev });
+            }
+          });
+        });
+        if (recentRevisions.length === 0) return null;
+        return (
+          <div className="card dash-card" style={{ borderLeft: "3px solid var(--amber)" }}>
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
+              📐 {t("Drawing Revisions")}
+              <span className="badge badge-amber fs-xs">{recentRevisions.length} {t("in last 7 days")}</span>
+            </div>
+            <div className="flex-col-gap-6">
+              {recentRevisions.slice(0, 5).map((r, i) => (
+                <div key={i} className="flex-between queue-row cursor-pointer"
+                  onClick={() => { const p = projects.find(p2 => String(p2.id) === String(r.projectId)); if (p) setModal({ type: "viewProject", data: p }); }}>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm text-blue fw-500">{r.project}</span>
+                    <span className="text-xs text-muted">{r.drawing} Rev {r.revision}</span>
+                  </div>
+                  <span className="text-xs text-muted">{new Date(r.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                </div>
+              ))}
+              {recentRevisions.length > 5 && <div className="text-xs text-muted">+{recentRevisions.length - 5} {t("more")}</div>}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── PM Action Queue (Phase 2A') — single decision inbox ── */}
       {dashCfg.showKPIs && (() => {
         const pendingMat = (materialRequests || []).filter(r => r.status === "requested");
@@ -1322,7 +1473,11 @@ function App({ auth, onLogout }) {
         const pendingReviews = (dailyReports || []).filter(r => !r.reviewedBy);
         const openProblems = (problems || []).filter(p => p.status === "open" && !p.assignedTo);
         const plansNeeded = projects.filter(p => p.needsPlans);
-        const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length + plansNeeded.length;
+        const queueRfis = dashActions.rfisOpen.filter(r => r.age > 7);
+        const queueSubs = dashActions.subsDueSoon;
+        const queueCOs = dashActions.cosPending;
+        const queueTm = dashActions.tmPending;
+        const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length + plansNeeded.length + queueRfis.length + queueSubs.length + queueCOs.length + queueTm.length;
         if (queueTotal === 0) return null;
         return (
           <div className="card dash-card dash-card--amber bg-2">
@@ -1333,16 +1488,65 @@ function App({ auth, onLogout }) {
               </div>
             </div>
             <div className="flex-col-gap-6">
+              {queueCOs.length > 0 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <span>📝</span>
+                    <span className="text-sm">{t("Change Orders Pending")}</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-amber">{queueCOs.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("projects")}>{t("Review")}</button>
+                  </div>
+                </div>
+              )}
+              {queueRfis.length > 0 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <span>❓</span>
+                    <span className="text-sm">{t("Overdue RFIs")}</span>
+                    <span className="badge badge-red fs-xs" style={{ padding: "0 5px" }}>{t("oldest")}: {queueRfis[0].age}d</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-red">{queueRfis.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("projects")}>{t("Respond")}</button>
+                  </div>
+                </div>
+              )}
+              {queueSubs.length > 0 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <span>📎</span>
+                    <span className="text-sm">{t("Submittals Due Soon")}</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-amber">{queueSubs.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("projects")}>{t("Review")}</button>
+                  </div>
+                </div>
+              )}
+              {queueTm.length > 0 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <span>🕐</span>
+                    <span className="text-sm">{t("T&M Tickets")}</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-amber">{queueTm.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("financials")}>{t("Review")}</button>
+                  </div>
+                </div>
+              )}
               {pendingMat.length > 0 && (
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
                     <span>📦</span>
-                    <span className="text-sm">Material Requests</span>
-                    {urgentMat.length > 0 && <span className="badge badge-red fs-xs" style={{ padding: "0 5px" }}>{urgentMat.length} urgent</span>}
+                    <span className="text-sm">{t("Material Requests")}</span>
+                    {urgentMat.length > 0 && <span className="badge badge-red fs-xs" style={{ padding: "0 5px" }}>{urgentMat.length} {t("urgent")}</span>}
                   </div>
                   <div className="flex-center-gap-8">
                     <span className="text-sm font-semi text-amber">{pendingMat.length}</span>
-                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("materials")}>Review</button>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("materials")}>{t("Review")}</button>
                   </div>
                 </div>
               )}
@@ -1350,11 +1554,11 @@ function App({ auth, onLogout }) {
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
                     <span>✓</span>
-                    <span className="text-sm">Deliveries Awaiting Confirmation</span>
+                    <span className="text-sm">{t("Deliveries Awaiting Confirmation")}</span>
                   </div>
                   <div className="flex-center-gap-8">
                     <span className="text-sm font-semi text-green">{awaitingConfirm.length}</span>
-                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("materials")}>View</button>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("materials")}>{t("View")}</button>
                   </div>
                 </div>
               )}
@@ -1362,23 +1566,23 @@ function App({ auth, onLogout }) {
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
                     <span>📋</span>
-                    <span className="text-sm">Daily Reports</span>
+                    <span className="text-sm">{t("Daily Reports")}</span>
                   </div>
                   <div className="flex-center-gap-8">
                     <span className="text-sm font-semi">{pendingReviews.length}</span>
-                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("reports")}>Review</button>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("reports")}>{t("Review")}</button>
                   </div>
                 </div>
               )}
               {openProblems.length > 0 && (
-                <div className="flex-between py-6">
+                <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
                     <span>⚠️</span>
-                    <span className="text-sm">Unassigned Problems</span>
+                    <span className="text-sm">{t("Unassigned Problems")}</span>
                   </div>
                   <div className="flex-center-gap-8">
                     <span className="text-sm font-semi text-red">{openProblems.length}</span>
-                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("reports")}>Assign</button>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("reports")}>{t("Assign")}</button>
                   </div>
                 </div>
               )}
@@ -1386,11 +1590,11 @@ function App({ auth, onLogout }) {
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
                     <span>📐</span>
-                    <span className="text-sm">Plans Needed</span>
+                    <span className="text-sm">{t("Plans Needed")}</span>
                   </div>
                   <div className="flex-center-gap-8">
                     <span className="text-sm font-semi text-amber">{plansNeeded.length}</span>
-                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("projects")}>Request</button>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("projects")}>{t("Request")}</button>
                   </div>
                 </div>
               )}
@@ -1680,13 +1884,14 @@ function App({ auth, onLogout }) {
           <div className="card" style={{ flex: "1 1 480px", minWidth: 320 }}>
             <div className="card-header"><div className="card-title font-head fs-13">{t("Win Rate by GC")}</div></div>
             <ResponsiveContainer width="100%" height={Math.max(140, gcWinRates.length * 28 + 32)}>
-              <BarChart data={gcWinRates.map(g => ({ name: g.gc.length > 18 ? g.gc.slice(0, 16) + "..." : g.gc, Awarded: g.awarded, Lost: g.lost, Pending: g.pending }))} layout="vertical" margin={{ left: 10, right: 20 }}>
+              <BarChart data={gcWinRates.map(g => ({ name: g.gc.length > 18 ? g.gc.slice(0, 16) + "..." : g.gc, fullGc: g.gc, Awarded: g.awarded, Lost: g.lost, Pending: g.pending }))} layout="vertical" margin={{ left: 10, right: 20 }}
+                onClick={(data) => { if (data?.activePayload?.[0]?.payload?.fullGc) { setSearch(data.activePayload[0].payload.fullGc); handleTabClick("bids"); } }}>
                 <XAxis type="number" tick={{ fill: "var(--text2)", fontSize: "var(--text-tab)" }} />
                 <YAxis type="category" dataKey="name" width={120} tick={{ fill: "var(--text2)", fontSize: "var(--text-tab)" }} />
                 <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text)" }} />
-                <Bar dataKey="Awarded" stackId="a" fill="var(--green)" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="Lost" stackId="a" fill="var(--red)" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="Pending" stackId="a" fill="var(--amber)" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="Awarded" stackId="a" fill="var(--green)" radius={[0, 0, 0, 0]} style={{ cursor: "pointer" }} />
+                <Bar dataKey="Lost" stackId="a" fill="var(--red)" radius={[0, 0, 0, 0]} style={{ cursor: "pointer" }} />
+                <Bar dataKey="Pending" stackId="a" fill="var(--amber)" radius={[0, 4, 4, 0]} style={{ cursor: "pointer" }} />
                 <Legend wrapperStyle={{ fontSize: "var(--text-tab)" }} />
               </BarChart>
             </ResponsiveContainer>
@@ -1700,11 +1905,11 @@ function App({ auth, onLogout }) {
                   { name: "31-60d", value: cashFlow.net30 },
                   { name: "61-90d", value: cashFlow.net60 },
                   { name: "90+d", value: cashFlow.net90 },
-                ]} margin={{ left: 0, right: 10 }}>
+                ]} margin={{ left: 0, right: 10 }} onClick={() => handleTabClick("financials")} style={{ cursor: "pointer" }}>
                   <XAxis dataKey="name" tick={{ fill: "var(--text2)", fontSize: "var(--text-tab)" }} />
                   <YAxis tick={{ fill: "var(--text2)", fontSize: "var(--text-tab)" }} tickFormatter={v => fmtK(v)} />
                   <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text)" }} formatter={v => fmt(v)} />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]} style={{ cursor: "pointer" }}>
                     {[
                       { name: "Current", color: "var(--green)" },
                       { name: "31-60d", color: "var(--amber)" },
@@ -1761,13 +1966,16 @@ function App({ auth, onLogout }) {
       {/* ── Compact Weekly Digest ── */}
       {dashCfg.showDigest && <div className="card mt-16" style={{ padding: "var(--space-3) var(--space-4)" }}>
         <div className="flex-between mb-8">
-          <div className="text-sm font-semi">Weekly Digest</div>
+          <div>
+            <div className="text-sm font-semi">{t("Weekly Digest")}</div>
+            {digestTimestamp && <div className="text-xs text-dim">{t("Generated")} {digestTimestamp.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</div>}
+          </div>
           <button className="btn btn-ghost btn-sm fs-11" onClick={runWeeklyDigest} disabled={digestLoading} >
-            {digestLoading ? "Analyzing..." : "Generate"}
+            {digestLoading ? t("Analyzing...") : digestResult ? t("Refresh") : t("Generate")}
           </button>
         </div>
         {!digestResult && !digestLoading && (
-          <div className="text-xs text-muted">AI-powered portfolio summary — health, alerts, and recommendations.</div>
+          <div className="text-xs text-muted">{t("AI-powered portfolio summary — health, alerts, and recommendations.")}</div>
         )}
         {digestLoading && <div className="text-xs text-muted text-center p-8">Analyzing {projects.length} projects...</div>}
         {digestResult && (
@@ -1796,13 +2004,15 @@ function App({ auth, onLogout }) {
 
       {/* Role-tailored quick actions */}
       {dashCfg.showQuickActions && (
-        <div className="flex gap-8 mt-16">
+        <div className="flex gap-8 mt-16 flex-wrap">
           <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>{t("+ Add Bid")}</button>
           <button className="btn btn-ghost" onClick={() => handleTabClick("projects")}>{t("View Projects")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("financials")}>{t("Financials")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("calendar")}>{t("Calendar")}</button>
         </div>
       )}
       {userRole === "office_admin" && (
-        <div className="flex gap-8 mt-16">
+        <div className="flex gap-8 mt-16 flex-wrap">
           <button className="btn btn-primary" onClick={() => handleTabClick("documents")}>{t("Documents")}</button>
           <button className="btn btn-ghost" onClick={() => handleTabClick("calendar")}>{t("Calendar")}</button>
           <button className="btn btn-ghost" onClick={() => handleTabClick("contacts")}>{t("Contacts")}</button>
@@ -1823,8 +2033,9 @@ function App({ auth, onLogout }) {
         </div>
       )}
       {userRole === "foreman" && (
-        <div className="flex gap-8 mt-16">
-          <button className="btn btn-primary" onClick={() => handleTabClick("projects")}>{t("Projects")}</button>
+        <div className="flex gap-8 mt-16 flex-wrap">
+          <button className="btn btn-primary" onClick={() => handleTabClick("foreman")}>{t("Field Portal")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("reports")}>{t("Daily Report")}</button>
           <button className="btn btn-ghost" onClick={() => handleTabClick("schedule")}>{t("Schedule")}</button>
           <button className="btn btn-ghost" onClick={() => handleTabClick("materials")}>{t("Materials")}</button>
           <button className="btn btn-ghost" onClick={() => handleTabClick("jsa")}>{t("JSA")}</button>
@@ -3096,6 +3307,7 @@ function App({ auth, onLogout }) {
   // ═══════════════════════════════════════════════════════════════
   // ── digest state ──
   const [digestResult, setDigestResult] = useState(null);
+  const [digestTimestamp, setDigestTimestamp] = useState(null);
   const [digestLoading, setDigestLoading] = useState(false);
 
   const runWeeklyDigest = async () => {
@@ -3127,6 +3339,7 @@ function App({ auth, onLogout }) {
       };
       const result = await generateWeeklyDigest(apiKey, projectData);
       setDigestResult(result);
+      setDigestTimestamp(new Date());
       show("Weekly digest generated", "ok");
     } catch (e) {
       show(e.message, "err");
@@ -3137,28 +3350,126 @@ function App({ auth, onLogout }) {
 
   // ── morning briefing state ──
   const [briefResult, setBriefResult] = useState(null);
+  const [briefTimestamp, setBriefTimestamp] = useState(null);
   const [briefLoading, setBriefLoading] = useState(false);
   const [showBrief, setShowBrief] = useState(false);
   const [lookAheadDays, setLookAheadDays] = useState(7);
 
-  const runMorningBrief = async () => {
-    if (!apiKey) { show("Set API key in Settings first", "err"); return; }
+  const runMorningBrief = () => {
     setBriefLoading(true);
     setBriefResult(null);
     try {
-      const { generateMorningBriefing } = await import("./utils/api.js");
-      const dashData = {
-        projects: projects.map(p => ({ name: p.name || p.project, gc: p.gc, progress: p.progress, margin: p.margin, phase: p.phase })),
-        bids: { total: bids.length, estimating: bids.filter(b => b.status === "estimating").length, submitted: bids.filter(b => b.status === "submitted").length, dueSoon: bids.filter(b => b.due && new Date(b.due) - Date.now() < 7 * 86400000 && b.status === "estimating").length },
-        invoices: (invoices || []).filter(i => i.status === "pending" || i.status === "overdue").map(i => ({ number: i.number, amount: i.amount, status: i.status, project: i.projectId })),
-        schedule: (schedule || []).filter(t => t.status === "in-progress").map(t => ({ task: t.task, project: t.projectName, end: t.end })),
-        incidents: (incidents || []).slice(0, 5),
-        today: new Date().toISOString().slice(0, 10),
-      };
-      const res = await generateMorningBriefing(apiKey, dashData);
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+      const in7 = new Date(now.getTime() + 7 * 86400000);
+      const parseDate = (s) => { if (!s) return null; const d = new Date(s); return isNaN(d) ? null : d; };
+      const fmt = (n) => "$" + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
+      const hour = now.getHours();
+      const greetName = auth?.name?.split(" ")[0] || "Boss";
+      const greeting = hour < 12 ? `Good morning, ${greetName}.` : hour < 17 ? `Good afternoon, ${greetName}.` : `Good evening, ${greetName}.`;
+
+      // ── Urgent Alerts ──
+      const urgentAlerts = [];
+
+      // Bids due this week
+      const dueBids = bids.filter(b => b.status === "estimating" && b.due && parseDate(b.due) >= now && parseDate(b.due) <= in7);
+      dueBids.forEach(b => urgentAlerts.push({ type: "Bid", alert: `"${b.name || "Untitled"}" due ${new Date(b.due).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`, project: b.gc, action: "Finalize and submit" }));
+
+      // Overdue invoices
+      const overdueInvs = invoices.filter(i => i.status === "overdue" || (i.status === "pending" && parseDate(i.date) && (now - parseDate(i.date)) > 30 * 86400000));
+      if (overdueInvs.length > 0) {
+        const total = overdueInvs.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+        urgentAlerts.push({ type: "A/R", alert: `${overdueInvs.length} overdue invoice${overdueInvs.length > 1 ? "s" : ""} totaling ${fmt(total)}`, action: "Follow up on collections" });
+      }
+
+      // Low-margin projects
+      const marginThr = companySettings?.marginAlertThreshold || 25;
+      const activeProjs = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
+      const lowMargin = activeProjs.filter(p => {
+        const contract = (p.contractAmount || p.contract || 0) + changeOrders.filter(c => c.projectId === p.id && c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
+        const labor = timeEntries.filter(te => te.projectId === p.id).reduce((s, te) => s + ((te.totalHours || 0) * (te.rate || 45)), 0);
+        const margin = contract > 0 ? Math.round(((contract - labor) / contract) * 100) : 100;
+        return margin < marginThr;
+      });
+      lowMargin.forEach(p => urgentAlerts.push({ type: "Margin", alert: `"${p.name}" is below ${marginThr}% margin target`, project: p.name, action: "Review labor costs and estimate" }));
+
+      // Open incidents
+      const openInc = (incidents || []).filter(i => i.status === "open" || !i.status);
+      if (openInc.length > 0) urgentAlerts.push({ type: "Safety", alert: `${openInc.length} open safety incident${openInc.length > 1 ? "s" : ""} need resolution`, action: "Investigate and close out" });
+
+      // Expired certifications
+      const expCerts = (certifications || []).filter(c => { const exp = c.expirationDate ? new Date(c.expirationDate) : null; return exp && exp <= now; });
+      if (expCerts.length > 0) urgentAlerts.push({ type: "Compliance", alert: `${expCerts.length} expired certification${expCerts.length > 1 ? "s" : ""} — crew may not be compliant`, action: "Renew or reassign affected workers" });
+
+      // Overdue RFIs
+      const overdueRfis = (rfis || []).filter(r => r.status !== "Answered" && r.status !== "Closed").filter(r => {
+        const sub = r.submitted || r.dateSubmitted;
+        return sub && (now - new Date(sub)) > 7 * 86400000;
+      });
+      if (overdueRfis.length > 0) urgentAlerts.push({ type: "RFI", alert: `${overdueRfis.length} RFI${overdueRfis.length > 1 ? "s" : ""} overdue (oldest: ${Math.floor((now - new Date(overdueRfis[0].submitted || overdueRfis[0].dateSubmitted)) / 86400000)}d)`, action: "Follow up with GC or architect" });
+
+      // ── Today's Focus ──
+      const todaysFocus = [];
+
+      // Pending change orders
+      const pendCOs = changeOrders.filter(co => co.status !== "approved" && co.status !== "rejected" && !co.deletedAt);
+      if (pendCOs.length > 0) {
+        const coTotal = pendCOs.reduce((s, co) => s + (Math.abs(Number(co.amount)) || 0), 0);
+        todaysFocus.push({ item: `${pendCOs.length} change order${pendCOs.length > 1 ? "s" : ""} pending approval (${fmt(coTotal)})`, priority: coTotal > 10000 ? "high" : "medium" });
+      }
+
+      // Pending material requests
+      const pendMat = (materialRequests || []).filter(r => r.status === "requested");
+      if (pendMat.length > 0) todaysFocus.push({ item: `${pendMat.length} material request${pendMat.length > 1 ? "s" : ""} awaiting review`, priority: pendMat.some(r => r.urgency === "urgent" || r.urgency === "emergency") ? "high" : "medium" });
+
+      // Unreviewed daily reports
+      const unreviewed = (dailyReports || []).filter(r => !r.reviewedBy);
+      if (unreviewed.length > 0) todaysFocus.push({ item: `${unreviewed.length} daily report${unreviewed.length > 1 ? "s" : ""} need review`, priority: unreviewed.length > 3 ? "high" : "medium" });
+
+      // Submittals due soon
+      const in14 = new Date(now.getTime() + 14 * 86400000);
+      const subsDue = submittals.filter(s => s.status !== "approved" && parseDate(s.due) && parseDate(s.due) <= in14);
+      if (subsDue.length > 0) todaysFocus.push({ item: `${subsDue.length} submittal${subsDue.length > 1 ? "s" : ""} due within 14 days`, priority: "medium" });
+
+      // Crew scheduled today
+      const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
+      const crewToday = new Set((teamSchedule || []).filter(s => s.days?.[todayKey]).map(s => s.employeeId)).size;
+      if (crewToday > 0) todaysFocus.push({ item: `${crewToday} crew member${crewToday > 1 ? "s" : ""} scheduled across ${new Set((teamSchedule || []).filter(s => s.days?.[todayKey]).map(s => s.projectId)).size} site${new Set((teamSchedule || []).filter(s => s.days?.[todayKey]).map(s => s.projectId)).size > 1 ? "s" : ""}`, priority: "low" });
+
+      // ── Money Moves ──
+      const moneyMoves = [];
+
+      // Pending invoices to send
+      const pendingInv = invoices.filter(i => i.status === "draft" || i.status === "pending");
+      if (pendingInv.length > 0) {
+        const invTotal = pendingInv.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+        moneyMoves.push({ item: `${pendingInv.length} invoice${pendingInv.length > 1 ? "s" : ""} to send`, amount: fmt(invTotal), action: "Send to GC", deadline: "This week" });
+      }
+
+      // Backlog value
+      const backlogVal = activeProjs.reduce((s, p) => {
+        const contract = (p.contractAmount || p.contract || 0) + changeOrders.filter(c => c.projectId === p.id && c.status === "approved").reduce((s2, c) => s2 + (c.amount || 0), 0);
+        const billed = invoices.filter(i => String(i.projectId) === String(p.id) && !i.deletedAt).reduce((s2, i) => s2 + (Number(i.amount) || 0), 0);
+        return s + Math.max(0, contract - billed);
+      }, 0);
+      if (backlogVal > 0) moneyMoves.push({ item: "Remaining backlog to bill", amount: fmt(backlogVal), action: "Bill as work completes", deadline: "Ongoing" });
+
+      // Active bids pipeline
+      const pipelineVal = bids.filter(b => b.status === "estimating" || b.status === "submitted").reduce((s, b) => s + (b.value || 0), 0);
+      if (pipelineVal > 0) moneyMoves.push({ item: `${bids.filter(b => b.status === "estimating" || b.status === "submitted").length} bids in pipeline`, amount: fmt(pipelineVal), action: "Track and follow up", deadline: "Active" });
+
+      // ── Summary ──
+      const parts = [];
+      if (activeProjs.length > 0) parts.push(`${activeProjs.length} active project${activeProjs.length > 1 ? "s" : ""}`);
+      if (dueBids.length > 0) parts.push(`${dueBids.length} bid${dueBids.length > 1 ? "s" : ""} due this week`);
+      if (urgentAlerts.length > 0) parts.push(`${urgentAlerts.length} item${urgentAlerts.length > 1 ? "s" : ""} needing attention`);
+      const summary = parts.length > 0 ? `You have ${parts.join(", ")}.` : "All clear — no urgent items today.";
+
+      const res = { greeting, summary, urgentAlerts, todaysFocus, moneyMoves };
       setBriefResult(res);
+      setBriefTimestamp(new Date());
       setShowBrief(true);
-      show("Morning briefing ready", "ok");
+      show(t("Morning briefing ready"), "ok");
     } catch (e) {
       show(e.message, "err");
     } finally {

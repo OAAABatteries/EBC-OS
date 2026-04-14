@@ -66,7 +66,6 @@ export function DashboardTab({
         const tomorrowCrew = (teamSchedule || []).filter(s => s.days?.[tomorrowKey] && String(s.projectId) === String(selectedProjectId));
         const tomorrowEvents = (calendarEvents || []).filter(e => e.date === tomorrowStr);
         if (tomorrowCrew.length === 0 && tomorrowEvents.length === 0) return null;
-        const employees = (projects || []).length > 0 ? [] : []; // placeholder — crew names come from schedule
         return (
           <div className="card" style={{ padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-3)', borderLeft: '3px solid var(--accent, #3b82f6)' }}>
             <div style={{ fontSize: 'var(--text-label)', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 'var(--weight-semi)', marginBottom: 'var(--space-1)' }}>
