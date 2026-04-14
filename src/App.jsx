@@ -1004,7 +1004,7 @@ function App({ auth, onLogout }) {
               <div className="text-sm font-semi mb-8 text-red">{t("Urgent Alerts")}</div>
               {briefResult.urgentAlerts.map((a, i) => (
                 <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", cursor: a.project ? "pointer" : undefined }}
-                  onClick={a.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); } : undefined}>
+                  onClick={a.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "viewProject", data: p }); } : undefined}>
                   <div className="flex-between">
                     <span className="text-sm">{a.alert}</span>
                     <span className="badge badge-red">{a.type}</span>
@@ -1021,7 +1021,7 @@ function App({ auth, onLogout }) {
               <div className="text-sm font-semi mb-8 text-amber">{t("Today's Focus")}</div>
               {briefResult.todaysFocus.map((f, i) => (
                 <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)", cursor: f.project ? "pointer" : undefined }}
-                  onClick={f.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(f.project.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); } : undefined}>
+                  onClick={f.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(f.project.toLowerCase())); if (p) setModal({ type: "viewProject", data: p }); } : undefined}>
                   <div className="flex-between">
                     <span className="text-sm">{f.item}</span>
                     <span className={`badge ${f.priority === "critical" ? "badge-red" : f.priority === "high" ? "badge-amber" : "badge-muted"}`}>{f.priority}</span>
@@ -1145,7 +1145,7 @@ function App({ auth, onLogout }) {
                 const count = todayProd.filter(p => p.projectId === pid).length;
                 return proj ? (
                   <div key={pid} className="text-xs py-3 cursor-pointer text-blue"
-                    onClick={() => setModal({ type: "editProject", data: proj })}>
+                    onClick={() => setModal({ type: "viewProject", data: proj })}>
                     {proj.name}: {count} {t("entries today")}
                   </div>
                 ) : null;
@@ -1253,7 +1253,7 @@ function App({ auth, onLogout }) {
               if (!proj) return null;
               return (
                 <div key={pid} className="flex-between queue-row fs-12 cursor-pointer"
-                  onClick={() => setModal({ type: "editProject", data: proj })}>
+                  onClick={() => setModal({ type: "viewProject", data: proj })}>
                   <span className="text-blue font-semi">{proj.name}</span>
                   <span><strong>{data.crew.size}</strong> crew · {data.hours.toFixed(0)}h</span>
                 </div>
@@ -1285,7 +1285,7 @@ function App({ auth, onLogout }) {
                   <div key={p.id} className="activity-tile flex-between flex-center-gap-8">
                     <div className="flex-1" style={{ minWidth: 0 }}>
                       <div className="text-sm font-semi text-ellipsis cursor-pointer text-blue"
-                        onClick={() => setModal({ type: "editProject", data: p })}>{p.name}</div>
+                        onClick={() => setModal({ type: "viewProject", data: p })}>{p.name}</div>
                       <div className="text-xs text-muted text-ellipsis">
                         {p.address}{p.suite ? ` — ${p.suite}` : ""}
                       </div>
@@ -1450,7 +1450,7 @@ function App({ auth, onLogout }) {
                     const crewToday = (teamSchedule || []).filter(s => String(s.projectId) === String(p.id) && s.days?.[todayKey]).length;
                     return (
                       <tr key={p.id} style={{ borderBottom: "1px solid var(--border)", cursor: "pointer" }}
-                        onClick={() => setModal({ type: "editProject", data: p })}>
+                        onClick={() => setModal({ type: "viewProject", data: p })}>
                         <td style={{ padding: "var(--space-2) var(--space-3)", fontWeight: "var(--weight-medium)", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</td>
                         <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)" }}>{fmt(contract)}</td>
                         <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--green)" }}>{fmt(billed)}</td>
@@ -1566,7 +1566,7 @@ function App({ auth, onLogout }) {
               <div className="text-xs text-red mb-4">Behind Schedule ({dashActions.projAtRisk.length})</div>
               {dashActions.projAtRisk.slice(0, 4).map(p => (
                 <div key={p.id} className="text-sm py-3 cursor-pointer text-blue"
-                  onClick={() => setModal({ type: "editProject", data: p })}>{p.name} — {p.progress || 0}%</div>
+                  onClick={() => setModal({ type: "viewProject", data: p })}>{p.name} — {p.progress || 0}%</div>
               ))}
               {dashActions.projAtRisk.length > 4 && <div className="text-xs text-muted">+{dashActions.projAtRisk.length - 4} more</div>}
             </div>
@@ -1576,7 +1576,7 @@ function App({ auth, onLogout }) {
               <div className="text-xs text-amber mb-4">No Billing 30+ Days ({dashActions.projNoBilling.length})</div>
               {dashActions.projNoBilling.slice(0, 4).map(p => (
                 <div key={p.id} className="text-sm py-3 cursor-pointer text-blue"
-                  onClick={() => setModal({ type: "editProject", data: p })}>{p.name}</div>
+                  onClick={() => setModal({ type: "viewProject", data: p })}>{p.name}</div>
               ))}
               {dashActions.projNoBilling.length > 4 && <div className="text-xs text-muted">+{dashActions.projNoBilling.length - 4} more</div>}
             </div>
@@ -1637,7 +1637,7 @@ function App({ auth, onLogout }) {
                     const diagnosis = getProfitDiagnosis(p);
                     const badgeClass = p.margin < 0 ? "badge-red" : p.margin < 15 ? "badge-red" : "badge-amber";
                     return (
-                      <tr key={p.id} className="cursor-pointer" onClick={() => setModal({ type: "editProject", data: p })}>
+                      <tr key={p.id} className="cursor-pointer" onClick={() => setModal({ type: "viewProject", data: p })}>
                         <td>
                           <div className="text-sm text-blue fw-500">{p.name}</div>
                           <div className="text-xs text-muted">{p.phase}</div>
@@ -1775,7 +1775,7 @@ function App({ auth, onLogout }) {
             <div className="text-sm rounded-control mb-sp2 bg-bg3" style={{ padding: "var(--space-2) var(--space-3)" }}>{digestResult.healthSummary}</div>
             {digestResult.alerts?.length > 0 && digestResult.alerts.slice(0, 3).map((a, i) => (
               <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", borderRadius: "var(--radius-control)", borderLeft: `3px solid ${a.priority === "high" ? "var(--red)" : "var(--amber)"}`, background: "var(--card)", fontSize: "var(--text-label)", cursor: a.project ? "pointer" : undefined }}
-                onClick={a.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); } : undefined}>
+                onClick={a.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "viewProject", data: p }); } : undefined}>
                 <span className="font-semi">{a.project}</span> — <span className="text-muted">{a.message}</span>
               </div>
             ))}
@@ -2171,7 +2171,7 @@ function App({ auth, onLogout }) {
                     const linkedProject = b.convertedToProject ? projects.find(p => p.bidId === b.id) : null;
                     return (
                     <div key={b.id} className="bid-card" style={{ marginBottom: "var(--space-2)", padding: "var(--space-3) var(--space-3)", cursor: "pointer", opacity: b.convertedToProject ? 0.7 : 1 }}
-                      onClick={() => b.convertedToProject && linkedProject ? setModal({ type: "editProject", data: linkedProject }) : setModal({ type: "editBid", data: b })}>
+                      onClick={() => b.convertedToProject && linkedProject ? setModal({ type: "viewProject", data: linkedProject }) : setModal({ type: "editBid", data: b })}>
                       <div className="text-xs font-semi lh-13 mb-4">{b.name}</div>
                       <div className="flex-between">
                         <span className="text-xs text-muted">{b.gc}</span>
@@ -2529,7 +2529,7 @@ function App({ auth, onLogout }) {
                   const linkedProj = projects.find(p => p.bidId === b.id);
                   return (
                     <button className="btn btn-ghost btn-sm fs-xs c-green" style={{ padding: "var(--space-1) var(--space-2)" }}
-                      onClick={(e) => { e.stopPropagation(); if (linkedProj) setModal({ type: "editProject", data: linkedProj }); }}>
+                      onClick={(e) => { e.stopPropagation(); if (linkedProj) setModal({ type: "viewProject", data: linkedProj }); }}>
                       → View Project
                     </button>
                   );
@@ -2743,7 +2743,7 @@ function App({ auth, onLogout }) {
                 const pHours = timeEntries.filter(te => String(te.projectId) === String(p.id) && te.totalHours).reduce((s, te) => s + te.totalHours, 0);
                 return (
                   <tr key={p.id} className="border-b cursor-pointer"
-                    onClick={() => { setProjects(prev => prev.map(proj => proj.id === p.id ? { ...proj, lastAccessed: new Date().toISOString() } : proj)); setModal({ type: "editProject", data: p }); }}>
+                    onClick={() => { setProjects(prev => prev.map(proj => proj.id === p.id ? { ...proj, lastAccessed: new Date().toISOString() } : proj)); setModal({ type: "viewProject", data: p }); }}>
                     <td className="fw-semi c-blue nowrap overflow-hidden" style={{ padding: "var(--space-2) var(--space-2)", maxWidth: 180, textOverflow: "ellipsis" }}>{p.name}</td>
                     <td className="text-right" style={{ padding: "var(--space-2) var(--space-2)" }}>
                       <div className="flex-center-gap-4 inline-flex">
@@ -2773,7 +2773,7 @@ function App({ auth, onLogout }) {
           projects={filteredProjects}
           onProjectClick={(p) => {
             setProjects(prev => prev.map(proj => proj.id === p.id ? { ...proj, lastAccessed: new Date().toISOString() } : proj));
-            setModal({ type: "editProject", data: { ...p, lastAccessed: new Date().toISOString() } });
+            setModal({ type: "viewProject", data: { ...p, lastAccessed: new Date().toISOString() } });
           }}
         />
       )}
@@ -2810,7 +2810,7 @@ function App({ auth, onLogout }) {
                 const riskColor = r.riskLevel === "critical" ? "var(--red)" : r.riskLevel === "high" ? "var(--amber)" : r.riskLevel === "medium" ? "var(--blue)" : "var(--green)";
                 return (
                   <div key={i} style={{ padding: "var(--space-3)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", borderLeft: `4px solid ${riskColor}`, background: "var(--card)", cursor: "pointer" }}
-                    onClick={() => { const p = projects.find(p => p.name?.toLowerCase().includes(r.project?.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); }}>
+                    onClick={() => { const p = projects.find(p => p.name?.toLowerCase().includes(r.project?.toLowerCase())); if (p) setModal({ type: "viewProject", data: p }); }}>
                     <div className="flex-between mb-4">
                       <span className="font-semi text-sm">{r.project}</span>
                       <div className="flex gap-8 flex-center">
@@ -2832,7 +2832,7 @@ function App({ auth, onLogout }) {
                   <div className="text-sm font-semi mb-8">{t("Immediate Actions")}</div>
                   {riskResult.immediateActions.map((a, i) => (
                     <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)", fontSize: "var(--text-label)", cursor: a.project ? "pointer" : undefined }}
-                      onClick={a.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "editProject", data: p }); } : undefined}>
+                      onClick={a.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "viewProject", data: p }); } : undefined}>
                       <div className="flex-between">
                         <span className="font-semi">{a.project}</span>
                         <span className="text-xs text-dim">{a.deadline}</span>
@@ -2884,7 +2884,7 @@ function App({ auth, onLogout }) {
             return (
             <div key={p.id} className="project-card" style={{ borderLeft: `4px solid ${healthColor}` }} onClick={() => {
               setProjects(prev => prev.map(proj => proj.id === p.id ? { ...proj, lastAccessed: new Date().toISOString() } : proj));
-              setModal({ type: "editProject", data: { ...p, lastAccessed: new Date().toISOString() } });
+              setModal({ type: "viewProject", data: { ...p, lastAccessed: new Date().toISOString() } });
             }}>
               {/* Top: phase + PM + foreman + health dot */}
               <div className="flex-between mb-4">
@@ -4164,7 +4164,7 @@ function App({ auth, onLogout }) {
                       // Map hyphenated nav keys to spaced tab names
                       const tabMap = { "change-orders": "change orders", submittals: "submittals", rfis: "rfis", closeout: "closeout", financials: "financials", team: "team", overview: "overview" };
                       setInitialProjTab(tabMap[destProjTab] || destProjTab || "overview");
-                      setTimeout(() => setModal({ type: "editProject", data: { ...proj, lastAccessed: new Date().toISOString() } }), 50);
+                      setTimeout(() => setModal({ type: "viewProject", data: { ...proj, lastAccessed: new Date().toISOString() } }), 50);
                     }
                   }
                   // Open specific bid modal

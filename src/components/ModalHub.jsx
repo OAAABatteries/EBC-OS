@@ -31,7 +31,7 @@ const SCOPE_OPTIONS = [
 ];
 
 const ModalHub = ({ type, data, app }) => {
-  const { setModal, show, fmt } = app;
+  const { setModal, show, fmt, t } = app;
   const isNew = !data || !data.id;
   const [aiText, setAiText] = useState("");
   const [punchAdding, setPunchAdding] = useState(false);
@@ -283,7 +283,7 @@ const ModalHub = ({ type, data, app }) => {
         }
         break;
       }
-      case "editProject": {
+      case "editProject": case "viewProject": {
         if (!draft.name) { show("Project name is required", "err"); return; }
         if (!draft.gc) { show("GC name is required", "err"); return; }
         if (isNew) {
@@ -469,7 +469,7 @@ const ModalHub = ({ type, data, app }) => {
     const totalBilled = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);
     const remaining = (draft.contract || 0) - totalBilled;
     const [projTab, setProjTab] = useState(app.initialProjTab || "overview");
-    const projTabs = ["overview", "change orders", "submittals", "rfis", "areas", "punch", "log", "reports", "team", "financials", "closeout", "sound", "logistics", "notes"];
+    const projTabs = ["overview", "change orders", "submittals", "rfis", "areas", "punch", "log", "reports", "team", "financials", "closeout", "sound", "logistics", "notes", "settings"];
     const [coFormOpen, setCoFormOpen] = useState(false);
     const [coEditId, setCoEditId] = useState(null);
     const [coExpandedId, setCoExpandedId] = useState(null);
@@ -2328,13 +2328,111 @@ const ModalHub = ({ type, data, app }) => {
                 </div>
               );
             })()}
+
+            {/* ═══ SETTINGS TAB — edit project fields ═══ */}
+            {projTab === "settings" && (
+              <div>
+                <div className="form-grid">
+                  <div className="form-group full">
+                    <label className="form-label">Project Name *</label>
+                    <input className="form-input" value={draft.name} onChange={e => upd("name", e.target.value)} placeholder="Project name" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">General Contractor *</label>
+                    <input className="form-input" value={draft.gc} onChange={e => upd("gc", e.target.value)} placeholder="GC name" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Contract Value ($)</label>
+                    <input className="form-input" type="number" value={draft.contract} onChange={e => upd("contract", Number(e.target.value))} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Progress (%)</label>
+                    <input className="form-input" type="number" min="0" max="100" value={draft.progress} onChange={e => upd("progress", Number(e.target.value))} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Sector</label>
+                    <input className="form-input" value={draft.phase} onChange={e => upd("phase", e.target.value)} placeholder="e.g. Medical, Commercial" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Construction Stage</label>
+                    <select className="form-select" value={draft.constructionStage || ""} onChange={e => {
+                      const newStage = e.target.value;
+                      const oldStage = draft.constructionStage || null;
+                      const now = new Date().toISOString();
+                      const entry = { from: oldStage, to: newStage, changedBy: app.auth?.name || "Unknown", changedById: app.auth?.id, changedAt: now };
+                      upd("constructionStage", newStage);
+                      upd("stageHistory", [...(draft.stageHistory || []), entry]);
+                      upd("stageUpdatedAt", now);
+                      upd("stageUpdatedBy", app.auth?.name || "Unknown");
+                      const stageDef = CONSTRUCTION_STAGES.find(s => s.key === newStage);
+                      if (stageDef) upd("progress", stageDef.progress);
+                    }}>
+                      <option value="">— No Stage —</option>
+                      {CONSTRUCTION_STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Start Date</label>
+                    <input className="form-input" type="date" value={draft.start} onChange={e => upd("start", e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">End Date</label>
+                    <input className="form-input" type="date" value={draft.end} onChange={e => upd("end", e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">PM Assigned</label>
+                    <select className="form-select" value={draft.pm || ""} onChange={e => upd("pm", e.target.value)}>
+                      <option value="">— Select PM —</option>
+                      {(app.employees || []).filter(e => ["pm","admin","owner","Project Manager","PM"].includes(e.role)).map(e => (
+                        <option key={e.id} value={e.name}>{e.name}</option>
+                      ))}
+                      {/* Fallback if no employees match */}
+                      {(app.employees || []).filter(e => ["pm","admin","owner","Project Manager","PM"].includes(e.role)).length === 0 && <>
+                        <option value="Emmanuel Aguilar">Emmanuel Aguilar</option>
+                        <option value="Abner Aguilar">Abner Aguilar</option>
+                        <option value="Isai Aguilar">Isai Aguilar</option>
+                      </>}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Assigned Foreman</label>
+                    <select className="form-select" value={draft.assignedForeman != null ? String(draft.assignedForeman) : ""} onChange={e => upd("assignedForeman", e.target.value ? Number(e.target.value) : null)}>
+                      <option value="">— No Foreman Assigned —</option>
+                      {(app.employees || []).filter(e => e.role === "Foreman").map(e => (
+                        <option key={e.id} value={e.id}>{e.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group full">
+                    <label className="form-label">Address</label>
+                    <input className="form-input" value={draft.address || ""} onChange={e => upd("address", e.target.value)} placeholder="Project address" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Suite / Area</label>
+                    <input className="form-input" value={draft.suite || ""} onChange={e => upd("suite", e.target.value)} placeholder="e.g. Suite 200, Level 4" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Parking Info</label>
+                    <input className="form-input" value={draft.parking || ""} onChange={e => upd("parking", e.target.value)} placeholder="e.g. Garage Level B2, Lot C" />
+                  </div>
+                  <div className="form-group full">
+                    <label className="form-label">Close-Out Notes</label>
+                    <textarea className="form-textarea" value={draft.closeOut || ""} onChange={e => upd("closeOut", e.target.value)} placeholder="Close-out status, punch list, final inspections..." style={{ minHeight: 80, resize: "vertical" }} />
+                  </div>
+                </div>
+                <div className="flex gap-8 mt-16" style={{ position: "sticky", bottom: 0, padding: "var(--space-3) 0", background: "var(--bg)", zIndex: 2 }}>
+                  <button className="btn btn-primary" onClick={handleSave}>Save Changes</button>
+                  <button className="btn btn-ghost" onClick={close}>Cancel</button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="modal-actions flex-between">
             <button className="btn badge-red-outlined" onClick={handleDelete}>Delete</button>
             <div className="flex gap-8">
               <button className="btn btn-ghost" onClick={close}>Close</button>
-              <button className="btn btn-primary" onClick={() => setModal({ type: "editProject", data: draft })}>Edit</button>
+              <button className="btn btn-ghost" onClick={() => setProjTab("settings")}>Settings</button>
             </div>
           </div>
         </div>
