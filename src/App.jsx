@@ -1321,7 +1321,8 @@ function App({ auth, onLogout }) {
         const awaitingConfirm = (materialRequests || []).filter(r => r.status === "delivered" && !r.confirmedBy);
         const pendingReviews = (dailyReports || []).filter(r => !r.reviewedBy);
         const openProblems = (problems || []).filter(p => p.status === "open" && !p.assignedTo);
-        const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length;
+        const plansNeeded = projects.filter(p => p.needsPlans);
+        const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length + plansNeeded.length;
         if (queueTotal === 0) return null;
         return (
           <div className="card dash-card dash-card--amber bg-2">
@@ -1378,6 +1379,18 @@ function App({ auth, onLogout }) {
                   <div className="flex-center-gap-8">
                     <span className="text-sm font-semi text-red">{openProblems.length}</span>
                     <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("reports")}>Assign</button>
+                  </div>
+                </div>
+              )}
+              {plansNeeded.length > 0 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <span>📐</span>
+                    <span className="text-sm">Plans Needed</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-amber">{plansNeeded.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("projects")}>Request</button>
                   </div>
                 </div>
               )}
@@ -2892,6 +2905,16 @@ function App({ auth, onLogout }) {
                   })()}
                 </span>
               </div>
+              {/* Plans needed banner */}
+              {p.needsPlans && (
+                <div className="flex-between mb-4" style={{ padding: "var(--space-1) var(--space-2)", borderRadius: "var(--radius-sm, 4px)", background: "var(--amber-dim)", border: "1px solid var(--amber)" }}>
+                  <span className="fs-10 fw-semi" style={{ color: "var(--amber)" }}>Plans needed — request from GC</span>
+                  <button className="fs-9 fw-semi cursor-pointer" style={{ background: "none", border: "none", color: "var(--amber)", padding: "0 4px" }}
+                    onClick={(e) => { e.stopPropagation(); setProjects(prev => prev.map(proj => proj.id === p.id ? { ...proj, needsPlans: false, plansRequestedAt: new Date().toISOString() } : proj)); show(`Plans marked as requested for ${p.name}`); }}>
+                    Mark Requested
+                  </button>
+                </div>
+              )}
               {/* Name + GC */}
               <div className="card-title font-head fs-14 mb-2 lh-13">{p.name}</div>
               <div className="text-xs text-muted mb-4">{p.gc}</div>

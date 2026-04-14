@@ -267,9 +267,11 @@ const ModalHub = ({ type, data, app }) => {
                 sector: awardedBid.sector || "",
                 contact: awardedBid.contact || "",
                 assignedForeman: awardedBid.assignedForeman || null,
+                needsPlans: true,
+                plansRequestedAt: null,
               };
               app.setProjects(prev => [...prev, newProject]);
-              show(`Bid awarded! Project created: ${draft.name}`);
+              show(`Bid awarded! Project "${draft.name}" created — request construction plans from ${draft.gc || "the GC"}`, 6000);
             } else {
               app.setBids(prev => prev.map(b => b.id === draft.id ? { ...draft, convertedToProject: true } : b));
               show("Bid awarded! Project already exists.");
