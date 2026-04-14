@@ -2190,12 +2190,12 @@ const ModalHub = ({ type, data, app }) => {
                   {/* Compose */}
                   <div className="rounded-control p-sp3 bg-bg3" style={{ border: "1px solid var(--border)" }}>
                     <textarea
-                      className="form-textarea"
+                      className="form-textarea mb-sp2 fs-label w-full"
                       rows={3}
                       placeholder="Post a note to the project team..."
                       value={noteText}
                       onChange={e => setNoteText(e.target.value)}
-                      className="mb-sp2 fs-label w-full" style={{ resize: "vertical" }}
+                      style={{ resize: "vertical" }}
                     />
                     <div className="flex gap-8">
                       <button className="btn btn-sm btn-primary" onClick={() => addNote("pm")} disabled={!noteText.trim()}>Post as PM Note</button>
@@ -2537,7 +2537,7 @@ const ModalHub = ({ type, data, app }) => {
             <div className="mb-sp4 p-sp4" style={{ background: "rgba(16,185,129,0.06)", borderRadius: "var(--radius)", border: "1px solid var(--green)" }}>
               <div className="flex fw-semi mb-sp2 fs-label c-green gap-sp2"><Clipboard size={13} />PASTE BID INVITE EMAIL</div>
               <div className="mb-sp2 fs-tab c-text2">Paste the full email body from Procore, BuildingConnected, or any bid invite. Regex patterns will extract project name, GC, address, due date, and scope tags.</div>
-              <textarea className="form-textarea" value={emailImportText} onChange={e => setEmailImportText(e.target.value)} placeholder={"Paste bid invite email here...\n\nExample:\nFrom: ABC Construction\nProject: Houston Medical Center Renovation\nBid Due: April 15, 2026\nProject Address: 1234 Main St, Houston, TX 77002\nScope of Work: Metal Framing, Drywall, ACT\n\nThe AI parser will extract key fields automatically."} className="fs-label" style={{ minHeight: 130 }} />
+              <textarea className="form-textarea fs-label" value={emailImportText} onChange={e => setEmailImportText(e.target.value)} placeholder={"Paste bid invite email here...\n\nExample:\nFrom: ABC Construction\nProject: Houston Medical Center Renovation\nBid Due: April 15, 2026\nProject Address: 1234 Main St, Houston, TX 77002\nScope of Work: Metal Framing, Drywall, ACT\n\nThe AI parser will extract key fields automatically."} style={{ minHeight: 130 }} />
               <div className="flex-between mt-8">
                 <span className="text2 fs-11">{emailImportText.length > 0 ? `${emailImportText.length} characters` : "Paste email text above"}</span>
                 <div className="flex gap-8">
@@ -2551,7 +2551,7 @@ const ModalHub = ({ type, data, app }) => {
           {showAiPanel && (
             <div className="mb-sp4 p-sp4 bg-bg3" style={{ borderRadius: "var(--radius)", border: "1px solid var(--amber-dim)" }}>
               <div className="fw-semi mb-sp2 fs-label c-amber">PASTE BID INVITE, SPEC EXCERPT, OR EMAIL</div>
-              <textarea className="form-textarea" value={aiText} onChange={e => setAiText(e.target.value)} placeholder={"Paste the bid invite email, spec section, or project description here...\n\nThe AI will extract: project name, GC, due date, scope tags, risk level, phase, and key notes."} className="fs-label" style={{ minHeight: 120 }} />
+              <textarea className="form-textarea fs-label" value={aiText} onChange={e => setAiText(e.target.value)} placeholder={"Paste the bid invite email, spec section, or project description here...\n\nThe AI will extract: project name, GC, due date, scope tags, risk level, phase, and key notes."} style={{ minHeight: 120 }} />
               <div className="flex-between mt-8">
                 <span className="text2 fs-11">{aiText.length > 0 ? `${aiText.length} characters` : "Paste text to analyze"}</span>
                 <button className="btn btn-primary btn-sm" onClick={runAnalysis} disabled={aiLoading} style={{ minWidth: 140 }}>
@@ -2823,11 +2823,11 @@ const ModalHub = ({ type, data, app }) => {
             </div>
             <div className="form-group full">
               <label className="form-label">Notes / Clarifications</label>
-              <textarea className="form-textarea" value={draft.notes} onChange={e => upd("notes", e.target.value)} placeholder="RFI questions, clarifications, general notes..." className="fs-label" style={{ minHeight: 120, resize: "vertical", lineHeight: 1.5, fontFamily: "inherit" }} />
+              <textarea className="form-textarea fs-label" value={draft.notes} onChange={e => upd("notes", e.target.value)} placeholder="RFI questions, clarifications, general notes..." style={{ minHeight: 120, resize: "vertical", lineHeight: 1.5, fontFamily: "inherit" }} />
             </div>
             <div className="form-group full">
               <label className="form-label">Exclusions / Inclusions</label>
-              <textarea className="form-textarea" value={draft.exclusions || ""} onChange={e => upd("exclusions", e.target.value)} placeholder="List scope exclusions and inclusions for the proposal..." className="fs-label" style={{ minHeight: 80, resize: "vertical", lineHeight: 1.5, fontFamily: "inherit" }} />
+              <textarea className="form-textarea fs-label" value={draft.exclusions || ""} onChange={e => upd("exclusions", e.target.value)} placeholder="List scope exclusions and inclusions for the proposal..." style={{ minHeight: 80, resize: "vertical", lineHeight: 1.5, fontFamily: "inherit" }} />
             </div>
 
             {/* ── File Attachments ── */}
