@@ -979,7 +979,6 @@ function App({ auth, onLogout }) {
         </div>
         <div className="flex gap-8">
           <FeatureGuide guideKey="dashboard" />
-          <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>+ New Bid</button>
         </div>
       </div>
 
@@ -1995,8 +1994,8 @@ function App({ auth, onLogout }) {
       {/* Role-tailored quick actions */}
       {dashCfg.showQuickActions && (
         <div className="flex gap-8 mt-16 flex-wrap">
-          <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>{t("+ Add Bid")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("projects")}>{t("View Projects")}</button>
+          <button className="btn btn-primary" onClick={() => handleTabClick("projects")}>{t("View Projects")}</button>
+          <button className="btn btn-ghost" onClick={() => handleTabClick("bids")}>{t("Bids")}</button>
           <button className="btn btn-ghost" onClick={() => handleTabClick("financials")}>{t("Financials")}</button>
           <button className="btn btn-ghost" onClick={() => handleTabClick("calendar")}>{t("Calendar")}</button>
         </div>
