@@ -1,4 +1,5 @@
 import { THEMES } from "../../data/constants";
+import { Moon, Sun } from "lucide-react";
 
 export function SettingsTab({
   activeForeman, setActiveForeman, theme, setTheme,
@@ -27,7 +28,12 @@ export function SettingsTab({
           {Object.entries(THEMES).map(([key, th]) => (
             <div key={key} className={`theme-card${theme === key ? " active" : ""}`}
               onClick={() => setTheme(key)}>
-              <div>{th.icon}</div>
+              <div>{
+                th.icon === "logo" ? <img src="/ebc-eagle-white.png" alt="EBC" style={{ width: 28, height: 28, objectFit: "contain" }} /> :
+                th.icon === "moon" ? <Moon size={28} /> :
+                th.icon === "sun" ? <Sun size={28} /> :
+                <span>{th.icon}</span>
+              }</div>
               <div className="theme-card-label">{th.label}</div>
             </div>
           ))}

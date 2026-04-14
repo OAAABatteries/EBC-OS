@@ -58,7 +58,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);-webkit
 /* ══ KPI ══ */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-4);margin-bottom:var(--space-6)}
 .kpi-card{padding:var(--space-4) var(--space-5);border-radius:var(--radius-card);backdrop-filter:blur(20px) saturate(1.6);-webkit-backdrop-filter:blur(20px) saturate(1.6);
-  background:var(--glass-bg);border:1px solid var(--glass-border);transition:border-color 0.25s cubic-bezier(.4,0,.2,1),box-shadow 0.25s cubic-bezier(.4,0,.2,1)}
+  background:var(--glass-bg);border:1px solid var(--glass-border);transition:border-color 0.25s cubic-bezier(.4,0,.2,1),box-shadow 0.25s cubic-bezier(.4,0,.2,1);
+  display:flex;align-items:baseline;gap:var(--space-2);flex-wrap:wrap}
 .kpi-card:hover{border-color:var(--amber-dim)}
 .kpi-label{font-size:var(--text-tab);text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:var(--space-2)}
 .kpi-value{font-family:var(--font-body);font-size:var(--text-title);font-weight:var(--weight-bold);color:var(--amber);line-height:1;

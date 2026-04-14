@@ -1713,10 +1713,10 @@ function PayrollSummaryTab({ app }) {
       </div>
 
       <div className="flex gap-8 mt-16">
-        <div className="kpi-card"><span className="text2">Total Payroll</span><strong className="text-amber">{app.fmt(totalPayroll)}</strong></div>
-        <div className="kpi-card"><span className="text2">Total Hours</span><strong>{totalHours.toFixed(1)}h</strong></div>
-        <div className="kpi-card"><span className="text2">Overtime Hours</span><strong style={{ color: totalOT > 0 ? "var(--red)" : "var(--green)" }}>{totalOT.toFixed(1)}h</strong></div>
-        <div className="kpi-card"><span className="text2">Employees</span><strong>{byEmployee.filter(e => e.totalHours > 0).length}</strong></div>
+        <div className="kpi-card"><span className="text2">Total Payroll</span> <strong className="text-amber">{app.fmt(totalPayroll)}</strong></div>
+        <div className="kpi-card"><span className="text2">Total Hours</span> <strong>{totalHours.toFixed(1)}h</strong></div>
+        <div className="kpi-card"><span className="text2">Overtime Hours</span> <strong style={{ color: totalOT > 0 ? "var(--red)" : "var(--green)" }}>{totalOT.toFixed(1)}h</strong></div>
+        <div className="kpi-card"><span className="text2">Employees</span> <strong>{byEmployee.filter(e => e.totalHours > 0).length}</strong></div>
       </div>
 
       <div className="mt-16">
