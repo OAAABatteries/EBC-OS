@@ -979,26 +979,16 @@ function App({ auth, onLogout }) {
         </div>
         <div className="flex gap-8">
           <FeatureGuide guideKey="dashboard" />
-          {dashCfg.showBrief && (
-            <button className="btn btn-ghost" onClick={() => { showBrief ? setShowBrief(false) : runMorningBrief(); }} disabled={briefLoading}>
-              {briefLoading ? t("Loading...") : t("Morning Brief")}
-            </button>
-          )}
           <button className="btn btn-primary" onClick={() => setModal({ type: "editBid", data: null })}>+ New Bid</button>
         </div>
       </div>
 
-      {/* Morning Briefing Panel */}
-      {showBrief && briefResult && (
+      {/* Morning Briefing — auto-populated from live data */}
+      {dashCfg.showBrief && briefResult && (
         <div className="card mb-sp4 p-sp5 overflow-auto" style={{ maxHeight: 450 }}>
           <div className="flex-between mb-12">
             <div>
               <div className="text-sm font-semi">{briefResult.greeting || "Good morning!"}</div>
-              {briefTimestamp && <div className="text-xs text-dim">{t("Generated")} {briefTimestamp.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</div>}
-            </div>
-            <div className="flex gap-8">
-              <button className="btn btn-ghost btn-sm" onClick={runMorningBrief}>{t("Refresh")}</button>
-              <button className="btn btn-ghost btn-sm" onClick={() => setShowBrief(false)}>{t("Close")}</button>
             </div>
           </div>
 
@@ -3348,134 +3338,109 @@ function App({ auth, onLogout }) {
     }
   };
 
-  // ── morning briefing state ──
-  const [briefResult, setBriefResult] = useState(null);
-  const [briefTimestamp, setBriefTimestamp] = useState(null);
-  const [briefLoading, setBriefLoading] = useState(false);
-  const [showBrief, setShowBrief] = useState(false);
+  // ── morning briefing (auto-computed) ──
   const [lookAheadDays, setLookAheadDays] = useState(7);
 
-  const runMorningBrief = () => {
-    setBriefLoading(true);
-    setBriefResult(null);
-    try {
-      const now = new Date();
-      const todayStr = now.toISOString().slice(0, 10);
-      const in7 = new Date(now.getTime() + 7 * 86400000);
-      const parseDate = (s) => { if (!s) return null; const d = new Date(s); return isNaN(d) ? null : d; };
-      const fmt = (n) => "$" + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
-      const hour = now.getHours();
-      const greetName = auth?.name?.split(" ")[0] || "Boss";
-      const greeting = hour < 12 ? `Good morning, ${greetName}.` : hour < 17 ? `Good afternoon, ${greetName}.` : `Good evening, ${greetName}.`;
+  const briefResult = useMemo(() => {
+    const now = new Date();
+    const in7 = new Date(now.getTime() + 7 * 86400000);
+    const parseDate = (s) => { if (!s) return null; const d = new Date(s); return isNaN(d) ? null : d; };
+    const fmt = (n) => "$" + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
+    const hour = now.getHours();
+    const greetName = auth?.name?.split(" ")[0] || "Boss";
+    const greeting = hour < 12 ? `Good morning, ${greetName}.` : hour < 17 ? `Good afternoon, ${greetName}.` : `Good evening, ${greetName}.`;
 
-      // ── Urgent Alerts ──
-      const urgentAlerts = [];
+    // ── Urgent Alerts ──
+    const urgentAlerts = [];
 
-      // Bids due this week
-      const dueBids = bids.filter(b => b.status === "estimating" && b.due && parseDate(b.due) >= now && parseDate(b.due) <= in7);
-      dueBids.forEach(b => urgentAlerts.push({ type: "Bid", alert: `"${b.name || "Untitled"}" due ${new Date(b.due).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`, project: b.gc, action: "Finalize and submit" }));
+    const dueBids = bids.filter(b => b.status === "estimating" && b.due && parseDate(b.due) >= now && parseDate(b.due) <= in7);
+    dueBids.forEach(b => urgentAlerts.push({ type: "Bid", alert: `"${b.name || "Untitled"}" due ${new Date(b.due).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`, project: b.gc, action: "Finalize and submit" }));
 
-      // Overdue invoices
-      const overdueInvs = invoices.filter(i => i.status === "overdue" || (i.status === "pending" && parseDate(i.date) && (now - parseDate(i.date)) > 30 * 86400000));
-      if (overdueInvs.length > 0) {
-        const total = overdueInvs.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-        urgentAlerts.push({ type: "A/R", alert: `${overdueInvs.length} overdue invoice${overdueInvs.length > 1 ? "s" : ""} totaling ${fmt(total)}`, action: "Follow up on collections" });
-      }
-
-      // Low-margin projects
-      const marginThr = companySettings?.marginAlertThreshold || 25;
-      const activeProjs = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
-      const lowMargin = activeProjs.filter(p => {
-        const contract = (p.contractAmount || p.contract || 0) + changeOrders.filter(c => c.projectId === p.id && c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
-        const labor = timeEntries.filter(te => te.projectId === p.id).reduce((s, te) => s + ((te.totalHours || 0) * (te.rate || 45)), 0);
-        const margin = contract > 0 ? Math.round(((contract - labor) / contract) * 100) : 100;
-        return margin < marginThr;
-      });
-      lowMargin.forEach(p => urgentAlerts.push({ type: "Margin", alert: `"${p.name}" is below ${marginThr}% margin target`, project: p.name, action: "Review labor costs and estimate" }));
-
-      // Open incidents
-      const openInc = (incidents || []).filter(i => i.status === "open" || !i.status);
-      if (openInc.length > 0) urgentAlerts.push({ type: "Safety", alert: `${openInc.length} open safety incident${openInc.length > 1 ? "s" : ""} need resolution`, action: "Investigate and close out" });
-
-      // Expired certifications
-      const expCerts = (certifications || []).filter(c => { const exp = c.expirationDate ? new Date(c.expirationDate) : null; return exp && exp <= now; });
-      if (expCerts.length > 0) urgentAlerts.push({ type: "Compliance", alert: `${expCerts.length} expired certification${expCerts.length > 1 ? "s" : ""} — crew may not be compliant`, action: "Renew or reassign affected workers" });
-
-      // Overdue RFIs
-      const overdueRfis = (rfis || []).filter(r => r.status !== "Answered" && r.status !== "Closed").filter(r => {
-        const sub = r.submitted || r.dateSubmitted;
-        return sub && (now - new Date(sub)) > 7 * 86400000;
-      });
-      if (overdueRfis.length > 0) urgentAlerts.push({ type: "RFI", alert: `${overdueRfis.length} RFI${overdueRfis.length > 1 ? "s" : ""} overdue (oldest: ${Math.floor((now - new Date(overdueRfis[0].submitted || overdueRfis[0].dateSubmitted)) / 86400000)}d)`, action: "Follow up with GC or architect" });
-
-      // ── Today's Focus ──
-      const todaysFocus = [];
-
-      // Pending change orders
-      const pendCOs = changeOrders.filter(co => co.status !== "approved" && co.status !== "rejected" && !co.deletedAt);
-      if (pendCOs.length > 0) {
-        const coTotal = pendCOs.reduce((s, co) => s + (Math.abs(Number(co.amount)) || 0), 0);
-        todaysFocus.push({ item: `${pendCOs.length} change order${pendCOs.length > 1 ? "s" : ""} pending approval (${fmt(coTotal)})`, priority: coTotal > 10000 ? "high" : "medium" });
-      }
-
-      // Pending material requests
-      const pendMat = (materialRequests || []).filter(r => r.status === "requested");
-      if (pendMat.length > 0) todaysFocus.push({ item: `${pendMat.length} material request${pendMat.length > 1 ? "s" : ""} awaiting review`, priority: pendMat.some(r => r.urgency === "urgent" || r.urgency === "emergency") ? "high" : "medium" });
-
-      // Unreviewed daily reports
-      const unreviewed = (dailyReports || []).filter(r => !r.reviewedBy);
-      if (unreviewed.length > 0) todaysFocus.push({ item: `${unreviewed.length} daily report${unreviewed.length > 1 ? "s" : ""} need review`, priority: unreviewed.length > 3 ? "high" : "medium" });
-
-      // Submittals due soon
-      const in14 = new Date(now.getTime() + 14 * 86400000);
-      const subsDue = submittals.filter(s => s.status !== "approved" && parseDate(s.due) && parseDate(s.due) <= in14);
-      if (subsDue.length > 0) todaysFocus.push({ item: `${subsDue.length} submittal${subsDue.length > 1 ? "s" : ""} due within 14 days`, priority: "medium" });
-
-      // Crew scheduled today
-      const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
-      const crewToday = new Set((teamSchedule || []).filter(s => s.days?.[todayKey]).map(s => s.employeeId)).size;
-      if (crewToday > 0) todaysFocus.push({ item: `${crewToday} crew member${crewToday > 1 ? "s" : ""} scheduled across ${new Set((teamSchedule || []).filter(s => s.days?.[todayKey]).map(s => s.projectId)).size} site${new Set((teamSchedule || []).filter(s => s.days?.[todayKey]).map(s => s.projectId)).size > 1 ? "s" : ""}`, priority: "low" });
-
-      // ── Money Moves ──
-      const moneyMoves = [];
-
-      // Pending invoices to send
-      const pendingInv = invoices.filter(i => i.status === "draft" || i.status === "pending");
-      if (pendingInv.length > 0) {
-        const invTotal = pendingInv.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-        moneyMoves.push({ item: `${pendingInv.length} invoice${pendingInv.length > 1 ? "s" : ""} to send`, amount: fmt(invTotal), action: "Send to GC", deadline: "This week" });
-      }
-
-      // Backlog value
-      const backlogVal = activeProjs.reduce((s, p) => {
-        const contract = (p.contractAmount || p.contract || 0) + changeOrders.filter(c => c.projectId === p.id && c.status === "approved").reduce((s2, c) => s2 + (c.amount || 0), 0);
-        const billed = invoices.filter(i => String(i.projectId) === String(p.id) && !i.deletedAt).reduce((s2, i) => s2 + (Number(i.amount) || 0), 0);
-        return s + Math.max(0, contract - billed);
-      }, 0);
-      if (backlogVal > 0) moneyMoves.push({ item: "Remaining backlog to bill", amount: fmt(backlogVal), action: "Bill as work completes", deadline: "Ongoing" });
-
-      // Active bids pipeline
-      const pipelineVal = bids.filter(b => b.status === "estimating" || b.status === "submitted").reduce((s, b) => s + (b.value || 0), 0);
-      if (pipelineVal > 0) moneyMoves.push({ item: `${bids.filter(b => b.status === "estimating" || b.status === "submitted").length} bids in pipeline`, amount: fmt(pipelineVal), action: "Track and follow up", deadline: "Active" });
-
-      // ── Summary ──
-      const parts = [];
-      if (activeProjs.length > 0) parts.push(`${activeProjs.length} active project${activeProjs.length > 1 ? "s" : ""}`);
-      if (dueBids.length > 0) parts.push(`${dueBids.length} bid${dueBids.length > 1 ? "s" : ""} due this week`);
-      if (urgentAlerts.length > 0) parts.push(`${urgentAlerts.length} item${urgentAlerts.length > 1 ? "s" : ""} needing attention`);
-      const summary = parts.length > 0 ? `You have ${parts.join(", ")}.` : "All clear — no urgent items today.";
-
-      const res = { greeting, summary, urgentAlerts, todaysFocus, moneyMoves };
-      setBriefResult(res);
-      setBriefTimestamp(new Date());
-      setShowBrief(true);
-      show(t("Morning briefing ready"), "ok");
-    } catch (e) {
-      show(e.message, "err");
-    } finally {
-      setBriefLoading(false);
+    const overdueInvs = invoices.filter(i => i.status === "overdue" || (i.status === "pending" && parseDate(i.date) && (now - parseDate(i.date)) > 30 * 86400000));
+    if (overdueInvs.length > 0) {
+      const total = overdueInvs.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+      urgentAlerts.push({ type: "A/R", alert: `${overdueInvs.length} overdue invoice${overdueInvs.length > 1 ? "s" : ""} totaling ${fmt(total)}`, action: "Follow up on collections" });
     }
-  };
+
+    const marginThr = companySettings?.marginAlertThreshold || 25;
+    const activeProjs = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
+    const lowMargin = activeProjs.filter(p => {
+      const contract = (p.contractAmount || p.contract || 0) + changeOrders.filter(c => c.projectId === p.id && c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
+      const labor = timeEntries.filter(te => te.projectId === p.id).reduce((s, te) => s + ((te.totalHours || 0) * (te.rate || 45)), 0);
+      const margin = contract > 0 ? Math.round(((contract - labor) / contract) * 100) : 100;
+      return margin < marginThr;
+    });
+    lowMargin.forEach(p => urgentAlerts.push({ type: "Margin", alert: `"${p.name}" is below ${marginThr}% margin target`, project: p.name, action: "Review labor costs and estimate" }));
+
+    const openInc = (incidents || []).filter(i => i.status === "open" || !i.status);
+    if (openInc.length > 0) urgentAlerts.push({ type: "Safety", alert: `${openInc.length} open safety incident${openInc.length > 1 ? "s" : ""} need resolution`, action: "Investigate and close out" });
+
+    const expCerts = (certifications || []).filter(c => { const exp = c.expirationDate ? new Date(c.expirationDate) : null; return exp && exp <= now; });
+    if (expCerts.length > 0) urgentAlerts.push({ type: "Compliance", alert: `${expCerts.length} expired certification${expCerts.length > 1 ? "s" : ""} — crew may not be compliant`, action: "Renew or reassign affected workers" });
+
+    const overdueRfis = (rfis || []).filter(r => r.status !== "Answered" && r.status !== "Closed").filter(r => {
+      const sub = r.submitted || r.dateSubmitted;
+      return sub && (now - new Date(sub)) > 7 * 86400000;
+    });
+    if (overdueRfis.length > 0) urgentAlerts.push({ type: "RFI", alert: `${overdueRfis.length} RFI${overdueRfis.length > 1 ? "s" : ""} overdue (oldest: ${Math.floor((now - new Date(overdueRfis[0].submitted || overdueRfis[0].dateSubmitted)) / 86400000)}d)`, action: "Follow up with GC or architect" });
+
+    // ── Today's Focus ──
+    const todaysFocus = [];
+
+    const pendCOs = changeOrders.filter(co => co.status !== "approved" && co.status !== "rejected" && !co.deletedAt);
+    if (pendCOs.length > 0) {
+      const coTotal = pendCOs.reduce((s, co) => s + (Math.abs(Number(co.amount)) || 0), 0);
+      todaysFocus.push({ item: `${pendCOs.length} change order${pendCOs.length > 1 ? "s" : ""} pending approval (${fmt(coTotal)})`, priority: coTotal > 10000 ? "high" : "medium" });
+    }
+
+    const pendMat = (materialRequests || []).filter(r => r.status === "requested");
+    if (pendMat.length > 0) todaysFocus.push({ item: `${pendMat.length} material request${pendMat.length > 1 ? "s" : ""} awaiting review`, priority: pendMat.some(r => r.urgency === "urgent" || r.urgency === "emergency") ? "high" : "medium" });
+
+    const unreviewed = (dailyReports || []).filter(r => !r.reviewedBy);
+    if (unreviewed.length > 0) todaysFocus.push({ item: `${unreviewed.length} daily report${unreviewed.length > 1 ? "s" : ""} need review`, priority: unreviewed.length > 3 ? "high" : "medium" });
+
+    const in14 = new Date(now.getTime() + 14 * 86400000);
+    const subsDue = submittals.filter(s => s.status !== "approved" && parseDate(s.due) && parseDate(s.due) <= in14);
+    if (subsDue.length > 0) todaysFocus.push({ item: `${subsDue.length} submittal${subsDue.length > 1 ? "s" : ""} due within 14 days`, priority: "medium" });
+
+    const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
+    const crewToday = new Set((teamSchedule || []).filter(s => s.days?.[todayKey]).map(s => s.employeeId)).size;
+    const sitesToday = new Set((teamSchedule || []).filter(s => s.days?.[todayKey]).map(s => s.projectId)).size;
+    if (crewToday > 0) todaysFocus.push({ item: `${crewToday} crew member${crewToday > 1 ? "s" : ""} scheduled across ${sitesToday} site${sitesToday > 1 ? "s" : ""}`, priority: "low" });
+
+    // ── Money Moves ──
+    const moneyMoves = [];
+
+    const pendingInv = invoices.filter(i => i.status === "draft" || i.status === "pending");
+    if (pendingInv.length > 0) {
+      const invTotal = pendingInv.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+      moneyMoves.push({ item: `${pendingInv.length} invoice${pendingInv.length > 1 ? "s" : ""} to send`, amount: fmt(invTotal), action: "Send to GC", deadline: "This week" });
+    }
+
+    const backlogVal = activeProjs.reduce((s, p) => {
+      const contract = (p.contractAmount || p.contract || 0) + changeOrders.filter(c => c.projectId === p.id && c.status === "approved").reduce((s2, c) => s2 + (c.amount || 0), 0);
+      const billed = invoices.filter(i => String(i.projectId) === String(p.id) && !i.deletedAt).reduce((s2, i) => s2 + (Number(i.amount) || 0), 0);
+      return s + Math.max(0, contract - billed);
+    }, 0);
+    if (backlogVal > 0) moneyMoves.push({ item: "Remaining backlog to bill", amount: fmt(backlogVal), action: "Bill as work completes", deadline: "Ongoing" });
+
+    const activeBids = bids.filter(b => b.status === "estimating" || b.status === "submitted");
+    const pipelineVal = activeBids.reduce((s, b) => s + (b.value || 0), 0);
+    if (pipelineVal > 0) moneyMoves.push({ item: `${activeBids.length} bids in pipeline`, amount: fmt(pipelineVal), action: "Track and follow up", deadline: "Active" });
+
+    // ── Summary ──
+    const parts = [];
+    if (activeProjs.length > 0) parts.push(`${activeProjs.length} active project${activeProjs.length > 1 ? "s" : ""}`);
+    if (dueBids.length > 0) parts.push(`${dueBids.length} bid${dueBids.length > 1 ? "s" : ""} due this week`);
+    if (urgentAlerts.length > 0) parts.push(`${urgentAlerts.length} item${urgentAlerts.length > 1 ? "s" : ""} needing attention`);
+    const summary = parts.length > 0 ? `You have ${parts.join(", ")}.` : "All clear — no urgent items today.";
+
+    // Only show brief if there's something to say
+    const hasContent = urgentAlerts.length > 0 || todaysFocus.length > 0 || moneyMoves.length > 0;
+    if (!hasContent) return null;
+
+    return { greeting, summary, urgentAlerts, todaysFocus, moneyMoves };
+  }, [bids, invoices, projects, changeOrders, companySettings, timeEntries, incidents, certifications, rfis, submittals, materialRequests, dailyReports, teamSchedule, auth]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── project closeout state ──
   const [closeoutProj, setCloseoutProj] = useState(null);
