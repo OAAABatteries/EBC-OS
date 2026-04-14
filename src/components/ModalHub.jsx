@@ -1254,8 +1254,8 @@ const ModalHub = ({ type, data, app }) => {
                 <div className="flex-between flex-wrap gap-8">
                   <div className="flex gap-4">
                     {["all", "open", "answered", "overdue"].map(f => (
-                      <button key={f} className={`btn btn-sm ${rfiFilter === f ? "btn-primary" : "btn-ghost"}`} onClick={() => setRfiFilter(f)}
-                        className="capitalize fs-xs">{f}{f === "overdue" && rfiOverdueCount > 0 ? ` (${rfiOverdueCount})` : ""}</button>
+                      <button key={f} className={`btn btn-sm capitalize fs-xs ${rfiFilter === f ? "btn-primary" : "btn-ghost"}`} onClick={() => setRfiFilter(f)}
+                      >{f}{f === "overdue" && rfiOverdueCount > 0 ? ` (${rfiOverdueCount})` : ""}</button>
                     ))}
                   </div>
                   <button className="btn btn-sm btn-primary" onClick={() => { resetRfiForm(); setRfiFormOpen(true); }}>+ Add RFI</button>
