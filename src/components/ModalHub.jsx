@@ -482,7 +482,7 @@ const ModalHub = ({ type, data, app }) => {
     const totalBilled = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);
     const remaining = (draft.contract || 0) - totalBilled;
     const [projTab, setProjTab] = useState(app.initialProjTab || "overview");
-    const projTabs = ["overview", "change orders", "submittals", "rfis", "areas", "punch", "log", "reports", "team", "financials", "closeout", "logistics", "notes", "settings"];
+    const projTabs = ["overview", "notes", "change orders", "submittals", "rfis", "areas", "punch", "log", "reports", "team", "financials", "closeout", "logistics", "settings"];
     const [coFormOpen, setCoFormOpen] = useState(false);
     const [coEditId, setCoEditId] = useState(null);
     const [coExpandedId, setCoExpandedId] = useState(null);
@@ -852,6 +852,35 @@ const ModalHub = ({ type, data, app }) => {
                       <ClipboardList size={16} /> {t("Generate Report")} ({t("Copy to Clipboard")})
                     </button>
                   </div>
+
+                  {/* ── Recent Notes Preview ── */}
+                  {(() => {
+                    const projId = String(draft.id);
+                    const recentNotes = projectNotes
+                      .filter(n => String(n.projectId) === projId)
+                      .sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""))
+                      .slice(0, 3);
+                    const pinnedNotes = projectNotes.filter(n => String(n.projectId) === projId && n.pinned);
+                    const allVisible = [...pinnedNotes.filter(n => !recentNotes.find(r => r.id === n.id)), ...recentNotes].slice(0, 4);
+                    if (allVisible.length === 0) return null;
+                    return (
+                      <div className="mt-sp3 rounded-control bg-bg2" style={{ border: "1px solid var(--border)", padding: "var(--space-3) var(--space-4)" }}>
+                        <div className="flex-between mb-sp2">
+                          <div className="fw-semi fs-tab uppercase c-text3" style={{ letterSpacing: "0.7px" }}>Team Notes</div>
+                          <button className="btn btn-ghost btn-sm fs-10" onClick={() => setProjTab("notes")}>View All</button>
+                        </div>
+                        {allVisible.map(note => (
+                          <div key={note.id} className="border-b" style={{ padding: "var(--space-2) 0" }}>
+                            <div className="flex-between">
+                              <span className="fs-tab fw-semi c-text">{note.pinned ? "📌 " : ""}{note.author}</span>
+                              <span className="fs-tab c-text3">{note.timestamp ? new Date(note.timestamp).toLocaleDateString() : ""}</span>
+                            </div>
+                            <div className="fs-tab c-text2 mt-sp1" style={{ lineHeight: 1.4 }}>{(note.text || "").slice(0, 120)}{(note.text || "").length > 120 ? "..." : ""}</div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })()}
