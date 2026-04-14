@@ -2190,7 +2190,7 @@ const ModalHub = ({ type, data, app }) => {
                   {/* Compose */}
                   <div className="rounded-control p-sp3 bg-bg3" style={{ border: "1px solid var(--border)" }}>
                     <textarea
-                      className="input"
+                      className="form-textarea"
                       rows={3}
                       placeholder="Post a note to the project team..."
                       value={noteText}
@@ -3707,7 +3707,7 @@ const ModalHub = ({ type, data, app }) => {
                     Team Notes ({allNotes.length})
                   </div>
                 </div>
-                <textarea className="input" rows={2} placeholder="Post a note to the project team..." value={noteText} onChange={e => setNoteText(e.target.value)} className="mb-sp2 fs-label w-full" style={{ resize: "vertical" }} />
+                <textarea className="form-textarea mb-sp2 fs-label w-full" rows={2} placeholder="Post a note to the project team..." value={noteText} onChange={e => setNoteText(e.target.value)} style={{ resize: "vertical" }} />
                 <div className="flex gap-6 mb-10">
                   <button className="btn btn-sm btn-primary" onClick={() => addNote("pm")} disabled={!noteText.trim()}>PM Note</button>
                   <button className="btn btn-sm btn-ghost" onClick={() => addNote("field")} disabled={!noteText.trim()}>Field Note</button>
