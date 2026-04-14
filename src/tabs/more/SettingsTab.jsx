@@ -1834,7 +1834,7 @@ function ThemeTab({ app }) {
               }}
             >
               <div className="justify-center" style={{ display: "flex" }}>{
-                theme.icon === "logo" ? <img src="/ebc-eagle-white.png" alt="EBC" style={{ width: 32, height: 32, objectFit: "contain" }} /> :
+                theme.icon === "logo" ? <img src={app.theme === "daylight" ? "/ebc-eagle.png" : "/ebc-eagle-white.png"} alt="EBC" style={{ width: 32, height: 32, objectFit: "contain" }} /> :
                 theme.icon === "building-2" ? <Building2 size={32} /> :
                 theme.icon === "moon" ? <Moon size={32} /> :
                 theme.icon === "sun" ? <Sun size={32} /> :

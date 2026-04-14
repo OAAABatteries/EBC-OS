@@ -2071,9 +2071,9 @@ function App({ auth, onLogout }) {
           ))}
         </div>
         <div className="flex gap-4">
-          <button className={`btn btn-sm ${bidViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("list")} className="flex-center-gap-4"><List className="w-4 h-4" /> List</button>
-          <button className={`btn btn-sm ${bidViewMode === "pipeline" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("pipeline")} className="flex-center-gap-4"><Columns className="w-4 h-4" /> Pipeline</button>
-          <button className={`btn btn-sm ${bidViewMode === "calendar" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("calendar")} className="flex-center-gap-4"><Calendar className="w-4 h-4" /> Calendar</button>
+          <button className={`btn btn-sm flex-center-gap-4 ${bidViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("list")}><List className="w-4 h-4" /> List</button>
+          <button className={`btn btn-sm flex-center-gap-4 ${bidViewMode === "pipeline" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("pipeline")}><Columns className="w-4 h-4" /> Pipeline</button>
+          <button className={`btn btn-sm flex-center-gap-4 ${bidViewMode === "calendar" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("calendar")}><Calendar className="w-4 h-4" /> Calendar</button>
         </div>
       </div>
 
@@ -2440,7 +2440,7 @@ function App({ auth, onLogout }) {
             const readiness = [hasPlans, hasScope, hasEstimator, hasValue].filter(Boolean).length;
             const readinessMax = 4;
             return (
-            <div key={b.id} className="bid-card" onClick={() => setModal({ type: "editBid", data: b })} className="pos-relative">
+            <div key={b.id} className="bid-card pos-relative" onClick={() => setModal({ type: "editBid", data: b })}>
               {/* Top row: status + risk + due countdown */}
               <div className="flex-between mb-4">
                 <span className="flex-center-gap-6">
@@ -2700,9 +2700,9 @@ function App({ auth, onLogout }) {
 
       {/* View Toggle: List | Summary | Schedule */}
       <div className="flex gap-4 mb-16">
-        <button className={`btn btn-sm ${projectViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("list")} className="flex-center-gap-4"><List className="w-4 h-4" /> List</button>
-        <button className={`btn btn-sm ${projectViewMode === "summary" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("summary")} className="flex-center-gap-4"><Columns className="w-4 h-4" /> Summary</button>
-        <button className={`btn btn-sm ${projectViewMode === "schedule" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("schedule")} className="flex-center-gap-4"><BarChart2 className="w-4 h-4" /> Schedule</button>
+        <button className={`btn btn-sm flex-center-gap-4 ${projectViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("list")}><List className="w-4 h-4" /> List</button>
+        <button className={`btn btn-sm flex-center-gap-4 ${projectViewMode === "summary" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("summary")}><Columns className="w-4 h-4" /> Summary</button>
+        <button className={`btn btn-sm flex-center-gap-4 ${projectViewMode === "schedule" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("schedule")}><BarChart2 className="w-4 h-4" /> Schedule</button>
       </div>
 
       {/* Cross-Project Summary Table */}

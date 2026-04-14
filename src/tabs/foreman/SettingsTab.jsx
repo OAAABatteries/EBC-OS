@@ -29,7 +29,7 @@ export function SettingsTab({
             <div key={key} className={`theme-card${theme === key ? " active" : ""}`}
               onClick={() => setTheme(key)}>
               <div>{
-                th.icon === "logo" ? <img src="/ebc-eagle-white.png" alt="EBC" style={{ width: 28, height: 28, objectFit: "contain" }} /> :
+                th.icon === "logo" ? <img src={theme === "daylight" ? "/ebc-eagle.png" : "/ebc-eagle-white.png"} alt="EBC" style={{ width: 28, height: 28, objectFit: "contain" }} /> :
                 th.icon === "moon" ? <Moon size={28} /> :
                 th.icon === "sun" ? <Sun size={28} /> :
                 <span>{th.icon}</span>

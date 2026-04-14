@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback, Fragment } from "react";
-import { AlertTriangle, Camera, CheckSquare, Square, Clipboard, ClipboardList, FileDown, FileText, FolderOpen, HardHat, Image, MapPin, MessageSquare, Paperclip, Pin, PinOff, Search } from "lucide-react";
-import { softDelete, filterActive } from "../utils/financialValidation";
+import { AlertTriangle, BarChart2, Camera, CheckSquare, Square, Clipboard, ClipboardList, FileDown, FileText, FolderOpen, HardHat, Image, MapPin, MessageSquare, Paperclip, Pin, PinOff, Search, Volume2 } from "lucide-react";
+import { softDelete, filterActive, getAdjustedContract, computeProjectTotalCost, computeProjectLaborCost } from "../utils/financialValidation";
 import { AreasTab } from "../tabs/AreasTab";
 import { PunchListTab } from "../tabs/PunchListTab";
 import { DecisionLogTab } from "../tabs/DecisionLogTab";
