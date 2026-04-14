@@ -249,11 +249,14 @@ const ModalHub = ({ type, data, app }) => {
             if (!app.projects.some(p => p.bidId === draft.id)) {
               const awardedBid = { ...draft, convertedToProject: true };
               app.setBids(prev => prev.map(b => b.id === draft.id ? awardedBid : b));
+              // Phase 3: carry scope detail + takeoff summary at award
+              const linkedTakeoff = (app.takeoffs || []).find(tk => tk.bidId === awardedBid.id);
               const newProject = {
                 id: app.nextId(),
                 name: awardedBid.name,
                 gc: awardedBid.gc,
                 contract: awardedBid.value || 0,
+                originalBidValue: awardedBid.value || 0,
                 billed: 0, progress: 0,
                 phase: awardedBid.phase || awardedBid.sector || "",
                 start: awardedBid.due || "",
@@ -264,11 +267,21 @@ const ModalHub = ({ type, data, app }) => {
                 bidId: awardedBid.id,
                 notes: awardedBid.notes || "",
                 scope: awardedBid.scope || [],
+                exclusions: awardedBid.exclusions || "",
                 sector: awardedBid.sector || "",
                 contact: awardedBid.contact || "",
                 assignedForeman: awardedBid.assignedForeman || null,
                 needsPlans: true,
                 plansRequestedAt: null,
+                contractType: "lump_sum",
+                retainageRate: 10,
+                // Takeoff snapshot for est vs. actual
+                takeoffSummary: linkedTakeoff ? {
+                  totalSF: linkedTakeoff.rooms?.reduce((s, r) => s + (r.items || []).reduce((is, i) => is + (i.totalSF || i.qty || 0), 0), 0) || 0,
+                  roomCount: linkedTakeoff.rooms?.length || 0,
+                  grandTotal: linkedTakeoff.grandTotal || 0,
+                  snapshotAt: new Date().toISOString(),
+                } : null,
               };
               app.setProjects(prev => [...prev, newProject]);
               show(`Bid awarded! Project "${draft.name}" created — request construction plans from ${draft.gc || "the GC"}`, 6000);
@@ -670,13 +683,19 @@ const ModalHub = ({ type, data, app }) => {
             <button className="modal-close" onClick={close}>✕</button>
           </div>
 
-          {/* Sub-tabs */}
-          <div className="flex gap-4 mb-12 border-b overflow-x-auto" style={{ paddingBottom: "var(--space-2)" }}>
-            {projTabs.map(tab => (
-              <button key={tab} className={`btn btn-sm ${projTab === tab ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjTab(tab)}
-                className="fs-tab capitalize nowrap">{tab}</button>
-            ))}
-          </div>
+          {/* Sub-tabs (Phase 4: role-filtered) */}
+          {(() => {
+            const role = app.auth?.role || "owner";
+            const hiddenTabs = ["foreman","driver","employee"].includes(role) ? ["financials","closeout"] : [];
+            const visibleTabs = projTabs.filter(tab => !hiddenTabs.includes(tab));
+            return (
+              <div className="flex gap-4 mb-12 border-b overflow-x-auto" style={{ paddingBottom: "var(--space-2)" }}>
+                {visibleTabs.map(tab => (
+                  <button key={tab} className={`btn btn-sm fs-tab capitalize nowrap ${projTab === tab ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjTab(tab)}>{tab}</button>
+                ))}
+              </div>
+            );
+          })()}
 
           <div className="flex-1" style={{ overflowY: "auto", paddingBottom: "var(--space-4)" }}>
             {/* ── Overview ── */}
@@ -698,6 +717,21 @@ const ModalHub = ({ type, data, app }) => {
                     <div><span className="text-dim text-xs">PROGRESS</span><div className="font-mono">{draft.progress}%</div></div>
                   </div>
                   <div className="progress-bar"><div className="progress-fill" style={{ width: `${draft.progress}%` }} /></div>
+                  {/* GC Contacts */}
+                  {(draft.gcSuperName || draft.gcPmName || draft.siteContact) && (
+                    <div className="flex gap-16 flex-wrap">
+                      {draft.gcSuperName && <div><span className="text-dim text-xs">GC SUPER</span><div className="text-sm">{draft.gcSuperName}{draft.gcSuperPhone ? ` · ${draft.gcSuperPhone}` : ""}</div></div>}
+                      {draft.gcPmName && <div><span className="text-dim text-xs">GC PM</span><div className="text-sm">{draft.gcPmName}{draft.gcPmEmail ? ` · ${draft.gcPmEmail}` : ""}</div></div>}
+                      {draft.siteContact && <div><span className="text-dim text-xs">SITE CONTACT</span><div className="text-sm">{draft.siteContact}{draft.siteContactPhone ? ` · ${draft.siteContactPhone}` : ""}</div></div>}
+                    </div>
+                  )}
+                  {/* Job identifiers */}
+                  {(draft.jobNumber || draft.poNumber) && (
+                    <div className="flex gap-16 flex-wrap">
+                      {draft.jobNumber && <div><span className="text-dim text-xs">JOB #</span><div className="text-sm font-mono">{draft.jobNumber}</div></div>}
+                      {draft.poNumber && <div><span className="text-dim text-xs">PO / SUB #</span><div className="text-sm font-mono">{draft.poNumber}</div></div>}
+                    </div>
+                  )}
                   <div className="flex gap-16 flex-wrap">
                     <div><span className="text-dim text-xs">ADDRESS</span><div className="text-sm">{draft.address || "—"}</div></div>
                     {draft.suite && <div><span className="text-dim text-xs">SUITE</span><div className="text-sm">{draft.suite}</div></div>}
@@ -2329,10 +2363,46 @@ const ModalHub = ({ type, data, app }) => {
               );
             })()}
 
-            {/* ═══ SETTINGS TAB — edit project fields ═══ */}
-            {projTab === "settings" && (
+            {/* ═══ SETTINGS TAB — edit project fields (Phases 2-5) ═══ */}
+            {projTab === "settings" && (() => {
+              const userRole = app.auth?.role || "owner";
+              const canSeeFinancials = ["owner","admin","pm","estimator","office_admin","accounting"].includes(userRole);
+              const linkedBid = draft.bidId ? (app.bids || []).find(b => b.id === draft.bidId) : null;
+              const linkedTakeoff = draft.bidId ? (app.takeoffs || []).find(tk => tk.bidId === draft.bidId) : null;
+              // Auto-progress from areas
+              const projAreas = (app.areas || []).filter(a => String(a.projectId) === String(draft.id));
+              const autoProgress = projAreas.length > 0
+                ? (() => { const total = projAreas.reduce((s, a) => s + (a.scopeItems || []).reduce((si, i) => si + (i.budgetQty || 0), 0), 0); const done = projAreas.reduce((s, a) => s + (a.scopeItems || []).reduce((si, i) => si + (i.installedQty || 0), 0), 0); return total > 0 ? Math.round((done / total) * 100) : null; })()
+                : null;
+              return (
               <div>
-                <div className="form-grid">
+                {/* ── Linked Bid (Phase 3) ── */}
+                {linkedBid && (
+                  <div className="mb-16 p-8 rounded-control" style={{ background: "var(--bg2)", border: "1px solid var(--border)" }}>
+                    <div className="flex-between">
+                      <div>
+                        <div className="fs-10 text-dim uppercase fw-semi">Original Estimate</div>
+                        <div className="text-sm fw-semi mt-2">{linkedBid.name}</div>
+                        <div className="text-xs text-muted">{linkedBid.estimator || "—"} · {linkedBid.sector || "—"} · Bid: {fmt(linkedBid.value || 0)}</div>
+                        {linkedBid.exclusions && <div className="text-xs text-muted mt-4"><span className="fw-semi">Exclusions:</span> {linkedBid.exclusions}</div>}
+                      </div>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setModal({ type: "viewBid", data: linkedBid })}>View Bid</button>
+                    </div>
+                    {canSeeFinancials && linkedBid.value > 0 && draft.contract > 0 && (
+                      <div className="flex gap-16 mt-8 fs-10">
+                        <span>Bid: <span className="font-mono fw-semi">{fmt(linkedBid.value)}</span></span>
+                        <span>Contract: <span className="font-mono fw-semi">{fmt(draft.contract)}</span></span>
+                        <span style={{ color: draft.contract >= linkedBid.value ? "var(--green)" : "var(--red)" }}>
+                          {draft.contract >= linkedBid.value ? "+" : ""}{fmt(draft.contract - linkedBid.value)} ({draft.contract >= linkedBid.value ? "+" : ""}{Math.round(((draft.contract - linkedBid.value) / linkedBid.value) * 100)}%)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── Section: Project Info ── */}
+                <div className="fw-semi fs-tab uppercase c-text3 mb-8" style={{ letterSpacing: "0.7px", borderBottom: "1px solid var(--border)", paddingBottom: "var(--space-2)" }}>Project Info</div>
+                <div className="form-grid mb-16">
                   <div className="form-group full">
                     <label className="form-label">Project Name *</label>
                     <input className="form-input" value={draft.name} onChange={e => upd("name", e.target.value)} placeholder="Project name" />
@@ -2342,17 +2412,22 @@ const ModalHub = ({ type, data, app }) => {
                     <input className="form-input" value={draft.gc} onChange={e => upd("gc", e.target.value)} placeholder="GC name" />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Contract Value ($)</label>
-                    <input className="form-input" type="number" value={draft.contract} onChange={e => upd("contract", Number(e.target.value))} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Progress (%)</label>
-                    <input className="form-input" type="number" min="0" max="100" value={draft.progress} onChange={e => upd("progress", Number(e.target.value))} />
-                  </div>
-                  <div className="form-group">
                     <label className="form-label">Sector</label>
                     <input className="form-input" value={draft.phase} onChange={e => upd("phase", e.target.value)} placeholder="e.g. Medical, Commercial" />
                   </div>
+                  <div className="form-group">
+                    <label className="form-label">Job Number</label>
+                    <input className="form-input" value={draft.jobNumber || ""} onChange={e => upd("jobNumber", e.target.value)} placeholder="EBC internal job #" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">PO / Subcontract #</label>
+                    <input className="form-input" value={draft.poNumber || ""} onChange={e => upd("poNumber", e.target.value)} placeholder="GC purchase order #" />
+                  </div>
+                </div>
+
+                {/* ── Section: Schedule ── */}
+                <div className="fw-semi fs-tab uppercase c-text3 mb-8" style={{ letterSpacing: "0.7px", borderBottom: "1px solid var(--border)", paddingBottom: "var(--space-2)" }}>Schedule</div>
+                <div className="form-grid mb-16">
                   <div className="form-group">
                     <label className="form-label">Construction Stage</label>
                     <select className="form-select" value={draft.constructionStage || ""} onChange={e => {
@@ -2372,6 +2447,15 @@ const ModalHub = ({ type, data, app }) => {
                     </select>
                   </div>
                   <div className="form-group">
+                    <label className="form-label">Progress (%){autoProgress !== null ? ` · Areas: ${autoProgress}%` : ""}</label>
+                    <div className="flex gap-8 items-center">
+                      <input className="form-input" type="number" min="0" max="100" value={draft.progress} onChange={e => upd("progress", Number(e.target.value))} style={{ flex: 1 }} />
+                      {autoProgress !== null && autoProgress !== draft.progress && (
+                        <button className="btn btn-ghost btn-sm fs-10" onClick={() => upd("progress", autoProgress)} title="Sync from area completion data">Sync</button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="form-group">
                     <label className="form-label">Start Date</label>
                     <input className="form-input" type="date" value={draft.start} onChange={e => upd("start", e.target.value)} />
                   </div>
@@ -2379,6 +2463,11 @@ const ModalHub = ({ type, data, app }) => {
                     <label className="form-label">End Date</label>
                     <input className="form-input" type="date" value={draft.end} onChange={e => upd("end", e.target.value)} />
                   </div>
+                </div>
+
+                {/* ── Section: People & Contacts ── */}
+                <div className="fw-semi fs-tab uppercase c-text3 mb-8" style={{ letterSpacing: "0.7px", borderBottom: "1px solid var(--border)", paddingBottom: "var(--space-2)" }}>People & Contacts</div>
+                <div className="form-grid mb-16">
                   <div className="form-group">
                     <label className="form-label">PM Assigned</label>
                     <select className="form-select" value={draft.pm || ""} onChange={e => upd("pm", e.target.value)}>
@@ -2386,7 +2475,6 @@ const ModalHub = ({ type, data, app }) => {
                       {(app.employees || []).filter(e => ["pm","admin","owner","Project Manager","PM"].includes(e.role)).map(e => (
                         <option key={e.id} value={e.name}>{e.name}</option>
                       ))}
-                      {/* Fallback if no employees match */}
                       {(app.employees || []).filter(e => ["pm","admin","owner","Project Manager","PM"].includes(e.role)).length === 0 && <>
                         <option value="Emmanuel Aguilar">Emmanuel Aguilar</option>
                         <option value="Abner Aguilar">Abner Aguilar</option>
@@ -2403,6 +2491,35 @@ const ModalHub = ({ type, data, app }) => {
                       ))}
                     </select>
                   </div>
+                  <div className="form-group">
+                    <label className="form-label">GC Superintendent</label>
+                    <input className="form-input" value={draft.gcSuperName || ""} onChange={e => upd("gcSuperName", e.target.value)} placeholder="Name" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">GC Super Phone</label>
+                    <input className="form-input" type="tel" value={draft.gcSuperPhone || ""} onChange={e => upd("gcSuperPhone", e.target.value)} placeholder="713-555-0100" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">GC PM Name</label>
+                    <input className="form-input" value={draft.gcPmName || ""} onChange={e => upd("gcPmName", e.target.value)} placeholder="Name" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">GC PM Email</label>
+                    <input className="form-input" type="email" value={draft.gcPmEmail || ""} onChange={e => upd("gcPmEmail", e.target.value)} placeholder="pm@gc.com" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Site Contact</label>
+                    <input className="form-input" value={draft.siteContact || ""} onChange={e => upd("siteContact", e.target.value)} placeholder="On-site contact name" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Site Contact Phone</label>
+                    <input className="form-input" type="tel" value={draft.siteContactPhone || ""} onChange={e => upd("siteContactPhone", e.target.value)} placeholder="713-555-0200" />
+                  </div>
+                </div>
+
+                {/* ── Section: Site Access ── */}
+                <div className="fw-semi fs-tab uppercase c-text3 mb-8" style={{ letterSpacing: "0.7px", borderBottom: "1px solid var(--border)", paddingBottom: "var(--space-2)" }}>Site Access</div>
+                <div className="form-grid mb-16">
                   <div className="form-group full">
                     <label className="form-label">Address</label>
                     <input className="form-input" value={draft.address || ""} onChange={e => upd("address", e.target.value)} placeholder="Project address" />
@@ -2412,20 +2529,66 @@ const ModalHub = ({ type, data, app }) => {
                     <input className="form-input" value={draft.suite || ""} onChange={e => upd("suite", e.target.value)} placeholder="e.g. Suite 200, Level 4" />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Parking Info</label>
+                    <label className="form-label">Parking</label>
                     <input className="form-input" value={draft.parking || ""} onChange={e => upd("parking", e.target.value)} placeholder="e.g. Garage Level B2, Lot C" />
                   </div>
+                  <div className="form-group">
+                    <label className="form-label">Gate Code</label>
+                    <input className="form-input" value={draft.gateCode || ""} onChange={e => upd("gateCode", e.target.value)} placeholder="Entry code" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Delivery Entrance</label>
+                    <input className="form-input" value={draft.deliveryEntrance || ""} onChange={e => upd("deliveryEntrance", e.target.value)} placeholder="Where to unload" />
+                  </div>
+                  <div className="form-group full">
+                    <label className="form-label">Access Instructions</label>
+                    <textarea className="form-textarea" value={draft.accessInstructions || ""} onChange={e => upd("accessInstructions", e.target.value)} placeholder="Parking, entry protocol, badge requirements..." style={{ minHeight: 60, resize: "vertical" }} />
+                  </div>
+                </div>
+
+                {/* ── Section: Financial (hidden for foremen) ── */}
+                {canSeeFinancials && (
+                  <>
+                    <div className="fw-semi fs-tab uppercase c-text3 mb-8" style={{ letterSpacing: "0.7px", borderBottom: "1px solid var(--border)", paddingBottom: "var(--space-2)" }}>Financial</div>
+                    <div className="form-grid mb-16">
+                      <div className="form-group">
+                        <label className="form-label">Base Contract Value ($)</label>
+                        <input className="form-input" type="number" value={draft.contract} onChange={e => upd("contract", Number(e.target.value))} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Retainage Rate (%)</label>
+                        <input className="form-input" type="number" min="0" max="100" value={draft.retainageRate ?? 10} onChange={e => upd("retainageRate", Number(e.target.value))} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Contract Type</label>
+                        <select className="form-select" value={draft.contractType || "lump_sum"} onChange={e => upd("contractType", e.target.value)}>
+                          <option value="lump_sum">Lump Sum</option>
+                          <option value="gmp">GMP</option>
+                          <option value="t_and_m">Time & Material</option>
+                          <option value="unit_price">Unit Price</option>
+                        </select>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* ── Section: Notes ── */}
+                <div className="fw-semi fs-tab uppercase c-text3 mb-8" style={{ letterSpacing: "0.7px", borderBottom: "1px solid var(--border)", paddingBottom: "var(--space-2)" }}>Notes</div>
+                <div className="form-grid mb-16">
                   <div className="form-group full">
                     <label className="form-label">Close-Out Notes</label>
                     <textarea className="form-textarea" value={draft.closeOut || ""} onChange={e => upd("closeOut", e.target.value)} placeholder="Close-out status, punch list, final inspections..." style={{ minHeight: 80, resize: "vertical" }} />
                   </div>
                 </div>
-                <div className="flex gap-8 mt-16" style={{ position: "sticky", bottom: 0, padding: "var(--space-3) 0", background: "var(--bg)", zIndex: 2 }}>
+
+                {/* ── Sticky Save Bar ── */}
+                <div className="flex gap-8" style={{ position: "sticky", bottom: 0, padding: "var(--space-3) 0", background: "var(--bg)", zIndex: 2, borderTop: "1px solid var(--border)" }}>
                   <button className="btn btn-primary" onClick={handleSave}>Save Changes</button>
                   <button className="btn btn-ghost" onClick={close}>Cancel</button>
                 </div>
               </div>
-            )}
+              );
+            })()}
           </div>
 
           <div className="modal-actions flex-between">
