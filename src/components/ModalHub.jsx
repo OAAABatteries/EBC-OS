@@ -1812,13 +1812,13 @@ const ModalHub = ({ type, data, app }) => {
                                   {item.dateCompleted && <span className="text-xs text-muted">{item.dateCompleted}</span>}
                                 </div>
                                 {/* Inline notes */}
-                                <input type="text" placeholder="Notes..." value={item.notes || ""} className="input input-sm mt-sp1 fs-xs w-full" style={{ padding: "var(--space-1) var(--space-2)", maxWidth: 400, background: "transparent", border: "1px solid var(--border)" }}
+                                <input type="text" placeholder="Notes..." value={item.notes || ""} className="form-input mt-sp1 fs-xs w-full" style={{ padding: "var(--space-1) var(--space-2)", maxWidth: 400 }}
                                   onClick={e => e.stopPropagation()}
                                   onChange={e => updateCloseoutItem(ci.id, "notes", e.target.value)} />
                               </div>
                             </div>
                             <div className="ml-sp2 flex-shrink-0">
-                              <select value={item.responsible || ci.responsible} className="input input-sm fs-xs" style={{ padding: "var(--space-1) var(--space-1)", width: 80 }}
+                              <select value={item.responsible || ci.responsible} className="form-select fs-xs" style={{ padding: "var(--space-1) var(--space-1)", width: 80 }}
                                 onClick={e => e.stopPropagation()}
                                 onChange={e => updateCloseoutItem(ci.id, "responsible", e.target.value)}>
                                 <option value="PM">PM</option>
@@ -1839,7 +1839,7 @@ const ModalHub = ({ type, data, app }) => {
                 {/* Closeout Notes */}
                 <div>
                   <div className="text-xs font-semi mb-4">CLOSEOUT NOTES</div>
-                  <textarea className="input w-full fs-12" rows={3} placeholder="General closeout notes..." value={closeout.notes || ""}
+                  <textarea className="form-textarea w-full fs-12" rows={3} placeholder="General closeout notes..." value={closeout.notes || ""}
                     
                     onChange={e => {
                       const newCloseout = { ...closeout, notes: e.target.value };
