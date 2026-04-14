@@ -2471,11 +2471,12 @@ const ModalHub = ({ type, data, app }) => {
           </div>
 
           <div className="modal-actions flex-between">
-            <button className="btn badge-red-outlined" onClick={handleDelete}>Delete</button>
-            <div className="flex gap-8">
-              <button className="btn btn-ghost" onClick={close}>Close</button>
-              <button className="btn btn-ghost" onClick={() => setProjTab("settings")}>Settings</button>
-            </div>
+            <button className="btn badge-red-outlined" onClick={() => {
+              const name = prompt(`Type "${draft.name}" to permanently delete this project and all its data:`);
+              if (name === draft.name) handleDelete();
+              else if (name !== null) show("Name didn't match — project not deleted", "err");
+            }}>Delete</button>
+            <button className="btn btn-ghost" onClick={() => setProjTab("settings")}>Edit</button>
           </div>
         </div>
       </div>
