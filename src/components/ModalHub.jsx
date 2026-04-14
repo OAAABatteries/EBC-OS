@@ -1517,6 +1517,7 @@ const ModalHub = ({ type, data, app }) => {
               const activeInvoices = filterActive(projInvoices);
               const billedToDate = activeInvoices.reduce((s, i) => s + (i.amount || 0), 0);
               const defaultRetainageRate = app.companySettings?.defaultRetainageRate || 10;
+              const retainageRate = draft.retainageRate ?? defaultRetainageRate;
               // Retainage: prefer per-invoice retainageWithheld, fall back to flat rate for legacy records
               const retainageReceivable = activeInvoices.reduce((s, i) => {
                 if (i.retainageWithheld != null) return s + (i.retainageWithheld || 0);
@@ -2328,7 +2329,7 @@ const ModalHub = ({ type, data, app }) => {
                   {/* Filters */}
                   <div className="flex gap-4">
                     {["all", "pm", "field", "office"].map(f => (
-                      <button key={f} className={`btn btn-sm ${notesFilter === f ? "btn-primary" : "btn-ghost"}`} onClick={() => setNotesFilter(f)} className="text-capitalize">
+                      <button key={f} className={`btn btn-sm capitalize ${notesFilter === f ? "btn-primary" : "btn-ghost"}`} onClick={() => setNotesFilter(f)}>
                         {f === "all" ? `All (${allNotes.length})` : `${catLabel(f)} (${filterMap[f]?.length || 0})`}
                       </button>
                     ))}
@@ -3834,7 +3835,7 @@ const ModalHub = ({ type, data, app }) => {
                   <button className="btn btn-sm btn-ghost" onClick={() => addNote("office")} disabled={!noteText.trim()}>Office Note</button>
                   <div className="ml-auto flex gap-4">
                     {["all", "pm", "field", "office"].map(f => (
-                      <button key={f} className={`btn btn-sm ${notesFilter === f ? "btn-primary" : "btn-ghost"}`} onClick={() => setNotesFilter(f)} className="capitalize fs-xs" style={{ padding: "var(--space-1) var(--space-2)" }}>
+                      <button key={f} className={`btn btn-sm capitalize fs-xs ${notesFilter === f ? "btn-primary" : "btn-ghost"}`} onClick={() => setNotesFilter(f)} style={{ padding: "var(--space-1) var(--space-2)" }}>
                         {f === "all" ? `All (${allNotes.length})` : `${catLabel(f)} (${filterMap[f]?.length || 0})`}
                       </button>
                     ))}
