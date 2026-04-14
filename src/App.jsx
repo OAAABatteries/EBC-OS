@@ -2782,12 +2782,12 @@ function App({ auth, onLogout }) {
       {projectViewMode === "list" && <>
       <div className="mb-sp4">
         <input
-          className="form-input"
+          className="form-input w-full"
           type="text"
           placeholder={t("Search projects by name, GC, or phase...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full" style={{ maxWidth: 500 }}
+          style={{ maxWidth: 500 }}
         />
       </div>
 
