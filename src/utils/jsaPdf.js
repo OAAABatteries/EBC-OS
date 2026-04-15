@@ -206,6 +206,9 @@ export async function generateJsaPdf(jsa) {
   const rightLabelX = ML + CW / 2 + 5;
   const rightValueX = ML + CW / 2 + 32;
 
+  const leftMaxW  = rightLabelX - leftValueX - 4;  // max width for left values
+  const rightMaxW = PW - MR - rightValueX - 2;     // max width for right values
+
   const infoRows = [
     ["Project:",    safe(jsa.projectName || "--"),    "Supervisor:", safe(jsa.supervisor || "--")],
     ["Trade:",      safe(jsa.trade || "--"),          "GC:",         safe(jsa.gc || "--")],
@@ -220,8 +223,17 @@ export async function generateJsaPdf(jsa) {
     doc.text(lbl2, rightLabelX, y);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...C.darkGray);
-    doc.text(val1, leftValueX, y);
-    doc.text(val2, rightValueX, y);
+    const leftLines = doc.splitTextToSize(val1, leftMaxW);
+    const rightLines = doc.splitTextToSize(val2, rightMaxW);
+    doc.text(leftLines[0] || "", leftValueX, y);
+    doc.text(rightLines[0] || "", rightValueX, y);
+    // Handle overflow lines
+    const extra = Math.max(leftLines.length, rightLines.length) - 1;
+    for (let i = 1; i <= extra; i++) {
+      y += 4.5;
+      if (leftLines[i]) doc.text(leftLines[i], leftValueX, y);
+      if (rightLines[i]) doc.text(rightLines[i], rightValueX, y);
+    }
     y += 6;
   });
 
