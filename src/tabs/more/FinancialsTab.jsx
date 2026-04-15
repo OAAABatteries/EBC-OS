@@ -13,7 +13,7 @@ export function Financials({ app }) {
   const [sub, setSub] = useState("Invoices");
   return (
     <div>
-      <SubTabs tabs={["Invoices", "Change Orders", "T&M Tickets", "Job Costing", "Payroll Summary", "Aging Report", "AP Bills", "Vendors", "Commitments", "Retainage", "Period Close", "Budget", "Reports"]} active={sub} onChange={setSub} />
+      <SubTabs tabs={["Invoices", "Change Orders", "T&M Tickets", "Job Costing", "Payroll Summary", "Aging Report", "AP Bills", "Vendors", "Commitments", "Retainage", "Period Close", "Budget", "SOV", "Pay Apps", "Reports"]} active={sub} onChange={setSub} />
       {sub === "Invoices" && <InvoicesTab app={app} />}
       {sub === "Change Orders" && <ChangeOrdersTab app={app} />}
       {sub === "T&M Tickets" && <TmTicketsTab app={app} />}
@@ -26,6 +26,8 @@ export function Financials({ app }) {
       {sub === "Retainage" && <RetainageTab app={app} />}
       {sub === "Period Close" && <PeriodCloseTab app={app} />}
       {sub === "Budget" && <BudgetTab app={app} />}
+      {sub === "SOV" && <SOVOverviewTab app={app} />}
+      {sub === "Pay Apps" && <PayAppsOverviewTab app={app} />}
       {sub === "Reports" && <FinReportsTab app={app} />}
     </div>
   );
@@ -3710,6 +3712,138 @@ function FinReportsTab({ app }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ── SOV Overview (company-wide) ──────────────────────────── */
+function SOVOverviewTab({ app }) {
+  const projects = app.projects.filter(p => p.status === "in-progress" || p.status === "completed");
+  const sovItems = app.sovItems || [];
+  const payApps = app.payApps || [];
+
+  const rows = projects.map(p => {
+    const items = sovItems.filter(s => String(s.projectId) === String(p.id));
+    const sovTotal = items.reduce((s, i) => s + (i.scheduledValue || 0), 0);
+    const apps = payApps.filter(pa => String(pa.projectId) === String(p.id));
+    const latestApp = apps.length > 0 ? apps.sort((a, b) => b.periodNumber - a.periodNumber)[0] : null;
+    let billedToDate = 0;
+    if (latestApp) {
+      items.forEach(sov => {
+        const line = latestApp.lines.find(l => l.sovItemId === sov.id);
+        if (line) billedToDate += Math.round(sov.scheduledValue * (line.currentPercent / 100));
+      });
+    }
+    return { project: p, sovTotal, lineCount: items.length, appCount: apps.length, billedToDate, hasSOV: items.length > 0 };
+  });
+
+  const withSOV = rows.filter(r => r.hasSOV);
+  const withoutSOV = rows.filter(r => !r.hasSOV);
+  const totalSOV = withSOV.reduce((s, r) => s + r.sovTotal, 0);
+  const totalBilled = withSOV.reduce((s, r) => s + r.billedToDate, 0);
+
+  return (
+    <div>
+      <div className="flex gap-16 mb-16 flex-wrap">
+        <div><span className="text-dim text-xs">PROJECTS WITH SOV</span><div className="font-mono text-amber">{withSOV.length}</div></div>
+        <div><span className="text-dim text-xs">TOTAL SOV VALUE</span><div className="font-mono">{app.fmt(totalSOV)}</div></div>
+        <div><span className="text-dim text-xs">TOTAL BILLED</span><div className="font-mono text-green">{app.fmt(totalBilled)}</div></div>
+        <div><span className="text-dim text-xs">REMAINING</span><div className="font-mono">{app.fmt(totalSOV - totalBilled)}</div></div>
+      </div>
+
+      {withSOV.length > 0 && (
+        <div className="mb-16">
+          <div className="text-xs fw-600 mb-8 text-amber">PROJECTS WITH SOV</div>
+          <table className="data-table">
+            <thead><tr><th>Project</th><th>Lines</th><th style={{textAlign:"right"}}>SOV Total</th><th style={{textAlign:"right"}}>Billed</th><th style={{textAlign:"right"}}>Remaining</th><th>Pay Apps</th></tr></thead>
+            <tbody>
+              {withSOV.map(r => (
+                <tr key={r.project.id} className="clickable" onClick={() => { app.setInitialProjTab("sov"); app.setModal({ type: "viewProject", data: r.project }); }}>
+                  <td>{r.project.name}</td>
+                  <td className="font-mono">{r.lineCount}</td>
+                  <td className="font-mono" style={{textAlign:"right"}}>{app.fmt(r.sovTotal)}</td>
+                  <td className="font-mono text-green" style={{textAlign:"right"}}>{app.fmt(r.billedToDate)}</td>
+                  <td className="font-mono" style={{textAlign:"right"}}>{app.fmt(r.sovTotal - r.billedToDate)}</td>
+                  <td className="font-mono">{r.appCount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {withoutSOV.length > 0 && (
+        <div>
+          <div className="text-xs fw-600 mb-8 text-dim">PROJECTS WITHOUT SOV ({withoutSOV.length})</div>
+          <div className="flex gap-4 flex-wrap">
+            {withoutSOV.map(r => (
+              <span key={r.project.id} className="badge badge-ghost clickable" onClick={() => { app.setInitialProjTab("sov"); app.setModal({ type: "viewProject", data: r.project }); }}>
+                {r.project.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Pay Apps Overview (company-wide) ─────────────────────── */
+function PayAppsOverviewTab({ app }) {
+  const payApps = (app.payApps || []).slice().sort((a, b) => {
+    if (a.periodDate < b.periodDate) return 1;
+    if (a.periodDate > b.periodDate) return -1;
+    return 0;
+  });
+  const sovItems = app.sovItems || [];
+
+  const statusBadge = (s) => s === "paid" ? "badge-green" : s === "submitted" ? "badge-amber" : "badge-ghost";
+  const pName = (pid) => app.projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
+
+  const totalPending = payApps.filter(p => p.status === "submitted").length;
+  const totalDraft = payApps.filter(p => p.status === "draft").length;
+
+  return (
+    <div>
+      <div className="flex gap-16 mb-16 flex-wrap">
+        <div><span className="text-dim text-xs">TOTAL PAY APPS</span><div className="font-mono text-amber">{payApps.length}</div></div>
+        <div><span className="text-dim text-xs">PENDING</span><div className="font-mono" style={{color: totalPending > 0 ? "var(--amber)" : "var(--text3)"}}>{totalPending}</div></div>
+        <div><span className="text-dim text-xs">DRAFTS</span><div className="font-mono">{totalDraft}</div></div>
+      </div>
+
+      {payApps.length === 0 ? (
+        <div className="text-center py-24 text-dim">No pay applications yet. Open a project's SOV tab to create one.</div>
+      ) : (
+        <table className="data-table">
+          <thead><tr><th>Project</th><th>App #</th><th>Period</th><th>Status</th><th style={{textAlign:"right"}}>This Period</th><th style={{textAlign:"right"}}>Cumulative</th><th>Notes</th></tr></thead>
+          <tbody>
+            {payApps.map(pa => {
+              const items = sovItems.filter(s => String(s.projectId) === String(pa.projectId));
+              let thisPeriod = 0, cumulative = 0;
+              items.forEach(sov => {
+                const line = pa.lines.find(l => l.sovItemId === sov.id);
+                if (line) {
+                  const prev = Math.round(sov.scheduledValue * (line.previousPercent / 100));
+                  const curr = Math.round(sov.scheduledValue * (line.currentPercent / 100));
+                  thisPeriod += curr - prev;
+                  cumulative += curr;
+                }
+              });
+              return (
+                <tr key={pa.id} className="clickable" onClick={() => { app.setInitialProjTab("sov"); const proj = app.projects.find(p => String(p.id) === String(pa.projectId)); if (proj) app.setModal({ type: "viewProject", data: proj }); }}>
+                  <td>{pName(pa.projectId)}</td>
+                  <td className="font-mono fw-600">#{pa.periodNumber}</td>
+                  <td>{pa.periodDate}</td>
+                  <td><span className={`badge ${statusBadge(pa.status)}`}>{pa.status}</span></td>
+                  <td className="font-mono text-green" style={{textAlign:"right"}}>{app.fmt(thisPeriod)}</td>
+                  <td className="font-mono" style={{textAlign:"right"}}>{app.fmt(cumulative)}</td>
+                  <td className="text-dim text-xs">{pa.notes || ""}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

@@ -959,3 +959,72 @@ export const initBudgets = {
     { phase: "ACT", costType: "material", budgetAmount: 684 },
   ],
 };
+
+// ── SEED: SOV (Schedule of Values) ──
+// SOV line items define the billing breakdown per project
+export const initSovItems = [
+  // Sprouts Farmers Market — $215,100 contract broken into scope lines
+  { id: "sov-1", projectId: 12, lineNumber: 1, description: "General Conditions", scheduledValue: 10755 },
+  { id: "sov-2", projectId: 12, lineNumber: 2, description: "Metal Framing", scheduledValue: 49473 },
+  { id: "sov-3", projectId: 12, lineNumber: 3, description: "Drywall", scheduledValue: 60228 },
+  { id: "sov-4", projectId: 12, lineNumber: 4, description: "ACT Ceilings", scheduledValue: 15057 },
+  { id: "sov-5", projectId: 12, lineNumber: 5, description: "Tape & Finish", scheduledValue: 36567 },
+  { id: "sov-6", projectId: 12, lineNumber: 6, description: "Doors & Hardware", scheduledValue: 21510 },
+  { id: "sov-7", projectId: 12, lineNumber: 7, description: "Mobilization / Cleanup", scheduledValue: 21510 },
+  // Escapology Sugar Land — $116,800 contract
+  { id: "sov-8", projectId: 17, lineNumber: 1, description: "Demo", scheduledValue: 11680 },
+  { id: "sov-9", projectId: 17, lineNumber: 2, description: "Metal Framing", scheduledValue: 26864 },
+  { id: "sov-10", projectId: 17, lineNumber: 3, description: "Drywall", scheduledValue: 32704 },
+  { id: "sov-11", projectId: 17, lineNumber: 4, description: "ACT Ceilings", scheduledValue: 8176 },
+  { id: "sov-12", projectId: 17, lineNumber: 5, description: "Tape & Finish", scheduledValue: 19856 },
+  { id: "sov-13", projectId: 17, lineNumber: 6, description: "Doors & Hardware", scheduledValue: 11680 },
+  { id: "sov-14", projectId: 17, lineNumber: 7, description: "Cleanup / Punch", scheduledValue: 5840 },
+];
+
+// ── SEED: PAY APPLICATIONS ──
+// Each pay app = one billing period snapshot with per-line % complete
+export const initPayApps = [
+  // Escapology — 3 billing periods (project is 85% complete)
+  {
+    id: "pa-1", projectId: 17, periodNumber: 1, periodDate: "2025-12-31",
+    status: "paid", retainageRate: 10, notes: "Initial mobilization + demo",
+    lines: [
+      { sovItemId: "sov-8", previousPercent: 0, currentPercent: 100, storedMaterial: 0 },
+      { sovItemId: "sov-9", previousPercent: 0, currentPercent: 25, storedMaterial: 0 },
+      { sovItemId: "sov-10", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
+      { sovItemId: "sov-11", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
+      { sovItemId: "sov-12", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
+      { sovItemId: "sov-13", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
+      { sovItemId: "sov-14", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
+    ],
+    createdAt: "2025-12-28T10:00:00Z", submittedAt: "2025-12-30T14:00:00Z",
+  },
+  {
+    id: "pa-2", projectId: 17, periodNumber: 2, periodDate: "2026-01-31",
+    status: "paid", retainageRate: 10, notes: "Framing + board started",
+    lines: [
+      { sovItemId: "sov-8", previousPercent: 100, currentPercent: 100, storedMaterial: 0 },
+      { sovItemId: "sov-9", previousPercent: 25, currentPercent: 75, storedMaterial: 0 },
+      { sovItemId: "sov-10", previousPercent: 0, currentPercent: 30, storedMaterial: 0 },
+      { sovItemId: "sov-11", previousPercent: 0, currentPercent: 10, storedMaterial: 0 },
+      { sovItemId: "sov-12", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
+      { sovItemId: "sov-13", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
+      { sovItemId: "sov-14", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
+    ],
+    createdAt: "2026-01-28T10:00:00Z", submittedAt: "2026-01-30T14:00:00Z",
+  },
+  {
+    id: "pa-3", projectId: 17, periodNumber: 3, periodDate: "2026-02-28",
+    status: "submitted", retainageRate: 10, notes: "Framing complete, board + tape in progress",
+    lines: [
+      { sovItemId: "sov-8", previousPercent: 100, currentPercent: 100, storedMaterial: 0 },
+      { sovItemId: "sov-9", previousPercent: 75, currentPercent: 100, storedMaterial: 0 },
+      { sovItemId: "sov-10", previousPercent: 30, currentPercent: 80, storedMaterial: 0 },
+      { sovItemId: "sov-11", previousPercent: 10, currentPercent: 60, storedMaterial: 0 },
+      { sovItemId: "sov-12", previousPercent: 0, currentPercent: 50, storedMaterial: 0 },
+      { sovItemId: "sov-13", previousPercent: 0, currentPercent: 40, storedMaterial: 0 },
+      { sovItemId: "sov-14", previousPercent: 0, currentPercent: 10, storedMaterial: 0 },
+    ],
+    createdAt: "2026-02-25T10:00:00Z", submittedAt: "2026-02-27T14:00:00Z",
+  },
+];

@@ -8,6 +8,7 @@ import { PhaseTracker, getDefaultPhases } from "./PhaseTracker";
 import { PerimeterMapModal } from "./PerimeterMapModal";
 import { PPE_ITEMS, PERMIT_TYPES } from "../data/jsaConstants";
 import { SUBMITTAL_CATEGORIES } from "../data/constants";
+import SOVEditor from "./SOVEditor";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · ModalHub — Bid/Project/Contact edit modals
@@ -487,7 +488,7 @@ const ModalHub = ({ type, data, app }) => {
     const totalBilled = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);
     const remaining = (draft.contract || 0) - totalBilled;
     const [projTab, setProjTab] = useState(app.initialProjTab || "overview");
-    const projTabs = ["overview", "notes", "change orders", "rfis & submittals", "areas", "punch", "log", "reports", "team", "financials", "closeout", "logistics", "settings"];
+    const projTabs = ["overview", "notes", "change orders", "rfis & submittals", "areas", "punch", "log", "reports", "team", "financials", "sov", "closeout", "logistics", "settings"];
     const [coFormOpen, setCoFormOpen] = useState(false);
     const [coEditId, setCoEditId] = useState(null);
     const [coExpandedId, setCoExpandedId] = useState(null);
@@ -1904,6 +1905,9 @@ const ModalHub = ({ type, data, app }) => {
               </div>
               );
             })()}
+
+            {/* ── SOV (Schedule of Values) ── */}
+            {projTab === "sov" && <SOVEditor project={draft} app={app} />}
 
             {/* ── Closeout ── */}
             {projTab === "closeout" && (() => {
