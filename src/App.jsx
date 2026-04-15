@@ -1210,7 +1210,11 @@ function App({ auth, onLogout }) {
         const queueSubs = dashActions.subsDueSoon;
         const queueCOs = dashActions.cosPending;
         const queueTm = dashActions.tmPending;
-        const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length + plansNeeded.length + queueRfis.length + queueSubs.length + queueCOs.length + queueTm.length + dashActions.followUps.length;
+        const queueBids = dashActions.bidsDueSoon;
+        const queueOverdueInv = dashActions.overdueInv;
+        const queueProfitAlerts = dashActions.profitAlerts;
+        const canAccessTab = (tab) => hasAccess(userRole, tab);
+        const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length + plansNeeded.length + queueRfis.length + queueSubs.length + queueCOs.length + queueTm.length + dashActions.followUps.length + queueBids.length + queueOverdueInv.length + queueProfitAlerts.length;
         if (queueTotal === 0) return (
           <div id="dash-actions" className="card dash-card bg-2" style={{ borderLeft: "3px solid var(--green)" }}>
             <div className="text-sm font-semi flex-center-gap-6">
@@ -1222,7 +1226,7 @@ function App({ auth, onLogout }) {
           <div id="dash-actions" className="card dash-card dash-card--amber bg-2">
             <div className="flex-between mb-8">
               <div className="text-sm font-semi flex-center-gap-6">
-                <Bell size={14} /> PM Action Queue
+                <Bell size={14} /> {userRole === "superintendent" ? t("Field Action Queue") : t("Action Queue")}
                 <span className="badge badge-amber fs-tab" style={{ padding: "var(--space-1) var(--space-2)" }}>{queueTotal}</span>
               </div>
             </div>
@@ -1264,7 +1268,7 @@ function App({ auth, onLogout }) {
                   </div>
                 </div>
               )}
-              {queueTm.length > 0 && (
+              {queueTm.length > 0 && canAccessTab("financials") && (
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
                     <Clock size={14} />
@@ -1337,7 +1341,7 @@ function App({ auth, onLogout }) {
                   </div>
                 </div>
               )}
-              {dashActions.followUps.length > 0 && (
+              {dashActions.followUps.length > 0 && canAccessTab("contacts") && (
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
                     <MessageSquare size={14} />
@@ -1346,6 +1350,43 @@ function App({ auth, onLogout }) {
                   <div className="flex-center-gap-8">
                     <span className="text-sm font-semi text-blue">{dashActions.followUps.length}</span>
                     <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("contacts")}>{t("View")}</button>
+                  </div>
+                </div>
+              )}
+              {queueBids.length > 0 && canAccessTab("bids") && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <Calendar size={14} />
+                    <span className="text-sm">{t("Bids Due This Week")}</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-red">{queueBids.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("bids")}>{t("Review")}</button>
+                  </div>
+                </div>
+              )}
+              {queueOverdueInv.length > 0 && canAccessTab("financials") && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <DollarSign size={14} />
+                    <span className="text-sm">{t("Overdue Invoices")}</span>
+                    <span className="badge badge-red fs-xs" style={{ padding: "0 5px" }}>{fmt(dashActions.overdueTotal)}</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-red">{queueOverdueInv.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("financials", { subTab: "invoices" })}>{t("Collect")}</button>
+                  </div>
+                </div>
+              )}
+              {queueProfitAlerts.length > 0 && canAccessTab("financials") && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <TrendingDown size={14} />
+                    <span className="text-sm">{t("Low Margin Projects")}</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-red">{queueProfitAlerts.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => { const el = document.getElementById("dash-profit"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }}>{t("Review")}</button>
                   </div>
                 </div>
               )}
@@ -1528,7 +1569,14 @@ function App({ auth, onLogout }) {
         const todayReports = (dailyReports || []).filter(r => r.submittedAt && r.submittedAt.startsWith(todayStr));
         const unreviewed = todayReports.filter(r => !r.reviewedBy).length;
         const hasActivity = todayProd.length > 0 || todayTm.length > 0 || todayPunch.length > 0 || todayProblems.length > 0 || todayReports.length > 0;
-        if (!hasActivity) return null;
+        if (!hasActivity) return (
+          <div className="card dash-card" style={{ borderLeft: "3px solid var(--text3)", opacity: 0.8 }}>
+            <div className="text-sm font-semi flex-center-gap-6 text-dim">
+              <ClipboardList size={15} /> {t("No field activity reported yet today")}
+            </div>
+            <div className="text-xs text-dim mt-4">{t("Production logs, T&M tickets, punch items, and daily reports will appear here as crews check in.")}</div>
+          </div>
+        );
         return (
           <div className="card dash-card dash-card--green">
             <div className="text-sm font-semi mb-8 flex-center-gap-6">
@@ -1543,7 +1591,7 @@ function App({ auth, onLogout }) {
                 </div>
               )}
               {todayTm.length > 0 && (
-                <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("financials", { subTab: "tm" })}>
+                <div className="activity-tile cursor-pointer" onClick={() => hasAccess(userRole, "financials") ? navigateWithContext("financials", { subTab: "tm" }) : navigateWithContext("reports")}>
                   <div className="text-lg font-bold text-amber">{todayTm.length}</div>
                   <div className="text-xs text-muted">{t("T&M tickets")}</div>
                   <div className="text-xs text-dim">{todayTm.length} {t("created today")}</div>
@@ -1588,7 +1636,7 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ── This Week Look-Ahead — crew + deliveries + events ── */}
-      {!["employee", "driver", "accounting"].includes(userRole) && (() => {
+      {!collapsedZones.field && !["employee", "driver", "accounting"].includes(userRole) && (() => {
         const today = new Date(); today.setHours(0,0,0,0);
         const weekDays = [];
         for (let i = 0; i < lookAheadDays; i++) {
@@ -1655,7 +1703,7 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ── Today's Manpower — cross-project headcount ── */}
-      {["owner", "admin", "pm", "superintendent", "foreman"].includes(userRole) && (() => {
+      {!collapsedZones.field && ["owner", "admin", "pm", "superintendent", "foreman"].includes(userRole) && (() => {
         const todayStr2 = new Date().toDateString();
         const todayKey2 = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
         // Group crew by project from today's clock-ins + schedule
