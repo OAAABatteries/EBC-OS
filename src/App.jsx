@@ -3508,8 +3508,9 @@ function App({ auth, onLogout }) {
               if ((p.progress || 0) < expected - 15) scheduleRisk = "behind";
               else if (now > endDate && (p.progress || 0) < 100) scheduleRisk = "overdue";
             }
-            // Billing health
-            const billedPct = (p.contract || 0) > 0 ? Math.round(((p.billed || 0) / p.contract) * 100) : 0;
+            // Billing health (use adjusted contract including approved COs)
+            const adjContract = getAdjustedContract(p, changeOrders);
+            const billedPct = adjContract > 0 ? Math.round(((p.billed || 0) / adjContract) * 100) : 0;
             const billingLag = (p.progress || 0) > 0 && billedPct < (p.progress || 0) - 20;
             // Overall health
             const issues = (scheduleRisk ? 1 : 0) + (overdueRfis > 0 ? 1 : 0) + (billingLag ? 1 : 0) + (pCOs.length > 0 ? 1 : 0);
@@ -3552,10 +3553,10 @@ function App({ auth, onLogout }) {
               {/* Name + GC */}
               <div className="card-title font-head fs-14 mb-2 lh-13">{p.name}</div>
               <div className="text-xs text-muted mb-4">{p.gc}</div>
-              {/* Contract + Billed (hide $0) */}
+              {/* Contract + Billed (hide $0) — shows adjusted value with approved COs */}
               <div className="flex-between text-sm mb-4">
-                {(p.contract || 0) > 0 ? (
-                  <span>Contract: <span className="font-mono text-amber">{fmt(p.contract)}</span></span>
+                {adjContract > 0 ? (
+                  <span>Contract: <span className="font-mono text-amber">{fmt(adjContract)}</span></span>
                 ) : <span className="text-xs text-muted text-italic">No contract value</span>}
                 {(p.billed || 0) > 0 && <span className="text-xs">Billed: <span className="font-mono">{fmt(p.billed)}</span></span>}
               </div>
