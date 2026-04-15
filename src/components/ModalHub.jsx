@@ -7,6 +7,7 @@ import { DecisionLogTab } from "../tabs/DecisionLogTab";
 import { PhaseTracker, getDefaultPhases } from "./PhaseTracker";
 import { PerimeterMapModal } from "./PerimeterMapModal";
 import { PPE_ITEMS, PERMIT_TYPES } from "../data/jsaConstants";
+import { SUBMITTAL_CATEGORIES } from "../data/constants";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · ModalHub — Bid/Project/Contact edit modals
@@ -572,6 +573,10 @@ const ModalHub = ({ type, data, app }) => {
     const [subFilter, setSubFilter] = useState("all");
     const subNextNum = projSubmittals.length > 0 ? Math.max(...projSubmittals.map(s => parseInt(String(s.number || "0").replace(/\D/g, "")) || 0)) + 1 : 1;
     const [subForm, setSubForm] = useState({ number: "", description: "", specSection: "", type: "product data", status: "not started", dateSubmitted: "", dateReturned: "", notes: "" });
+    const [libPickerOpen, setLibPickerOpen] = useState(false);
+    const [libSearch, setLibSearch] = useState("");
+    const [libCatFilter, setLibCatFilter] = useState("all");
+    const [libSelected, setLibSelected] = useState(new Set());
     const SUB_STATUSES = ["not started", "in progress", "submitted", "approved", "revise & resubmit", "rejected"];
     const SUB_TYPES = ["product data", "shop drawings", "samples", "test reports"];
     const SUB_STATUS_BADGE = (st) => {
@@ -1160,9 +1165,111 @@ const ModalHub = ({ type, data, app }) => {
                         <FileDown size={13} /> Generate Package
                       </button>
                     )}
+                    <button className="btn btn-ghost btn-sm" onClick={() => { setLibPickerOpen(!libPickerOpen); setLibSelected(new Set()); setLibSearch(""); setLibCatFilter("all"); }}>+ Add from Library</button>
                     <button className="btn btn-primary btn-sm" onClick={() => { resetSubForm(); setSubFormOpen(!subFormOpen); }}>+ Add Submittal</button>
                   </div>
                 </div>
+
+                {libPickerOpen && (() => {
+                  const lib = (app.submittalLibrary || []);
+                  const libFiltered = lib.filter(item => {
+                    if (libCatFilter !== "all" && item.category !== libCatFilter) return false;
+                    if (!libSearch) return true;
+                    const q = libSearch.toLowerCase();
+                    return item.itemName.toLowerCase().includes(q) || (item.manufacturer || "").toLowerCase().includes(q) || (item.specSection || "").toLowerCase().includes(q);
+                  });
+
+                  const toggleItem = (id) => {
+                    setLibSelected(prev => {
+                      const next = new Set(prev);
+                      next.has(id) ? next.delete(id) : next.add(id);
+                      return next;
+                    });
+                  };
+
+                  const addSelected = () => {
+                    if (libSelected.size === 0) return app.show("Select at least one item", "err");
+                    const selectedItems = lib.filter(i => libSelected.has(i.id));
+                    const today = new Date().toISOString().slice(0, 10);
+                    const gcContact = draft.contact || draft.gcSuperName || draft.gcPmName || "";
+
+                    const existingNums = projSubmittals.map(s => s.number || "");
+                    let nextNum = projSubmittals.length + 1;
+                    let prefix = "SUB-";
+                    if (existingNums.length > 0) {
+                      const last = existingNums[existingNums.length - 1];
+                      const match = last.match(/^([A-Za-z0-9]+-?)(\d+)$/);
+                      if (match) {
+                        prefix = match[1];
+                        nextNum = parseInt(match[2]) + 1;
+                      }
+                    }
+
+                    const newSubmittals = selectedItems.map((item, idx) => ({
+                      id: crypto.randomUUID(),
+                      projectId: draft.id,
+                      number: prefix + String(nextNum + idx).padStart(3, "0"),
+                      description: item.itemName,
+                      specSection: item.specSection || "",
+                      type: item.type || "product data",
+                      status: "submitted",
+                      dateSubmitted: today,
+                      dateReturned: "",
+                      distributedBy: gcContact,
+                      notes: `From library: ${item.manufacturer || ""} ${item.specModel || ""}`.trim(),
+                      created: new Date().toISOString(),
+                      libraryItemId: item.id,
+                    }));
+
+                    app.setSubmittals(prev => [...prev, ...newSubmittals]);
+
+                    const projName = draft.name || "Unknown";
+                    app.setSubmittalLibrary(prev => prev.map(i =>
+                      libSelected.has(i.id) ? { ...i, lastUsedDate: today, lastUsedProject: projName } : i
+                    ));
+
+                    app.show(`${newSubmittals.length} submittal${newSubmittals.length !== 1 ? "s" : ""} added from library`, "ok");
+                    setLibPickerOpen(false);
+                    setLibSelected(new Set());
+                  };
+
+                  return (
+                    <div className="card mb-12 p-sp4 bg-bg3" style={{ border: "1px solid var(--blue-dim)" }}>
+                      <div className="flex-between mb-8">
+                        <span className="font-semi text-sm">Pick from Submittal Library</span>
+                        <div className="flex gap-8">
+                          {libSelected.size > 0 && <button className="btn btn-primary btn-sm" onClick={addSelected}>Add Selected ({libSelected.size})</button>}
+                          <button className="btn btn-ghost btn-sm" onClick={() => setLibPickerOpen(false)}>Cancel</button>
+                        </div>
+                      </div>
+                      <div className="flex gap-8 mb-8 flex-wrap">
+                        <input className="form-input flex-1" placeholder="Search library..." value={libSearch} onChange={e => setLibSearch(e.target.value)} style={{ minWidth: 200, maxWidth: 300 }} />
+                        <select className="form-select" value={libCatFilter} onChange={e => setLibCatFilter(e.target.value)} style={{ width: 160 }}>
+                          <option value="all">All Categories</option>
+                          {SUBMITTAL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ maxHeight: 280, overflowY: "auto" }}>
+                        <table className="data-table">
+                          <thead><tr><th style={{ width: 30 }}></th><th>Item</th><th>Manufacturer</th><th style={{ width: 80 }}>Spec</th><th style={{ width: 110 }}>Category</th><th style={{ width: 80 }}>Status</th></tr></thead>
+                          <tbody>
+                            {libFiltered.length === 0 && <tr><td colSpan={6} className="text-center text-dim" style={{ padding: "var(--space-4)" }}>No items match</td></tr>}
+                            {libFiltered.map(item => (
+                              <tr key={item.id} className="cursor-pointer" onClick={() => toggleItem(item.id)} style={{ background: libSelected.has(item.id) ? "rgba(59,130,246,0.1)" : undefined }}>
+                                <td><input type="checkbox" checked={libSelected.has(item.id)} onChange={() => toggleItem(item.id)} /></td>
+                                <td className="font-semi text-sm">{item.itemName}</td>
+                                <td className="text-xs">{item.manufacturer || "\u2014"}</td>
+                                <td className="font-mono text-xs">{item.specSection || "\u2014"}</td>
+                                <td className="text-xs">{item.category || "\u2014"}</td>
+                                <td><span className={`badge fs-xs capitalize ${item.approvalStatus === "approved" ? "badge-green" : item.approvalStatus === "pending" ? "badge-amber" : "badge-ghost"}`}>{item.approvalStatus}</span></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Quick Filters */}
                 <div className="flex gap-4 mb-8 flex-wrap">
