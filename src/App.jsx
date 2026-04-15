@@ -767,20 +767,22 @@ function App({ auth, onLogout }) {
   // Labor % = weighted average of (burdened labor cost / contract) across in-progress projects with time data
   const laborUtil = useMemo(() => {
     const burden = companySettings?.laborBurdenMultiplier || 1.35;
-    const activeProj = projects.filter(p => p.status === "in-progress" && (p.contract || 0) > 0);
+    const activeProj = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
     if (activeProj.length === 0) return null;
     let totalLabor = 0;
     let totalContract = 0;
     for (const p of activeProj) {
+      const adjContract = getAdjustedContract(p, changeOrders);
+      if (adjContract <= 0) continue;
       const lc = computeProjectLaborCost(p.id, p.name, timeEntries, employees, burden);
       if (lc.burdenedCost > 0) {
         totalLabor += lc.burdenedCost;
-        totalContract += p.contract;
+        totalContract += adjContract;
       }
     }
     if (totalContract === 0) return null;
     return Math.round((totalLabor / totalContract) * 100);
-  }, [projects, timeEntries, employees, companySettings]);
+  }, [projects, timeEntries, employees, companySettings, changeOrders]);
 
   // ── filtered bids ──
   const filteredBids = useMemo(() => {
@@ -934,20 +936,24 @@ function App({ auth, onLogout }) {
   }, [theme]);
 
   // ── role-specific dashboard config ──
+  // showKPIs = financial KPIs, profit analysis, KPI grid
+  // showCharts = win rate, receivables aging charts
+  // showBrief = quick brief section
+  // showField = workforce health, drawing revisions (field oversight data)
   const ROLE_DASH = {
-    owner:          { subtitle: "Company Overview",       showKPIs: true,  showCharts: true,  showBrief: true  },
-    admin:          { subtitle: "Company Overview",       showKPIs: true,  showCharts: true,  showBrief: true  },
-    pm:             { subtitle: "Projects & Bids",        showKPIs: true,  showCharts: true,  showBrief: true  },
-    superintendent: { subtitle: "Field Oversight",        showKPIs: false, showCharts: false, showBrief: true  },
-    estimator:      { subtitle: "Estimating & Bids",      showKPIs: true,  showCharts: true,  showBrief: true  },
-    office_admin:   { subtitle: "Office Operations",      showKPIs: true,  showCharts: false, showBrief: true  },
-    accounting:     { subtitle: "Financials & Payroll",   showKPIs: true,  showCharts: true,  showBrief: true  },
-    safety:         { subtitle: "Safety & Compliance",    showKPIs: false, showCharts: false, showBrief: true  },
-    foreman:        { subtitle: "Field Operations",       showKPIs: false, showCharts: false, showBrief: true  },
-    driver:         { subtitle: "Deliveries",             showKPIs: false, showCharts: false, showBrief: false },
-    employee:       { subtitle: "My Work",                showKPIs: false, showCharts: false, showBrief: false },
+    owner:          { subtitle: "Company Overview",       showKPIs: true,  showCharts: true,  showBrief: true,  showField: true  },
+    admin:          { subtitle: "Company Overview",       showKPIs: true,  showCharts: true,  showBrief: true,  showField: true  },
+    pm:             { subtitle: "Projects & Bids",        showKPIs: true,  showCharts: true,  showBrief: true,  showField: true  },
+    superintendent: { subtitle: "Field Oversight",        showKPIs: false, showCharts: false, showBrief: true,  showField: true  },
+    estimator:      { subtitle: "Estimating & Bids",      showKPIs: true,  showCharts: true,  showBrief: true,  showField: false },
+    office_admin:   { subtitle: "Office Operations",      showKPIs: true,  showCharts: false, showBrief: true,  showField: false },
+    accounting:     { subtitle: "Financials & Payroll",   showKPIs: true,  showCharts: true,  showBrief: true,  showField: false },
+    safety:         { subtitle: "Safety & Compliance",    showKPIs: false, showCharts: false, showBrief: true,  showField: true  },
+    foreman:        { subtitle: "Field Operations",       showKPIs: false, showCharts: false, showBrief: true,  showField: true  },
+    driver:         { subtitle: "Deliveries",             showKPIs: false, showCharts: false, showBrief: false, showField: false },
+    employee:       { subtitle: "My Work",                showKPIs: false, showCharts: false, showBrief: false, showField: false },
   };
-  const dashCfg = ROLE_DASH[userRole] || ROLE_DASH.owner;
+  const dashCfg = ROLE_DASH[userRole] || ROLE_DASH.employee;
 
   // ── Dashboard computed action items ──
   const dashActions = useMemo(() => {
@@ -990,7 +996,8 @@ function App({ auth, onLogout }) {
 
     // Projects with no invoice in last 30 days (active projects only)
     // Suppress entirely when no invoices exist (no data to judge from)
-    const projNoBilling = invoices.length === 0 ? [] : projects.filter(p => (p.progress || 0) < 100).filter(p => {
+    // Canonical filter — matches Financial KPI, Brief, KPI Grid
+    const projNoBilling = invoices.length === 0 ? [] : projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active")).filter(p => {
       const projInvs = invoices.filter(i => String(i.projectId) === String(p.id));
       if (projInvs.length === 0) return true;
       const latest = Math.max(...projInvs.map(i => parseDate(i.date)?.getTime() || 0));
@@ -1082,9 +1089,36 @@ function App({ auth, onLogout }) {
         </div>
       </div>
 
+      {/* ── Section Jump Navigation — sticky pill bar ── */}
+      {(() => {
+        const JUMP_SECTIONS = [
+          { id: "dash-brief", label: "Brief", show: dashCfg.showBrief },
+          { id: "dash-actions", label: "Actions", show: ["owner","admin","pm","superintendent"].includes(userRole) },
+          { id: "dash-financial", label: "Financial", show: dashCfg.showKPIs },
+          { id: "dash-field", label: "Field", show: ["owner","admin","pm","superintendent","foreman","safety"].includes(userRole) },
+          { id: "dash-workforce", label: "Crew", show: dashCfg.showKPIs || dashCfg.showField },
+          { id: "dash-projects", label: "Projects", show: dashCfg.showKPIs },
+          { id: "profit-analysis-section", label: "Profit", show: dashCfg.showKPIs },
+          { id: "dash-cash", label: "Cash", show: userRole === "owner" || userRole === "admin" },
+          { id: "dash-gc", label: "GC", show: dashCfg.showKPIs },
+        ].filter(s => s.show);
+        if (JUMP_SECTIONS.length < 3) return null;
+        return (
+          <div className="flex gap-6 mb-sp4 flex-wrap" style={{ position: "sticky", top: 0, zIndex: 10, background: "var(--bg1)", padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
+            {JUMP_SECTIONS.map(s => (
+              <button key={s.id} className="btn btn-ghost btn-sm fs-xs"
+                style={{ padding: "var(--space-1) var(--space-3)", borderRadius: "var(--radius-control)", minHeight: 0 }}
+                onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        );
+      })()}
+
       {/* Quick Brief — auto-populated from live data */}
       {dashCfg.showBrief && briefResult && (
-        <div className="card mb-sp4 p-sp5 overflow-auto" style={{ maxHeight: 450 }}>
+        <div id="dash-brief" className="card mb-sp4 p-sp5 overflow-auto" style={{ maxHeight: 450 }}>
           <div className="flex-between mb-12">
             <div>
               <div className="text-xs" style={{ color: "var(--text3)", letterSpacing: "1px", textTransform: "uppercase" }}>{t("Quick Brief")}</div>
@@ -1157,8 +1191,8 @@ function App({ auth, onLogout }) {
         </div>
       )}
 
-      {/* ── PM Action Queue — promoted to position 2 (was buried at position 11) ── */}
-      {dashCfg.showKPIs && (() => {
+      {/* ── PM Action Queue — promoted to position 2; gated to PM/Owner/Admin/Super only ── */}
+      {["owner", "admin", "pm", "superintendent"].includes(userRole) && (() => {
         const pendingMat = (materialRequests || []).filter(r => r.status === "requested");
         const urgentMat = pendingMat.filter(r => r.urgency === "urgent" || r.urgency === "emergency");
         const awaitingConfirm = (materialRequests || []).filter(r => r.status === "delivered" && !r.confirmedBy);
@@ -1171,14 +1205,14 @@ function App({ auth, onLogout }) {
         const queueTm = dashActions.tmPending;
         const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length + plansNeeded.length + queueRfis.length + queueSubs.length + queueCOs.length + queueTm.length;
         if (queueTotal === 0) return (
-          <div className="card dash-card bg-2" style={{ borderLeft: "3px solid var(--green)" }}>
+          <div id="dash-actions" className="card dash-card bg-2" style={{ borderLeft: "3px solid var(--green)" }}>
             <div className="text-sm font-semi flex-center-gap-6">
               <span style={{ color: "var(--green)" }}>&#10003;</span> {t("All Clear")} — {t("nothing needs your attention right now")}
             </div>
           </div>
         );
         return (
-          <div className="card dash-card dash-card--amber bg-2">
+          <div id="dash-actions" className="card dash-card dash-card--amber bg-2">
             <div className="flex-between mb-8">
               <div className="text-sm font-semi flex-center-gap-6">
                 <span>&#9889;</span> PM Action Queue
@@ -1401,17 +1435,18 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ── ZONE: Financial Health ── */}
-      {dashCfg.showKPIs && <div className="text-xs text-uppercase text-muted mt-sp4 mb-sp2" style={{ letterSpacing: "1px", borderBottom: "1px solid var(--border)", paddingBottom: "var(--space-2)" }}>{t("Financial Health")}</div>}
+      {dashCfg.showKPIs && <div id="dash-financial" className="text-xs text-uppercase text-muted mt-sp4 mb-sp2" style={{ letterSpacing: "1px", borderBottom: "1px solid var(--border)", paddingBottom: "var(--space-2)" }}>{t("Financial Health")}</div>}
 
       {/* ── Financial KPI Summary — PM's money-at-a-glance ── */}
       {dashCfg.showKPIs && (() => {
-        const activeProjects = projects.filter(p => !p.deletedAt && p.status !== "completed");
+        // Canonical "active project" filter — matches Brief, KPI Grid, GC Relationships
+        const activeProjects = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
         const adjustedContract = activeProjects.reduce((s, p) => s + getAdjustedContract(p, changeOrders), 0);
         const activeIds = new Set(activeProjects.map(p => String(p.id)));
         const totalBilled = invoices.filter(inv => !inv.deletedAt && activeIds.has(String(inv.projectId))).reduce((s, inv) => s + (Number(inv.amount) || 0), 0);
         const totalPendingCOs = changeOrders.filter(co => !co.deletedAt && co.status === "pending").reduce((s, co) => s + (Math.abs(Number(co.amount)) || 0), 0);
         const remaining = adjustedContract - totalBilled;
-        const fmt = (n) => "$" + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
+        const fmt = (n) => (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
         // Trend: compare this month billing vs last month
         const now = new Date();
         const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -1419,7 +1454,8 @@ function App({ auth, onLogout }) {
         const lastMonth = `${lastM.getFullYear()}-${String(lastM.getMonth() + 1).padStart(2, "0")}`;
         const billedThisMonth = invoices.filter(inv => !inv.deletedAt && activeIds.has(String(inv.projectId)) && (inv.date || inv.createdAt || "").startsWith(thisMonth)).reduce((s, inv) => s + (Number(inv.amount) || 0), 0);
         const billedLastMonth = invoices.filter(inv => !inv.deletedAt && activeIds.has(String(inv.projectId)) && (inv.date || inv.createdAt || "").startsWith(lastMonth)).reduce((s, inv) => s + (Number(inv.amount) || 0), 0);
-        const billingTrend = billedLastMonth > 0 ? Math.round(((billedThisMonth - billedLastMonth) / billedLastMonth) * 100) : null;
+        // Suppress trend in first 5 days of month — billedThisMonth is near $0, always shows -100%
+        const billingTrend = billedLastMonth > 0 && now.getDate() > 5 ? Math.round(((billedThisMonth - billedLastMonth) / billedLastMonth) * 100) : null;
         return (
           <div className="kpi-grid mb-sp4">
             <div className="kpi-card cursor-pointer" onClick={() => navigateWithContext("projects")}>
@@ -1449,12 +1485,12 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ═══ ZONE: Field & Operations ═══ */}
-      <div className="zone-divider" style={{ marginTop: "var(--space-6)", marginBottom: "var(--space-3)" }}>
+      <div id="dash-field" className="zone-divider" style={{ marginTop: "var(--space-6)", marginBottom: "var(--space-3)" }}>
         <div className="text-xs text-muted text-uppercase fw-700" style={{ letterSpacing: "0.8px" }}>{t("Field & Operations")}</div>
       </div>
 
       {/* ── Today's Field Activity Summary — aggregates foreman-entered data ── */}
-      {(() => {
+      {["owner", "admin", "pm", "superintendent", "foreman", "safety"].includes(userRole) && (() => {
         const todayStr = new Date().toISOString().slice(0, 10);
         const todayProd = (productionLogs || []).filter(pl => pl.date === todayStr || (pl.createdAt && pl.createdAt.startsWith(todayStr)));
         const todayTm = (tmTickets || []).filter(t => t.createdAt && t.createdAt.startsWith(todayStr));
@@ -1465,11 +1501,7 @@ function App({ auth, onLogout }) {
         const todayReports = (dailyReports || []).filter(r => r.submittedAt && r.submittedAt.startsWith(todayStr));
         const unreviewed = todayReports.filter(r => !r.reviewedBy).length;
         const hasActivity = todayProd.length > 0 || todayTm.length > 0 || todayPunch.length > 0 || todayProblems.length > 0 || todayReports.length > 0;
-        if (!hasActivity) return (
-          <div className="card dash-card" style={{ opacity: 0.6 }}>
-            <div className="text-sm text-muted flex-center-gap-6"><ClipboardList size={14} /> {t("No field activity reported today")}</div>
-          </div>
-        );
+        if (!hasActivity) return null;
         return (
           <div className="card dash-card dash-card--green">
             <div className="text-sm font-semi mb-8 flex-center-gap-6">
@@ -1477,34 +1509,34 @@ function App({ auth, onLogout }) {
             </div>
             <div className="grid-auto-180">
               {todayProd.length > 0 && (
-                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("reports")}>
+                <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("reports", { subTab: "production" })}>
                   <div className="text-lg font-bold text-green">{todayProd.length}</div>
                   <div className="text-xs text-muted">{t("Production logged")}</div>
                   <div className="text-xs text-dim">{todayProd.length} {t("entries today")}</div>
                 </div>
               )}
               {todayTm.length > 0 && (
-                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("financials")}>
+                <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("financials", { subTab: "tm" })}>
                   <div className="text-lg font-bold text-amber">{todayTm.length}</div>
                   <div className="text-xs text-muted">{t("T&M tickets")}</div>
                   <div className="text-xs text-dim">{todayTm.length} {t("created today")}</div>
                 </div>
               )}
               {(punchCreated > 0 || punchResolved > 0) && (
-                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("projects")}>
+                <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("projects", { subTab: "punch" })}>
                   <div className="text-lg font-bold text-red">{punchCreated}</div>
                   <div className="text-xs text-muted">{t("Punch items")}</div>
                   <div className="text-xs text-dim">{punchResolved} {t("resolved today")}</div>
                 </div>
               )}
               {todayProblems.length > 0 && (
-                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("reports")}>
+                <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("reports", { subTab: "problems" })}>
                   <div className="text-lg font-bold text-red">{todayProblems.length}</div>
                   <div className="text-xs text-muted">{t("Problems reported")}</div>
                 </div>
               )}
               {todayReports.length > 0 && (
-                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("reports")}>
+                <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("reports")}>
                   <div className="text-lg font-bold text-blue">{todayReports.length}</div>
                   <div className="text-xs text-muted">{t("Daily reports")}</div>
                   {unreviewed > 0 && <div className="text-xs text-amber fw-700">{unreviewed} {t("un-reviewed")}</div>}
@@ -1529,7 +1561,7 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ── This Week Look-Ahead — crew + deliveries + events ── */}
-      {(() => {
+      {!["employee", "driver", "accounting"].includes(userRole) && (() => {
         const today = new Date(); today.setHours(0,0,0,0);
         const weekDays = [];
         for (let i = 0; i < lookAheadDays; i++) {
@@ -1558,11 +1590,7 @@ function App({ auth, onLogout }) {
 
         // Only show if we have some data
         const hasData = days.some(d => d.crew > 0 || d.deliveries > 0 || d.events.length > 0);
-        if (!hasData) return (
-          <div className="card dash-card" style={{ opacity: 0.6 }}>
-            <div className="text-sm text-muted flex-center-gap-6"><Calendar size={14} /> {t("No crew, deliveries, or events scheduled this week")}</div>
-          </div>
-        );
+        if (!hasData) return null;
 
         return (
           <div className="card dash-card dash-card--amber">
@@ -1576,11 +1604,11 @@ function App({ auth, onLogout }) {
                   ))}
                 </span>
               </span>
-              <button className="btn btn-ghost btn-sm" onClick={() => handleTabClick("calendar")}>{t("Full Calendar")}</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => navigateWithContext("calendar")}>{t("Full Calendar")}</button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(weekDays.length, 7)}, 1fr)`, gap: "var(--space-1)", fontSize: "var(--text-tab)" }}>
               {days.map((d, i) => (
-                <div key={i} style={{ padding: "var(--space-2) var(--space-1)", borderRadius: "var(--radius-control)", background: i === 0 ? "rgba(16,185,129,0.08)" : "var(--bg3)", textAlign: "center", border: i === 0 ? "1px solid var(--green)" : "1px solid transparent", cursor: "pointer" }} onClick={() => handleTabClick("calendar")}>
+                <div key={i} style={{ padding: "var(--space-2) var(--space-1)", borderRadius: "var(--radius-control)", background: i === 0 ? "rgba(16,185,129,0.08)" : "var(--bg3)", textAlign: "center", border: i === 0 ? "1px solid var(--green)" : "1px solid transparent", cursor: "pointer" }} onClick={() => navigateWithContext("calendar")}>
                   <div style={{ fontWeight: "var(--weight-bold)", fontSize: "var(--text-xs)", color: i === 0 ? "var(--green)" : "var(--text3)", marginBottom: "var(--space-1)" }}>
                     {d.label.split(",")[0]}
                   </div>
@@ -1600,7 +1628,7 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ── Today's Manpower — cross-project headcount ── */}
-      {(() => {
+      {["owner", "admin", "pm", "superintendent", "foreman"].includes(userRole) && (() => {
         const todayStr2 = new Date().toDateString();
         const todayKey2 = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
         // Group crew by project from today's clock-ins + schedule
@@ -1618,11 +1646,7 @@ function App({ auth, onLogout }) {
           projManpower[pid].crew.add(s.employeeId);
         });
         const entries = Object.entries(projManpower);
-        if (entries.length === 0) return (
-          <div className="card dash-card" style={{ opacity: 0.6 }}>
-            <div className="text-sm text-muted flex-center-gap-6"><HardHat size={14} /> {t("No crew on site today")}</div>
-          </div>
-        );
+        if (entries.length === 0) return null;
         const totalCrew = new Set(entries.flatMap(([, v]) => [...v.crew])).size;
         return (
           <div className="card dash-card dash-card--blue">
@@ -1645,7 +1669,7 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ── Today's Sites — quick directions / clock-in ── */}
-      {(() => {
+      {["owner", "admin", "pm", "superintendent", "foreman", "employee", "driver"].includes(userRole) && (() => {
         const mySites = projects.filter(p => p.status === "in-progress" && p.lat && p.lng);
         if (mySites.length === 0) return null;
         const PROXIMITY_M = 200;
@@ -1674,7 +1698,7 @@ function App({ auth, onLogout }) {
                     </div>
                     {isOnSite ? (
                       <button className="btn btn-primary btn-sm ws-nowrap flex-shrink-0"
-                        onClick={() => handleTabClick("timeclock")}>
+                        onClick={() => navigateWithContext("timeclock")}>
                         Clock In
                       </button>
                     ) : (
@@ -1689,7 +1713,7 @@ function App({ auth, onLogout }) {
             </div>
             {mySites.length > 6 && (
               <div className="text-xs text-muted mt-6 cursor-pointer text-blue"
-                onClick={() => handleTabClick("projects")}>View all {mySites.length} sites →</div>
+                onClick={() => navigateWithContext("projects")}>View all {mySites.length} sites →</div>
             )}
           </div>
         );
@@ -1712,11 +1736,7 @@ function App({ auth, onLogout }) {
           return exp && exp <= now2;
         });
         const safetyCount = openIncidents.length + expiringCerts.length + expiredCerts.length;
-        if (safetyCount === 0 && recentTalks.length === 0) return (
-          <div className="card dash-card" style={{ borderLeft: "3px solid var(--green)", opacity: 0.6 }}>
-            <div className="text-sm text-muted flex-center-gap-6">&#128737;&#65039; {t("No safety issues — all clear")}</div>
-          </div>
-        );
+        if (safetyCount === 0 && recentTalks.length === 0) return null;
         return (
           <div className="card dash-card" style={{ borderLeft: expiredCerts.length > 0 || openIncidents.length > 0 ? "3px solid var(--red)" : "3px solid var(--green)" }}>
             <div className="text-sm font-semi mb-8 flex-center-gap-6">
@@ -1725,12 +1745,12 @@ function App({ auth, onLogout }) {
             </div>
             <div className="grid-auto-180">
               {openIncidents.length > 0 && (
-                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("safety")}>
+                <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("safety")}>
                   <div className="text-lg font-bold text-red">{openIncidents.length}</div>
                   <div className="text-xs text-muted">{t("Open Incidents")}</div>
                 </div>
               )}
-              <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("jsa")}>
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("jsa")}>
                 <div className="text-lg font-bold text-green">{recentTalks.length}</div>
                 <div className="text-xs text-muted">{t("Toolbox Talks (7d)")}</div>
               </div>
@@ -1752,7 +1772,7 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ── Crew & Workforce Health ── */}
-      {dashCfg.showKPIs && (() => {
+      {(dashCfg.showKPIs || dashCfg.showField) && (() => {
         const now3 = new Date();
         const activeEmps = (employees || []).filter(e => e.status !== "terminated" && e.status !== "inactive" && !e.deletedAt);
         const todayKey3 = ['sun','mon','tue','wed','thu','fri','sat'][now3.getDay()];
@@ -1769,32 +1789,28 @@ function App({ auth, onLogout }) {
           const exp = c.expirationDate ? new Date(c.expirationDate) : null;
           return exp && exp > now3 && (exp - now3) < 30 * 86400000;
         });
-        if (activeEmps.length === 0) return (
-          <div className="card dash-card" style={{ opacity: 0.6 }}>
-            <div className="text-sm text-muted">No active employees</div>
-          </div>
-        );
+        if (activeEmps.length === 0) return null;
         return (
-          <div className="card dash-card dash-card--blue">
+          <div id="dash-workforce" className="card dash-card dash-card--blue">
             <div className="text-sm font-semi mb-8 flex-center-gap-6">
               👷 {t("Workforce Health")}
               {conflicts > 0 && <span className="badge badge-red fs-xs">{conflicts} {t("conflict")}{conflicts > 1 ? "s" : ""}</span>}
             </div>
             <div className="grid-auto-180">
-              <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("timeclock")}>
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("timeclock")}>
                 <div className="text-lg font-bold text-blue">{activeEmps.length}</div>
                 <div className="text-xs text-muted">{t("Active Employees")}</div>
               </div>
-              <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("schedule")}>
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("schedule")}>
                 <div className="text-lg font-bold text-green">{scheduledToday}</div>
                 <div className="text-xs text-muted">{t("Scheduled Today")}</div>
               </div>
-              <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("timeclock")}>
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("timeclock")}>
                 <div className="text-lg font-bold" style={{ color: clockedIn > 0 ? "var(--green)" : "var(--text3)" }}>{clockedIn}</div>
                 <div className="text-xs text-muted">{t("Clocked In")}</div>
               </div>
               {conflicts > 0 && (
-                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("schedule")}>
+                <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("schedule")}>
                   <div className="text-lg font-bold text-red">{conflicts}</div>
                   <div className="text-xs text-muted">{t("Double-Booked")}</div>
                 </div>
@@ -1811,7 +1827,7 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ── Drawing / Plan Revision Alerts ── */}
-      {dashCfg.showKPIs && (() => {
+      {(dashCfg.showKPIs || dashCfg.showField) && (() => {
         // Check for recently revised drawings (plans uploaded/revised in last 7 days)
         const now4 = new Date();
         const recentRevisions = [];
@@ -1870,11 +1886,12 @@ function App({ auth, onLogout }) {
 
       {/* ── 7.6 Multi-project PM KPI Grid ── */}
       {dashCfg.showKPIs && (() => {
-        const activeProjs = (projects || []).filter(p => p.status === "in-progress" || p.status === "active");
+        // Canonical filter — matches Financial KPI, Brief, GC Relationships
+        const activeProjs = (projects || []).filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
         if (activeProjs.length < 2) return null;
         const fmt = (v) => typeof v === "number" ? (v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v.toFixed(0)}`) : "$0";
         return (
-          <div className="card mb-12" style={{ padding: "var(--space-3) var(--space-4)" }}>
+          <div id="dash-projects" className="card mb-12" style={{ padding: "var(--space-3) var(--space-4)" }}>
             <div className="text-sm font-semi mb-8" style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
               Multi-Project KPIs
               <span className="badge badge-blue fs-xs" style={{ padding: "0 6px" }}>{activeProjs.length}</span>
@@ -2046,13 +2063,16 @@ function App({ auth, onLogout }) {
         const weekAgo = new Date(now - 7 * 86400000);
         const recentEntries = timeEntries.filter(te => te.clockIn && new Date(te.clockIn) >= weekAgo);
         const weeklyHours = recentEntries.reduce((s, te) => s + (te.totalHours || 0), 0);
-        const avgRate = employees.length > 0 ? employees.reduce((s, e) => s + (e.payRate || 25), 0) / employees.length : 25;
+        // Average only field employees (those with time entries) — office staff inflate the average
+        const fieldEmpIds = new Set(recentEntries.map(te => String(te.employeeId)));
+        const fieldEmps = employees.filter(e => fieldEmpIds.has(String(e.id)));
+        const avgRate = fieldEmps.length > 0 ? fieldEmps.reduce((s, e) => s + (e.payRate || 25), 0) / fieldEmps.length : 25;
         const weeklyPayroll = Math.round(weeklyHours * avgRate * burden);
         const totalAR = cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90;
         const coverageWeeks = weeklyPayroll > 0 ? Math.round(totalAR / weeklyPayroll * 10) / 10 : null;
         if (weeklyPayroll === 0 && totalAR === 0) return null;
         return (
-          <div className="card dash-card mt-8">
+          <div id="dash-cash" className="card dash-card mt-8">
             <div className="text-sm font-semi mb-8 flex-center-gap-6">
               <DollarSign size={15} /> {t("Cash Position")}
             </div>
@@ -2105,7 +2125,7 @@ function App({ auth, onLogout }) {
                   { name: "31-60d", value: cashFlow.net30 },
                   { name: "61-90d", value: cashFlow.net60 },
                   { name: "90+d", value: cashFlow.net90 },
-                ]} margin={{ left: 0, right: 10 }} onClick={() => handleTabClick("financials")} style={{ cursor: "pointer" }}>
+                ]} margin={{ left: 0, right: 10 }} onClick={() => navigateWithContext("financials")} style={{ cursor: "pointer" }}>
                   <XAxis dataKey="name" tick={{ fill: "var(--text2)", fontSize: "var(--text-tab)" }} />
                   <YAxis tick={{ fill: "var(--text2)", fontSize: "var(--text-tab)" }} tickFormatter={v => fmtK(v)} />
                   <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text)" }} formatter={v => fmt(v)} />
@@ -2127,7 +2147,8 @@ function App({ auth, onLogout }) {
       {/* ── GC Relationship Health — active projects + open items per GC ── */}
       {dashCfg.showKPIs && (() => {
         const activeByGc = {};
-        projects.filter(p => p.status === "in-progress" && p.gc).forEach(p => {
+        // Canonical filter — matches Financial KPI, Brief, KPI Grid
+        projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active") && p.gc).forEach(p => {
           if (!activeByGc[p.gc]) activeByGc[p.gc] = { gc: p.gc, projects: 0, openRfis: 0, openSubs: 0, backlog: 0 };
           activeByGc[p.gc].projects++;
           activeByGc[p.gc].backlog += getAdjustedContract(p, changeOrders);
@@ -2143,7 +2164,7 @@ function App({ auth, onLogout }) {
         const gcList = Object.values(activeByGc).sort((a, b) => b.backlog - a.backlog);
         if (gcList.length === 0) return null;
         return (
-          <div className="card dash-card mt-16">
+          <div id="dash-gc" className="card dash-card mt-16">
             <div className="text-sm font-semi mb-8 flex-center-gap-6">
               <Building2 size={15} /> {t("GC Relationships")}
               <span className="text-xs text-muted fw-400">{gcList.length} active</span>
@@ -2174,44 +2195,25 @@ function App({ auth, onLogout }) {
         );
       })()}
 
-      {/* ── Section 5: Follow-ups & Recent Activity side by side ── */}
-      <div className="flex gap-16 mt-16 flex-wrap">
-        {dashActions.followUps.length > 0 && (
-          <div className="card chart-card-half">
-            <div className="text-sm font-semi mb-8">Follow-ups</div>
-            {dashActions.followUps.slice(0, 5).map((c, i) => (
-              <div key={i} className="flex gap-8 log-item--clickable"
-                onClick={() => navigateWithContext("contacts", { search: c.contact || "" })}>
-                <div className="log-accent-bar bg-amber" />
-                <div className="flex-1">
-                  <div className="flex-between">
-                    <span className="text-sm font-semi">{c.contact}</span>
-                    <span className="text-xs text-dim">{c.time}</span>
-                  </div>
-                  <div className="text-xs text-muted">{c.next}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="card chart-card-half">
-          <div className="text-sm font-semi mb-8">Recent Activity</div>
-          {callLog.slice(0, 5).map(c => (
-            <div key={c.id} className="flex gap-8 log-item--clickable"
+      {/* ── Follow-ups — PM/Owner/Admin only (CRM data, not field-relevant) ── */}
+      {["owner", "admin", "pm"].includes(userRole) && dashActions.followUps.length > 0 && (
+        <div className="card dash-card mt-16">
+          <div className="text-sm font-semi mb-8">Follow-ups</div>
+          {dashActions.followUps.slice(0, 5).map((c, i) => (
+            <div key={i} className="flex gap-8 log-item--clickable"
               onClick={() => navigateWithContext("contacts", { search: c.contact || "" })}>
-              <div className="log-accent-bar bg-blue" />
+              <div className="log-accent-bar bg-amber" />
               <div className="flex-1">
                 <div className="flex-between">
                   <span className="text-sm font-semi">{c.contact}</span>
                   <span className="text-xs text-dim">{c.time}</span>
                 </div>
-                <div className="text-xs text-muted">{c.note}</div>
+                <div className="text-xs text-muted">{c.next}</div>
               </div>
             </div>
           ))}
-          {callLog.length === 0 && <div className="text-sm text-muted p-8">No recent activity</div>}
         </div>
-      </div>
+      )}
 
       {/* Weekly Digest removed — called banned external AI API (generateWeeklyDigest).
          Quick Brief already serves the same purpose using local computation. */}
@@ -3785,7 +3787,7 @@ function App({ auth, onLogout }) {
       const margin = Math.round(((adjContract - costs.total) / adjContract) * 100);
       return margin < marginThr;
     });
-    lowMargin.forEach(p => urgentAlerts.push({ type: "Margin", alert: `"${p.name}" is below ${marginThr}% margin target`, project: p.name, action: "Review labor costs and estimate", tab: "projects" }));
+    lowMargin.forEach(p => urgentAlerts.push({ type: "Margin", alert: `"${p.name}" is below ${marginThr}% margin target`, project: p.name, action: "Review labor costs and estimate" }));
 
     const openInc = (incidents || []).filter(i => i.status === "open" || !i.status);
     if (openInc.length > 0) urgentAlerts.push({ type: "Safety", alert: `${openInc.length} open safety incident${openInc.length > 1 ? "s" : ""} need resolution`, action: "Investigate and close out", tab: "safety" });
@@ -3797,7 +3799,7 @@ function App({ auth, onLogout }) {
       const sub = r.submitted || r.dateSubmitted;
       return sub && (now - new Date(sub)) > 7 * 86400000;
     });
-    if (overdueRfis.length > 0) urgentAlerts.push({ type: "RFI", alert: `${overdueRfis.length} RFI${overdueRfis.length > 1 ? "s" : ""} overdue (oldest: ${Math.floor((now - new Date(overdueRfis[0].submitted || overdueRfis[0].dateSubmitted)) / 86400000)}d)`, action: "Follow up with GC or architect", tab: "projects" });
+    if (overdueRfis.length > 0) urgentAlerts.push({ type: "RFI", alert: `${overdueRfis.length} RFI${overdueRfis.length > 1 ? "s" : ""} overdue (oldest: ${Math.floor((now - new Date(overdueRfis[0].submitted || overdueRfis[0].dateSubmitted)) / 86400000)}d)`, action: "Follow up with GC or architect", tab: "projects", subTab: "rfis" });
 
     // ── Today's Focus ──
     const todaysFocus = [];
@@ -3805,7 +3807,7 @@ function App({ auth, onLogout }) {
     const pendCOs = changeOrders.filter(co => co.status !== "approved" && co.status !== "rejected" && !co.deletedAt);
     if (pendCOs.length > 0) {
       const coTotal = pendCOs.reduce((s, co) => s + (Math.abs(Number(co.amount)) || 0), 0);
-      todaysFocus.push({ item: `${pendCOs.length} change order${pendCOs.length > 1 ? "s" : ""} pending approval (${fmt(coTotal)})`, priority: coTotal > 10000 ? "high" : "medium", tab: "projects", actionLabel: "Review COs" });
+      todaysFocus.push({ item: `${pendCOs.length} change order${pendCOs.length > 1 ? "s" : ""} pending approval (${fmt(coTotal)})`, priority: coTotal > 10000 ? "high" : "medium", tab: "projects", subTab: "change-orders", actionLabel: "Review COs" });
     }
 
     const pendMat = (materialRequests || []).filter(r => r.status === "requested");
@@ -3816,7 +3818,7 @@ function App({ auth, onLogout }) {
 
     const in14 = new Date(now.getTime() + 14 * 86400000);
     const subsDue = submittals.filter(s => s.status !== "approved" && parseDate(s.due) && parseDate(s.due) <= in14);
-    if (subsDue.length > 0) todaysFocus.push({ item: `${subsDue.length} submittal${subsDue.length > 1 ? "s" : ""} due within 14 days`, priority: "medium", tab: "projects", actionLabel: "Check Submittals" });
+    if (subsDue.length > 0) todaysFocus.push({ item: `${subsDue.length} submittal${subsDue.length > 1 ? "s" : ""} due within 14 days`, priority: "medium", tab: "projects", subTab: "submittals", actionLabel: "Check Submittals" });
 
     if (crewCount > 0) todaysFocus.push({ item: `${crewCount} crew member${crewCount > 1 ? "s" : ""} scheduled across ${siteCount} site${siteCount > 1 ? "s" : ""}`, priority: "low", tab: "calendar", actionLabel: "View Schedule" });
 
@@ -3847,12 +3849,24 @@ function App({ auth, onLogout }) {
     if (urgentAlerts.length > 0) parts.push(`${urgentAlerts.length} item${urgentAlerts.length > 1 ? "s" : ""} needing attention`);
     const summary = parts.length > 0 ? `You have ${parts.join(", ")}.` : "All clear — no urgent items today.";
 
+    // ── Role-filter: strip financial/bid data from field roles ──
+    const FINANCIAL_ROLES = ["owner", "admin", "pm", "accounting"];
+    const role = viewAsRole || auth?.role || "owner";
+    const isFinancialRole = FINANCIAL_ROLES.includes(role);
+
+    // Field roles should not see margin alerts, A/R, bid financials, or money moves
+    const filteredAlerts = isFinancialRole ? urgentAlerts
+      : urgentAlerts.filter(a => !["Margin", "A/R", "Bid", "Unassigned"].includes(a.type));
+    const filteredFocus = isFinancialRole ? todaysFocus
+      : todaysFocus.filter(f => !f.item?.includes("change order") && !f.item?.includes("invoice"));
+    const filteredMoney = isFinancialRole ? moneyMoves : [];
+
     // Only show brief if there's something to say
-    const hasContent = urgentAlerts.length > 0 || todaysFocus.length > 0 || moneyMoves.length > 0;
+    const hasContent = filteredAlerts.length > 0 || filteredFocus.length > 0 || filteredMoney.length > 0;
     if (!hasContent) return null;
 
-    return { greeting, summary, urgentAlerts, todaysFocus, moneyMoves };
-  }, [bids, invoices, projects, changeOrders, companySettings, timeEntries, incidents, certifications, rfis, submittals, materialRequests, dailyReports, teamSchedule, auth]); // eslint-disable-line react-hooks/exhaustive-deps
+    return { greeting, summary, urgentAlerts: filteredAlerts, todaysFocus: filteredFocus, moneyMoves: filteredMoney };
+  }, [bids, invoices, projects, changeOrders, companySettings, timeEntries, incidents, certifications, rfis, submittals, materialRequests, dailyReports, teamSchedule, auth, viewAsRole]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── project closeout state ──
   const [closeoutProj, setCloseoutProj] = useState(null);

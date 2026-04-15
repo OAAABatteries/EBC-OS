@@ -199,6 +199,13 @@ const ModalHub = ({ type, data, app }) => {
       const extracted = await extractBidFromPdf(file);
 
       // Pre-fill draft fields (only overwrite if extracted value is non-empty)
+      // Also persist structured proposal data so "Create Proposal" can use it
+      const proposalData = {
+        lineItems: (extracted.lineItems || []).map(li => ({ description: li.label || li.description || "", amount: String(li.amount || 0) })),
+        alternates: (extracted.alternates || []).map(a => ({ description: a.description || "", type: a.type === "deduct" ? "deduct" : "add", amount: String(a.amount || 0) })),
+        includes: Array.isArray(extracted.includes) ? extracted.includes.filter(Boolean) : [],
+        excludes: Array.isArray(extracted.excludes) ? extracted.excludes.filter(Boolean) : [],
+      };
       setDraft(d => ({
         ...d,
         name: extracted.name || d.name,
@@ -211,6 +218,7 @@ const ModalHub = ({ type, data, app }) => {
         scope: extracted.scope.length > 0 ? extracted.scope : d.scope,
         notes: extracted.notes || d.notes,
         month: extracted.month || d.month,
+        proposalData,
       }));
 
       // Also store the PDF as an attachment
@@ -234,6 +242,72 @@ const ModalHub = ({ type, data, app }) => {
       show("PDF scan failed: " + (err.message || "Unknown error"), "err");
     } finally {
       setPdfScanning(false);
+    }
+  };
+
+  // ── Create Proposal: transform bid data → EBC-branded proposal PDF ──
+  const handleCreateProposal = async () => {
+    if (!draft.name) { show("Enter a bid name first", "err"); return; }
+
+    // Prefer stored proposalData; fall back to parsing notes text
+    let li = draft.proposalData?.lineItems;
+    let alt = draft.proposalData?.alternates;
+    let inc = draft.proposalData?.includes;
+    let exc = draft.proposalData?.excludes;
+
+    if ((!li || li.length === 0) && draft.notes) {
+      // Parse LINE ITEMS from notes: "LINE ITEMS: Demo: $2,500 | Drywall: $15,500"
+      const liMatch = draft.notes.match(/LINE ITEMS(?:\s*\([^)]*\))?\s*:\s*([^\n]+)/i);
+      if (liMatch) {
+        li = liMatch[1].split("|").map(s => {
+          const m = s.match(/^\s*(.+?):\s*\$?([\d,]+)/);
+          return m ? { description: m[1].trim(), amount: m[2].replace(/,/g, "") } : null;
+        }).filter(Boolean);
+      }
+      // Parse ALTERNATE(S)
+      const altMatch = draft.notes.match(/ALTERNATE\(?S?\)?\s*:\s*([^\n]+)/i);
+      if (altMatch) {
+        alt = altMatch[1].split("|").map(s => {
+          const m = s.match(/^\s*(.+?)\s*\((ADD|DEDUCT)(?:\s+\$?([\d,]+))?\)/i);
+          return m ? { description: m[1].trim(), type: m[2].toLowerCase(), amount: (m[3] || "0").replace(/,/g, "") } : null;
+        }).filter(Boolean);
+      }
+      // Parse INCLUDES / EXCLUDES
+      const incMatch = draft.notes.match(/INCLUDES\s*:\s*([^\n]+)/i);
+      if (incMatch && (!inc || inc.length === 0)) inc = incMatch[1].split(";").map(s => s.trim()).filter(Boolean);
+      const excMatch = draft.notes.match(/EXCLUDES\s*:\s*([^\n]+)/i);
+      if (excMatch && (!exc || exc.length === 0)) exc = excMatch[1].split(";").map(s => s.trim()).filter(Boolean);
+    }
+
+    // If still no line items, create a single line item from the total value
+    if (!li || li.length === 0) {
+      if (draft.value) {
+        li = [{ description: draft.name, amount: String(draft.value) }];
+      } else {
+        show("No line items found — add pricing in Notes or re-scan the PDF", "err");
+        return;
+      }
+    }
+
+    try {
+      const { generateQuickProposalPdf } = await import("../utils/proposalPdf.js");
+      const result = await generateQuickProposalPdf({
+        projectName: draft.name,
+        projectAddress: draft.address || "",
+        gcName: draft.gc || "",
+        date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+        lineItems: li.filter(i => i.description && i.amount),
+        alternates: (alt || []).filter(a => a.description && a.amount),
+        includes: inc || [],
+        excludes: exc || [],
+        notes: "",
+      });
+      const blobUrl = URL.createObjectURL(result.blob);
+      window.open(blobUrl, "_blank");
+      show(`Proposal generated: ${result.fileName}`, "ok");
+    } catch (err) {
+      console.error("[create-proposal]", err);
+      show("Proposal generation failed: " + (err.message || "Unknown error"), "err");
     }
   };
 
