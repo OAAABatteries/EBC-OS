@@ -1277,6 +1277,17 @@ function App({ auth, onLogout }) {
                 <Bell size={14} /> {userRole === "superintendent" ? t("Field Action Queue") : t("Action Queue")}
                 <span className="badge badge-amber fs-tab" style={{ padding: "var(--space-1) var(--space-2)" }}>{queueTotal}</span>
               </div>
+              {/* E5: Quick Add — jump to project modal at the right tab */}
+              {["owner", "admin", "pm"].includes(userRole) && (() => {
+                const activeProjs = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
+                if (activeProjs.length === 0) return null;
+                return (
+                  <div className="flex gap-4">
+                    <button className="btn btn-ghost btn-sm fs-xs" onClick={() => { if (activeProjs.length === 1) { setInitialProjTab("change orders"); setModal({ type: "viewProject", data: activeProjs[0] }); } else { setModal({ type: "quickAdd", tab: "change orders" }); } }}>+ CO</button>
+                    <button className="btn btn-ghost btn-sm fs-xs" onClick={() => { if (activeProjs.length === 1) { setInitialProjTab("rfis & submittals"); setModal({ type: "viewProject", data: activeProjs[0] }); } else { setModal({ type: "quickAdd", tab: "rfis & submittals" }); } }}>+ RFI</button>
+                  </div>
+                );
+              })()}
             </div>
             <div className="flex-col-gap-6">
               {queueCOs.length > 0 && (
@@ -2073,6 +2084,158 @@ function App({ auth, onLogout }) {
               ))}
               {recentRevisions.length > 5 && <div className="text-xs text-muted">+{recentRevisions.length - 5} {t("more")}</div>}
             </div>
+          </div>
+        );
+      })()}
+
+      {/* ── E1: Area-Level Progress — sub-project granularity ── */}
+      {!collapsedZones.field && dashCfg.showField && (() => {
+        const activeProjs = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
+        const areasByProj = {};
+        (areas || []).forEach(a => {
+          if (!areasByProj[a.projectId]) areasByProj[a.projectId] = [];
+          areasByProj[a.projectId].push(a);
+        });
+        const projsWithAreas = activeProjs.filter(p => (areasByProj[String(p.id)] || []).length > 0);
+        if (projsWithAreas.length === 0) return null;
+        const STATUS_COLOR = { "not-started": "var(--text3)", "in-progress": "var(--amber)", "complete": "var(--green)", "blocked": "var(--red)" };
+        return (
+          <div className="card dash-card">
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
+              <Columns size={15} /> {t("Area Progress")}
+            </div>
+            {projsWithAreas.slice(0, 4).map(p => {
+              const projAreas = areasByProj[String(p.id)] || [];
+              const total = projAreas.length;
+              const complete = projAreas.filter(a => a.status === "complete").length;
+              const blocked = projAreas.filter(a => a.status === "blocked").length;
+              return (
+                <div key={p.id} className="mb-8">
+                  <div className="flex-between mb-4 cursor-pointer" onClick={() => { setInitialProjTab("areas"); setModal({ type: "viewProject", data: p }); }}>
+                    <span className="text-sm text-blue fw-500">{p.name}</span>
+                    <span className="text-xs text-dim">{complete}/{total} complete{blocked > 0 ? ` · ${blocked} blocked` : ""}</span>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    {projAreas.slice(0, 12).map(a => (
+                      <span key={a.id} className="text-xs" style={{ padding: "1px 6px", borderRadius: 3, background: (STATUS_COLOR[a.status] || "var(--text3)") + "18", color: STATUS_COLOR[a.status] || "var(--text3)", border: `1px solid ${(STATUS_COLOR[a.status] || "var(--text3)")}33` }}>
+                        {a.name}{a.floor ? ` · ${a.floor}` : ""}
+                      </span>
+                    ))}
+                    {projAreas.length > 12 && <span className="text-xs text-dim">+{projAreas.length - 12}</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* ── E2: Foreman Accountability — filing consistency ── */}
+      {!collapsedZones.field && ["owner", "admin", "pm", "superintendent"].includes(userRole) && (() => {
+        const foremen = (employees || []).filter(e => (e.role === "foreman" || e.role === "superintendent") && e.status !== "terminated" && !e.deletedAt);
+        if (foremen.length === 0) return null;
+        const now6 = new Date();
+        const last7d = Array.from({ length: 7 }, (_, i) => new Date(now6.getTime() - i * 86400000).toISOString().slice(0, 10));
+        const foremanStats = foremen.map(f => {
+          const reports = (dailyReports || []).filter(r => String(r.submittedBy || r.employeeId) === String(f.id));
+          const reportsLast7 = reports.filter(r => last7d.some(d => (r.submittedAt || r.date || "").startsWith(d)));
+          const openProbs = (problems || []).filter(p => String(p.assignedTo) === String(f.id) && p.status === "open").length;
+          const openPunch = (punchItems || []).filter(p => String(p.assignedTo) === String(f.id) && p.status !== "resolved" && p.status !== "complete").length;
+          return { id: f.id, name: f.name, role: f.role, reportsLast7: reportsLast7.length, openProblems: openProbs, openPunch: openPunch };
+        }).sort((a, b) => a.reportsLast7 - b.reportsLast7);
+        return (
+          <div className="card dash-card">
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
+              <HardHat size={15} /> {t("Foreman Accountability")} <span className="text-xs text-dim">({t("last 7 days")})</span>
+            </div>
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead><tr><th>{t("Name")}</th><th className="num">{t("Reports")}</th><th className="num">{t("Open Issues")}</th><th className="num">{t("Open Punch")}</th></tr></thead>
+                <tbody>
+                  {foremanStats.map(f => (
+                    <tr key={f.id}>
+                      <td className="text-sm fw-500">{f.name} <span className="text-xs text-dim">({f.role === "superintendent" ? "Super" : "Foreman"})</span></td>
+                      <td className="num" style={{ color: f.reportsLast7 < 3 ? "var(--red)" : f.reportsLast7 < 5 ? "var(--amber)" : "var(--green)" }}>{f.reportsLast7}/7</td>
+                      <td className="num" style={{ color: f.openProblems > 0 ? "var(--red)" : "var(--text3)" }}>{f.openProblems}</td>
+                      <td className="num" style={{ color: f.openPunch > 2 ? "var(--amber)" : "var(--text3)" }}>{f.openPunch}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── E3: Billing Health — underbilling / overbilling detection ── */}
+      {dashCfg.showKPIs && (!collapsedZones.financial || userRole === "owner") && (() => {
+        const burden = companySettings?.laborBurdenMultiplier || 1.35;
+        const activeProjs = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active") && (p.progress || 0) > 0);
+        const billingIssues = activeProjs.map(p => {
+          const contract = getAdjustedContract(p, changeOrders);
+          if (contract <= 0) return null;
+          const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, accruals || []);
+          const billed = (invoices || []).filter(i => String(i.projectId) === String(p.id) && !i.deletedAt).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+          const costPct = contract > 0 ? costs.total / contract : 0;
+          const billPct = contract > 0 ? billed / contract : 0;
+          const gap = billPct - costPct;
+          // Flag if billed significantly more than earned (overbilling) or significantly less (underbilling)
+          if (Math.abs(gap) < 0.10) return null; // within 10% tolerance
+          return { ...p, contract, billed, totalCost: costs.total, costPct: Math.round(costPct * 100), billPct: Math.round(billPct * 100), gap: Math.round(gap * 100), type: gap > 0 ? "overbilled" : "underbilled" };
+        }).filter(Boolean).sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap));
+        if (billingIssues.length === 0) return null;
+        return (
+          <div className="card dash-card" style={{ borderLeft: "3px solid var(--amber)" }}>
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
+              <DollarSign size={15} /> {t("Billing Health")}
+              <span className="text-xs text-dim">{t("cost-to-complete vs billed")}</span>
+            </div>
+            {billingIssues.slice(0, 5).map(p => (
+              <div key={p.id} className="flex-between queue-row cursor-pointer" onClick={() => { setInitialProjTab("financials"); setModal({ type: "viewProject", data: p }); }}>
+                <div className="flex-center-gap-8">
+                  <span className="text-sm text-blue fw-500">{p.name}</span>
+                  <span className={`badge ${p.type === "overbilled" ? "badge-amber" : "badge-red"} fs-xs`}>{p.type === "overbilled" ? "Overbilled" : "Underbilled"}</span>
+                </div>
+                <span className="text-xs text-dim">{t("Cost")}: {p.costPct}% · {t("Billed")}: {p.billPct}% · {t("Gap")}: {Math.abs(p.gap)}%</span>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* ── E4: Schedule Conflicts — same-day trade overlaps by project ── */}
+      {!collapsedZones.field && dashCfg.showField && (() => {
+        const todayKey4 = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+        const todaySchedule = (teamSchedule || []).filter(s => s.days?.[todayKey4]);
+        // Group by project+area, check if multiple trades share same area today
+        const projAreaTrades = {};
+        todaySchedule.forEach(s => {
+          const key = `${s.projectId}::${s.areaId || "general"}`;
+          if (!projAreaTrades[key]) projAreaTrades[key] = { projectId: s.projectId, areaId: s.areaId, trades: new Set(), employees: [] };
+          if (s.trade) projAreaTrades[key].trades.add(s.trade);
+          projAreaTrades[key].employees.push(s.employeeId);
+        });
+        const conflicts = Object.values(projAreaTrades).filter(g => g.trades.size >= 2);
+        if (conflicts.length === 0) return null;
+        return (
+          <div className="card dash-card" style={{ borderLeft: "3px solid var(--amber)" }}>
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
+              <AlertTriangle size={15} /> {t("Trade Conflicts Today")}
+              <span className="badge badge-amber fs-xs">{conflicts.length}</span>
+            </div>
+            {conflicts.slice(0, 5).map((c, i) => {
+              const proj = projects.find(p => String(p.id) === String(c.projectId));
+              const area = (areas || []).find(a => String(a.id) === String(c.areaId));
+              return (
+                <div key={i} className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm text-blue fw-500">{proj?.name || "Unknown"}</span>
+                    {area && <span className="text-xs text-dim">· {area.name}</span>}
+                  </div>
+                  <span className="text-xs">{[...c.trades].join(" + ")} ({c.employees.length} crew)</span>
+                </div>
+              );
+            })}
           </div>
         );
       })()}
@@ -5451,7 +5614,26 @@ function App({ auth, onLogout }) {
         ))}
       </div>
 
-      {modal && <ModalHub type={modal.type} data={modal.data} app={app} />}
+      {/* Quick-Add project picker — opens project modal at specific tab */}
+      {modal?.type === "quickAdd" && (() => {
+        const activeProjs = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
+        return (
+          <div className="modal-overlay" onClick={() => setModal(null)}>
+            <div className="modal-content" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+              <div className="modal-header"><h3>{t("Select Project")}</h3><button className="modal-close" onClick={() => setModal(null)}>✕</button></div>
+              <div className="flex-col-gap-6 p-sp4">
+                {activeProjs.map(p => (
+                  <button key={p.id} className="btn btn-ghost text-left" style={{ justifyContent: "flex-start" }}
+                    onClick={() => { setInitialProjTab(modal.tab); setModal({ type: "viewProject", data: p }); }}>
+                    <div><div className="fw-500">{p.name}</div><div className="text-xs text-dim">{p.gc} · {p.phase || "Active"}</div></div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+      {modal && modal.type !== "quickAdd" && <ModalHub type={modal.type} data={modal.data} app={app} />}
 
       {/* Session timeout warning */}
       {showTimeoutWarning && (
