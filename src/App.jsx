@@ -540,6 +540,9 @@ function App({ auth, onLogout }) {
   }, []);
   // ── role view toggle (Admin can preview other role views) ──
   const [viewAsRole, setViewAsRole] = useLocalStorage("ebc_viewAsRole", "");
+  // ── Collapsible dashboard zones — persisted per-user ──
+  const [collapsedZones, setCollapsedZones] = useLocalStorage("ebc_collapsedZones", {});
+  const toggleZone = (zone) => setCollapsedZones(prev => ({ ...prev, [zone]: !prev[zone] }));
   // Auditor device + orientation for preview frames. Persisted so auditors
   // don't have to re-pick every session. Defaults to iPhone portrait.
   const [previewDevice, setPreviewDevice] = useLocalStorage("ebc_previewDevice", "iphone-14-pro");
@@ -682,7 +685,7 @@ function App({ auth, onLogout }) {
   }, [theme]);
 
   // ── helpers ──
-  const fmt = n => "$" + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const fmt = n => { const v = Number(n || 0); return (v < 0 ? "-$" : "$") + Math.abs(v).toLocaleString("en-US", { maximumFractionDigits: 0 }); };
   const fmtK = n => n >= 1000000 ? "$" + (n / 1000000).toFixed(1) + "M" : n >= 1000 ? "$" + (n / 1000).toFixed(0) + "K" : fmt(n);
   const nextId = () => crypto.randomUUID();
 
@@ -945,6 +948,7 @@ function App({ auth, onLogout }) {
     admin:          { subtitle: "Company Overview",       showKPIs: true,  showCharts: true,  showBrief: true,  showField: true  },
     pm:             { subtitle: "Projects & Bids",        showKPIs: true,  showCharts: true,  showBrief: true,  showField: true  },
     superintendent: { subtitle: "Field Oversight",        showKPIs: false, showCharts: false, showBrief: true,  showField: true  },
+    project_engineer: { subtitle: "Project Support",       showKPIs: true,  showCharts: false, showBrief: true,  showField: true  },
     estimator:      { subtitle: "Estimating & Bids",      showKPIs: true,  showCharts: true,  showBrief: true,  showField: false },
     office_admin:   { subtitle: "Office Operations",      showKPIs: true,  showCharts: false, showBrief: true,  showField: false },
     accounting:     { subtitle: "Financials & Payroll",   showKPIs: true,  showCharts: true,  showBrief: true,  showField: false },
@@ -969,11 +973,11 @@ function App({ auth, onLogout }) {
     }).sort((a, b) => (parseDate(a.due) || 0) - (parseDate(b.due) || 0));
 
     // COs pending approval
-    const cosPending = changeOrders.filter(co => co.status !== "approved" && co.status !== "rejected");
+    const cosPending = changeOrders.filter(co => !co.deletedAt && co.status !== "approved" && co.status !== "rejected");
     const cosPendingTotal = cosPending.reduce((s, co) => s + (co.amount || 0), 0);
 
     // RFIs open (with age)
-    const rfisOpen = rfis.filter(r => r.status !== "Answered" && r.status !== "Closed").map(r => {
+    const rfisOpen = rfis.filter(r => !r.deletedAt && r.status !== "Answered" && r.status !== "Closed").map(r => {
       const submitted = r.submitted || r.dateSubmitted;
       const age = submitted ? Math.floor((now - new Date(submitted)) / 86400000) : 0;
       return { ...r, age };
@@ -982,6 +986,7 @@ function App({ auth, onLogout }) {
     // Submittals due soon (not approved, due within 14 days)
     const in14 = new Date(now.getTime() + 14 * 86400000);
     const subsDueSoon = submittals.filter(s => {
+      if (s.deletedAt) return false;
       if (s.status === "approved") return false;
       const d = parseDate(s.due);
       return d && d <= in14;
@@ -1007,6 +1012,8 @@ function App({ auth, onLogout }) {
     // Projects at risk (behind schedule) — uses front-loaded S-curve
     // Construction work is non-linear: mobilization is slow, middle phase is fast, punch/closeout is slow
     const projAtRisk = projects.filter(p => {
+      if (p.deletedAt) return false;
+      if (p.status !== "in-progress" && p.status !== "active") return false;
       if ((p.progress || 0) >= 100) return false;
       const end = parseDate(p.end);
       const start = parseDate(p.start);
@@ -1030,20 +1037,20 @@ function App({ auth, onLogout }) {
     // Use adjusted contract (base + approved COs) so margin matches every other
     // screen. Using raw p.contract here is the #1 source of dashboard/P&L
     // self-contradiction flagged by the auditor.
-    const profitAlerts = projects.filter(p => {
-      if ((p.progress || 0) >= 100) return false; // skip completed
+    const profitAlerts = projects.reduce((acc, p) => {
+      if (p.deletedAt) return acc;
+      if (p.status !== "in-progress" && p.status !== "active") return acc;
+      if ((p.progress || 0) >= 100) return acc;
       const adjustedContract = getAdjustedContract(p, changeOrders);
-      if (adjustedContract <= 0) return false; // can't calculate without contract
+      if (adjustedContract <= 0) return acc;
       const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, accruals || []);
-      if (costs.total <= 0) return false; // no costs yet — not alertable
-      const margin = ((adjustedContract - costs.total) / adjustedContract) * 100;
-      return margin < marginThreshold;
-    }).map(p => {
-      const adjustedContract = getAdjustedContract(p, changeOrders);
-      const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, accruals || []);
+      if (costs.total <= 0) return acc;
       const margin = Math.round(((adjustedContract - costs.total) / adjustedContract) * 100);
-      return { ...p, adjustedContract, margin, totalCost: costs.total, laborActual: costs.labor, materialActual: costs.material, laborHours: costs.laborHours, subCost: costs.subcontractor, otherAP: costs.otherAP };
-    }).sort((a, b) => a.margin - b.margin);
+      if (margin < marginThreshold) {
+        acc.push({ ...p, adjustedContract, margin, totalCost: costs.total, laborActual: costs.labor, materialActual: costs.material, laborHours: costs.laborHours, subCost: costs.subcontractor, otherAP: costs.otherAP });
+      }
+      return acc;
+    }, []).sort((a, b) => a.margin - b.margin);
 
     // Total urgency count
     const urgentCount = bidsDueSoon.length + cosPending.length + rfisOpen.filter(r => r.age > 7).length + subsDueSoon.length + overdueInv.length + profitAlerts.length;
@@ -1107,7 +1114,7 @@ function App({ auth, onLogout }) {
           <div className="flex gap-6 mb-sp4 flex-wrap" style={{ position: "sticky", top: 0, zIndex: 10, background: "var(--bg1)", padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
             {JUMP_SECTIONS.map(s => (
               <button key={s.id} className="btn btn-ghost btn-sm fs-xs"
-                style={{ padding: "var(--space-1) var(--space-3)", borderRadius: "var(--radius-control)", minHeight: 0 }}
+                style={{ padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)" }}
                 onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" })}>
                 {s.label}
               </button>
@@ -1118,7 +1125,7 @@ function App({ auth, onLogout }) {
 
       {/* Quick Brief — auto-populated from live data */}
       {dashCfg.showBrief && briefResult && (
-        <div id="dash-brief" className="card mb-sp4 p-sp5 overflow-auto" style={{ maxHeight: 450 }}>
+        <div id="dash-brief" className="card mb-sp4 p-sp5">
           <div className="flex-between mb-12">
             <div>
               <div className="text-xs" style={{ color: "var(--text3)", letterSpacing: "1px", textTransform: "uppercase" }}>{t("Quick Brief")}</div>
@@ -1203,11 +1210,11 @@ function App({ auth, onLogout }) {
         const queueSubs = dashActions.subsDueSoon;
         const queueCOs = dashActions.cosPending;
         const queueTm = dashActions.tmPending;
-        const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length + plansNeeded.length + queueRfis.length + queueSubs.length + queueCOs.length + queueTm.length;
+        const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length + plansNeeded.length + queueRfis.length + queueSubs.length + queueCOs.length + queueTm.length + dashActions.followUps.length;
         if (queueTotal === 0) return (
           <div id="dash-actions" className="card dash-card bg-2" style={{ borderLeft: "3px solid var(--green)" }}>
             <div className="text-sm font-semi flex-center-gap-6">
-              <span style={{ color: "var(--green)" }}>&#10003;</span> {t("All Clear")} — {t("nothing needs your attention right now")}
+              <CheckSquare size={14} style={{ color: "var(--green)" }} /> {t("All Clear")} — {t("nothing needs your attention right now")}
             </div>
           </div>
         );
@@ -1215,7 +1222,7 @@ function App({ auth, onLogout }) {
           <div id="dash-actions" className="card dash-card dash-card--amber bg-2">
             <div className="flex-between mb-8">
               <div className="text-sm font-semi flex-center-gap-6">
-                <span>&#9889;</span> PM Action Queue
+                <Bell size={14} /> PM Action Queue
                 <span className="badge badge-amber fs-tab" style={{ padding: "var(--space-1) var(--space-2)" }}>{queueTotal}</span>
               </div>
             </div>
@@ -1223,7 +1230,7 @@ function App({ auth, onLogout }) {
               {queueCOs.length > 0 && (
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
-                    <span>&#128221;</span>
+                    <FileText size={14} />
                     <span className="text-sm">{t("Change Orders Pending")}</span>
                   </div>
                   <div className="flex-center-gap-8">
@@ -1235,7 +1242,7 @@ function App({ auth, onLogout }) {
               {queueRfis.length > 0 && (
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
-                    <span>&#10067;</span>
+                    <AlertTriangle size={14} />
                     <span className="text-sm">{t("Overdue RFIs")}</span>
                     <span className="badge badge-red fs-xs" style={{ padding: "0 5px" }}>{t("oldest")}: {queueRfis[0].age}d</span>
                   </div>
@@ -1248,7 +1255,7 @@ function App({ auth, onLogout }) {
               {queueSubs.length > 0 && (
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
-                    <span>&#128206;</span>
+                    <Paperclip size={14} />
                     <span className="text-sm">{t("Submittals Due Soon")}</span>
                   </div>
                   <div className="flex-center-gap-8">
@@ -1260,7 +1267,7 @@ function App({ auth, onLogout }) {
               {queueTm.length > 0 && (
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
-                    <span>&#128336;</span>
+                    <Clock size={14} />
                     <span className="text-sm">{t("T&M Tickets")}</span>
                   </div>
                   <div className="flex-center-gap-8">
@@ -1272,7 +1279,7 @@ function App({ auth, onLogout }) {
               {pendingMat.length > 0 && (
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
-                    <span>&#128230;</span>
+                    <Package size={14} />
                     <span className="text-sm">{t("Material Requests")}</span>
                     {urgentMat.length > 0 && <span className="badge badge-red fs-xs" style={{ padding: "0 5px" }}>{urgentMat.length} {t("urgent")}</span>}
                   </div>
@@ -1285,7 +1292,7 @@ function App({ auth, onLogout }) {
               {awaitingConfirm.length > 0 && (
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
-                    <span>&#10003;</span>
+                    <Truck size={14} />
                     <span className="text-sm">{t("Deliveries Awaiting Confirmation")}</span>
                   </div>
                   <div className="flex-center-gap-8">
@@ -1297,7 +1304,7 @@ function App({ auth, onLogout }) {
               {pendingReviews.length > 0 && (
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
-                    <span>&#128203;</span>
+                    <Clipboard size={14} />
                     <span className="text-sm">{t("Daily Reports")}</span>
                   </div>
                   <div className="flex-center-gap-8">
@@ -1309,7 +1316,7 @@ function App({ auth, onLogout }) {
               {openProblems.length > 0 && (
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
-                    <span>&#9888;&#65039;</span>
+                    <AlertTriangle size={14} />
                     <span className="text-sm">{t("Unassigned Problems")}</span>
                   </div>
                   <div className="flex-center-gap-8">
@@ -1321,12 +1328,24 @@ function App({ auth, onLogout }) {
               {plansNeeded.length > 0 && (
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
-                    <span>&#128208;</span>
+                    <FileText size={14} />
                     <span className="text-sm">{t("Plans Needed")}</span>
                   </div>
                   <div className="flex-center-gap-8">
                     <span className="text-sm font-semi text-amber">{plansNeeded.length}</span>
                     <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("projects")}>{t("Request")}</button>
+                  </div>
+                </div>
+              )}
+              {dashActions.followUps.length > 0 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <MessageSquare size={14} />
+                    <span className="text-sm">{t("Follow-ups")}</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-blue">{dashActions.followUps.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("contacts")}>{t("View")}</button>
                   </div>
                 </div>
               )}
@@ -1434,11 +1453,17 @@ function App({ auth, onLogout }) {
         );
       })()}
 
-      {/* ── ZONE: Financial Health ── */}
-      {dashCfg.showKPIs && <div id="dash-financial" className="text-xs text-uppercase text-muted mt-sp4 mb-sp2" style={{ letterSpacing: "1px", borderBottom: "1px solid var(--border)", paddingBottom: "var(--space-2)" }}>{t("Financial Health")}</div>}
+      {/* ── ZONE: Financial Health (collapsible) ── */}
+      {dashCfg.showKPIs && (
+        <div id="dash-financial" className="zone-header cursor-pointer" style={{ marginTop: "var(--space-6)", marginBottom: collapsedZones.financial ? 0 : "var(--space-3)", borderBottom: "1px solid var(--border)", paddingBottom: "var(--space-2)", display: "flex", alignItems: "center", justifyContent: "space-between" }}
+          onClick={() => toggleZone("financial")}>
+          <span className="fs-label text-uppercase fw-700" style={{ letterSpacing: "0.8px", color: "var(--text2)" }}>{t("Financial Health")}</span>
+          {collapsedZones.financial ? <ChevronDown size={16} style={{ color: "var(--text3)" }} /> : <ChevronUp size={16} style={{ color: "var(--text3)" }} />}
+        </div>
+      )}
 
       {/* ── Financial KPI Summary — PM's money-at-a-glance ── */}
-      {dashCfg.showKPIs && (() => {
+      {dashCfg.showKPIs && !collapsedZones.financial && (() => {
         // Canonical "active project" filter — matches Brief, KPI Grid, GC Relationships
         const activeProjects = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
         const adjustedContract = activeProjects.reduce((s, p) => s + getAdjustedContract(p, changeOrders), 0);
@@ -1446,7 +1471,7 @@ function App({ auth, onLogout }) {
         const totalBilled = invoices.filter(inv => !inv.deletedAt && activeIds.has(String(inv.projectId))).reduce((s, inv) => s + (Number(inv.amount) || 0), 0);
         const totalPendingCOs = changeOrders.filter(co => !co.deletedAt && co.status === "pending").reduce((s, co) => s + (Math.abs(Number(co.amount)) || 0), 0);
         const remaining = adjustedContract - totalBilled;
-        const fmt = (n) => (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
+        // Uses global fmt() — negative-safe
         // Trend: compare this month billing vs last month
         const now = new Date();
         const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -1484,13 +1509,15 @@ function App({ auth, onLogout }) {
         );
       })()}
 
-      {/* ═══ ZONE: Field & Operations ═══ */}
-      <div id="dash-field" className="zone-divider" style={{ marginTop: "var(--space-6)", marginBottom: "var(--space-3)" }}>
-        <div className="text-xs text-muted text-uppercase fw-700" style={{ letterSpacing: "0.8px" }}>{t("Field & Operations")}</div>
+      {/* ═══ ZONE: Field & Operations (collapsible) ═══ */}
+      <div id="dash-field" className="zone-header cursor-pointer" style={{ marginTop: "var(--space-6)", marginBottom: collapsedZones.field ? 0 : "var(--space-3)", borderBottom: "1px solid var(--border)", paddingBottom: "var(--space-2)", display: "flex", alignItems: "center", justifyContent: "space-between" }}
+        onClick={() => toggleZone("field")}>
+        <span className="fs-label text-uppercase fw-700" style={{ letterSpacing: "0.8px", color: "var(--text2)" }}>{t("Field & Operations")}</span>
+        {collapsedZones.field ? <ChevronDown size={16} style={{ color: "var(--text3)" }} /> : <ChevronUp size={16} style={{ color: "var(--text3)" }} />}
       </div>
 
       {/* ── Today's Field Activity Summary — aggregates foreman-entered data ── */}
-      {["owner", "admin", "pm", "superintendent", "foreman", "safety"].includes(userRole) && (() => {
+      {!collapsedZones.field && ["owner", "admin", "pm", "superintendent", "foreman", "safety"].includes(userRole) && (() => {
         const todayStr = new Date().toISOString().slice(0, 10);
         const todayProd = (productionLogs || []).filter(pl => pl.date === todayStr || (pl.createdAt && pl.createdAt.startsWith(todayStr)));
         const todayTm = (tmTickets || []).filter(t => t.createdAt && t.createdAt.startsWith(todayStr));
@@ -1669,7 +1696,7 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ── Today's Sites — quick directions / clock-in ── */}
-      {["owner", "admin", "pm", "superintendent", "foreman", "employee", "driver"].includes(userRole) && (() => {
+      {!collapsedZones.field && ["superintendent", "foreman", "employee", "driver", "safety"].includes(userRole) && (() => {
         const mySites = projects.filter(p => p.status === "in-progress" && p.lat && p.lng);
         if (mySites.length === 0) return null;
         const PROXIMITY_M = 200;
@@ -1720,7 +1747,7 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ── Safety & Compliance Summary ── */}
-      {(() => {
+      {!collapsedZones.field && (() => {
         const now2 = new Date();
         const openIncidents = (incidents || []).filter(i => i.status === "open" || !i.status);
         const recentTalks = (toolboxTalks || []).filter(tt => {
@@ -1772,7 +1799,7 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ── Crew & Workforce Health ── */}
-      {(dashCfg.showKPIs || dashCfg.showField) && (() => {
+      {!collapsedZones.field && (dashCfg.showKPIs || dashCfg.showField) && (() => {
         const now3 = new Date();
         const activeEmps = (employees || []).filter(e => e.status !== "terminated" && e.status !== "inactive" && !e.deletedAt);
         const todayKey3 = ['sun','mon','tue','wed','thu','fri','sat'][now3.getDay()];
@@ -1793,7 +1820,7 @@ function App({ auth, onLogout }) {
         return (
           <div id="dash-workforce" className="card dash-card dash-card--blue">
             <div className="text-sm font-semi mb-8 flex-center-gap-6">
-              👷 {t("Workforce Health")}
+              <HardHat size={15} /> {t("Workforce Health")}
               {conflicts > 0 && <span className="badge badge-red fs-xs">{conflicts} {t("conflict")}{conflicts > 1 ? "s" : ""}</span>}
             </div>
             <div className="grid-auto-180">
@@ -1821,13 +1848,20 @@ function App({ auth, onLogout }) {
                   <div className="text-xs text-muted">{t("Certs Expiring")}</div>
                 </div>
               )}
+              {laborUtil !== null && dashCfg.showKPIs && (
+                <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("financials")}>
+                  <div className="text-lg font-bold" style={{ color: laborUtil > 55 ? "var(--red)" : laborUtil > 40 ? "var(--amber)" : "var(--green)" }}>{laborUtil}%</div>
+                  <div className="text-xs text-muted">{t("Labor % of Contract")}</div>
+                  {laborUtil > 55 && <div className="text-xs text-red">{t("Above target")}</div>}
+                </div>
+              )}
             </div>
           </div>
         );
       })()}
 
       {/* ── Drawing / Plan Revision Alerts ── */}
-      {(dashCfg.showKPIs || dashCfg.showField) && (() => {
+      {!collapsedZones.field && (dashCfg.showKPIs || dashCfg.showField) && (() => {
         // Check for recently revised drawings (plans uploaded/revised in last 7 days)
         const now4 = new Date();
         const recentRevisions = [];
@@ -1844,7 +1878,7 @@ function App({ auth, onLogout }) {
         return (
           <div className="card dash-card" style={{ borderLeft: "3px solid var(--amber)" }}>
             <div className="text-sm font-semi mb-8 flex-center-gap-6">
-              📐 {t("Drawing Revisions")}
+              <Columns size={15} /> {t("Drawing Revisions")}
               <span className="badge badge-amber fs-xs">{recentRevisions.length} {t("in last 7 days")}</span>
             </div>
             <div className="flex-col-gap-6">
@@ -1867,7 +1901,7 @@ function App({ auth, onLogout }) {
       {/* PM Action Queue moved to position 2 (right after Brief) */}
 
       {/* ── Projects by Stage (Phase 2B) ── */}
-      {dashCfg.showKPIs && (() => {
+      {dashCfg.showKPIs && !collapsedZones.financial && (() => {
         const staged = (projects || []).filter(p => p.constructionStage && (p.progress || 0) < 100);
         if (staged.length === 0) return null;
         const counts = {};
@@ -1885,11 +1919,11 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ── 7.6 Multi-project PM KPI Grid ── */}
-      {dashCfg.showKPIs && (() => {
+      {dashCfg.showKPIs && !collapsedZones.financial && (() => {
         // Canonical filter — matches Financial KPI, Brief, GC Relationships
         const activeProjs = (projects || []).filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
         if (activeProjs.length < 2) return null;
-        const fmt = (v) => typeof v === "number" ? (v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v.toFixed(0)}`) : "$0";
+        const fmtCell = (v) => typeof v === "number" ? (v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v.toFixed(0)}`) : "$0";
         return (
           <div id="dash-projects" className="card mb-12" style={{ padding: "var(--space-3) var(--space-4)" }}>
             <div className="text-sm font-semi mb-8" style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
@@ -1921,9 +1955,9 @@ function App({ auth, onLogout }) {
                       <tr key={p.id} style={{ borderBottom: "1px solid var(--border)", cursor: "pointer" }}
                         onClick={() => setModal({ type: "viewProject", data: p })}>
                         <td style={{ padding: "var(--space-2) var(--space-3)", fontWeight: "var(--weight-medium)", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</td>
-                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)" }}>{fmt(contract)}</td>
-                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--green)" }}>{fmt(billed)}</td>
-                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)" }}>{fmt(costs.total)}</td>
+                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)" }}>{fmtCell(contract)}</td>
+                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--green)" }}>{fmtCell(billed)}</td>
+                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)" }}>{fmtCell(costs.total)}</td>
                         <td style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)", color: margin < 20 ? "var(--red)" : margin < 40 ? "var(--amber)" : "var(--green)", fontWeight: "var(--weight-semi)" }}>{margin}%</td>
                         <td style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)" }}>{crewToday || "\u2014"}</td>
                       </tr>
@@ -1940,7 +1974,7 @@ function App({ auth, onLogout }) {
       {/* Compact KPI row removed — duplicated Financial KPI Summary */}
 
       {/* ── Section 3: Project Health — behind schedule / no billing ── */}
-      {dashCfg.showKPIs && (dashActions.projAtRisk.length > 0 || dashActions.projNoBilling.length > 0) && (
+      {dashCfg.showKPIs && !collapsedZones.financial && (dashActions.projAtRisk.length > 0 || dashActions.projNoBilling.length > 0) && (
         <div className="card dash-card">
           <div className="text-sm font-semi mb-8">Project Health</div>
           {dashActions.projAtRisk.length > 0 && (
@@ -1967,7 +2001,7 @@ function App({ auth, onLogout }) {
       )}
 
       {/* ── Profit Analysis — projects below 30% margin ── */}
-      {dashCfg.showKPIs && dashActions.profitAlerts.length > 0 && (() => {
+      {dashCfg.showKPIs && !collapsedZones.financial && dashActions.profitAlerts.length > 0 && (() => {
         const marginThr = companySettings?.marginAlertThreshold || 25;
         const getProfitDiagnosis = (p) => {
           const base = p.adjustedContract || p.contract || 0;
@@ -2057,7 +2091,7 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ── Cash Position / Payroll Coverage — Owner/Admin only ── */}
-      {(userRole === "owner" || userRole === "admin") && (() => {
+      {!collapsedZones.financial && (userRole === "owner" || userRole === "admin") && (() => {
         const burden = companySettings?.laborBurdenMultiplier || 1.35;
         const now = new Date();
         const weekAgo = new Date(now - 7 * 86400000);
@@ -2066,7 +2100,7 @@ function App({ auth, onLogout }) {
         // Average only field employees (those with time entries) — office staff inflate the average
         const fieldEmpIds = new Set(recentEntries.map(te => String(te.employeeId)));
         const fieldEmps = employees.filter(e => fieldEmpIds.has(String(e.id)));
-        const avgRate = fieldEmps.length > 0 ? fieldEmps.reduce((s, e) => s + (e.payRate || 25), 0) / fieldEmps.length : 25;
+        const avgRate = fieldEmps.length > 0 ? fieldEmps.reduce((s, e) => s + (e.hourlyRate || 25), 0) / fieldEmps.length : 25;
         const weeklyPayroll = Math.round(weeklyHours * avgRate * burden);
         const totalAR = cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90;
         const coverageWeeks = weeklyPayroll > 0 ? Math.round(totalAR / weeklyPayroll * 10) / 10 : null;
@@ -2099,7 +2133,7 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ── Section 4: Charts — only if data exists, compact ── */}
-      {dashCfg.showCharts && gcWinRates.length > 0 && (
+      {dashCfg.showCharts && !collapsedZones.financial && gcWinRates.length > 0 && (
         <div className="flex gap-16 mt-8 flex-wrap">
           <div className="card" style={{ flex: "1 1 480px", minWidth: 320 }}>
             <div className="card-header"><div className="card-title font-head fs-13">{t("Win Rate by GC")}</div></div>
@@ -2145,7 +2179,7 @@ function App({ auth, onLogout }) {
       )}
 
       {/* ── GC Relationship Health — active projects + open items per GC ── */}
-      {dashCfg.showKPIs && (() => {
+      {dashCfg.showKPIs && !collapsedZones.financial && (() => {
         const activeByGc = {};
         // Canonical filter — matches Financial KPI, Brief, KPI Grid
         projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active") && p.gc).forEach(p => {
@@ -2170,7 +2204,7 @@ function App({ auth, onLogout }) {
               <span className="text-xs text-muted fw-400">{gcList.length} active</span>
             </div>
             <div style={{ overflowX: "auto" }}>
-              <table className="table-clean" style={{ width: "100%" }}>
+              <table className="data-table" style={{ width: "100%" }}>
                 <thead><tr>
                   <th className="text-xs text-muted">{t("General Contractor")}</th>
                   <th className="text-xs text-muted text-right">{t("Projects")}</th>
@@ -2195,25 +2229,7 @@ function App({ auth, onLogout }) {
         );
       })()}
 
-      {/* ── Follow-ups — PM/Owner/Admin only (CRM data, not field-relevant) ── */}
-      {["owner", "admin", "pm"].includes(userRole) && dashActions.followUps.length > 0 && (
-        <div className="card dash-card mt-16">
-          <div className="text-sm font-semi mb-8">Follow-ups</div>
-          {dashActions.followUps.slice(0, 5).map((c, i) => (
-            <div key={i} className="flex gap-8 log-item--clickable"
-              onClick={() => navigateWithContext("contacts", { search: c.contact || "" })}>
-              <div className="log-accent-bar bg-amber" />
-              <div className="flex-1">
-                <div className="flex-between">
-                  <span className="text-sm font-semi">{c.contact}</span>
-                  <span className="text-xs text-dim">{c.time}</span>
-                </div>
-                <div className="text-xs text-muted">{c.next}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Follow-ups moved into PM Action Queue (position 10) per audit */}
 
       {/* Weekly Digest removed — called banned external AI API (generateWeeklyDigest).
          Quick Brief already serves the same purpose using local computation. */}
@@ -3727,7 +3743,7 @@ function App({ auth, onLogout }) {
     const now = new Date();
     const in7 = new Date(now.getTime() + 7 * 86400000);
     const parseDate = (s) => { if (!s) return null; const d = new Date(s); return isNaN(d) ? null : d; };
-    const fmt = (n) => "$" + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
+    const fmt = (n) => (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
     const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
     const crewCount = new Set((teamSchedule || []).filter(s => s.days?.[todayKey]).map(s => s.employeeId)).size;
     const siteCount = new Set((teamSchedule || []).filter(s => s.days?.[todayKey]).map(s => s.projectId)).size;
@@ -3842,13 +3858,6 @@ function App({ auth, onLogout }) {
     const pipelineVal = activeBids.reduce((s, b) => s + (b.value || 0), 0);
     if (pipelineVal > 0) moneyMoves.push({ item: `${activeBids.length} bids in pipeline`, amount: fmt(pipelineVal), action: "Track and follow up", deadline: "Active", tab: "bids", actionLabel: "View Pipeline" });
 
-    // ── Summary ──
-    const parts = [];
-    if (activeProjs.length > 0) parts.push(`${activeProjs.length} active project${activeProjs.length > 1 ? "s" : ""}`);
-    if (dueBids.length > 0) parts.push(`${dueBids.length} bid${dueBids.length > 1 ? "s" : ""} due this week`);
-    if (urgentAlerts.length > 0) parts.push(`${urgentAlerts.length} item${urgentAlerts.length > 1 ? "s" : ""} needing attention`);
-    const summary = parts.length > 0 ? `You have ${parts.join(", ")}.` : "All clear — no urgent items today.";
-
     // ── Role-filter: strip financial/bid data from field roles ──
     const FINANCIAL_ROLES = ["owner", "admin", "pm", "accounting"];
     const role = viewAsRole || auth?.role || "owner";
@@ -3860,6 +3869,13 @@ function App({ auth, onLogout }) {
     const filteredFocus = isFinancialRole ? todaysFocus
       : todaysFocus.filter(f => !f.item?.includes("change order") && !f.item?.includes("invoice"));
     const filteredMoney = isFinancialRole ? moneyMoves : [];
+
+    // ── Summary — built AFTER role-filtering so counts match what user actually sees ──
+    const parts = [];
+    if (activeProjs.length > 0) parts.push(`${activeProjs.length} active project${activeProjs.length > 1 ? "s" : ""}`);
+    if (isFinancialRole && dueBids.length > 0) parts.push(`${dueBids.length} bid${dueBids.length > 1 ? "s" : ""} due this week`);
+    if (filteredAlerts.length > 0) parts.push(`${filteredAlerts.length} item${filteredAlerts.length > 1 ? "s" : ""} needing attention`);
+    const summary = parts.length > 0 ? `You have ${parts.join(", ")}.` : "All clear — no urgent items today.";
 
     // Only show brief if there's something to say
     const hasContent = filteredAlerts.length > 0 || filteredFocus.length > 0 || filteredMoney.length > 0;

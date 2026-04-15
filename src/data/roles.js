@@ -29,8 +29,13 @@ export const ROLES = {
     access: ["dashboard", "bids", "projects", "estimating", "documents", "calendar", "schedule", "reports", "materials", "scope", "contacts", "sds"],
     description: "Project support, submittals, RFIs, documents"
   },
+  superintendent: {
+    label: "Superintendent",
+    access: ["dashboard", "projects", "schedule", "reports", "safety", "jsa", "materials", "deliveries", "timeclock", "sds", "map", "settings", "calendar"],
+    description: "Field oversight, crew coordination, schedule management"
+  },
   foreman: {
-    label: "Superintendent / Foreman",
+    label: "Foreman",
     access: ["dashboard", "projects", "schedule", "reports", "safety", "jsa", "materials", "deliveries", "timeclock", "sds", "map", "settings"],
     description: "Field operations and team management"
   },
