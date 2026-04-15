@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { Fragment, useState, useEffect, useMemo, useCallback } from "react";
 import { T } from "../data/translations";
 import { EVENT_TYPES, WEATHER_CONDITIONS } from "../data/calendarConstants";
 import { detectAllConflicts } from "../utils/conflictEngine";
@@ -768,7 +768,7 @@ export function CalendarView({ app }) {
 
               {/* Hourly rows */}
               {hours.map((h) => (
-                <React.Fragment key={h}>
+                <Fragment key={h}>
                   <div className="cal-time-label">{fmtHour(h)}</div>
                   {weekDates.map((d, i) => {
                     const ds = toStr(d);
@@ -783,7 +783,7 @@ export function CalendarView({ app }) {
                       </div>
                     );
                   })}
-                </React.Fragment>
+                </Fragment>
               ))}
             </div>
           )}

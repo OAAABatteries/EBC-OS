@@ -147,7 +147,9 @@ const ModalHub = ({ type, data, app }) => {
           name: "", gc: "", value: 0, due: "", status: "invite_received",
           scope: [], sector: "", risk: "Med", notes: "", contact: "",
           address: "", attachments: [], estimator: app.auth?.name || "", exclusions: "",
-          plansUploaded: false, addendaCount: 0, proposalStatus: ""
+          plansUploaded: false, addendaCount: 0, proposalStatus: "",
+          followUpDate: "", lastFollowUp: "", followUpLog: [], lastActivityDate: new Date().toISOString().slice(0, 10),
+          priority: "", lostReason: "", noBidReason: "", activityLog: []
         };
       case "editProject":
         return data ? { ...data } : {
@@ -238,16 +240,17 @@ const ModalHub = ({ type, data, app }) => {
         if (!draft.name) { show("Bid name is required", "err"); return; }
         if (!draft.gc) { show("GC name is required", "err"); return; }
         if (draft.value && isNaN(Number(draft.value))) { show("Value must be a number", "err"); return; }
+        const bidWithActivity = { ...draft, lastActivityDate: new Date().toISOString().slice(0, 10) };
         if (isNew) {
-          app.setBids(prev => [...prev, { ...draft, id: app.nextId() }]);
+          app.setBids(prev => [...prev, { ...bidWithActivity, id: app.nextId() }]);
           show("Bid added");
         } else {
           // If status was changed to "awarded" via the dropdown, auto-convert to project
           const wasPreviouslyAwarded = data && data.status === "awarded";
-          if (draft.status === "awarded" && !wasPreviouslyAwarded) {
+          if (bidWithActivity.status === "awarded" && !wasPreviouslyAwarded) {
             // Check if project already exists for this bid
-            if (!app.projects.some(p => p.bidId === draft.id)) {
-              const awardedBid = { ...draft, convertedToProject: true };
+            if (!app.projects.some(p => p.bidId === bidWithActivity.id)) {
+              const awardedBid = { ...bidWithActivity, convertedToProject: true };
               app.setBids(prev => prev.map(b => b.id === draft.id ? awardedBid : b));
               // Phase 3: carry scope detail + takeoff summary at award
               const linkedTakeoff = (app.takeoffs || []).find(tk => tk.bidId === awardedBid.id);
@@ -284,13 +287,13 @@ const ModalHub = ({ type, data, app }) => {
                 } : null,
               };
               app.setProjects(prev => [...prev, newProject]);
-              show(`Bid awarded! Project "${draft.name}" created — request construction plans from ${draft.gc || "the GC"}`, 6000);
+              show(`Bid awarded! Project "${bidWithActivity.name}" created — request construction plans from ${bidWithActivity.gc || "the GC"}`, 6000);
             } else {
-              app.setBids(prev => prev.map(b => b.id === draft.id ? { ...draft, convertedToProject: true } : b));
+              app.setBids(prev => prev.map(b => b.id === bidWithActivity.id ? { ...bidWithActivity, convertedToProject: true } : b));
               show("Bid awarded! Project already exists.");
             }
           } else {
-            app.setBids(prev => prev.map(b => b.id === draft.id ? { ...draft } : b));
+            app.setBids(prev => prev.map(b => b.id === bidWithActivity.id ? { ...bidWithActivity } : b));
             show("Bid updated");
           }
         }
@@ -2637,18 +2640,19 @@ const ModalHub = ({ type, data, app }) => {
             </div>
             <div className="form-group">
               <label className="form-label">Due Date</label>
-              <input className="form-input" value={draft.due} onChange={e => upd("due", e.target.value)} placeholder="e.g. Mar 20" />
+              <input className="form-input" type="date" value={draft.due || ""} onChange={e => upd("due", e.target.value)} />
             </div>
             <div className="form-group">
               <label className="form-label">Status</label>
               <select className="form-select" value={draft.status} onChange={e => {
                 const newStatus = e.target.value;
                 const ESTIMATING_ACTIVE = ["estimating", "takeoff", "awaiting_quotes", "pricing", "draft_ready"];
+                const today = new Date().toISOString().slice(0, 10);
+                const logEntry = { date: today, action: `Status → ${newStatus}`, by: app.auth?.name || "Unknown" };
                 // When transitioning into active estimating and not yet claimed
                 if (ESTIMATING_ACTIVE.includes(newStatus) && !draft.estimatingBy) {
                   const pmName = app.auth?.name || "";
-                  setDraft(d => ({ ...d, status: newStatus, estimatingBy: pmName, estimatingStarted: new Date().toISOString().slice(0, 10) }));
-                  // Check for duplicate: other bids from same GC already being estimated by a different PM
+                  setDraft(d => ({ ...d, status: newStatus, estimatingBy: pmName, estimatingStarted: today, activityLog: [...(d.activityLog || []), logEntry] }));
                   if (pmName) {
                     const dups = (app.bids || []).filter(b =>
                       String(b.id) !== String(draft.id) &&
@@ -2661,7 +2665,7 @@ const ModalHub = ({ type, data, app }) => {
                     }
                   }
                 } else {
-                  upd("status", newStatus);
+                  setDraft(d => ({ ...d, status: newStatus, activityLog: [...(d.activityLog || []), logEntry] }));
                 }
               }}>
                 <optgroup label="Pre-Bid">
@@ -2693,10 +2697,57 @@ const ModalHub = ({ type, data, app }) => {
                   In progress by {draft.estimatingBy}{draft.estimatingStarted ? ` · started ${draft.estimatingStarted}` : ""}
                 </div>
               )}
+              {/* Lost reason */}
+              {draft.status === "lost" && (
+                <div className="mt-8">
+                  <label className="form-label fs-xs">Why was this bid lost?</label>
+                  <select className="form-select" value={draft.lostReason || ""} onChange={e => upd("lostReason", e.target.value)}>
+                    <option value="">Select reason...</option>
+                    <option value="price">Price too high</option>
+                    <option value="relationship">GC relationship / preference</option>
+                    <option value="scope">Scope mismatch</option>
+                    <option value="timing">Timing / schedule</option>
+                    <option value="qualification">Qualification / experience</option>
+                    <option value="unknown">Unknown / not disclosed</option>
+                  </select>
+                </div>
+              )}
+              {/* No-bid reason */}
+              {draft.status === "no_bid" && (
+                <div className="mt-8">
+                  <label className="form-label fs-xs">Why no bid?</label>
+                  <select className="form-select" value={draft.noBidReason || ""} onChange={e => upd("noBidReason", e.target.value)}>
+                    <option value="">Select reason...</option>
+                    <option value="too_small">Too small</option>
+                    <option value="too_busy">Too busy / at capacity</option>
+                    <option value="wrong_scope">Wrong scope for EBC</option>
+                    <option value="bad_gc">Bad GC / payment history</option>
+                    <option value="too_far">Too far / location</option>
+                    <option value="late_invite">Received invite too late</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              )}
+            </div>
+            {/* Priority */}
+            <div className="form-group">
+              <label className="form-label">Priority</label>
+              <div className="flex gap-4">
+                {[{v:"hot",l:"Hot",c:"badge-red"},{v:"warm",l:"Warm",c:"badge-amber"},{v:"cold",l:"Cold",c:"badge-muted"},{v:"strategic",l:"Strategic",c:"badge-blue"}].map(p => (
+                  <button key={p.v} type="button" className={`badge ${draft.priority === p.v ? p.c : "badge-muted"} cursor-pointer`}
+                    style={{ opacity: draft.priority === p.v ? 1 : 0.5 }}
+                    onClick={() => upd("priority", draft.priority === p.v ? "" : p.v)}>
+                    {p.l}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label">Sector</label>
-              <input className="form-input" value={draft.sector || draft.phase || ""} onChange={e => upd("sector", e.target.value)} placeholder="e.g. Healthcare, Commercial, K-12" />
+              <select className="form-select" value={draft.sector || draft.phase || ""} onChange={e => upd("sector", e.target.value)}>
+                <option value="">Select sector...</option>
+                {["Medical", "Commercial", "Education", "Hospitality", "Government", "Religious", "Entertainment", "Industrial", "Residential"].map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
             </div>
             <div className="form-group">
               <label className="form-label">Estimator / Owner</label>
@@ -2929,6 +2980,22 @@ const ModalHub = ({ type, data, app }) => {
               <button className="btn btn-ghost" onClick={close}>Cancel</button>
               <button className="btn btn-primary" onClick={handleSave}>{isNew ? "Add Bid" : "Save Changes"}</button>
             </div>
+
+            {/* Activity Log */}
+            {!isNew && (draft.activityLog || []).length > 0 && (
+              <div className="mt-16" style={{ borderTop: "1px solid var(--border)", paddingTop: "var(--space-3)" }}>
+                <div className="text-xs font-semi mb-8">Activity Log</div>
+                <div style={{ maxHeight: 160, overflowY: "auto" }}>
+                  {(draft.activityLog || []).slice().reverse().slice(0, 20).map((entry, i) => (
+                    <div key={i} className="flex gap-8 text-xs text-muted py-2" style={{ borderBottom: "1px solid var(--border)" }}>
+                      <span className="fw-500" style={{ minWidth: 70 }}>{entry.date}</span>
+                      <span style={{ flex: 1 }}>{entry.action}</span>
+                      <span>{entry.by}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -2983,7 +3050,10 @@ const ModalHub = ({ type, data, app }) => {
             </div>
             <div className="form-group">
               <label className="form-label">Sector</label>
-              <input className="form-input" value={draft.phase} onChange={e => upd("phase", e.target.value)} placeholder="e.g. Medical, Commercial" />
+              <select className="form-select" value={draft.phase || ""} onChange={e => upd("phase", e.target.value)}>
+                <option value="">Select sector...</option>
+                {["Medical", "Commercial", "Education", "Hospitality", "Government", "Religious", "Entertainment", "Industrial", "Residential"].map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
             </div>
             <div className="form-group">
               <label className="form-label">Construction Stage</label>

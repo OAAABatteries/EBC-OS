@@ -126,6 +126,60 @@ const PRIORITY_BADGE = { high: "badge-red", med: "badge-amber", low: "badge-gree
 const SCOPE_ICONS = { unchecked: "○", checked: "✓", flagged: "⚑" };
 const SCOPE_CYCLE = { unchecked: "checked", checked: "flagged", flagged: "unchecked" };
 const BID_FILTERS = ["All", "Active", "Submitted", "Awarded", "Lost", "No Bid"];
+const BID_SECTORS = ["Medical", "Commercial", "Education", "Hospitality", "Government", "Religious", "Entertainment", "Industrial", "Residential"];
+const BID_SCOPE_OPTIONS = ["Metal Framing", "GWB", "ACT", "Demo", "Lead-Lined", "ICRA", "Insulation", "L5 Finish", "Deflection Track", "Seismic ACT", "FRP", "Fireproofing", "Shaft Wall"];
+
+// ── Next-action urgency engine (Phase 1a) ──
+const NEXT_ACTION = {
+  plans_missing:  { label: "Plans missing",   color: "var(--red)",   bg: "var(--red-bg, rgba(239,68,68,0.12))" },
+  needs_owner:    { label: "Needs owner",      color: "var(--amber)", bg: "var(--amber-bg, rgba(245,158,11,0.12))" },
+  overdue:        { label: "Overdue",           color: "var(--red)",   bg: "var(--red-bg, rgba(239,68,68,0.12))" },
+  due_soon:       { label: "Due soon",          color: "var(--amber)", bg: "var(--amber-bg, rgba(245,158,11,0.12))" },
+  stale:          { label: "Stale",             color: "var(--text3)", bg: "var(--bg3)" },
+  follow_up_due:  { label: "Follow-up due",     color: "var(--amber)", bg: "var(--amber-bg, rgba(245,158,11,0.12))" },
+  needs_handoff:  { label: "Needs handoff",     color: "var(--blue)",  bg: "var(--blue-bg, rgba(59,130,246,0.12))" },
+};
+const getNextAction = (b, projects) => {
+  const active = BID_ACTIVE_STATUSES.includes(b.status);
+  const estimating = ["estimating","takeoff","awaiting_quotes","pricing","draft_ready","assigned","reviewing","invite_received"].includes(b.status);
+  if (estimating && !((b.attachments || []).length > 0 || b.plansUploaded)) return "plans_missing";
+  if (estimating && !b.estimator) return "needs_owner";
+  const due = b.due ? new Date(b.due) : null;
+  const daysLeft = due && !isNaN(due) ? Math.ceil((due - new Date()) / 86400000) : null;
+  if (active && daysLeft !== null && daysLeft < 0) return "overdue";
+  if (active && daysLeft !== null && daysLeft <= 3) return "due_soon";
+  // Follow-up due: submitted bids with a followUpDate that's past or today
+  if (["submitted","clarifications","negotiating"].includes(b.status) && b.followUpDate) {
+    const fuDue = new Date(b.followUpDate);
+    if (!isNaN(fuDue) && fuDue <= new Date()) return "follow_up_due";
+  }
+  // Follow-up stale: submitted with no follow-up in 7+ days
+  if (["submitted","clarifications","negotiating"].includes(b.status)) {
+    const lastFU = b.lastFollowUp || b.lastActivityDate || null;
+    if (lastFU) {
+      const daysSinceFU = Math.floor((Date.now() - new Date(lastFU).getTime()) / 86400000);
+      if (daysSinceFU >= 7) return "follow_up_due";
+    }
+  }
+  if (b.status === "awarded" && !b.convertedToProject && !(projects || []).some(p => p.bidId === b.id)) return "needs_handoff";
+  // Staleness: no activity in 14+ days
+  const ref = b.lastActivityDate || b.estimatingStarted || b.bidDate || null;
+  if (active && ref) {
+    const daysSince = Math.floor((Date.now() - new Date(ref).getTime()) / 86400000);
+    if (daysSince >= 14) return "stale";
+  }
+  return null;
+};
+const getLastTouch = (b) => {
+  const ref = b.lastActivityDate || b.lastFollowUp || b.estimatingStarted || b.bidDate || null;
+  if (!ref) return null;
+  const d = new Date(ref);
+  if (isNaN(d)) return null;
+  const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+  if (days === 0) return "Today";
+  if (days === 1) return "1d ago";
+  return `${days}d ago`;
+};
 
 // (Anime/Cyberpunk theme effects archived to src/archive/theme-effects.jsx)
 
@@ -597,6 +651,9 @@ function App({ auth, onLogout }) {
 
   // ── bid filter (for bids tab) ──
   const [bidFilter, setBidFilter] = useState("All");
+  const [bidAdvFilter, setBidAdvFilter] = useState({ estimator: "", gc: "", sector: "", scope: "", risk: "", dueBefore: "", dueAfter: "", overdueOnly: false, noPlans: false, staleOnly: false });
+  const [bidAdvOpen, setBidAdvOpen] = useState(false);
+  const bidAdvActive = Object.values(bidAdvFilter).some(v => v === true || (typeof v === "string" && v !== ""));
   const [bidViewMode, setBidViewMode] = useState("list"); // "list" | "pipeline" | "calendar"
   const [bidCalMonth, setBidCalMonth] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
   const [bidCalSelected, setBidCalSelected] = useState(null); // "YYYY-MM-DD"
@@ -738,8 +795,23 @@ function App({ auth, onLogout }) {
         (b.estimator || "").toLowerCase().includes(q)
       );
     }
+    // Advanced filters
+    const af = bidAdvFilter;
+    if (af.estimator) list = list.filter(b => b.estimator === af.estimator);
+    if (af.gc) list = list.filter(b => (b.gc || "").toLowerCase().includes(af.gc.toLowerCase()));
+    if (af.sector) list = list.filter(b => b.sector === af.sector);
+    if (af.scope) list = list.filter(b => (b.scope || []).includes(af.scope));
+    if (af.risk) list = list.filter(b => b.risk === af.risk);
+    if (af.dueAfter) list = list.filter(b => b.due && b.due >= af.dueAfter);
+    if (af.dueBefore) list = list.filter(b => b.due && b.due <= af.dueBefore);
+    if (af.overdueOnly) list = list.filter(b => { const d = b.due ? new Date(b.due) : null; return d && !isNaN(d) && d < new Date(); });
+    if (af.noPlans) list = list.filter(b => !((b.attachments || []).length > 0 || b.plansUploaded));
+    if (af.staleOnly) list = list.filter(b => {
+      const ref = b.lastActivityDate || b.estimatingStarted || b.bidDate || null;
+      return ref && Math.floor((Date.now() - new Date(ref).getTime()) / 86400000) >= 14;
+    });
     return list;
-  }, [bids, bidFilter, search]);
+  }, [bids, bidFilter, search, bidAdvFilter]);
 
   // ── filtered contacts ──
   const filteredContacts = useMemo(() => {
@@ -2271,8 +2343,47 @@ function App({ auth, onLogout }) {
         </div>
       )}
 
+      {/* ── KPI Strip ── */}
+      {(() => {
+        const activeBids = bids.filter(b => BID_ACTIVE_STATUSES.includes(b.status) && !b.convertedToProject);
+        const activeVol = activeBids.reduce((s, b) => s + (b.value || 0), 0);
+        const submittedBids = bids.filter(b => ["submitted", "clarifications", "negotiating"].includes(b.status));
+        const submittedVol = submittedBids.reduce((s, b) => s + (b.value || 0), 0);
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+        const awardedThisMonth = bids.filter(b => b.status === "awarded" && b.lastActivityDate && b.lastActivityDate >= monthStart).length;
+        const totalDecided = bids.filter(b => ["awarded", "lost"].includes(b.status)).length;
+        const totalWon = bids.filter(b => b.status === "awarded").length;
+        const winRate = totalDecided > 0 ? Math.round((totalWon / totalDecided) * 100) : 0;
+        const overdueFU = submittedBids.filter(b => {
+          if (b.followUpDate && new Date(b.followUpDate) <= now) return true;
+          const lastFU = b.lastFollowUp || b.lastActivityDate;
+          return lastFU && Math.floor((now - new Date(lastFU)) / 86400000) >= 7;
+        }).length;
+        const weekOut = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10);
+        const dueThisWeek = activeBids.filter(b => b.due && b.due <= weekOut && b.due >= now.toISOString().slice(0, 10)).length;
+        return (
+          <div className="flex gap-sp3 mb-12 flex-wrap" style={{ padding: "var(--space-2) 0" }}>
+            {[
+              { label: "Active", value: fmtK(activeVol), sub: `${activeBids.length} bids` },
+              { label: "Submitted", value: fmtK(submittedVol), sub: `${submittedBids.length} bids` },
+              { label: "Awarded", value: String(awardedThisMonth), sub: "this month" },
+              { label: "Win Rate", value: `${winRate}%`, sub: `${totalWon}/${totalDecided}` },
+              { label: "F/U Overdue", value: String(overdueFU), sub: "need action", color: overdueFU > 0 ? "var(--red)" : undefined },
+              { label: "Due This Week", value: String(dueThisWeek), sub: "bids", color: dueThisWeek > 0 ? "var(--amber)" : undefined },
+            ].map(k => (
+              <div key={k.label} className="text-center" style={{ flex: 1, minWidth: 80 }}>
+                <div className="fs-xs text-muted">{k.label}</div>
+                <div className="font-bold fs-secondary" style={{ color: k.color || "var(--text)" }}>{k.value}</div>
+                <div className="fs-10 text-dim">{k.sub}</div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
       <div className="flex-between mb-16">
-        <div className="flex gap-4 flex-wrap">
+        <div className="flex gap-4 flex-wrap items-center">
           {BID_FILTERS.map(f => (
             <button
               key={f}
@@ -2282,6 +2393,9 @@ function App({ auth, onLogout }) {
               {t(f)}
             </button>
           ))}
+          <button className={`btn btn-sm ${bidAdvOpen ? "btn-primary" : bidAdvActive ? "btn-amber" : "btn-ghost"}`} onClick={() => setBidAdvOpen(o => !o)}>
+            {bidAdvActive ? "Filters Active" : "Filters"}
+          </button>
         </div>
         <div className="flex gap-4">
           <button className={`btn btn-sm flex-center-gap-4 ${bidViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("list")}><List className="w-4 h-4" /> List</button>
@@ -2289,6 +2403,72 @@ function App({ auth, onLogout }) {
           <button className={`btn btn-sm flex-center-gap-4 ${bidViewMode === "calendar" ? "btn-primary" : "btn-ghost"}`} onClick={() => setBidViewMode("calendar")}><Calendar className="w-4 h-4" /> Calendar</button>
         </div>
       </div>
+
+      {/* ── Advanced Filter Panel ── */}
+      {bidAdvOpen && (
+        <div className="card mb-16" style={{ padding: "var(--space-3) var(--space-4)" }}>
+          <div className="flex gap-8 flex-wrap items-end">
+            <div className="form-group" style={{ minWidth: 120 }}>
+              <label className="form-label fs-xs">Estimator</label>
+              <select className="form-select fs-label" value={bidAdvFilter.estimator} onChange={e => setBidAdvFilter(f => ({ ...f, estimator: e.target.value }))}>
+                <option value="">All</option>
+                {[...new Set(bids.map(b => b.estimator).filter(Boolean))].sort().map(e => <option key={e} value={e}>{e}</option>)}
+              </select>
+            </div>
+            <div className="form-group" style={{ minWidth: 120 }}>
+              <label className="form-label fs-xs">GC</label>
+              <input className="form-input fs-label" placeholder="Filter GC..." value={bidAdvFilter.gc} onChange={e => setBidAdvFilter(f => ({ ...f, gc: e.target.value }))} style={{ width: 120 }} />
+            </div>
+            <div className="form-group" style={{ minWidth: 120 }}>
+              <label className="form-label fs-xs">Sector</label>
+              <select className="form-select fs-label" value={bidAdvFilter.sector} onChange={e => setBidAdvFilter(f => ({ ...f, sector: e.target.value }))}>
+                <option value="">All</option>
+                {BID_SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="form-group" style={{ minWidth: 120 }}>
+              <label className="form-label fs-xs">Scope</label>
+              <select className="form-select fs-label" value={bidAdvFilter.scope} onChange={e => setBidAdvFilter(f => ({ ...f, scope: e.target.value }))}>
+                <option value="">All</option>
+                {BID_SCOPE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="form-group" style={{ minWidth: 80 }}>
+              <label className="form-label fs-xs">Risk</label>
+              <select className="form-select fs-label" value={bidAdvFilter.risk} onChange={e => setBidAdvFilter(f => ({ ...f, risk: e.target.value }))}>
+                <option value="">All</option>
+                <option value="High">High</option>
+                <option value="Med">Med</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+            <div className="form-group" style={{ minWidth: 110 }}>
+              <label className="form-label fs-xs">Due After</label>
+              <input className="form-input fs-label" type="date" value={bidAdvFilter.dueAfter} onChange={e => setBidAdvFilter(f => ({ ...f, dueAfter: e.target.value }))} />
+            </div>
+            <div className="form-group" style={{ minWidth: 110 }}>
+              <label className="form-label fs-xs">Due Before</label>
+              <input className="form-input fs-label" type="date" value={bidAdvFilter.dueBefore} onChange={e => setBidAdvFilter(f => ({ ...f, dueBefore: e.target.value }))} />
+            </div>
+          </div>
+          <div className="flex gap-12 mt-8 items-center">
+            <label className="flex-center-gap-4 text-xs cursor-pointer">
+              <input type="checkbox" checked={bidAdvFilter.overdueOnly} onChange={e => setBidAdvFilter(f => ({ ...f, overdueOnly: e.target.checked }))} /> Overdue only
+            </label>
+            <label className="flex-center-gap-4 text-xs cursor-pointer">
+              <input type="checkbox" checked={bidAdvFilter.noPlans} onChange={e => setBidAdvFilter(f => ({ ...f, noPlans: e.target.checked }))} /> No plans
+            </label>
+            <label className="flex-center-gap-4 text-xs cursor-pointer">
+              <input type="checkbox" checked={bidAdvFilter.staleOnly} onChange={e => setBidAdvFilter(f => ({ ...f, staleOnly: e.target.checked }))} /> Stale (14d+)
+            </label>
+            {bidAdvActive && (
+              <button className="btn btn-ghost btn-sm text-red ml-auto" onClick={() => setBidAdvFilter({ estimator: "", gc: "", sector: "", scope: "", risk: "", dueBefore: "", dueAfter: "", overdueOnly: false, noPlans: false, staleOnly: false })}>
+                Clear Filters
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {selectedBids.size > 0 && (
         <div className="card mt-16 flex gap-sp3" style={{ padding: "var(--space-3) var(--space-4)" }}>
@@ -2369,17 +2549,29 @@ function App({ auth, onLogout }) {
                     <div className="text-xs text-dim p-16 text-center">Empty</div>
                   ) : colBids.map(b => {
                     const linkedProject = b.convertedToProject ? projects.find(p => p.bidId === b.id) : null;
+                    const pDue = b.due ? new Date(b.due) : null;
+                    const pDaysLeft = pDue && !isNaN(pDue) ? Math.ceil((pDue - new Date()) / 86400000) : null;
+                    const pNA = getNextAction(b, projects);
+                    const pNAMeta = pNA ? NEXT_ACTION[pNA] : null;
                     return (
-                    <div key={b.id} className="bid-card" style={{ marginBottom: "var(--space-2)", padding: "var(--space-3) var(--space-3)", cursor: "pointer", opacity: b.convertedToProject ? 0.7 : 1 }}
+                    <div key={b.id} className="bid-card" style={{ marginBottom: "var(--space-2)", padding: "var(--space-3) var(--space-3)", cursor: "pointer", opacity: b.convertedToProject ? 0.7 : 1, borderLeft: pNAMeta ? `3px solid ${pNAMeta.color}` : undefined }}
                       onClick={() => b.convertedToProject && linkedProject ? setModal({ type: "viewProject", data: linkedProject }) : setModal({ type: "editBid", data: b })}>
-                      <div className="text-xs font-semi lh-13 mb-4">{b.name}</div>
+                      <div className="flex-between mb-2">
+                        <div className="text-xs font-semi lh-13" style={{ flex: 1 }}>{b.name}</div>
+                        {pDaysLeft !== null && (
+                          <span className="fs-10 fw-600 ml-4" style={{ color: pDaysLeft < 0 ? "var(--red)" : pDaysLeft <= 3 ? "var(--amber)" : "var(--text3)", whiteSpace: "nowrap" }}>
+                            {pDaysLeft < 0 ? `${Math.abs(pDaysLeft)}d over` : pDaysLeft === 0 ? "Today" : `${pDaysLeft}d`}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex-between">
                         <span className="text-xs text-muted">{b.gc}</span>
                         <span className="text-xs font-mono text-amber">{b.value ? fmt(b.value) : "—"}</span>
                       </div>
-                      <div className="flex gap-4 mt-4">
+                      <div className="flex gap-4 mt-4 flex-wrap">
                         <span className={`badge ${STATUS_BADGE[b.status] || "badge-muted"} fs-9`}>{STATUS_LABEL[b.status] || b.status}</span>
-                        {b.contact && <span className="text-xs text-dim">{b.contact}</span>}
+                        {b.estimator && <span className="text-xs text-blue">{b.estimator.split(" ")[0]}</span>}
+                        {pNAMeta && <span className="fs-9 fw-600" style={{ color: pNAMeta.color }}>{pNAMeta.label}</span>}
                       </div>
                       {b.estimatingBy && !b.convertedToProject && (
                         <div className="text-xs mt-4 text-blue font-semi">
@@ -2645,13 +2837,18 @@ function App({ auth, onLogout }) {
             const daysLeft = dueDate && !isNaN(dueDate) ? Math.ceil((dueDate - new Date()) / 86400000) : null;
             const dueColor = daysLeft !== null ? (daysLeft < 0 ? "var(--red)" : daysLeft <= 2 ? "var(--red)" : daysLeft <= 7 ? "var(--amber)" : "var(--text2)") : "var(--text2)";
             const dueLabel = daysLeft !== null ? (daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : daysLeft === 0 ? "Due today" : daysLeft === 1 ? "Due tomorrow" : `${daysLeft}d left`) : (b.due || "No date");
-            // Readiness
+            // Readiness (5 milestones)
             const hasPlans = (b.attachments || []).length > 0 || b.plansUploaded;
             const hasScope = (b.scope || []).length > 0;
             const hasEstimator = !!(b.estimator);
             const hasValue = b.value > 0;
-            const readiness = [hasPlans, hasScope, hasEstimator, hasValue].filter(Boolean).length;
-            const readinessMax = 4;
+            const hasProposal = !!(b.proposalStatus);
+            const readiness = [hasPlans, hasScope, hasEstimator, hasValue, hasProposal].filter(Boolean).length;
+            const readinessMax = 5;
+            // Next action + last touch
+            const nextAction = getNextAction(b, projects);
+            const naMeta = nextAction ? NEXT_ACTION[nextAction] : null;
+            const lastTouch = getLastTouch(b);
             return (
             <div key={b.id} className="bid-card pos-relative" onClick={() => setModal({ type: "editBid", data: b })}>
               {/* Top row: status + risk + due countdown */}
@@ -2662,6 +2859,7 @@ function App({ auth, onLogout }) {
                   }} className="cursor-pointer" />
                   <span className={`badge ${STATUS_BADGE[b.status] || "badge-muted"}`}>{STATUS_LABEL[b.status] || b.status}</span>
                   {b.risk === "High" && <span className="badge badge-red fs-10">High</span>}
+                  {b.priority && <span className={`badge ${b.priority === "hot" ? "badge-red" : b.priority === "warm" ? "badge-amber" : b.priority === "strategic" ? "badge-blue" : "badge-muted"} fs-10`}>{b.priority.charAt(0).toUpperCase() + b.priority.slice(1)}</span>}
                 </span>
                 <span className="fw-semi fs-tab" style={{ color: dueColor }}>{dueLabel}</span>
               </div>
@@ -2681,12 +2879,17 @@ function App({ auth, onLogout }) {
                 {hasValue ? <span className="font-mono font-bold text-amber fs-secondary">{fmt(b.value)}</span> : <span className="text-xs text-muted text-italic">No estimate</span>}
                 {b.estimator && <span className="text-xs text-blue">{b.estimator}</span>}
               </div>
-              {/* Readiness bar */}
+              {/* Readiness bar + next action */}
               <div className="mt-sp2 gap-sp1" style={{ display: "flex", alignItems: "center" }}>
                 {Array.from({ length: readinessMax }, (_, i) => (
                   <div key={i} style={{ flex: 1, height: 3, borderRadius: "var(--radius-control)", background: i < readiness ? "var(--green)" : "var(--border)" }} />
                 ))}
                 <span className="text-xs text-muted ml-sp1 fs-xs">{readiness}/{readinessMax}</span>
+                {naMeta && (
+                  <span className="ml-sp2 fs-10 fw-600" style={{ color: naMeta.color, background: naMeta.bg, padding: "1px 6px", borderRadius: "var(--radius-control)", whiteSpace: "nowrap" }}>
+                    {naMeta.label}
+                  </span>
+                )}
               </div>
               {/* Quick indicators row */}
               <div className="flex gap-6 mt-6 flex-wrap fs-10 text-muted">
@@ -2694,34 +2897,20 @@ function App({ auth, onLogout }) {
                 {(b.addendaCount || 0) > 0 && <span className="text-amber">{b.addendaCount} addenda</span>}
                 {hasScope && <span>{(b.scope || []).slice(0, 3).join(", ")}{(b.scope || []).length > 3 ? "..." : ""}</span>}
                 {b.contact && <span>{b.contact}</span>}
+                {b.followUpDate && <span style={{ color: new Date(b.followUpDate) <= new Date() ? "var(--red)" : "var(--text2)" }}>Next F/U: {b.followUpDate}</span>}
+                {lastTouch && <span style={{ marginLeft: "auto" }}>Last touch: {lastTouch}</span>}
               </div>
               {/* Action row */}
               <div className="flex gap-4 mt-6 flex-wrap">
-                {b.status === "submitted" && (
+                {["submitted", "clarifications", "negotiating"].includes(b.status) && (
                   <button className="btn btn-ghost btn-sm btn-xs"
-                    onClick={(e) => { e.stopPropagation(); runFollowUp(b); }}
-                    disabled={followUpLoading && followUpBid?.id === b.id}>
-                    {followUpLoading && followUpBid?.id === b.id ? "Drafting..." : "Follow-Up"}
+                    onClick={(e) => { e.stopPropagation(); openFollowUpLog(b); }}>
+                    {b.followUpDate && new Date(b.followUpDate) <= new Date() ? "Follow-Up Due!" : "Log Follow-Up"}
                   </button>
                 )}
                 {b.status === "awarded" && !projects.some(p => p.bidId === b.id) && (
                   <button className="btn btn-primary btn-sm btn-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const newProj = {
-                        id: nextId(), bidId: b.id, name: b.name, gc: b.gc,
-                        contract: b.value || 0, billed: 0, progress: 0,
-                        phase: b.phase || b.sector || "Pre-Construction", start: b.due || "", end: "",
-                        pm: b.estimator || "", address: b.address || "",
-                        scope: b.scope || [], sector: b.sector || "", contact: b.contact || "",
-                        notes: b.notes || "", attachments: b.attachments || [],
-                        laborBudget: 0, laborHours: 0,
-                        assignedForeman: b.assignedForeman || null,
-                      };
-                      setProjects(prev => [...prev, newProj]);
-                      setBids(prev => prev.map(x => x.id === b.id ? { ...x, convertedToProject: true } : x));
-                      show(`Bid awarded! Project created: ${b.name}`);
-                    }}>
+                    onClick={(e) => { e.stopPropagation(); openHandoff(b); }}>
                     Convert to Project
                   </button>
                 )}
@@ -2754,25 +2943,150 @@ function App({ auth, onLogout }) {
         </div>
       )}
 
-      {/* Follow-Up Email Modal */}
-      {followUpBid && followUpText && (
-        <div className="modal-overlay" onMouseDown={onOverlayDown} onMouseUp={onOverlayUp(() => setFollowUpBid(null))}>
+      {/* Follow-Up Log Modal */}
+      {followUpBid && (
+        <div className="modal-overlay" onMouseDown={onOverlayDown} onMouseUp={onOverlayUp(() => { setFollowUpBid(null); setFollowUpText(""); })}>
           <div className="modal-content modal-md">
             <div className="modal-header flex-between">
               <div className="modal-title">Follow-Up: {followUpBid.name}</div>
-              <button className="btn btn-ghost btn-sm" onClick={() => setFollowUpBid(null)}>{t("Close")}</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => { setFollowUpBid(null); setFollowUpText(""); }}>{t("Close")}</button>
             </div>
             <div className="p-16">
-              <div className="text-xs text-muted mb-8">To: {followUpBid.contact || followUpBid.gc} · Re: {followUpBid.name}</div>
-              <pre className="pre-wrap-content">
-                {followUpText}
-              </pre>
-              <div className="flex gap-8 mt-12">
-                <button className="btn btn-primary btn-sm" onClick={() => {
-                  navigator.clipboard.writeText(followUpText);
-                  show("Copied to clipboard", "ok");
-                }}>{t("Copy Email")}</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => runFollowUp(followUpBid)}>{t("Regenerate")}</button>
+              <div className="text-xs text-muted mb-12">GC: {followUpBid.gc} · Contact: {followUpBid.contact || "—"}</div>
+
+              {/* Previous follow-ups */}
+              {(followUpBid.followUpLog || []).length > 0 && (
+                <div className="mb-12">
+                  <div className="text-xs font-semi mb-4">History</div>
+                  {(followUpBid.followUpLog || []).slice(-5).map((entry, i) => (
+                    <div key={i} className="flex gap-8 text-xs text-muted py-2" style={{ borderBottom: "1px solid var(--border)" }}>
+                      <span className="fw-500">{entry.date}</span>
+                      <span className="badge badge-muted fs-9">{entry.method}</span>
+                      <span style={{ flex: 1 }}>{entry.result || "—"}</span>
+                      <span>{entry.by}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Log new follow-up */}
+              <div className="text-xs font-semi mb-8">Log Follow-Up</div>
+              <div className="flex gap-8 mb-8">
+                {["call", "email", "text", "in-person"].map(m => (
+                  <button key={m} className={`btn btn-sm ${followUpForm.method === m ? "btn-primary" : "btn-ghost"}`}
+                    onClick={() => setFollowUpForm(f => ({ ...f, method: m }))}>
+                    {m.charAt(0).toUpperCase() + m.slice(1)}
+                  </button>
+                ))}
+              </div>
+              <div className="form-group mb-8">
+                <label className="form-label fs-xs">Contact</label>
+                <input className="form-input" value={followUpForm.contact} onChange={e => setFollowUpForm(f => ({ ...f, contact: e.target.value }))} placeholder="Who did you speak with?" />
+              </div>
+              <div className="form-group mb-8">
+                <label className="form-label fs-xs">Result / Notes</label>
+                <textarea className="form-textarea" rows={2} value={followUpForm.result} onChange={e => setFollowUpForm(f => ({ ...f, result: e.target.value }))} placeholder="Left voicemail, awaiting response, GC said..." />
+              </div>
+              <div className="form-group mb-12">
+                <label className="form-label fs-xs">Next Follow-Up Date</label>
+                <input className="form-input" type="date" value={followUpForm.nextDate} onChange={e => setFollowUpForm(f => ({ ...f, nextDate: e.target.value }))} />
+              </div>
+              <div className="flex gap-8">
+                <button className="btn btn-primary btn-sm" onClick={saveFollowUpLog}>Save Follow-Up</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => runFollowUp(followUpBid)} disabled={followUpLoading}>
+                  {followUpLoading ? "Drafting..." : "AI Draft Email"}
+                </button>
+              </div>
+
+              {/* AI-generated email (shown after clicking AI Draft) */}
+              {followUpText && (
+                <div className="mt-12" style={{ borderTop: "1px solid var(--border)", paddingTop: "var(--space-3)" }}>
+                  <div className="text-xs font-semi mb-4">AI Draft Email</div>
+                  <pre className="pre-wrap-content">{followUpText}</pre>
+                  <div className="flex gap-8 mt-8">
+                    <button className="btn btn-primary btn-sm" onClick={() => {
+                      navigator.clipboard.writeText(followUpText);
+                      show("Copied to clipboard", "ok");
+                    }}>{t("Copy Email")}</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => runFollowUp(followUpBid)}>{t("Regenerate")}</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Handoff Modal */}
+      {handoffBid && (
+        <div className="modal-overlay" onMouseDown={onOverlayDown} onMouseUp={onOverlayUp(() => setHandoffBid(null))}>
+          <div className="modal-content modal-md">
+            <div className="modal-header flex-between">
+              <div className="modal-title">Project Handoff: {handoffBid.name}</div>
+              <button className="btn btn-ghost btn-sm" onClick={() => setHandoffBid(null)}>{t("Close")}</button>
+            </div>
+            <div className="p-16">
+              <div className="text-xs text-muted mb-12">GC: {handoffBid.gc} · Estimator: {handoffBid.estimator || "—"}</div>
+
+              <div className="form-group mb-8">
+                <label className="form-label fs-xs">Contract Value ($)</label>
+                <input className="form-input" type="number" value={handoffForm.contractValue} onChange={e => setHandoffForm(f => ({ ...f, contractValue: Number(e.target.value) }))} />
+                {handoffForm.contractValue !== (handoffBid.value || 0) && (
+                  <div className="text-xs text-amber mt-2">Original bid: {fmt(handoffBid.value || 0)} → Contract: {fmt(handoffForm.contractValue)}</div>
+                )}
+              </div>
+
+              <div className="form-group mb-8">
+                <label className="form-label fs-xs">Scope Awarded</label>
+                <div className="flex gap-4 flex-wrap">
+                  {(handoffBid.scope || []).map(s => (
+                    <span key={s} className="badge badge-muted fs-10">{s}</span>
+                  ))}
+                  {(handoffBid.scope || []).length === 0 && <span className="text-xs text-dim">No scope tags</span>}
+                </div>
+              </div>
+
+              {handoffBid.exclusions && (
+                <div className="form-group mb-8">
+                  <label className="form-label fs-xs">Exclusions</label>
+                  <div className="text-xs text-muted" style={{ whiteSpace: "pre-wrap" }}>{handoffBid.exclusions}</div>
+                </div>
+              )}
+
+              <div className="flex gap-8 mb-8">
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label fs-xs">Project Manager</label>
+                  <select className="form-select" value={handoffForm.pm} onChange={e => setHandoffForm(f => ({ ...f, pm: e.target.value }))}>
+                    <option value="">Select PM...</option>
+                    <option value="Emmanuel Aguilar">Emmanuel Aguilar</option>
+                    <option value="Abner Aguilar">Abner Aguilar</option>
+                    <option value="Isai">Isai</option>
+                  </select>
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label fs-xs">Superintendent</label>
+                  <select className="form-select" value={handoffForm.super} onChange={e => setHandoffForm(f => ({ ...f, super: e.target.value }))}>
+                    <option value="">Select Super...</option>
+                    {(employees || []).filter(emp => emp.role === "Foreman" || emp.role === "Superintendent").map(emp => (
+                      <option key={emp.id} value={emp.name}>{emp.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group mb-8">
+                <label className="form-label fs-xs">Documents ({(handoffBid.attachments || []).length} files)</label>
+                <div className="text-xs text-muted">{(handoffBid.attachments || []).length > 0 ? "All bid documents will be copied to the project." : "No documents attached — request plans from GC."}</div>
+              </div>
+
+              <div className="form-group mb-12">
+                <label className="form-label fs-xs">Handoff Notes</label>
+                <textarea className="form-textarea" rows={2} value={handoffForm.notes} onChange={e => setHandoffForm(f => ({ ...f, notes: e.target.value }))} placeholder="Anything the field team needs to know..." />
+              </div>
+
+              <div className="flex gap-8">
+                <button className="btn btn-primary" onClick={executeHandoff}>Create Project</button>
+                <button className="btn btn-ghost" onClick={() => setHandoffBid(null)}>Cancel</button>
               </div>
             </div>
           </div>
@@ -3471,6 +3785,7 @@ function App({ auth, onLogout }) {
   const [followUpText, setFollowUpText] = useState("");
   const [followUpLoading, setFollowUpLoading] = useState(false);
   const [followUpBid, setFollowUpBid] = useState(null);
+  const [followUpForm, setFollowUpForm] = useState({ method: "email", result: "", nextDate: "", contact: "" });
 
   const runFollowUp = async (bid) => {
     if (!apiKey) { show("Set API key in Settings first", "err"); return; }
@@ -3485,10 +3800,89 @@ function App({ auth, onLogout }) {
       show("Follow-up email generated", "ok");
     } catch (e) {
       show(e.message, "err");
-      setFollowUpBid(null);
     } finally {
       setFollowUpLoading(false);
     }
+  };
+
+  const openFollowUpLog = (bid) => {
+    setFollowUpBid(bid);
+    setFollowUpForm({ method: "email", result: "", nextDate: "", contact: bid.contact || bid.gc || "" });
+    setFollowUpText("");
+  };
+
+  const saveFollowUpLog = () => {
+    if (!followUpBid) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const entry = {
+      date: today,
+      method: followUpForm.method,
+      result: followUpForm.result,
+      contact: followUpForm.contact,
+      by: auth?.name || "Unknown",
+    };
+    setBids(prev => prev.map(b => {
+      if (b.id !== followUpBid.id) return b;
+      return {
+        ...b,
+        followUpLog: [...(b.followUpLog || []), entry],
+        lastFollowUp: today,
+        followUpDate: followUpForm.nextDate || "",
+        lastActivityDate: today,
+      };
+    }));
+    show("Follow-up logged");
+    setFollowUpBid(null);
+    setFollowUpText("");
+  };
+
+  // ── handoff state ──
+  const [handoffBid, setHandoffBid] = useState(null);
+  const [handoffForm, setHandoffForm] = useState({ contractValue: 0, pm: "", super: "", notes: "" });
+
+  const openHandoff = (bid) => {
+    setHandoffBid(bid);
+    setHandoffForm({
+      contractValue: bid.value || 0,
+      pm: bid.estimator || "",
+      super: "",
+      notes: "",
+    });
+  };
+
+  const executeHandoff = () => {
+    if (!handoffBid) return;
+    const b = handoffBid;
+    const linkedTakeoff = (takeoffs || []).find(tk => tk.bidId === b.id);
+    const newProj = {
+      id: nextId(), bidId: b.id, name: b.name, gc: b.gc,
+      contract: handoffForm.contractValue || b.value || 0,
+      originalBidValue: b.value || 0,
+      billed: 0, progress: 0,
+      phase: b.phase || b.sector || "Pre-Construction",
+      start: b.due || "", end: "",
+      pm: handoffForm.pm || b.estimator || "",
+      address: b.address || "",
+      scope: b.scope || [], sector: b.sector || "",
+      contact: b.contact || "",
+      notes: handoffForm.notes ? `${b.notes || ""}\n\nHandoff notes: ${handoffForm.notes}`.trim() : (b.notes || ""),
+      exclusions: b.exclusions || "",
+      attachments: b.attachments || [],
+      laborBudget: 0, laborHours: 0,
+      assignedForeman: null,
+      needsPlans: true, plansRequestedAt: null,
+      contractType: "lump_sum", retainageRate: 10,
+      takeoffSummary: linkedTakeoff ? {
+        totalSF: linkedTakeoff.rooms?.reduce((s, r) => s + (r.items || []).reduce((is, i) => is + (i.totalSF || i.qty || 0), 0), 0) || 0,
+        roomCount: linkedTakeoff.rooms?.length || 0,
+        grandTotal: linkedTakeoff.grandTotal || 0,
+        snapshotAt: new Date().toISOString(),
+      } : null,
+    };
+    setProjects(prev => [...prev, newProj]);
+    setBids(prev => prev.map(x => x.id === b.id ? { ...x, convertedToProject: true, lastActivityDate: new Date().toISOString().slice(0, 10) } : x));
+    show(`Project "${b.name}" created — request construction plans from ${b.gc || "the GC"}`, 6000);
+    setHandoffBid(null);
   };
 
   // ── bid win predictor state ──
