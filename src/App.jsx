@@ -13,7 +13,8 @@ import {
   initAreas, initProductionLogs, initDecisionLog,
   initCompanySettings,
   initVendors, initAPBills, initPeriods, COST_TYPES, COST_CODES,
-  initAccruals, initCommitments, initBudgets
+  initAccruals, initCommitments, initBudgets,
+  initSovItems, initPayApps
 } from "./data/constants";
 import { softDelete, filterActive, computeProjectLaborCost, computeProjectLaborByCode, computeProjectTotalCost, validatePeriod, getAdjustedContract } from "./utils/financialValidation";
 import { AreasTab } from "./tabs/AreasTab";
@@ -420,6 +421,8 @@ function App({ auth, onLogout }) {
   const [accruals, setAccruals, _syncAccruals] = useSyncedState("accruals", initAccruals);
   const [commitments, setCommitments, _syncCommitments] = useSyncedState("commitments", initCommitments);
   const [budgets, setBudgets, _syncBudgets] = useSyncedState("budgets", initBudgets);
+  const [sovItems, setSovItems, _syncSovItems] = useSyncedState("sovItems", initSovItems);
+  const [payApps, setPayApps, _syncPayApps] = useSyncedState("payApps", initPayApps);
 
   // ── User GPS location for proximity features ──
   const [userLocation, setUserLocation] = useState(null);
@@ -708,6 +711,7 @@ function App({ auth, onLogout }) {
     problems, setProblems,
     vendors, setVendors, apBills, setAPBills, periods, setPeriods,
     accruals, setAccruals, commitments, setCommitments, budgets, setBudgets,
+    sovItems, setSovItems, payApps, setPayApps,
     COST_TYPES, COST_CODES,
     show, setModal, modal, search, setSearch, tab, setTab, subTab, setSubTab, fmt, fmtK, nextId,
     lang, setLang, t,
@@ -3709,6 +3713,9 @@ function App({ auth, onLogout }) {
 
     const dueBids = bids.filter(b => b.status === "estimating" && b.due && parseDate(b.due) >= now && parseDate(b.due) <= in7);
     dueBids.forEach(b => urgentAlerts.push({ type: "Bid", alert: `"${b.name || "Untitled"}" due ${new Date(b.due).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`, project: b.gc, action: "Finalize and submit", tab: "bids" }));
+
+    const unassignedBids = bids.filter(b => !b.estimator && ["invite_received","reviewing","assigned","takeoff","awaiting_quotes","pricing","draft_ready","estimating"].includes(b.status) && b.due && parseDate(b.due) >= now && parseDate(b.due) <= in7);
+    unassignedBids.forEach(b => urgentAlerts.push({ type: "Unassigned", alert: `"${b.name || "Untitled"}" has no estimator — due ${new Date(b.due).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`, project: b.gc, action: "Assign an estimator now", tab: "bids" }));
 
     const overdueInvs = invoices.filter(i => i.status === "overdue" || (i.status === "pending" && parseDate(i.date) && (now - parseDate(i.date)) > 30 * 86400000));
     if (overdueInvs.length > 0) {

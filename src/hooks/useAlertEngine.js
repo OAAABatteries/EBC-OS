@@ -202,6 +202,27 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
     }
   });
 
+  // 5b) Unassigned bids due within 7 days
+  (bids || []).forEach(b => {
+    if (b.estimator) return; // has an owner
+    if (!["invite_received", "reviewing", "assigned", "takeoff", "awaiting_quotes", "pricing", "draft_ready", "estimating"].includes(b.status)) return;
+    const dueDate = parseDate(b.due) || parseDate(b.bidDate);
+    if (!dueDate) return;
+    const daysUntil = daysBetween(now, dueDate);
+    if (daysUntil < 0 || daysUntil > 7) return;
+    alerts.push({
+      id: `unassigned_bid_${b.id}`,
+      category: "bids",
+      urgency: daysUntil <= 2 ? "critical" : "warning",
+      icon: "alert",
+      title: `No estimator: ${b.name.length > 35 ? b.name.slice(0, 32) + "..." : b.name}`,
+      message: `Due ${daysUntil === 0 ? "TODAY" : `in ${daysUntil} day${daysUntil !== 1 ? "s" : ""}`} — no one assigned. $${(b.value || 0).toLocaleString()}`,
+      action: { label: "Assign Estimator", type: "openBid" },
+      nav: { tab: "bids", bidId: b.id },
+      ts: now.toISOString(),
+    });
+  });
+
   // ════════════════════════════════════════════════════════════
   //  PROJECT MANAGEMENT ALERTS
   // ════════════════════════════════════════════════════════════

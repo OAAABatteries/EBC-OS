@@ -2,7 +2,7 @@ import { useState, Fragment, lazy, Suspense } from "react";
 import { SubTabs } from "./moreShared";
 import { resetAllGuides } from "../../components/FeatureGuide";
 import { THEMES, COMPANY_DEFAULTS, ASSEMBLIES } from "../../data/constants";
-import { Wrench, Shield, Download, ClipboardCopy, Building2, Moon, Sun } from "lucide-react";
+import { Wrench, Shield, Download, ClipboardCopy, Building2, Moon, Sun, Trash2, AlertTriangle, Eye, Lock, Server } from "lucide-react";
 
 const BusinessCardGenerator = lazy(() => import("../../components/BusinessCard"));
 function BusinessCardTab({ app }) {
@@ -21,8 +21,8 @@ export function Settings({ app }) {
   // Simplified settings for non-business roles
   const canSeeInsurance = ["owner", "admin", "pm", "office_admin", "accounting"].includes(userRole);
   const tabs = isFullAccess
-    ? ["Company", ...(canSeeInsurance ? ["Insurance"] : []), "Assemblies", "Equipment", "Margin Tiers", "Business Cards", "Data", "QuickBooks", "Theme", "API", "Account"]
-    : [...(canSeeInsurance ? ["Insurance"] : []), "Theme", "Account"];
+    ? ["Company", ...(canSeeInsurance ? ["Insurance"] : []), "Assemblies", "Equipment", "Margin Tiers", "Business Cards", "Data", "QuickBooks", "Theme", "API", "Security", "Account"]
+    : [...(canSeeInsurance ? ["Insurance"] : []), "Theme", "Security", "Account"];
   if (isOwnerOrAdmin) tabs.push("Users");
   if (isForeman) tabs.push("Team");
   const [sub, setSub] = useState(isFullAccess ? "Company" : "Theme");
@@ -38,6 +38,7 @@ export function Settings({ app }) {
       {sub === "QuickBooks" && <QuickBooksTab app={app} />}
       {sub === "Theme" && <ThemeTab app={app} />}
       {sub === "API" && <ApiTab app={app} />}
+      {sub === "Security" && <SecurityTab app={app} />}
       {sub === "Account" && <AccountTab app={app} />}
       {sub === "Insurance" && <InsuranceTab app={app} />}
       {sub === "Users" && isOwnerOrAdmin && <UsersTab app={app} />}
@@ -1855,11 +1856,130 @@ function ThemeTab({ app }) {
   );
 }
 
+/* ── Security & Privacy ─────────────────────────────────────── */
+function SecurityTab({ app }) {
+  const [inventory, setInventory] = useState(null);
+
+  const scanStorage = () => {
+    const items = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      const val = localStorage.getItem(k) || "";
+      const size = new Blob([val]).size;
+      const isSensitive = /api|key|password|token|secret|auth/i.test(k);
+      items.push({ key: k, size, isSensitive });
+    }
+    items.sort((a, b) => b.size - a.size);
+    setInventory(items);
+  };
+
+  const clearApiKey = () => {
+    if (!confirm("Clear API key from this browser? You'll need to re-enter it to use AI features.")) return;
+    app.setApiKey("");
+    localStorage.removeItem("ebc_apiKey");
+    app.show("API key cleared", "ok");
+  };
+
+  const clearAllData = () => {
+    if (!confirm("⚠ NUCLEAR OPTION: This will erase ALL EBC-OS data from this browser — bids, projects, settings, everything.\n\nExport a backup first from Settings → Data.\n\nType YES to confirm.")) return;
+    const secondConfirm = prompt("Type YES to confirm clearing all local data:");
+    if (secondConfirm !== "YES") { app.show("Cancelled", "err"); return; }
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k.startsWith("ebc_") || k.startsWith("ebc-")) keysToRemove.push(k);
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    app.show(`Cleared ${keysToRemove.length} items. Reloading...`, "ok");
+    setTimeout(() => window.location.reload(), 1500);
+  };
+
+  const fmtSize = (bytes) => bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
+
+  return (
+    <div className="mt-16">
+      <div className="section-title flex-center-gap-8"><Shield style={{ width: 16, height: 16 }} /> Security & Privacy</div>
+
+      {/* Clear API Key */}
+      <div className="card mt-16">
+        <div className="flex-between">
+          <div>
+            <strong className="flex-center-gap-8"><Lock style={{ width: 14, height: 14 }} /> API Key</strong>
+            <p className="text2 mt-4">
+              {app.apiKey
+                ? <>Key stored: <span className="font-mono">sk-ant-...{app.apiKey.slice(-4)}</span></>
+                : "No API key stored"}
+            </p>
+          </div>
+          <button className="btn btn-ghost btn-sm text-red" onClick={clearApiKey} disabled={!app.apiKey}>
+            <Trash2 style={{ width: 14, height: 14 }} /> Clear Key
+          </button>
+        </div>
+      </div>
+
+      {/* Storage Inventory */}
+      <div className="card mt-16">
+        <div className="flex-between mb-12">
+          <div>
+            <strong className="flex-center-gap-8"><Eye style={{ width: 14, height: 14 }} /> Storage Inventory</strong>
+            <p className="text2 mt-4">See what EBC-OS stores in your browser.</p>
+          </div>
+          <button className="btn btn-ghost btn-sm" onClick={scanStorage}>
+            {inventory ? "Refresh" : "Scan Storage"}
+          </button>
+        </div>
+        {inventory && (
+          <div style={{ maxHeight: 280, overflowY: "auto" }}>
+            <table className="w-full fs-13">
+              <thead>
+                <tr className="text-left">
+                  <th className="px-8 py-4">Key</th>
+                  <th className="px-8 py-4">Size</th>
+                  <th className="px-8 py-4">Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inventory.map(item => (
+                  <tr key={item.key} style={{ borderTop: "1px solid var(--border)" }}>
+                    <td className="px-8 py-4 font-mono" style={{ fontSize: 11, wordBreak: "break-all" }}>{item.key}</td>
+                    <td className="px-8 py-4 ws-nowrap">{fmtSize(item.size)}</td>
+                    <td className="px-8 py-4">{item.isSensitive ? <span className="badge badge-red">Sensitive</span> : <span className="badge badge-muted">Data</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="text-xs text-dim mt-8">
+              Total: {inventory.length} keys · {fmtSize(inventory.reduce((s, i) => s + i.size, 0))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Nuclear Option */}
+      <div className="card mt-16" style={{ border: "1px solid var(--red)", background: "rgba(239,68,68,0.04)" }}>
+        <strong className="flex-center-gap-8 text-red"><AlertTriangle style={{ width: 14, height: 14 }} /> Clear All Local Data</strong>
+        <p className="text2 mt-4 mb-12">Permanently erase all EBC-OS data from this browser. Export a backup first.</p>
+        <button className="btn btn-danger btn-sm" onClick={clearAllData}>
+          <Trash2 style={{ width: 14, height: 14 }} /> Erase Everything
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ── API Settings ────────────────────────────────────────────── */
+const API_KEY_WARNING_KEY = "ebc_api_key_warning_dismissed";
+
 function ApiTab({ app }) {
   const [key, setKey] = useState(app.apiKey || "");
   const [testing, setTesting] = useState(false);
   const [status, setStatus] = useState(null);
+  const [warningDismissed, setWarningDismissed] = useState(() => localStorage.getItem(API_KEY_WARNING_KEY) === "1");
+
+  const dismissWarning = () => {
+    localStorage.setItem(API_KEY_WARNING_KEY, "1");
+    setWarningDismissed(true);
+  };
 
   const saveKey = () => {
     if (key && !key.startsWith("sk-ant-")) {
@@ -1893,6 +2013,25 @@ function ApiTab({ app }) {
 
   return (
     <div className="mt-16">
+      {/* F2: One-time security warning */}
+      {!warningDismissed && (
+        <div className="card mb-16" style={{ border: "1px solid var(--amber)", background: "var(--amber-dim)" }}>
+          <div className="flex-between">
+            <div className="flex-center-gap-8">
+              <AlertTriangle style={{ width: 16, height: 16, color: "var(--amber)", flexShrink: 0 }} />
+              <div>
+                <strong className="text-sm">Security Notice</strong>
+                <p className="text-xs text-dim mt-2">
+                  Your API key is stored in this browser's local storage and is visible in developer tools.
+                  Do not use shared or public computers. Clear your key when done on shared machines.
+                </p>
+              </div>
+            </div>
+            <button className="btn btn-ghost btn-sm ws-nowrap" onClick={dismissWarning}>Got it</button>
+          </div>
+        </div>
+      )}
+
       <div className="section-title">Anthropic API</div>
       <div className="card mt-16">
         <div className="text-sm text-dim mb-16">
@@ -1920,6 +2059,18 @@ function ApiTab({ app }) {
           {status === "err" && <span className="badge badge-red">Failed</span>}
           {app.apiKey && !status && <span className="text-xs text-muted">Key set: sk-ant-...{app.apiKey.slice(-4)}</span>}
         </div>
+      </div>
+
+      {/* F4: Backend proxy — future work */}
+      <div className="card mt-16" style={{ border: "1px dashed var(--border2)", opacity: 0.8 }}>
+        <div className="flex-center-gap-8 mb-8">
+          <Server style={{ width: 14, height: 14, color: "var(--text3)" }} />
+          <strong className="text-sm" style={{ color: "var(--text3)" }}>Backend Proxy (Coming Soon)</strong>
+        </div>
+        <p className="text-xs text-dim">
+          Future: API calls will route through a Netlify Function or Supabase Edge Function so the key never touches the browser.
+          This doesn't block daily use — your key works fine locally for now.
+        </p>
       </div>
 
       <div className="section-title mt-16">Features</div>
