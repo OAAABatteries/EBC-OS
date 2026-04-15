@@ -574,49 +574,56 @@ const ModalHub = ({ type, data, app }) => {
     const coTypeLabel = (t) => ({ add: "+Add", deduct: "-Deduct", "no cost": "No Cost" }[t] || t);
     const resetCoForm = () => { setCoForm({ number: "", description: "", type: "add", amount: "", status: "draft", date: new Date().toISOString().slice(0, 10), notes: "", tmTicketIds: [] }); setCoEditId(null); };
     const saveCo = () => {
-      const num = coForm.number || `CO-${String(coNextNum).padStart(3, "0")}`;
-      const amt = parseFloat(coForm.amount) || 0;
-      const finalAmt = coForm.type === "deduct" ? -Math.abs(amt) : coForm.type === "no cost" ? 0 : Math.abs(amt);
-      const tmIds = coForm.tmTicketIds || [];
-      // Enforce period discipline — block saves into closed periods (admin can override with reason)
-      let periodOverride = null;
-      const periodCheck = validatePeriod(coForm.date, app.periods || []);
-      if (!periodCheck.allowed) {
-        const isAdmin = app.auth?.role === "admin" || app.auth?.role === "owner";
-        if (!isAdmin) {
-          app.show(periodCheck.warning, "err");
-          return;
+      try {
+        const num = coForm.number || `CO-${String(coNextNum).padStart(3, "0")}`;
+        const amt = parseFloat(coForm.amount) || 0;
+        const finalAmt = coForm.type === "deduct" ? -Math.abs(amt) : coForm.type === "no cost" ? 0 : Math.abs(amt);
+        const tmIds = coForm.tmTicketIds || [];
+        // Enforce period discipline — block saves into closed periods (admin can override with reason)
+        let periodOverride = null;
+        const periodCheck = validatePeriod(coForm.date, app.periods || []);
+        if (!periodCheck.allowed) {
+          const isAdmin = app.auth?.role === "admin" || app.auth?.role === "owner";
+          if (!isAdmin) {
+            app.show(periodCheck.warning, "err");
+            return;
+          }
+          const reason = prompt(`${periodCheck.warning}\n\nOverride reason (required):`);
+          if (!reason || !reason.trim()) return;
+          periodOverride = {
+            reason: reason.trim(),
+            approvedBy: app.auth?.name || "unknown",
+            timestamp: new Date().toISOString(),
+          };
         }
-        const reason = prompt(`${periodCheck.warning}\n\nOverride reason (required):`);
-        if (!reason || !reason.trim()) return;
-        periodOverride = {
-          reason: reason.trim(),
-          approvedBy: app.auth?.name || "unknown",
-          timestamp: new Date().toISOString(),
-        };
-      }
-      if (coEditId) {
-        // Clear changeOrderId from previously linked T&M tickets that are no longer selected
-        const oldCo = app.changeOrders.find(c => c.id === coEditId);
-        const removedTmIds = (oldCo?.tmTicketIds || []).filter(id => !tmIds.includes(id));
-        if (removedTmIds.length > 0) {
-          app.setTmTickets(prev => prev.map(t => removedTmIds.includes(t.id) ? { ...t, changeOrderId: undefined } : t));
+        if (coEditId) {
+          // Clear changeOrderId from previously linked T&M tickets that are no longer selected
+          const oldCo = app.changeOrders.find(c => c.id === coEditId);
+          const removedTmIds = (oldCo?.tmTicketIds || []).filter(id => !tmIds.includes(id));
+          if (removedTmIds.length > 0) {
+            app.setTmTickets(prev => prev.map(t => removedTmIds.includes(t.id) ? { ...t, changeOrderId: undefined } : t));
+          }
+          app.setChangeOrders(prev => prev.map(c => c.id === coEditId ? { ...c, number: num, description: coForm.description, type: coForm.type, amount: finalAmt, status: coForm.status, date: coForm.date, notes: coForm.notes, tmTicketIds: tmIds, ...(periodOverride ? { periodOverride } : {}) } : c));
+          app.show("Change order updated");
+        } else {
+          const newCo = { id: crypto.randomUUID(), projectId: draft.id, number: num, description: coForm.description, type: coForm.type, amount: finalAmt, status: coForm.status, date: coForm.date, notes: coForm.notes, tmTicketIds: tmIds, created: new Date().toISOString(), ...(periodOverride ? { periodOverride } : {}) };
+          app.setChangeOrders(prev => [...prev, newCo]);
+          // Set changeOrderId on linked T&M tickets
+          if (tmIds.length > 0) {
+            app.setTmTickets(prev => prev.map(t => tmIds.includes(t.id) ? { ...t, changeOrderId: newCo.id } : t));
+          }
+          app.show("Change order saved");
         }
-        app.setChangeOrders(prev => prev.map(c => c.id === coEditId ? { ...c, number: num, description: coForm.description, type: coForm.type, amount: finalAmt, status: coForm.status, date: coForm.date, notes: coForm.notes, tmTicketIds: tmIds, ...(periodOverride ? { periodOverride } : {}) } : c));
-      } else {
-        const newCo = { id: crypto.randomUUID(), projectId: draft.id, number: num, description: coForm.description, type: coForm.type, amount: finalAmt, status: coForm.status, date: coForm.date, notes: coForm.notes, tmTicketIds: tmIds, created: new Date().toISOString(), ...(periodOverride ? { periodOverride } : {}) };
-        app.setChangeOrders(prev => [...prev, newCo]);
-        // Set changeOrderId on linked T&M tickets
-        if (tmIds.length > 0) {
-          app.setTmTickets(prev => prev.map(t => tmIds.includes(t.id) ? { ...t, changeOrderId: newCo.id } : t));
+        // Update changeOrderId on newly linked T&M tickets
+        if (coEditId && tmIds.length > 0) {
+          app.setTmTickets(prev => prev.map(t => tmIds.includes(t.id) ? { ...t, changeOrderId: coEditId } : t));
         }
+        resetCoForm();
+        setCoFormOpen(false);
+      } catch (err) {
+        console.error("saveCo error:", err);
+        app.show("Failed to save change order: " + err.message, "err");
       }
-      // Update changeOrderId on newly linked T&M tickets
-      if (coEditId && tmIds.length > 0) {
-        app.setTmTickets(prev => prev.map(t => tmIds.includes(t.id) ? { ...t, changeOrderId: coEditId } : t));
-      }
-      resetCoForm();
-      setCoFormOpen(false);
     };
     const editCo = (co) => {
       setCoForm({ number: co.number || "", description: co.description || co.desc || "", type: co.type || "add", amount: String(Math.abs(co.amount || 0)), status: co.status || "draft", date: co.date || co.submitted || "", notes: co.notes || "", tmTicketIds: co.tmTicketIds || [] });
@@ -631,9 +638,15 @@ const ModalHub = ({ type, data, app }) => {
       }
     };
     const exportCoPdf = async (co) => {
-      const { generateChangeOrderPdf } = await import("../utils/changeOrderPdf.js");
-      const projectCOs = app.changeOrders.filter(c => c.projectId === co.projectId);
-      await generateChangeOrderPdf(draft, { ...co, description: co.description || co.desc }, app.company || {}, projectCOs);
+      try {
+        const { generateChangeOrderPdf } = await import("../utils/changeOrderPdf.js");
+        const projectCOs = app.changeOrders.filter(c => c.projectId === co.projectId);
+        await generateChangeOrderPdf(draft, { ...co, description: co.description || co.desc }, app.company || {}, projectCOs);
+        app.show("Change order PDF exported");
+      } catch (err) {
+        console.error("exportCoPdf error:", err);
+        app.show("Failed to export PDF: " + err.message, "err");
+      }
     };
 
     const generateSubPackage = async () => {
