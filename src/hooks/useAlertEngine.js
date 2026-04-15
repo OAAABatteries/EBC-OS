@@ -227,7 +227,7 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
   //  PROJECT MANAGEMENT ALERTS
   // ════════════════════════════════════════════════════════════
 
-  const activeProjects = (projects || []).filter(p => p.status === "in-progress" || p.status === "active");
+  const activeProjects = (projects || []).filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
   const completedProjects = (projects || []).filter(p => p.status === "completed" || (p.progress || 0) >= 100);
 
   activeProjects.forEach(p => {

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { initProjects, initContacts, initChangeOrders, MS, COMPANY_DEFAULTS } from "../data/constants";
+import { getAdjustedContract } from "../utils/financialValidation";
 
 // ═══════════════════════════════════════════════════════════════
 //  GC Portal — External-facing page for GC PMs & Superintendents
@@ -542,10 +543,10 @@ export default function GCPortal() {
                           <span key={s} className="gcp-badge gcp-badge-gray">{s}</span>
                         ))}
                       </div>
-                      {p.contract && (
+                      {(p.contract || getAdjustedContract(p, initChangeOrders)) > 0 && (
                         <>
                           <div className="fw-semi mb-sp1 fs-label mt-sp4" style={{ color: "var(--bg)" }}>Contract</div>
-                          <div className="fs-secondary fw-bold c-green">${(p.contract).toLocaleString()}</div>
+                          <div className="fs-secondary fw-bold c-green">${getAdjustedContract(p, initChangeOrders).toLocaleString()}</div>
                         </>
                       )}
                     </div>

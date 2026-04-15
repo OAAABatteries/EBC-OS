@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { getAdjustedContract } from "../utils/financialValidation";
 
 // ═══════════════════════════════════════════════════════════════
 //  Map View — GTA-style project map with PM filtering
@@ -153,7 +154,7 @@ export function MapView({ app }) {
         <div class="map-popup-content">
           <div class="map-popup-title">${p.name}</div>
           <div class="map-popup-row"><span class="map-popup-label">GC</span> ${p.gc}</div>
-          <div class="map-popup-row"><span class="map-popup-label">Contract</span> ${fmt(p.contract)}</div>
+          <div class="map-popup-row"><span class="map-popup-label">Contract</span> ${fmt(getAdjustedContract(p, app.changeOrders || []))}</div>
           <div class="map-popup-row"><span class="map-popup-label">Phase</span> <span style="color:${color}">${p.phase}</span></div>
           <div class="map-popup-row"><span class="map-popup-label">PM</span> ${p.pm || "—"}</div>
           ${team > 0 ? `<div class="map-popup-row"><span class="map-popup-label">Crew</span> ${team} assigned</div>` : ""}
@@ -304,7 +305,7 @@ export function MapView({ app }) {
           <div className="section-title">Project Map</div>
           {!isFullscreen && (
             <div className="section-sub">
-              {filtered.length} project{filtered.length !== 1 ? "s" : ""} — {fmtContract(filtered.reduce((s, p) => s + (p.contract || 0), 0))} total
+              {filtered.length} project{filtered.length !== 1 ? "s" : ""} — {fmtContract(filtered.reduce((s, p) => s + getAdjustedContract(p, app.changeOrders || []), 0))} total
             </div>
           )}
         </div>

@@ -3539,7 +3539,7 @@ const ModalHub = ({ type, data, app }) => {
           {!isNew && (() => {
             const pid = draft.id;
             const adjustedContract = getAdjustedContract(draft, app.changeOrders || []);
-            const projCostsData = computeProjectTotalCost(pid, draft.name, app.timeEntries || [], app.employees || [], app.apBills || [], 1.35, app.accruals || []);
+            const projCostsData = computeProjectTotalCost(pid, draft.name, app.timeEntries || [], app.employees || [], app.apBills || [], app.companySettings?.laborBurdenMultiplier || 1.35, app.accruals || []);
             const totalCost = projCostsData.totalCost || 0;
             const laborCost = projCostsData.laborCost || 0;
             const billed = (app.invoices || []).filter(i => String(i.projectId) === String(pid) && i.status !== "void").reduce((s, i) => s + (i.amount || 0), 0);

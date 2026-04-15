@@ -647,7 +647,7 @@ function App({ auth, onLogout }) {
     // Missing daily reports (after 4 PM, check if today's report exists for active projects)
     const hour = new Date().getHours();
     if (hour >= 16 && !pmNotifFired.current[`report-missing-${today}`]) {
-      const activeProjs = (projects || []).filter(p => p.status === "in-progress");
+      const activeProjs = (projects || []).filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
       const todayReports = (dailyReports || []).filter(r => r.date === today);
       const missing = activeProjs.filter(p => !todayReports.some(r => String(r.projectId) === String(p.id)));
       if (missing.length > 0) {

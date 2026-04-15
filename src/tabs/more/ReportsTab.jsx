@@ -8,7 +8,7 @@ const REPORT_COLORS = { estimating: "#e09422", submitted: "#3b82f6", awarded: "#
 
 export function Reports({ app }) {
   const userRole = app.auth?.role || "owner";
-  const isBizRole = ["owner", "admin", "pm", "office_admin"].includes(userRole);
+  const isBizRole = ["owner", "admin", "pm", "office_admin", "superintendent"].includes(userRole);
   const bids = app.bids || [];
   const projects = app.projects || [];
   const [reportSummary, setReportSummary] = useState(null);

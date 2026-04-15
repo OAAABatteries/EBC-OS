@@ -3471,11 +3471,11 @@ function FinReportsTab({ app }) {
 
   // Compute project metrics once — exclude completed projects
   const budgets = app.budgets || {};
-  const projectMetrics = projects.filter(p => p.status !== "completed" && p.status !== "deleted").map(p => {
+  const projectMetrics = projects.filter(p => !p.deletedAt && p.status !== "completed" && p.status !== "deleted").map(p => {
     const costs = wipPeriod
       ? computeProjectCostForPeriod(p.id, p.name, wipPeriod, timeEntries, employees, apBills, app.accruals || [], burden)
       : computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, app.accruals || []);
-    const billed = invoices.filter(i => String(i.projectId) === String(p.id)).reduce((s, i) => s + (i.amount || 0), 0);
+    const billed = filterActive(invoices).filter(i => String(i.projectId) === String(p.id)).reduce((s, i) => s + (i.amount || 0), 0);
     const adjustedContract = getAdjustedContract(p, changeOrders);
     const approvedCOs = adjustedContract - (p.contract || 0);
     // Cost-to-cost % complete: actual cost / total estimated cost (budget). NOT clamped — show overruns.

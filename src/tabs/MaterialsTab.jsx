@@ -66,7 +66,7 @@ export function MaterialsTab({ app }) {
   const { materials, setMaterials, customAssemblies, setCustomAssemblies, show, fmt, submittals } = app;
   const { notifyMaterialStatus } = useNotifications();
   const userRole = app.auth?.role || "owner";
-  const isFieldRole = ["foreman", "employee", "driver"].includes(userRole);
+  const isFieldRole = ["superintendent", "foreman", "employee", "driver"].includes(userRole);
   const VIEWS = isFieldRole ? FIELD_VIEWS : FULL_VIEWS;
   const [optResult, setOptResult] = useState(null);
   const [optLoading, setOptLoading] = useState(false);
