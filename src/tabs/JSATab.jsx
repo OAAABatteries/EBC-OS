@@ -145,6 +145,35 @@ export function JSATab({ app }) {
     teamMembers: [],
   });
   const updForm = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const [gcTemplate, setGcTemplate] = useState(null); // detected GC JSA template
+
+  // ── GC auto-detect: when project changes, find GC template ──
+  const handleProjectSelect = useCallback((projectId) => {
+    setForm(f => ({ ...f, projectId }));
+    setGcTemplate(null);
+    if (!projectId) return;
+    const proj = (projects || []).find(p => String(p.id) === String(projectId));
+    if (!proj?.gc) return;
+    // Auto-fill GC name
+    setForm(f => ({ ...f, gc: proj.gc }));
+    // Find contact from this GC company with a template
+    const contacts = app.contacts || [];
+    const gcContact = contacts.find(c =>
+      c.company && c.gcJsaTemplate &&
+      (c.company === proj.gc || proj.gc.toLowerCase().includes(c.company.toLowerCase()) || c.company.toLowerCase().includes(proj.gc.toLowerCase()))
+    );
+    if (gcContact?.gcJsaTemplate) {
+      const tmpl = gcContact.gcJsaTemplate;
+      setGcTemplate({ ...tmpl, gcCompany: gcContact.company, contactName: gcContact.name });
+      // Merge required PPE and permits into form
+      setForm(f => ({
+        ...f,
+        ppe: [...new Set([...f.ppe, ...(tmpl.requiredPpe || [])])],
+        permits: [...new Set([...f.permits, ...(tmpl.requiredPermits || [])])],
+      }));
+      show(`GC template loaded: ${tmpl.name || gcContact.company}`, "ok");
+    }
+  }, [projects, app.contacts, show]);
 
   // ── AI auto-fill state ──
   const [aiJsaLoading, setAiJsaLoading] = useState(false);
@@ -270,6 +299,96 @@ export function JSATab({ app }) {
     );
   };
 
+  // ── JSA routing state ──
+  const [routingResult, setRoutingResult] = useState(null); // { recipients: [...], jsaId }
+
+  // ── Resolve JSA recipients ──
+  const resolveJsaRecipients = useCallback((jsa) => {
+    const recipients = [];
+    const proj = (projects || []).find(p => p.id === jsa.projectId);
+    const contacts = app.contacts || [];
+    const bookkeepingEmail = app.company?.bookkeepingEmail || "bookkeeping@ebconstructors.com";
+
+    // 1) GC Project Manager — find contact from project's GC company
+    if (proj?.gc) {
+      const gcPm = contacts.find(c =>
+        c.email &&
+        (c.company === proj.gc || proj.gc.toLowerCase().includes(c.company?.toLowerCase() || "") || (c.company || "").toLowerCase().includes(proj.gc.toLowerCase())) &&
+        (c.role?.toLowerCase().includes("pm") || c.role?.toLowerCase().includes("project manager") || c.role?.toLowerCase().includes("coordinator"))
+      );
+      if (gcPm) {
+        recipients.push({ role: "GC Project Manager", name: gcPm.name, email: gcPm.email, company: gcPm.company });
+      } else {
+        // Fallback: any contact from that GC with an email
+        const gcAny = contacts.find(c => c.email && (c.company === proj.gc || proj.gc.toLowerCase().includes(c.company?.toLowerCase() || "")));
+        if (gcAny) recipients.push({ role: "GC Contact", name: gcAny.name, email: gcAny.email, company: gcAny.company });
+      }
+    }
+
+    // 2) EBC Bookkeeping
+    if (bookkeepingEmail) {
+      recipients.push({ role: "EBC Bookkeeping", name: "Bookkeeping", email: bookkeepingEmail, company: "EBC" });
+    }
+
+    // 3) EBC PM assigned to project
+    if (proj?.pm) {
+      // Try to find PM email from employees
+      const pmEmployee = (app.employees || []).find(e => e.name === proj.pm && e.email);
+      recipients.push({ role: "EBC Project Manager", name: proj.pm, email: pmEmployee?.email || "pm@ebconstructors.com", company: "EBC" });
+    }
+
+    return recipients;
+  }, [projects, app.contacts, app.company, app.employees]);
+
+  // ── Close & Route JSA ──
+  const closeAndRouteJsa = useCallback(async (jsa) => {
+    // Close the JSA
+    setJsas(prev => prev.map(j => j.id === jsa.id ? { ...j, status: "closed", closedAt: new Date().toISOString() } : j));
+
+    // Resolve recipients
+    const recipients = resolveJsaRecipients(jsa);
+
+    // Generate PDF (auto-download)
+    const projN = projName(jsa.projectId);
+    const tradeLabel = (jsa.trades || (jsa.trade ? [jsa.trade] : [])).map(tr => TRADE_LABELS[tr]?.label || tr).join(", ");
+    const allH = jsa.steps.flatMap(s => s.hazards || []);
+    const maxR = Math.max(0, ...allH.map(h => (h.likelihood || 1) * (h.severity || 1)));
+    const ppeLabels = (jsa.ppe || []).map(k => PPE_ITEMS.find(p => p.key === k)?.label || k).filter(Boolean);
+    const permitLabels = (jsa.permits || []).map(k => PERMIT_TYPES.find(p => p.key === k)?.label || k).filter(Boolean);
+    const teamMap = {};
+    (jsa.teamSignOn || []).forEach(c => { teamMap[c.name] = { name: c.name, signature: c.signature || null }; });
+    (jsa.teamMembers || []).forEach(c => { if (!teamMap[c.name]) teamMap[c.name] = { name: c.name, signature: c.signature || null }; else if (c.signature) teamMap[c.name].signature = c.signature; });
+
+    const gcHeaderText = jsa.gcTemplate?.headerText || null;
+
+    try {
+      await generateJsaPdf({
+        ...jsa,
+        projectName: projN,
+        trade: tradeLabel,
+        gc: jsa.gc || (projects || []).find(p => p.id === jsa.projectId)?.gc || "",
+        gcHeaderText,
+        riskLevel: maxR <= 6 ? "Low" : maxR <= 12 ? "Medium" : maxR <= 19 ? "High" : "Critical",
+        ppe: ppeLabels,
+        permits: permitLabels,
+        teamMembers: Object.values(teamMap),
+      });
+    } catch { /* PDF generation is best-effort */ }
+
+    // Queue mailto links for each recipient
+    if (recipients.length > 0) {
+      const subject = encodeURIComponent(`JSA Completed: ${jsa.title} — ${projN}`);
+      const body = encodeURIComponent(`JSA "${jsa.title}" for project ${projN} has been completed and signed.\n\nDate: ${jsa.date}\nTrade: ${tradeLabel}\nSupervisor: ${jsa.supervisor}\nCrew: ${Object.keys(teamMap).join(", ") || "—"}\n\nPDF attached separately. Please file accordingly.`);
+      // Open mailto for the first recipient (browsers block multiple)
+      const allEmails = recipients.map(r => r.email).filter(Boolean).join(",");
+      window.open(`mailto:${allEmails}?subject=${subject}&body=${body}`, "_blank");
+    }
+
+    // Show routing result
+    setRoutingResult({ recipients, jsaId: jsa.id, title: jsa.title, project: projN });
+    show(`JSA closed & sent to ${recipients.length} recipient${recipients.length !== 1 ? "s" : ""}`, "ok");
+  }, [setJsas, resolveJsaRecipients, show, projects, projName]);
+
   // ═══════════════════════════════════════════════════════════
   //  JSA DETAIL / EDIT
   // ═══════════════════════════════════════════════════════════
@@ -292,6 +411,24 @@ export function JSATab({ app }) {
 
     return (
       <div className="jsa-detail">
+        {/* Routing Confirmation Banner */}
+        {routingResult && routingResult.jsaId === jsa.id && (
+          <div className="mb-sp4" style={{ background: "#10b98122", border: "1px solid #10b981", borderRadius: "var(--radius-md)", padding: "var(--space-3) var(--space-4)" }}>
+            <div className="fw-semi fs-label mb-sp2" style={{ color: "#10b981" }}>
+              JSA Closed & Routed — Sent to {routingResult.recipients.length} recipient{routingResult.recipients.length !== 1 ? "s" : ""}
+            </div>
+            {routingResult.recipients.map((r, i) => (
+              <div key={i} className="fs-tab mb-sp1" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
+                <span style={{ color: "#10b981" }}>✓</span>
+                <span className="fw-semi">{r.role}</span>
+                <span className="c-text3">{r.name}</span>
+                <span className="c-text3 fs-xs">({r.email})</span>
+              </div>
+            ))}
+            <button className="cal-nav-btn mt-sp2 fs-xs" onClick={() => setRoutingResult(null)}>{t("Dismiss")}</button>
+          </div>
+        )}
+
         <div className="mb-sp4 gap-sp2 flex-wrap" style={{ display: "flex", alignItems: "center" }}>
           <button className="cal-nav-btn" onClick={() => setSubTab("list")}>{t("← Back")}</button>
           <span className="jsa-status-badge" style={{ background: (jsa.status === "active" ? "#10b981" : jsa.status === "draft" ? "#f59e0b" : "var(--text3)") + "22", color: jsa.status === "active" ? "#10b981" : jsa.status === "draft" ? "#f59e0b" : "var(--text3)" }}>
@@ -299,7 +436,7 @@ export function JSATab({ app }) {
           </span>
           <div className="gap-sp2 ml-auto" style={{ display: "flex" }}>
             {jsa.status === "draft" && <button className="btn btn-primary btn-sm" onClick={() => updateJsa({ status: "active" })}>{t("Activate")}</button>}
-            {jsa.status === "active" && <button className="cal-nav-btn" onClick={() => updateJsa({ status: "closed" })}>{t("Close JSA")}</button>}
+            {jsa.status === "active" && <button className="cal-nav-btn" onClick={() => closeAndRouteJsa(jsa)}>{t("Close & Send JSA")}</button>}
             <button className="cal-nav-btn" onClick={() => {
               const projN = projName(jsa.projectId);
               const tradeLabel = (jsa.trades || (jsa.trade ? [jsa.trade] : [])).map(tr => TRADE_LABELS[tr]?.label || tr).join(", ");
@@ -705,6 +842,7 @@ export function JSATab({ app }) {
         id: crypto.randomUUID(),
         ...form,
         projectId: Number(form.projectId),
+        gcTemplate: gcTemplate || null,
         status: "draft",
         teamSignOn: [],
         toolboxTalk: { topic: "", notes: "", discussed: false },
@@ -716,6 +854,7 @@ export function JSATab({ app }) {
       setJsas(prev => [...prev, newJsa]);
       show(t("JSA created"));
       setForm({ projectId: "", trades: ["framing"], templateId: "", title: "", location: "", supervisor: "", competentPerson: "", gc: "", date: new Date().toISOString().slice(0, 10), shift: "day", weather: "clear", indoorOutdoor: "outdoor", steps: [], ppe: [], permits: [], teamMembers: [] });
+      setGcTemplate(null);
       setActiveJsa(newJsa.id);
       setSubTab("detail");
     };
@@ -742,7 +881,7 @@ export function JSATab({ app }) {
         <div className="form-grid mb-sp4">
           <div className="form-group">
             <label className="form-label">{t("Project")}</label>
-            <select className="form-select" value={form.projectId} onChange={e => updForm("projectId", e.target.value)}>
+            <select className="form-select" value={form.projectId} onChange={e => handleProjectSelect(e.target.value)}>
               <option value="">{t("Select...")}</option>
               {(projects || []).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
@@ -832,6 +971,29 @@ export function JSATab({ app }) {
         {form.indoorOutdoor !== "indoor" && weatherHazard && form.weather !== "clear" && (
           <div className="jsa-weather-warn">
             <AlertTriangle className="mr-sp1" style={{ width: 16, height: 16, display: "inline", verticalAlign: "middle" }} />{lang === "es" ? weatherHazard.hazardEs : weatherHazard.hazard}
+          </div>
+        )}
+
+        {/* GC Template Banner */}
+        {gcTemplate && (
+          <div className="jsa-gc-template-banner" style={{ background: "var(--blue-bg, #1e3a5f22)", border: "1px solid var(--blue, #3b82f6)", borderRadius: "var(--radius-md)", padding: "var(--space-3) var(--space-4)", marginBottom: "var(--space-4)" }}>
+            <div className="fw-semi fs-label mb-sp1" style={{ color: "var(--blue, #3b82f6)" }}>
+              {gcTemplate.gcCompany} — JSA Template Applied
+            </div>
+            {gcTemplate.headerText && <div className="fs-tab c-text2 mb-sp1">{gcTemplate.headerText}</div>}
+            {gcTemplate.additionalNotes && <div className="fs-xs c-text3">{gcTemplate.additionalNotes}</div>}
+            {(gcTemplate.requiredPpe || []).length > 0 && (
+              <div className="fs-xs c-text3 mt-sp1">Required PPE auto-added: {gcTemplate.requiredPpe.map(k => {
+                const item = PPE_ITEMS.find(p => p.key === k);
+                return item ? `${item.icon} ${item.label}` : k;
+              }).join(", ")}</div>
+            )}
+            {(gcTemplate.requiredPermits || []).length > 0 && (
+              <div className="fs-xs c-text3 mt-sp1">Required permits auto-added: {gcTemplate.requiredPermits.map(k => {
+                const p = PERMIT_TYPES.find(pt => pt.key === k);
+                return p ? p.label : k;
+              }).join(", ")}</div>
+            )}
           </div>
         )}
 

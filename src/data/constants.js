@@ -7,7 +7,7 @@ import { isDemoMode } from "./defaults";
 const _demo = isDemoMode();
 
 // Bump this when seed data changes to bust stale localStorage caches
-export const DATA_VERSION = 24;
+export const DATA_VERSION = 25;
 
 // ── THEMES (3 active — archived themes in src/archive/theme-effects.jsx) ──
 export const THEMES = {
@@ -365,14 +365,14 @@ const _demoContacts = [
   {id:2,name:"Mason Williams",company:"Endurance Builders",role:"Superintendent",bids:0,wins:0,color:"#3b82f6",last:"Mar 19",priority:"high",phone:"713-899-6142",email:"mwilliams@endbs.com",notes:"Woodside Lab super. PTO 3/23-3/28. Containment on T&M."},
   {id:3,name:"Ruby Rubio",company:"Endurance Builders",role:"Project Engineer",bids:0,wins:0,color:"#3b82f6",last:"Mar 19",priority:"med",phone:"281-745-2965",email:"rrubio@endbs.com",notes:"Send COI, submittals, lead times to Ruby."},
   // WC Construction
-  {id:4,name:"Heidi Phillips",company:"WC Construction",role:"Project Manager",bids:0,wins:0,color:"#10b981",last:"Mar 18",priority:"high",phone:"409-893-2069",email:"hphillips@wcconstructioncompany.com",notes:"CB&I PM. Also 6WW Lobby, PPER Missouri City, WL Level 11."},
+  {id:4,name:"Heidi Phillips",company:"WC Construction",role:"Project Manager",bids:0,wins:0,color:"#10b981",last:"Mar 18",priority:"high",phone:"409-893-2069",email:"hphillips@wcconstructioncompany.com",notes:"CB&I PM. Also 6WW Lobby, PPER Missouri City, WL Level 11.",gcJsaTemplate:{name:"WC Construction JSA",requiredPpe:["hard_hat","safety_glasses","safety_boots","hi_vis","hearing"],requiredPermits:[],headerText:"WC Construction Company — Job Safety Analysis",additionalNotes:"Submit completed JSA to WCC safety coordinator within 24 hours. All subs must use WCC JSA format.",requireSupervisorSignature:true,requireCompetentPerson:true}},
   {id:5,name:"Joseph Quan",company:"WC Construction",role:"Project Engineer",bids:0,wins:0,color:"#10b981",last:"Mar 20",priority:"high",phone:"832-991-5653",email:"jquan@wcconstructioncompany.com",notes:"CB&I PE. Submittals due Mar 24."},
   {id:6,name:"Adam Teeter",company:"WC Construction",role:"Superintendent",bids:0,wins:0,color:"#10b981",last:"Mar 18",priority:"med",phone:"832-570-3670",email:"ateeter@wcconstructioncompany.com",notes:"CB&I superintendent."},
   {id:41,name:"Alejandra Ibarra",company:"WC Construction",role:"Office Manager / AP",bids:0,wins:1,color:"#10b981",last:"Mar 19",priority:"high",phone:"281-801-0076 ext 221",email:"aibarra@wcconstructioncompany.com",notes:"PPER Missouri City AP/billing contact. Invoice #4 flagged 3/19/2026 — lien waiver typo, correct amount $13,464.00. Status: Revise & Resubmit in Procore."},
   {id:42,name:"Jeremy Price",company:"WC Construction",role:"Project Manager",bids:0,wins:1,color:"#10b981",last:"Mar 6",priority:"med",phone:"",email:"",notes:"PPER Missouri City PM. Requested thin-cut stone pricing for columns per architect 3/6/2026."},
   {id:43,name:"Bo Ruiz",company:"WC Construction",role:"Superintendent",bids:0,wins:1,color:"#10b981",last:"Mar 5",priority:"med",phone:"",email:"",notes:"PPER Missouri City superintendent. 2 overdue punch list items as of 3/5/2026."},
   // Forney Construction
-  {id:7,name:"Jason McIntyre",company:"Forney Construction",role:"Project Manager",bids:0,wins:0,color:"#f59e0b",last:"Mar 2",priority:"high",phone:"713-410-9824",email:"jason.mcintyre@forneyconstruction.com",notes:"PM on League City CCC CT, Pearland MEIC-CT, Woodlands RAD."},
+  {id:7,name:"Jason McIntyre",company:"Forney Construction",role:"Project Manager",bids:0,wins:0,color:"#f59e0b",last:"Mar 2",priority:"high",phone:"713-410-9824",email:"jason.mcintyre@forneyconstruction.com",notes:"PM on League City CCC CT, Pearland MEIC-CT, Woodlands RAD.",gcJsaTemplate:{name:"Forney Standard JSA",requiredPpe:["hard_hat","safety_glasses","safety_boots","hi_vis"],requiredPermits:[],headerText:"Forney Construction — Safety First",additionalNotes:"All workers must attend morning toolbox talk before starting work. JSA must be reviewed if conditions change.",requireSupervisorSignature:true,requireCompetentPerson:true}},
   {id:8,name:"Natalie Pettis",company:"Forney Construction",role:"Asst. PM",bids:0,wins:0,color:"#f59e0b",last:"Mar 2",priority:"med",phone:"832-274-2512",email:"natalie.pettis@forneyconstruction.com",notes:"MHTW RAD APM. Also IAH RAC."},
   {id:9,name:"Jennifer Averitt",company:"Forney Construction",role:"Asst. PM",bids:0,wins:0,color:"#f59e0b",last:"Mar 17",priority:"med",phone:"",email:"jennifer.averitt@forneyconstruction.com",notes:"MH MC Cancer Center CT. CO #1 sent 3/17."},
   {id:10,name:"Jose Perez",company:"Forney Construction",role:"Asst. PM",bids:0,wins:0,color:"#f59e0b",last:"Mar 13",priority:"med",phone:"832-605-7437",email:"jose.perez@forneyconstruction.com",notes:"Our Lady of Guadalupe PM."},
@@ -383,7 +383,7 @@ const _demoContacts = [
   {id:14,name:"Ethan Alvarez",company:"O'Donnell/Snider",role:"Project Manager",bids:0,wins:0,color: "var(--purple)",last:"Mar 16",priority:"med",phone:"",email:"",notes:"PM on MH MC Hospital Single Plane IR & Neuro IR."},
   {id:15,name:"Jim Suh",company:"O'Donnell/Snider",role:"Estimator",bids:0,wins:0,color: "var(--purple)",last:"Apr 6",priority:"high",phone:"281-404-7673",email:"jsuh@odonnellsnider.com",notes:"EQT Corp Budget, A5 Steakhouse, Kannon, HM Katy Emergency Care Center. Very active — multiple ITBs in March/April 2026."},
   // United Constructors
-  {id:15,name:"Justin Gayford",company:"United Constructors",role:"Project Manager",bids:0,wins:0,color:"#ef4444",last:"Mar 11",priority:"high",phone:"",email:"justin@unitedconstructors.com",notes:"Brunello Cucinelli PM. Active schedule coordination."},
+  {id:15,name:"Justin Gayford",company:"United Constructors",role:"Project Manager",bids:0,wins:0,color:"#ef4444",last:"Mar 11",priority:"high",phone:"",email:"justin@unitedconstructors.com",notes:"Brunello Cucinelli PM. Active schedule coordination.",gcJsaTemplate:{name:"United Constructors Safety Plan",requiredPpe:["hard_hat","safety_glasses","safety_boots","hi_vis","gloves_cut"],requiredPermits:["hot_work"],headerText:"United Constructors — Pre-Task Safety Plan",additionalNotes:"Hot work permit required for any cutting/welding. Competent person must be on-site at all times. Daily safety huddle mandatory.",requireSupervisorSignature:true,requireCompetentPerson:true}},
   {id:16,name:"Steve Williams",company:"United Constructors",role:"VP Interior Construction",bids:0,wins:0,color:"#ef4444",last:"Mar 12",priority:"high",phone:"713-579-9738",email:"swilliams@unitedconstructors.com",notes:"Heart Care Clinic. CO #2 approved 3/12. Escapology Sugar Land PM."},
   {id:17,name:"Mistie Williams",company:"United Constructors",role:"Project Coordinator",bids:0,wins:0,color:"#ef4444",last:"Mar 2",priority:"med",phone:"713-579-9742",email:"mwilliams@unitedconstructors.com",notes:"Subcontracts and COs. Dotson, Escapology, Heart Care."},
   // Harvey Cleary
@@ -591,6 +591,7 @@ export const COMPANY_DEFAULTS = {
   defaultWaste:5,
   defaultOverhead:10,
   defaultProfit:10,
+  bookkeepingEmail:"bookkeeping@ebconstructors.com",
 };
 
 // ── MILESTONES ──

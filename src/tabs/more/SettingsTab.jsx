@@ -1299,6 +1299,11 @@ function CompanyTab({ app }) {
             <label className="form-label">License</label>
             <input className="form-input" value={form.license} onChange={e => setForm({ ...form, license: e.target.value })} />
           </div>
+          <div className="form-group">
+            <label className="form-label">Bookkeeping Email</label>
+            <input className="form-input" value={form.bookkeepingEmail || ""} onChange={e => setForm({ ...form, bookkeepingEmail: e.target.value })} placeholder="bookkeeping@ebconstructors.com" />
+            <div className="text-xs text-muted mt-4">JSA auto-routing sends completed JSAs to this email.</div>
+          </div>
         </div>
       </div>
 

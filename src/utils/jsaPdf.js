@@ -76,8 +76,8 @@ async function loadLogo() {
 }
 
 // ── Branded header ──
-function drawHeader(doc, logo) {
-  const hH = 34;
+function drawHeader(doc, logo, gcHeaderText) {
+  const hH = gcHeaderText ? 40 : 34;
   doc.setFillColor(...C.navy);
   doc.rect(0, 0, PW, hH, "F");
   doc.setFillColor(...C.orange);
@@ -85,7 +85,7 @@ function drawHeader(doc, logo) {
 
   if (logo) {
     try {
-      const logoH = hH;
+      const logoH = 34;
       const logoW = logoH * (500 / 275);
       doc.addImage(logo, "PNG", 0, 0, logoW, logoH);
     } catch { /* skip */ }
@@ -101,6 +101,14 @@ function drawHeader(doc, logo) {
   doc.setTextColor(200, 210, 220);
   doc.text("Eagles Brothers Constructors", PW - MR, 24, { align: "right" });
   doc.text("Houston, TX  ·  (346) 970-7093", PW - MR, 29, { align: "right" });
+
+  // GC header text — show GC's required format name
+  if (gcHeaderText) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(255, 200, 100);
+    doc.text(safe(gcHeaderText), PW / 2, hH - 3, { align: "center" });
+  }
 
   return hH + 6;
 }
@@ -163,7 +171,7 @@ export async function generateJsaPdf(jsa) {
   const logo = await loadLogo();
 
   // ── PAGE 1: Header + Details ──
-  let y = drawHeader(doc, logo);
+  let y = drawHeader(doc, logo, jsa.gcHeaderText || null);
   y += 2;
 
   // Title bar
