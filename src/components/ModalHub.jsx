@@ -6,6 +6,7 @@ import { PunchListTab } from "../tabs/PunchListTab";
 import { DecisionLogTab } from "../tabs/DecisionLogTab";
 import { PhaseTracker, getDefaultPhases } from "./PhaseTracker";
 import { PerimeterMapModal } from "./PerimeterMapModal";
+import { PPE_ITEMS, PERMIT_TYPES } from "../data/jsaConstants";
 
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · ModalHub — Bid/Project/Contact edit modals
@@ -485,7 +486,7 @@ const ModalHub = ({ type, data, app }) => {
     const totalBilled = projInvoices.reduce((s, i) => s + (i.amount || 0), 0);
     const remaining = (draft.contract || 0) - totalBilled;
     const [projTab, setProjTab] = useState(app.initialProjTab || "overview");
-    const projTabs = ["overview", "notes", "change orders", "submittals", "rfis", "areas", "punch", "log", "reports", "team", "financials", "closeout", "logistics", "settings"];
+    const projTabs = ["overview", "notes", "change orders", "rfis & submittals", "areas", "punch", "log", "reports", "team", "financials", "closeout", "logistics", "settings"];
     const [coFormOpen, setCoFormOpen] = useState(false);
     const [coEditId, setCoEditId] = useState(null);
     const [coExpandedId, setCoExpandedId] = useState(null);
@@ -694,7 +695,13 @@ const ModalHub = ({ type, data, app }) => {
             return (
               <div className="flex gap-4 mb-12 border-b overflow-x-auto" style={{ paddingBottom: "var(--space-2)" }}>
                 {visibleTabs.map(tab => (
-                  <button key={tab} className={`btn btn-sm fs-tab capitalize nowrap ${projTab === tab ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjTab(tab)}>{tab}</button>
+                  <button key={tab} className={`btn btn-sm fs-tab capitalize nowrap ${projTab === tab ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjTab(tab)}>
+                    {tab}
+                    {tab === "rfis & submittals" && (() => {
+                      const count = projRFIs.filter(r => r.status === "open").length + projSubmittals.filter(s => s.status === "submitted" || s.status === "revise & resubmit").length;
+                      return count > 0 ? <span className="ml-sp1 badge badge-amber fs-xs" style={{ padding: "0 5px", minWidth: "auto" }}>{count}</span> : null;
+                    })()}
+                  </button>
                 ))}
               </div>
             );
@@ -713,6 +720,33 @@ const ModalHub = ({ type, data, app }) => {
               const completedCount = projPhases.filter(p => p.status === "completed").length;
               return (
                 <div className="flex-col gap-12">
+                  {/* RFI & Submittal status strip */}
+                  {(() => {
+                    const openRfis = projRFIs.filter(r => r.status === "open").length;
+                    const pendingSubs = projSubmittals.filter(s => s.status === "submitted" || s.status === "revise & resubmit").length;
+                    const hasIssues = openRfis > 0 || pendingSubs > 0;
+                    return (
+                      <div
+                        className="flex gap-16 items-center"
+                        style={{
+                          padding: "var(--space-2) var(--space-4)",
+                          borderRadius: "var(--radius)",
+                          background: hasIssues ? "rgba(245,158,11,0.08)" : "rgba(34,197,94,0.08)",
+                          border: `1px solid ${hasIssues ? "rgba(245,158,11,0.2)" : "rgba(34,197,94,0.2)"}`,
+                          cursor: hasIssues ? "pointer" : "default",
+                        }}
+                        onClick={() => hasIssues && setProjTab("rfis & submittals")}
+                      >
+                        <span className="text-xs" style={{ color: openRfis > 0 ? "var(--amber)" : "var(--green)" }}>
+                          {openRfis > 0 ? `${openRfis} RFI${openRfis !== 1 ? "s" : ""} open` : "All RFIs answered"}
+                        </span>
+                        <span className="text-xs text-dim">&middot;</span>
+                        <span className="text-xs" style={{ color: pendingSubs > 0 ? "var(--amber)" : "var(--green)" }}>
+                          {pendingSubs > 0 ? `${pendingSubs} submittal${pendingSubs !== 1 ? "s" : ""} pending` : "All submittals resolved"}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   <div className="flex gap-16 flex-wrap">
                     <div><span className="text-dim text-xs">CONTRACT</span><div className="font-mono text-amber font-bold">{fmt(draft.contract)}</div></div>
                     <div><span className="text-dim text-xs">BILLED</span><div className="font-mono">{fmt(totalBilled)}</div></div>
@@ -1098,9 +1132,22 @@ const ModalHub = ({ type, data, app }) => {
               </div>
             )}
 
-            {/* ── Submittals ── */}
-            {projTab === "submittals" && (
-              <div>
+            {/* ── RFIs & Submittals (combined) ── */}
+            {projTab === "rfis & submittals" && (() => {
+              const [rfiSubTab, setRfiSubTab] = useState("Submittals");
+              return (
+                <div>
+                  <div className="flex gap-4 mb-12 border-b" style={{ paddingBottom: "var(--space-2)" }}>
+                    {["Submittals", "RFIs"].map(t => (
+                      <button key={t} className={`btn btn-sm ${rfiSubTab === t ? "btn-primary" : "btn-ghost"}`} onClick={() => setRfiSubTab(t)}>
+                        {t}
+                        {t === "RFIs" && (() => { const c = projRFIs.filter(r => r.status === "open").length; return c > 0 ? <span className="ml-sp1 badge badge-amber fs-xs" style={{ padding: "0 5px", minWidth: "auto" }}>{c}</span> : null; })()}
+                        {t === "Submittals" && (() => { const c = projSubmittals.filter(s => s.status === "submitted" || s.status === "revise & resubmit").length; return c > 0 ? <span className="ml-sp1 badge badge-amber fs-xs" style={{ padding: "0 5px", minWidth: "auto" }}>{c}</span> : null; })()}
+                      </button>
+                    ))}
+                  </div>
+                  {rfiSubTab === "Submittals" && (
+                    <div>
                 {/* Header + Add button */}
                 <div className="flex-between mb-8">
                   <div className="flex-center-gap-6">
@@ -1268,12 +1315,10 @@ const ModalHub = ({ type, data, app }) => {
                     )}
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* ── RFIs ── */}
-            {projTab === "rfis" && (
-              <div className="flex-col gap-12">
+                    </div>
+                  )}
+                  {rfiSubTab === "RFIs" && (
+                    <div className="flex-col gap-12">
                 {/* Summary stats */}
                 <div className="flex gap-16 flex-wrap field-card-compact">
                   <div><span className="text-dim text-xs">TOTAL RFIs</span><div className="font-mono text-sm">{projRFIs.length}</div></div>
@@ -1512,8 +1557,11 @@ const ModalHub = ({ type, data, app }) => {
                     })}
                   </div>
                 )}
-              </div>
-            )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* ── Crew ── */}
             {projTab === "team" && (
@@ -3875,6 +3923,85 @@ const ModalHub = ({ type, data, app }) => {
               <textarea className="form-textarea" value={draft.notes} onChange={e => upd("notes", e.target.value)} placeholder="Notes about this contact..." />
             </div>
           </div>
+
+          {/* ── GC JSA Template Config ── */}
+          <div className="mt-16">
+            <div className="text-xs text-dim mb-8" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span>GC JSA TEMPLATE</span>
+              {!draft.gcJsaTemplate && (
+                <button className="btn btn-ghost btn-sm fs-xs" onClick={() => upd("gcJsaTemplate", { name: "", requiredPpe: [], requiredPermits: [], headerText: "", additionalNotes: "", requireSupervisorSignature: true, requireCompetentPerson: true })}>
+                  + Configure
+                </button>
+              )}
+            </div>
+            {!draft.gcJsaTemplate && (
+              <div className="text-sm text-muted">No JSA template configured for this GC. Click Configure to set up their required JSA format.</div>
+            )}
+            {draft.gcJsaTemplate && (
+                <div className="card" style={{ padding: "var(--space-3)", background: "var(--bg2)", borderRadius: "var(--radius-md)" }}>
+                  <div className="form-grid">
+                    <div className="form-group full">
+                      <label className="form-label">Template Name</label>
+                      <input className="form-input" value={draft.gcJsaTemplate.name || ""} onChange={e => upd("gcJsaTemplate", { ...draft.gcJsaTemplate, name: e.target.value })} placeholder="e.g. Forney Standard JSA" />
+                    </div>
+                    <div className="form-group full">
+                      <label className="form-label">PDF Header Text</label>
+                      <input className="form-input" value={draft.gcJsaTemplate.headerText || ""} onChange={e => upd("gcJsaTemplate", { ...draft.gcJsaTemplate, headerText: e.target.value })} placeholder="e.g. Forney Construction — Safety Department" />
+                    </div>
+                    <div className="form-group full">
+                      <label className="form-label">Required PPE</label>
+                      <div className="flex gap-4 flex-wrap">
+                        {PPE_ITEMS.map(item => {
+                          const active = (draft.gcJsaTemplate.requiredPpe || []).includes(item.key);
+                          return (
+                            <button key={item.key} type="button"
+                              className={`btn btn-sm ${active ? "btn-primary" : "btn-ghost"}`}
+                              style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}
+                              onClick={() => upd("gcJsaTemplate", { ...draft.gcJsaTemplate, requiredPpe: active ? draft.gcJsaTemplate.requiredPpe.filter(k => k !== item.key) : [...(draft.gcJsaTemplate.requiredPpe || []), item.key] })}>
+                              {item.icon} {item.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="form-group full">
+                      <label className="form-label">Required Permits</label>
+                      <div className="flex gap-4 flex-wrap">
+                        {PERMIT_TYPES.map(p => {
+                          const active = (draft.gcJsaTemplate.requiredPermits || []).includes(p.key);
+                          return (
+                            <button key={p.key} type="button"
+                              className={`btn btn-sm ${active ? "btn-primary" : "btn-ghost"}`}
+                              style={{ fontSize: "var(--text-xs)", padding: "var(--space-1) var(--space-2)" }}
+                              onClick={() => upd("gcJsaTemplate", { ...draft.gcJsaTemplate, requiredPermits: active ? draft.gcJsaTemplate.requiredPermits.filter(k => k !== p.key) : [...(draft.gcJsaTemplate.requiredPermits || []), p.key] })}>
+                              {p.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="form-group full">
+                      <label className="form-label">Additional Notes / Requirements</label>
+                      <textarea className="form-textarea" value={draft.gcJsaTemplate.additionalNotes || ""} onChange={e => upd("gcJsaTemplate", { ...draft.gcJsaTemplate, additionalNotes: e.target.value })} placeholder="GC-specific safety requirements..." />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <input type="checkbox" checked={draft.gcJsaTemplate.requireSupervisorSignature !== false} onChange={e => upd("gcJsaTemplate", { ...draft.gcJsaTemplate, requireSupervisorSignature: e.target.checked })} />
+                        Require Supervisor Signature
+                      </label>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <input type="checkbox" checked={draft.gcJsaTemplate.requireCompetentPerson !== false} onChange={e => upd("gcJsaTemplate", { ...draft.gcJsaTemplate, requireCompetentPerson: e.target.checked })} />
+                        Require Competent Person
+                      </label>
+                    </div>
+                  </div>
+                  <button className="btn btn-ghost btn-sm fs-xs c-red mt-8" onClick={() => { if (confirm("Remove JSA template config?")) upd("gcJsaTemplate", null); }}>Remove Template</button>
+                </div>
+            )}
+          </div>
+
           {!isNew && (
             <div className="mt-16">
               <div className="text-xs text-dim mb-8">CALL HISTORY</div>
