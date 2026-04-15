@@ -4,6 +4,9 @@ import { getHF, SCOPE_INIT, SCOPE_ITEM_MAP, DEFAULT_ASSUMPTIONS, DEFAULT_PROPOSA
 import { generateProposalPdf, generateQuickProposalPdf, defaultIncludes, defaultExcludes } from "../utils/proposalPdf";
 import { buildScopeLines } from "../utils/scopeBuilder";
 import { uploadTakeoffPdf, downloadTakeoffPdf, getSignedUrl, uploadProjectDrawing, insertProjectDrawing, getDrawingsByBid } from "../lib/supabase";
+import { extractPdfText } from "../utils/pdfBidExtractor.js";
+import { parseProposalWithAI } from "../utils/proposalImporter.js";
+import { Upload } from "lucide-react";
 
 /* ── helpers ─────────────────────────────────────────────────── */
 
@@ -1158,6 +1161,7 @@ export function EstimatingTab({ app }) {
             bids={bids}
             show={show}
             onClose={() => setShowQuickProposal(false)}
+            apiKey={app.apiKey}
           />
         )}
       </div>
@@ -1960,6 +1964,7 @@ export function EstimatingTab({ app }) {
           bids={bids}
           show={show}
           onClose={() => setShowQuickProposal(false)}
+          apiKey={app.apiKey}
         />
       )}
     </div>
@@ -2358,7 +2363,7 @@ function RoomHeader({ rm, isOpen, roomTotal, onToggle, onUpdateRoom, onDelete, f
    Quick Proposal Modal — generate proposals from simple line items
    No takeoff/assembly system needed
    ═══════════════════════════════════════════════════════════════ */
-function QuickProposalModal({ bids, show, onClose }) {
+function QuickProposalModal({ bids, show, onClose, apiKey }) {
   const [projectName, setProjectName] = useState("");
   const [projectAddress, setProjectAddress] = useState("");
   const [gcName, setGcName] = useState("");
@@ -2371,6 +2376,34 @@ function QuickProposalModal({ bids, show, onClose }) {
   const [generating, setGenerating] = useState(false);
   const [editSection, setEditSection] = useState(null); // "includes" | "excludes" | null
   const [generatedPdf, setGeneratedPdf] = useState(null); // { fileName, blobUrl, projectName }
+  const [importing, setImporting] = useState(false);
+
+  const handleImportPdf = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!apiKey) { show("Set your API key in Settings to use Import", "err"); return; }
+    setImporting(true);
+    try {
+      const text = await extractPdfText(file);
+      const data = await parseProposalWithAI(apiKey, text);
+      if (data.projectName) setProjectName(data.projectName);
+      if (data.projectAddress) setProjectAddress(data.projectAddress);
+      if (data.gcName) setGcName(data.gcName);
+      if (data.lineItems?.length > 0) setLineItems(data.lineItems);
+      if (data.alternates?.length > 0) setAlternates(data.alternates);
+      if (data.includes?.length > 0) setIncludes(data.includes);
+      if (data.excludes?.length > 0) setExcludes(data.excludes);
+      if (data.notes) setNotes(data.notes);
+      show("Proposal imported — review the fields below", "ok");
+    } catch (err) {
+      if (err.message === "NO_API_KEY") show("Set API key in Settings first", "err");
+      else if (err.message === "PARSE_FAILED") show("Could not parse proposal — fill in details manually", "err");
+      else if (err.message === "EMPTY_TEXT") show("Could not read PDF — try a different file", "err");
+      else show("Import failed — " + (err.message || "unknown error"), "err");
+    }
+    setImporting(false);
+    e.target.value = "";
+  };
 
   // Prefill from bid if selected
   const [selectedBid, setSelectedBid] = useState("");
@@ -2463,6 +2496,17 @@ function QuickProposalModal({ bids, show, onClose }) {
             </select>
           </div>
         )}
+
+        {/* Import from PDF */}
+        <div className="mb-12" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <label className="btn btn-sm btn-ghost" style={{ cursor: importing ? "wait" : "pointer", opacity: importing ? 0.5 : 1 }}>
+            <Upload size={14} className="mr-sp1" />
+            {importing ? "Importing..." : "Import from PDF"}
+            <input type="file" accept=".pdf" onChange={handleImportPdf} disabled={importing}
+              style={{ display: "none" }} />
+          </label>
+          {importing && <span className="text-xs" style={{ opacity: 0.5 }}>Extracting proposal data...</span>}
+        </div>
 
         {/* Project info */}
         <div className="form-grid mb-12">
