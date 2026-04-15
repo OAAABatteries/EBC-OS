@@ -516,6 +516,28 @@ const _demoSubmittals = [
   {id:627,projectId:19,number:"OC-ThermBatt-1.0",description:"Owens Corning Thermal Batt Insulation",specSection:"07 21 00",type:"product data",status:"approved",dateSubmitted:"2026-01-27",dateReturned:"",distributedBy:"Alejandra Ibarra (WC Construction)",notes:"Available in EBC submittal library"},
 ];
 
+// ── SUBMITTAL CATEGORIES ──
+export const SUBMITTAL_CATEGORIES = [
+  "Framing", "Drywall/Gypsum", "Acoustical Ceilings", "Insulation",
+  "Doors/Frames", "Sheathing", "Specialty", "Accessories"
+];
+
+// ── SEED: SUBMITTAL LIBRARY (master catalog) ──
+const _demoSubmittalLibrary = [
+  { id: "sl-001", itemName: "USG Sheetrock Firecode X Panels", manufacturer: "USG", specModel: "Firecode X 5/8\"", category: "Drywall/Gypsum", specSection: "09 21 16", type: "product data", lastUsedDate: "2026-03-03", lastUsedProject: "Arch-Con - Sprouts Farmers Market", approvalStatus: "approved", notes: "", createdAt: "2026-01-01" },
+  { id: "sl-002", itemName: "Sheetrock Mold Tough Firecode X Panels", manufacturer: "USG", specModel: "Mold Tough Firecode X 5/8\"", category: "Drywall/Gypsum", specSection: "09 21 16", type: "product data", lastUsedDate: "2026-03-03", lastUsedProject: "Arch-Con - Sprouts Farmers Market", approvalStatus: "approved", notes: "", createdAt: "2026-01-01" },
+  { id: "sl-003", itemName: "Knauf EcoBatt Insulation R-11", manufacturer: "Knauf", specModel: "EcoBatt R-11", category: "Insulation", specSection: "07 21 00", type: "product data", lastUsedDate: "2026-01-27", lastUsedProject: "PPER - Missouri City", approvalStatus: "approved", notes: "", createdAt: "2026-01-01" },
+  { id: "sl-004", itemName: "Knauf EcoBatt Insulation R-8", manufacturer: "Knauf", specModel: "EcoBatt R-8", category: "Insulation", specSection: "07 21 00", type: "product data", lastUsedDate: "2026-01-27", lastUsedProject: "PPER - Missouri City", approvalStatus: "approved", notes: "", createdAt: "2026-01-01" },
+  { id: "sl-005", itemName: "Knauf EcoBatt Insulation R-19", manufacturer: "Knauf", specModel: "EcoBatt R-19", category: "Insulation", specSection: "07 21 00", type: "product data", lastUsedDate: "2026-01-27", lastUsedProject: "PPER - Missouri City", approvalStatus: "approved", notes: "", createdAt: "2026-01-01" },
+  { id: "sl-006", itemName: "Armstrong Prelude XL 15/16\" Exposed Tee Grid", manufacturer: "Armstrong", specModel: "Prelude XL 15/16\"", category: "Acoustical Ceilings", specSection: "09 51 00", type: "product data", lastUsedDate: "2026-03-03", lastUsedProject: "Arch-Con - Sprouts Farmers Market", approvalStatus: "approved", notes: "", createdAt: "2026-01-01" },
+  { id: "sl-007", itemName: "ToughRock Fireguard X Mold Guard", manufacturer: "GP", specModel: "Fireguard X Mold Guard 5/8\"", category: "Drywall/Gypsum", specSection: "09 21 16", type: "product data", lastUsedDate: "2026-03-03", lastUsedProject: "Arch-Con - Sprouts Farmers Market", approvalStatus: "approved", notes: "", createdAt: "2026-01-01" },
+  { id: "sl-008", itemName: "DensShield Tile Backer", manufacturer: "GP", specModel: "DensShield 1/2\"", category: "Sheathing", specSection: "09 28 00", type: "product data", lastUsedDate: "2026-02-24", lastUsedProject: "Texas Heart Center - Baytown", approvalStatus: "approved", notes: "", createdAt: "2026-01-01" },
+  { id: "sl-009", itemName: "USG Durock Cement Board with EdgeGuard", manufacturer: "USG", specModel: "Durock 1/2\"", category: "Specialty", specSection: "09 28 00", type: "product data", lastUsedDate: "2026-02-24", lastUsedProject: "Texas Heart Center - Baytown", approvalStatus: "approved", notes: "", createdAt: "2026-01-01" },
+  { id: "sl-010", itemName: "DensGlass Gold Exterior Sheathing", manufacturer: "GP", specModel: "DensGlass Gold 5/8\"", category: "Sheathing", specSection: "07 25 00", type: "product data", lastUsedDate: "2026-01-27", lastUsedProject: "PPER - Missouri City", approvalStatus: "approved", notes: "", createdAt: "2026-01-01" },
+  { id: "sl-011", itemName: "Owens Corning Thermal Batt Insulation", manufacturer: "Owens Corning", specModel: "Thermal Batt", category: "Insulation", specSection: "07 21 00", type: "product data", lastUsedDate: "2026-01-27", lastUsedProject: "PPER - Missouri City", approvalStatus: "approved", notes: "", createdAt: "2026-01-01" },
+  { id: "sl-012", itemName: "Knauf EcoBatt Insulation", manufacturer: "Knauf", specModel: "EcoBatt (general)", category: "Insulation", specSection: "07 21 00", type: "product data", lastUsedDate: "2026-03-03", lastUsedProject: "Arch-Con - Sprouts Farmers Market", approvalStatus: "approved", notes: "", createdAt: "2026-01-01" },
+];
+
 // ── SEED: SCHEDULE ──
 const _demoSchedule = [];
 
@@ -745,6 +767,7 @@ export const initTmTickets = _demoTmTickets; // always load — foreman T&M capt
 export const initChangeOrders = _demoChangeOrders; // always load — foreman portal needs this
 export const initRfis = _demoRfis; // always load — foreman portal needs this
 export const initSubmittals = _demoSubmittals; // always load — foreman portal needs this
+export const initSubmittalLibrary = _demoSubmittalLibrary; // always load — master catalog
 export const initSchedule = _demoSchedule; // always load
 export const initIncidents = _demo ? _demoIncidents : [];
 export const initToolboxTalks = _demo ? _demoToolboxTalks : [];

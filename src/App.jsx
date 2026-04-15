@@ -5,7 +5,7 @@ import { useSyncedState, flushSyncQueue } from "./hooks/useSyncedState";
 import { useToast } from "./hooks/useToast";
 import {
   THEMES, ASSEMBLIES, SCOPE_INIT, initBids, initProjects, initContacts, initCallLog,
-  initInvoices, initChangeOrders, initRfis, initSubmittals, initSchedule,
+  initInvoices, initChangeOrders, initRfis, initSubmittals, initSubmittalLibrary, initSchedule,
   initIncidents, initToolboxTalks, initDailyReports, initTakeoffs, initPunchItems,
   OSHA_CHECKLIST, COMPANY_DEFAULTS, getHF,
   initEmployees, initCompanyLocations, initTimeEntries, initCrewSchedule, initMaterialRequests,
@@ -88,6 +88,7 @@ const PRIMARY_TABS = [
 const SECONDARY_TABS = [
   { key: "financials", label: "Financials" },
   { key: "documents", label: "Documents" },
+  { key: "submittalLibrary", label: "Submittal Library" },
   { key: "calendar", label: "Calendar" },
   { key: "schedule", label: "Schedule" },
   { key: "reports", label: "Reports" },
@@ -382,6 +383,7 @@ function App({ auth, onLogout }) {
   const [changeOrders, setChangeOrders, _syncChangeOrders] = useSyncedState("changeOrders", initChangeOrders);
   const [rfis, setRfis, _syncRfis] = useSyncedState("rfis", initRfis);
   const [submittals, setSubmittals, _syncSubmittals] = useSyncedState("submittals", initSubmittals);
+  const [submittalLibrary, setSubmittalLibrary, _syncSubLibrary] = useSyncedState("submittalLibrary", initSubmittalLibrary);
   const [schedule, setSchedule, _syncSchedule] = useSyncedState("schedule", initSchedule);
   const [incidents, setIncidents, _syncIncidents] = useSyncedState("incidents", initIncidents);
   const [toolboxTalks, setToolboxTalks, _syncToolboxTalks] = useSyncedState("toolboxTalks", initToolboxTalks);
@@ -685,7 +687,7 @@ function App({ auth, onLogout }) {
   const app = {
     bids, setBids, projects, setProjects, contacts, setContacts, callLog, setCallLog,
     scope, setScope, invoices, setInvoices, changeOrders, setChangeOrders, rfis, setRfis,
-    submittals, setSubmittals, schedule, setSchedule, incidents, setIncidents,
+    submittals, setSubmittals, submittalLibrary, setSubmittalLibrary, schedule, setSchedule, incidents, setIncidents,
     toolboxTalks, setToolboxTalks, dailyReports, setDailyReports, takeoffs, setTakeoffs,
     company, setCompany, assemblies, setAssemblies, theme, setTheme,
     materials, setMaterials, customAssemblies, setCustomAssemblies, incentiveProjects, setIncentiveProjects, apiKey, setApiKey,
@@ -4983,7 +4985,7 @@ function App({ auth, onLogout }) {
         {tab === "jsa" && <JSATab app={app} />}
         {tab === "deliveries" && <DeliveriesTab app={app} />}
         {tab === "foreman" && <ForemanView app={{...app, auth: { ...app.auth, role: "foreman", name: app.auth?.name || "Admin" }}} />}
-        {["financials", "documents", "schedule", "reports", "safety", "timeclock", "sds", "map", "settings"].includes(tab) && <MoreTabs app={app} />}
+        {["financials", "documents", "submittalLibrary", "schedule", "reports", "safety", "timeclock", "sds", "map", "settings"].includes(tab) && <MoreTabs app={app} />}
       </main>
 
       {/* ── Bottom Nav (mobile only) ── */}
