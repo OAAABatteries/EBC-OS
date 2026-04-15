@@ -496,6 +496,7 @@ export const T = {
   // ── Dashboard ──
   "overview": { es: "resumen" },
   "Morning Brief": { es: "Briefing Matutino" },
+  "Quick Brief": { es: "Briefing Rápido" },
   "Bid Pipeline": { es: "Pipeline de Licitaciones" },
   "Active Projects": { es: "Proyectos Activos" },
   "Open Invoices": { es: "Facturas Pendientes" },

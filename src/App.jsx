@@ -1054,12 +1054,13 @@ function App({ auth, onLogout }) {
         </div>
       </div>
 
-      {/* Morning Briefing — auto-populated from live data */}
+      {/* Quick Brief — auto-populated from live data */}
       {dashCfg.showBrief && briefResult && (
         <div className="card mb-sp4 p-sp5 overflow-auto" style={{ maxHeight: 450 }}>
           <div className="flex-between mb-12">
             <div>
-              <div className="text-sm font-semi">{briefResult.greeting || "Good morning!"}</div>
+              <div className="text-xs" style={{ color: "var(--text3)", letterSpacing: "1px", textTransform: "uppercase" }}>{t("Quick Brief")}</div>
+              <div className="text-sm font-semi mt-4">{briefResult.greeting}</div>
             </div>
           </div>
 
@@ -1070,13 +1071,16 @@ function App({ auth, onLogout }) {
             <div className="mb-12">
               <div className="text-sm font-semi mb-8 text-red">{t("Urgent Alerts")}</div>
               {briefResult.urgentAlerts.map((a, i) => (
-                <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", cursor: a.project ? "pointer" : undefined }}
-                  onClick={a.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "viewProject", data: p }); } : undefined}>
+                <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", cursor: "pointer" }}
+                  onClick={() => { if (a.tab) handleTabClick(a.tab); else if (a.project) { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "viewProject", data: p }); } }}>
                   <div className="flex-between">
                     <span className="text-sm">{a.alert}</span>
                     <span className="badge badge-red">{a.type}</span>
                   </div>
-                  <div className="text-xs mt-2 text-green">{a.action}</div>
+                  <div className="flex-between mt-2">
+                    <span className="text-xs text-green">{a.action}</span>
+                    {a.tab && <span className="text-xs font-semi" style={{ color: "var(--accent, #3b82f6)" }}>Go &rsaquo;</span>}
+                  </div>
                 </div>
               ))}
             </div>
@@ -1087,11 +1091,14 @@ function App({ auth, onLogout }) {
             <div className="mb-12">
               <div className="text-sm font-semi mb-8 text-amber">{t("Today's Focus")}</div>
               {briefResult.todaysFocus.map((f, i) => (
-                <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)", cursor: f.project ? "pointer" : undefined }}
-                  onClick={f.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(f.project.toLowerCase())); if (p) setModal({ type: "viewProject", data: p }); } : undefined}>
+                <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)", cursor: f.tab ? "pointer" : undefined }}
+                  onClick={f.tab ? () => handleTabClick(f.tab) : f.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(f.project.toLowerCase())); if (p) setModal({ type: "viewProject", data: p }); } : undefined}>
                   <div className="flex-between">
                     <span className="text-sm">{f.item}</span>
-                    <span className={`badge ${f.priority === "critical" ? "badge-red" : f.priority === "high" ? "badge-amber" : "badge-muted"}`}>{f.priority}</span>
+                    <div className="flex gap-8" style={{ alignItems: "center" }}>
+                      <span className={`badge ${f.priority === "critical" ? "badge-red" : f.priority === "high" ? "badge-amber" : "badge-muted"}`}>{f.priority}</span>
+                      {f.actionLabel && <span className="text-xs font-semi" style={{ color: "var(--accent, #3b82f6)", whiteSpace: "nowrap" }}>{f.actionLabel} &rsaquo;</span>}
+                    </div>
                   </div>
                   {f.project && <div className="text-xs text-dim mt-2 text-blue underline">{f.project}</div>}
                 </div>
@@ -1104,12 +1111,15 @@ function App({ auth, onLogout }) {
             <div className="mb-12">
               <div className="text-sm font-semi mb-8">{t("Money Moves")}</div>
               {briefResult.moneyMoves.map((m, i) => (
-                <div key={i} className="queue-row">
+                <div key={i} className="queue-row" style={{ cursor: m.tab ? "pointer" : undefined }} onClick={m.tab ? () => handleTabClick(m.tab) : undefined}>
                   <div className="flex-between">
                     <span className="text-sm">{m.item}</span>
                     <span className="font-semi text-sm text-green">{m.amount}</span>
                   </div>
-                  <div className="text-xs text-muted mt-2">{m.action} — {m.deadline}</div>
+                  <div className="flex-between mt-2">
+                    <span className="text-xs text-muted">{m.action} — {m.deadline}</span>
+                    {m.actionLabel && <span className="text-xs font-semi" style={{ color: "var(--accent, #3b82f6)", whiteSpace: "nowrap" }}>{m.actionLabel} &rsaquo;</span>}
+                  </div>
                 </div>
               ))}
             </div>
@@ -3659,20 +3669,49 @@ function App({ auth, onLogout }) {
     const in7 = new Date(now.getTime() + 7 * 86400000);
     const parseDate = (s) => { if (!s) return null; const d = new Date(s); return isNaN(d) ? null : d; };
     const fmt = (n) => "$" + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
-    const hour = now.getHours();
+    const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
+    const crewCount = new Set((teamSchedule || []).filter(s => s.days?.[todayKey]).map(s => s.employeeId)).size;
+    const siteCount = new Set((teamSchedule || []).filter(s => s.days?.[todayKey]).map(s => s.projectId)).size;
+    const dayLabel = now.toLocaleDateString("en-US", { weekday: "long" });
+    const timeLabel = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
     const greetName = auth?.name?.split(" ")[0] || "Boss";
-    const greeting = hour < 12 ? `Good morning, ${greetName}.` : hour < 17 ? `Good afternoon, ${greetName}.` : `Good evening, ${greetName}.`;
+    const GREETINGS = [
+      `Que pedo, ${greetName}`,
+      `What's good, ${greetName}`,
+      `Rise and grind, ${greetName}`,
+      `Let's get it, ${greetName}`,
+      `Arriba, ${greetName}`,
+      `Orale pues, ${greetName}`,
+      `Another day, another dollar, ${greetName}`,
+      `Lock in, ${greetName}`,
+      `A darle, ${greetName}`,
+      `Eagle mode, ${greetName}`,
+      `Vamos, ${greetName}`,
+      `Back at it, ${greetName}`,
+      `Let's eat, ${greetName}`,
+      `Echale ganas, ${greetName}`,
+      `No days off, ${greetName}`,
+      `Wassup, ${greetName}`,
+      `Pa'lante, ${greetName}`,
+      `Ready or not, ${greetName}`,
+      `Con todo, ${greetName}`,
+      `Time to build, ${greetName}`,
+    ];
+    // Pick greeting based on day-of-year so it stays stable within a day but changes daily
+    const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+    const greetLine = GREETINGS[dayOfYear % GREETINGS.length];
+    const greeting = `${greetLine} — ${dayLabel} ${timeLabel}, ${siteCount} site${siteCount !== 1 ? "s" : ""} active, ${crewCount} crew scheduled`;
 
     // ── Urgent Alerts ──
     const urgentAlerts = [];
 
     const dueBids = bids.filter(b => b.status === "estimating" && b.due && parseDate(b.due) >= now && parseDate(b.due) <= in7);
-    dueBids.forEach(b => urgentAlerts.push({ type: "Bid", alert: `"${b.name || "Untitled"}" due ${new Date(b.due).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`, project: b.gc, action: "Finalize and submit" }));
+    dueBids.forEach(b => urgentAlerts.push({ type: "Bid", alert: `"${b.name || "Untitled"}" due ${new Date(b.due).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`, project: b.gc, action: "Finalize and submit", tab: "bids" }));
 
     const overdueInvs = invoices.filter(i => i.status === "overdue" || (i.status === "pending" && parseDate(i.date) && (now - parseDate(i.date)) > 30 * 86400000));
     if (overdueInvs.length > 0) {
       const total = overdueInvs.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-      urgentAlerts.push({ type: "A/R", alert: `${overdueInvs.length} overdue invoice${overdueInvs.length > 1 ? "s" : ""} totaling ${fmt(total)}`, action: "Follow up on collections" });
+      urgentAlerts.push({ type: "A/R", alert: `${overdueInvs.length} overdue invoice${overdueInvs.length > 1 ? "s" : ""} totaling ${fmt(total)}`, action: "Follow up on collections", tab: "financials" });
     }
 
     const marginThr = companySettings?.marginAlertThreshold || 25;
@@ -3683,19 +3722,19 @@ function App({ auth, onLogout }) {
       const margin = contract > 0 ? Math.round(((contract - labor) / contract) * 100) : 100;
       return margin < marginThr;
     });
-    lowMargin.forEach(p => urgentAlerts.push({ type: "Margin", alert: `"${p.name}" is below ${marginThr}% margin target`, project: p.name, action: "Review labor costs and estimate" }));
+    lowMargin.forEach(p => urgentAlerts.push({ type: "Margin", alert: `"${p.name}" is below ${marginThr}% margin target`, project: p.name, action: "Review labor costs and estimate", tab: "projects" }));
 
     const openInc = (incidents || []).filter(i => i.status === "open" || !i.status);
-    if (openInc.length > 0) urgentAlerts.push({ type: "Safety", alert: `${openInc.length} open safety incident${openInc.length > 1 ? "s" : ""} need resolution`, action: "Investigate and close out" });
+    if (openInc.length > 0) urgentAlerts.push({ type: "Safety", alert: `${openInc.length} open safety incident${openInc.length > 1 ? "s" : ""} need resolution`, action: "Investigate and close out", tab: "safety" });
 
     const expCerts = (certifications || []).filter(c => { const exp = c.expirationDate ? new Date(c.expirationDate) : null; return exp && exp <= now; });
-    if (expCerts.length > 0) urgentAlerts.push({ type: "Compliance", alert: `${expCerts.length} expired certification${expCerts.length > 1 ? "s" : ""} — crew may not be compliant`, action: "Renew or reassign affected workers" });
+    if (expCerts.length > 0) urgentAlerts.push({ type: "Compliance", alert: `${expCerts.length} expired certification${expCerts.length > 1 ? "s" : ""} — crew may not be compliant`, action: "Renew or reassign affected workers", tab: "more" });
 
     const overdueRfis = (rfis || []).filter(r => r.status !== "Answered" && r.status !== "Closed").filter(r => {
       const sub = r.submitted || r.dateSubmitted;
       return sub && (now - new Date(sub)) > 7 * 86400000;
     });
-    if (overdueRfis.length > 0) urgentAlerts.push({ type: "RFI", alert: `${overdueRfis.length} RFI${overdueRfis.length > 1 ? "s" : ""} overdue (oldest: ${Math.floor((now - new Date(overdueRfis[0].submitted || overdueRfis[0].dateSubmitted)) / 86400000)}d)`, action: "Follow up with GC or architect" });
+    if (overdueRfis.length > 0) urgentAlerts.push({ type: "RFI", alert: `${overdueRfis.length} RFI${overdueRfis.length > 1 ? "s" : ""} overdue (oldest: ${Math.floor((now - new Date(overdueRfis[0].submitted || overdueRfis[0].dateSubmitted)) / 86400000)}d)`, action: "Follow up with GC or architect", tab: "projects" });
 
     // ── Today's Focus ──
     const todaysFocus = [];
@@ -3703,23 +3742,20 @@ function App({ auth, onLogout }) {
     const pendCOs = changeOrders.filter(co => co.status !== "approved" && co.status !== "rejected" && !co.deletedAt);
     if (pendCOs.length > 0) {
       const coTotal = pendCOs.reduce((s, co) => s + (Math.abs(Number(co.amount)) || 0), 0);
-      todaysFocus.push({ item: `${pendCOs.length} change order${pendCOs.length > 1 ? "s" : ""} pending approval (${fmt(coTotal)})`, priority: coTotal > 10000 ? "high" : "medium" });
+      todaysFocus.push({ item: `${pendCOs.length} change order${pendCOs.length > 1 ? "s" : ""} pending approval (${fmt(coTotal)})`, priority: coTotal > 10000 ? "high" : "medium", tab: "projects", actionLabel: "Review COs" });
     }
 
     const pendMat = (materialRequests || []).filter(r => r.status === "requested");
-    if (pendMat.length > 0) todaysFocus.push({ item: `${pendMat.length} material request${pendMat.length > 1 ? "s" : ""} awaiting review`, priority: pendMat.some(r => r.urgency === "urgent" || r.urgency === "emergency") ? "high" : "medium" });
+    if (pendMat.length > 0) todaysFocus.push({ item: `${pendMat.length} material request${pendMat.length > 1 ? "s" : ""} awaiting review`, priority: pendMat.some(r => r.urgency === "urgent" || r.urgency === "emergency") ? "high" : "medium", tab: "materials", actionLabel: "Review Materials" });
 
     const unreviewed = (dailyReports || []).filter(r => !r.reviewedBy);
-    if (unreviewed.length > 0) todaysFocus.push({ item: `${unreviewed.length} daily report${unreviewed.length > 1 ? "s" : ""} need review`, priority: unreviewed.length > 3 ? "high" : "medium" });
+    if (unreviewed.length > 0) todaysFocus.push({ item: `${unreviewed.length} daily report${unreviewed.length > 1 ? "s" : ""} need review`, priority: unreviewed.length > 3 ? "high" : "medium", tab: "reports", actionLabel: "Review Reports" });
 
     const in14 = new Date(now.getTime() + 14 * 86400000);
     const subsDue = submittals.filter(s => s.status !== "approved" && parseDate(s.due) && parseDate(s.due) <= in14);
-    if (subsDue.length > 0) todaysFocus.push({ item: `${subsDue.length} submittal${subsDue.length > 1 ? "s" : ""} due within 14 days`, priority: "medium" });
+    if (subsDue.length > 0) todaysFocus.push({ item: `${subsDue.length} submittal${subsDue.length > 1 ? "s" : ""} due within 14 days`, priority: "medium", tab: "projects", actionLabel: "Check Submittals" });
 
-    const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
-    const crewToday = new Set((teamSchedule || []).filter(s => s.days?.[todayKey]).map(s => s.employeeId)).size;
-    const sitesToday = new Set((teamSchedule || []).filter(s => s.days?.[todayKey]).map(s => s.projectId)).size;
-    if (crewToday > 0) todaysFocus.push({ item: `${crewToday} crew member${crewToday > 1 ? "s" : ""} scheduled across ${sitesToday} site${sitesToday > 1 ? "s" : ""}`, priority: "low" });
+    if (crewCount > 0) todaysFocus.push({ item: `${crewCount} crew member${crewCount > 1 ? "s" : ""} scheduled across ${siteCount} site${siteCount > 1 ? "s" : ""}`, priority: "low", tab: "calendar", actionLabel: "View Schedule" });
 
     // ── Money Moves ──
     const moneyMoves = [];
@@ -3727,7 +3763,7 @@ function App({ auth, onLogout }) {
     const pendingInv = invoices.filter(i => i.status === "draft" || i.status === "pending");
     if (pendingInv.length > 0) {
       const invTotal = pendingInv.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-      moneyMoves.push({ item: `${pendingInv.length} invoice${pendingInv.length > 1 ? "s" : ""} to send`, amount: fmt(invTotal), action: "Send to GC", deadline: "This week" });
+      moneyMoves.push({ item: `${pendingInv.length} invoice${pendingInv.length > 1 ? "s" : ""} to send`, amount: fmt(invTotal), action: "Send to GC", deadline: "This week", tab: "financials", actionLabel: "Send Invoices" });
     }
 
     const backlogVal = activeProjs.reduce((s, p) => {
@@ -3735,11 +3771,11 @@ function App({ auth, onLogout }) {
       const billed = invoices.filter(i => String(i.projectId) === String(p.id) && !i.deletedAt).reduce((s2, i) => s2 + (Number(i.amount) || 0), 0);
       return s + Math.max(0, contract - billed);
     }, 0);
-    if (backlogVal > 0) moneyMoves.push({ item: "Remaining backlog to bill", amount: fmt(backlogVal), action: "Bill as work completes", deadline: "Ongoing" });
+    if (backlogVal > 0) moneyMoves.push({ item: "Remaining backlog to bill", amount: fmt(backlogVal), action: "Bill as work completes", deadline: "Ongoing", tab: "financials", actionLabel: "View Billing" });
 
     const activeBids = bids.filter(b => b.status === "estimating" || b.status === "submitted");
     const pipelineVal = activeBids.reduce((s, b) => s + (b.value || 0), 0);
-    if (pipelineVal > 0) moneyMoves.push({ item: `${activeBids.length} bids in pipeline`, amount: fmt(pipelineVal), action: "Track and follow up", deadline: "Active" });
+    if (pipelineVal > 0) moneyMoves.push({ item: `${activeBids.length} bids in pipeline`, amount: fmt(pipelineVal), action: "Track and follow up", deadline: "Active", tab: "bids", actionLabel: "View Pipeline" });
 
     // ── Summary ──
     const parts = [];

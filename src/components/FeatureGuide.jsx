@@ -58,9 +58,9 @@ export const GUIDE_STEPS = {
         "The charts below show your bid win rate, revenue by project, and team utilization over time. Use them in Monday morning reviews to spot trends early.",
     },
     {
-      title: "Morning Brief",
+      title: "Quick Brief",
       description:
-        "Hit 'Morning Brief' for an AI-generated summary of your day — open bids, team status, and any items that need your signature or follow-up.",
+        "Your Quick Brief auto-populates from live data — open bids, team status, and any items that need your signature or follow-up. Action buttons take you straight to each area.",
     },
   ],
 
