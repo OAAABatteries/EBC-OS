@@ -1228,6 +1228,8 @@ function App({ auth, onLogout }) {
 
       {/* ── PM Action Queue — promoted to position 2; gated to PM/Owner/Admin/Super only ── */}
       {["owner", "admin", "pm", "superintendent"].includes(userRole) && (() => {
+        const isPM = effectiveRole === "pm" && auth?.name;
+        const myProjectIds = isPM ? new Set(projects.filter(p => p.pm === auth.name).map(p => String(p.id))) : null;
         const pendingMat = (materialRequests || []).filter(r => r.status === "requested");
         const urgentMat = pendingMat.filter(r => r.urgency === "urgent" || r.urgency === "emergency");
         const awaitingConfirm = (materialRequests || []).filter(r => r.status === "delivered" && !r.confirmedBy);
@@ -1642,6 +1644,67 @@ function App({ auth, onLogout }) {
                 </div>
               );
             })()}
+            {(userRole === "owner" || userRole === "admin") && backlog > 0 && (
+              <div className="kpi-card cursor-pointer" onClick={() => navigateWithContext("projects")}>
+                <div className="kpi-label">{t("Backlog")}</div>
+                <div className="kpi-value fs-subtitle">{fmt(backlog)}</div>
+                <div className="kpi-sub">{t("unbilled contract value")}</div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ── Cash Position — MOVED UP for owner visibility (was after field sections) ── */}
+      {!collapsedZones.financial && (userRole === "owner" || userRole === "admin") && (() => {
+        const burden = companySettings?.laborBurdenMultiplier || 1.35;
+        const now = new Date();
+        const weekAgo = new Date(now - 7 * 86400000);
+        const recentEntries = timeEntries.filter(te => te.clockIn && new Date(te.clockIn) >= weekAgo);
+        const weeklyHours = recentEntries.reduce((s, te) => s + (te.totalHours || 0), 0);
+        const fieldEmpIds = new Set(recentEntries.map(te => String(te.employeeId)));
+        const fieldEmps = employees.filter(e => fieldEmpIds.has(String(e.id)));
+        const avgRate = fieldEmps.length > 0 ? fieldEmps.reduce((s, e) => s + (e.hourlyRate || 25), 0) / fieldEmps.length : 25;
+        const weeklyPayroll = Math.round(weeklyHours * avgRate * burden);
+        const totalAR = cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90;
+        const coverageWeeks = weeklyPayroll > 0 ? Math.round(totalAR / weeklyPayroll * 10) / 10 : null;
+        if (weeklyPayroll === 0 && totalAR === 0) return null;
+        const activeProjs = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
+        const totalRetainage = activeProjs.reduce((s, p) => {
+          const projInvs = (invoices || []).filter(i => String(i.projectId) === String(p.id) && !i.deletedAt);
+          const rate = p.retainageRate ?? (companySettings?.defaultRetainageRate || 10);
+          return s + projInvs.reduce((is, i) => is + (i.retainageWithheld || Math.round((i.amount || 0) * rate / 100)), 0);
+        }, 0);
+        return (
+          <div id="dash-cash" className="card dash-card mt-8">
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
+              <DollarSign size={15} /> {t("Cash Position")}
+            </div>
+            <div className="grid-auto-180">
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("financials")}>
+                <div className="text-lg font-bold text-green">{fmtK(totalAR)}</div>
+                <div className="text-xs text-muted">{t("Outstanding A/R")}</div>
+              </div>
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("timeclock")}>
+                <div className="text-lg font-bold" style={{ color: weeklyPayroll > 0 ? "var(--text)" : "var(--text3)" }}>{fmtK(weeklyPayroll)}</div>
+                <div className="text-xs text-muted">{t("Est. Weekly Payroll")}</div>
+                <div className="text-xs text-muted">{weeklyHours.toFixed(0)}h @ ${avgRate.toFixed(0)}/hr</div>
+              </div>
+              {coverageWeeks !== null && (
+                <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("financials", { subTab: "aging" })}>
+                  <div className="text-lg font-bold" style={{ color: coverageWeeks >= 4 ? "var(--green)" : coverageWeeks >= 2 ? "var(--amber)" : "var(--red)" }}>{coverageWeeks}</div>
+                  <div className="text-xs text-muted">{t("Weeks A/R Coverage")}</div>
+                  {coverageWeeks < 2 && <div className="text-xs text-red">{t("Low coverage")}</div>}
+                </div>
+              )}
+              {totalRetainage > 0 && (
+                <div className="activity-tile">
+                  <div className="text-lg font-bold text-amber">{fmtK(totalRetainage)}</div>
+                  <div className="text-xs text-muted">{t("Retainage Held")}</div>
+                  <div className="text-xs text-dim">{t("across")} {activeProjs.length} {t("projects")}</div>
+                </div>
+              )}
+            </div>
           </div>
         );
       })()}
@@ -2168,7 +2231,7 @@ function App({ auth, onLogout }) {
       })()}
 
       {/* ── E3: Billing Health — underbilling / overbilling detection ── */}
-      {dashCfg.showKPIs && (!collapsedZones.financial || userRole === "owner") && (() => {
+      {dashCfg.showKPIs && (!collapsedZones.financial || ["owner", "admin", "pm", "accounting"].includes(userRole)) && (() => {
         const burden = companySettings?.laborBurdenMultiplier || 1.35;
         const activeProjs = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active") && (p.progress || 0) > 0);
         const billingIssues = activeProjs.map(p => {
@@ -2449,62 +2512,7 @@ function App({ auth, onLogout }) {
         );
       })()}
 
-      {/* ── Cash Position / Payroll Coverage — Owner/Admin only ── */}
-      {!collapsedZones.financial && (userRole === "owner" || userRole === "admin") && (() => {
-        const burden = companySettings?.laborBurdenMultiplier || 1.35;
-        const now = new Date();
-        const weekAgo = new Date(now - 7 * 86400000);
-        const recentEntries = timeEntries.filter(te => te.clockIn && new Date(te.clockIn) >= weekAgo);
-        const weeklyHours = recentEntries.reduce((s, te) => s + (te.totalHours || 0), 0);
-        // Average only field employees (those with time entries) — office staff inflate the average
-        const fieldEmpIds = new Set(recentEntries.map(te => String(te.employeeId)));
-        const fieldEmps = employees.filter(e => fieldEmpIds.has(String(e.id)));
-        const avgRate = fieldEmps.length > 0 ? fieldEmps.reduce((s, e) => s + (e.hourlyRate || 25), 0) / fieldEmps.length : 25;
-        const weeklyPayroll = Math.round(weeklyHours * avgRate * burden);
-        const totalAR = cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90;
-        const coverageWeeks = weeklyPayroll > 0 ? Math.round(totalAR / weeklyPayroll * 10) / 10 : null;
-        if (weeklyPayroll === 0 && totalAR === 0) return null;
-        return (
-          <div id="dash-cash" className="card dash-card mt-8">
-            <div className="text-sm font-semi mb-8 flex-center-gap-6">
-              <DollarSign size={15} /> {t("Cash Position")}
-            </div>
-            <div className="grid-auto-180">
-              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("financials")}>
-                <div className="text-lg font-bold text-green">{fmtK(totalAR)}</div>
-                <div className="text-xs text-muted">{t("Outstanding A/R")}</div>
-              </div>
-              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("timeclock")}>
-                <div className="text-lg font-bold" style={{ color: weeklyPayroll > 0 ? "var(--text)" : "var(--text3)" }}>{fmtK(weeklyPayroll)}</div>
-                <div className="text-xs text-muted">{t("Est. Weekly Payroll")}</div>
-                <div className="text-xs text-muted">{weeklyHours.toFixed(0)}h @ ${avgRate.toFixed(0)}/hr</div>
-              </div>
-              {coverageWeeks !== null && (
-                <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("financials", { subTab: "aging" })}>
-                  <div className="text-lg font-bold" style={{ color: coverageWeeks >= 4 ? "var(--green)" : coverageWeeks >= 2 ? "var(--amber)" : "var(--red)" }}>{coverageWeeks}</div>
-                  <div className="text-xs text-muted">{t("Weeks A/R Coverage")}</div>
-                  {coverageWeeks < 2 && <div className="text-xs text-red">{t("Low coverage")}</div>}
-                </div>
-              )}
-              {(() => {
-                const activeProjs = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
-                const totalRetainage = activeProjs.reduce((s, p) => {
-                  const projInvs = (invoices || []).filter(i => String(i.projectId) === String(p.id) && !i.deletedAt);
-                  const rate = p.retainageRate ?? (companySettings?.defaultRetainageRate || 10);
-                  return s + projInvs.reduce((is, i) => is + (i.retainageWithheld || Math.round((i.amount || 0) * rate / 100)), 0);
-                }, 0);
-                return totalRetainage > 0 ? (
-                  <div className="activity-tile">
-                    <div className="text-lg font-bold text-amber">{fmtK(totalRetainage)}</div>
-                    <div className="text-xs text-muted">{t("Retainage Held")}</div>
-                    <div className="text-xs text-dim">{t("across")} {activeProjs.length} {t("projects")}</div>
-                  </div>
-                ) : null;
-              })()}
-            </div>
-          </div>
-        );
-      })()}
+      {/* Cash Position moved up — now renders right after Financial KPI tiles, before Field zone */}
 
       {/* ── Section 4: Charts — only if data exists, compact ── */}
       {dashCfg.showCharts && !collapsedZones.financial && gcWinRates.length > 0 && (
