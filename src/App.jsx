@@ -1242,6 +1242,15 @@ function App({ auth, onLogout }) {
           + (canAccessTab("bids") ? queueBids.length : 0)
           + (canAccessTab("financials") ? queueOverdueInv.length : 0)
           + (canAccessTab("financials") ? queueProfitAlerts.length : 0);
+        // Warn PM if no projects assigned (data integrity issue)
+        if (isPM && myProjectIds && myProjectIds.size === 0) return (
+          <div id="dash-actions" className="card dash-card bg-2" style={{ borderLeft: "3px solid var(--amber)" }}>
+            <div className="text-sm font-semi flex-center-gap-6">
+              <AlertTriangle size={14} style={{ color: "var(--amber)" }} /> {t("No projects assigned to you")}
+            </div>
+            <div className="text-xs text-dim mt-4">{t("Check that your name matches the PM field on your projects, or ask an admin to assign them.")}</div>
+          </div>
+        );
         if (queueTotal === 0) return (
           <div id="dash-actions" className="card dash-card bg-2" style={{ borderLeft: "3px solid var(--green)" }}>
             <div className="text-sm font-semi flex-center-gap-6">
@@ -1263,6 +1272,7 @@ function App({ auth, onLogout }) {
                   <div className="flex-center-gap-8">
                     <FileText size={14} />
                     <span className="text-sm">{t("Change Orders Pending")}</span>
+                    {dashActions.cosPendingTotal !== 0 && <span className="badge badge-amber fs-xs" style={{ padding: "0 5px" }}>{fmt(dashActions.cosPendingTotal)}</span>}
                   </div>
                   <div className="flex-center-gap-8">
                     <span className="text-sm font-semi text-amber">{queueCOs.length}</span>
@@ -1344,7 +1354,7 @@ function App({ auth, onLogout }) {
                   </div>
                 </div>
               )}
-              {missingReports.length > 0 && new Date().getHours() >= 14 && (
+              {missingReports.length > 0 && new Date().getHours() >= 12 && (
                 <div className="flex-between queue-row">
                   <div className="flex-center-gap-8">
                     <AlertTriangle size={14} />
@@ -1362,6 +1372,7 @@ function App({ auth, onLogout }) {
                   <div className="flex-center-gap-8">
                     <AlertTriangle size={14} />
                     <span className="text-sm">{t("Unassigned Problems")}</span>
+                    {(() => { const oldest = openProblems.reduce((max, p) => { const age = p.reportedAt ? Math.floor((new Date() - new Date(p.reportedAt)) / 86400000) : 0; return age > max ? age : max; }, 0); return oldest > 0 ? <span className="badge badge-red fs-xs" style={{ padding: "0 5px" }}>{t("oldest")}: {oldest}d</span> : null; })()}
                   </div>
                   <div className="flex-center-gap-8">
                     <span className="text-sm font-semi text-red">{openProblems.length}</span>
@@ -1624,14 +1635,18 @@ function App({ auth, onLogout }) {
         const todayReports = (dailyReports || []).filter(r => r.submittedAt && r.submittedAt.startsWith(todayStr));
         const unreviewed = todayReports.filter(r => !r.reviewedBy).length;
         const hasActivity = todayProd.length > 0 || todayTm.length > 0 || todayPunch.length > 0 || todayProblems.length > 0 || todayReports.length > 0;
-        if (!hasActivity) return (
-          <div className="card dash-card" style={{ borderLeft: "3px solid var(--text3)", opacity: 0.8 }}>
-            <div className="text-sm font-semi flex-center-gap-6 text-dim">
-              <ClipboardList size={15} /> {t("No field activity reported yet today")}
+        if (!hasActivity) {
+          const isLate = new Date().getHours() >= 14;
+          return (
+            <div className="card dash-card" style={{ borderLeft: `3px solid var(--${isLate ? "red" : "text3"})`, opacity: isLate ? 1 : 0.8 }}>
+              <div className={`text-sm font-semi flex-center-gap-6 ${isLate ? "text-red" : "text-dim"}`}>
+                {isLate ? <AlertTriangle size={15} /> : <ClipboardList size={15} />}
+                {isLate ? t("No field activity by 2 PM — check with your crews") : t("No field activity reported yet today")}
+              </div>
+              <div className="text-xs text-dim mt-4">{isLate ? t("No production logs, daily reports, or punch items have been filed today. This may indicate a reporting gap.") : t("Production logs, T&M tickets, punch items, and daily reports will appear here as crews check in.")}</div>
             </div>
-            <div className="text-xs text-dim mt-4">{t("Production logs, T&M tickets, punch items, and daily reports will appear here as crews check in.")}</div>
-          </div>
-        );
+          );
+        }
         return (
           <div className="card dash-card dash-card--green">
             <div className="text-sm font-semi mb-8 flex-center-gap-6">
@@ -1790,7 +1805,10 @@ function App({ auth, onLogout }) {
                 <div key={pid} className="flex-between queue-row fs-12 cursor-pointer"
                   onClick={() => setModal({ type: "viewProject", data: proj })}>
                   <span className="text-blue font-semi">{proj.name}</span>
-                  <span><strong>{data.crew.size}</strong> crew · {data.hours.toFixed(0)}h</span>
+                  <span className="flex-center-gap-6">
+                    {(() => { const pIssues = (problems || []).filter(p2 => String(p2.projectId) === String(pid) && p2.status === "open").length; return pIssues > 0 ? <span className="badge badge-red fs-xs" style={{ padding: "0 4px" }}>{pIssues} issues</span> : null; })()}
+                    <span><strong>{data.crew.size}</strong> crew · {data.hours.toFixed(0)}h</span>
+                  </span>
                 </div>
               );
             })}
@@ -2043,7 +2061,7 @@ function App({ auth, onLogout }) {
       {/* PM Action Queue moved to position 2 (right after Brief) */}
 
       {/* ── Projects by Stage (Phase 2B) ── */}
-      {dashCfg.showKPIs && !collapsedZones.financial && (() => {
+      {(dashCfg.showKPIs || dashCfg.showField) && !collapsedZones.financial && (() => {
         const staged = (projects || []).filter(p => p.constructionStage && (p.progress || 0) < 100);
         if (staged.length === 0) return null;
         const counts = {};
@@ -2080,7 +2098,9 @@ function App({ auth, onLogout }) {
                     <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Contract</th>
                     <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Billed</th>
                     <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Cost</th>
+                    <th style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Progress</th>
                     <th style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Margin</th>
+                    <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Hours</th>
                     <th style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Crew</th>
                   </tr>
                 </thead>
@@ -2100,7 +2120,14 @@ function App({ auth, onLogout }) {
                         <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)" }}>{fmtCell(contract)}</td>
                         <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--green)" }}>{fmtCell(billed)}</td>
                         <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)" }}>{fmtCell(costs.total)}</td>
+                        <td style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                            <div style={{ width: 32, height: 5, background: "var(--bg3)", borderRadius: 3, overflow: "hidden" }}><div style={{ width: `${p.progress || 0}%`, height: "100%", background: (p.progress || 0) >= 80 ? "var(--green)" : "var(--amber)", borderRadius: 3 }} /></div>
+                            <span style={{ fontSize: "var(--text-tab)" }}>{p.progress || 0}%</span>
+                          </div>
+                        </td>
                         <td style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)", color: margin < 20 ? "var(--red)" : margin < 40 ? "var(--amber)" : "var(--green)", fontWeight: "var(--weight-semi)" }}>{margin}%</td>
+                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", color: "var(--text2)" }}>{costs.laborHours > 0 ? `${Math.round(costs.laborHours)}h` : "\u2014"}</td>
                         <td style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)" }}>{crewToday || "\u2014"}</td>
                       </tr>
                     );
@@ -3567,9 +3594,13 @@ function App({ auth, onLogout }) {
         const docTab = subTab || "change-orders";
         const setDocTab = (t) => setSubTab(t);
         const projName = (pid) => projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
-        const allCOs = changeOrders.filter(c => !c.deletedAt).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-        const allRFIs = rfis.filter(r => !r.deletedAt).sort((a, b) => (b.age || 0) - (a.age || 0));
-        const allSubs = submittals.filter(s => !s.deletedAt).sort((a, b) => ((a.due || "") > (b.due || "") ? 1 : -1));
+        const statusPriority = (s) => ({ pending: 0, draft: 1, submitted: 2, approved: 3, rejected: 4 }[s] ?? 2);
+        const allCOs = changeOrders.filter(c => !c.deletedAt).sort((a, b) => statusPriority(a.status) - statusPriority(b.status) || (b.date || "").localeCompare(a.date || ""));
+        const allRFIs = rfis.filter(r => !r.deletedAt).sort((a, b) => {
+          const aOpen = r => r.status !== "Answered" && r.status !== "Closed" ? 0 : 1;
+          return aOpen(a) - aOpen(b) || (b.age || 0) - (a.age || 0);
+        });
+        const allSubs = submittals.filter(s => !s.deletedAt).sort((a, b) => (a.status === "approved" ? 1 : 0) - (b.status === "approved" ? 1 : 0) || ((a.due || "") > (b.due || "") ? 1 : -1));
         const allPunch = (punchItems || []).filter(p => !p.deletedAt && p.status !== "resolved" && p.status !== "complete");
         return (
           <div>
