@@ -613,6 +613,18 @@ function App({ auth, onLogout }) {
   }, [tab, subTab]); // eslint-disable-line react-hooks/exhaustive-deps
   const [installPrompt, setInstallPrompt] = useState(null);
   const [notifOpen, setNotifOpen] = useState(false);
+  // Jump nav active section tracking
+  const [activeSection, setActiveSection] = useState(null);
+  useEffect(() => {
+    if (tab !== "dashboard") return;
+    const ids = ["dash-brief", "dash-actions", "dash-financial", "dash-field", "dash-workforce", "dash-projects", "profit-analysis-section", "dash-cash", "dash-gc"];
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (visible.length > 0) setActiveSection(visible[0].target.id);
+    }, { rootMargin: "-80px 0px -60% 0px", threshold: 0.1 });
+    ids.forEach(id => { const el = document.getElementById(id); if (el) observer.observe(el); });
+    return () => observer.disconnect();
+  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── PWA install prompt (24h cooldown after dismiss) ──
   useEffect(() => {
@@ -1129,7 +1141,7 @@ function App({ auth, onLogout }) {
         return (
           <div className="flex gap-6 mb-sp4 flex-wrap" style={{ position: "sticky", top: 0, zIndex: 10, background: "var(--bg1)", padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
             {JUMP_SECTIONS.map(s => (
-              <button key={s.id} className="btn btn-ghost btn-sm fs-xs"
+              <button key={s.id} className={`btn btn-sm fs-xs ${activeSection === s.id ? "btn-primary" : "btn-ghost"}`}
                 style={{ padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)" }}
                 onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" })}>
                 {s.label}
@@ -1298,6 +1310,7 @@ function App({ auth, onLogout }) {
                   <div className="flex-center-gap-8">
                     <Paperclip size={14} />
                     <span className="text-sm">{t("Submittals Due Soon")}</span>
+                    {(() => { const total = submittals.filter(s => !s.deletedAt).length; const approved = submittals.filter(s => !s.deletedAt && s.status === "approved").length; return total > 0 ? <span className="text-xs text-dim">{approved}/{total} {t("approved")}</span> : null; })()}
                   </div>
                   <div className="flex-center-gap-8">
                     <span className="text-sm font-semi text-amber">{queueSubs.length}</span>
@@ -1578,7 +1591,13 @@ function App({ auth, onLogout }) {
             <div className="kpi-card cursor-pointer" onClick={() => navigateWithContext("projects")}>
               <div className="kpi-label">{t("Active Contract")}</div>
               <div className="kpi-value fs-subtitle">{fmt(adjustedContract)}</div>
-              <div className="kpi-sub">{activeProjects.length} {t("projects")} {t("(incl. COs)")}</div>
+              <div className="kpi-sub flex-center-gap-4">
+                <span>{activeProjects.length} {t("projects")}</span>
+                {(() => {
+                  const newThisMonth = activeProjects.filter(p => p.createdAt && p.createdAt.startsWith(thisMonth)).length;
+                  return newThisMonth > 0 ? <span style={{ color: "var(--green)", fontSize: "var(--text-tab)" }}>+{newThisMonth} {t("new")}</span> : null;
+                })()}
+              </div>
             </div>
             <div className="kpi-card cursor-pointer" onClick={() => navigateWithContext("financials")}>
               <div className="kpi-label">{t("Billed")}</div>
@@ -2153,7 +2172,7 @@ function App({ auth, onLogout }) {
                 <div key={p.id} className="text-sm py-3 cursor-pointer text-blue"
                   onClick={() => setModal({ type: "viewProject", data: p })}>{p.name} — {p.progress || 0}%</div>
               ))}
-              {dashActions.projAtRisk.length > 4 && <div className="text-xs text-muted">+{dashActions.projAtRisk.length - 4} more</div>}
+              {dashActions.projAtRisk.length > 4 && <div className="text-xs text-blue cursor-pointer" onClick={() => navigateWithContext("projects", { search: "at-risk" })}>+{dashActions.projAtRisk.length - 4} more →</div>}
             </div>
           )}
           {dashActions.projNoBilling.length > 0 && (
@@ -2163,21 +2182,21 @@ function App({ auth, onLogout }) {
                 <div key={p.id} className="text-sm py-3 cursor-pointer text-blue"
                   onClick={() => setModal({ type: "viewProject", data: p })}>{p.name}</div>
               ))}
-              {dashActions.projNoBilling.length > 4 && <div className="text-xs text-muted">+{dashActions.projNoBilling.length - 4} more</div>}
+              {dashActions.projNoBilling.length > 4 && <div className="text-xs text-blue cursor-pointer" onClick={() => navigateWithContext("financials", { subTab: "invoices" })}>+{dashActions.projNoBilling.length - 4} more →</div>}
             </div>
           )}
         </div>
       )}
 
       {/* ── Profit Analysis — projects below 30% margin ── */}
-      {dashCfg.showKPIs && !collapsedZones.financial && dashActions.profitAlerts.length === 0 && (
+      {dashCfg.showKPIs && (!collapsedZones.financial || userRole === "owner") && dashActions.profitAlerts.length === 0 && (
         <div id="dash-profit" className="card dash-card" style={{ borderLeft: "3px solid var(--green)" }}>
           <div className="text-sm font-semi flex-center-gap-6">
             <CheckSquare size={14} style={{ color: "var(--green)" }} /> {t("All active projects above")} {companySettings?.marginAlertThreshold || 25}% {t("margin target")}
           </div>
         </div>
       )}
-      {dashCfg.showKPIs && !collapsedZones.financial && dashActions.profitAlerts.length > 0 && (() => {
+      {dashCfg.showKPIs && (!collapsedZones.financial || userRole === "owner") && dashActions.profitAlerts.length > 0 && (() => {
         const marginThr = companySettings?.marginAlertThreshold || 25;
         const getProfitDiagnosis = (p) => {
           const base = p.adjustedContract || p.contract || 0;
@@ -2185,11 +2204,12 @@ function App({ auth, onLogout }) {
           const matRatio = p.materialActual && base > 0 ? p.materialActual / base : null;
           const issues = [];
           // Labor is primary profit driver — healthy labor ratio is ~50% of contract (100% markup)
-          if (laborRatio !== null && laborRatio > 0.55) issues.push({ icon: <Wrench size={11} />, text: "Labor overrun" });
-          if (matRatio !== null && matRatio > 0.28) issues.push({ icon: <Package size={11} />, text: "Material overage (est.)" });
+          if (laborRatio !== null && laborRatio > 0.55) issues.push({ icon: <Wrench size={11} />, text: `Labor at ${Math.round(laborRatio * 100)}% of contract (target: ≤55%)` });
+          if (matRatio !== null && matRatio > 0.28) issues.push({ icon: <Package size={11} />, text: `Materials at ${Math.round(matRatio * 100)}% of contract (target: ≤28%)` });
           // Check negative COs
           const projCOs = changeOrders.filter(co => String(co.projectId) === String(p.id) && co.amount < 0 && co.status === "approved");
-          if (projCOs.length > 0) issues.push({ icon: <FileX size={11} />, text: "CO reduced margin" });
+          const coReduction = projCOs.reduce((s, c) => s + (c.amount || 0), 0);
+          if (projCOs.length > 0) issues.push({ icon: <FileX size={11} />, text: `COs reduced by ${fmt(Math.abs(coReduction))}` });
           if (issues.length === 0) {
             if (p.margin < 0) return [{ icon: <AlertTriangle size={11} />, text: "Contract underwater" }];
             if (p.margin < 15) return [{ icon: <AlertTriangle size={11} />, text: "Critical — review estimate vs actuals" }];
@@ -2291,18 +2311,33 @@ function App({ auth, onLogout }) {
                 <div className="text-lg font-bold text-green">{fmtK(totalAR)}</div>
                 <div className="text-xs text-muted">{t("Outstanding A/R")}</div>
               </div>
-              <div className="activity-tile">
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("timeclock")}>
                 <div className="text-lg font-bold" style={{ color: weeklyPayroll > 0 ? "var(--text)" : "var(--text3)" }}>{fmtK(weeklyPayroll)}</div>
                 <div className="text-xs text-muted">{t("Est. Weekly Payroll")}</div>
                 <div className="text-xs text-muted">{weeklyHours.toFixed(0)}h @ ${avgRate.toFixed(0)}/hr</div>
               </div>
               {coverageWeeks !== null && (
-                <div className="activity-tile">
+                <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("financials", { subTab: "aging" })}>
                   <div className="text-lg font-bold" style={{ color: coverageWeeks >= 4 ? "var(--green)" : coverageWeeks >= 2 ? "var(--amber)" : "var(--red)" }}>{coverageWeeks}</div>
                   <div className="text-xs text-muted">{t("Weeks A/R Coverage")}</div>
                   {coverageWeeks < 2 && <div className="text-xs text-red">{t("Low coverage")}</div>}
                 </div>
               )}
+              {(() => {
+                const activeProjs = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
+                const totalRetainage = activeProjs.reduce((s, p) => {
+                  const projInvs = (invoices || []).filter(i => String(i.projectId) === String(p.id) && !i.deletedAt);
+                  const rate = p.retainageRate ?? (companySettings?.defaultRetainageRate || 10);
+                  return s + projInvs.reduce((is, i) => is + (i.retainageWithheld || Math.round((i.amount || 0) * rate / 100)), 0);
+                }, 0);
+                return totalRetainage > 0 ? (
+                  <div className="activity-tile">
+                    <div className="text-lg font-bold text-amber">{fmtK(totalRetainage)}</div>
+                    <div className="text-xs text-muted">{t("Retainage Held")}</div>
+                    <div className="text-xs text-dim">{t("across")} {activeProjs.length} {t("projects")}</div>
+                  </div>
+                ) : null;
+              })()}
             </div>
           </div>
         );
@@ -3604,11 +3639,26 @@ function App({ auth, onLogout }) {
         const allPunch = (punchItems || []).filter(p => !p.deletedAt && p.status !== "resolved" && p.status !== "complete");
         return (
           <div>
-            <div className="flex gap-4 mb-12">
-              <button className={`btn btn-sm ${docTab === "change-orders" ? "btn-primary" : "btn-ghost"}`} onClick={() => setDocTab("change-orders")}>Change Orders ({allCOs.filter(c => c.status !== "approved" && c.status !== "rejected").length})</button>
-              <button className={`btn btn-sm ${docTab === "rfis" ? "btn-primary" : "btn-ghost"}`} onClick={() => setDocTab("rfis")}>RFIs ({allRFIs.filter(r => r.status !== "Answered" && r.status !== "Closed").length})</button>
-              <button className={`btn btn-sm ${docTab === "submittals" ? "btn-primary" : "btn-ghost"}`} onClick={() => setDocTab("submittals")}>Submittals ({allSubs.filter(s => s.status !== "approved").length})</button>
-              <button className={`btn btn-sm ${docTab === "punch" ? "btn-primary" : "btn-ghost"}`} onClick={() => setDocTab("punch")}>Punch ({allPunch.length})</button>
+            <div className="flex gap-4 mb-12 flex-between">
+              <div className="flex gap-4">
+                <button className={`btn btn-sm ${docTab === "change-orders" ? "btn-primary" : "btn-ghost"}`} onClick={() => setDocTab("change-orders")}>Change Orders ({allCOs.filter(c => c.status !== "approved" && c.status !== "rejected").length})</button>
+                <button className={`btn btn-sm ${docTab === "rfis" ? "btn-primary" : "btn-ghost"}`} onClick={() => setDocTab("rfis")}>RFIs ({allRFIs.filter(r => r.status !== "Answered" && r.status !== "Closed").length})</button>
+                <button className={`btn btn-sm ${docTab === "submittals" ? "btn-primary" : "btn-ghost"}`} onClick={() => setDocTab("submittals")}>Submittals ({allSubs.filter(s => s.status !== "approved").length})</button>
+                <button className={`btn btn-sm ${docTab === "punch" ? "btn-primary" : "btn-ghost"}`} onClick={() => setDocTab("punch")}>Punch ({allPunch.length})</button>
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={() => {
+                const data = docTab === "change-orders" ? allCOs : docTab === "rfis" ? allRFIs : docTab === "submittals" ? allSubs : allPunch;
+                const headers = docTab === "change-orders" ? ["Project","CO#","Description","Amount","Status","Date"] : docTab === "rfis" ? ["Project","RFI#","Subject","Status","Age","Ball in Court"] : docTab === "submittals" ? ["Project","Sub#","Description","Status","Due","Spec Ref"] : ["Project","Area","Description","Priority","Assigned","Created"];
+                const rows = data.map(d => {
+                  if (docTab === "change-orders") return [projName(d.projectId), d.number||"", `"${(d.description||"").replace(/"/g,'""')}"`, d.amount||0, d.status||"", d.date||""];
+                  if (docTab === "rfis") return [projName(d.projectId), d.number||"", `"${(d.subject||"").replace(/"/g,'""')}"`, d.status||"", d.submitted ? Math.floor((new Date()-new Date(d.submitted))/86400000) : 0, d.ballInCourt||""];
+                  if (docTab === "submittals") return [projName(d.projectId), d.number||"", `"${(d.description||d.item||"").replace(/"/g,'""')}"`, d.status||"", d.due||"", d.specRef||""];
+                  return [projName(d.projectId), d.area||d.location||"", `"${(d.description||"").replace(/"/g,'""')}"`, d.priority||"normal", d.assignedTo||"", d.createdAt ? new Date(d.createdAt).toLocaleDateString() : ""];
+                });
+                const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+                const blob = new Blob([csv], { type: "text/csv" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `ebc_${docTab}.csv`; a.click(); URL.revokeObjectURL(url);
+                show(`${docTab} exported`);
+              }}>{t("Export CSV")}</button>
             </div>
             {docTab === "change-orders" && (
               <div className="table-wrap"><table className="data-table"><thead><tr><th>Project</th><th>CO #</th><th>Description</th><th className="num">Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>
