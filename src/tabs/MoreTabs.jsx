@@ -10,6 +10,7 @@ import { MapView } from "./MapView";
 // Lazy-load each domain to keep the bundle lean
 const Financials = lazy(() => import("./more/FinancialsTab").then(m => ({ default: m.Financials })));
 const Documents = lazy(() => import("./more/DocumentsTab").then(m => ({ default: m.Documents })));
+const SubmittalLibrary = lazy(() => import("./more/SubmittalLibraryTab").then(m => ({ default: m.SubmittalLibrary })));
 const Schedule = lazy(() => import("./more/ScheduleTab").then(m => ({ default: m.Schedule })));
 const Reports = lazy(() => import("./more/ReportsTab").then(m => ({ default: m.Reports })));
 const Safety = lazy(() => import("./more/SafetyTab").then(m => ({ default: m.Safety })));
@@ -25,6 +26,7 @@ export function MoreTabs({ app }) {
     switch (app.tab) {
       case "financials": return <Financials app={app} />;
       case "documents":  return <Documents app={app} />;
+      case "submittalLibrary": return <SubmittalLibrary app={app} />;
       case "schedule":   return <Schedule app={app} />;
       case "reports":    return <Reports app={app} />;
       case "safety":     return <Safety app={app} />;
