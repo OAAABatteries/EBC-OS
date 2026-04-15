@@ -1236,7 +1236,12 @@ function App({ auth, onLogout }) {
         const queueOverdueInv = dashActions.overdueInv;
         const queueProfitAlerts = dashActions.profitAlerts;
         const canAccessTab = (tab) => hasAccess(userRole, tab);
-        const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length + plansNeeded.length + queueRfis.length + queueSubs.length + queueCOs.length + queueTm.length + dashActions.followUps.length + queueBids.length + queueOverdueInv.length + queueProfitAlerts.length;
+        const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length + plansNeeded.length + queueRfis.length + queueSubs.length + queueCOs.length
+          + (canAccessTab("financials") ? queueTm.length : 0)
+          + (canAccessTab("contacts") ? dashActions.followUps.length : 0)
+          + (canAccessTab("bids") ? queueBids.length : 0)
+          + (canAccessTab("financials") ? queueOverdueInv.length : 0)
+          + (canAccessTab("financials") ? queueProfitAlerts.length : 0);
         if (queueTotal === 0) return (
           <div id="dash-actions" className="card dash-card bg-2" style={{ borderLeft: "3px solid var(--green)" }}>
             <div className="text-sm font-semi flex-center-gap-6">
@@ -4101,11 +4106,19 @@ function App({ auth, onLogout }) {
     const role = viewAsRole || auth?.role || "owner";
     const isFinancialRole = FINANCIAL_ROLES.includes(role);
 
-    // Field roles should not see margin alerts, A/R, bid financials, or money moves
+    // Field roles should not see alerts that navigate to tabs they cannot access
     const filteredAlerts = isFinancialRole ? urgentAlerts
-      : urgentAlerts.filter(a => !["Margin", "A/R", "Bid", "Unassigned"].includes(a.type));
+      : urgentAlerts.filter(a => {
+        if (["Margin", "A/R", "Bid", "Unassigned"].includes(a.type)) return false;
+        if (a.tab && !hasAccess(role, a.tab)) return false;
+        return true;
+      });
     const filteredFocus = isFinancialRole ? todaysFocus
-      : todaysFocus.filter(f => !f.item?.includes("change order") && !f.item?.includes("invoice"));
+      : todaysFocus.filter(f => {
+        if (f.item?.includes("change order") || f.item?.includes("invoice")) return false;
+        if (f.tab && !hasAccess(role, f.tab)) return false;
+        return true;
+      });
     const filteredMoney = isFinancialRole ? moneyMoves : [];
 
     // ── Summary — built AFTER role-filtering so counts match what user actually sees ──
