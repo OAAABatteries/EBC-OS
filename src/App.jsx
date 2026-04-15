@@ -1087,7 +1087,7 @@ function App({ auth, onLogout }) {
             )}
             {dashActions.urgentCount > 0 && <span className="text-red fw-700">{dashActions.urgentCount} items need attention</span>}
             <span className="ml-sp2 fs-xs" style={{ color: isSupabaseConfigured() ? "var(--green)" : "var(--text3)" }}>
-              {isSupabaseConfigured() ? "● " + t("Live") : "○ " + t("Local")} — {new Date().toLocaleTimeString([], {hour: "numeric", minute: "2-digit"})}
+              {isSupabaseConfigured() ? "● " + t("Live") : "○ " + t("Local")} · {t("as of")} {new Date().toLocaleTimeString([], {hour: "numeric", minute: "2-digit"})}
             </span>
           </div>
         </div>
@@ -1542,10 +1542,25 @@ function App({ auth, onLogout }) {
               </div>
             </div>
             <div className="kpi-card cursor-pointer" onClick={() => navigateWithContext("financials")}>
-              <div className="kpi-label">{t("Remaining")}</div>
+              <div className="kpi-label">{t("Remaining to Bill")}</div>
               <div className="kpi-value" style={{ fontSize: "var(--text-subtitle)", color: remaining < 0 ? "var(--red)" : "var(--text)" }}>{fmt(remaining)}</div>
-              <div className="kpi-sub">{totalPendingCOs > 0 && <span className="c-amber">{fmt(totalPendingCOs)} {t("pending COs")}</span>}</div>
+              <div className="kpi-sub">{totalPendingCOs > 0 ? <span className="c-amber">{fmt(totalPendingCOs)} {t("pending COs")}</span> : <span>{t("Contract – Billed")}</span>}</div>
             </div>
+            {(() => {
+              const totalCost = activeProjects.reduce((s, p) => {
+                const c = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, companySettings?.laborBurdenMultiplier || 1.35, accruals || []);
+                return s + c.total;
+              }, 0);
+              const companyMargin = adjustedContract > 0 ? Math.round(((adjustedContract - totalCost) / adjustedContract) * 100) : 0;
+              const marginThr = companySettings?.marginAlertThreshold || 25;
+              return (
+                <div className="kpi-card">
+                  <div className="kpi-label">{t("Company Margin")}</div>
+                  <div className="kpi-value fs-subtitle" style={{ color: companyMargin >= marginThr ? "var(--green)" : companyMargin >= marginThr * 0.6 ? "var(--amber)" : "var(--red)" }}>{companyMargin}%</div>
+                  <div className="kpi-sub">{fmt(adjustedContract - totalCost)} {t("est. profit")}</div>
+                </div>
+              );
+            })()}
           </div>
         );
       })()}
@@ -2049,6 +2064,13 @@ function App({ auth, onLogout }) {
       )}
 
       {/* ── Profit Analysis — projects below 30% margin ── */}
+      {dashCfg.showKPIs && !collapsedZones.financial && dashActions.profitAlerts.length === 0 && (
+        <div id="dash-profit" className="card dash-card" style={{ borderLeft: "3px solid var(--green)" }}>
+          <div className="text-sm font-semi flex-center-gap-6">
+            <CheckSquare size={14} style={{ color: "var(--green)" }} /> {t("All active projects above")} {companySettings?.marginAlertThreshold || 25}% {t("margin target")}
+          </div>
+        </div>
+      )}
       {dashCfg.showKPIs && !collapsedZones.financial && dashActions.profitAlerts.length > 0 && (() => {
         const marginThr = companySettings?.marginAlertThreshold || 25;
         const getProfitDiagnosis = (p) => {
@@ -3799,7 +3821,7 @@ function App({ auth, onLogout }) {
     const dayLabel = now.toLocaleDateString("en-US", { weekday: "long" });
     const timeLabel = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
     const greetName = auth?.name?.split(" ")[0] || "Boss";
-    const GREETINGS = [
+    const CASUAL_GREETINGS = [
       `Que pedo, ${greetName}`,
       `What's good, ${greetName}`,
       `Rise and grind, ${greetName}`,
@@ -3821,6 +3843,14 @@ function App({ auth, onLogout }) {
       `Con todo, ${greetName}`,
       `Time to build, ${greetName}`,
     ];
+    const PRO_GREETINGS = [
+      `Good morning, ${greetName}`,
+      `Welcome back, ${greetName}`,
+      `Command Center, ${greetName}`,
+      `Ready to go, ${greetName}`,
+      `Overview ready, ${greetName}`,
+    ];
+    const GREETINGS = companySettings?.professionalGreetings ? PRO_GREETINGS : CASUAL_GREETINGS;
     // Pick greeting based on day-of-year so it stays stable within a day but changes daily
     const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
     const greetLine = GREETINGS[dayOfYear % GREETINGS.length];
