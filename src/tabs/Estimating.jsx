@@ -5,7 +5,7 @@ import { generateProposalPdf, generateQuickProposalPdf, defaultIncludes, default
 import { buildScopeLines } from "../utils/scopeBuilder";
 import { uploadTakeoffPdf, downloadTakeoffPdf, getSignedUrl, uploadProjectDrawing, insertProjectDrawing, getDrawingsByBid } from "../lib/supabase";
 import { extractPdfText } from "../utils/pdfBidExtractor.js";
-import { parseProposalWithAI } from "../utils/proposalImporter.js";
+import { parseProposalFromText } from "../utils/proposalImporter.js";
 import { Upload } from "lucide-react";
 
 /* ── helpers ─────────────────────────────────────────────────── */
@@ -1161,7 +1161,7 @@ export function EstimatingTab({ app }) {
             bids={bids}
             show={show}
             onClose={() => setShowQuickProposal(false)}
-            apiKey={app.apiKey}
+
           />
         )}
       </div>
@@ -2363,7 +2363,7 @@ function RoomHeader({ rm, isOpen, roomTotal, onToggle, onUpdateRoom, onDelete, f
    Quick Proposal Modal — generate proposals from simple line items
    No takeoff/assembly system needed
    ═══════════════════════════════════════════════════════════════ */
-function QuickProposalModal({ bids, show, onClose, apiKey }) {
+function QuickProposalModal({ bids, show, onClose }) {
   const [projectName, setProjectName] = useState("");
   const [projectAddress, setProjectAddress] = useState("");
   const [gcName, setGcName] = useState("");
@@ -2381,11 +2381,10 @@ function QuickProposalModal({ bids, show, onClose, apiKey }) {
   const handleImportPdf = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!apiKey) { show("Set your API key in Settings to use Import", "err"); return; }
     setImporting(true);
     try {
       const text = await extractPdfText(file);
-      const data = await parseProposalWithAI(apiKey, text);
+      const data = parseProposalFromText(text);
       if (data.projectName) setProjectName(data.projectName);
       if (data.projectAddress) setProjectAddress(data.projectAddress);
       if (data.gcName) setGcName(data.gcName);
@@ -2396,9 +2395,7 @@ function QuickProposalModal({ bids, show, onClose, apiKey }) {
       if (data.notes) setNotes(data.notes);
       show("Proposal imported — review the fields below", "ok");
     } catch (err) {
-      if (err.message === "NO_API_KEY") show("Set API key in Settings first", "err");
-      else if (err.message === "PARSE_FAILED") show("Could not parse proposal — fill in details manually", "err");
-      else if (err.message === "EMPTY_TEXT") show("Could not read PDF — try a different file", "err");
+      if (err.message === "EMPTY_TEXT") show("Could not read PDF — try a different file", "err");
       else show("Import failed — " + (err.message || "unknown error"), "err");
     }
     setImporting(false);
