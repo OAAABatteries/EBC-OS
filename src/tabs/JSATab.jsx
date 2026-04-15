@@ -136,9 +136,11 @@ export function JSATab({ app }) {
   const [libTrade, setLibTrade] = useState("framing");
 
   // Create form state (hoisted to top level to avoid hooks-in-callbacks)
+  // Auto-populate supervisor with logged-in user's name (foremen fill these out)
+  const autoSupervisor = app.auth?.name || "";
   const [form, setForm] = useState({
     projectId: "", trades: ["framing"], templateId: "", title: "",
-    location: "", supervisor: "", competentPerson: "", gc: "",
+    location: "", supervisor: autoSupervisor, competentPerson: autoSupervisor, gc: "",
     date: new Date().toISOString().slice(0, 10),
     shift: "day", weather: "clear", indoorOutdoor: "outdoor",
     steps: [], ppe: [], permits: [],
@@ -853,7 +855,7 @@ export function JSATab({ app }) {
       };
       setJsas(prev => [...prev, newJsa]);
       show(t("JSA created"));
-      setForm({ projectId: "", trades: ["framing"], templateId: "", title: "", location: "", supervisor: "", competentPerson: "", gc: "", date: new Date().toISOString().slice(0, 10), shift: "day", weather: "clear", indoorOutdoor: "outdoor", steps: [], ppe: [], permits: [], teamMembers: [] });
+      setForm({ projectId: "", trades: ["framing"], templateId: "", title: "", location: "", supervisor: autoSupervisor, competentPerson: autoSupervisor, gc: "", date: new Date().toISOString().slice(0, 10), shift: "day", weather: "clear", indoorOutdoor: "outdoor", steps: [], ppe: [], permits: [], teamMembers: [] });
       setGcTemplate(null);
       setActiveJsa(newJsa.id);
       setSubTab("detail");

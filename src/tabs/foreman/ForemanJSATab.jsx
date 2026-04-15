@@ -20,9 +20,11 @@ export function ForemanJSATab({
   // ── JSA-specific state ──
   const [jsaView, setJsaView] = useState("list"); // list | detail | create | rollcall
   const [activeJsaId, setActiveJsaId] = useState(null);
+  // Auto-populate supervisor with foreman's name
+  const foremanName = activeForeman?.name || "";
   const [jsaForm, setJsaForm] = useState({
     projectId: "", trade: "framing", templateId: "", title: "",
-    location: "", supervisor: "", competentPerson: "",
+    location: "", supervisor: foremanName, competentPerson: foremanName,
     date: new Date().toISOString().slice(0, 10),
     shift: "day", weather: "clear",
     steps: [], ppe: [], permits: [],

@@ -176,17 +176,12 @@ export async function generateJsaPdf(jsa) {
   doc.setFont("helvetica", "bold");
   doc.text("JOB SAFETY ANALYSIS", ML + 4, y + 7.5);
 
-  // Risk level badge — right side of title bar
+  // Risk level — plain text, right-aligned on title bar
   const rl = jsa.riskLevel || riskLabel(Math.max(...(jsa.steps || []).flatMap(s => (s.hazards || [s]).map(h => (h.likelihood || 1) * (h.severity || 1))), 0));
-  const badgeColor = rl === "Low" ? C.green : rl === "High" || rl === "Critical" ? C.red : C.yellow;
-  const badgeText = rl.toUpperCase();
-  const badgeW = doc.getTextWidth(badgeText) + 8;
-  doc.setFillColor(...badgeColor);
-  doc.roundedRect(PW - MR - badgeW - 2, y + 1.5, badgeW, 7, 1.5, 1.5, "F");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
+  doc.setFontSize(10);
   doc.setTextColor(255, 255, 255);
-  doc.text(badgeText, PW - MR - badgeW / 2 - 2, y + 6.5, { align: "center" });
+  doc.text(`Risk: ${rl}`, PW - MR - 4, y + 7, { align: "right" });
 
   y += 16;
 
@@ -389,14 +384,11 @@ export async function generateJsaPdf(jsa) {
     doc.text(String(row.severity), cx + 2, y + 4.5);
     cx += colDefs[4].w;
 
-    // Risk score badge
-    const rc = riskColor(score);
-    doc.setFillColor(...rc);
-    doc.roundedRect(cx + 1, y + 1, 11, 5, 1, 1, "F");
+    // Risk score — plain bold text, no color bubble
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7);
-    doc.setTextColor(255, 255, 255);
-    doc.text(`${score}`, cx + 6.5, y + 4.8, { align: "center" });
+    doc.setFontSize(8);
+    doc.setTextColor(...C.darkGray);
+    doc.text(`${score}`, cx + 2, y + 4.5);
     cx += colDefs[5].w;
 
     doc.setFont("helvetica", "normal");
