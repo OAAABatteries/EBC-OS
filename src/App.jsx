@@ -55,7 +55,7 @@ import { useSessionTimeout } from "./hooks/useSessionTimeout";
 import { NotificationPanel } from "./components/NotificationPanel";
 import { PerimeterMapModal } from "./components/PerimeterMapModal";
 import { polygonAreaSqFt } from "./utils/geofence";
-import { TrendingDown, AlertTriangle, DollarSign, Wrench, Package, FileX, ChevronDown, ChevronUp, Search, Calendar, Building2, BarChart2, ClipboardList, Globe, Bell, FolderOpen, MapPin, Paperclip, FileText, Image, Sheet, FileSpreadsheet, Camera, List, Columns, CheckSquare, Square, FileDown, Volume2, MessageSquare, Pin, PinOff, Truck, HardHat, Clipboard, LayoutDashboard, Briefcase, Calculator, MoreHorizontal } from "lucide-react";
+import { TrendingDown, AlertTriangle, DollarSign, Wrench, Package, FileX, ChevronDown, ChevronUp, Search, Calendar, Building2, BarChart2, ClipboardList, Globe, Bell, FolderOpen, MapPin, Paperclip, FileText, Image, Sheet, FileSpreadsheet, Camera, List, Columns, CheckSquare, Square, FileDown, Volume2, MessageSquare, Pin, PinOff, Truck, HardHat, Clipboard, LayoutDashboard, Briefcase, Calculator, MoreHorizontal, Clock } from "lucide-react";
 import { ModalHub } from "./components/ModalHub";
 import { DEVICE_PRESETS, MockStatusBar } from "./components/MockStatusBar";
 
@@ -745,10 +745,10 @@ function App({ auth, onLogout }) {
     return Object.values(map).sort((a, b) => b.total - a.total).slice(0, 8);
   }, [bids]);
 
-  // Backlog = total contract value of all in-progress projects
+  // Backlog = total adjusted contract value (base + approved COs) of all in-progress projects
   const backlog = useMemo(() => {
-    return projects.filter(p => p.status === "in-progress").reduce((s, p) => s + (p.contract || 0), 0);
-  }, [projects]);
+    return projects.filter(p => p.status === "in-progress").reduce((s, p) => s + getAdjustedContract(p, changeOrders), 0);
+  }, [projects, changeOrders]);
 
   const cashFlow = useMemo(() => {
     const now = new Date();
@@ -879,6 +879,16 @@ function App({ auth, onLogout }) {
     setSubTab(null);
   };
 
+  // ── context-preserving nav — use from dashboard actions that pre-filter ──
+  const navigateWithContext = (key, opts = {}) => {
+    setTab(key);
+    setMoreOpen(false);
+    setMobileNav(false);
+    if ("search" in opts) setSearch(opts.search); else setSearch("");
+    if ("bidFilter" in opts) setBidFilter(opts.bidFilter); else setBidFilter("All");
+    if ("subTab" in opts) setSubTab(opts.subTab); else setSubTab(null);
+  };
+
   const isSecondaryActive = SECONDARY_KEYS.includes(tab);
 
   // ── scope cycle handler ──
@@ -925,15 +935,17 @@ function App({ auth, onLogout }) {
 
   // ── role-specific dashboard config ──
   const ROLE_DASH = {
-    owner:       { subtitle: "Company Overview",       showKPIs: true,  showCharts: true,  showDigest: true,  showBrief: true,  showQuickActions: true },
-    admin:       { subtitle: "Company Overview",       showKPIs: true,  showCharts: true,  showDigest: true,  showBrief: true,  showQuickActions: true },
-    pm:          { subtitle: "Projects & Bids",        showKPIs: true,  showCharts: true,  showDigest: true,  showBrief: true,  showQuickActions: true },
-    office_admin:{ subtitle: "Office Operations",      showKPIs: true,  showCharts: false, showDigest: false, showBrief: true,  showQuickActions: false },
-    accounting:  { subtitle: "Financials & Payroll",   showKPIs: true,  showCharts: true,  showDigest: true,  showBrief: true,  showQuickActions: false },
-    safety:      { subtitle: "Safety & Compliance",    showKPIs: false, showCharts: false, showDigest: false, showBrief: true,  showQuickActions: false },
-    foreman:     { subtitle: "Field Operations",       showKPIs: false, showCharts: false, showDigest: false, showBrief: true,  showQuickActions: false },
-    driver:      { subtitle: "Deliveries",             showKPIs: false, showCharts: false, showDigest: false, showBrief: false, showQuickActions: false },
-    employee:    { subtitle: "My Work",                showKPIs: false, showCharts: false, showDigest: false, showBrief: false, showQuickActions: false },
+    owner:          { subtitle: "Company Overview",       showKPIs: true,  showCharts: true,  showBrief: true  },
+    admin:          { subtitle: "Company Overview",       showKPIs: true,  showCharts: true,  showBrief: true  },
+    pm:             { subtitle: "Projects & Bids",        showKPIs: true,  showCharts: true,  showBrief: true  },
+    superintendent: { subtitle: "Field Oversight",        showKPIs: false, showCharts: false, showBrief: true  },
+    estimator:      { subtitle: "Estimating & Bids",      showKPIs: true,  showCharts: true,  showBrief: true  },
+    office_admin:   { subtitle: "Office Operations",      showKPIs: true,  showCharts: false, showBrief: true  },
+    accounting:     { subtitle: "Financials & Payroll",   showKPIs: true,  showCharts: true,  showBrief: true  },
+    safety:         { subtitle: "Safety & Compliance",    showKPIs: false, showCharts: false, showBrief: true  },
+    foreman:        { subtitle: "Field Operations",       showKPIs: false, showCharts: false, showBrief: true  },
+    driver:         { subtitle: "Deliveries",             showKPIs: false, showCharts: false, showBrief: false },
+    employee:       { subtitle: "My Work",                showKPIs: false, showCharts: false, showBrief: false },
   };
   const dashCfg = ROLE_DASH[userRole] || ROLE_DASH.owner;
 
@@ -985,16 +997,20 @@ function App({ auth, onLogout }) {
       return (now.getTime() - latest) > 30 * 86400000;
     });
 
-    // Projects at risk (behind schedule)
+    // Projects at risk (behind schedule) — uses front-loaded S-curve
+    // Construction work is non-linear: mobilization is slow, middle phase is fast, punch/closeout is slow
     const projAtRisk = projects.filter(p => {
       if ((p.progress || 0) >= 100) return false;
       const end = parseDate(p.end);
       const start = parseDate(p.start);
       if (!end || !start) return false;
       const totalDays = (end - start) / 86400000;
-      const elapsed = (now - start) / 86400000;
-      const expectedProgress = Math.min(100, (elapsed / totalDays) * 100);
-      return (p.progress || 0) < expectedProgress - 15; // 15% behind expected
+      if (totalDays <= 0) return false;
+      const elapsed = Math.max(0, (now - start) / 86400000);
+      const ratio = Math.min(1, elapsed / totalDays);
+      // S-curve: slow start, fast middle, slow finish — better matches construction progress
+      const expectedProgress = Math.min(100, 100 * (3 * ratio * ratio - 2 * ratio * ratio * ratio));
+      return (p.progress || 0) < expectedProgress - 20; // 20% behind S-curve expected
     });
 
     // Follow-ups from call log
@@ -1032,10 +1048,16 @@ function App({ auth, onLogout }) {
 
   const renderDashboard = () => (
     <div>
-      {/* ── Header — action-oriented ── */}
+      {/* ── Header — time-aware, action-oriented ── */}
       <div className="section-header">
         <div>
-          <div className="section-title font-head fs-20">{t("Command Center")}</div>
+          <div className="section-title font-head fs-20">{(() => {
+            const h = new Date().getHours();
+            if (h < 6) return t("Command Center");
+            if (h < 12) return t("Good Morning") + (auth?.name ? `, ${auth.name.split(" ")[0]}` : "");
+            if (h < 17) return t("Command Center");
+            return t("End of Day");
+          })()}</div>
           <div className="section-sub flex fs-label gap-sp2 flex-wrap">
             <span>{auth?.name || "EBC"} — {new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</span>
             {(auth?.role === "owner" || auth?.role === "admin") && (
@@ -1078,7 +1100,7 @@ function App({ auth, onLogout }) {
               <div className="text-sm font-semi mb-8 text-red">{t("Urgent Alerts")}</div>
               {briefResult.urgentAlerts.map((a, i) => (
                 <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-2)", borderRadius: "var(--radius-control)", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", cursor: "pointer" }}
-                  onClick={() => { if (a.tab) handleTabClick(a.tab); else if (a.project) { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "viewProject", data: p }); } }}>
+                  onClick={() => { if (a.tab) navigateWithContext(a.tab, { search: a.search, subTab: a.subTab }); else if (a.project) { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "viewProject", data: p }); } }}>
                   <div className="flex-between">
                     <span className="text-sm">{a.alert}</span>
                     <span className="badge badge-red">{a.type}</span>
@@ -1098,7 +1120,7 @@ function App({ auth, onLogout }) {
               <div className="text-sm font-semi mb-8 text-amber">{t("Today's Focus")}</div>
               {briefResult.todaysFocus.map((f, i) => (
                 <div key={i} style={{ padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)", cursor: f.tab ? "pointer" : undefined }}
-                  onClick={f.tab ? () => handleTabClick(f.tab) : f.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(f.project.toLowerCase())); if (p) setModal({ type: "viewProject", data: p }); } : undefined}>
+                  onClick={f.tab ? () => navigateWithContext(f.tab, { search: f.search, subTab: f.subTab }) : f.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(f.project.toLowerCase())); if (p) setModal({ type: "viewProject", data: p }); } : undefined}>
                   <div className="flex-between">
                     <span className="text-sm">{f.item}</span>
                     <div className="flex gap-8" style={{ alignItems: "center" }}>
@@ -1117,7 +1139,7 @@ function App({ auth, onLogout }) {
             <div className="mb-12">
               <div className="text-sm font-semi mb-8">{t("Money Moves")}</div>
               {briefResult.moneyMoves.map((m, i) => (
-                <div key={i} className="queue-row" style={{ cursor: m.tab ? "pointer" : undefined }} onClick={m.tab ? () => handleTabClick(m.tab) : undefined}>
+                <div key={i} className="queue-row" style={{ cursor: m.tab ? "pointer" : undefined }} onClick={m.tab ? () => navigateWithContext(m.tab, { search: m.search, subTab: m.subTab }) : undefined}>
                   <div className="flex-between">
                     <span className="text-sm">{m.item}</span>
                     <span className="font-semi text-sm text-green">{m.amount}</span>
@@ -1135,30 +1157,289 @@ function App({ auth, onLogout }) {
         </div>
       )}
 
+      {/* ── PM Action Queue — promoted to position 2 (was buried at position 11) ── */}
+      {dashCfg.showKPIs && (() => {
+        const pendingMat = (materialRequests || []).filter(r => r.status === "requested");
+        const urgentMat = pendingMat.filter(r => r.urgency === "urgent" || r.urgency === "emergency");
+        const awaitingConfirm = (materialRequests || []).filter(r => r.status === "delivered" && !r.confirmedBy);
+        const pendingReviews = (dailyReports || []).filter(r => !r.reviewedBy);
+        const openProblems = (problems || []).filter(p => p.status === "open" && !p.assignedTo);
+        const plansNeeded = projects.filter(p => p.needsPlans);
+        const queueRfis = dashActions.rfisOpen.filter(r => r.age > 7);
+        const queueSubs = dashActions.subsDueSoon;
+        const queueCOs = dashActions.cosPending;
+        const queueTm = dashActions.tmPending;
+        const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length + plansNeeded.length + queueRfis.length + queueSubs.length + queueCOs.length + queueTm.length;
+        if (queueTotal === 0) return (
+          <div className="card dash-card bg-2" style={{ borderLeft: "3px solid var(--green)" }}>
+            <div className="text-sm font-semi flex-center-gap-6">
+              <span style={{ color: "var(--green)" }}>&#10003;</span> {t("All Clear")} — {t("nothing needs your attention right now")}
+            </div>
+          </div>
+        );
+        return (
+          <div className="card dash-card dash-card--amber bg-2">
+            <div className="flex-between mb-8">
+              <div className="text-sm font-semi flex-center-gap-6">
+                <span>&#9889;</span> PM Action Queue
+                <span className="badge badge-amber fs-tab" style={{ padding: "var(--space-1) var(--space-2)" }}>{queueTotal}</span>
+              </div>
+            </div>
+            <div className="flex-col-gap-6">
+              {queueCOs.length > 0 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <span>&#128221;</span>
+                    <span className="text-sm">{t("Change Orders Pending")}</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-amber">{queueCOs.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("projects", { subTab: "change-orders" })}>{t("Review")}</button>
+                  </div>
+                </div>
+              )}
+              {queueRfis.length > 0 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <span>&#10067;</span>
+                    <span className="text-sm">{t("Overdue RFIs")}</span>
+                    <span className="badge badge-red fs-xs" style={{ padding: "0 5px" }}>{t("oldest")}: {queueRfis[0].age}d</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-red">{queueRfis.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("projects", { subTab: "rfis" })}>{t("Respond")}</button>
+                  </div>
+                </div>
+              )}
+              {queueSubs.length > 0 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <span>&#128206;</span>
+                    <span className="text-sm">{t("Submittals Due Soon")}</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-amber">{queueSubs.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("projects", { subTab: "submittals" })}>{t("Review")}</button>
+                  </div>
+                </div>
+              )}
+              {queueTm.length > 0 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <span>&#128336;</span>
+                    <span className="text-sm">{t("T&M Tickets")}</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-amber">{queueTm.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("financials", { subTab: "tm" })}>{t("Review")}</button>
+                  </div>
+                </div>
+              )}
+              {pendingMat.length > 0 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <span>&#128230;</span>
+                    <span className="text-sm">{t("Material Requests")}</span>
+                    {urgentMat.length > 0 && <span className="badge badge-red fs-xs" style={{ padding: "0 5px" }}>{urgentMat.length} {t("urgent")}</span>}
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-amber">{pendingMat.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("materials", { search: "requested" })}>{t("Review")}</button>
+                  </div>
+                </div>
+              )}
+              {awaitingConfirm.length > 0 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <span>&#10003;</span>
+                    <span className="text-sm">{t("Deliveries Awaiting Confirmation")}</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-green">{awaitingConfirm.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("deliveries")}>{t("View")}</button>
+                  </div>
+                </div>
+              )}
+              {pendingReviews.length > 0 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <span>&#128203;</span>
+                    <span className="text-sm">{t("Daily Reports")}</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi">{pendingReviews.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("reports")}>{t("Review")}</button>
+                  </div>
+                </div>
+              )}
+              {openProblems.length > 0 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <span>&#9888;&#65039;</span>
+                    <span className="text-sm">{t("Unassigned Problems")}</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-red">{openProblems.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("reports", { subTab: "problems" })}>{t("Assign")}</button>
+                  </div>
+                </div>
+              )}
+              {plansNeeded.length > 0 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <span>&#128208;</span>
+                    <span className="text-sm">{t("Plans Needed")}</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-amber">{plansNeeded.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("projects")}>{t("Request")}</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Driver Quick Summary ── */}
+      {userRole === "driver" && (() => {
+        const pendingDeliveries = (materialRequests || []).filter(r => r.status === "approved" || r.status === "assigned" || r.status === "in-transit");
+        const todayDeliveries = pendingDeliveries.filter(r => {
+          const d = r.scheduledDate || r.deliveryDate;
+          return d && d.startsWith(new Date().toISOString().slice(0, 10));
+        });
+        return (
+          <div className="card dash-card dash-card--blue">
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
+              <Truck size={15} /> {t("Delivery Summary")}
+            </div>
+            <div className="grid-auto-180">
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("deliveries")}>
+                <div className="text-lg font-bold text-blue">{todayDeliveries.length}</div>
+                <div className="text-xs text-muted">{t("Today's Deliveries")}</div>
+              </div>
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("deliveries")}>
+                <div className="text-lg font-bold" style={{ color: pendingDeliveries.length > 0 ? "var(--amber)" : "var(--green)" }}>{pendingDeliveries.length}</div>
+                <div className="text-xs text-muted">{t("Total Pending")}</div>
+              </div>
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("materials")}>
+                <div className="text-lg font-bold text-blue">{(materialRequests || []).filter(r => r.status === "requested").length}</div>
+                <div className="text-xs text-muted">{t("Awaiting Pickup")}</div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Employee Quick Summary ── */}
+      {userRole === "employee" && (() => {
+        const todayStr = new Date().toDateString();
+        const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+        const mySchedule = (teamSchedule || []).filter(s => s.days?.[todayKey]);
+        const mySiteCount = new Set(mySchedule.map(s => s.projectId)).size;
+        const clockedIn = (timeEntries || []).some(te => te.clockIn && !te.clockOut && new Date(te.clockIn).toDateString() === todayStr);
+        return (
+          <div className="card dash-card dash-card--blue">
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
+              <Clock size={15} /> {t("My Day")}
+            </div>
+            <div className="grid-auto-180">
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("timeclock")}>
+                <div className="text-lg font-bold" style={{ color: clockedIn ? "var(--green)" : "var(--amber)" }}>{clockedIn ? "IN" : "OUT"}</div>
+                <div className="text-xs text-muted">{clockedIn ? t("Clocked In") : t("Not Clocked In")}</div>
+              </div>
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("schedule")}>
+                <div className="text-lg font-bold text-blue">{mySiteCount}</div>
+                <div className="text-xs text-muted">{t("Sites Today")}</div>
+              </div>
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("materials")}>
+                <div className="text-lg font-bold text-blue">{(materialRequests || []).filter(r => r.status === "requested").length}</div>
+                <div className="text-xs text-muted">{t("Material Requests")}</div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Foreman / Superintendent Field Summary ── */}
+      {(userRole === "foreman" || userRole === "superintendent") && (() => {
+        const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+        const myCrewToday = (teamSchedule || []).filter(s => s.days?.[todayKey]);
+        const crewCount = new Set(myCrewToday.map(s => s.employeeId)).size;
+        const siteCount = new Set(myCrewToday.map(s => s.projectId)).size;
+        const openPunch = (punchItems || []).filter(p => p.status !== "resolved" && p.status !== "complete");
+        const pendingDeliveries = (materialRequests || []).filter(r => r.status === "approved" || r.status === "assigned" || r.status === "in-transit");
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const todayJsas = (jsas || []).filter(j => j.date === todayStr || (j.createdAt && j.createdAt.startsWith(todayStr)));
+        return (
+          <div className="card dash-card dash-card--blue">
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
+              <HardHat size={15} /> {t("Field Summary")}
+            </div>
+            <div className="grid-auto-180">
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("schedule")}>
+                <div className="text-lg font-bold text-blue">{crewCount}</div>
+                <div className="text-xs text-muted">{t("Crew Scheduled")}</div>
+                <div className="text-xs text-muted">{siteCount} {t("site")}{siteCount !== 1 ? "s" : ""}</div>
+              </div>
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("projects", { subTab: "punch" })}>
+                <div className="text-lg font-bold" style={{ color: openPunch.length > 0 ? "var(--amber)" : "var(--green)" }}>{openPunch.length}</div>
+                <div className="text-xs text-muted">{t("Open Punch")}</div>
+              </div>
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("deliveries")}>
+                <div className="text-lg font-bold" style={{ color: pendingDeliveries.length > 0 ? "var(--blue)" : "var(--text3)" }}>{pendingDeliveries.length}</div>
+                <div className="text-xs text-muted">{t("Pending Deliveries")}</div>
+              </div>
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("jsa")}>
+                <div className="text-lg font-bold" style={{ color: todayJsas.length > 0 ? "var(--green)" : "var(--amber)" }}>{todayJsas.length}</div>
+                <div className="text-xs text-muted">{t("JSAs Today")}</div>
+                {todayJsas.length === 0 && <div className="text-xs text-amber">{t("None filed")}</div>}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── ZONE: Financial Health ── */}
+      {dashCfg.showKPIs && <div className="text-xs text-uppercase text-muted mt-sp4 mb-sp2" style={{ letterSpacing: "1px", borderBottom: "1px solid var(--border)", paddingBottom: "var(--space-2)" }}>{t("Financial Health")}</div>}
+
       {/* ── Financial KPI Summary — PM's money-at-a-glance ── */}
-      {(() => {
+      {dashCfg.showKPIs && (() => {
         const activeProjects = projects.filter(p => !p.deletedAt && p.status !== "completed");
-        const totalContract = activeProjects.reduce((s, p) => s + (p.contract || 0), 0);
-        const totalBilled = invoices.filter(inv => !inv.deletedAt).reduce((s, inv) => s + (Number(inv.amount) || 0), 0);
+        const adjustedContract = activeProjects.reduce((s, p) => s + getAdjustedContract(p, changeOrders), 0);
+        const activeIds = new Set(activeProjects.map(p => String(p.id)));
+        const totalBilled = invoices.filter(inv => !inv.deletedAt && activeIds.has(String(inv.projectId))).reduce((s, inv) => s + (Number(inv.amount) || 0), 0);
         const totalPendingCOs = changeOrders.filter(co => !co.deletedAt && co.status === "pending").reduce((s, co) => s + (Math.abs(Number(co.amount)) || 0), 0);
-        const totalApprovedCOs = changeOrders.filter(co => !co.deletedAt && co.status === "approved").reduce((s, co) => s + (Number(co.amount) || 0), 0);
-        const adjustedContract = totalContract + totalApprovedCOs;
         const remaining = adjustedContract - totalBilled;
-        const marginPct = adjustedContract > 0 ? Math.round((remaining / adjustedContract) * 100) : 0;
         const fmt = (n) => "$" + Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
+        // Trend: compare this month billing vs last month
+        const now = new Date();
+        const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+        const lastM = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonth = `${lastM.getFullYear()}-${String(lastM.getMonth() + 1).padStart(2, "0")}`;
+        const billedThisMonth = invoices.filter(inv => !inv.deletedAt && activeIds.has(String(inv.projectId)) && (inv.date || inv.createdAt || "").startsWith(thisMonth)).reduce((s, inv) => s + (Number(inv.amount) || 0), 0);
+        const billedLastMonth = invoices.filter(inv => !inv.deletedAt && activeIds.has(String(inv.projectId)) && (inv.date || inv.createdAt || "").startsWith(lastMonth)).reduce((s, inv) => s + (Number(inv.amount) || 0), 0);
+        const billingTrend = billedLastMonth > 0 ? Math.round(((billedThisMonth - billedLastMonth) / billedLastMonth) * 100) : null;
         return (
           <div className="kpi-grid mb-sp4">
-            <div className="kpi-card cursor-pointer" onClick={() => handleTabClick("projects")}>
+            <div className="kpi-card cursor-pointer" onClick={() => navigateWithContext("projects")}>
               <div className="kpi-label">{t("Active Contract")}</div>
               <div className="kpi-value fs-subtitle">{fmt(adjustedContract)}</div>
-              <div className="kpi-sub">{activeProjects.length} {t("projects")} {totalApprovedCOs > 0 && `(+${fmt(totalApprovedCOs)} COs)`}</div>
+              <div className="kpi-sub">{activeProjects.length} {t("projects")} {t("(incl. COs)")}</div>
             </div>
-            <div className="kpi-card cursor-pointer" onClick={() => handleTabClick("financials")}>
+            <div className="kpi-card cursor-pointer" onClick={() => navigateWithContext("financials")}>
               <div className="kpi-label">{t("Billed")}</div>
               <div className="kpi-value fs-subtitle c-green">{fmt(totalBilled)}</div>
-              <div className="kpi-sub">{adjustedContract > 0 ? Math.round((totalBilled / adjustedContract) * 100) : 0}% {t("of contract")}</div>
+              <div className="kpi-sub flex-center-gap-4">
+                <span>{adjustedContract > 0 ? Math.round((totalBilled / adjustedContract) * 100) : 0}% {t("of contract")}</span>
+                {billingTrend !== null && (
+                  <span style={{ color: billingTrend >= 0 ? "var(--green)" : "var(--red)", fontSize: "var(--text-tab)" }}>
+                    {billingTrend >= 0 ? "\u25B2" : "\u25BC"} {Math.abs(billingTrend)}% {t("vs last mo")}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="kpi-card cursor-pointer" onClick={() => handleTabClick("financials")}>
+            <div className="kpi-card cursor-pointer" onClick={() => navigateWithContext("financials")}>
               <div className="kpi-label">{t("Remaining")}</div>
               <div className="kpi-value" style={{ fontSize: "var(--text-subtitle)", color: remaining < 0 ? "var(--red)" : "var(--text)" }}>{fmt(remaining)}</div>
               <div className="kpi-sub">{totalPendingCOs > 0 && <span className="c-amber">{fmt(totalPendingCOs)} {t("pending COs")}</span>}</div>
@@ -1166,6 +1447,11 @@ function App({ auth, onLogout }) {
           </div>
         );
       })()}
+
+      {/* ═══ ZONE: Field & Operations ═══ */}
+      <div className="zone-divider" style={{ marginTop: "var(--space-6)", marginBottom: "var(--space-3)" }}>
+        <div className="text-xs text-muted text-uppercase fw-700" style={{ letterSpacing: "0.8px" }}>{t("Field & Operations")}</div>
+      </div>
 
       {/* ── Today's Field Activity Summary — aggregates foreman-entered data ── */}
       {(() => {
@@ -1179,7 +1465,11 @@ function App({ auth, onLogout }) {
         const todayReports = (dailyReports || []).filter(r => r.submittedAt && r.submittedAt.startsWith(todayStr));
         const unreviewed = todayReports.filter(r => !r.reviewedBy).length;
         const hasActivity = todayProd.length > 0 || todayTm.length > 0 || todayPunch.length > 0 || todayProblems.length > 0 || todayReports.length > 0;
-        if (!hasActivity) return null;
+        if (!hasActivity) return (
+          <div className="card dash-card" style={{ opacity: 0.6 }}>
+            <div className="text-sm text-muted flex-center-gap-6"><ClipboardList size={14} /> {t("No field activity reported today")}</div>
+          </div>
+        );
         return (
           <div className="card dash-card dash-card--green">
             <div className="text-sm font-semi mb-8 flex-center-gap-6">
@@ -1268,7 +1558,11 @@ function App({ auth, onLogout }) {
 
         // Only show if we have some data
         const hasData = days.some(d => d.crew > 0 || d.deliveries > 0 || d.events.length > 0);
-        if (!hasData) return null;
+        if (!hasData) return (
+          <div className="card dash-card" style={{ opacity: 0.6 }}>
+            <div className="text-sm text-muted flex-center-gap-6"><Calendar size={14} /> {t("No crew, deliveries, or events scheduled this week")}</div>
+          </div>
+        );
 
         return (
           <div className="card dash-card dash-card--amber">
@@ -1324,7 +1618,11 @@ function App({ auth, onLogout }) {
           projManpower[pid].crew.add(s.employeeId);
         });
         const entries = Object.entries(projManpower);
-        if (entries.length === 0) return null;
+        if (entries.length === 0) return (
+          <div className="card dash-card" style={{ opacity: 0.6 }}>
+            <div className="text-sm text-muted flex-center-gap-6"><HardHat size={14} /> {t("No crew on site today")}</div>
+          </div>
+        );
         const totalCrew = new Set(entries.flatMap(([, v]) => [...v.crew])).size;
         return (
           <div className="card dash-card dash-card--blue">
@@ -1414,7 +1712,11 @@ function App({ auth, onLogout }) {
           return exp && exp <= now2;
         });
         const safetyCount = openIncidents.length + expiringCerts.length + expiredCerts.length;
-        if (safetyCount === 0 && recentTalks.length === 0) return null;
+        if (safetyCount === 0 && recentTalks.length === 0) return (
+          <div className="card dash-card" style={{ borderLeft: "3px solid var(--green)", opacity: 0.6 }}>
+            <div className="text-sm text-muted flex-center-gap-6">&#128737;&#65039; {t("No safety issues — all clear")}</div>
+          </div>
+        );
         return (
           <div className="card dash-card" style={{ borderLeft: expiredCerts.length > 0 || openIncidents.length > 0 ? "3px solid var(--red)" : "3px solid var(--green)" }}>
             <div className="text-sm font-semi mb-8 flex-center-gap-6">
@@ -1433,13 +1735,13 @@ function App({ auth, onLogout }) {
                 <div className="text-xs text-muted">{t("Toolbox Talks (7d)")}</div>
               </div>
               {expiredCerts.length > 0 && (
-                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("projects")}>
+                <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("settings", { subTab: "credentials" })}>
                   <div className="text-lg font-bold text-red">{expiredCerts.length}</div>
                   <div className="text-xs text-muted">{t("Expired Certs")}</div>
                 </div>
               )}
               {expiringCerts.length > 0 && (
-                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("projects")}>
+                <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("settings", { subTab: "credentials" })}>
                   <div className="text-lg font-bold text-amber">{expiringCerts.length}</div>
                   <div className="text-xs text-muted">{t("Expiring (30d)")}</div>
                 </div>
@@ -1467,7 +1769,11 @@ function App({ auth, onLogout }) {
           const exp = c.expirationDate ? new Date(c.expirationDate) : null;
           return exp && exp > now3 && (exp - now3) < 30 * 86400000;
         });
-        if (activeEmps.length === 0) return null;
+        if (activeEmps.length === 0) return (
+          <div className="card dash-card" style={{ opacity: 0.6 }}>
+            <div className="text-sm text-muted">No active employees</div>
+          </div>
+        );
         return (
           <div className="card dash-card dash-card--blue">
             <div className="text-sm font-semi mb-8 flex-center-gap-6">
@@ -1494,7 +1800,7 @@ function App({ auth, onLogout }) {
                 </div>
               )}
               {expiringCerts3.length > 0 && (
-                <div className="activity-tile cursor-pointer" onClick={() => handleTabClick("projects")}>
+                <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("settings", { subTab: "credentials" })}>
                   <div className="text-lg font-bold text-amber">{expiringCerts3.length}</div>
                   <div className="text-xs text-muted">{t("Certs Expiring")}</div>
                 </div>
@@ -1542,143 +1848,7 @@ function App({ auth, onLogout }) {
         );
       })()}
 
-      {/* ── PM Action Queue (Phase 2A') — single decision inbox ── */}
-      {dashCfg.showKPIs && (() => {
-        const pendingMat = (materialRequests || []).filter(r => r.status === "requested");
-        const urgentMat = pendingMat.filter(r => r.urgency === "urgent" || r.urgency === "emergency");
-        const awaitingConfirm = (materialRequests || []).filter(r => r.status === "delivered" && !r.confirmedBy);
-        const pendingReviews = (dailyReports || []).filter(r => !r.reviewedBy);
-        const openProblems = (problems || []).filter(p => p.status === "open" && !p.assignedTo);
-        const plansNeeded = projects.filter(p => p.needsPlans);
-        const queueRfis = dashActions.rfisOpen.filter(r => r.age > 7);
-        const queueSubs = dashActions.subsDueSoon;
-        const queueCOs = dashActions.cosPending;
-        const queueTm = dashActions.tmPending;
-        const queueTotal = pendingMat.length + awaitingConfirm.length + pendingReviews.length + openProblems.length + plansNeeded.length + queueRfis.length + queueSubs.length + queueCOs.length + queueTm.length;
-        if (queueTotal === 0) return null;
-        return (
-          <div className="card dash-card dash-card--amber bg-2">
-            <div className="flex-between mb-8">
-              <div className="text-sm font-semi flex-center-gap-6">
-                <span>⚡</span> PM Action Queue
-                <span className="badge badge-amber fs-tab" style={{ padding: "var(--space-1) var(--space-2)" }}>{queueTotal}</span>
-              </div>
-            </div>
-            <div className="flex-col-gap-6">
-              {queueCOs.length > 0 && (
-                <div className="flex-between queue-row">
-                  <div className="flex-center-gap-8">
-                    <span>📝</span>
-                    <span className="text-sm">{t("Change Orders Pending")}</span>
-                  </div>
-                  <div className="flex-center-gap-8">
-                    <span className="text-sm font-semi text-amber">{queueCOs.length}</span>
-                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("projects")}>{t("Review")}</button>
-                  </div>
-                </div>
-              )}
-              {queueRfis.length > 0 && (
-                <div className="flex-between queue-row">
-                  <div className="flex-center-gap-8">
-                    <span>❓</span>
-                    <span className="text-sm">{t("Overdue RFIs")}</span>
-                    <span className="badge badge-red fs-xs" style={{ padding: "0 5px" }}>{t("oldest")}: {queueRfis[0].age}d</span>
-                  </div>
-                  <div className="flex-center-gap-8">
-                    <span className="text-sm font-semi text-red">{queueRfis.length}</span>
-                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("projects")}>{t("Respond")}</button>
-                  </div>
-                </div>
-              )}
-              {queueSubs.length > 0 && (
-                <div className="flex-between queue-row">
-                  <div className="flex-center-gap-8">
-                    <span>📎</span>
-                    <span className="text-sm">{t("Submittals Due Soon")}</span>
-                  </div>
-                  <div className="flex-center-gap-8">
-                    <span className="text-sm font-semi text-amber">{queueSubs.length}</span>
-                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("projects")}>{t("Review")}</button>
-                  </div>
-                </div>
-              )}
-              {queueTm.length > 0 && (
-                <div className="flex-between queue-row">
-                  <div className="flex-center-gap-8">
-                    <span>🕐</span>
-                    <span className="text-sm">{t("T&M Tickets")}</span>
-                  </div>
-                  <div className="flex-center-gap-8">
-                    <span className="text-sm font-semi text-amber">{queueTm.length}</span>
-                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("financials")}>{t("Review")}</button>
-                  </div>
-                </div>
-              )}
-              {pendingMat.length > 0 && (
-                <div className="flex-between queue-row">
-                  <div className="flex-center-gap-8">
-                    <span>📦</span>
-                    <span className="text-sm">{t("Material Requests")}</span>
-                    {urgentMat.length > 0 && <span className="badge badge-red fs-xs" style={{ padding: "0 5px" }}>{urgentMat.length} {t("urgent")}</span>}
-                  </div>
-                  <div className="flex-center-gap-8">
-                    <span className="text-sm font-semi text-amber">{pendingMat.length}</span>
-                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("materials")}>{t("Review")}</button>
-                  </div>
-                </div>
-              )}
-              {awaitingConfirm.length > 0 && (
-                <div className="flex-between queue-row">
-                  <div className="flex-center-gap-8">
-                    <span>✓</span>
-                    <span className="text-sm">{t("Deliveries Awaiting Confirmation")}</span>
-                  </div>
-                  <div className="flex-center-gap-8">
-                    <span className="text-sm font-semi text-green">{awaitingConfirm.length}</span>
-                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("materials")}>{t("View")}</button>
-                  </div>
-                </div>
-              )}
-              {pendingReviews.length > 0 && (
-                <div className="flex-between queue-row">
-                  <div className="flex-center-gap-8">
-                    <span>📋</span>
-                    <span className="text-sm">{t("Daily Reports")}</span>
-                  </div>
-                  <div className="flex-center-gap-8">
-                    <span className="text-sm font-semi">{pendingReviews.length}</span>
-                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("reports")}>{t("Review")}</button>
-                  </div>
-                </div>
-              )}
-              {openProblems.length > 0 && (
-                <div className="flex-between queue-row">
-                  <div className="flex-center-gap-8">
-                    <span>⚠️</span>
-                    <span className="text-sm">{t("Unassigned Problems")}</span>
-                  </div>
-                  <div className="flex-center-gap-8">
-                    <span className="text-sm font-semi text-red">{openProblems.length}</span>
-                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("reports")}>{t("Assign")}</button>
-                  </div>
-                </div>
-              )}
-              {plansNeeded.length > 0 && (
-                <div className="flex-between queue-row">
-                  <div className="flex-center-gap-8">
-                    <span>📐</span>
-                    <span className="text-sm">{t("Plans Needed")}</span>
-                  </div>
-                  <div className="flex-center-gap-8">
-                    <span className="text-sm font-semi text-amber">{plansNeeded.length}</span>
-                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => handleTabClick("projects")}>{t("Request")}</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })()}
+      {/* PM Action Queue moved to position 2 (right after Brief) */}
 
       {/* ── Projects by Stage (Phase 2B) ── */}
       {dashCfg.showKPIs && (() => {
@@ -1690,7 +1860,7 @@ function App({ auth, onLogout }) {
           <div className="flex gap-6 mb-12 flex-wrap">
             {CONSTRUCTION_STAGES.map(s => counts[s.key] ? (
               <div key={s.key} style={{ padding: "var(--space-1) var(--space-3)", borderRadius: "var(--radius-control)", background: s.color + "18", border: `1px solid ${s.color}33`, fontSize: "var(--text-tab)", color: s.color, fontWeight: "var(--weight-semi)", cursor: "pointer" }}
-                onClick={() => handleTabClick("projects")}>
+                onClick={() => navigateWithContext("projects", { search: s.label })}>
                 {s.label} <span className="fw-800">{counts[s.key]}</span>
               </div>
             ) : null)}
@@ -1716,17 +1886,18 @@ function App({ auth, onLogout }) {
                     <th style={{ textAlign: "left", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)", fontWeight: "var(--weight-semi)" }}>Project</th>
                     <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Contract</th>
                     <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Billed</th>
-                    <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Labor</th>
+                    <th style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Cost</th>
                     <th style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Margin</th>
                     <th style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", textTransform: "uppercase", color: "var(--text3)" }}>Crew</th>
                   </tr>
                 </thead>
                 <tbody>
                   {activeProjs.slice(0, 10).map(p => {
-                    const contract = (p.contractAmount || 0) + (changeOrders || []).filter(c => c.projectId === p.id && c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
-                    const billed = (invoices || []).filter(i => i.projectId === p.id).reduce((s, i) => s + (i.amount || 0), 0);
-                    const labor = (timeEntries || []).filter(te => te.projectId === p.id).reduce((s, te) => s + ((te.totalHours || 0) * (te.rate || 45)), 0);
-                    const margin = contract > 0 ? Math.round(((contract - labor) / contract) * 100) : 0;
+                    const contract = getAdjustedContract(p, changeOrders);
+                    const billed = (invoices || []).filter(i => String(i.projectId) === String(p.id) && !i.deletedAt).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+                    const burden = companySettings?.laborBurdenMultiplier || 1.35;
+                    const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, accruals || []);
+                    const margin = contract > 0 ? Math.round(((contract - costs.total) / contract) * 100) : 0;
                     const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
                     const crewToday = (teamSchedule || []).filter(s => String(s.projectId) === String(p.id) && s.days?.[todayKey]).length;
                     return (
@@ -1735,7 +1906,7 @@ function App({ auth, onLogout }) {
                         <td style={{ padding: "var(--space-2) var(--space-3)", fontWeight: "var(--weight-medium)", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</td>
                         <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)" }}>{fmt(contract)}</td>
                         <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--green)" }}>{fmt(billed)}</td>
-                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)" }}>{fmt(labor)}</td>
+                        <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", color: "var(--text2)" }}>{fmt(costs.total)}</td>
                         <td style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)", color: margin < 20 ? "var(--red)" : margin < 40 ? "var(--amber)" : "var(--green)", fontWeight: "var(--weight-semi)" }}>{margin}%</td>
                         <td style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)" }}>{crewToday || "\u2014"}</td>
                       </tr>
@@ -1748,95 +1919,8 @@ function App({ auth, onLogout }) {
         );
       })()}
 
-      {/* ── Section 1: Action Items — what needs attention NOW ── */}
-      {dashCfg.showKPIs && (dashActions.bidsDueSoon.length > 0 || dashActions.cosPending.length > 0 || dashActions.rfisOpen.length > 0 || dashActions.subsDueSoon.length > 0 || dashActions.overdueInv.length > 0 || dashActions.tmPending.length > 0 || dashActions.profitAlerts.length > 0) && (
-        <div className="grid-auto-200 mb-16">
-          {dashActions.bidsDueSoon.length > 0 && (
-            <div className="card action-card action-card--red" onClick={() => handleTabClick("bids")}>
-              <div className="text-xs text-muted">Bids Due This Week</div>
-              <div className="action-value text-red">{dashActions.bidsDueSoon.length}</div>
-              <div className="text-xs text-muted mt-2">{dashActions.bidsDueSoon.slice(0, 2).map(b => b.name?.slice(0, 20) || "Untitled").join(", ")}{dashActions.bidsDueSoon.length > 2 ? "..." : ""}</div>
-            </div>
-          )}
-          {dashActions.cosPending.length > 0 && (
-            <div className="card action-card action-card--amber" onClick={() => handleTabClick("projects")}>
-              <div className="text-xs text-muted">COs Pending</div>
-              <div className="fs-subtitle fw-bold c-amber">{dashActions.cosPending.length}</div>
-              <div className="text-xs text-muted mt-2">{fmtK(dashActions.cosPendingTotal)} awaiting approval</div>
-            </div>
-          )}
-          {dashActions.rfisOpen.length > 0 && (() => {
-            const overdueRfis = dashActions.rfisOpen.filter(r => r.age > 7);
-            return (
-              <div className="card" style={{ padding: "var(--space-3) var(--space-4)", cursor: "pointer", borderLeft: `3px solid ${overdueRfis.length > 0 ? "var(--red)" : "var(--blue)"}` }} onClick={() => handleTabClick("projects")}>
-                <div className="text-xs text-muted">Open RFIs</div>
-                <div style={{ fontSize: "var(--text-subtitle)", fontWeight: "var(--weight-bold)", color: overdueRfis.length > 0 ? "var(--red)" : "var(--blue)" }}>{dashActions.rfisOpen.length}</div>
-                {overdueRfis.length > 0 && <div className="text-xs text-red fw-700 mt-2">{overdueRfis.length} overdue (oldest: {dashActions.rfisOpen[0].age}d)</div>}
-              </div>
-            );
-          })()}
-          {dashActions.subsDueSoon.length > 0 && (
-            <div className="card action-card action-card--amber" onClick={() => handleTabClick("projects")}>
-              <div className="text-xs text-muted">Submittals Due</div>
-              <div className="action-value">{dashActions.subsDueSoon.length}</div>
-              <div className="text-xs text-muted mt-2">within 14 days</div>
-            </div>
-          )}
-          {dashActions.overdueInv.length > 0 && (
-            <div className="card action-card action-card--red" onClick={() => handleTabClick("financials")}>
-              <div className="text-xs text-muted">Overdue Invoices</div>
-              <div className="action-value text-red">{dashActions.overdueInv.length}</div>
-              <div className="text-xs text-muted mt-2">{fmtK(dashActions.overdueTotal)} outstanding</div>
-            </div>
-          )}
-          {dashActions.tmPending.length > 0 && (
-            <div className="card action-card action-card--amber" onClick={() => handleTabClick("financials")}>
-              <div className="text-xs text-muted">T&M Pending</div>
-              <div className="action-value">{dashActions.tmPending.length}</div>
-              <div className="text-xs text-muted mt-2">tickets to review</div>
-            </div>
-          )}
-          {dashActions.profitAlerts.length > 0 && (
-            <div className="card action-card action-card--red" onClick={() => handleTabClick("projects")}>
-              <div className="text-xs text-muted">Low Margin</div>
-              <div className="action-value text-red">{dashActions.profitAlerts.length}</div>
-              <div className="text-xs text-muted mt-2">projects below {companySettings?.marginAlertThreshold || 25}%</div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Section 2: Compact KPI row — context, not decoration ── */}
-      {dashCfg.showKPIs && (
-        <div className="kpi-compact-row">
-          {[
-            { label: "Backlog", val: backlog > 0 ? fmtK(backlog) : null, click: "projects" },
-            { label: "Pipeline", val: pipeline > 0 ? fmtK(pipeline) : null, click: "bids" },
-            { label: "Win Rate", val: winRate !== null ? `${winRate}%` : null, sub: winRate !== null ? `${awarded}W/${lost}L` : null, click: "bids" },
-            { label: "A/R", val: (cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90) > 0 ? fmtK(cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90) : null, color: cashFlow.net90 > 0 ? "var(--red)" : undefined, click: "financials" },
-            { label: "Labor", val: laborUtil !== null ? `${laborUtil}%` : null, color: laborUtil !== null ? (laborUtil >= 70 ? "var(--green)" : laborUtil >= 50 ? "var(--amber)" : "var(--red)") : undefined, click: "timeclock" },
-            { label: "Open Bids", val: openBids > 0 ? String(openBids) : null, click: "bids" },
-          ].filter(k => k.val).map((k, i) => (
-            <div key={i} className="kpi-compact"
-              onClick={() => handleTabClick(k.click)}>
-              <div className="text-xs text-muted">{k.label}</div>
-              <div className="fw-bold fs-card" style={{ color: k.color || "var(--text)" }}>{k.val}</div>
-              {k.sub && <div className="text-xs text-muted">{k.sub}</div>}
-            </div>
-          ))}
-          {dashActions.profitAlerts.length > 0 && (
-            <div className="flex-col rounded-control gap-sp1 text-center cursor-pointer" style={{ padding: "var(--space-2) var(--space-4)", background: "rgba(239,68,68,0.10)", border: "1px solid rgba(239,68,68,0.25)", minWidth: 80, alignItems: "center" }}
-              onClick={() => document.getElementById("profit-analysis-section")?.scrollIntoView({ behavior: "smooth" })}>
-              <div className="flex-center-gap-4">
-                <TrendingDown size={12} className="text-red" />
-                <span className="text-xs text-red text-uppercase" style={{ letterSpacing: "0.6px" }}>Profit Alert</span>
-              </div>
-              <div className="fw-bold fs-card c-red">{dashActions.profitAlerts.length}</div>
-              <div className="text-xs text-red" style={{ opacity: 0.8 }}>{dashActions.profitAlerts.filter(p => p.margin < 15).length > 0 ? `${dashActions.profitAlerts.filter(p => p.margin < 15).length} critical` : `below ${companySettings?.marginAlertThreshold || 25}%`}</div>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Action Items card grid removed — duplicated PM Action Queue (now position 2) */}
+      {/* Compact KPI row removed — duplicated Financial KPI Summary */}
 
       {/* ── Section 3: Project Health — behind schedule / no billing ── */}
       {dashCfg.showKPIs && (dashActions.projAtRisk.length > 0 || dashActions.projNoBilling.length > 0) && (
@@ -1955,6 +2039,45 @@ function App({ auth, onLogout }) {
         );
       })()}
 
+      {/* ── Cash Position / Payroll Coverage — Owner/Admin only ── */}
+      {(userRole === "owner" || userRole === "admin") && (() => {
+        const burden = companySettings?.laborBurdenMultiplier || 1.35;
+        const now = new Date();
+        const weekAgo = new Date(now - 7 * 86400000);
+        const recentEntries = timeEntries.filter(te => te.clockIn && new Date(te.clockIn) >= weekAgo);
+        const weeklyHours = recentEntries.reduce((s, te) => s + (te.totalHours || 0), 0);
+        const avgRate = employees.length > 0 ? employees.reduce((s, e) => s + (e.payRate || 25), 0) / employees.length : 25;
+        const weeklyPayroll = Math.round(weeklyHours * avgRate * burden);
+        const totalAR = cashFlow.current + cashFlow.net30 + cashFlow.net60 + cashFlow.net90;
+        const coverageWeeks = weeklyPayroll > 0 ? Math.round(totalAR / weeklyPayroll * 10) / 10 : null;
+        if (weeklyPayroll === 0 && totalAR === 0) return null;
+        return (
+          <div className="card dash-card mt-8">
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
+              <DollarSign size={15} /> {t("Cash Position")}
+            </div>
+            <div className="grid-auto-180">
+              <div className="activity-tile cursor-pointer" onClick={() => navigateWithContext("financials")}>
+                <div className="text-lg font-bold text-green">{fmtK(totalAR)}</div>
+                <div className="text-xs text-muted">{t("Outstanding A/R")}</div>
+              </div>
+              <div className="activity-tile">
+                <div className="text-lg font-bold" style={{ color: weeklyPayroll > 0 ? "var(--text)" : "var(--text3)" }}>{fmtK(weeklyPayroll)}</div>
+                <div className="text-xs text-muted">{t("Est. Weekly Payroll")}</div>
+                <div className="text-xs text-muted">{weeklyHours.toFixed(0)}h @ ${avgRate.toFixed(0)}/hr</div>
+              </div>
+              {coverageWeeks !== null && (
+                <div className="activity-tile">
+                  <div className="text-lg font-bold" style={{ color: coverageWeeks >= 4 ? "var(--green)" : coverageWeeks >= 2 ? "var(--amber)" : "var(--red)" }}>{coverageWeeks}</div>
+                  <div className="text-xs text-muted">{t("Weeks A/R Coverage")}</div>
+                  {coverageWeeks < 2 && <div className="text-xs text-red">{t("Low coverage")}</div>}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Section 4: Charts — only if data exists, compact ── */}
       {dashCfg.showCharts && gcWinRates.length > 0 && (
         <div className="flex gap-16 mt-8 flex-wrap">
@@ -1962,7 +2085,7 @@ function App({ auth, onLogout }) {
             <div className="card-header"><div className="card-title font-head fs-13">{t("Win Rate by GC")}</div></div>
             <ResponsiveContainer width="100%" height={Math.max(140, gcWinRates.length * 28 + 32)}>
               <BarChart data={gcWinRates.map(g => ({ name: g.gc.length > 18 ? g.gc.slice(0, 16) + "..." : g.gc, fullGc: g.gc, Awarded: g.awarded, Lost: g.lost, Pending: g.pending }))} layout="vertical" margin={{ left: 10, right: 20 }}
-                onClick={(data) => { if (data?.activePayload?.[0]?.payload?.fullGc) { setSearch(data.activePayload[0].payload.fullGc); handleTabClick("bids"); } }}>
+                onClick={(data) => { if (data?.activePayload?.[0]?.payload?.fullGc) { navigateWithContext("bids", { search: data.activePayload[0].payload.fullGc }); } }}>
                 <XAxis type="number" tick={{ fill: "var(--text2)", fontSize: "var(--text-tab)" }} />
                 <YAxis type="category" dataKey="name" width={120} tick={{ fill: "var(--text2)", fontSize: "var(--text-tab)" }} />
                 <Tooltip contentStyle={{ background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", color: "var(--text)" }} />
@@ -2001,6 +2124,56 @@ function App({ auth, onLogout }) {
         </div>
       )}
 
+      {/* ── GC Relationship Health — active projects + open items per GC ── */}
+      {dashCfg.showKPIs && (() => {
+        const activeByGc = {};
+        projects.filter(p => p.status === "in-progress" && p.gc).forEach(p => {
+          if (!activeByGc[p.gc]) activeByGc[p.gc] = { gc: p.gc, projects: 0, openRfis: 0, openSubs: 0, backlog: 0 };
+          activeByGc[p.gc].projects++;
+          activeByGc[p.gc].backlog += getAdjustedContract(p, changeOrders);
+        });
+        (rfis || []).filter(r => r.status === "open" || r.status === "pending").forEach(r => {
+          const proj = projects.find(p => String(p.id) === String(r.projectId));
+          if (proj?.gc && activeByGc[proj.gc]) activeByGc[proj.gc].openRfis++;
+        });
+        (submittals || []).filter(s => s.status === "pending" || s.status === "submitted").forEach(s => {
+          const proj = projects.find(p => String(p.id) === String(s.projectId));
+          if (proj?.gc && activeByGc[proj.gc]) activeByGc[proj.gc].openSubs++;
+        });
+        const gcList = Object.values(activeByGc).sort((a, b) => b.backlog - a.backlog);
+        if (gcList.length === 0) return null;
+        return (
+          <div className="card dash-card mt-16">
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
+              <Building2 size={15} /> {t("GC Relationships")}
+              <span className="text-xs text-muted fw-400">{gcList.length} active</span>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table className="table-clean" style={{ width: "100%" }}>
+                <thead><tr>
+                  <th className="text-xs text-muted">{t("General Contractor")}</th>
+                  <th className="text-xs text-muted text-right">{t("Projects")}</th>
+                  <th className="text-xs text-muted text-right">{t("Backlog")}</th>
+                  <th className="text-xs text-muted text-right">{t("Open RFIs")}</th>
+                  <th className="text-xs text-muted text-right">{t("Open Subs")}</th>
+                </tr></thead>
+                <tbody>
+                  {gcList.slice(0, 8).map(g => (
+                    <tr key={g.gc} className="cursor-pointer" onClick={() => navigateWithContext("projects", { search: g.gc })}>
+                      <td className="text-sm fw-600">{g.gc}</td>
+                      <td className="text-sm text-right">{g.projects}</td>
+                      <td className="text-sm text-right">{fmtK(g.backlog)}</td>
+                      <td className="text-sm text-right" style={{ color: g.openRfis > 0 ? "var(--amber)" : "var(--text3)" }}>{g.openRfis}</td>
+                      <td className="text-sm text-right" style={{ color: g.openSubs > 0 ? "var(--amber)" : "var(--text3)" }}>{g.openSubs}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Section 5: Follow-ups & Recent Activity side by side ── */}
       <div className="flex gap-16 mt-16 flex-wrap">
         {dashActions.followUps.length > 0 && (
@@ -2008,7 +2181,7 @@ function App({ auth, onLogout }) {
             <div className="text-sm font-semi mb-8">Follow-ups</div>
             {dashActions.followUps.slice(0, 5).map((c, i) => (
               <div key={i} className="flex gap-8 log-item--clickable"
-                onClick={() => { handleTabClick("contacts"); setTimeout(() => setContactSearch(c.contact || ""), 0); }}>
+                onClick={() => navigateWithContext("contacts", { search: c.contact || "" })}>
                 <div className="log-accent-bar bg-amber" />
                 <div className="flex-1">
                   <div className="flex-between">
@@ -2025,7 +2198,7 @@ function App({ auth, onLogout }) {
           <div className="text-sm font-semi mb-8">Recent Activity</div>
           {callLog.slice(0, 5).map(c => (
             <div key={c.id} className="flex gap-8 log-item--clickable"
-              onClick={() => { handleTabClick("contacts"); setTimeout(() => setContactSearch(c.contact || ""), 0); }}>
+              onClick={() => navigateWithContext("contacts", { search: c.contact || "" })}>
               <div className="log-accent-bar bg-blue" />
               <div className="flex-1">
                 <div className="flex-between">
@@ -2040,97 +2213,10 @@ function App({ auth, onLogout }) {
         </div>
       </div>
 
-      {/* ── Compact Weekly Digest ── */}
-      {dashCfg.showDigest && <div className="card mt-16" style={{ padding: "var(--space-3) var(--space-4)" }}>
-        <div className="flex-between mb-8">
-          <div>
-            <div className="text-sm font-semi">{t("Weekly Digest")}</div>
-            {digestTimestamp && <div className="text-xs text-dim">{t("Generated")} {digestTimestamp.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</div>}
-          </div>
-          <button className="btn btn-ghost btn-sm fs-11" onClick={runWeeklyDigest} disabled={digestLoading} >
-            {digestLoading ? t("Analyzing...") : digestResult ? t("Refresh") : t("Generate")}
-          </button>
-        </div>
-        {!digestResult && !digestLoading && (
-          <div className="text-xs text-muted">{t("AI-powered portfolio summary — health, alerts, and recommendations.")}</div>
-        )}
-        {digestLoading && <div className="text-xs text-muted text-center p-8">Analyzing {projects.length} projects...</div>}
-        {digestResult && (
-          <div>
-            <div className="text-sm rounded-control mb-sp2 bg-bg3" style={{ padding: "var(--space-2) var(--space-3)" }}>{digestResult.healthSummary}</div>
-            {digestResult.alerts?.length > 0 && digestResult.alerts.slice(0, 3).map((a, i) => (
-              <div key={i} style={{ padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-1)", borderRadius: "var(--radius-control)", borderLeft: `3px solid ${a.priority === "high" ? "var(--red)" : "var(--amber)"}`, background: "var(--card)", fontSize: "var(--text-label)", cursor: a.project ? "pointer" : undefined }}
-                onClick={a.project ? () => { const p = projects.find(p => p.name?.toLowerCase().includes(a.project.toLowerCase())); if (p) setModal({ type: "viewProject", data: p }); } : undefined}>
-                <span className="font-semi">{a.project}</span> — <span className="text-muted">{a.message}</span>
-              </div>
-            ))}
-            {digestResult.recommendations?.length > 0 && (
-              <div className="mt-8">
-                <div className="text-xs font-semi mb-4">Recommendations</div>
-                {digestResult.recommendations.slice(0, 3).map((r, i) => (
-                  <div key={i} className="text-xs py-3">
-                    <span className={`badge ${r.urgency === "now" ? "badge-red" : "badge-amber"} fs-10`}>{r.urgency}</span>{" "}
-                    {r.action}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>}
+      {/* Weekly Digest removed — called banned external AI API (generateWeeklyDigest).
+         Quick Brief already serves the same purpose using local computation. */}
 
-      {/* Role-tailored quick actions */}
-      {dashCfg.showQuickActions && (
-        <div className="flex gap-8 mt-16 flex-wrap">
-          <button className="btn btn-primary" onClick={() => handleTabClick("projects")}>{t("View Projects")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("bids")}>{t("Bids")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("financials")}>{t("Financials")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("calendar")}>{t("Calendar")}</button>
-        </div>
-      )}
-      {userRole === "office_admin" && (
-        <div className="flex gap-8 mt-16 flex-wrap">
-          <button className="btn btn-primary" onClick={() => handleTabClick("documents")}>{t("Documents")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("calendar")}>{t("Calendar")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("contacts")}>{t("Contacts")}</button>
-        </div>
-      )}
-      {userRole === "accounting" && (
-        <div className="flex gap-8 mt-16">
-          <button className="btn btn-primary" onClick={() => handleTabClick("financials")}>{t("Financials")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("timeclock")}>{t("Time Clock")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("reports")}>{t("Reports")}</button>
-        </div>
-      )}
-      {userRole === "safety" && (
-        <div className="flex gap-8 mt-16">
-          <button className="btn btn-primary" onClick={() => handleTabClick("jsa")}>{t("JSA Forms")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("safety")}>{t("Safety")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("reports")}>{t("Reports")}</button>
-        </div>
-      )}
-      {userRole === "foreman" && (
-        <div className="flex gap-8 mt-16 flex-wrap">
-          <button className="btn btn-primary" onClick={() => handleTabClick("foreman")}>{t("Field Portal")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("reports")}>{t("Daily Report")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("schedule")}>{t("Schedule")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("materials")}>{t("Materials")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("jsa")}>{t("JSA")}</button>
-        </div>
-      )}
-      {userRole === "driver" && (
-        <div className="flex gap-8 mt-16">
-          <button className="btn btn-primary" onClick={() => handleTabClick("deliveries")}>{t("Deliveries")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("materials")}>{t("Materials")}</button>
-        </div>
-      )}
-      {userRole === "employee" && (
-        <div className="flex gap-8 mt-16">
-          <button className="btn btn-primary" onClick={() => handleTabClick("timeclock")}>{t("Time Clock")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("schedule")}>{t("Schedule")}</button>
-          <button className="btn btn-ghost" onClick={() => handleTabClick("materials")}>{t("Materials")}</button>
-        </div>
-      )}
+      {/* Quick Actions removed — redundant tab-bar restatement (audit: "zero-value noise") */}
     </div>
   );
 
@@ -3629,43 +3715,8 @@ function App({ auth, onLogout }) {
   const [digestTimestamp, setDigestTimestamp] = useState(null);
   const [digestLoading, setDigestLoading] = useState(false);
 
-  const runWeeklyDigest = async () => {
-    if (!apiKey) { show("Set API key in Settings first", "err"); return; }
-    setDigestLoading(true);
-    setDigestResult(null);
-    try {
-      const { generateWeeklyDigest } = await import("./utils/api.js");
-      const projectData = {
-        projects: projects.map(p => ({
-          name: p.name || p.project, gc: p.gc, phase: p.phase,
-          contract: p.contract, billed: p.billed, margin: p.margin,
-          progress: p.progress, scope: p.scope,
-        })),
-        bids: {
-          estimating: bids.filter(b => b.status === "estimating").length,
-          submitted: bids.filter(b => b.status === "submitted").length,
-          awarded: bids.filter(b => b.status === "awarded").length,
-          lost: bids.filter(b => b.status === "lost").length,
-          pipelineValue: pipeline,
-        },
-        tmTickets: {
-          total: tmTickets.length,
-          pending: tmTickets.filter(t => t.status !== "approved" && t.status !== "billed").length,
-          approvedValue: tmTickets.filter(t => t.status === "approved" || t.status === "billed")
-            .reduce((s, t) => s + (t.laborEntries || []).reduce((a, e) => a + e.hours * e.rate, 0) + (t.materialEntries || []).reduce((a, e) => a + e.qty * e.unitCost * (1 + (e.markupPct || 0) / 100), 0), 0),
-        },
-        weekOf: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      };
-      const result = await generateWeeklyDigest(apiKey, projectData);
-      setDigestResult(result);
-      setDigestTimestamp(new Date());
-      show("Weekly digest generated", "ok");
-    } catch (e) {
-      show(e.message, "err");
-    } finally {
-      setDigestLoading(false);
-    }
-  };
+  // runWeeklyDigest removed — called banned external AI API (generateWeeklyDigest).
+  // Quick Brief auto-computes the same information from local data.
 
   // ── morning briefing (auto-computed) ──
   const [lookAheadDays, setLookAheadDays] = useState(7);
@@ -3725,10 +3776,13 @@ function App({ auth, onLogout }) {
 
     const marginThr = companySettings?.marginAlertThreshold || 25;
     const activeProjs = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
+    const briefBurden = companySettings?.laborBurdenMultiplier || 1.35;
     const lowMargin = activeProjs.filter(p => {
-      const contract = (p.contractAmount || p.contract || 0) + changeOrders.filter(c => c.projectId === p.id && c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
-      const labor = timeEntries.filter(te => te.projectId === p.id).reduce((s, te) => s + ((te.totalHours || 0) * (te.rate || 45)), 0);
-      const margin = contract > 0 ? Math.round(((contract - labor) / contract) * 100) : 100;
+      const adjContract = getAdjustedContract(p, changeOrders);
+      if (adjContract <= 0) return false;
+      const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, briefBurden, accruals || []);
+      if (costs.total <= 0) return false;
+      const margin = Math.round(((adjContract - costs.total) / adjContract) * 100);
       return margin < marginThr;
     });
     lowMargin.forEach(p => urgentAlerts.push({ type: "Margin", alert: `"${p.name}" is below ${marginThr}% margin target`, project: p.name, action: "Review labor costs and estimate", tab: "projects" }));
@@ -3737,7 +3791,7 @@ function App({ auth, onLogout }) {
     if (openInc.length > 0) urgentAlerts.push({ type: "Safety", alert: `${openInc.length} open safety incident${openInc.length > 1 ? "s" : ""} need resolution`, action: "Investigate and close out", tab: "safety" });
 
     const expCerts = (certifications || []).filter(c => { const exp = c.expirationDate ? new Date(c.expirationDate) : null; return exp && exp <= now; });
-    if (expCerts.length > 0) urgentAlerts.push({ type: "Compliance", alert: `${expCerts.length} expired certification${expCerts.length > 1 ? "s" : ""} — crew may not be compliant`, action: "Renew or reassign affected workers", tab: "more" });
+    if (expCerts.length > 0) urgentAlerts.push({ type: "Compliance", alert: `${expCerts.length} expired certification${expCerts.length > 1 ? "s" : ""} — crew may not be compliant`, action: "Renew or reassign affected workers", tab: "settings", subTab: "credentials" });
 
     const overdueRfis = (rfis || []).filter(r => r.status !== "Answered" && r.status !== "Closed").filter(r => {
       const sub = r.submitted || r.dateSubmitted;
@@ -3776,9 +3830,9 @@ function App({ auth, onLogout }) {
     }
 
     const backlogVal = activeProjs.reduce((s, p) => {
-      const contract = (p.contractAmount || p.contract || 0) + changeOrders.filter(c => c.projectId === p.id && c.status === "approved").reduce((s2, c) => s2 + (c.amount || 0), 0);
+      const adjContract = getAdjustedContract(p, changeOrders);
       const billed = invoices.filter(i => String(i.projectId) === String(p.id) && !i.deletedAt).reduce((s2, i) => s2 + (Number(i.amount) || 0), 0);
-      return s + Math.max(0, contract - billed);
+      return s + Math.max(0, adjContract - billed);
     }, 0);
     if (backlogVal > 0) moneyMoves.push({ item: "Remaining backlog to bill", amount: fmt(backlogVal), action: "Bill as work completes", deadline: "Ongoing", tab: "financials", actionLabel: "View Billing" });
 
