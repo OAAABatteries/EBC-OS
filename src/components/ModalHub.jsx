@@ -1057,30 +1057,30 @@ const ModalHub = ({ type, data, app }) => {
                     </div>
                     <div className="flex gap-8 flex-wrap mb-8">
                       <div className="flex-0-100">
-                        <label className="text-xs text-dim">CO Number</label>
-                        <input className="input input-sm" placeholder={`CO-${String(coNextNum).padStart(3, "0")}`} value={coForm.number} onChange={e => setCoForm(p => ({ ...p, number: e.target.value }))} />
+                        <label className="form-label">CO Number</label>
+                        <input className="form-input" placeholder={`CO-${String(coNextNum).padStart(3, "0")}`} value={coForm.number} onChange={e => setCoForm(p => ({ ...p, number: e.target.value }))} />
                       </div>
                       <div className="flex-1 min-w-200">
-                        <label className="text-xs text-dim">Description</label>
-                        <input className="input input-sm" placeholder="Describe the change..." value={coForm.description} onChange={e => setCoForm(p => ({ ...p, description: e.target.value }))} />
+                        <label className="form-label">Description</label>
+                        <textarea className="form-textarea" rows={4} placeholder="Describe the change in detail — scope, reason, affected areas..." value={coForm.description} onChange={e => setCoForm(p => ({ ...p, description: e.target.value }))} />
                       </div>
                     </div>
                     <div className="flex gap-8 flex-wrap mb-8">
                       <div className="flex-0-120">
-                        <label className="text-xs text-dim">Type</label>
-                        <select className="input input-sm" value={coForm.type} onChange={e => setCoForm(p => ({ ...p, type: e.target.value }))}>
+                        <label className="form-label">Type</label>
+                        <select className="form-select" value={coForm.type} onChange={e => setCoForm(p => ({ ...p, type: e.target.value }))}>
                           <option value="add">Add</option>
                           <option value="deduct">Deduct</option>
                           <option value="no cost">No Cost</option>
                         </select>
                       </div>
                       <div className="flex-0-120">
-                        <label className="text-xs text-dim">Amount ($)</label>
-                        <input className="input input-sm" type="number" step="0.01" placeholder="0.00" value={coForm.amount} onChange={e => setCoForm(p => ({ ...p, amount: e.target.value }))} disabled={coForm.type === "no cost"} />
+                        <label className="form-label">Amount ($)</label>
+                        <input className="form-input" type="number" step="0.01" placeholder="0.00" value={coForm.amount} onChange={e => setCoForm(p => ({ ...p, amount: e.target.value }))} disabled={coForm.type === "no cost"} />
                       </div>
                       <div className="flex-0-140">
-                        <label className="text-xs text-dim">Status</label>
-                        <select className="input input-sm" value={coForm.status} onChange={e => setCoForm(p => ({ ...p, status: e.target.value }))}>
+                        <label className="form-label">Status</label>
+                        <select className="form-select" value={coForm.status} onChange={e => setCoForm(p => ({ ...p, status: e.target.value }))}>
                           <option value="draft">Draft</option>
                           <option value="submitted">Submitted</option>
                           <option value="approved">Approved</option>
@@ -1088,13 +1088,13 @@ const ModalHub = ({ type, data, app }) => {
                         </select>
                       </div>
                       <div className="flex-0-140">
-                        <label className="text-xs text-dim">Date</label>
-                        <input className="input input-sm" type="date" value={coForm.date} onChange={e => setCoForm(p => ({ ...p, date: e.target.value }))} />
+                        <label className="form-label">Date</label>
+                        <input className="form-input" type="date" value={coForm.date} onChange={e => setCoForm(p => ({ ...p, date: e.target.value }))} />
                       </div>
                     </div>
                     <div className="mb-8">
-                      <label className="text-xs text-dim">Notes</label>
-                      <textarea className="input input-sm resize-v" rows={2} placeholder="Additional notes..." value={coForm.notes} onChange={e => setCoForm(p => ({ ...p, notes: e.target.value }))} />
+                      <label className="form-label">Notes</label>
+                      <textarea className="form-textarea" rows={2} placeholder="Additional notes..." value={coForm.notes} onChange={e => setCoForm(p => ({ ...p, notes: e.target.value }))} />
                     </div>
                     {/* T&M Backup Selection */}
                     {(() => {
@@ -1167,6 +1167,7 @@ const ModalHub = ({ type, data, app }) => {
                               <span className="font-semi text-sm">{desc}</span>
                             </div>
                             <div className="flex gap-8 align-center">
+                              <button className="btn btn-sm btn-ghost" title="Export PDF" onClick={(e) => { e.stopPropagation(); exportCoPdf(co); }} style={{ padding: "var(--space-1) var(--space-2)", fontSize: "var(--text-xs)" }}>PDF</button>
                               <span className={`badge ${coStatusColor(coStatus)} capitalize fs-xs`}>{coStatus}</span>
                               <span className="font-mono text-sm" style={{ color: (co.amount || 0) < 0 ? "var(--red)" : (co.amount || 0) > 0 ? "var(--green)" : "var(--text2)", minWidth: 70, textAlign: "right" }}>
                                 {(co.amount || 0) < 0 ? "-" : (co.amount || 0) > 0 ? "+" : ""}{fmt(Math.abs(co.amount || 0))}
