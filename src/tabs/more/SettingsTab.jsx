@@ -1,4 +1,4 @@
-import { useState, Fragment, lazy, Suspense } from "react";
+import { useState, useEffect, Fragment, lazy, Suspense } from "react";
 import { SubTabs } from "./moreShared";
 import { resetAllGuides } from "../../components/FeatureGuide";
 import { THEMES, COMPANY_DEFAULTS, ASSEMBLIES } from "../../data/constants";
@@ -26,6 +26,16 @@ export function Settings({ app }) {
   if (isOwnerOrAdmin) tabs.push("Users");
   if (isForeman) tabs.push("Team");
   const [sub, setSub] = useState(isFullAccess ? "Company" : "Theme");
+
+  // Wire app.subTab → internal sub-tab on mount
+  useEffect(() => {
+    if (app.subTab) {
+      const map = { "credentials": "Insurance", "insurance": "Insurance", "company": "Company", "theme": "Theme", "security": "Security", "users": "Users", "api": "API", "quickbooks": "QuickBooks", "assemblies": "Assemblies", "equipment": "Equipment" };
+      const mapped = map[app.subTab.toLowerCase()];
+      if (mapped && tabs.includes(mapped)) setSub(mapped);
+    }
+  }, [app.subTab]);
+
   return (
     <div>
       <SubTabs tabs={tabs} active={sub} onChange={setSub} />
@@ -994,9 +1004,9 @@ function UsersTab({ app }) {
 
   const ROLES_IMPORT = {
     owner: "Owner", admin: "Admin", pm: "Project Manager", estimator: "Estimator",
-    project_engineer: "Project Engineer", foreman: "Superintendent / Foreman",
-    safety: "Safety Officer", accounting: "Accounting", office_admin: "Office Admin",
-    employee: "Employee / Team", driver: "Driver"
+    project_engineer: "Project Engineer", superintendent: "Superintendent",
+    foreman: "Foreman", safety: "Safety Officer", accounting: "Accounting",
+    office_admin: "Office Admin", employee: "Employee / Team", driver: "Driver"
   };
 
   const refresh = () => {

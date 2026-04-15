@@ -750,7 +750,7 @@ function App({ auth, onLogout }) {
 
   // Backlog = total adjusted contract value (base + approved COs) of all in-progress projects
   const backlog = useMemo(() => {
-    return projects.filter(p => p.status === "in-progress").reduce((s, p) => s + getAdjustedContract(p, changeOrders), 0);
+    return projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active")).reduce((s, p) => s + getAdjustedContract(p, changeOrders), 0);
   }, [projects, changeOrders]);
 
   const cashFlow = useMemo(() => {
@@ -3330,7 +3330,7 @@ function App({ auth, onLogout }) {
             const headers = ["ID","Name","GC","Contract","Billed","Progress","Phase","Start","End","PM","Address","Margin"];
             const rows = filteredProjects.map(p => [
               p.id, `"${(p.name||'').replace(/"/g,'""')}"`, `"${(p.gc||'').replace(/"/g,'""')}"`,
-              p.contract||0, p.billed||0, p.progress||0, p.phase||'', p.start||'', p.end||'',
+              getAdjustedContract(p, changeOrders)||0, p.billed||0, p.progress||0, p.phase||'', p.start||'', p.end||'',
               `"${(p.pm||'').replace(/"/g,'""')}"`, `"${(p.address||'').replace(/"/g,'""')}"`, p.margin||''
             ]);
             const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -3387,7 +3387,7 @@ function App({ auth, onLogout }) {
                         <span>{p.progress || 0}%</span>
                       </div>
                     </td>
-                    <td className="table-td-mono-right">${((p.contract || 0) / 1000).toFixed(0)}k</td>
+                    <td className="table-td-mono-right">${((getAdjustedContract(p, changeOrders) || 0) / 1000).toFixed(0)}k</td>
                     <td style={{ padding: "var(--space-2) var(--space-2)", textAlign: "right", color: pRfis > 0 ? "var(--red)" : "var(--text3)", fontWeight: pRfis > 0 ? 700 : 400 }}>{pRfis}</td>
                     <td style={{ padding: "var(--space-2) var(--space-2)", textAlign: "right", color: pCOs > 0 ? "var(--amber)" : "var(--text3)", fontWeight: pCOs > 0 ? 700 : 400 }}>{pCOs}</td>
                     <td style={{ padding: "var(--space-2) var(--space-2)", textAlign: "right", color: pTm > 0 ? "var(--amber)" : "var(--text3)" }}>{pTm}</td>
@@ -4078,7 +4078,7 @@ function App({ auth, onLogout }) {
         const projTM = (tmTickets || []).filter(t => String(t.projectId) === String(p.id));
         return {
           name: p.name || p.project, gc: p.gc, phase: p.phase,
-          contract: p.contract, billed: p.billed, margin: p.margin, progress: p.progress,
+          contract: getAdjustedContract(p, changeOrders), billed: p.billed, margin: p.margin, progress: p.progress,
           scope: p.scope,
           changeOrders: { count: projCOs.length, totalValue: projCOs.reduce((s, c) => s + (c.amount || 0), 0), pendingCount: projCOs.filter(c => c.status === "pending").length },
           tmTickets: { count: projTM.length, pendingValue: projTM.filter(t => t.status !== "approved" && t.status !== "billed").reduce((s, t) => s + (t.laborEntries || []).reduce((a, e) => a + e.hours * e.rate, 0) + (t.materialEntries || []).reduce((a, e) => a + e.qty * e.unitCost, 0), 0) },

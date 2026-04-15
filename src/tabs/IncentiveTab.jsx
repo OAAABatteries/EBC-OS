@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Award } from "lucide-react";
-import { computeProjectTotalCost } from "../utils/financialValidation";
+import { computeProjectTotalCost, getAdjustedContract } from "../utils/financialValidation";
 
 // ═══════════════════════════════════════════════════════════════
 //  Incentive & Appreciation System
@@ -86,14 +86,10 @@ export function IncentiveTab({ app }) {
     const accruals = app.accruals || [];
     const changeOrders = app.changeOrders || [];
     const burden = app.companySettings?.laborBurdenMultiplier || 1.35;
-    return projects.filter(p => p.contract > 0).map(p => {
+    return projects.filter(p => (p.contract || 0) > 0 || getAdjustedContract(p, changeOrders) > 0).map(p => {
       const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, accruals);
       const totalCost = costs.total;
-      // Adjusted contract = base contract + approved change orders (matches dashboard / WIP)
-      const approvedCOs = changeOrders
-        .filter(c => String(c.projectId) === String(p.id) && c.status === "approved")
-        .reduce((s, c) => s + (c.amount || 0), 0);
-      const revenue = (p.contract || 0) + approvedCOs;
+      const revenue = getAdjustedContract(p, changeOrders);
       const margin = revenue > 0 ? ((revenue - totalCost) / revenue * 100) : 0;
       return {
         id: p.id,

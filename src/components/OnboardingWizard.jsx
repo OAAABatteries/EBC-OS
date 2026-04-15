@@ -22,7 +22,12 @@ const FIELD_ROLES  = ["foreman", "employee", "driver"];
 function roleFamily(role) {
   if (ADMIN_ROLES.includes(role))  return "admin";
   if (role === "pm")               return "pm";
+  if (role === "superintendent")   return "foreman";  // field leadership family
   if (role === "foreman")          return "foreman";
+  if (role === "estimator")        return "pm";        // office/preconstruction family
+  if (role === "project_engineer") return "pm";
+  if (role === "safety")           return "foreman";   // field-adjacent
+  if (role === "accounting")       return "admin";
   if (role === "employee")         return "employee";
   if (role === "driver")           return "driver";
   return "admin"; // fallback

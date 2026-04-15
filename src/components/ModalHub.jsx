@@ -569,7 +569,8 @@ const ModalHub = ({ type, data, app }) => {
     const coNextNum = projCOs.length > 0 ? Math.max(...projCOs.map(c => parseInt(String(c.number || "0").replace(/\D/g, "")) || 0)) + 1 : 1;
     const [coForm, setCoForm] = useState({ number: "", description: "", type: "add", amount: "", status: "draft", date: new Date().toISOString().slice(0, 10), notes: "", tmTicketIds: [] });
     const coNetTotal = projCOs.reduce((s, c) => s + (c.type === "no cost" ? 0 : (c.amount || 0)), 0);
-    const coAdjustedContract = (draft.contract || 0) + coNetTotal;
+    const coApprovedTotal = projCOs.filter(c => c.status === "approved").reduce((s, c) => s + (c.type === "no cost" ? 0 : (c.amount || 0)), 0);
+    const coAdjustedContract = (draft.contract || 0) + coApprovedTotal;
     const coStatusColor = (st) => ({ draft: "badge-ghost", submitted: "badge-amber", approved: "badge-green", rejected: "badge-red" }[st] || "badge-ghost");
     const coTypeLabel = (t) => ({ add: "+Add", deduct: "-Deduct", "no cost": "No Cost" }[t] || t);
     const resetCoForm = () => { setCoForm({ number: "", description: "", type: "add", amount: "", status: "draft", date: new Date().toISOString().slice(0, 10), notes: "", tmTicketIds: [] }); setCoEditId(null); };
@@ -827,7 +828,7 @@ const ModalHub = ({ type, data, app }) => {
           {/* Sub-tabs (Phase 4: role-filtered) */}
           {(() => {
             const role = app.auth?.role || "owner";
-            const hiddenTabs = ["foreman","driver","employee"].includes(role) ? ["financials","closeout"] : [];
+            const hiddenTabs = ["superintendent","foreman","driver","employee"].includes(role) ? ["financials","closeout"] : [];
             const visibleTabs = projTabs.filter(tab => !hiddenTabs.includes(tab));
             return (
               <div className="flex gap-4 mb-12 border-b overflow-x-auto" style={{ paddingBottom: "var(--space-2)" }}>
@@ -2036,9 +2037,8 @@ const ModalHub = ({ type, data, app }) => {
               const completedCount = CLOSEOUT_ITEMS.filter(ci => itemMap[ci.id]?.done).length;
               const pct = Math.round((completedCount / CLOSEOUT_ITEMS.length) * 100);
               const isOverdue = draft.end && new Date(draft.end) < new Date();
-              const coTotal = projCOs.reduce((s, c) => s + (c.amount || 0), 0);
               const approvedCOs = projCOs.filter(c => c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
-              const revisedContract = (draft.contract || 0) + coTotal;
+              const revisedContract = (draft.contract || 0) + approvedCOs;
               const paidInvoices = projInvoices.filter(i => i.status === "paid").reduce((s, i) => s + (i.amount || 0), 0);
               const retainageHeld = Math.round(revisedContract * 0.10);
               const remainingBalance = revisedContract - totalBilled;

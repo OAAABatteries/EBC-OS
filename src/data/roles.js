@@ -16,7 +16,7 @@ export const ROLES = {
   },
   pm: {
     label: "Project Manager",
-    access: ["dashboard", "bids", "projects", "estimating", "financials", "documents", "calendar", "schedule", "reports", "safety", "jsa", "materials", "deliveries", "incentives", "scope", "contacts", "timeclock", "sds", "map", "settings"],
+    access: ["dashboard", "bids", "projects", "estimating", "financials", "documents", "submittalLibrary", "calendar", "schedule", "reports", "safety", "jsa", "materials", "deliveries", "incentives", "scope", "contacts", "timeclock", "sds", "map", "settings"],
     description: "Manage assigned projects and bids"
   },
   estimator: {
@@ -26,7 +26,7 @@ export const ROLES = {
   },
   project_engineer: {
     label: "Project Engineer",
-    access: ["dashboard", "bids", "projects", "estimating", "documents", "calendar", "schedule", "reports", "materials", "scope", "contacts", "sds"],
+    access: ["dashboard", "bids", "projects", "estimating", "documents", "submittalLibrary", "calendar", "schedule", "reports", "materials", "scope", "contacts", "sds"],
     description: "Project support, submittals, RFIs, documents"
   },
   superintendent: {
@@ -36,7 +36,7 @@ export const ROLES = {
   },
   foreman: {
     label: "Foreman",
-    access: ["dashboard", "projects", "schedule", "reports", "safety", "jsa", "materials", "deliveries", "timeclock", "sds", "map", "settings"],
+    access: ["dashboard", "projects", "foreman", "schedule", "reports", "safety", "jsa", "materials", "deliveries", "timeclock", "sds", "map", "settings"],
     description: "Field operations and team management"
   },
   safety: {

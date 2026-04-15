@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { filterActive } from "../../utils/financialValidation";
 import { SubTabs } from "./moreShared";
@@ -18,6 +18,15 @@ export function Reports({ app }) {
   const [forecastLoading, setForecastLoading] = useState(false);
   const [showForecast, setShowForecast] = useState(false);
   const [reportSub, setReportSub] = useState("Incidents");
+
+  // Wire app.subTab → internal sub-tab on mount
+  useEffect(() => {
+    if (app.subTab) {
+      const map = { "problems": "Incidents", "incidents": "Incidents", "toolbox": "Toolbox Talks", "production": "Daily Reports", "daily": "Daily Reports" };
+      const mapped = map[app.subTab.toLowerCase()];
+      if (mapped) setReportSub(mapped);
+    }
+  }, [app.subTab]);
 
   const runForecast = async () => {
     if (!app.apiKey) { app.show("Set API key in Settings first", "err"); return; }

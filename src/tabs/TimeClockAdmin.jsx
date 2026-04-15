@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Clock, ClipboardList, MapPin, AlertTriangle, Flame, DollarSign, Package } from "lucide-react";
 import { FeatureGuide } from "../components/FeatureGuide";
 import { NewHireWizard } from "../components/NewHireWizard";
+import { getAdjustedContract } from "../utils/financialValidation";
 
 // ═══════════════════════════════════════════════════════════════
 //  Time Clock Admin — Crew scheduling, verification, labor mgmt
@@ -950,8 +951,8 @@ export function TimeClockAdmin({ app }) {
 
           {/* ── Backlog / Projected Overhead ── */}
           {(() => {
-            const activeProjects = projects.filter(p => p.status === "in-progress");
-            const totalContract = activeProjects.reduce((s, p) => s + (p.contract || 0), 0);
+            const activeProjects = projects.filter(p => !p.deletedAt && (p.status === "in-progress" || p.status === "active"));
+            const totalContract = activeProjects.reduce((s, p) => s + getAdjustedContract(p, app.changeOrders || []), 0);
             const totalBilled = activeProjects.reduce((s, p) => s + (p.billed || 0), 0);
             const backlog = totalContract - totalBilled;
             const activeEmps = employees.filter(e => e.active);

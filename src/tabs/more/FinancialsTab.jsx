@@ -1,4 +1,4 @@
-import { useState, useCallback, Fragment } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import { Search, CheckSquare, Square, AlertTriangle } from "lucide-react";
 import { addAudit, AttachmentsInput, AuditHistory, SubTabs } from "./moreShared";
 import { softDelete, filterActive, auditDiff, CRITICAL_FIELDS, validateInvoice, findDuplicateInvoice, validateChangeOrder, findDuplicateCO, validateAPBill, findDuplicateAPBill, computeProjectLaborCost, computeProjectLaborByCode, computeProjectTotalCost, computeProjectCostForPeriod, validateAccrual, validateCommitment, computeProjectCommittedCost, computeBudgetVsActual, validatePeriod, computeWorkedHours, getAdjustedContract, DEFAULT_BURDEN } from "../../utils/financialValidation";
@@ -9,8 +9,26 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 //  Extracted Sprint 9.1 from MoreTabs.jsx
 // ═══════════════════════════════════════════════════════════════
 
+const FINANCIAL_SUBTAB_MAP = {
+  "tm": "T&M Tickets", "t&m": "T&M Tickets", "invoices": "Invoices",
+  "change-orders": "Change Orders", "cos": "Change Orders", "job-costing": "Job Costing",
+  "payroll": "Payroll Summary", "aging": "Aging Report", "ap": "AP Bills",
+  "vendors": "Vendors", "commitments": "Commitments", "retainage": "Retainage",
+  "period-close": "Period Close", "budget": "Budget", "sov": "SOV",
+  "pay-apps": "Pay Apps", "reports": "Reports"
+};
+
 export function Financials({ app }) {
   const [sub, setSub] = useState("Invoices");
+
+  // Wire app.subTab → internal sub-tab on mount
+  useEffect(() => {
+    if (app.subTab) {
+      const mapped = FINANCIAL_SUBTAB_MAP[app.subTab.toLowerCase()];
+      if (mapped) setSub(mapped);
+    }
+  }, [app.subTab]);
+
   return (
     <div>
       <SubTabs tabs={["Invoices", "Change Orders", "T&M Tickets", "Job Costing", "Payroll Summary", "Aging Report", "AP Bills", "Vendors", "Commitments", "Retainage", "Period Close", "Budget", "SOV", "Pay Apps", "Reports"]} active={sub} onChange={setSub} />
