@@ -2792,6 +2792,9 @@ const ModalHub = ({ type, data, app }) => {
                 {pdfScanning ? "Scanning..." : "Scan Proposal PDF"}
                 <input type="file" accept=".pdf" className="absolute cursor-pointer" style={{ inset: 0, opacity: 0 }} onChange={(e) => { if (e.target.files?.[0]) handlePdfScan(e.target.files[0]); e.target.value = ""; }} disabled={pdfScanning} />
               </label>
+              {(draft.proposalData?.lineItems?.length > 0 || (!isNew && draft.notes)) && (
+                <button className="btn btn-sm fs-tab" style={{ background: "rgba(255,127,33,0.12)", border: "1px solid var(--orange)", color: "var(--orange)" }} onClick={handleCreateProposal}>Create Proposal</button>
+              )}
               {isNew && <button className="btn btn-sm flex fs-tab c-green gap-sp1" style={{ background: "rgba(16,185,129,0.12)", border: "1px solid var(--green)" }} onClick={() => { setShowEmailImport(!showEmailImport); setShowAiPanel(false); }}><Clipboard size={12} />{showEmailImport ? "Close" : "Paste Bid Invite"}</button>}
               {isNew && <button className="btn btn-sm fs-tab c-amber" style={{ background: "var(--amber-dim)", border: "1px solid var(--amber)" }} onClick={() => { setShowAiPanel(!showAiPanel); setShowEmailImport(false); }}>{showAiPanel ? "Hide AI" : "Analyze Bid Package"}</button>}
               <button className="modal-close" onClick={close}>✕</button>
