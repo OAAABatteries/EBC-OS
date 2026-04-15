@@ -552,7 +552,7 @@ const ModalHub = ({ type, data, app }) => {
 
   // ── View Project (read-only) ──
   if (type === "viewProject") {
-    const projCOs = app.changeOrders.filter(co => String(co.projectId) === String(draft.id));
+    const projCOs = app.changeOrders.filter(co => String(co.projectId) === String(draft.id) && !co.deletedAt);
     const projRFIs = (app.rfis || []).filter(r => String(r.projectId) === String(draft.id));
     const projSubmittals = (app.submittals || []).filter(s => String(s.projectId) === String(draft.id));
     const projCrew = app.teamSchedule.filter(s => String(s.projectId) === String(draft.id));
@@ -631,10 +631,25 @@ const ModalHub = ({ type, data, app }) => {
       setCoFormOpen(true);
     };
     const deleteCo = (coId) => {
-      const reason = prompt("Reason for voiding this change order:");
-      if (reason !== null) {
-        app.setChangeOrders(prev => prev.map(c => c.id === coId ? softDelete(c, app.auth?.name, reason) : c));
-        app.show("Change order voided");
+      const co = app.changeOrders.find(c => c.id === coId);
+      const isApproved = co?.status === "approved";
+      if (isApproved) {
+        // Approved COs get soft-deleted (audit trail)
+        const reason = prompt("Reason for voiding this approved change order:");
+        if (reason !== null) {
+          app.setChangeOrders(prev => prev.map(c => c.id === coId ? softDelete(c, app.auth?.name, reason) : c));
+          app.show("Change order voided");
+        }
+      } else {
+        // Draft/submitted/rejected — hard delete
+        if (!confirm("Remove this change order?")) return;
+        // Clear changeOrderId from linked T&M tickets
+        const tmIds = co?.tmTicketIds || [];
+        if (tmIds.length > 0) {
+          app.setTmTickets(prev => prev.map(t => tmIds.includes(t.id) ? { ...t, changeOrderId: undefined } : t));
+        }
+        app.setChangeOrders(prev => prev.filter(c => c.id !== coId));
+        app.show("Change order removed");
       }
     };
     const exportCoPdf = async (co) => {
