@@ -7,6 +7,9 @@ import { CalendarPTO } from "./calendar/CalendarPTO";
 import { CalendarEquipment } from "./calendar/CalendarEquipment";
 import { CalendarConflicts } from "./calendar/CalendarConflicts";
 import { CalendarAnalytics } from "./calendar/CalendarAnalytics";
+import { Upload, AlertTriangle } from "lucide-react";
+import { ImportReviewModal } from "../components/ImportReviewModal.jsx";
+import { parseGcSchedule } from "../utils/gcDocParser.js";
 
 // ═══════════════════════════════════════════════════════════════
 //  CalendarView — Main calendar module for EBC-OS
@@ -120,6 +123,9 @@ export function CalendarView({ app }) {
   const [showEventForm, setShowEventForm] = useState(false);
   const [eventForm, setEventForm] = useState(emptyForm);
 
+  const [showScheduleImport, setShowScheduleImport] = useState(false);
+  const [importProjectId, setImportProjectId] = useState("");
+
   // ── AI Week Planner state ──
   const [weekPlanResult, setWeekPlanResult] = useState(null);
   const [weekPlanLoading, setWeekPlanLoading] = useState(false);
@@ -141,6 +147,47 @@ export function CalendarView({ app }) {
       setWeekPlanLoading(false);
     }
   };
+
+  const handleScheduleImport = useCallback((selectedItems) => {
+    const now = new Date().toISOString();
+    const pid = Number(importProjectId) || null;
+
+    const newEvents = selectedItems.map((item) => ({
+      id: crypto.randomUUID(),
+      type: "gantt",
+      title: item.title,
+      projectId: pid,
+      date: item.date,
+      allDay: true,
+      startTime: null,
+      endTime: null,
+      assignedTo: null,
+      location: "",
+      notes: "Imported from GC schedule",
+      status: "scheduled",
+      recurrence: null,
+      createdAt: now,
+      createdBy: "admin",
+      audit: [{ action: "imported_from_gc_schedule", at: now, by: "admin" }],
+    }));
+    setCalendarEvents((prev) => [...prev, ...newEvents]);
+
+    if (app.setSchedule) {
+      const ganttItems = selectedItems
+        .filter((item) => item.date && item.endDate && item.date !== item.endDate)
+        .map((item) => ({
+          id: crypto.randomUUID(),
+          projectId: pid,
+          task: item.title,
+          start: item.date,
+          end: item.endDate,
+          status: "scheduled",
+        }));
+      if (ganttItems.length > 0) {
+        app.setSchedule((prev) => [...prev, ...ganttItems]);
+      }
+    }
+  }, [importProjectId, setCalendarEvents, app]);
 
   // ── Conflict detection ──
   const conflicts = useMemo(() => {
@@ -542,9 +589,14 @@ export function CalendarView({ app }) {
             </button>
           ))}
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={() => { showWeekPlan ? setShowWeekPlan(false) : runWeekPlan(); }} disabled={weekPlanLoading}>
-          {weekPlanLoading ? "Planning..." : "AI Week Plan"}
-        </button>
+        <div className="flex gap-8">
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowScheduleImport(true)}>
+            <Upload size={14} className="mr-sp1" /> Import GC Schedule
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { showWeekPlan ? setShowWeekPlan(false) : runWeekPlan(); }} disabled={weekPlanLoading}>
+            {weekPlanLoading ? "Planning..." : "AI Week Plan"}
+          </button>
+        </div>
       </div>
 
       {/* ── AI Week Plan Panel ── */}
@@ -1047,6 +1099,57 @@ export function CalendarView({ app }) {
           </div>
         </div>
       )}
+
+      {/* GC Schedule Import Modal */}
+      <ImportReviewModal
+        open={showScheduleImport}
+        onClose={() => setShowScheduleImport(false)}
+        title="Import GC Schedule"
+        loadingMessage="Scanning for EBC schedule items..."
+        emptyMessage="No items for Eagles Brothers found. Check that the document mentions EBC or your trade scopes."
+        parseText={parseGcSchedule}
+        onConfirm={handleScheduleImport}
+        projectSelector={
+          <div>
+            <label className="form-label">Project *</label>
+            <select className="form-input" value={importProjectId}
+              onChange={(e) => setImportProjectId(e.target.value)}>
+              <option value="">-- Select Project --</option>
+              {(app.projects || []).map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+        }
+        renderItem={(item, i, update) => (
+          <div>
+            <input className="form-input fs-label mb-4" value={item.title}
+              onChange={(e) => update({ title: e.target.value })}
+              style={{ width: "100%" }} />
+            <div className="flex gap-8" style={{ alignItems: "center" }}>
+              <div className="flex gap-4" style={{ alignItems: "center" }}>
+                <span className="text-xs" style={{ opacity: 0.5 }}>Start:</span>
+                <input type="date" className="form-input fs-label" value={item.date}
+                  onChange={(e) => update({ date: e.target.value })}
+                  style={{ width: 140 }} />
+              </div>
+              {item.date !== item.endDate && (
+                <div className="flex gap-4" style={{ alignItems: "center" }}>
+                  <span className="text-xs" style={{ opacity: 0.5 }}>End:</span>
+                  <input type="date" className="form-input fs-label" value={item.endDate}
+                    onChange={(e) => update({ endDate: e.target.value })}
+                    style={{ width: 140 }} />
+                </div>
+              )}
+              {item.dateWarning && (
+                <span className="text-xs" style={{ color: "var(--warning, #f5a623)" }}>
+                  <AlertTriangle size={12} /> {item.dateWarning}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      />
     </div>
   );
 }
