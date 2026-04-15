@@ -603,6 +603,35 @@ const ModalHub = ({ type, data, app }) => {
       resetSubForm();
       setSubFormOpen(false);
       show(subEditId ? "Submittal updated" : "Submittal added", "ok");
+      // Prompt to add to library if not already from library
+      if (!subEditId) {
+        const desc = subForm.description || "";
+        const alreadyInLib = (app.submittalLibrary || []).some(li =>
+          li.itemName.toLowerCase() === desc.toLowerCase()
+        );
+        if (!alreadyInLib && desc.length > 3) {
+          setTimeout(() => {
+            if (confirm(`Add "${desc}" to the Submittal Library for future use?`)) {
+              const libItem = {
+                id: "sl-" + crypto.randomUUID().slice(0, 8),
+                itemName: desc,
+                manufacturer: "",
+                specModel: "",
+                category: "",
+                specSection: subForm.specSection || "",
+                type: subForm.type || "product data",
+                approvalStatus: subForm.status === "approved" ? "approved" : "not submitted",
+                notes: "",
+                lastUsedDate: new Date().toISOString().slice(0, 10),
+                lastUsedProject: draft.name || "",
+                createdAt: new Date().toISOString().slice(0, 10),
+              };
+              app.setSubmittalLibrary(prev => [...prev, libItem]);
+              app.show("Added to Submittal Library", "ok");
+            }
+          }, 300);
+        }
+      }
     };
     const editSub = (s) => {
       setSubForm({ number: s.number || "", description: s.description || "", specSection: s.specSection || s.spec || "", type: s.type || "product data", status: s.status || "not started", dateSubmitted: s.dateSubmitted || s.date || "", dateReturned: s.dateReturned || "", notes: s.notes || "" });
