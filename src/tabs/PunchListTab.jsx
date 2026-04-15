@@ -3,14 +3,16 @@
 //  Props: { punchItems, setPunchItems, areas, employees, projectId, t }
 // ═══════════════════════════════════════════════════════════════
 
-import { useState, useMemo } from "react";
-import { Plus, AlertTriangle, CheckCircle, Clock, Filter, Pencil, Trash2, Lock } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { Plus, AlertTriangle, CheckCircle, Clock, Filter, Pencil, Trash2, Lock, Upload } from "lucide-react";
 import { FieldCard } from "../components/field/FieldCard";
 import { FieldButton } from "../components/field/FieldButton";
 import { FieldInput } from "../components/field/FieldInput";
 import { FieldSelect } from "../components/field/FieldSelect";
 import { StatTile } from "../components/field/StatTile";
 import { PhotoCapture } from "../components/field/PhotoCapture";
+import { ImportReviewModal } from "../components/ImportReviewModal.jsx";
+import { parseGcPunchList } from "../utils/gcDocParser.js";
 
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
 const PRIORITY_BADGE = { high: "badge-red", medium: "badge-amber", low: "badge-muted" };
@@ -33,6 +35,7 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
   const [formPriority, setFormPriority] = useState("medium");
   const [formAssignee, setFormAssignee] = useState("");
   const [formPhotos, setFormPhotos] = useState([]);
+  const [showImport, setShowImport] = useState(false);
 
   const projectAreas = useMemo(
     () => areas.filter((a) => String(a.projectId) === String(projectId)),
@@ -99,6 +102,23 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
     setEditingId(null);
     setShowForm(false);
   };
+
+  const handlePunchImport = useCallback((selectedItems) => {
+    const now = new Date().toISOString();
+    const newItems = selectedItems.map((item) => ({
+      id: crypto.randomUUID(),
+      projectId: Number(projectId),
+      description: item.description,
+      location: item.location,
+      assignedTo: null,
+      priority: item.priority,
+      status: "open",
+      photos: [],
+      createdAt: now,
+      completedAt: null,
+    }));
+    setPunchItems((prev) => [...prev, ...newItems]);
+  }, [projectId, setPunchItems]);
 
   const startEdit = (item) => {
     setFormDesc(item.description || "");
@@ -186,10 +206,16 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
             ))}
           </FieldSelect>
         </div>
-        <FieldButton onClick={() => { if (showForm && editingId) { resetForm(); } else { setShowForm(!showForm); } }} t={t}>
-          <Plus size={14} className="mr-sp1" />
-          {tr("Add Punch Item")}
-        </FieldButton>
+        <div className="flex gap-8">
+          <FieldButton onClick={() => setShowImport(true)} t={t}>
+            <Upload size={14} className="mr-sp1" />
+            {tr("Import GC Punch")}
+          </FieldButton>
+          <FieldButton onClick={() => { if (showForm && editingId) { resetForm(); } else { setShowForm(!showForm); } }} t={t}>
+            <Plus size={14} className="mr-sp1" />
+            {tr("Add Punch Item")}
+          </FieldButton>
+        </div>
       </div>
 
       {/* ── Add Form ── */}
@@ -324,6 +350,41 @@ export function PunchListTab({ punchItems = [], setPunchItems, areas = [], emplo
           </div>
         </FieldCard>
       ))}
+      {/* GC Punch Import Modal */}
+      <ImportReviewModal
+        open={showImport}
+        onClose={() => setShowImport(false)}
+        title="Import GC Punch List"
+        loadingMessage="Scanning for EBC items..."
+        emptyMessage="No items for Eagles Brothers found. Check that the document mentions EBC or your trade scopes."
+        parseText={(text) => parseGcPunchList(text, projectItems)}
+        onConfirm={handlePunchImport}
+        renderItem={(item, i, update) => (
+          <div>
+            <div className="flex gap-8 mb-4" style={{ alignItems: "center" }}>
+              <input className="form-input flex-1 fs-label" value={item.description}
+                onChange={(e) => update({ description: e.target.value })} />
+            </div>
+            <div className="flex gap-8" style={{ alignItems: "center" }}>
+              <input className="form-input fs-label" value={item.location} placeholder="Location"
+                onChange={(e) => update({ location: e.target.value })}
+                style={{ width: 140 }} />
+              <select className="form-input fs-label" value={item.priority}
+                onChange={(e) => update({ priority: e.target.value })}
+                style={{ width: 100 }}>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              {item.isDuplicate && (
+                <span className="text-xs" style={{ color: "var(--warning, #f5a623)" }}>
+                  Possible duplicate
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      />
     </div>
   );
 }
