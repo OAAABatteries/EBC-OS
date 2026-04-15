@@ -603,7 +603,14 @@ function App({ auth, onLogout }) {
   const [selectedBids, setSelectedBids] = useState(new Set());
   const [bidPageSize, setBidPageSize] = useState(24);
   const [projPageSize, setProjPageSize] = useState(24);
-  const [projectViewMode, setProjectViewMode] = useState("list"); // "list" | "schedule"
+  const [projectViewMode, setProjectViewMode] = useState("list"); // "list" | "schedule" | "summary" | "documents"
+  // Auto-switch to documents view when navigating to projects with a document subTab
+  const DOC_SUBTABS = ["change-orders", "rfis", "submittals", "punch"];
+  useEffect(() => {
+    if (tab === "projects" && subTab && DOC_SUBTABS.includes(subTab)) {
+      setProjectViewMode("documents");
+    }
+  }, [tab, subTab]); // eslint-disable-line react-hooks/exhaustive-deps
   const [installPrompt, setInstallPrompt] = useState(null);
   const [notifOpen, setNotifOpen] = useState(false);
 
@@ -965,6 +972,11 @@ function App({ auth, onLogout }) {
     const in7 = new Date(now.getTime() + 7 * 86400000);
     const parseDate = (s) => { if (!s) return null; const d = new Date(s); return isNaN(d) ? null : d; };
 
+    // PM scoping: PM only sees action items for their own projects
+    const isPM = effectiveRole === "pm" && auth?.name;
+    const myProjectIds = isPM ? new Set(projects.filter(p => p.pm === auth.name).map(p => String(p.id))) : null;
+    const inScope = (projectId) => !myProjectIds || myProjectIds.has(String(projectId));
+
     // Bids due in next 7 days
     const bidsDueSoon = bids.filter(b => {
       if (b.status !== "estimating") return false;
@@ -972,12 +984,12 @@ function App({ auth, onLogout }) {
       return d && d >= now && d <= in7;
     }).sort((a, b) => (parseDate(a.due) || 0) - (parseDate(b.due) || 0));
 
-    // COs pending approval
-    const cosPending = changeOrders.filter(co => !co.deletedAt && co.status !== "approved" && co.status !== "rejected");
+    // COs pending approval (PM-scoped)
+    const cosPending = changeOrders.filter(co => !co.deletedAt && co.status !== "approved" && co.status !== "rejected" && inScope(co.projectId));
     const cosPendingTotal = cosPending.reduce((s, co) => s + (co.amount || 0), 0);
 
-    // RFIs open (with age)
-    const rfisOpen = rfis.filter(r => !r.deletedAt && r.status !== "Answered" && r.status !== "Closed").map(r => {
+    // RFIs open (with age, PM-scoped)
+    const rfisOpen = rfis.filter(r => !r.deletedAt && r.status !== "Answered" && r.status !== "Closed" && inScope(r.projectId)).map(r => {
       const submitted = r.submitted || r.dateSubmitted;
       const age = submitted ? Math.floor((now - new Date(submitted)) / 86400000) : 0;
       return { ...r, age };
@@ -988,6 +1000,7 @@ function App({ auth, onLogout }) {
     const subsDueSoon = submittals.filter(s => {
       if (s.deletedAt) return false;
       if (s.status === "approved") return false;
+      if (!inScope(s.projectId)) return false;
       const d = parseDate(s.due);
       return d && d <= in14;
     }).sort((a, b) => (parseDate(a.due) || 0) - (parseDate(b.due) || 0));
@@ -996,8 +1009,8 @@ function App({ auth, onLogout }) {
     const overdueInv = invoices.filter(i => i.status === "overdue" || (i.status === "pending" && parseDate(i.date) && (now - parseDate(i.date)) > 30 * 86400000));
     const overdueTotal = overdueInv.reduce((s, i) => s + (i.amount || 0), 0);
 
-    // T&M tickets pending
-    const tmPending = tmTickets.filter(t => t.status === "pending" || t.status === "draft");
+    // T&M tickets pending (PM-scoped)
+    const tmPending = tmTickets.filter(t => (t.status === "pending" || t.status === "draft") && inScope(t.projectId));
 
     // Projects with no invoice in last 30 days (active projects only)
     // Suppress entirely when no invoices exist (no data to judge from)
@@ -1056,7 +1069,7 @@ function App({ auth, onLogout }) {
     const urgentCount = bidsDueSoon.length + cosPending.length + rfisOpen.filter(r => r.age > 7).length + subsDueSoon.length + overdueInv.length + profitAlerts.length;
 
     return { bidsDueSoon, cosPending, cosPendingTotal, rfisOpen, subsDueSoon, overdueInv, overdueTotal, tmPending, projNoBilling, projAtRisk, followUps, profitAlerts, urgentCount };
-  }, [bids, changeOrders, rfis, submittals, invoices, tmTickets, projects, callLog, timeEntries, employees, companySettings, apBills, accruals]);
+  }, [bids, changeOrders, rfis, submittals, invoices, tmTickets, projects, callLog, timeEntries, employees, companySettings, apBills, accruals, effectiveRole, auth]);
 
   const pName = (pid) => projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
 
@@ -1206,6 +1219,12 @@ function App({ auth, onLogout }) {
         const pendingReviews = (dailyReports || []).filter(r => !r.reviewedBy);
         const openProblems = (problems || []).filter(p => p.status === "open" && !p.assignedTo);
         const plansNeeded = projects.filter(p => p.needsPlans);
+        // Missing daily reports: foremen scheduled today who haven't submitted
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+        const scheduledForemen = (employees || []).filter(e => e.active && (e.role === "foreman" || e.role === "superintendent"));
+        const submittedToday = new Set((dailyReports || []).filter(r => (r.submittedAt || r.date || "").startsWith(todayStr)).map(r => String(r.submittedBy || r.employeeId)));
+        const missingReports = scheduledForemen.filter(f => !submittedToday.has(String(f.id)));
         const queueRfis = dashActions.rfisOpen.filter(r => r.age > 7);
         const queueSubs = dashActions.subsDueSoon;
         const queueCOs = dashActions.cosPending;
@@ -1314,6 +1333,19 @@ function App({ auth, onLogout }) {
                   <div className="flex-center-gap-8">
                     <span className="text-sm font-semi">{pendingReviews.length}</span>
                     <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("reports")}>{t("Review")}</button>
+                  </div>
+                </div>
+              )}
+              {missingReports.length > 0 && new Date().getHours() >= 14 && (
+                <div className="flex-between queue-row">
+                  <div className="flex-center-gap-8">
+                    <AlertTriangle size={14} />
+                    <span className="text-sm">{t("Missing Daily Reports")}</span>
+                    <span className="badge badge-red fs-xs" style={{ padding: "0 5px" }}>{missingReports.map(f => f.name?.split(" ")[0]).join(", ")}</span>
+                  </div>
+                  <div className="flex-center-gap-8">
+                    <span className="text-sm font-semi text-red">{missingReports.length}</span>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => navigateWithContext("reports", { subTab: "daily" })}>{t("Follow Up")}</button>
                   </div>
                 </div>
               )}
@@ -1861,6 +1893,45 @@ function App({ auth, onLogout }) {
         );
       })()}
 
+      {/* ── Upcoming Inspections — from calendar events ── */}
+      {!collapsedZones.field && dashCfg.showField && (() => {
+        const now5 = new Date(); now5.setHours(0,0,0,0);
+        const in14 = new Date(now5.getTime() + 14 * 86400000);
+        const inspections = (calendarEvents || []).filter(ev => {
+          if (ev.type !== "inspection") return false;
+          const d = ev.date ? new Date(ev.date) : null;
+          return d && d >= now5 && d <= in14;
+        }).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+        if (inspections.length === 0) return null;
+        const projName = (pid) => projects.find(p => String(p.id) === String(pid))?.name || "";
+        return (
+          <div className="card dash-card" style={{ borderLeft: "3px solid var(--blue)" }}>
+            <div className="text-sm font-semi mb-8 flex-center-gap-6">
+              <ClipboardList size={15} /> {t("Upcoming Inspections")}
+              <span className="badge badge-blue fs-xs">{inspections.length} {t("in next 14 days")}</span>
+            </div>
+            <div className="flex-col-gap-6">
+              {inspections.slice(0, 8).map((ev, i) => {
+                const d = new Date(ev.date);
+                const isToday = d.toDateString() === new Date().toDateString();
+                const isTomorrow = d.toDateString() === new Date(Date.now() + 86400000).toDateString();
+                const dateLabel = isToday ? "Today" : isTomorrow ? "Tomorrow" : d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+                return (
+                  <div key={ev.id || i} className="flex-between queue-row">
+                    <div className="flex-center-gap-8">
+                      <span className={`text-xs fw-bold ${isToday ? "text-red" : isTomorrow ? "text-amber" : "text-blue"}`}>{dateLabel}</span>
+                      <span className="text-sm">{ev.title}</span>
+                      {projName(ev.projectId) && <span className="text-xs text-muted">— {projName(ev.projectId)}</span>}
+                    </div>
+                    {ev.time && <span className="text-xs text-muted">{ev.time}</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Crew & Workforce Health ── */}
       {!collapsedZones.field && (dashCfg.showKPIs || dashCfg.showField) && (() => {
         const now3 = new Date();
@@ -1947,7 +2018,7 @@ function App({ auth, onLogout }) {
             <div className="flex-col-gap-6">
               {recentRevisions.slice(0, 5).map((r, i) => (
                 <div key={i} className="flex-between queue-row cursor-pointer"
-                  onClick={() => { const p = projects.find(p2 => String(p2.id) === String(r.projectId)); if (p) setModal({ type: "viewProject", data: p }); }}>
+                  onClick={() => { const p = projects.find(p2 => String(p2.id) === String(r.projectId)); if (p) { setInitialProjTab("log"); setModal({ type: "viewProject", data: p }); } }}>
                   <div className="flex-center-gap-8">
                     <span className="text-sm text-blue fw-500">{r.project}</span>
                     <span className="text-xs text-muted">{r.drawing} Rev {r.revision}</span>
@@ -2123,7 +2194,7 @@ function App({ auth, onLogout }) {
                     const diagnosis = getProfitDiagnosis(p);
                     const badgeClass = p.margin < 0 ? "badge-red" : p.margin < 15 ? "badge-red" : "badge-amber";
                     return (
-                      <tr key={p.id} className="cursor-pointer" onClick={() => setModal({ type: "viewProject", data: p })}>
+                      <tr key={p.id} className="cursor-pointer" onClick={() => { setInitialProjTab("financials"); setModal({ type: "viewProject", data: p }); }}>
                         <td>
                           <div className="text-sm text-blue fw-500">{p.name}</div>
                           <div className="text-xs text-muted">{p.phase}</div>
@@ -3420,6 +3491,7 @@ function App({ auth, onLogout }) {
         <button className={`btn btn-sm flex-center-gap-4 ${projectViewMode === "list" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("list")}><List className="w-4 h-4" /> List</button>
         <button className={`btn btn-sm flex-center-gap-4 ${projectViewMode === "summary" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("summary")}><Columns className="w-4 h-4" /> Summary</button>
         <button className={`btn btn-sm flex-center-gap-4 ${projectViewMode === "schedule" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("schedule")}><BarChart2 className="w-4 h-4" /> Schedule</button>
+        <button className={`btn btn-sm flex-center-gap-4 ${projectViewMode === "documents" ? "btn-primary" : "btn-ghost"}`} onClick={() => setProjectViewMode("documents")}><FileText className="w-4 h-4" /> Documents</button>
       </div>
 
       {/* Cross-Project Summary Table */}
@@ -3481,6 +3553,90 @@ function App({ auth, onLogout }) {
           }}
         />
       )}
+
+      {/* Cross-Project Documents View — RFIs, COs, Submittals, Punch Items across all projects */}
+      {projectViewMode === "documents" && (() => {
+        const docTab = subTab || "change-orders";
+        const setDocTab = (t) => setSubTab(t);
+        const projName = (pid) => projects.find(p => String(p.id) === String(pid))?.name || "Unknown";
+        const allCOs = changeOrders.filter(c => !c.deletedAt).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+        const allRFIs = rfis.filter(r => !r.deletedAt).sort((a, b) => (b.age || 0) - (a.age || 0));
+        const allSubs = submittals.filter(s => !s.deletedAt).sort((a, b) => ((a.due || "") > (b.due || "") ? 1 : -1));
+        const allPunch = (punchItems || []).filter(p => !p.deletedAt && p.status !== "resolved" && p.status !== "complete");
+        return (
+          <div>
+            <div className="flex gap-4 mb-12">
+              <button className={`btn btn-sm ${docTab === "change-orders" ? "btn-primary" : "btn-ghost"}`} onClick={() => setDocTab("change-orders")}>Change Orders ({allCOs.filter(c => c.status !== "approved" && c.status !== "rejected").length})</button>
+              <button className={`btn btn-sm ${docTab === "rfis" ? "btn-primary" : "btn-ghost"}`} onClick={() => setDocTab("rfis")}>RFIs ({allRFIs.filter(r => r.status !== "Answered" && r.status !== "Closed").length})</button>
+              <button className={`btn btn-sm ${docTab === "submittals" ? "btn-primary" : "btn-ghost"}`} onClick={() => setDocTab("submittals")}>Submittals ({allSubs.filter(s => s.status !== "approved").length})</button>
+              <button className={`btn btn-sm ${docTab === "punch" ? "btn-primary" : "btn-ghost"}`} onClick={() => setDocTab("punch")}>Punch ({allPunch.length})</button>
+            </div>
+            {docTab === "change-orders" && (
+              <div className="table-wrap"><table className="data-table"><thead><tr><th>Project</th><th>CO #</th><th>Description</th><th className="num">Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>
+                {allCOs.map(c => (
+                  <tr key={c.id} className="cursor-pointer" onClick={() => { const p = projects.find(p2 => String(p2.id) === String(c.projectId)); if (p) { setInitialProjTab("change orders"); setModal({ type: "viewProject", data: p }); } }}>
+                    <td className="text-sm text-blue fw-500">{projName(c.projectId)}</td>
+                    <td className="text-sm">{c.number || "—"}</td>
+                    <td className="text-sm">{c.description || "—"}</td>
+                    <td className="num">{fmt(c.amount || 0)}</td>
+                    <td><span className={`badge ${c.status === "approved" ? "badge-green" : c.status === "rejected" ? "badge-red" : "badge-amber"}`}>{c.status}</span></td>
+                    <td className="text-xs text-muted">{c.date || "—"}</td>
+                  </tr>
+                ))}
+                {allCOs.length === 0 && <tr><td colSpan={6} className="text-center text-dim">No change orders</td></tr>}
+              </tbody></table></div>
+            )}
+            {docTab === "rfis" && (
+              <div className="table-wrap"><table className="data-table"><thead><tr><th>Project</th><th>RFI #</th><th>Subject</th><th>Status</th><th>Age</th><th>Ball in Court</th></tr></thead><tbody>
+                {allRFIs.map(r => {
+                  const age = r.submitted || r.dateSubmitted ? Math.floor((new Date() - new Date(r.submitted || r.dateSubmitted)) / 86400000) : 0;
+                  return (
+                    <tr key={r.id} className="cursor-pointer" onClick={() => { const p = projects.find(p2 => String(p2.id) === String(r.projectId)); if (p) { setInitialProjTab("rfis & submittals"); setModal({ type: "viewProject", data: p }); } }}>
+                      <td className="text-sm text-blue fw-500">{projName(r.projectId)}</td>
+                      <td className="text-sm">{r.number || "—"}</td>
+                      <td className="text-sm">{r.subject || "—"}</td>
+                      <td><span className={`badge ${r.status === "Answered" || r.status === "Closed" ? "badge-green" : age > 14 ? "badge-red" : "badge-amber"}`}>{r.status}</span></td>
+                      <td className={`text-sm ${age > 14 ? "text-red fw-bold" : age > 7 ? "text-amber" : ""}`}>{age}d</td>
+                      <td className="text-xs">{r.ballInCourt || "—"}</td>
+                    </tr>
+                  );
+                })}
+                {allRFIs.length === 0 && <tr><td colSpan={6} className="text-center text-dim">No RFIs</td></tr>}
+              </tbody></table></div>
+            )}
+            {docTab === "submittals" && (
+              <div className="table-wrap"><table className="data-table"><thead><tr><th>Project</th><th>Submittal #</th><th>Description</th><th>Status</th><th>Due</th><th>Spec Ref</th></tr></thead><tbody>
+                {allSubs.map(s => (
+                  <tr key={s.id} className="cursor-pointer" onClick={() => { const p = projects.find(p2 => String(p2.id) === String(s.projectId)); if (p) { setInitialProjTab("rfis & submittals"); setModal({ type: "viewProject", data: p }); } }}>
+                    <td className="text-sm text-blue fw-500">{projName(s.projectId)}</td>
+                    <td className="text-sm">{s.number || "—"}</td>
+                    <td className="text-sm">{s.description || s.item || "—"}</td>
+                    <td><span className={`badge ${s.status === "approved" ? "badge-green" : s.status === "rejected" ? "badge-red" : "badge-amber"}`}>{s.status}</span></td>
+                    <td className="text-xs">{s.due || "—"}</td>
+                    <td className="text-xs text-muted">{s.specRef || "—"}</td>
+                  </tr>
+                ))}
+                {allSubs.length === 0 && <tr><td colSpan={6} className="text-center text-dim">No submittals</td></tr>}
+              </tbody></table></div>
+            )}
+            {docTab === "punch" && (
+              <div className="table-wrap"><table className="data-table"><thead><tr><th>Project</th><th>Area</th><th>Description</th><th>Priority</th><th>Assigned</th><th>Created</th></tr></thead><tbody>
+                {allPunch.map(p => (
+                  <tr key={p.id} className="cursor-pointer" onClick={() => { const proj = projects.find(p2 => String(p2.id) === String(p.projectId)); if (proj) { setInitialProjTab("punch"); setModal({ type: "viewProject", data: proj }); } }}>
+                    <td className="text-sm text-blue fw-500">{projName(p.projectId)}</td>
+                    <td className="text-sm">{p.area || p.location || "—"}</td>
+                    <td className="text-sm">{p.description || "—"}</td>
+                    <td><span className={`badge ${p.priority === "high" ? "badge-red" : p.priority === "medium" ? "badge-amber" : "badge-ghost"}`}>{p.priority || "normal"}</span></td>
+                    <td className="text-xs">{p.assignedTo || "Unassigned"}</td>
+                    <td className="text-xs text-muted">{p.createdAt ? new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}</td>
+                  </tr>
+                ))}
+                {allPunch.length === 0 && <tr><td colSpan={6} className="text-center text-dim">No open punch items</td></tr>}
+              </tbody></table></div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Search Bar */}
       {projectViewMode === "list" && <>
