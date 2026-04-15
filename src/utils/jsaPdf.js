@@ -202,11 +202,11 @@ export async function generateJsaPdf(jsa) {
   // ── Project details grid (two-column, matches CO layout) ──
   doc.setFontSize(9);
   const leftLabelX  = ML;
-  const leftValueX  = ML + 32;
-  const rightLabelX = ML + CW / 2 + 5;
-  const rightValueX = ML + CW / 2 + 32;
+  const leftValueX  = ML + 24;
+  const rightLabelX = ML + CW / 2 + 8;
+  const rightValueX = ML + CW / 2 + 34;
 
-  const leftMaxW  = rightLabelX - leftValueX - 4;  // max width for left values
+  const leftMaxW  = rightLabelX - leftValueX - 3;  // max width for left values
   const rightMaxW = PW - MR - rightValueX - 2;     // max width for right values
 
   const infoRows = [
