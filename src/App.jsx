@@ -979,7 +979,7 @@ function App({ auth, onLogout }) {
 
     // Bids due in next 7 days
     const bidsDueSoon = bids.filter(b => {
-      if (b.status !== "estimating") return false;
+      if (["won", "lost", "declined", "archived"].includes(b.status)) return false;
       const d = parseDate(b.due);
       return d && d >= now && d <= in7;
     }).sort((a, b) => (parseDate(a.due) || 0) - (parseDate(b.due) || 0));
@@ -1065,7 +1065,10 @@ function App({ auth, onLogout }) {
       return acc;
     }, []).sort((a, b) => a.margin - b.margin);
 
-    // Total urgency count
+    // Total urgency count — high-priority items shown in header badge
+    // Note: this is a SUBSET of the full Action Queue. The queue also shows materials,
+    // deliveries, daily reports, problems, plans, and follow-ups. This count highlights
+    // the items that have financial or deadline urgency.
     const urgentCount = bidsDueSoon.length + cosPending.length + rfisOpen.filter(r => r.age > 7).length + subsDueSoon.length + overdueInv.length + profitAlerts.length;
 
     return { bidsDueSoon, cosPending, cosPendingTotal, rfisOpen, subsDueSoon, overdueInv, overdueTotal, tmPending, projNoBilling, projAtRisk, followUps, profitAlerts, urgentCount };
@@ -1098,7 +1101,7 @@ function App({ auth, onLogout }) {
                 ))}
               </select>
             )}
-            {dashActions.urgentCount > 0 && <span className="text-red fw-700">{dashActions.urgentCount} items need attention</span>}
+            {dashActions.urgentCount > 0 && <span className="text-red fw-700">{dashActions.urgentCount} {t("urgent")}</span>}
             <span className="ml-sp2 fs-xs" style={{ color: isSupabaseConfigured() ? "var(--green)" : "var(--text3)" }}>
               {isSupabaseConfigured() ? "● " + t("Live") : "○ " + t("Local")} · {t("as of")} {new Date().toLocaleTimeString([], {hour: "numeric", minute: "2-digit"})}
             </span>
@@ -1418,7 +1421,7 @@ function App({ auth, onLogout }) {
                   </div>
                   <div className="flex-center-gap-8">
                     <span className="text-sm font-semi text-red">{queueProfitAlerts.length}</span>
-                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => { const el = document.getElementById("dash-profit"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }}>{t("Review")}</button>
+                    <button className="btn btn-ghost btn-sm btn-inline" onClick={() => { const el = document.getElementById("profit-analysis-section") || document.getElementById("dash-profit"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }}>{t("Review")}</button>
                   </div>
                 </div>
               )}
@@ -1586,7 +1589,7 @@ function App({ auth, onLogout }) {
               const companyMargin = adjustedContract > 0 ? Math.round(((adjustedContract - totalCost) / adjustedContract) * 100) : 0;
               const marginThr = companySettings?.marginAlertThreshold || 25;
               return (
-                <div className="kpi-card">
+                <div className="kpi-card cursor-pointer" onClick={() => { const el = document.getElementById("profit-analysis-section") || document.getElementById("dash-profit"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
                   <div className="kpi-label">{t("Company Margin")}</div>
                   <div className="kpi-value fs-subtitle" style={{ color: companyMargin >= marginThr ? "var(--green)" : companyMargin >= marginThr * 0.6 ? "var(--amber)" : "var(--red)" }}>{companyMargin}%</div>
                   <div className="kpi-sub">{fmt(adjustedContract - totalCost)} {t("est. profit")}</div>
