@@ -245,6 +245,7 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
   // Sheet management
   const [sheetNames, setSheetNames] = useState(_init.sheetNames || {});
+  const [_sidebarSheetsOpen, _setSidebarSheetsOpen] = useState(true);
   const [showSheets, setShowSheets] = useState(false);
   const [editingSheet, setEditingSheet] = useState(null);
 
@@ -3495,6 +3496,49 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
         {/* ── Conditions Panel (right sidebar) ── */}
         <div className="flex-col flex-shrink-0" style={{ width: 260, borderLeft: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.85)" }}>
+
+          {/* Sheet Index — collapsible */}
+          {pdfs && pdfs.length > 0 && (() => {
+            const [sheetIdxOpen, setSheetIdxOpen] = [_sidebarSheetsOpen, _setSidebarSheetsOpen];
+            // Build a list of all pages across all PDFs with indicators
+            const allSheets = [];
+            pdfs.forEach((pdfDoc, pdfIdx) => {
+              const n = pdfDoc?.numPages || 0;
+              for (let p = 1; p <= n; p++) {
+                const pk = `${pdfIdx}:${p}`;
+                const mCount = (measurements?.[pk] || []).length;
+                const hasCalib = !!scales?.[pk];
+                const hasCORev = !!revisionDocs?.[pk];
+                const name = sheetNames?.[pk] || `Sheet ${p}`;
+                allSheets.push({ pk, pdfIdx, page: p, name, mCount, hasCalib, hasCORev });
+              }
+            });
+            if (allSheets.length === 0) return null;
+            return (
+              <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                <button onClick={() => _setSidebarSheetsOpen(!_sidebarSheetsOpen)} style={{ ...btn, width: "100%", padding: "var(--space-2) var(--space-3)", borderRadius: 0, border: "none", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "var(--text-label)", fontWeight: 600 }}>
+                  <span className="c-white">Sheets ({allSheets.length})</span>
+                  <span className="c-white fs-xs">{_sidebarSheetsOpen ? "▼" : "▶"}</span>
+                </button>
+                {_sidebarSheetsOpen && (
+                  <div style={{ maxHeight: 200, overflow: "auto", padding: "0 var(--space-2) var(--space-2)" }}>
+                    {allSheets.map(s => (
+                      <div key={s.pk} onClick={() => { setActivePdfIdx(s.pdfIdx); setPage(s.page); }}
+                        style={{ padding: "var(--space-1) var(--space-2)", cursor: "pointer", background: pageKey === s.pk ? "rgba(224,148,34,0.2)" : "transparent", borderRadius: 3, fontSize: "var(--text-xs)", color: "rgba(255,255,255,0.8)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4 }}
+                        title={`${s.name}${s.hasCalib ? " · calibrated" : ""}${s.mCount > 0 ? ` · ${s.mCount} measurements` : ""}${s.hasCORev ? " · CO revision" : ""}`}>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
+                        <span style={{ display: "flex", gap: 3, flexShrink: 0 }}>
+                          {s.hasCalib && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} title="calibrated" />}
+                          {s.mCount > 0 && <span style={{ color: "var(--amber)", fontSize: 10 }}>{s.mCount}</span>}
+                          {s.hasCORev && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444" }} title="CO revision" />}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Conditions list */}
           <div className="overflow-auto flex-1" style={{ padding: "var(--space-3) var(--space-3) var(--space-2)" }}>

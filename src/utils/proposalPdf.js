@@ -189,7 +189,8 @@ export const defaultExcludes = [
 ];
 
 // ── main export function ──
-export async function generateProposalPdf({ takeoff, bid, company, assemblies, submittals, calcItem, calcRoom, calcSummary, scopeLines, proposalTerms, proposalNumber }) {
+export async function generateProposalPdf({ takeoff, bid, company, assemblies, submittals, calcItem, calcRoom, calcSummary, scopeLines, proposalTerms, proposalNumber, audience = "client" }) {
+  // audience: "client" (default, hides qty/rates/line totals) or "internal" (shows everything)
   const doc = new jsPDF({ unit: "mm", format: "letter" });
 
   // Load logo
@@ -297,15 +298,42 @@ export async function generateProposalPdf({ takeoff, bid, company, assemblies, s
     y += 8;
     rowAlt = !rowAlt;
 
-    // Show individual line items — descriptions only, no prices
+    // Show individual line items — descriptions only for client, full breakdown for internal
     (rm.items || []).forEach((it) => {
       y = checkPage(doc, y, 7);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(...COLORS.medGray);
-      const itemDesc = sanitize(`     ${it.qty} ${it.unit}  ${it.desc}`);
-      doc.text(itemDesc, ML + 6, y + 4.5);
-      y += 6;
+      if (audience === "internal") {
+        // Full breakdown: code, qty unit, desc, mat, lab, total
+        const c = calcItem(it, assemblies);
+        const itemDesc = sanitize(`     ${it.code || ""}  ${it.qty} ${it.unit}  ${it.desc}`);
+        doc.text(itemDesc, ML + 6, y + 4.5);
+        // Right-aligned mat/lab/total columns
+        doc.setFont("helvetica", "normal");
+        doc.text(`M: ${fmtMoney(c.mat * markup)}`, PAGE_W - MR - 80, y + 4.5, { align: "right" });
+        doc.text(`L: ${fmtMoney(c.lab * markup)}`, PAGE_W - MR - 40, y + 4.5, { align: "right" });
+        doc.setFont("helvetica", "bold");
+        doc.text(fmtMoney((c.mat + c.lab) * markup), PAGE_W - MR - 4, y + 4.5, { align: "right" });
+        y += 6;
+        // Source traceability line (internal only)
+        if ((it.sourceSheets || []).length > 0 || it.sourceBidAreaName) {
+          doc.setFont("helvetica", "italic");
+          doc.setFontSize(7);
+          doc.setTextColor(...COLORS.lightGray);
+          const trace = [];
+          if (it.sourceBidAreaName) trace.push(`area: ${it.sourceBidAreaName}`);
+          if ((it.sourceSheets || []).length > 0) trace.push(`sheets: ${it.sourceSheets.join(", ")}`);
+          if ((it.sourceMeasurementIds || []).length > 0) trace.push(`${it.sourceMeasurementIds.length} measurements`);
+          doc.text(sanitize(`       ${trace.join(" · ")}`), ML + 6, y + 3.5);
+          y += 4;
+        }
+      } else {
+        // Client view: qty + description, no prices
+        const itemDesc = sanitize(`     ${it.qty} ${it.unit}  ${it.desc}`);
+        doc.text(itemDesc, ML + 6, y + 4.5);
+        y += 6;
+      }
     });
   });
 

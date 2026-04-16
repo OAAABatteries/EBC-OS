@@ -388,7 +388,7 @@ function InvoicesTab({ app }) {
 /* ── Change Orders ───────────────────────────────────────────── */
 function ChangeOrdersTab({ app }) {
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ projectId: "", number: "", desc: "", amount: "", status: "pending", submitted: "", approved: "", type: "add", reference: "", notes: "", scope_items: [], gc_name: "", gc_company: "", attachments: [], date: "" });
+  const [form, setForm] = useState({ projectId: "", number: "", desc: "", amount: "", laborAmount: "", materialAmount: "", status: "pending", submitted: "", approved: "", type: "add", reference: "", notes: "", scope_items: [], gc_name: "", gc_company: "", attachments: [], date: "" });
   const [scopeInput, setScopeInput] = useState("");
   const [impactId, setImpactId] = useState(null);
   const [impactResult, setImpactResult] = useState(null);
@@ -397,9 +397,35 @@ function ChangeOrdersTab({ app }) {
   const [showDeletedCO, setShowDeletedCO] = useState(false);
   const [coErrors, setCoErrors] = useState([]);
   const [editingCoId, setEditingCoId] = useState(null);
+  const [coFilter, setCoFilter] = useState("all"); // all | pending | stuck | missing-date | at-risk
 
   const pName = (pid) => app.projects.find(p => p.id === pid)?.name || "Unknown";
   const badge = (s) => s === "approved" ? "badge-green" : s === "pending" ? "badge-amber" : "badge-red";
+  // Labor vs material split — EBC makes ~100% margin on labor, ~0% on material pass-through.
+  // Legacy COs without the split default to 100% labor (EBC's core economic model; safer default
+  // than 50/50 because over-stating labor just makes the profit estimate higher, which the PM
+  // will notice; under-stating it silently hides profit).
+  const coLabor = (co) => {
+    const l = Number(co.laborAmount);
+    if (Number.isFinite(l) && l !== 0) return l;
+    const m = Number(co.materialAmount);
+    if (Number.isFinite(m) && m !== 0) return (Number(co.amount) || 0) - m;
+    return Number(co.amount) || 0;
+  };
+  const coMaterial = (co) => (Number(co.amount) || 0) - coLabor(co);
+  // Rough profit impact — 100% of labor (EBC self-performs drywall/framing), 0% of material.
+  // Conservative; actual varies, but this is the dominant economic signal for a CO.
+  const coProfit = (co) => coLabor(co);
+  // Local T&M ticket total — handles both the modern laborEntries/materialEntries shape
+  // and the legacy workers/materials shape. Needed for the linked-tickets sub-label and
+  // the void-orphan warning. (TmTicketsTab has its own scoped version; this is a separate closure.)
+  const tmTicketTotal = (t) => {
+    const laborArr = t.laborEntries || t.workers || [];
+    const matArr = t.materialEntries || t.materials || [];
+    const labor = laborArr.reduce((s, e) => s + (Number(e.hours) || 0) * (Number(e.rate) || 0), 0);
+    const mat = matArr.reduce((s, e) => s + ((Number(e.qty) || Number(e.quantity) || 0) * (Number(e.unitCost) || Number(e.price) || 0)), 0);
+    return labor + mat;
+  };
 
   // Age / per-row risk — same logic as runImpact but computed ambiently for every row and header
   const daysOpen = (co) => co.submitted ? Math.max(0, Math.floor((Date.now() - new Date(co.submitted).getTime()) / 86400000)) : null;
@@ -438,19 +464,38 @@ function ChangeOrdersTab({ app }) {
   const overThirtyTotal = overThirty.reduce((s, c) => s + (c.amount || 0), 0);
   const oldestPendingDays = pendingCOs.reduce((max, c) => { const d = daysOpen(c); return d != null && d > max ? d : max; }, 0);
   const approvedMissingDate = coFiltered.filter(c => c.status === "approved" && !c.approved).length;
+  const atRiskCount = coFiltered.filter(c => rowRisk(c).level === "high").length;
+
+  // Filter chip — narrows the displayed set without changing KPI math. Chip counts stay stable.
+  const coDisplayed = coFiltered.filter(co => {
+    if (coFilter === "all") return true;
+    if (coFilter === "pending") return co.status === "pending";
+    if (coFilter === "stuck") { const d = daysOpen(co); return co.status === "pending" && d != null && d > 30; }
+    if (coFilter === "missing-date") return co.status === "approved" && !co.approved;
+    if (coFilter === "at-risk") return rowRisk(co).level === "high";
+    return true;
+  });
 
   // Project-level grouping — default view. Per-project numbering (#1 = oldest CO on that job),
   // per-project subtotals, and groups sorted by at-risk count so jobs needing attention bubble up.
   const statusRankForSort = { pending: 0, approved: 1, rejected: 2, deleted: 3 };
   const coByProject = {};
-  coFiltered.forEach(co => {
+  coDisplayed.forEach(co => {
     const pid = co.projectId ?? 0;
     if (!coByProject[pid]) coByProject[pid] = [];
     coByProject[pid].push(co);
   });
-  // Stable per-project CO index — oldest submitted is #1. Independent of current display sort.
+  // Stable per-project CO index — oldest submitted is #1. Computed over the FULL underlying set
+  // (including voided and filtered-out COs) so numbers are a stable identity, not filter-relative.
+  // A gap like "CO #1, CO #3" signals that #2 was voided, which is information, not a bug.
   const perProjectIdx = {};
-  Object.values(coByProject).forEach(list => {
+  const allByProject = {};
+  (app.changeOrders || []).forEach(co => {
+    const pid = co.projectId ?? 0;
+    if (!allByProject[pid]) allByProject[pid] = [];
+    allByProject[pid].push(co);
+  });
+  Object.values(allByProject).forEach(list => {
     [...list]
       .sort((a, b) => (a.submitted || "9999").localeCompare(b.submitted || "9999"))
       .forEach((co, i) => { perProjectIdx[co.id] = i + 1; });
@@ -680,6 +725,42 @@ function ChangeOrdersTab({ app }) {
               <input className="form-input" type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
             </div>
             <div className="form-group">
+              <label className="form-label" title="EBC makes ~100% on labor, ~0% on material pass-through. Splitting lets the impact engine estimate actual profit.">Labor $ <span className="fs-12 text-muted">(optional)</span></label>
+              <input className="form-input" type="number" placeholder="auto = full amount" value={form.laborAmount}
+                onChange={e => {
+                  const labor = e.target.value;
+                  const amt = Number(form.amount) || 0;
+                  const mat = labor === "" ? form.materialAmount : String(Math.max(0, amt - (Number(labor) || 0)));
+                  setForm({ ...form, laborAmount: labor, materialAmount: mat });
+                }} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Material $ <span className="fs-12 text-muted">(optional)</span></label>
+              <input className="form-input" type="number" placeholder="auto = 0" value={form.materialAmount}
+                onChange={e => {
+                  const mat = e.target.value;
+                  const amt = Number(form.amount) || 0;
+                  const labor = mat === "" ? form.laborAmount : String(Math.max(0, amt - (Number(mat) || 0)));
+                  setForm({ ...form, materialAmount: mat, laborAmount: labor });
+                }} />
+              {(() => {
+                const amt = Number(form.amount) || 0;
+                const l = Number(form.laborAmount) || 0;
+                const m = Number(form.materialAmount) || 0;
+                if (amt === 0) return null;
+                const pctLabor = Math.round((l / amt) * 100);
+                const pctMat = Math.round((m / amt) * 100);
+                const diff = Math.abs(amt - l - m);
+                if (l === 0 && m === 0) {
+                  return <div className="fs-12 text-muted mt-4">Blank → treated as 100% labor</div>;
+                }
+                if (diff > 0.5) {
+                  return <div className="fs-12 mt-4" style={{ color: "var(--red)" }}>⚠ Labor + Material = {app.fmt(l + m)}, but Amount = {app.fmt(amt)} (diff {app.fmt(diff)})</div>;
+                }
+                return <div className="fs-12 text-muted mt-4">Labor {pctLabor}% · Material {pctMat}% · est. profit {app.fmt(l)}</div>;
+              })()}
+            </div>
+            <div className="form-group">
               <label className="form-label">Reference</label>
               <input className="form-input" placeholder="Bulletin #01, RFI #3..." value={form.reference} onChange={e => setForm({ ...form, reference: e.target.value })} />
             </div>
@@ -770,20 +851,68 @@ function ChangeOrdersTab({ app }) {
         </div>
       )}
 
+      {/* Filter chips — narrow the set without retyping. Counts reflect the full (pre-chip) search result. */}
+      {coFiltered.length > 0 && (() => {
+        const chips = [
+          { id: "all", label: "All", count: coFiltered.length, color: null },
+          { id: "pending", label: "Pending", count: pendingCOs.length, color: "var(--amber)" },
+          { id: "stuck", label: "Stuck >30d", count: overThirty.length, color: "var(--red)" },
+          { id: "missing-date", label: "Missing date", count: approvedMissingDate, color: "var(--red)" },
+          { id: "at-risk", label: "At risk", count: atRiskCount, color: "var(--red)" },
+        ];
+        return (
+          <div className="flex gap-8 mt-16" style={{ flexWrap: "wrap" }}>
+            {chips.map(c => {
+              const active = coFilter === c.id;
+              const zero = c.count === 0 && c.id !== "all";
+              return (
+                <button
+                  key={c.id}
+                  className="btn btn-sm"
+                  disabled={zero}
+                  onClick={() => setCoFilter(c.id)}
+                  style={{
+                    background: active ? "var(--brand, #0d3b66)" : "transparent",
+                    color: active ? "white" : (zero ? "var(--text-dim)" : (c.color || "var(--text)")),
+                    border: `1px solid ${active ? "var(--brand, #0d3b66)" : "var(--border, #ddd)"}`,
+                    fontWeight: active ? 700 : 500,
+                    cursor: zero ? "not-allowed" : "pointer",
+                    opacity: zero ? 0.5 : 1,
+                  }}>
+                  {c.label} <span style={{ opacity: 0.8, marginLeft: 4 }}>({c.count})</span>
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
+
       <div className="flex-between mt-16">
         <button className={`btn btn-ghost btn-sm ${showDeletedCO ? "btn-active" : ""}`}
           onClick={() => setShowDeletedCO(v => !v)}>
           {showDeletedCO ? "Hide Voided" : "Show Voided"}
         </button>
+        {coFilter !== "all" && (
+          <div className="fs-12 text-muted">
+            Showing {coDisplayed.length} of {coFiltered.length} ·
+            <button className="btn btn-link btn-sm" style={{ padding: "0 4px" }} onClick={() => setCoFilter("all")}>clear filter</button>
+          </div>
+        )}
       </div>
       <div className="table-wrap mt-8">
         <table className="data-table">
           <thead><tr><th>CO #</th><th>Description</th><th>Amount</th><th>Age</th><th>Risk</th><th>Status</th><th>Submitted</th><th>Approved</th><th></th></tr></thead>
           <tbody>
-            {coFiltered.length === 0 && <tr><td colSpan={9} className="more-empty-cell">{app.search ? "No matching change orders" : <>No change orders yet<br/><span className="more-empty-hint">Change orders track scope changes on active projects — add one when a GC approves extra work</span></>}</td></tr>}
+            {coDisplayed.length === 0 && <tr><td colSpan={9} className="more-empty-cell">{
+              coFiltered.length > 0 && coFilter !== "all"
+                ? <>No COs match the "{coFilter === "missing-date" ? "Missing date" : coFilter === "stuck" ? "Stuck >30d" : coFilter === "at-risk" ? "At risk" : coFilter.charAt(0).toUpperCase() + coFilter.slice(1)}" filter.<br/><button className="btn btn-link btn-sm mt-4" onClick={() => setCoFilter("all")}>Show all ({coFiltered.length})</button></>
+                : app.search
+                  ? "No matching change orders"
+                  : <>No change orders yet<br/><span className="more-empty-hint">Change orders track scope changes on active projects — add one when a GC approves extra work</span></>
+            }</td></tr>}
             {coGroups.map(g => (
               <Fragment key={`group-${g.projectId}`}>
-                <tr style={{ background: "var(--surface-2, #f5f6f8)", borderTop: "2px solid var(--border)" }}>
+                <tr style={{ background: "var(--bg3)", borderTop: "2px solid var(--border)" }}>
                   <td colSpan={9} style={{ padding: "10px 12px" }}>
                     <div className="flex-between" style={{ alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
@@ -823,7 +952,7 @@ function ChangeOrdersTab({ app }) {
                     {(() => {
                       const linked = (app.tmTickets || []).filter(t => t.changeOrderId === co.id);
                       if (!linked.length) return null;
-                      const tmTotal = linked.reduce((s, t) => s + calcTicketTotal(t), 0);
+                      const tmTotal = linked.reduce((s, t) => s + tmTicketTotal(t), 0);
                       return <div className="fs-12 text-muted mt-4">{linked.length} T&M ticket{linked.length > 1 ? "s" : ""} linked ({app.fmt(tmTotal)})</div>;
                     })()}
                   </td>
@@ -870,6 +999,25 @@ function ChangeOrdersTab({ app }) {
                       rejectionReason = "";
                     }
 
+                    // Period-close gate — any transition that changes recognized revenue must respect
+                    // the period lock. Covers: pending → approved (creates revenue) and approved → rejected (removes it).
+                    let periodOverride = co.periodOverride || null;
+                    const changesRevenue = next === "approved" || (co.status === "approved" && next === "rejected");
+                    if (changesRevenue) {
+                      const changeDate = new Date().toISOString().slice(0, 10);
+                      const periodCheck = validatePeriod(changeDate, app.periods || []);
+                      if (!periodCheck.allowed) {
+                        const isAdmin = app.auth?.role === "admin" || app.auth?.role === "owner";
+                        if (!isAdmin) {
+                          app.show(`Blocked: ${periodCheck.warning}`, "err");
+                          return;
+                        }
+                        const reason = prompt(`${periodCheck.warning}\n\nAdmin override reason (required):`);
+                        if (!reason || !reason.trim()) { app.show("Override cancelled — reason required", "err"); return; }
+                        periodOverride = { reason: reason.trim(), approvedBy: app.auth?.name || "Unknown", timestamp: new Date().toISOString() };
+                      }
+                    }
+
                     const updated = {
                       ...co, status: next,
                       approved: next === "approved" ? new Date().toISOString().slice(0, 10) : co.approved,
@@ -878,6 +1026,7 @@ function ChangeOrdersTab({ app }) {
                       rejectionReason,
                       rejectedBy: next === "rejected" ? (app.auth?.name || "Unknown") : (next === "pending" ? "" : co.rejectedBy),
                       rejectedAt: next === "rejected" ? new Date().toISOString() : (next === "pending" ? null : co.rejectedAt),
+                      periodOverride,
                     };
                     updated.audit = auditDiff(co, updated, CRITICAL_FIELDS.changeOrder, app.auth);
                     app.setChangeOrders(prev => prev.map(c => c.id === co.id ? updated : c));
@@ -934,11 +1083,28 @@ function ChangeOrdersTab({ app }) {
                         if (isRecognizedRevenue(co)) {
                           if (!confirm(`⚠ VOIDING AN APPROVED CO\n\nCO #${co.number} (${app.fmt(co.amount)}) is currently counted as project revenue.\n\nVoiding will REMOVE it from all P&L rollups and adjusted-contract calculations.\n\nContinue?`)) return;
                         }
+                        // T&M orphan cleanup — warn about linked tickets before voiding so the PM
+                        // knows those tickets will become unlinked (they remain, just no longer tied to this CO).
+                        const linkedTickets = (app.tmTickets || []).filter(t => t.changeOrderId === co.id);
+                        if (linkedTickets.length > 0) {
+                          const tmTotal = linkedTickets.reduce((s, t) => s + tmTicketTotal(t), 0);
+                          if (!confirm(`⚠ LINKED T&M TICKETS\n\nThis CO has ${linkedTickets.length} T&M ticket${linkedTickets.length > 1 ? "s" : ""} linked (${app.fmt(tmTotal)} total).\n\nVoiding this CO will UNLINK those tickets — they'll remain in the T&M log but orphaned from this CO.\n\nContinue?`)) return;
+                        }
                         const reason = prompt("Reason for voiding this change order (required):");
                         if (reason === null) return;
                         if (!reason.trim()) { app.show("Void cancelled — reason required", "err"); return; }
                         app.setChangeOrders(prev => prev.map(c => c.id === co.id ? softDelete(c, app.auth?.name, reason.trim()) : c));
-                        app.show("Change order voided");
+                        // Unlink T&M tickets but preserve the historical reference for audit
+                        if (linkedTickets.length > 0 && app.setTmTickets) {
+                          app.setTmTickets(prev => prev.map(t => t.changeOrderId === co.id ? {
+                            ...t,
+                            changeOrderId: null,
+                            unlinkedFromVoidedCo: { coId: co.id, coNumber: co.number, voidedAt: new Date().toISOString(), voidedBy: app.auth?.name || "Unknown" },
+                          } : t));
+                          app.show(`CO voided · ${linkedTickets.length} T&M ticket${linkedTickets.length > 1 ? "s" : ""} unlinked`);
+                        } else {
+                          app.show("Change order voided");
+                        }
                       }}>✕</button>
                     </div>
                   </td>

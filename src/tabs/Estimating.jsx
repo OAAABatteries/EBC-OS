@@ -1270,6 +1270,15 @@ export function EstimatingTab({ app }) {
               show("Complete Scope Review first to generate proposal PDF", "info");
               return;
             }
+            // Phase 2: gate export on addendum acknowledgement
+            const unackDocs = (tk.documents || []).filter(d => !d.acknowledged);
+            if (unackDocs.length > 0) {
+              const unackList = unackDocs.map(d => `${d.type} #${d.number}`).join(", ");
+              if (!confirm(`${unackDocs.length} document(s) not acknowledged: ${unackList}.\n\nExport anyway? (Click OK only if you're sure these were reviewed.)`)) {
+                show("Export cancelled — acknowledge all documents first", "info");
+                return;
+              }
+            }
             try {
               const bid = bids.find(b => b.id === tk.bidId);
               const fileName = await generateProposalPdf({
@@ -1278,10 +1287,26 @@ export function EstimatingTab({ app }) {
                 scopeLines: tk.scopeLines,
                 proposalTerms: tk.proposalTerms,
                 proposalNumber: tk.proposalNumber,
+                audience: "client",
               });
               show(`PDF exported: ${fileName}`, "ok");
             } catch (e) { show("PDF export failed: " + e.message, "err"); }
           }}>Export PDF</button>
+          <button className="btn btn-ghost btn-sm" title="Internal review PDF — shows quantities, rates, labor/material breakdown, and source references"
+            onClick={async () => {
+              try {
+                const bid = bids.find(b => b.id === tk.bidId);
+                const fileName = await generateProposalPdf({
+                  takeoff: tk, bid, company, assemblies, submittals,
+                  calcItem, calcRoom, calcSummary,
+                  scopeLines: tk.scopeLines,
+                  proposalTerms: tk.proposalTerms,
+                  proposalNumber: tk.proposalNumber,
+                  audience: "internal",
+                });
+                show(`Internal review PDF exported: ${fileName}`, "ok");
+              } catch (e) { show("Internal PDF failed: " + e.message, "err"); }
+            }}>Internal Review</button>
         </div>
       </div>
 
@@ -1301,6 +1326,76 @@ export function EstimatingTab({ app }) {
         </select>
         <span className="fs-label ml-sp2 c-text2">Created: {tk.created}</span>
       </div>
+
+      {/* ── Documents Tracker — addenda, bulletins, RFIs, plan revisions ── */}
+      {(() => {
+        const docs = tk.documents || [];
+        const unack = docs.filter(d => !d.acknowledged);
+        const addDoc = (type) => {
+          const number = prompt(`${type === "addendum" ? "Addendum" : type === "bulletin" ? "Bulletin" : type === "rfi" ? "RFI" : "Plans"} number:`, "");
+          if (!number) return;
+          const date = prompt("Date (YYYY-MM-DD):", new Date().toISOString().slice(0, 10)) || "";
+          const notes = prompt("Notes (optional):", "") || "";
+          const newDoc = { id: crypto.randomUUID(), type, number, date, notes, acknowledged: false, createdAt: new Date().toISOString() };
+          updateTakeoff(tk.id, { documents: [...docs, newDoc] });
+        };
+        const toggleAck = (id) => {
+          updateTakeoff(tk.id, { documents: docs.map(d => d.id === id ? { ...d, acknowledged: !d.acknowledged, acknowledgedAt: !d.acknowledged ? new Date().toISOString() : null } : d) });
+        };
+        const removeDoc = (id) => {
+          if (!confirm("Remove this document?")) return;
+          updateTakeoff(tk.id, { documents: docs.filter(d => d.id !== id) });
+        };
+        return (
+          <div className="card dash-card mb-sp3" style={{ borderLeft: unack.length > 0 ? "3px solid var(--red)" : "3px solid var(--green)" }}>
+            <div className="flex-between mb-8 flex-wrap gap-8">
+              <div className="text-sm font-semi flex-center-gap-6">
+                📎 Plan Documents & Addenda
+                {unack.length > 0 ? (
+                  <span className="badge badge-red fs-xs">{unack.length} not acknowledged — blocks Export PDF</span>
+                ) : docs.length > 0 ? (
+                  <span className="badge badge-green fs-xs">{docs.length} acknowledged</span>
+                ) : (
+                  <span className="badge badge-amber fs-xs">none tracked — add plans / addenda</span>
+                )}
+              </div>
+              <div className="flex gap-4 flex-wrap">
+                <button className="btn btn-ghost btn-sm" onClick={() => addDoc("plans")}>+ Plans</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => addDoc("specs")}>+ Specs</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => addDoc("addendum")}>+ Addendum</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => addDoc("bulletin")}>+ Bulletin</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => addDoc("rfi")}>+ RFI</button>
+              </div>
+            </div>
+            {docs.length > 0 ? (
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead><tr><th>Type</th><th>#</th><th>Date</th><th>Notes</th><th>Ack</th><th></th></tr></thead>
+                  <tbody>
+                    {docs.map(d => (
+                      <tr key={d.id} style={{ background: d.acknowledged ? "transparent" : "rgba(239,68,68,0.05)" }}>
+                        <td><span className={`badge fs-xs ${d.type === "addendum" ? "badge-red" : d.type === "bulletin" ? "badge-amber" : d.type === "rfi" ? "badge-blue" : "badge-ghost"}`}>{d.type}</span></td>
+                        <td className="fw-semi">{d.number}</td>
+                        <td className="text-xs text-muted">{d.date || "—"}</td>
+                        <td className="text-xs">{d.notes || "—"}</td>
+                        <td>
+                          <label style={{ display: "inline-flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                            <input type="checkbox" checked={d.acknowledged || false} onChange={() => toggleAck(d.id)} />
+                            <span className="text-xs">{d.acknowledged ? "Yes" : "No"}</span>
+                          </label>
+                        </td>
+                        <td><button className="btn btn-ghost btn-sm text-red" onClick={() => removeDoc(d.id)}>✕</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-xs text-dim">Track every plan set, addendum, bulletin, and RFI. Unacknowledged items block PDF export — prevents submitting a bid that missed an addendum.</div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Markups moved to Bid Summary section below — takeoff phase is about scope & measurements */}
 
@@ -1594,28 +1689,32 @@ export function EstimatingTab({ app }) {
           <h3 className="fs-secondary mb-sp3">Bid Pricing</h3>
           <div className="flex gap-8 mb-sp3 flex-wrap" style={{ alignItems: "center" }}>
             {[
-              { label: "Waste %", key: "wastePct" },
-              { label: "Tax %", key: "taxRate" },
-              { label: "Overhead %", key: "overheadPct" },
-              { label: "Profit %", key: "profitPct" },
-            ].map(({ label, key }) => (
-              <div key={key} className="flex gap-8" style={{ alignItems: "center" }}>
+              { label: "Waste %", key: "wastePct", title: "Applied to materials only" },
+              { label: "Labor Burden %", key: "laborBurdenPct", title: "Payroll taxes, workers comp, insurance — applied to labor only (typically 25-40%)" },
+              { label: "Tax %", key: "taxRate", title: "Sales tax on materials (pass-through, applied AFTER markup)" },
+              { label: "Overhead %", key: "overheadPct", title: "Applied to pre-tax cost" },
+              { label: "Profit %", key: "profitPct", title: "Applied to cost+overhead, pre-tax" },
+            ].map(({ label, key, title }) => (
+              <div key={key} className="flex gap-8" style={{ alignItems: "center" }} title={title}>
                 <label className="fs-label c-text2 nowrap">{label}</label>
                 <input
                   className="form-input"
                   type="number"
                   step="0.01"
                   style={{ width: 72 }}
-                  value={tk[key]}
+                  value={tk[key] ?? (key === "laborBurdenPct" ? 0 : 0)}
                   onChange={(e) => updateTakeoff(tk.id, { [key]: parseFloat(e.target.value) || 0 })}
                 />
               </div>
             ))}
           </div>
-          <div className="summary-row"><span>Waste ({tk.wastePct}%)</span><span>{fmt(summary.wasteAmt)}</span></div>
-          <div className="summary-row"><span>Tax on Materials ({tk.taxRate}%)</span><span>{fmt(summary.taxAmt)}</span></div>
-          <div className="summary-row"><span>Overhead ({tk.overheadPct}%)</span><span>{fmt(summary.overheadAmt)}</span></div>
-          <div className="summary-row"><span>Profit ({tk.profitPct}%)</span><span>{fmt(summary.profitAmt)}</span></div>
+          <div className="summary-row"><span>Waste on Materials ({tk.wastePct || 0}%)</span><span>{fmt(summary.wasteAmt)}</span></div>
+          {(tk.laborBurdenPct || 0) > 0 && (
+            <div className="summary-row"><span>Labor Burden ({tk.laborBurdenPct}%)</span><span>{fmt(summary.burdenAmt || 0)}</span></div>
+          )}
+          <div className="summary-row"><span>Overhead ({tk.overheadPct || 0}%)</span><span>{fmt(summary.overheadAmt)}</span></div>
+          <div className="summary-row"><span>Profit ({tk.profitPct || 0}%)</span><span>{fmt(summary.profitAmt)}</span></div>
+          <div className="summary-row"><span>Sales Tax on Materials ({tk.taxRate || 0}%) <span className="text-xs text-dim">(pass-through)</span></span><span>{fmt(summary.taxAmt)}</span></div>
           <div className="summary-row total"><span>BID TOTAL</span><span>{fmt(summary.grandTotal)}</span></div>
         </div>
       )}
