@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, Fragment } from "react";
 import { Search, CheckSquare, Square, AlertTriangle } from "lucide-react";
 import { addAudit, AttachmentsInput, AuditHistory, SubTabs, DocViewer } from "./moreShared";
-import { softDelete, filterActive, auditDiff, CRITICAL_FIELDS, validateInvoice, findDuplicateInvoice, validateChangeOrder, findDuplicateCO, validateAPBill, findDuplicateAPBill, computeProjectLaborCost, computeProjectLaborByCode, computeProjectTotalCost, computeProjectCostForPeriod, validateAccrual, validateCommitment, computeProjectCommittedCost, computeBudgetVsActual, validatePeriod, computeWorkedHours, getAdjustedContract, DEFAULT_BURDEN } from "../../utils/financialValidation";
+import { softDelete, filterActive, auditDiff, CRITICAL_FIELDS, validateInvoice, findDuplicateInvoice, validateChangeOrder, findDuplicateCO, validateAPBill, findDuplicateAPBill, computeProjectLaborCost, computeProjectLaborByCode, computeProjectTotalCost, computeProjectCostForPeriod, validateAccrual, validateCommitment, computeProjectCommittedCost, computeBudgetVsActual, validatePeriod, computeWorkedHours, getAdjustedContract, isRecognizedRevenue, DEFAULT_BURDEN } from "../../utils/financialValidation";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 
 // ═══════════════════════════════════════════════════════════════
@@ -401,10 +401,79 @@ function ChangeOrdersTab({ app }) {
   const pName = (pid) => app.projects.find(p => p.id === pid)?.name || "Unknown";
   const badge = (s) => s === "approved" ? "badge-green" : s === "pending" ? "badge-amber" : "badge-red";
 
+  // Age / per-row risk — same logic as runImpact but computed ambiently for every row and header
+  const daysOpen = (co) => co.submitted ? Math.max(0, Math.floor((Date.now() - new Date(co.submitted).getTime()) / 86400000)) : null;
+  const rowRisk = (co) => {
+    if (co.status === "deleted" || co.status === "rejected") return { level: "ok", label: "—" };
+    if (co.status === "approved" && !co.approved) return { level: "high", label: "missing date" };
+    if (co.status === "pending") {
+      const d = daysOpen(co);
+      if (d != null && d > 30) return { level: "high", label: `${d}d stuck` };
+      if (d != null && d > 14) return { level: "medium", label: `${d}d follow-up` };
+    }
+    const proj = app.projects.find(p => p.id === co.projectId);
+    const base = proj?.contract || 0;
+    if (base > 0) {
+      const pct = Math.abs((co.amount || 0) / base) * 100;
+      if (pct > 10) return { level: "high", label: `${pct.toFixed(0)}% of base` };
+    }
+    if ((co.amount || 0) < 0 && co.status !== "approved") return { level: "medium", label: "credit — verify" };
+    return { level: "ok", label: "ok" };
+  };
+  const riskColor = (lv) => lv === "high" ? "var(--red)" : lv === "medium" ? "var(--amber)" : lv === "ok" ? "var(--text-dim)" : "var(--blue)";
+
   const coFiltered = (showDeletedCO ? app.changeOrders : filterActive(app.changeOrders)).filter(co => {
     if (!app.search) return true;
     const q = app.search.toLowerCase();
     return co.number.toLowerCase().includes(q) || pName(co.projectId).toLowerCase().includes(q) || (co.desc || "").toLowerCase().includes(q);
+  });
+
+  // Portfolio KPIs — always-visible answers, driven by the same data the flag engine uses
+  const pendingCOs = coFiltered.filter(c => c.status === "pending");
+  const pendingTotal = pendingCOs.reduce((s, c) => s + (c.amount || 0), 0);
+  const ytdStart = new Date(new Date().getFullYear(), 0, 1);
+  const approvedYTD = coFiltered.filter(c => c.status === "approved" && c.approved && new Date(c.approved) >= ytdStart);
+  const approvedYTDTotal = approvedYTD.reduce((s, c) => s + (c.amount || 0), 0);
+  const overThirty = pendingCOs.filter(c => { const d = daysOpen(c); return d != null && d > 30; });
+  const overThirtyTotal = overThirty.reduce((s, c) => s + (c.amount || 0), 0);
+  const oldestPendingDays = pendingCOs.reduce((max, c) => { const d = daysOpen(c); return d != null && d > max ? d : max; }, 0);
+  const approvedMissingDate = coFiltered.filter(c => c.status === "approved" && !c.approved).length;
+
+  // Project-level grouping — default view. Per-project numbering (#1 = oldest CO on that job),
+  // per-project subtotals, and groups sorted by at-risk count so jobs needing attention bubble up.
+  const statusRankForSort = { pending: 0, approved: 1, rejected: 2, deleted: 3 };
+  const coByProject = {};
+  coFiltered.forEach(co => {
+    const pid = co.projectId ?? 0;
+    if (!coByProject[pid]) coByProject[pid] = [];
+    coByProject[pid].push(co);
+  });
+  // Stable per-project CO index — oldest submitted is #1. Independent of current display sort.
+  const perProjectIdx = {};
+  Object.values(coByProject).forEach(list => {
+    [...list]
+      .sort((a, b) => (a.submitted || "9999").localeCompare(b.submitted || "9999"))
+      .forEach((co, i) => { perProjectIdx[co.id] = i + 1; });
+  });
+  const coGroups = Object.entries(coByProject).map(([pid, list]) => {
+    const proj = app.projects.find(p => p.id === Number(pid)) || { id: Number(pid), name: "Unknown Project", contract: 0 };
+    const pending = list.filter(c => c.status === "pending");
+    const pendingTotal = pending.reduce((s, c) => s + (c.amount || 0), 0);
+    const recognizedTotal = list.filter(c => isRecognizedRevenue(c)).reduce((s, c) => s + (c.amount || 0), 0);
+    const missingDate = list.filter(c => c.status === "approved" && !c.approved).length;
+    const atRisk = list.filter(c => rowRisk(c).level === "high").length;
+    const oldestPending = pending.reduce((max, c) => { const d = daysOpen(c); return d != null && d > max ? d : max; }, 0);
+    const sortedList = [...list].sort((a, b) => {
+      const sr = (statusRankForSort[a.status] ?? 9) - (statusRankForSort[b.status] ?? 9);
+      if (sr !== 0) return sr;
+      return (b.submitted || "").localeCompare(a.submitted || "");
+    });
+    return { projectId: Number(pid), proj, list: sortedList, pendingTotal, recognizedTotal, missingDate, atRisk, oldestPending };
+  });
+  coGroups.sort((a, b) => {
+    if (b.atRisk !== a.atRisk) return b.atRisk - a.atRisk;
+    if (b.pendingTotal !== a.pendingTotal) return b.pendingTotal - a.pendingTotal;
+    return (a.proj.name || "").localeCompare(b.proj.name || "");
   });
 
   // Local heuristic CO impact — no external API. Computed from existing data.
@@ -414,7 +483,7 @@ function ChangeOrdersTab({ app }) {
     if (!project) { app.show("Project not found", "err"); return; }
     const projectCOs = app.changeOrders.filter(c => c.projectId === co.projectId);
     const baseContract = project.contract || 0;
-    const approvedCOTotal = projectCOs.filter(c => c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
+    const approvedCOTotal = projectCOs.filter(c => isRecognizedRevenue(c)).reduce((s, c) => s + (c.amount || 0), 0);
     const pendingCOTotal = projectCOs.filter(c => c.status !== "approved" && c.status !== "rejected" && c.id !== co.id).reduce((s, c) => s + (c.amount || 0), 0);
     const currentAdjusted = baseContract + approvedCOTotal;
     const thisCoAmount = co.amount || 0;
@@ -446,6 +515,11 @@ function ChangeOrdersTab({ app }) {
 
   const save = () => {
     const errors = validateChangeOrder({ projectId: form.projectId, description: form.desc, amount: form.amount, type: form.type, number: form.number });
+    // Revenue-integrity gate: an approved CO is revenue. It must have a date on record.
+    // Without this gate, approved-with-no-date rows silently flow into P&L rollups.
+    if (form.status === "approved" && !form.approved) {
+      errors.push("Approved COs require an Approval Date — leave status as Pending if not yet approved");
+    }
     if (errors.length > 0) { setCoErrors(errors); return; }
     setCoErrors([]);
 
@@ -476,6 +550,9 @@ function ChangeOrdersTab({ app }) {
           status: form.status,
           submitted: form.submitted,
           approved: form.approved || null,
+          // Stamp approver when status transitions to approved via form save (mirrors badge-click behavior)
+          approvedBy: form.status === "approved" ? (c.approvedBy || app.auth?.name || "Unknown") : c.approvedBy,
+          approvedAt: form.status === "approved" ? (c.approvedAt || new Date().toISOString()) : c.approvedAt,
           type: form.type || "add",
           reference: form.reference || "",
           notes: form.notes || "",
@@ -505,6 +582,9 @@ function ChangeOrdersTab({ app }) {
         status: form.status,
         submitted: form.submitted,
         approved: form.approved || null,
+        // Stamp approver when a CO is created already-approved — required for revenue recognition
+        approvedBy: form.status === "approved" ? (app.auth?.name || "Unknown") : null,
+        approvedAt: form.status === "approved" ? new Date().toISOString() : null,
         type: form.type || "add",
         reference: form.reference || "",
         notes: form.notes || "",
@@ -542,6 +622,33 @@ function ChangeOrdersTab({ app }) {
           <button className="btn btn-primary btn-sm" onClick={() => { if (!adding) { setEditingCoId(null); const nums = app.changeOrders.map(c => parseInt(c.number)).filter(n => !isNaN(n)); setForm(f => ({ ...f, number: String((nums.length ? Math.max(...nums) : 0) + 1).padStart(3, "0"), attachments: [] })); } setAdding(!adding); }}>+ Add CO</button>
         </div>
       </div>
+
+      {/* Portfolio KPI strip — answers "where's my money / what's stuck" before a click */}
+      {coFiltered.length > 0 && (
+        <div className="more-grid-4 mt-16">
+          <div className="more-metric-card--p10">
+            <div className="text-xs text-muted">Pending ({pendingCOs.length})</div>
+            <div className="fw-bold fs-card mt-sp1" style={{ color: "var(--amber)" }}>{app.fmt(pendingTotal)}</div>
+          </div>
+          <div className="more-metric-card--p10">
+            <div className="text-xs text-muted">Approved YTD ({approvedYTD.length})</div>
+            <div className="fw-bold fs-card mt-sp1" style={{ color: "var(--green)" }}>{app.fmt(approvedYTDTotal)}</div>
+          </div>
+          <div className="more-metric-card--p10">
+            <div className="text-xs text-muted">Stuck &gt; 30d ({overThirty.length})</div>
+            <div className="fw-bold fs-card mt-sp1" style={{ color: overThirty.length ? "var(--red)" : "var(--text-dim)" }}>{app.fmt(overThirtyTotal)}</div>
+          </div>
+          <div className="more-metric-card--p10">
+            <div className="text-xs text-muted">Oldest Pending</div>
+            <div className="fw-bold fs-card mt-sp1" style={{ color: oldestPendingDays > 30 ? "var(--red)" : oldestPendingDays > 14 ? "var(--amber)" : "var(--text-dim)" }}>{oldestPendingDays ? `${oldestPendingDays} days` : "—"}</div>
+          </div>
+        </div>
+      )}
+      {approvedMissingDate > 0 && (
+        <div className="mt-8 fs-12" style={{ color: "var(--red)", borderLeft: "3px solid var(--red)", paddingLeft: 8 }}>
+          {approvedMissingDate} approved CO{approvedMissingDate > 1 ? "s" : ""} missing an approval date — these are EXCLUDED from project revenue until Approval Date + Approver are recorded. Edit each CO and fill in the Approved date to recognize the revenue.
+        </div>
+      )}
 
       {adding && (
         <div className="card mt-16">
@@ -671,14 +778,46 @@ function ChangeOrdersTab({ app }) {
       </div>
       <div className="table-wrap mt-8">
         <table className="data-table">
-          <thead><tr><th>CO #</th><th>Project</th><th>Description</th><th>Amount</th><th>Status</th><th>Submitted</th><th>Approved</th><th></th></tr></thead>
+          <thead><tr><th>CO #</th><th>Description</th><th>Amount</th><th>Age</th><th>Risk</th><th>Status</th><th>Submitted</th><th>Approved</th><th></th></tr></thead>
           <tbody>
-            {coFiltered.length === 0 && <tr><td colSpan={8} className="more-empty-cell">{app.search ? "No matching change orders" : <>No change orders yet<br/><span className="more-empty-hint">Change orders track scope changes on active projects — add one when a GC approves extra work</span></>}</td></tr>}
-            {coFiltered.map(co => (
+            {coFiltered.length === 0 && <tr><td colSpan={9} className="more-empty-cell">{app.search ? "No matching change orders" : <>No change orders yet<br/><span className="more-empty-hint">Change orders track scope changes on active projects — add one when a GC approves extra work</span></>}</td></tr>}
+            {coGroups.map(g => (
+              <Fragment key={`group-${g.projectId}`}>
+                <tr style={{ background: "var(--surface-2, #f5f6f8)", borderTop: "2px solid var(--border)" }}>
+                  <td colSpan={9} style={{ padding: "10px 12px" }}>
+                    <div className="flex-between" style={{ alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: "var(--text-section)", fontWeight: 700 }}>{g.proj.name}</span>
+                        <span className="fs-12 text-muted">
+                          Base {app.fmt(g.proj.contract || 0)} · {g.list.length} CO{g.list.length !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      <div className="fs-12" style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+                        {g.pendingTotal !== 0 && (
+                          <span style={{ color: "var(--amber)" }}>Pending {app.fmt(g.pendingTotal)}</span>
+                        )}
+                        {g.recognizedTotal !== 0 && (
+                          <span style={{ color: "var(--green)" }}>Recognized {app.fmt(g.recognizedTotal)}</span>
+                        )}
+                        {g.missingDate > 0 && (
+                          <span style={{ color: "var(--red)" }}>{g.missingDate} missing date</span>
+                        )}
+                        {g.atRisk > 0 && (
+                          <span style={{ color: "var(--red)", fontWeight: 700 }}>● {g.atRisk} at risk</span>
+                        )}
+                        {g.oldestPending > 14 && (
+                          <span className="text-muted">Oldest pending {g.oldestPending}d</span>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                {g.list.map(co => (
               <Fragment key={co.id}>
                 <tr style={co.status === "deleted" ? { opacity: 0.5, textDecoration: "line-through" } : {}}>
-                  <td>{co.number}</td>
-                  <td>{pName(co.projectId)}</td>
+                  <td title={co.number && co.number !== String(perProjectIdx[co.id]) ? `Internal ref: ${co.number}` : undefined}>
+                    <span style={{ fontWeight: 600 }}>CO #{perProjectIdx[co.id]}</span>
+                  </td>
                   <td>
                     {co.desc}
                     {(() => {
@@ -689,18 +828,56 @@ function ChangeOrdersTab({ app }) {
                     })()}
                   </td>
                   <td>{app.fmt(co.amount)}</td>
+                  <td>{(() => {
+                    const d = daysOpen(co);
+                    if (d == null) return <span className="text-dim">—</span>;
+                    const color = co.status === "pending" && d > 30 ? "var(--red)" : co.status === "pending" && d > 14 ? "var(--amber)" : "var(--text-muted)";
+                    return <span style={{ color, fontWeight: d > 14 ? 600 : 400 }}>{d}d</span>;
+                  })()}</td>
+                  <td>{(() => {
+                    const r = rowRisk(co);
+                    return <span title={r.label} style={{ color: riskColor(r.level), fontWeight: r.level === "high" ? 700 : r.level === "medium" ? 600 : 400, fontSize: "var(--text-label)" }}>
+                      {r.level === "high" ? "● " : r.level === "medium" ? "● " : r.level === "ok" ? "○ " : "◦ "}{r.label}
+                    </span>;
+                  })()}</td>
                   <td><span className={`${badge(co.status)} more-cursor-pointer`} title="Click to change status" onClick={() => {
                     const next = co.status === "pending" ? "approved" : co.status === "approved" ? "rejected" : "pending";
+                    const isApprover = app.auth?.role === "admin" || app.auth?.role === "owner" || app.auth?.role === "pm";
+                    let rejectionReason = co.rejectionReason || "";
+
+                    // Role gate: every transition requires PM/Admin/Owner
+                    if (!isApprover) { app.show("Only PM/Admin/Owner can change CO status", "err"); return; }
+
+                    // pending → approved: explicit confirm on amount
                     if (next === "approved") {
-                      const isApprover = app.auth?.role === "admin" || app.auth?.role === "owner" || app.auth?.role === "pm";
-                      if (!isApprover) { app.show("Only PM/Admin/Owner can approve COs", "err"); return; }
-                      if (!confirm(`Approve CO #${co.number} for ${app.fmt(co.amount)}?`)) return;
+                      if (!confirm(`Approve CO #${co.number} for ${app.fmt(co.amount)}?\n\nThis will flow into project revenue once saved.`)) return;
                     }
+                    // approved → rejected: this is an UN-APPROVE, removes from revenue rollup. Require reason.
+                    if (co.status === "approved" && next === "rejected") {
+                      const reason = prompt(`Un-approve CO #${co.number} (${app.fmt(co.amount)})?\n\nThis will REMOVE the CO from project revenue rollups.\n\nReason (required):`);
+                      if (!reason || !reason.trim()) { app.show("Un-approve cancelled — reason required", "err"); return; }
+                      rejectionReason = reason.trim();
+                    }
+                    // pending → rejected: GC rejected the CO. Require reason.
+                    if (co.status === "pending" && next === "rejected") {
+                      const reason = prompt(`Reject CO #${co.number}?\n\nReason (required — e.g. "GC rejected scope", "pricing too high"):`);
+                      if (!reason || !reason.trim()) { app.show("Rejection cancelled — reason required", "err"); return; }
+                      rejectionReason = reason.trim();
+                    }
+                    // rejected → pending: re-opening for re-review
+                    if (co.status === "rejected" && next === "pending") {
+                      if (!confirm(`Return CO #${co.number} to pending for re-review?\n\nThis clears the prior rejection reason.`)) return;
+                      rejectionReason = "";
+                    }
+
                     const updated = {
                       ...co, status: next,
                       approved: next === "approved" ? new Date().toISOString().slice(0, 10) : co.approved,
                       approvedBy: next === "approved" ? (app.auth?.name || "Unknown") : co.approvedBy,
                       approvedAt: next === "approved" ? new Date().toISOString() : co.approvedAt,
+                      rejectionReason,
+                      rejectedBy: next === "rejected" ? (app.auth?.name || "Unknown") : (next === "pending" ? "" : co.rejectedBy),
+                      rejectedAt: next === "rejected" ? new Date().toISOString() : (next === "pending" ? null : co.rejectedAt),
                     };
                     updated.audit = auditDiff(co, updated, CRITICAL_FIELDS.changeOrder, app.auth);
                     app.setChangeOrders(prev => prev.map(c => c.id === co.id ? updated : c));
@@ -753,17 +930,21 @@ function ChangeOrdersTab({ app }) {
                     )}
                     <button className="btn btn-ghost btn-sm btn-table-delete"
                       onClick={() => {
-                        const reason = prompt("Reason for voiding this change order:");
-                        if (reason !== null) {
-                          app.setChangeOrders(prev => prev.map(c => c.id === co.id ? softDelete(c, app.auth?.name, reason) : c));
-                          app.show("Change order voided");
+                        // Loud warning when voiding an approved CO — this erases recognized revenue from P&L rollups.
+                        if (isRecognizedRevenue(co)) {
+                          if (!confirm(`⚠ VOIDING AN APPROVED CO\n\nCO #${co.number} (${app.fmt(co.amount)}) is currently counted as project revenue.\n\nVoiding will REMOVE it from all P&L rollups and adjusted-contract calculations.\n\nContinue?`)) return;
                         }
+                        const reason = prompt("Reason for voiding this change order (required):");
+                        if (reason === null) return;
+                        if (!reason.trim()) { app.show("Void cancelled — reason required", "err"); return; }
+                        app.setChangeOrders(prev => prev.map(c => c.id === co.id ? softDelete(c, app.auth?.name, reason.trim()) : c));
+                        app.show("Change order voided");
                       }}>✕</button>
                     </div>
                   </td>
                 </tr>
                 {impactId === co.id && impactResult && (
-                  <tr><td colSpan={8} className="more-expand-cell">
+                  <tr><td colSpan={9} className="more-expand-cell">
                     <div className="more-detail-panel">
                       <div className="more-grid-3">
                         <div className="more-metric-card">
@@ -802,6 +983,8 @@ function ChangeOrdersTab({ app }) {
                     </div>
                   </td></tr>
                 )}
+              </Fragment>
+            ))}
               </Fragment>
             ))}
           </tbody>
@@ -1381,7 +1564,7 @@ function JobCostingTab({ app }) {
       const { analyzeJobCostVariance } = await import("../../utils/api.js");
       const projectData = app.projects.map(proj => {
         const billed = filterActive(app.invoices).filter(i => i.projectId === proj.id).reduce((s, i) => s + i.amount, 0);
-        const cos = app.changeOrders.filter(c => c.projectId === proj.id && c.status === "approved").reduce((s, c) => s + c.amount, 0);
+        const cos = app.changeOrders.filter(c => c.projectId === proj.id && isRecognizedRevenue(c)).reduce((s, c) => s + c.amount, 0);
         const tmTickets = (app.tmTickets || []).filter(t => t.projectId === proj.id);
         const tmApproved = tmTickets.filter(t => t.status === "approved" || t.status === "billed").reduce((s, t) => s + calcTicketTotal(t), 0);
         const tmPending = tmTickets.filter(t => t.status === "draft" || t.status === "submitted").reduce((s, t) => s + calcTicketTotal(t), 0);
@@ -1511,7 +1694,7 @@ function JobCostingTab({ app }) {
       {app.projects.length === 0 && <div className="card mt-16 more-empty-cell">No projects yet<br/><span className="more-empty-hint">Convert awarded bids to projects to track job costing, labor, and profitability</span></div>}
       {app.projects.map(proj => {
         const billed = filterActive(app.invoices).filter(i => i.projectId === proj.id).reduce((s, i) => s + i.amount, 0);
-        const cos = app.changeOrders.filter(c => c.projectId === proj.id && c.status === "approved").reduce((s, c) => s + c.amount, 0);
+        const cos = app.changeOrders.filter(c => c.projectId === proj.id && isRecognizedRevenue(c)).reduce((s, c) => s + c.amount, 0);
         const tmTickets = (app.tmTickets || []).filter(t => t.projectId === proj.id);
         const tmApproved = tmTickets.filter(t => t.status === "approved" || t.status === "billed").reduce((s, t) => s + calcTicketTotal(t), 0);
         const tmPending = tmTickets.filter(t => t.status === "draft" || t.status === "submitted").reduce((s, t) => s + calcTicketTotal(t), 0);

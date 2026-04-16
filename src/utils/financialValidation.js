@@ -17,12 +17,17 @@ export const DEFAULT_BURDEN = 1.35; // FICA + SUTA + WC + GL + benefits
  * job costing, FinReports, alert engine, and closeout. Pending/rejected/deleted
  * COs are ignored. Deduct COs are stored as negative amounts and net down.
  */
+// A CO is recognized as revenue only when approved AND has both an approval date and approver on record.
+// Approved-with-missing-date is a data-integrity claim, not earned revenue — it stays out of the rollup.
+export function isRecognizedRevenue(co) {
+  return !!(co && co.status === "approved" && co.approved && co.approvedBy);
+}
+
 export function getAdjustedContract(project, changeOrders = []) {
   const base = project?.contract || 0;
   const approvedCOs = (changeOrders || [])
     .filter(c =>
-      c
-      && c.status === "approved"
+      isRecognizedRevenue(c)
       && String(c.projectId) === String(project?.id)
     )
     .reduce((s, c) => s + (c.amount || 0), 0);
