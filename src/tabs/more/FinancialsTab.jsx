@@ -457,9 +457,11 @@ function ChangeOrdersTab({ app }) {
   // Portfolio KPIs — always-visible answers, driven by the same data the flag engine uses
   const pendingCOs = coFiltered.filter(c => c.status === "pending");
   const pendingTotal = pendingCOs.reduce((s, c) => s + (c.amount || 0), 0);
+  const pendingLabor = pendingCOs.reduce((s, c) => s + coLabor(c), 0);
   const ytdStart = new Date(new Date().getFullYear(), 0, 1);
   const approvedYTD = coFiltered.filter(c => c.status === "approved" && c.approved && new Date(c.approved) >= ytdStart);
   const approvedYTDTotal = approvedYTD.reduce((s, c) => s + (c.amount || 0), 0);
+  const approvedYTDProfit = approvedYTD.reduce((s, c) => s + coProfit(c), 0);
   const overThirty = pendingCOs.filter(c => { const d = daysOpen(c); return d != null && d > 30; });
   const overThirtyTotal = overThirty.reduce((s, c) => s + (c.amount || 0), 0);
   const oldestPendingDays = pendingCOs.reduce((max, c) => { const d = daysOpen(c); return d != null && d > max ? d : max; }, 0);
@@ -504,7 +506,9 @@ function ChangeOrdersTab({ app }) {
     const proj = app.projects.find(p => p.id === Number(pid)) || { id: Number(pid), name: "Unknown Project", contract: 0 };
     const pending = list.filter(c => c.status === "pending");
     const pendingTotal = pending.reduce((s, c) => s + (c.amount || 0), 0);
-    const recognizedTotal = list.filter(c => isRecognizedRevenue(c)).reduce((s, c) => s + (c.amount || 0), 0);
+    const recognized = list.filter(c => isRecognizedRevenue(c));
+    const recognizedTotal = recognized.reduce((s, c) => s + (c.amount || 0), 0);
+    const recognizedProfit = recognized.reduce((s, c) => s + coProfit(c), 0);
     const missingDate = list.filter(c => c.status === "approved" && !c.approved).length;
     const atRisk = list.filter(c => rowRisk(c).level === "high").length;
     const oldestPending = pending.reduce((max, c) => { const d = daysOpen(c); return d != null && d > max ? d : max; }, 0);
@@ -513,7 +517,7 @@ function ChangeOrdersTab({ app }) {
       if (sr !== 0) return sr;
       return (b.submitted || "").localeCompare(a.submitted || "");
     });
-    return { projectId: Number(pid), proj, list: sortedList, pendingTotal, recognizedTotal, missingDate, atRisk, oldestPending };
+    return { projectId: Number(pid), proj, list: sortedList, pendingTotal, recognizedTotal, recognizedProfit, missingDate, atRisk, oldestPending };
   });
   coGroups.sort((a, b) => {
     if (b.atRisk !== a.atRisk) return b.atRisk - a.atRisk;
@@ -532,10 +536,18 @@ function ChangeOrdersTab({ app }) {
     const pendingCOTotal = projectCOs.filter(c => c.status !== "approved" && c.status !== "rejected" && c.id !== co.id).reduce((s, c) => s + (c.amount || 0), 0);
     const currentAdjusted = baseContract + approvedCOTotal;
     const thisCoAmount = co.amount || 0;
+    const thisLabor = coLabor(co);
+    const thisMaterial = coMaterial(co);
+    const thisProfit = coProfit(co);
+    const laborPct = thisCoAmount !== 0 ? (thisLabor / thisCoAmount) * 100 : 100;
     const newAdjusted = currentAdjusted + (co.status === "approved" ? 0 : thisCoAmount);
     const contractPctChange = baseContract > 0 ? ((thisCoAmount / baseContract) * 100) : 0;
     const cumulativeCOPct = baseContract > 0 ? (((approvedCOTotal + thisCoAmount) / baseContract) * 100) : 0;
     const flags = [];
+    // Margin flag: a fully-material CO contributes revenue but near-zero profit — PMs often price these thin.
+    if (thisCoAmount > 0 && laborPct < 30) {
+      flags.push({ level: "medium", text: `Mostly material (${laborPct.toFixed(0)}% labor) — low profit contribution. Verify markup on material.` });
+    }
     if (Math.abs(contractPctChange) > 10) flags.push({ level: "high", text: `Single CO is ${contractPctChange.toFixed(1)}% of base contract — requires GC scrutiny` });
     if (cumulativeCOPct > 20) flags.push({ level: "high", text: `Cumulative COs would reach ${cumulativeCOPct.toFixed(1)}% of base — audit risk` });
     if (thisCoAmount < 0) flags.push({ level: "medium", text: "Credit CO — verify scope reduction is documented" });
@@ -551,6 +563,10 @@ function ChangeOrdersTab({ app }) {
       currentAdjusted,
       newAdjusted,
       thisCoAmount,
+      thisLabor,
+      thisMaterial,
+      thisProfit,
+      laborPct: Number(laborPct.toFixed(0)),
       contractPctChange: Number(contractPctChange.toFixed(1)),
       cumulativeCOPct: Number(cumulativeCOPct.toFixed(1)),
       flags,
@@ -564,6 +580,14 @@ function ChangeOrdersTab({ app }) {
     // Without this gate, approved-with-no-date rows silently flow into P&L rollups.
     if (form.status === "approved" && !form.approved) {
       errors.push("Approved COs require an Approval Date — leave status as Pending if not yet approved");
+    }
+    // Labor/material split — if either field is filled, both should add up to Amount.
+    // Allow a $0.50 fuzz factor for rounding. Blank-on-both is fine (treated as 100% labor).
+    const lAmt = Number(form.laborAmount);
+    const mAmt = Number(form.materialAmount);
+    const totalAmt = Number(form.amount) || 0;
+    if ((form.laborAmount !== "" || form.materialAmount !== "") && Math.abs(totalAmt - (lAmt || 0) - (mAmt || 0)) > 0.5) {
+      errors.push(`Labor + Material (${app.fmt((lAmt || 0) + (mAmt || 0))}) must equal Amount (${app.fmt(totalAmt)}), or leave both blank for 100% labor`);
     }
     if (errors.length > 0) { setCoErrors(errors); return; }
     setCoErrors([]);
@@ -592,6 +616,8 @@ function ChangeOrdersTab({ app }) {
           number: form.number,
           desc: form.desc,
           amount: Number(form.amount),
+          laborAmount: form.laborAmount !== "" ? Number(form.laborAmount) : null,
+          materialAmount: form.materialAmount !== "" ? Number(form.materialAmount) : null,
           status: form.status,
           submitted: form.submitted,
           approved: form.approved || null,
@@ -624,6 +650,8 @@ function ChangeOrdersTab({ app }) {
         number: form.number,
         desc: form.desc,
         amount: Number(form.amount),
+        laborAmount: form.laborAmount !== "" ? Number(form.laborAmount) : null,
+        materialAmount: form.materialAmount !== "" ? Number(form.materialAmount) : null,
         status: form.status,
         submitted: form.submitted,
         approved: form.approved || null,
@@ -648,7 +676,7 @@ function ChangeOrdersTab({ app }) {
     setAdding(false);
     setScopeInput("");
     setCoErrors([]);
-    setForm({ projectId: "", number: "", desc: "", amount: "", status: "pending", submitted: "", approved: "", type: "add", reference: "", notes: "", scope_items: [], gc_name: "", gc_company: "", attachments: [], date: "" });
+    setForm({ projectId: "", number: "", desc: "", amount: "", laborAmount: "", materialAmount: "", status: "pending", submitted: "", approved: "", type: "add", reference: "", notes: "", scope_items: [], gc_name: "", gc_company: "", attachments: [], date: "" });
   };
 
   return (
@@ -674,10 +702,14 @@ function ChangeOrdersTab({ app }) {
           <div className="more-metric-card--p10">
             <div className="text-xs text-muted">Pending ({pendingCOs.length})</div>
             <div className="fw-bold fs-card mt-sp1" style={{ color: "var(--amber)" }}>{app.fmt(pendingTotal)}</div>
+            {pendingLabor !== pendingTotal && (
+              <div className="fs-12 text-muted">≈{app.fmt(pendingLabor)} labor</div>
+            )}
           </div>
           <div className="more-metric-card--p10">
             <div className="text-xs text-muted">Approved YTD ({approvedYTD.length})</div>
             <div className="fw-bold fs-card mt-sp1" style={{ color: "var(--green)" }}>{app.fmt(approvedYTDTotal)}</div>
+            <div className="fs-12 text-muted">≈{app.fmt(approvedYTDProfit)} profit</div>
           </div>
           <div className="more-metric-card--p10">
             <div className="text-xs text-muted">Stuck &gt; 30d ({overThirty.length})</div>
@@ -926,7 +958,12 @@ function ChangeOrdersTab({ app }) {
                           <span style={{ color: "var(--amber)" }}>Pending {app.fmt(g.pendingTotal)}</span>
                         )}
                         {g.recognizedTotal !== 0 && (
-                          <span style={{ color: "var(--green)" }}>Recognized {app.fmt(g.recognizedTotal)}</span>
+                          <span style={{ color: "var(--green)" }}>
+                            Recognized {app.fmt(g.recognizedTotal)}
+                            {g.recognizedProfit !== g.recognizedTotal && (
+                              <span className="text-muted fs-12"> (≈{app.fmt(g.recognizedProfit)} profit)</span>
+                            )}
+                          </span>
                         )}
                         {g.missingDate > 0 && (
                           <span style={{ color: "var(--red)" }}>{g.missingDate} missing date</span>
@@ -1060,6 +1097,8 @@ function ChangeOrdersTab({ app }) {
                             number: co.number || "",
                             desc: co.desc || "",
                             amount: String(co.amount || ""),
+                            laborAmount: co.laborAmount != null ? String(co.laborAmount) : "",
+                            materialAmount: co.materialAmount != null ? String(co.materialAmount) : "",
                             status: co.status || "pending",
                             submitted: co.submitted || "",
                             approved: co.approved || "",
@@ -1137,6 +1176,22 @@ function ChangeOrdersTab({ app }) {
                           <span className="text-muted">Cumulative COs (approved + this)</span>
                           <span className={impactResult.cumulativeCOPct > 20 ? "text-red fw-bold" : impactResult.cumulativeCOPct > 10 ? "text-amber" : ""}>{impactResult.cumulativeCOPct}%</span>
                         </div>
+                        <div className="flex-between mt-4" style={{ borderTop: "1px dashed var(--border)", paddingTop: 6 }}>
+                          <span className="text-muted">Labor / Material split</span>
+                          <span>
+                            <span style={{ color: "var(--green)" }}>{app.fmt(impactResult.thisLabor)}</span>
+                            <span className="text-muted"> / </span>
+                            <span className="text-muted">{app.fmt(impactResult.thisMaterial)}</span>
+                            <span className="text-muted fs-12"> ({impactResult.laborPct}% labor)</span>
+                          </span>
+                        </div>
+                        <div className="flex-between">
+                          <span className="font-semi">Est. profit impact</span>
+                          <span className="fw-bold" style={{ color: impactResult.thisProfit >= 0 ? "var(--green)" : "var(--red)" }}>
+                            {app.fmt(impactResult.thisProfit)}
+                          </span>
+                        </div>
+                        <div className="fs-12 text-dim" style={{ marginTop: 2 }}>Assumes ~100% margin on self-performed labor, ~0% on material pass-through.</div>
                       </div>
                       <div className="mt-8">
                         {impactResult.flags.map((f, i) => (
