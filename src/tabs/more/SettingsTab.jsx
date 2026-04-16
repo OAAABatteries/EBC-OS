@@ -1,5 +1,6 @@
 import { useState, useEffect, Fragment, lazy, Suspense } from "react";
 import { SubTabs } from "./moreShared";
+import { ImportWizard } from "./ImportWizard";
 import { resetAllGuides } from "../../components/FeatureGuide";
 import { THEMES, COMPANY_DEFAULTS, ASSEMBLIES } from "../../data/constants";
 import { Wrench, Shield, Download, ClipboardCopy, Building2, Moon, Sun, Trash2, AlertTriangle, Eye, Lock, Server } from "lucide-react";
@@ -23,14 +24,14 @@ export function Settings({ app }) {
   const tabs = isFullAccess
     ? ["Company", ...(canSeeInsurance ? ["Insurance"] : []), "Assemblies", "Equipment", "Margin Tiers", "Business Cards", "Data", "QuickBooks", "Theme", "API", "Security", "Account"]
     : [...(canSeeInsurance ? ["Insurance"] : []), "Theme", "Security", "Account"];
-  if (isOwnerOrAdmin) tabs.push("Users");
+  if (isOwnerOrAdmin) { tabs.push("Users"); tabs.push("Import"); }
   if (isForeman) tabs.push("Team");
   const [sub, setSub] = useState(isFullAccess ? "Company" : "Theme");
 
   // Wire app.subTab → internal sub-tab on mount
   useEffect(() => {
     if (app.subTab) {
-      const map = { "credentials": "Insurance", "insurance": "Insurance", "company": "Company", "theme": "Theme", "security": "Security", "users": "Users", "api": "API", "quickbooks": "QuickBooks", "assemblies": "Assemblies", "equipment": "Equipment" };
+      const map = { "credentials": "Insurance", "insurance": "Insurance", "company": "Company", "theme": "Theme", "security": "Security", "users": "Users", "api": "API", "quickbooks": "QuickBooks", "assemblies": "Assemblies", "equipment": "Equipment", "import": "Import" };
       const mapped = map[app.subTab.toLowerCase()];
       if (mapped && tabs.includes(mapped)) setSub(mapped);
     }
@@ -52,6 +53,7 @@ export function Settings({ app }) {
       {sub === "Account" && <AccountTab app={app} />}
       {sub === "Insurance" && <InsuranceTab app={app} />}
       {sub === "Users" && isOwnerOrAdmin && <UsersTab app={app} />}
+      {sub === "Import" && isOwnerOrAdmin && <ImportWizard app={app} />}
       {sub === "Team" && isForeman && <ForemanTeamTab app={app} />}
 
       {/* ── Account / Logout ── */}
