@@ -2,6 +2,7 @@
 //  EBC-OS · MoreTabs Shared Utilities
 //  Extracted Sprint 9.1 — shared across all More sub-tabs
 // ═══════════════════════════════════════════════════════════════
+import { useState } from "react";
 
 // ── Audit trail helper ──
 export function addAudit(item, field, oldVal, newVal, user) {
@@ -19,6 +20,7 @@ export function addAudit(item, field, oldVal, newVal, user) {
 // ── Shared attachments input for Invoice / AP Bill / CO forms ──
 export function AttachmentsInput({ app, form, setForm }) {
   const attachments = form.attachments || [];
+  const [viewing, setViewing] = useState(null);
   const onFiles = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
@@ -39,13 +41,50 @@ export function AttachmentsInput({ app, form, setForm }) {
       {attachments.length > 0 && (
         <div className="flex gap-4 flex-wrap mt-8">
           {attachments.map((a, i) => (
-            <span key={i} className="more-attach-pill">
+            <span key={i} className="more-attach-pill" style={{ cursor: "pointer" }} onClick={() => setViewing(a)} title="Click to view">
               📎 {a.name} ({Math.round((a.size || 0) / 1024)}KB)
-              <span className="more-attach-remove" onClick={() => setForm({ ...form, attachments: attachments.filter((_, j) => j !== i) })}>✕</span>
+              <span className="more-attach-remove" onClick={(e) => { e.stopPropagation(); setForm({ ...form, attachments: attachments.filter((_, j) => j !== i) }); }}>✕</span>
             </span>
           ))}
         </div>
       )}
+      {viewing && <DocViewer doc={viewing} onClose={() => setViewing(null)} />}
+    </div>
+  );
+}
+
+// ── In-app document viewer — PDFs, images, text. No external viewer required. ──
+export function DocViewer({ doc, onClose }) {
+  if (!doc) return null;
+  const type = (doc.type || "").toLowerCase();
+  const isPDF = type.includes("pdf") || (doc.name || "").toLowerCase().endsWith(".pdf");
+  const isImage = type.startsWith("image/") || /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(doc.name || "");
+  const isText = type.startsWith("text/") || /\.(txt|md|csv|json|log)$/i.test(doc.name || "");
+  return (
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 10000 }}>
+      <div className="modal-content" style={{ maxWidth: "90vw", maxHeight: "90vh", width: 1100, height: "85vh", display: "flex", flexDirection: "column" }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>{doc.name}</h3>
+          <div style={{ display: "flex", gap: 8 }}>
+            <a className="btn btn-ghost btn-sm" href={doc.dataUrl} download={doc.name}>Download</a>
+            <button className="modal-close" onClick={onClose}>✕</button>
+          </div>
+        </div>
+        <div style={{ flex: 1, overflow: "auto", background: "var(--bg1)", padding: 0 }}>
+          {isPDF && <iframe src={doc.dataUrl} title={doc.name} style={{ width: "100%", height: "100%", border: "none" }} />}
+          {isImage && <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 16, height: "100%" }}><img src={doc.dataUrl} alt={doc.name} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} /></div>}
+          {isText && <pre style={{ padding: 16, whiteSpace: "pre-wrap", fontSize: "var(--text-label)", color: "var(--text)" }}>{(() => { try { return atob(String(doc.dataUrl).split(",")[1] || ""); } catch { return "Cannot decode content"; } })()}</pre>}
+          {!isPDF && !isImage && !isText && (
+            <div style={{ padding: 40, textAlign: "center" }}>
+              <p className="text-dim">Preview not available for this file type ({doc.type || "unknown"}).</p>
+              <a className="btn btn-primary mt-8" href={doc.dataUrl} download={doc.name}>Download to view</a>
+            </div>
+          )}
+        </div>
+        <div style={{ padding: 8, fontSize: "var(--text-xs)", color: "var(--text3)", borderTop: "1px solid var(--border)" }}>
+          {doc.size ? `${Math.round(doc.size / 1024)} KB · ` : ""}{doc.type || "unknown"}{doc.uploadedAt ? ` · uploaded ${new Date(doc.uploadedAt).toLocaleDateString()}` : ""}{doc.uploadedBy ? ` by ${doc.uploadedBy}` : ""}
+        </div>
+      </div>
     </div>
   );
 }

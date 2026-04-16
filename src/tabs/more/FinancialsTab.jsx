@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, Fragment } from "react";
 import { Search, CheckSquare, Square, AlertTriangle } from "lucide-react";
-import { addAudit, AttachmentsInput, AuditHistory, SubTabs } from "./moreShared";
+import { addAudit, AttachmentsInput, AuditHistory, SubTabs, DocViewer } from "./moreShared";
 import { softDelete, filterActive, auditDiff, CRITICAL_FIELDS, validateInvoice, findDuplicateInvoice, validateChangeOrder, findDuplicateCO, validateAPBill, findDuplicateAPBill, computeProjectLaborCost, computeProjectLaborByCode, computeProjectTotalCost, computeProjectCostForPeriod, validateAccrual, validateCommitment, computeProjectCommittedCost, computeBudgetVsActual, validatePeriod, computeWorkedHours, getAdjustedContract, DEFAULT_BURDEN } from "../../utils/financialValidation";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
 
@@ -60,6 +60,7 @@ function InvoicesTab({ app }) {
   const [collectLoading, setCollectLoading] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
   const [invoiceErrors, setInvoiceErrors] = useState([]);
+  const [viewingDoc, setViewingDoc] = useState(null);
   const [editingInvId, setEditingInvId] = useState(null);
 
   const runCollection = async (inv) => {
@@ -298,6 +299,10 @@ function InvoicesTab({ app }) {
                   <td>{inv.paidDate || "—"}</td>
                   <td>
                     <div className="flex gap-4">
+                    {(inv.attachments || []).length > 0 && (
+                      <button className="btn btn-ghost btn-sm btn-table-action" title={`View ${inv.attachments.length} attachment${inv.attachments.length > 1 ? "s" : ""}`}
+                        onClick={() => setViewingDoc(inv.attachments[0])}>View</button>
+                    )}
                     {(inv.status === "pending" || inv.status === "overdue") && (
                       <button className="btn btn-ghost btn-sm btn-table-green"
                         onClick={() => {
@@ -375,6 +380,7 @@ function InvoicesTab({ app }) {
         </table>
       </div>
       <div className="summary-row mt-16">Total: {app.fmt(totalBilled)}</div>
+      {viewingDoc && <DocViewer doc={viewingDoc} onClose={() => setViewingDoc(null)} />}
     </div>
   );
 }
@@ -387,6 +393,7 @@ function ChangeOrdersTab({ app }) {
   const [impactId, setImpactId] = useState(null);
   const [impactResult, setImpactResult] = useState(null);
   const [impactLoading, setImpactLoading] = useState(false);
+  const [viewingDoc, setViewingDoc] = useState(null);
   const [showDeletedCO, setShowDeletedCO] = useState(false);
   const [coErrors, setCoErrors] = useState([]);
   const [editingCoId, setEditingCoId] = useState(null);
@@ -400,23 +407,41 @@ function ChangeOrdersTab({ app }) {
     return co.number.toLowerCase().includes(q) || pName(co.projectId).toLowerCase().includes(q) || (co.desc || "").toLowerCase().includes(q);
   });
 
-  const runImpact = async (co) => {
-    if (!app.apiKey) { app.show("Set API key in Settings first", "err"); return; }
+  // Local heuristic CO impact — no external API. Computed from existing data.
+  const runImpact = (co) => {
     setImpactId(co.id);
-    setImpactLoading(true);
-    setImpactResult(null);
-    try {
-      const { analyzeChangeOrderImpact } = await import("../../utils/api.js");
-      const project = app.projects.find(p => p.id === co.projectId);
-      const projectCOs = app.changeOrders.filter(c => c.projectId === co.projectId);
-      const result = await analyzeChangeOrderImpact(app.apiKey, co, project || { name: "Unknown" }, projectCOs);
-      setImpactResult(result);
-      app.show("Impact analysis complete", "ok");
-    } catch (e) {
-      app.show(e.message, "err");
-    } finally {
-      setImpactLoading(false);
+    const project = app.projects.find(p => p.id === co.projectId);
+    if (!project) { app.show("Project not found", "err"); return; }
+    const projectCOs = app.changeOrders.filter(c => c.projectId === co.projectId);
+    const baseContract = project.contract || 0;
+    const approvedCOTotal = projectCOs.filter(c => c.status === "approved").reduce((s, c) => s + (c.amount || 0), 0);
+    const pendingCOTotal = projectCOs.filter(c => c.status !== "approved" && c.status !== "rejected" && c.id !== co.id).reduce((s, c) => s + (c.amount || 0), 0);
+    const currentAdjusted = baseContract + approvedCOTotal;
+    const thisCoAmount = co.amount || 0;
+    const newAdjusted = currentAdjusted + (co.status === "approved" ? 0 : thisCoAmount);
+    const contractPctChange = baseContract > 0 ? ((thisCoAmount / baseContract) * 100) : 0;
+    const cumulativeCOPct = baseContract > 0 ? (((approvedCOTotal + thisCoAmount) / baseContract) * 100) : 0;
+    const flags = [];
+    if (Math.abs(contractPctChange) > 10) flags.push({ level: "high", text: `Single CO is ${contractPctChange.toFixed(1)}% of base contract — requires GC scrutiny` });
+    if (cumulativeCOPct > 20) flags.push({ level: "high", text: `Cumulative COs would reach ${cumulativeCOPct.toFixed(1)}% of base — audit risk` });
+    if (thisCoAmount < 0) flags.push({ level: "medium", text: "Credit CO — verify scope reduction is documented" });
+    if (co.status === "pending" && co.submitted) {
+      const daysOpen = Math.floor((new Date() - new Date(co.submitted)) / 86400000);
+      if (daysOpen > 30) flags.push({ level: "high", text: `Pending for ${daysOpen} days — escalate to GC` });
+      else if (daysOpen > 14) flags.push({ level: "medium", text: `Pending for ${daysOpen} days — follow up this week` });
     }
+    if (pendingCOTotal > 0) flags.push({ level: "info", text: `${projectCOs.filter(c => c.status !== "approved" && c.status !== "rejected" && c.id !== co.id).length} other pending COs on this project (${(pendingCOTotal).toLocaleString()} total)` });
+    if (flags.length === 0) flags.push({ level: "ok", text: "No immediate concerns — standard CO within normal parameters" });
+    setImpactResult({
+      baseContract,
+      currentAdjusted,
+      newAdjusted,
+      thisCoAmount,
+      contractPctChange: Number(contractPctChange.toFixed(1)),
+      cumulativeCOPct: Number(cumulativeCOPct.toFixed(1)),
+      flags,
+      local: true
+    });
   };
 
   const save = () => {
@@ -685,6 +710,10 @@ function ChangeOrdersTab({ app }) {
                   <td>{co.approved || "—"}</td>
                   <td>
                     <div className="flex gap-4">
+                    {(co.attachments || []).length > 0 && (
+                      <button className="btn btn-ghost btn-sm btn-table-action" title={`View ${co.attachments.length} attachment${co.attachments.length > 1 ? "s" : ""}`}
+                        onClick={() => setViewingDoc(co.attachments[0])}>View</button>
+                    )}
                     <button className="btn btn-ghost btn-sm btn-table-action"
                       onClick={async () => {
                         const { generateChangeOrderPdf } = await import("../../utils/changeOrderPdf.js");
@@ -694,9 +723,8 @@ function ChangeOrdersTab({ app }) {
                         app.show("CO PDF exported", "ok");
                       }}>PDF</button>
                     <button className="btn btn-ghost btn-sm btn-table-action"
-                      onClick={() => impactId === co.id && impactResult ? setImpactId(null) : runImpact(co)}
-                      disabled={impactLoading && impactId === co.id}>
-                      {impactLoading && impactId === co.id ? "..." : impactId === co.id && impactResult ? "Hide" : "Analyze"}
+                      onClick={() => impactId === co.id && impactResult ? setImpactId(null) : runImpact(co)}>
+                      {impactId === co.id && impactResult ? "Hide" : "Analyze"}
                     </button>
                     {co.status !== "deleted" && (
                       <button className="btn btn-ghost btn-sm btn-table-action"
@@ -737,64 +765,40 @@ function ChangeOrdersTab({ app }) {
                 {impactId === co.id && impactResult && (
                   <tr><td colSpan={8} className="more-expand-cell">
                     <div className="more-detail-panel">
-                      {/* Summary */}
-                      <div className="text-sm mb-12">{impactResult.summary}</div>
-
-                      {/* Margin Impact */}
-                      {impactResult.marginImpact && (
-                        <div className="more-grid-3">
-                          <div className="more-metric-card">
-                            <div className="text-xs text-muted">Before CO</div>
-                            <div className="more-metric-value">{impactResult.marginImpact.before}%</div>
-                          </div>
-                          <div className="more-metric-card">
-                            <div className="text-xs text-muted">After CO</div>
-                            <div style={{ fontSize: "var(--text-section)", fontWeight: "var(--weight-bold)", color: impactResult.marginImpact.change >= 0 ? "var(--green)" : "var(--red)" }}>{impactResult.marginImpact.after}%</div>
-                          </div>
-                          <div className="more-metric-card">
-                            <div className="text-xs text-muted">Change</div>
-                            <div style={{ fontSize: "var(--text-section)", fontWeight: "var(--weight-bold)", color: impactResult.marginImpact.change >= 0 ? "var(--green)" : "var(--red)" }}>
-                              {impactResult.marginImpact.change >= 0 ? "+" : ""}{impactResult.marginImpact.change}%
-                            </div>
+                      <div className="more-grid-3">
+                        <div className="more-metric-card">
+                          <div className="text-xs text-muted">Base Contract</div>
+                          <div className="more-metric-value">{app.fmt(impactResult.baseContract)}</div>
+                        </div>
+                        <div className="more-metric-card">
+                          <div className="text-xs text-muted">Current Adjusted</div>
+                          <div className="more-metric-value">{app.fmt(impactResult.currentAdjusted)}</div>
+                        </div>
+                        <div className="more-metric-card">
+                          <div className="text-xs text-muted">If Approved</div>
+                          <div style={{ fontSize: "var(--text-section)", fontWeight: "var(--weight-bold)", color: impactResult.thisCoAmount >= 0 ? "var(--green)" : "var(--red)" }}>
+                            {app.fmt(impactResult.newAdjusted)}
                           </div>
                         </div>
-                      )}
-
-                      {/* Cumulative */}
-                      {impactResult.cumulativeImpact && (
-                        <div className="more-info-card">
-                          <div className="flex-between mb-4">
-                            <span className="font-semi">Total CO Exposure</span>
-                            <span className="font-mono font-bold text-amber">{app.fmt(impactResult.cumulativeImpact.totalCOValue)}</span>
+                      </div>
+                      <div className="more-info-card mt-8">
+                        <div className="flex-between mb-4">
+                          <span className="font-semi">This CO as % of base contract</span>
+                          <span className={impactResult.contractPctChange > 10 ? "text-red fw-bold" : ""}>{impactResult.contractPctChange}%</span>
+                        </div>
+                        <div className="flex-between">
+                          <span className="text-muted">Cumulative COs (approved + this)</span>
+                          <span className={impactResult.cumulativeCOPct > 20 ? "text-red fw-bold" : impactResult.cumulativeCOPct > 10 ? "text-amber" : ""}>{impactResult.cumulativeCOPct}%</span>
+                        </div>
+                      </div>
+                      <div className="mt-8">
+                        {impactResult.flags.map((f, i) => (
+                          <div key={i} className="more-risk-flag" style={{ borderLeft: `3px solid var(--${f.level === "high" ? "red" : f.level === "medium" ? "amber" : f.level === "ok" ? "green" : "blue"})`, paddingLeft: 8, marginBottom: 4 }}>
+                            {f.text}
                           </div>
-                          <div className="flex-between mb-4">
-                            <span className="text-muted">% of Original Contract</span>
-                            <span>{impactResult.cumulativeImpact.pctOfContract}%</span>
-                          </div>
-                          {impactResult.cumulativeImpact.note && <div className="text-xs text-muted">{impactResult.cumulativeImpact.note}</div>}
-                        </div>
-                      )}
-
-                      {/* Cash Flow + Recommendation */}
-                      {impactResult.cashFlowNote && (
-                        <div className="more-info-card">
-                          <span className="font-semi">Cash Flow: </span>{impactResult.cashFlowNote}
-                        </div>
-                      )}
-                      {impactResult.recommendation && (
-                        <div className="more-info-card--blue">
-                          <span className="font-semi">Recommendation: </span>{impactResult.recommendation}
-                        </div>
-                      )}
-
-                      {/* Risk Flags */}
-                      {impactResult.riskFlags?.length > 0 && (
-                        <div className="mt-8">
-                          {impactResult.riskFlags.map((f, i) => (
-                            <div key={i} className="more-risk-flag">{f}</div>
-                          ))}
-                        </div>
-                      )}
+                        ))}
+                      </div>
+                      <div className="text-xs text-dim mt-8">Local analysis — no external API used.</div>
                     </div>
                   </td></tr>
                 )}
@@ -803,6 +807,7 @@ function ChangeOrdersTab({ app }) {
           </tbody>
         </table>
       </div>
+      {viewingDoc && <DocViewer doc={viewingDoc} onClose={() => setViewingDoc(null)} />}
     </div>
   );
 }
