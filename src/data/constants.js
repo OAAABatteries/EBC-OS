@@ -7,7 +7,7 @@ import { isDemoMode } from "./defaults";
 const _demo = isDemoMode();
 
 // Bump this when seed data changes to bust stale localStorage caches
-export const DATA_VERSION = 25;
+export const DATA_VERSION = 27;
 
 // ── THEMES (3 active — archived themes in src/archive/theme-effects.jsx) ──
 export const THEMES = {
@@ -437,34 +437,24 @@ const _demoContacts = [
 const _demoCallLog = [];
 
 // ── SEED: INVOICES ──
-const _demoInvoices = [
-  {id:301,projectId:19,number:"0004",date:"2026-03-10",amount:13464,status:"pending",desc:"Invoice #4 — PPER Missouri City. REVISION REQUIRED: Lien waiver typo — corrected amount is $13,464.00. Flagged by Alejandra Ibarra 3/19/2026. Status: Revise & Resubmit in Procore.",paidDate:null},
-];
+// Cleared: prior demo invoice numbers were placeholders.
+// Real invoices will be created from PayApps or entered manually.
+const _demoInvoices = [];
 
 // ── SEED: T&M TICKETS ──
 // Time & Material tracking — separate from original project contract
-const _demoTmTickets = [
-  {id:"tm1",projectId:1,ticketNumber:"TM-001",date:"2026-04-01",status:"submitted",changeOrderId:null,description:"Containment wall build-out — GC-directed unforeseen asbestos abatement barrier at Main Lab east wall. Not in original scope.",notes:"Mason Williams (Endurance Super) verbally directed. Documented immediately.",photos:[],laborEntries:[{id:"tl1",employeeName:"Oscar Alvarez",hours:4,rate:65,description:"Layout + framing containment wall"},{id:"tl2",employeeName:"Ricardo Mendez",hours:4,rate:55,description:"Hang poly + board containment"}],materialEntries:[{id:"tm1m1",item:"3-5/8\" Metal Studs 25ga",qty:20,unit:"EA",unitCost:8.50,markup:10},{id:"tm1m2",item:"5/8\" Type X Drywall",qty:10,unit:"SHT",unitCost:14.25,markup:10},{id:"tm1m3",item:"6-mil Poly Sheeting",qty:2,unit:"ROLL",unitCost:42,markup:10}],submittedDate:"2026-04-01",approvedDate:null,billedDate:null,auditTrail:[{action:"created",actor:"Oscar Alvarez",at:"2026-04-01T09:15:00Z"},{action:"submitted",actor:"Oscar Alvarez",at:"2026-04-01T15:30:00Z"}]},
-  {id:"tm2",projectId:1,ticketNumber:"TM-002",date:"2026-04-02",status:"draft",changeOrderId:null,description:"Demo existing CMU partition at Storage/Mechanical — not in original scope. GC confirmed demo required for new MEP routing.",notes:"Verbal direction from Mason Williams.",photos:[],laborEntries:[{id:"tl3",employeeName:"Oscar Alvarez",hours:6,rate:65,description:"CMU demo + haul-off prep"}],materialEntries:[{id:"tm2m1",item:"Debris Haul-Off",qty:1,unit:"LOAD",unitCost:350,markup:0}],submittedDate:null,approvedDate:null,billedDate:null,auditTrail:[{action:"created",actor:"Oscar Alvarez",at:"2026-04-02T10:00:00Z"}]},
-];
+// Cleared: prior demo tickets referenced fictional crew names and rates.
+const _demoTmTickets = [];
 
 // ── SEED: CHANGE ORDERS ──
-const _demoChangeOrders = [
-  {id:1,projectId:13,number:"CO-001",desc:"MHMC Cancer Center — Laser cabinet modification (rework due to GE equipment move)",amount:800,status:"approved",submitted:"2026-03-17",approved:"2026-03-17"},
-  {id:2,projectId:14,number:"CO-001",desc:"Heart Care Clinic — Equipment removal & delivery ($3,200) + credit for unused lead lined rock (-$7,500)",amount:-4300,status:"approved",submitted:"2026-03-11",approved:"2026-03-12"},
-  {id:3,projectId:9,number:"CO-001",desc:"MH League City CCC CT — Control arm removal",amount:800,status:"submitted",submitted:"2026-03-12",approved:null,contact:"Juan Hinojosa (Forney)"},
-  {id:4,projectId:1,number:"CO-001",desc:"Endurance Woodside — Containment wall build-out (asbestos abatement barrier)",amount:0,status:"draft",submitted:null,approved:null,tmTicketIds:["tm1"]},
-];
+// Cleared: prior demo COs had placeholder amounts and dates.
+// Real change orders will be entered as they are issued.
+const _demoChangeOrders = [];
 
 // ── SEED: RFIs ──
-const _demoRfis = [
-  {id:401,projectId:19,number:"RFI-001",subject:"Thin-cut stone pricing for columns per architect",status:"open",submitted:"2026-03-06",assigned:"Jeremy Price"},
-  // Endurance - Woodside Laboratory (projectId: 1) — seed RFIs for PM audit
-  {id:402,projectId:1,number:"RFI-001",subject:"Ceiling grid layout at corridor intersection — confirm centerline vs offset",status:"open",submitted:"2026-03-28",assigned:"Mason Williams",priority:"high",specRef:"09 51 13",costImpact:"Possible add if offset grid required",scheduleImpact:"2 day delay if redesign needed",question:"At the corridor intersection near Grid B/3, the reflected ceiling plan shows a centerline grid but the partition layout suggests an offset alignment. Please confirm which layout takes priority.",area:"Corridor A",daysOut:8},
-  {id:403,projectId:1,number:"RFI-002",subject:"Framing height at Control Room — confirm top-of-wall vs deck",status:"Answered",submitted:"2026-03-25",assigned:"Mason Williams",priority:"medium",specRef:"05 40 00",response:"Frame to deck. Refer to detail 4/A3.2. Full height framing with deflection track at top.",responseDate:"2026-03-27",question:"Control Room wall section shows 10'-0\" AFF but structural deck is at 12'-6\". Confirm if framing terminates at 10' with cripple or runs full height to deck.",area:"Control Room",daysOut:0},
-  {id:404,projectId:1,number:"RFI-003",subject:"ACT tile substitution — Armstrong 770 vs specified Ultima",status:"open",submitted:"2026-04-01",assigned:"Mason Williams",priority:"low",specRef:"09 51 00",costImpact:"$0.12/SF savings if approved",scheduleImpact:"None — lead times equal",question:"Armstrong Ultima HRC specified but 770 is available locally with same NRC/CAC ratings and shorter lead time. Request approval for substitution.",area:"Main Lab",daysOut:4},
-  {id:405,projectId:1,number:"RFI-004",subject:"Fire-rated shaft wall assembly at elevator — UL reference needed",status:"open",submitted:"2026-04-03",assigned:"Mason Williams",priority:"critical",specRef:"09 21 16",costImpact:"Potential $2,400 add for upgraded assembly",scheduleImpact:"3 day delay if current assembly rejected",question:"Elevator shaft requires 2-hour fire rating. Current spec calls for standard CH assembly but code review suggests SA assembly may be required. Please provide UL design number or confirm CH is acceptable.",area:"Elevator Shaft",daysOut:2},
-];
+// Cleared: prior demo RFIs referenced fictional GC contacts and placeholder impacts.
+// Real RFIs will be created as they are raised.
+const _demoRfis = [];
 
 // ── SEED: SUBMITTALS ──
 const _demoSubmittals = [
@@ -546,25 +536,17 @@ const _demoIncidents = [];
 
 const _demoToolboxTalks = [];
 
-const _demoDailyReports = [
-  // Endurance - Woodside Laboratory (projectId: 1) — seed daily reports for PM audit
-  {id:"dr-ws-1",projectId:1,date:"2026-04-03",foremanId:4,foremanName:"Antonio Ramirez",isOutdoor:false,temperature:"",conditions:"",teamPresent:[2,3,5,6,7],crewCount:5,totalHours:40,workPerformed:"Framed east wall of Main Lab. Hung 200 SF drywall on Control Room ceiling. Started demo of existing partition at Corridor A.",materialsReceived:"200 EA 3-5/8\" studs, 80 SHT 5/8\" Type X",equipmentOnSite:"Scissor lift, powder-actuated tool",visitors:"Mason Williams (GC super) — morning walkthrough",safetyIncident:"None",issues:"Pipe run blocking framing at Grid B — submitted RFI-001.",tomorrowPlan:"Continue Main Lab framing. Start corridor ceiling grid layout.",photos:[],reviewedBy:null,reviewedAt:null,submittedAt:"2026-04-03T15:30:00Z"},
-  {id:"dr-ws-2",projectId:1,date:"2026-04-04",foremanId:4,foremanName:"Antonio Ramirez",isOutdoor:false,temperature:"",conditions:"",teamPresent:[2,3,5,6,7,8],crewCount:6,totalHours:48,workPerformed:"Completed Main Lab east wall framing. Hung remaining drywall on Control Room ceiling. GC confirmed RFI-002 — frame to deck. Started elevator shaft layout.",materialsReceived:"None",equipmentOnSite:"Scissor lift",visitors:"None",safetyIncident:"None",issues:"Elevator shaft fire rating needs UL confirmation — submitted RFI-004.",tomorrowPlan:"Continue elevator shaft framing. Begin ACT grid at Storage Room A.",photos:[],reviewedBy:"Abner Aguilar",reviewedAt:"2026-04-04T17:00:00Z",submittedAt:"2026-04-04T15:45:00Z"},
-  {id:"dr-ws-3",projectId:1,date:"2026-04-05",foremanId:4,foremanName:"Antonio Ramirez",isOutdoor:false,temperature:"",conditions:"",teamPresent:[2,3,5,6],crewCount:4,totalHours:32,workPerformed:"Elevator shaft framing in progress. Started ACT grid layout at Storage Room A. Punch items from corridor walkthrough documented.",materialsReceived:"ACT grid runners + cross tees (delivery from EBC Yard)",equipmentOnSite:"Scissor lift, laser level",visitors:"None",safetyIncident:"None",issues:"ACT tile substitution pending — RFI-003 awaiting response.",tomorrowPlan:"Weekend — resume Monday with corridor framing and ACT install.",photos:[],reviewedBy:null,reviewedAt:null,submittedAt:"2026-04-05T15:15:00Z"},
-];
+// Cleared: prior demo daily reports referenced fictional foreman "Antonio Ramirez"
+// and placeholder crew IDs. Real daily reports will be submitted from the field.
+const _demoDailyReports = [];
 
 // ── SEED: TAKEOFFS ──
 const _demoTakeoffs = [];
 
 // ── SEED: PUNCH LIST ──
-const _demoPunchItems = [
-  {id:501,projectId:19,description:"Punch item #1 — overdue (reminder since 3/5/2026)",location:"",assignedTo:"Bo Ruiz",priority:"high",status:"open",photos:[],createdAt:"2026-03-05T00:00:00.000Z",completedAt:null,signedOffBy:null,signedOffAt:null},
-  {id:502,projectId:19,description:"Punch item #2 — overdue (reminder since 3/5/2026)",location:"",assignedTo:"Bo Ruiz",priority:"high",status:"open",photos:[],createdAt:"2026-03-05T00:00:00.000Z",completedAt:null,signedOffBy:null,signedOffAt:null},
-  // Endurance - Woodside Lab
-  {id:503,projectId:1,description:"Drywall joint cracking at Main Lab header — re-tape and skim",location:"Main Lab, Floor 1, Zone A",assignedTo:"Ricardo Mendez",priority:"high",status:"open",photos:[],createdAt:"2026-04-03T14:00:00.000Z",completedAt:null,signedOffBy:null,signedOffAt:null},
-  {id:504,projectId:1,description:"ACT grid misaligned at corridor junction — re-level 4 tiles",location:"Corridor A, Floor 1, Zone B",assignedTo:"Ricardo Mendez",priority:"medium",status:"open",photos:[],createdAt:"2026-04-03T14:15:00.000Z",completedAt:null,signedOffBy:null,signedOffAt:null},
-  {id:505,projectId:1,description:"Door frame not plumb — Conference Rm 201, shimmed but needs re-check",location:"Conference Room, Floor 2, Zone C",assignedTo:"Carlos Fuentes",priority:"high",status:"in-progress",photos:[],createdAt:"2026-04-02T11:00:00.000Z",completedAt:null,signedOffBy:null,signedOffAt:null},
-];
+// Cleared: prior demo punch items referenced fictional crew and placeholder locations.
+// Real punch items will be added from the field during walkthroughs.
+const _demoPunchItems = [];
 
 // ── OSHA CHECKLIST ──
 export const OSHA_CHECKLIST = [
@@ -598,22 +580,17 @@ export const COMPANY_DEFAULTS = {
 export const MS = ["Award","Submittal","Buyout","Framing","Board","Tape","Punch","CO"];
 
 // ── SEED: EMPLOYEES ──
+// Real EBC field crew only. Removed all fictional crew from prior demo seed.
+// Hourly rates, phones, and schedules intentionally blank — will be filled in
+// via Crew settings so they surface as Missing Data alerts on the dashboard.
+// IDs align with seedAccounts.js login IDs.
 const _demoEmployees = [
-  { id: 1, name: "Oscar Alvarez", role: "Foreman", pin: "1234", phone: "713-555-1001", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 42, active: true, email: "oscar@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null, trustedLead: false },
-  { id: 2, name: "Ricardo Mendez", role: "Journeyman", pin: "2345", phone: "713-555-1002", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 35, active: true, email: "ricardo@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
-  { id: 3, name: "Carlos Fuentes", role: "Apprentice", pin: "3456", phone: "713-555-1003", schedule: { start: "07:00", end: "15:30" }, hourlyRate: 22, active: true, email: "carlos@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
-  { id: 4, name: "Miguel Torres", role: "Journeyman", pin: "4567", phone: "713-555-1004", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 35, active: true, email: "miguel@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
-  { id: 5, name: "David Ramirez", role: "Foreman", pin: "5678", phone: "713-555-1005", schedule: { start: "06:00", end: "14:30" }, hourlyRate: 42, active: true, email: "david@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null, trustedLead: false },
-  { id: 6, name: "Luis Herrera", role: "Apprentice", pin: "6789", phone: "713-555-1006", schedule: { start: "07:00", end: "15:30" }, hourlyRate: 22, active: true, email: "luis@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
-  // Rigoberto is SALARIED and delivery-only (not a crew member). He does not
-  // receive an hourly wage, so `hourlyRate` is null — this keeps him out of the
-  // hourly-payroll pipe (PayrollSummary/QB IIF time export) and out of project
-  // labor cost aggregations. His compensation runs through salary payroll in
-  // QuickBooks, not through the field-time-clock workflow.
-  { id: 7, name: "Rigoberto Martinez", role: "Driver", pin: "7890", phone: "713-555-1007", schedule: { start: "07:00", end: "16:00" }, employmentType: "salary", hourlyRate: null, active: true, email: "rigoberto@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
-  { id: 9, name: "Antonio Hernandez", role: "Foreman", pin: "1009", phone: "713-555-1009", schedule: { start: "06:00", end: "14:30" }, hourlyRate: 42, active: true, email: "antonio@ebconstructors.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null, trustedLead: false },
-  { id: 10, name: "Jose Perez", role: "Journeyman", pin: "1110", phone: "713-555-1010", schedule: { start: "06:30", end: "15:00" }, hourlyRate: 35, active: true, email: "jose@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
-  { id: 11, name: "Fernando Reyes", role: "Apprentice", pin: "1111", phone: "713-555-1011", schedule: { start: "07:00", end: "15:30" }, hourlyRate: 22, active: true, email: "fernando@eaglesbros.com", password: "$2b$10$dOYF/6WdXW8/IAo9Z9Svceg52zk9nXA8aL4zOcsCAzwILkIEEeYAm", avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
+  { id: 7, name: "Sacramento Aguilar", role: "Safety / Delivery", pin: "1007", phone: "", schedule: { start: "", end: "" }, hourlyRate: null, active: true, email: "sacra@ebconstructors.com", password: null, avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
+  // Rigoberto is SALARIED and delivery-only (not a crew member). hourlyRate null
+  // keeps him out of hourly-payroll pipe and project labor cost aggregations.
+  { id: 8, name: "Rigoberto Martinez", role: "Driver", pin: "1008", phone: "", schedule: { start: "", end: "" }, employmentType: "salary", hourlyRate: null, active: true, email: "rigo@ebconstructors.com", password: null, avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
+  { id: 9, name: "Antonio Hernandez", role: "Foreman", pin: "1009", phone: "", schedule: { start: "", end: "" }, hourlyRate: null, active: true, email: "antonio@ebconstructors.com", password: null, avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null, trustedLead: false },
+  { id: 10, name: "Hazael Aguilar", role: "Crew", pin: "1010", phone: "", schedule: { start: "", end: "" }, hourlyRate: null, active: true, email: "haza@ebconstructors.com", password: null, avatar: null, notifications: { schedule: true, materials: true, deliveries: true }, defaultProjectId: null },
 ];
 
 // ── SEED: COMPANY LOCATIONS (geofence) ──
@@ -631,90 +608,19 @@ function _currentWeekStart() {
 const _ws = _currentWeekStart();
 
 // ── SEED: MATERIAL REQUESTS ──
-const _demoMaterialRequests = [
-  { id: "mr3", employeeId: 5, employeeName: "David Ramirez", projectId: 5, projectName: "Texas Heart Center - Baytown", material: "Lead-Lined Drywall (1/32\" Pb)", qty: 40, unit: "SHT", notes: "X-ray room — confirm lead spec with GC", status: "requested", requestedAt: new Date(Date.now() - 43200000).toISOString() },
-  { id: "mr4", employeeId: 9, employeeName: "Antonio Hernandez", projectId: 12, projectName: "Arch-Con - Sprouts Farmers Market", material: "Mud & Tape Compound (5gal)", qty: 10, unit: "BKT", notes: "", status: "approved", requestedAt: new Date(Date.now() - 259200000).toISOString(), approvedAt: new Date(Date.now() - 172800000).toISOString() },
-  // Endurance - Woodside Laboratory
-  {id:"mr-ws1",employeeId:1,employeeName:"Oscar Alvarez",projectId:1,projectName:"Endurance - Woodside Laboratory",material:"3-5/8\" Metal Studs 25ga (10ft)",qty:200,unit:"EA",notes:"Main Lab + Control Room framing. Deliver to east dock.",status:"approved",requestedAt:"2026-03-28T08:00:00Z",approvedAt:"2026-03-28T14:00:00Z"},
-  {id:"mr-ws2",employeeId:1,employeeName:"Oscar Alvarez",projectId:1,projectName:"Endurance - Woodside Laboratory",material:"5/8\" Type X Drywall (4x12)",qty:80,unit:"SHT",notes:"Control Room + Main Lab first layer",status:"in-transit",requestedAt:"2026-04-01T07:00:00Z",approvedAt:"2026-04-01T10:00:00Z",driverId:7},
-  {id:"mr-ws3",employeeId:1,employeeName:"Oscar Alvarez",projectId:1,projectName:"Endurance - Woodside Laboratory",material:"ACT Grid T-Bar 15/16\" (12ft)",qty:60,unit:"EA",notes:"Corridor A + Control Room ceilings. Need by 4/7.",status:"requested",requestedAt:"2026-04-03T12:00:00Z"},
-];
+// Cleared: prior demo requests referenced fictional crew members.
+// Real material requests will be created from the Foreman portal.
+const _demoMaterialRequests = [];
 
 // ── SEED: CREW SCHEDULE ──
-// Assigns foremen + team to active projects for the current week
-const _demoCrewSchedule = [
-  // Oscar Alvarez (Foreman id:1) → Endurance Woodside Lab (id:1) Mon-Thu + ROD Brunello Fri
-  { id: "cs1", employeeId: 1, projectId: 1, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: false }, hours: { start: "06:30", end: "15:00" }, task: "Metal Framing", trade: "Framing", floor: "1", zone: "A", areaId: "a1" },
-  { id: "cs2", employeeId: 2, projectId: 1, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: false }, hours: { start: "06:30", end: "15:00" }, task: "Drywall Hang", trade: "Board", floor: "1", zone: "A", areaId: "a2" },
-  { id: "cs3", employeeId: 3, projectId: 1, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: false }, hours: { start: "07:00", end: "15:30" }, task: "Demo & Framing Assist", trade: "Framing", floor: "1", zone: "A", areaId: "a7" },
-  { id: "cs6", employeeId: 1, projectId: 16, weekStart: _ws, days: { mon: false, tue: false, wed: false, thu: false, fri: true }, hours: { start: "06:30", end: "15:00" } },
-
-  // David Ramirez (Foreman id:5) → Texas Heart Center Baytown (id:5) + MH MC Single Plane IR (id:7)
-  { id: "cs10", employeeId: 5, projectId: 5, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: false, fri: false }, hours: { start: "06:00", end: "14:30" } },
-  { id: "cs11", employeeId: 4, projectId: 5, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: false, fri: false }, hours: { start: "06:30", end: "15:00" } },
-  { id: "cs12", employeeId: 6, projectId: 5, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: false, fri: false }, hours: { start: "07:00", end: "15:30" } },
-  { id: "cs13", employeeId: 5, projectId: 7, weekStart: _ws, days: { mon: false, tue: false, wed: false, thu: true, fri: true }, hours: { start: "06:00", end: "14:30" } },
-  { id: "cs14", employeeId: 4, projectId: 7, weekStart: _ws, days: { mon: false, tue: false, wed: false, thu: true, fri: true }, hours: { start: "06:30", end: "15:00" } },
-
-  // Antonio Hernandez (Foreman id:9) → Sprouts (id:12) + Our Lady of Guadalupe (id:11)
-  { id: "cs20", employeeId: 9, projectId: 12, weekStart: _ws, days: { mon: true, tue: true, wed: true, thu: true, fri: true }, hours: { start: "06:00", end: "14:30" } },
-  { id: "cs21", employeeId: 10, projectId: 12, weekStart: _ws, days: { mon: false, tue: false, wed: true, thu: true, fri: true }, hours: { start: "06:30", end: "15:00" } },
-  { id: "cs22", employeeId: 11, projectId: 12, weekStart: _ws, days: { mon: true, tue: true, wed: false, thu: false, fri: false }, hours: { start: "07:00", end: "15:30" } },
-  { id: "cs23", employeeId: 9, projectId: 11, weekStart: _ws, days: { mon: false, tue: false, wed: false, thu: false, fri: true }, hours: { start: "06:00", end: "14:30" } },
-];
+// Cleared: prior demo schedule assigned fictional crew IDs.
+// Real crew assignments will be made in the Scheduler.
+const _demoCrewSchedule = [];
 
 // ── SEED: TIME ENTRIES ──
-function _seedTimeEntries() {
-  const today = new Date();
-  const mon = new Date(today); mon.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Monday
-  const entries = [];
-  const mkEntry = (empId, empName, projId, projName, dayOffset, startH, startM, endH, endM, costCode) => {
-    const d = new Date(mon); d.setDate(mon.getDate() + dayOffset);
-    const cin = new Date(d); cin.setHours(startH, startM, 0, 0);
-    const cout = new Date(d); cout.setHours(endH, endM, 0, 0);
-    // Only include entries for days that have already passed
-    if (cout > today) return null;
-    const rawH = (cout - cin) / 3600000;
-    const totalHours = +(rawH >= 6 ? rawH - 0.5 : rawH).toFixed(2);
-    return {
-      id: `te_${empId}_${projId}_${dayOffset}`,
-      employeeId: empId, employeeName: empName,
-      projectId: projId, projectName: projName,
-      costCode: costCode || "misc",
-      clockIn: cin.toISOString(), clockOut: cout.toISOString(),
-      clockInLat: 29.73, clockInLng: -95.43, clockOutLat: 29.73, clockOutLng: -95.43,
-      totalHours, geofenceStatus: "inside",
-    };
-  };
-  // David's team on THC Baytown (id:5)
-  for (let d = 0; d < 3; d++) {
-    entries.push(mkEntry(5, "David Ramirez", 5, "Texas Heart Center - Baytown", d, 6, 0, 14, 30, "framing"));
-    entries.push(mkEntry(4, "Miguel Torres", 5, "Texas Heart Center - Baytown", d, 6, 30, 15, 0, "framing"));
-    entries.push(mkEntry(6, "Luis Herrera", 5, "Texas Heart Center - Baytown", d, 7, 0, 15, 30, "board"));
-  }
-  // David's team on MH MC Single Plane IR (id:7)
-  for (let d = 3; d < 5; d++) {
-    entries.push(mkEntry(5, "David Ramirez", 7, "MH MC Single Plane IR", d, 6, 0, 14, 30, "framing"));
-    entries.push(mkEntry(4, "Miguel Torres", 7, "MH MC Single Plane IR", d, 6, 30, 15, 0, "board"));
-  }
-  // Antonio's team on Sprouts (id:12)
-  for (let d = 0; d < 5; d++) {
-    entries.push(mkEntry(9, "Antonio Hernandez", 12, "Arch-Con - Sprouts Farmers Market", d, 6, 0, 14, 30, "framing"));
-  }
-  // Oscar's team on Endurance Woodside Lab (id:1) — last week of March + first days of April
-  // Covers the test question: "March margin for Project 1 broken out by cost type"
-  for (let d = -7; d < 0; d++) {
-    entries.push(mkEntry(1, "Oscar Alvarez", 1, "Endurance - Woodside Laboratory", d, 6, 30, 15, 0, "framing"));
-    entries.push(mkEntry(2, "Ricardo Mendez", 1, "Endurance - Woodside Laboratory", d, 6, 30, 15, 0, "framing"));
-    entries.push(mkEntry(3, "Carlos Fuentes", 1, "Endurance - Woodside Laboratory", d, 7, 0, 15, 30, "demo"));
-  }
-  for (let d = 0; d < 2; d++) {
-    entries.push(mkEntry(1, "Oscar Alvarez", 1, "Endurance - Woodside Laboratory", d, 6, 30, 15, 0, "board"));
-    entries.push(mkEntry(2, "Ricardo Mendez", 1, "Endurance - Woodside Laboratory", d, 6, 30, 15, 0, "board"));
-  }
-  return entries.filter(Boolean);
-}
-const _demoTimeEntries = _seedTimeEntries();
+// Cleared: prior demo time entries referenced fictional crew.
+// Real time entries are created via Time Clock (foreman + crew).
+const _demoTimeEntries = [];
 
 // ── SEED: AREAS / ZONES ──
 // Area-based work model — ties production, punch, crew assignments to physical locations
@@ -732,20 +638,14 @@ const _demoAreas = [
 
 // ── SEED: PRODUCTION LOGS ──
 // Daily production entries — foreman or crew enters what was installed
-const _demoProductionLogs = [
-  {id:"pl1",projectId:1,areaId:"a1",date:"2026-03-31",trade:"Metal Framing",unit:"LF",qtyInstalled:180,laborHours:16,crewSize:2,enteredBy:"Oscar Alvarez",enteredAt:"2026-03-31T15:00:00Z",notes:"Started Main Lab framing. East wall complete."},
-  {id:"pl2",projectId:1,areaId:"a1",date:"2026-04-01",trade:"Metal Framing",unit:"LF",qtyInstalled:210,laborHours:16,crewSize:2,enteredBy:"Oscar Alvarez",enteredAt:"2026-04-01T15:10:00Z",notes:"North + south walls framed. Header detail at window."},
-  {id:"pl3",projectId:1,areaId:"a2",date:"2026-04-01",trade:"Metal Framing",unit:"LF",qtyInstalled:320,laborHours:8,crewSize:1,enteredBy:"Oscar Alvarez",enteredAt:"2026-04-01T15:15:00Z",notes:"Control Room framing complete."},
-  {id:"pl4",projectId:1,areaId:"a2",date:"2026-04-02",trade:"Drywall",unit:"SF",qtyInstalled:640,laborHours:16,crewSize:2,enteredBy:"Oscar Alvarez",enteredAt:"2026-04-02T15:20:00Z",notes:"Control Room board hung — both sides, one layer each."},
-  {id:"pl5",projectId:1,areaId:"a1",date:"2026-04-03",trade:"Drywall",unit:"SF",qtyInstalled:480,laborHours:16,crewSize:2,enteredBy:"Oscar Alvarez",enteredAt:"2026-04-03T15:00:00Z",notes:"Main Lab east wall + south wall board hung."},
-];
+// Cleared: prior demo logs referenced fictional "Oscar Alvarez".
+// Real production logs created from the field.
+const _demoProductionLogs = [];
 
 // ── SEED: DECISION / COMMUNICATION LOG ──
-const _demoDecisionLog = [
-  {id:"dl1",projectId:1,date:"2026-04-01",type:"gc-directive",description:"Mason Williams (Endurance Super) directed containment wall build-out at Main Lab east wall due to unforeseen asbestos. Verbal direction, documented immediately.",attributedTo:"Mason Williams",recordedBy:"Oscar Alvarez",recordedAt:"2026-04-01T09:20:00Z"},
-  {id:"dl2",projectId:1,date:"2026-04-02",type:"decision",description:"Hold framing in Corridor A pending revised MEP routing. GC to issue updated drawings by 4/7.",attributedTo:"Christina Zube Volkers",recordedBy:"Abner Aguilar",recordedAt:"2026-04-02T14:00:00Z"},
-  {id:"dl3",projectId:1,date:"2026-04-03",type:"commitment",description:"GC committed to providing revised fire-stopping details for Main Lab header by end of week. EBC to hold tape & finish until received.",attributedTo:"Mason Williams",recordedBy:"Emmanuel Aguilar",recordedAt:"2026-04-03T10:30:00Z"},
-];
+// Cleared: prior demo entries referenced fictional GC contacts and crew.
+// Real decision log entries captured from project conversations.
+const _demoDecisionLog = [];
 
 // ── CONDITIONAL EXPORTS ──
 // Projects & employees ALWAYS load (real EBC data), other seed data is demo-only
@@ -797,234 +697,44 @@ export const COST_CODES = ["framing", "board", "tape", "finish", "ACT", "insulat
 
 // ── VENDOR MASTER ───────────────────────────────────────────
 // NOTE: Use `is1099` as the canonical field. Legacy `is1099Eligible` removed.
-export const initVendors = [
-  { id: 1, name: "ABC Supply Co", address: "4521 Dacoma St, Houston, TX 77092", phone: "713-555-0101", email: "orders@abcsupply.com", paymentTerms: "Net 30", defaultCostType: "material", w9Status: "received", is1099: false, status: "active", audit: [] },
-  { id: 2, name: "L&W Supply", address: "8900 Westpark Dr, Houston, TX 77063", phone: "713-555-0202", email: "sales@lwsupply.com", paymentTerms: "Net 30", defaultCostType: "material", w9Status: "received", is1099: false, status: "active", audit: [] },
-  { id: 3, name: "Tape & Texture Inc", dba: "T&T Drywall Services", phone: "281-555-0303", paymentTerms: "Net 15", defaultCostType: "subcontractor", w9Status: "received", is1099: true, status: "active", audit: [] },
-  { id: 4, name: "Metro Scaffold Rental", phone: "832-555-0404", paymentTerms: "Due on Receipt", defaultCostType: "equipment", w9Status: "missing", is1099: true, status: "active", audit: [] },
-  { id: 5, name: "Houston Steel Studs", address: "2200 Navigation Blvd, Houston, TX 77003", phone: "713-555-0505", email: "info@houstonsteel.com", paymentTerms: "Net 30", defaultCostType: "material", w9Status: "received", is1099: false, status: "active", audit: [] },
-];
+// Cleared: prior placeholder vendors (555-prefix fictional phones) removed.
+// Real vendors will be added via the AP tab as bills come in.
+export const initVendors = [];
 
 // ── AP BILLS (ACCOUNTS PAYABLE) ─────────────────────────────
-// NOTE: `phase` is required for budget variance tracking (material/sub budget rows match on phase).
-// `commitmentId` links bills to POs/subcontracts for live commitment rollup.
-export const initAPBills = [
-  { id: 1, vendorId: 1, projectId: 2, costType: "material", phase: "board", invoiceNumber: "INV-88421", date: "2026-03-15", dueDate: "2026-04-14", amount: 8450, description: "Drywall board delivery - Brunello Cucinelli", status: "approved", approvedBy: "Emmanuel Aguilar", approvedAt: "2026-03-16", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-15T13:45:00Z", commitmentId: 3, audit: [] },
-  { id: 2, vendorId: 5, projectId: 3, costType: "material", phase: "framing", invoiceNumber: "HSS-2026-0312", date: "2026-03-12", dueDate: "2026-04-11", amount: 6200, description: "Steel studs and track - BSLMC Cath Labs", status: "entered", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-12T10:20:00Z", commitmentId: 2, audit: [] },
-  { id: 3, vendorId: 3, projectId: 2, costType: "subcontractor", phase: "tape", invoiceNumber: "TT-2026-041", date: "2026-03-28", dueDate: "2026-04-12", amount: 12500, description: "Tape and texture scope - Brunello Cucinelli", status: "entered", retainageRate: 10, retainageAmount: 1250, netPayable: 11250, attachments: [], lienWaiverStatus: "conditional_received", lienWaiverDate: "2026-03-30", createdAt: "2026-03-28T15:10:00Z", commitmentId: 1, audit: [] },
-  { id: 4, vendorId: 5, projectId: 1, costType: "material", phase: "framing", invoiceNumber: "HSS-2026-0320", date: "2026-03-20", dueDate: "2026-04-19", amount: 4200, description: "Metal studs and track - Woodside Lab framing", status: "approved", approvedBy: "Emmanuel Aguilar", approvedAt: "2026-03-21T10:00:00Z", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-20T14:30:00Z", commitmentId: 4, audit: [] },
-  { id: 5, vendorId: 1, projectId: 1, costType: "material", phase: "board", invoiceNumber: "ABC-48821", date: "2026-03-25", dueDate: "2026-04-24", amount: 3850, description: "Drywall board - Woodside Lab", status: "approved", approvedBy: "Emmanuel Aguilar", approvedAt: "2026-03-26T09:15:00Z", retainageRate: 0, attachments: [], lienWaiverStatus: "not_required", createdAt: "2026-03-25T11:00:00Z", audit: [] },
-  { id: 6, vendorId: 3, projectId: 1, costType: "subcontractor", phase: "tape", invoiceNumber: "TT-2026-055", date: "2026-04-02", dueDate: "2026-04-17", amount: 6500, description: "Tape and finish scope - Woodside Lab", status: "entered", retainageRate: 10, retainageAmount: 650, netPayable: 5850, attachments: [], lienWaiverStatus: "missing", createdAt: "2026-04-02T16:00:00Z", commitmentId: 5, audit: [] },
-];
+// Cleared: prior demo bills referenced fictional vendors/invoice numbers.
+// Real AP bills will be entered in the AP tab as vendor invoices arrive.
+export const initAPBills = [];
 
 // ── ACCOUNTING PERIODS ──────────────────────────────────────
-export const initPeriods = [
-  { period: "2026-01", status: "closed", closedAt: "2026-02-05T17:00:00Z", closedBy: "Emmanuel Aguilar" },
-  { period: "2026-02", status: "closed", closedAt: "2026-03-04T16:30:00Z", closedBy: "Emmanuel Aguilar" },
-  { period: "2026-03", status: "open" },
-];
+// Cleared: prior demo close dates were fictional. First real period
+// close will create the authoritative record.
+export const initPeriods = [];
 
 // ── ACCRUALS ──────────────────────────────────────────────────
-export const initAccruals = [
-  { id: 1, type: "accrual", accrualType: "labor_stub", projectId: 2, costType: "labor", amount: 3200, period: "2026-03", description: "Labor accrual — last 3 days of March (pay period crosses into April)", autoReverse: true, reversalPeriod: "2026-04", status: "posted", createdAt: "2026-03-31T17:00:00Z", createdBy: "Emmanuel Aguilar", audit: [] },
-  { id: 2, type: "accrual", accrualType: "sub_accrual", projectId: 2, costType: "subcontractor", amount: 5000, period: "2026-03", description: "T&T Drywall tape/texture — work complete, invoice expected April", autoReverse: true, reversalPeriod: "2026-04", status: "posted", createdAt: "2026-03-31T17:00:00Z", createdBy: "Emmanuel Aguilar", audit: [] },
-  { id: 3, type: "accrual", accrualType: "labor_stub", projectId: 1, costType: "labor", amount: 2100, period: "2026-03", description: "Labor accrual — last 2 days of March for Woodside Lab crew", autoReverse: true, reversalPeriod: "2026-04", status: "posted", createdAt: "2026-03-31T16:00:00Z", createdBy: "Emmanuel Aguilar", audit: [] },
-];
+// Cleared: prior demo accruals were fictional month-end stubs.
+// Real accruals are created in the Accounting tab when actual cutoff occurs.
+export const initAccruals = [];
 
 // ── COMMITMENTS (SUBCONTRACTS & PURCHASE ORDERS) ──────────────
-export const initCommitments = [
-  { id: 1, type: "subcontract", projectId: 2, vendorId: 3, phase: "tape", costType: "subcontractor", originalAmount: 18000, changeOrders: 0, revisedAmount: 18000, invoicedToDate: 12500, remainingCommitment: 5500, description: "Tape & Texture scope — Brunello Cucinelli", status: "active", audit: [] },
-  { id: 2, type: "purchase_order", projectId: 3, vendorId: 5, phase: "framing", costType: "material", originalAmount: 14000, changeOrders: 0, revisedAmount: 14000, invoicedToDate: 6200, remainingCommitment: 7800, description: "Steel studs and track — BSLMC Cath Labs", status: "active", audit: [] },
-  { id: 3, type: "purchase_order", projectId: 2, vendorId: 1, phase: "board", costType: "material", originalAmount: 22000, changeOrders: 2500, revisedAmount: 24500, invoicedToDate: 8450, remainingCommitment: 16050, description: "Drywall board supply — Brunello Cucinelli", status: "active", audit: [] },
-  { id: 4, type: "purchase_order", projectId: 1, vendorId: 5, phase: "framing", costType: "material", originalAmount: 12000, changeOrders: 0, revisedAmount: 12000, invoicedToDate: 4200, remainingCommitment: 7800, description: "Metal framing material - Woodside Lab", status: "active", audit: [] },
-  { id: 5, type: "subcontract", projectId: 1, vendorId: 3, phase: "tape", costType: "subcontractor", originalAmount: 14000, changeOrders: 0, revisedAmount: 14000, invoicedToDate: 6500, remainingCommitment: 7500, description: "Tape, finish, texture scope - Woodside Lab", status: "active", audit: [] },
-];
+// Cleared: prior demo commitments referenced fictional vendors.
+// Real POs/subcontracts will be entered in the Commitments tab as they're issued.
+export const initCommitments = [];
 
 // ── PROJECT BUDGETS (by phase + cost type) ────────────────────
-export const initBudgets = {
-  1: [ // Endurance Woodside Laboratory — $74,800 contract
-    { phase: "demo", costType: "labor", budgetAmount: 4500 },
-    { phase: "framing", costType: "labor", budgetAmount: 12000 },
-    { phase: "framing", costType: "material", budgetAmount: 8500 },
-    { phase: "board", costType: "labor", budgetAmount: 10500 },
-    { phase: "board", costType: "material", budgetAmount: 9200 },
-    { phase: "tape", costType: "labor", budgetAmount: 8000 },
-    { phase: "finish", costType: "labor", budgetAmount: 5200 },
-    { phase: "ACT", costType: "labor", budgetAmount: 3800 },
-    { phase: "ACT", costType: "material", budgetAmount: 4500 },
-  ],
-  2: [ // Brunello Cucinelli
-    { phase: "framing", costType: "labor", budgetAmount: 45000 },
-    { phase: "framing", costType: "material", budgetAmount: 28000 },
-    { phase: "board", costType: "labor", budgetAmount: 35000 },
-    { phase: "board", costType: "material", budgetAmount: 24000 },
-    { phase: "tape", costType: "subcontractor", budgetAmount: 20000 },
-    { phase: "finish", costType: "labor", budgetAmount: 42000 },
-    { phase: "ACT", costType: "labor", budgetAmount: 18000 },
-    { phase: "ACT", costType: "material", budgetAmount: 15000 },
-  ],
-  3: [ // BSLMC Cath Labs
-    { phase: "framing", costType: "labor", budgetAmount: 22000 },
-    { phase: "framing", costType: "material", budgetAmount: 14000 },
-    { phase: "board", costType: "labor", budgetAmount: 18000 },
-    { phase: "board", costType: "material", budgetAmount: 12000 },
-    { phase: "finish", costType: "labor", budgetAmount: 15000 },
-  ],
-  // Auto-budget for Texas Heart Center Baytown — $54,200 contract → ~70% cost target
-  5: [
-    { phase: "framing", costType: "labor", budgetAmount: 8130 },
-    { phase: "framing", costType: "material", budgetAmount: 4336 },
-    { phase: "board", costType: "labor", budgetAmount: 9756 },
-    { phase: "board", costType: "material", budgetAmount: 5420 },
-    { phase: "tape", costType: "labor", budgetAmount: 6504 },
-    { phase: "finish", costType: "labor", budgetAmount: 2710 },
-    { phase: "ACT", costType: "labor", budgetAmount: 2168 },
-    { phase: "ACT", costType: "material", budgetAmount: 1626 },
-  ],
-  // Auto-budget for MH MC Single Plane IR — $33,000 contract → ~70% cost target
-  7: [
-    { phase: "framing", costType: "labor", budgetAmount: 4950 },
-    { phase: "framing", costType: "material", budgetAmount: 2640 },
-    { phase: "board", costType: "labor", budgetAmount: 5940 },
-    { phase: "board", costType: "material", budgetAmount: 3300 },
-    { phase: "tape", costType: "labor", budgetAmount: 3960 },
-    { phase: "finish", costType: "labor", budgetAmount: 1650 },
-    { phase: "ACT", costType: "labor", budgetAmount: 1320 },
-    { phase: "ACT", costType: "material", budgetAmount: 990 },
-  ],
-  // Auto-budget for Our Lady of Guadalupe Restroom — $34,700 contract → ~70% cost target
-  11: [
-    { phase: "framing", costType: "labor", budgetAmount: 5205 },
-    { phase: "framing", costType: "material", budgetAmount: 2776 },
-    { phase: "board", costType: "labor", budgetAmount: 6246 },
-    { phase: "board", costType: "material", budgetAmount: 3470 },
-    { phase: "tape", costType: "labor", budgetAmount: 4164 },
-    { phase: "finish", costType: "labor", budgetAmount: 1735 },
-    { phase: "ACT", costType: "labor", budgetAmount: 1388 },
-    { phase: "ACT", costType: "material", budgetAmount: 1041 },
-  ],
-  // Auto-budget for Arch-Con Sprouts Farmers Market — $215,100 contract → ~70% cost target
-  12: [
-    { phase: "framing", costType: "labor", budgetAmount: 32265 },
-    { phase: "framing", costType: "material", budgetAmount: 17208 },
-    { phase: "board", costType: "labor", budgetAmount: 38718 },
-    { phase: "board", costType: "material", budgetAmount: 21510 },
-    { phase: "tape", costType: "labor", budgetAmount: 25812 },
-    { phase: "finish", costType: "labor", budgetAmount: 10755 },
-    { phase: "ACT", costType: "labor", budgetAmount: 8604 },
-    { phase: "ACT", costType: "material", budgetAmount: 6453 },
-  ],
-  // Auto-budget for ROD Brunello Cucinelli Expansion (Landlord) — $49,900 contract → ~70% cost target
-  16: [
-    { phase: "framing", costType: "labor", budgetAmount: 7485 },
-    { phase: "framing", costType: "material", budgetAmount: 3992 },
-    { phase: "board", costType: "labor", budgetAmount: 8982 },
-    { phase: "board", costType: "material", budgetAmount: 4990 },
-    { phase: "tape", costType: "labor", budgetAmount: 5988 },
-    { phase: "finish", costType: "labor", budgetAmount: 2495 },
-    { phase: "ACT", costType: "labor", budgetAmount: 1996 },
-    { phase: "ACT", costType: "material", budgetAmount: 1497 },
-  ],
-  // Auto-budget for Escapology Sugar Land — $116,800 contract → ~70% cost target
-  17: [
-    { phase: "framing", costType: "labor", budgetAmount: 17520 },
-    { phase: "framing", costType: "material", budgetAmount: 9344 },
-    { phase: "board", costType: "labor", budgetAmount: 21024 },
-    { phase: "board", costType: "material", budgetAmount: 11680 },
-    { phase: "tape", costType: "labor", budgetAmount: 14016 },
-    { phase: "finish", costType: "labor", budgetAmount: 5840 },
-    { phase: "ACT", costType: "labor", budgetAmount: 4672 },
-    { phase: "ACT", costType: "material", budgetAmount: 3504 },
-  ],
-  // Auto-budget for Spring Cypress Oral Surgeons — $155,100 contract → ~70% cost target
-  18: [
-    { phase: "framing", costType: "labor", budgetAmount: 23265 },
-    { phase: "framing", costType: "material", budgetAmount: 12408 },
-    { phase: "board", costType: "labor", budgetAmount: 27918 },
-    { phase: "board", costType: "material", budgetAmount: 15510 },
-    { phase: "tape", costType: "labor", budgetAmount: 18612 },
-    { phase: "finish", costType: "labor", budgetAmount: 7755 },
-    { phase: "ACT", costType: "labor", budgetAmount: 6204 },
-    { phase: "ACT", costType: "material", budgetAmount: 4653 },
-  ],
-  // Auto-budget for PPER Missouri City — $22,800 contract → ~70% cost target
-  19: [
-    { phase: "framing", costType: "labor", budgetAmount: 3420 },
-    { phase: "framing", costType: "material", budgetAmount: 1824 },
-    { phase: "board", costType: "labor", budgetAmount: 4104 },
-    { phase: "board", costType: "material", budgetAmount: 2280 },
-    { phase: "tape", costType: "labor", budgetAmount: 2736 },
-    { phase: "finish", costType: "labor", budgetAmount: 1140 },
-    { phase: "ACT", costType: "labor", budgetAmount: 912 },
-    { phase: "ACT", costType: "material", budgetAmount: 684 },
-  ],
-};
+// Cleared: prior auto-budgets were ~70% contract placeholders.
+// Real budgets must be entered per project from the Budget tab
+// (triggers Missing Data alert on dashboard until populated).
+export const initBudgets = {};
 
 // ── SEED: SOV (Schedule of Values) ──
 // SOV line items define the billing breakdown per project
-export const initSovItems = [
-  // Sprouts Farmers Market — $215,100 contract broken into scope lines
-  { id: "sov-1", projectId: 12, lineNumber: 1, description: "General Conditions", scheduledValue: 10755 },
-  { id: "sov-2", projectId: 12, lineNumber: 2, description: "Metal Framing", scheduledValue: 49473 },
-  { id: "sov-3", projectId: 12, lineNumber: 3, description: "Drywall", scheduledValue: 60228 },
-  { id: "sov-4", projectId: 12, lineNumber: 4, description: "ACT Ceilings", scheduledValue: 15057 },
-  { id: "sov-5", projectId: 12, lineNumber: 5, description: "Tape & Finish", scheduledValue: 36567 },
-  { id: "sov-6", projectId: 12, lineNumber: 6, description: "Doors & Hardware", scheduledValue: 21510 },
-  { id: "sov-7", projectId: 12, lineNumber: 7, description: "Mobilization / Cleanup", scheduledValue: 21510 },
-  // Escapology Sugar Land — $116,800 contract
-  { id: "sov-8", projectId: 17, lineNumber: 1, description: "Demo", scheduledValue: 11680 },
-  { id: "sov-9", projectId: 17, lineNumber: 2, description: "Metal Framing", scheduledValue: 26864 },
-  { id: "sov-10", projectId: 17, lineNumber: 3, description: "Drywall", scheduledValue: 32704 },
-  { id: "sov-11", projectId: 17, lineNumber: 4, description: "ACT Ceilings", scheduledValue: 8176 },
-  { id: "sov-12", projectId: 17, lineNumber: 5, description: "Tape & Finish", scheduledValue: 19856 },
-  { id: "sov-13", projectId: 17, lineNumber: 6, description: "Doors & Hardware", scheduledValue: 11680 },
-  { id: "sov-14", projectId: 17, lineNumber: 7, description: "Cleanup / Punch", scheduledValue: 5840 },
-];
+// Cleared: prior demo lines had placeholder scheduledValue amounts.
+// Real SOV created per project from the SOV tab (triggers Missing Data alert).
+export const initSovItems = [];
 
 // ── SEED: PAY APPLICATIONS ──
 // Each pay app = one billing period snapshot with per-line % complete
-export const initPayApps = [
-  // Escapology — 3 billing periods (project is 85% complete)
-  {
-    id: "pa-1", projectId: 17, periodNumber: 1, periodDate: "2025-12-31",
-    status: "paid", retainageRate: 10, notes: "Initial mobilization + demo",
-    lines: [
-      { sovItemId: "sov-8", previousPercent: 0, currentPercent: 100, storedMaterial: 0 },
-      { sovItemId: "sov-9", previousPercent: 0, currentPercent: 25, storedMaterial: 0 },
-      { sovItemId: "sov-10", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
-      { sovItemId: "sov-11", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
-      { sovItemId: "sov-12", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
-      { sovItemId: "sov-13", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
-      { sovItemId: "sov-14", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
-    ],
-    createdAt: "2025-12-28T10:00:00Z", submittedAt: "2025-12-30T14:00:00Z",
-  },
-  {
-    id: "pa-2", projectId: 17, periodNumber: 2, periodDate: "2026-01-31",
-    status: "paid", retainageRate: 10, notes: "Framing + board started",
-    lines: [
-      { sovItemId: "sov-8", previousPercent: 100, currentPercent: 100, storedMaterial: 0 },
-      { sovItemId: "sov-9", previousPercent: 25, currentPercent: 75, storedMaterial: 0 },
-      { sovItemId: "sov-10", previousPercent: 0, currentPercent: 30, storedMaterial: 0 },
-      { sovItemId: "sov-11", previousPercent: 0, currentPercent: 10, storedMaterial: 0 },
-      { sovItemId: "sov-12", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
-      { sovItemId: "sov-13", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
-      { sovItemId: "sov-14", previousPercent: 0, currentPercent: 0, storedMaterial: 0 },
-    ],
-    createdAt: "2026-01-28T10:00:00Z", submittedAt: "2026-01-30T14:00:00Z",
-  },
-  {
-    id: "pa-3", projectId: 17, periodNumber: 3, periodDate: "2026-02-28",
-    status: "submitted", retainageRate: 10, notes: "Framing complete, board + tape in progress",
-    lines: [
-      { sovItemId: "sov-8", previousPercent: 100, currentPercent: 100, storedMaterial: 0 },
-      { sovItemId: "sov-9", previousPercent: 75, currentPercent: 100, storedMaterial: 0 },
-      { sovItemId: "sov-10", previousPercent: 30, currentPercent: 80, storedMaterial: 0 },
-      { sovItemId: "sov-11", previousPercent: 10, currentPercent: 60, storedMaterial: 0 },
-      { sovItemId: "sov-12", previousPercent: 0, currentPercent: 50, storedMaterial: 0 },
-      { sovItemId: "sov-13", previousPercent: 0, currentPercent: 40, storedMaterial: 0 },
-      { sovItemId: "sov-14", previousPercent: 0, currentPercent: 10, storedMaterial: 0 },
-    ],
-    createdAt: "2026-02-25T10:00:00Z", submittedAt: "2026-02-27T14:00:00Z",
-  },
-];
+// Cleared: prior demo pay apps used placeholder periods and % complete values.
+// Real pay apps are built from SOV once entered.
+export const initPayApps = [];

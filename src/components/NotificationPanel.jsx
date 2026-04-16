@@ -1,5 +1,5 @@
 import { useState, Fragment } from "react";
-import { BarChart2, Building2, HardHat, Bell, CheckCircle, Award, Mail, AlertTriangle, Edit, Clipboard, TrendingDown, FileText, DollarSign, Package, Clock } from "lucide-react";
+import { BarChart2, Building2, HardHat, Bell, CheckCircle, Award, Mail, AlertTriangle, Edit, Clipboard, TrendingDown, FileText, DollarSign, Package, Clock, Users, AlertCircle } from "lucide-react";
 
 const ALERT_ICONS = {
   award: <Award size={16} />,
@@ -12,6 +12,7 @@ const ALERT_ICONS = {
   dollar: <DollarSign size={16} />,
   package: <Package size={16} />,
   clock: <Clock size={16} />,
+  users: <Users size={16} />,
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -26,12 +27,14 @@ const URGENCY_COLORS = {
 };
 
 const CATEGORY_INFO = {
+  data_gaps: { label: "Missing Data", icon: <AlertCircle size={14} /> },
   bids: { label: "Bid Pipeline", icon: <BarChart2 size={14} /> },
   projects: { label: "Project Management", icon: <Building2 size={14} /> },
   team: { label: "Crew / HR", icon: <HardHat size={14} /> },
 };
 
-const CATEGORY_ORDER = ["bids", "projects", "team"];
+// Missing Data shown first — user can fill gaps with one click
+const CATEGORY_ORDER = ["data_gaps", "bids", "projects", "team"];
 
 export function NotificationPanel({ grouped, badgeCount, dismissAlert, dismissAll, onClose, onNav }) {
   const [collapsed, setCollapsed] = useState({});

@@ -30,6 +30,13 @@ function calcRoom(room, assemblies) {
 }
 
 function calcSummary(tk, assemblies) {
+  // Texas commercial subcontracting convention:
+  // - Waste applies to MATERIAL only (labor doesn't have waste)
+  // - Overhead and profit apply to base cost (pre-tax)
+  // - Sales tax is a pass-through on materials, added LAST, not subject to OH/profit markup
+  // - Bug fixed from prior version that (a) double-counted waste when computing tax base,
+  //   and (b) cascaded OH/profit on top of tax — inflating bids with phantom margin
+  //   on what is legally a pass-through cost.
   let matSub = 0, labSub = 0;
   (tk.rooms || []).forEach((rm) => {
     const c = calcRoom(rm, assemblies);
@@ -37,15 +44,21 @@ function calcSummary(tk, assemblies) {
     labSub += c.lab;
   });
   const subtotal = matSub + labSub;
-  const wasteAmt = subtotal * ((tk.wastePct || 0) / 100);
-  const netCost = subtotal + wasteAmt;
-  const taxAmt = matSub * (1 + (tk.wastePct || 0) / 100) * ((tk.taxRate || 0) / 100);
+  const wasteAmt = matSub * ((tk.wastePct || 0) / 100);           // waste on MATERIAL only
+  const matWithWaste = matSub + wasteAmt;
+  const burdenPct = tk.laborBurdenPct ?? 0;                         // labor burden (optional, defaults 0 for backward compat)
+  const burdenAmt = labSub * (burdenPct / 100);
+  const labWithBurden = labSub + burdenAmt;
+  const netCost = matWithWaste + labWithBurden;                     // true cost pre-markup
+  const overheadAmt = netCost * ((tk.overheadPct || 0) / 100);      // OH on pre-tax cost
+  const costWithOverhead = netCost + overheadAmt;
+  const profitAmt = costWithOverhead * ((tk.profitPct || 0) / 100); // profit on cost+OH
+  const costWithProfit = costWithOverhead + profitAmt;
+  const taxAmt = matWithWaste * ((tk.taxRate || 0) / 100);         // sales tax on material+waste, added AT THE END
+  const grandTotal = costWithProfit + taxAmt;
+  // costWithTax kept for backward-compat rendering; now means "cost before markup, tax-inclusive" (rarely used)
   const costWithTax = netCost + taxAmt;
-  const overheadAmt = costWithTax * ((tk.overheadPct || 0) / 100);
-  const costWithOverhead = costWithTax + overheadAmt;
-  const profitAmt = costWithOverhead * ((tk.profitPct || 0) / 100);
-  const grandTotal = costWithOverhead + profitAmt;
-  return { matSub, labSub, subtotal, wasteAmt, netCost, taxAmt, costWithTax, overheadAmt, costWithOverhead, profitAmt, grandTotal };
+  return { matSub, labSub, subtotal, wasteAmt, burdenAmt, labWithBurden, matWithWaste, netCost, taxAmt, costWithTax, overheadAmt, costWithOverhead, profitAmt, costWithProfit, grandTotal };
 }
 
 /* ── main export ─────────────────────────────────────────────── */

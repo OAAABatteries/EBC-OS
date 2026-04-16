@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════
-//  EBC-OS · AI Plan Analyzer
-//  Extracts scope from construction PDFs using pdfjs + Claude API
+//  EBC-OS · Plan Analyzer (local-only as of Apr 2026)
+//  Extracts scope from construction PDFs using pdfjs — NO external AI.
+//  Per user rule (feedback_no_external_ai.md): "No external AI APIs.
+//  All parsing must be local/heuristic." External Claude calls killed.
 // ═══════════════════════════════════════════════════════════════
-
-import { callClaude } from "../utils/api.js";
 
 /**
  * Extract text from all pages of a pdfjs document.
@@ -29,72 +29,123 @@ export async function extractPdfText(pdfDoc) {
  * @param {Array} assemblies - EBC assembly library [{code, name, category, unit}]
  * @returns {Promise<Object>} Structured analysis result
  */
-export async function analyzePlans(apiKey, planText, assemblies) {
-  const asmList = assemblies.map(a => `${a.code}: ${a.name} (${a.unit})`).join("\n");
+/**
+ * Local heuristic plan analysis — no external AI, no API keys.
+ * Extracts project metadata, wall types, and scope hints using regex/pattern matching
+ * against the plan text that pdfjs extracted locally.
+ *
+ * Signature preserved for backward compat: first arg (apiKey) is ignored.
+ */
+export async function analyzePlans(_apiKey, planText, assemblies) {
+  const text = String(planText || "");
+  const norm = text.replace(/\s+/g, " ");
 
-  // Truncate to avoid token limits — focus on the most important pages
-  const truncated = planText.slice(0, 12000);
+  // ── Project metadata ──
+  const project = {
+    name: extract(norm, /(?:project\s*name|project|project\s*title)\s*[:\-]?\s*([A-Z][A-Za-z0-9\s,.\-&]{4,80})/i) || "",
+    address: extract(norm, /\b(\d{2,5}\s+[NSEW]?\.?\s*[A-Z][A-Za-z\s]+(?:Street|St\.?|Ave\.?|Avenue|Blvd\.?|Boulevard|Road|Rd\.?|Drive|Dr\.?|Way|Lane|Ln\.?|Pkwy\.?|Parkway)[^\n,]{0,60})/i) || "",
+    architect: extract(norm, /(?:architect|prepared\s*by)\s*[:\-]?\s*([A-Z][A-Za-z0-9\s,.&\-']{3,60})/i) || "",
+    gc: extract(norm, /(?:general\s*contractor|gc|contractor)\s*[:\-]\s*([A-Z][A-Za-z0-9\s,.&\-']{3,60})/i),
+    size_sf: (() => { const m = /(\d{1,3}(?:,\d{3})*|\d+)\s*(?:SF|sq\.?\s*ft|square\s*feet)/i.exec(norm); return m ? Number(m[1].replace(/,/g, "")) : null; })(),
+    occupancy: extract(norm, /(?:occupancy|occ\.?\s*type|occupancy\s*group)\s*[:\-]?\s*([A-Z][\w\s\-\/,]{2,40})/i) || "",
+    building_type: extract(norm, /(?:building\s*type|construction\s*type)\s*[:\-]?\s*([A-Z0-9][\w\s\-\/,]{2,40})/i) || "",
+    ceiling_height: extract(norm, /(?:ceiling\s*height|ceil\.?\s*ht\.?|AFF)\s*[:\-=]?\s*(\d{1,2}['\-]\d{1,2}[""']?|\d{1,2}\s*(?:ft|feet)[^\n]{0,20})/i) || "",
+  };
 
-  const prompt = `You are a senior construction estimator for Eagles Brothers Constructors (EBC), a drywall and interior framing subcontractor in Houston, TX. EBC's scope includes: metal framing, drywall (GWB), acoustical ceilings (ACT), tape/float/finish, insulation/sound batting, doors/frames/hardware, fire caulking, corner bead, and related specialties.
-
-Analyze the following construction plan text and produce a complete scope assessment.
-
-EBC ASSEMBLY LIBRARY (use these codes when matching):
-${asmList}
-
-PLAN TEXT:
-${truncated}
-
-Return ONLY valid JSON in this exact format:
-{
-  "project": {
-    "name": "string",
-    "address": "string",
-    "architect": "string",
-    "gc": "string or null",
-    "size_sf": number_or_null,
-    "occupancy": "string",
-    "building_type": "string",
-    "ceiling_height": "string"
-  },
-  "contacts": [
-    {"name": "string", "company": "string", "role": "string", "phone": "string", "email": "string"}
-  ],
-  "conditions": [
-    {
-      "name": "string (descriptive name for this wall/ceiling/element)",
-      "type": "linear|area|count",
-      "folder": "Walls|Ceilings|Insulation|Counts|Add-Ons|Demo",
-      "assembly_code": "matching EBC code or empty string",
-      "height": 10,
-      "notes": "string describing where this applies"
+  // ── Wall type detection ──
+  // Look for common wall type call-outs: "TYPE A1", "W-1", "Wall Type 1", etc.
+  const wallTypePatterns = [
+    /\b(?:TYPE|WALL\s*TYPE|W-)\s*([A-Z]\d+|\d+)\b/gi,
+    /\b([A-Z]\d{1,2})\s*(?:WALL|PARTITION|DEMISING)/gi,
+  ];
+  const wallTypes = new Set();
+  for (const pat of wallTypePatterns) {
+    let m;
+    while ((m = pat.exec(norm)) !== null) {
+      if (m[1]) wallTypes.add(m[1].toUpperCase());
     }
-  ],
-  "scope_summary": [
-    "bullet point describing a scope item"
-  ],
-  "demo_items": [
-    "bullet point describing demo work"
-  ],
-  "rfi_candidates": [
-    "question that needs clarification from architect/GC"
-  ],
-  "separate_prices": [
-    "alternate/add pricing requested by architect"
-  ],
-  "finish_info": {
-    "paint_colors": ["PT1: color name", "PT2: color name"],
-    "flooring": ["type and spec"],
-    "ceiling_tile": "spec",
-    "base": "spec"
   }
+
+  // Match wall types to EBC assembly codes by fuzzy code matching
+  const asmByCode = new Map((assemblies || []).map(a => [String(a.code || "").toUpperCase(), a]));
+  const conditions = [];
+  for (const wt of wallTypes) {
+    const asm = asmByCode.get(wt) || [...asmByCode.values()].find(a => (a.code || "").toUpperCase().includes(wt));
+    conditions.push({
+      name: `Wall Type ${wt}`,
+      type: "linear",
+      folder: "Walls",
+      assembly_code: asm?.code || "",
+      height: 10,
+      notes: asm ? `Matched to ${asm.name}` : "No assembly match — map manually",
+    });
+  }
+
+  // Ceiling type detection (ACT-1, ACT 1, etc.)
+  const ceilingPat = /\b(ACT[-\s]?\d+|GYP[-\s]?BD|DRYWALL\s*CLG|EXPOSED\s*CLG)\b/gi;
+  const ceilings = new Set();
+  let m;
+  while ((m = ceilingPat.exec(norm)) !== null) ceilings.add(m[1].replace(/\s+/g, "").toUpperCase());
+  for (const c of ceilings) {
+    conditions.push({ name: `Ceiling ${c}`, type: "area", folder: "Ceilings", assembly_code: "", height: 0, notes: "Detected from plan text — verify location" });
+  }
+
+  // ── Scope summary: keyword-based bullet points ──
+  const scope_summary = [];
+  if (/\bdemo(?:lition)?\b/i.test(norm)) scope_summary.push("Demolition scope present — verify extent");
+  if (/\bmetal\s*stud/i.test(norm)) scope_summary.push("Metal stud framing indicated");
+  if (/\bgwb|gyp(?:sum)?\s*bd|drywall/i.test(norm)) scope_summary.push("Drywall/GWB scope indicated");
+  if (/\bfire[-\s]*(?:rated|caulk|stop)/i.test(norm)) scope_summary.push("Fire-rated / firestopping scope present");
+  if (/\binsulation|sound\s*batt|acoustic\s*batt/i.test(norm)) scope_summary.push("Insulation / sound batting scope");
+  if (/\bact|acoustic(?:al)?\s*(?:ceiling|tile)/i.test(norm)) scope_summary.push("Acoustical ceiling tile scope");
+  if (/\bdoor\s*schedule|hollow\s*metal|hm\s*frame/i.test(norm)) scope_summary.push("Doors / frames indicated");
+  if (/\bcorner\s*bead|control\s*joint/i.test(norm)) scope_summary.push("Corner bead / control joints needed");
+
+  // ── Demo items ──
+  const demo_items = [];
+  const demoPat = /\b(?:remove|demo(?:lish)?|tear\s*down|demolition\s*of)\s+([^.;\n]{8,80})/gi;
+  while ((m = demoPat.exec(norm)) !== null && demo_items.length < 10) {
+    demo_items.push(m[1].trim().replace(/\s+/g, " "));
+  }
+
+  // ── RFI candidates: look for "by others", "N.I.C.", "TBD", "clarify", "confirm" ──
+  const rfi_candidates = [];
+  const rfiPat = /[.;\n]\s*([^.;\n]{10,120}?(?:by\s+others|n\.?i\.?c\.?|TBD|to\s+be\s+determined|clarify|confirm|verify\s+with)[^.;\n]{0,60})/gi;
+  while ((m = rfiPat.exec(norm)) !== null && rfi_candidates.length < 8) {
+    rfi_candidates.push(m[1].trim().replace(/\s+/g, " "));
+  }
+
+  // ── Alternate / separate prices ──
+  const separate_prices = [];
+  const altPat = /\b(?:alternate|alt\.|add\s*alt|separate\s*price|option)\s*#?\s*(\d+[^.;\n]{0,100})/gi;
+  while ((m = altPat.exec(norm)) !== null && separate_prices.length < 5) {
+    separate_prices.push(m[1].trim().replace(/\s+/g, " "));
+  }
+
+  // ── Finish info ──
+  const paintPat = /\b(PT[-\s]?\d+)\s*[:\-]?\s*([A-Za-z][A-Za-z0-9\s\-]{3,40})/gi;
+  const paint_colors = [];
+  while ((m = paintPat.exec(norm)) !== null && paint_colors.length < 8) {
+    paint_colors.push(`${m[1].replace(/\s+/g, "").toUpperCase()}: ${m[2].trim()}`);
+  }
+
+  return {
+    project,
+    contacts: [], // local heuristic doesn't extract contacts well — handled elsewhere
+    conditions,
+    scope_summary,
+    demo_items,
+    rfi_candidates,
+    separate_prices,
+    finish_info: { paint_colors, flooring: [], ceiling_tile: "", base: "" },
+    _source: "local-heuristic", // flag so UI can show "analyzed locally"
+  };
 }
 
-Be thorough. Identify EVERY wall type, ceiling condition, insulation requirement, door/frame, and specialty item that falls under EBC's drywall/framing scope. Match to EBC assembly codes where possible. Include demo scope.`;
-
-  const result = await callClaude(apiKey, prompt, 4096);
-  const cleaned = result.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-  return JSON.parse(cleaned);
+// Helper — safe regex group-1 extraction
+function extract(text, re) {
+  const m = re.exec(text);
+  return m && m[1] ? m[1].trim() : "";
 }
 
 /**

@@ -75,7 +75,7 @@ function invoiceEmail(gcContact, projectName, contactEmail) {
 }
 
 // ── Main scan function ──
-export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices, apBills, accruals, companySettings }) {
+export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices, apBills, accruals, companySettings, budgets, sovItems }) {
   const now = new Date();
   const alerts = [];
   const contactMap = {};
@@ -499,6 +499,157 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
     }
   });
 
+  // ════════════════════════════════════════════════════════════
+  //  MISSING-DATA ALERTS (category: "data_gaps")
+  //  Surface empty/null inputs that block core workflows so the
+  //  user gets quick-action CTAs to fill gaps instead of a silent app.
+  // ════════════════════════════════════════════════════════════
+
+  // 15) Projects missing a contract amount (can't compute margin, SOV, billing)
+  const projsNoContract = activeProjects.filter(p => !p.contract || Number(p.contract) <= 0);
+  if (projsNoContract.length > 0) {
+    alerts.push({
+      id: `gap_no_contract_${projsNoContract.length}`,
+      category: "data_gaps",
+      urgency: "warning",
+      icon: "dollar",
+      title: `${projsNoContract.length} active project${projsNoContract.length !== 1 ? "s" : ""} — no contract amount`,
+      message: `${projsNoContract.slice(0, 3).map(p => p.name).join(", ")}${projsNoContract.length > 3 ? "…" : ""}. Needed for margin + billing.`,
+      action: { label: "Add Contract", type: "openProject" },
+      nav: { tab: "projects", projectId: projsNoContract[0].id, projTab: "financials" },
+      ts: now.toISOString(),
+    });
+  }
+
+  // 16) Projects missing GC contact (can't send emails / follow-up)
+  const projsNoGc = activeProjects.filter(p => !p.gc && !p.gcContact && !p.contactName);
+  if (projsNoGc.length > 0) {
+    alerts.push({
+      id: `gap_no_gc_${projsNoGc.length}`,
+      category: "data_gaps",
+      urgency: "info",
+      icon: "mail",
+      title: `${projsNoGc.length} project${projsNoGc.length !== 1 ? "s" : ""} — no GC contact`,
+      message: `${projsNoGc.slice(0, 3).map(p => p.name).join(", ")}${projsNoGc.length > 3 ? "…" : ""}. Add contact to enable email actions.`,
+      action: { label: "Add Contact", type: "openProject" },
+      nav: { tab: "projects", projectId: projsNoGc[0].id },
+      ts: now.toISOString(),
+    });
+  }
+
+  // 17) Active projects with no budget set (budgets[id] missing or empty)
+  const projsNoBudget = activeProjects.filter(p => {
+    if (!p.contract || Number(p.contract) <= 0) return false; // excluded by rule 15
+    const b = budgets && budgets[p.id];
+    return !b || !Array.isArray(b) || b.length === 0;
+  });
+  if (projsNoBudget.length > 0) {
+    alerts.push({
+      id: `gap_no_budget_${projsNoBudget.length}`,
+      category: "data_gaps",
+      urgency: "warning",
+      icon: "clipboard",
+      title: `${projsNoBudget.length} project${projsNoBudget.length !== 1 ? "s" : ""} — no budget`,
+      message: `${projsNoBudget.slice(0, 3).map(p => p.name).join(", ")}${projsNoBudget.length > 3 ? "…" : ""}. Needed for cost tracking + phase margin.`,
+      action: { label: "Create Budget", type: "openProject" },
+      nav: { tab: "projects", projectId: projsNoBudget[0].id, projTab: "financials" },
+      ts: now.toISOString(),
+    });
+  }
+
+  // 18) Active projects with no SOV (can't generate pay apps)
+  const projsNoSov = activeProjects.filter(p => {
+    if (!p.contract || Number(p.contract) <= 0) return false;
+    const hasSov = (sovItems || []).some(s => String(s.projectId) === String(p.id));
+    return !hasSov;
+  });
+  if (projsNoSov.length > 0) {
+    alerts.push({
+      id: `gap_no_sov_${projsNoSov.length}`,
+      category: "data_gaps",
+      urgency: "info",
+      icon: "file",
+      title: `${projsNoSov.length} project${projsNoSov.length !== 1 ? "s" : ""} — no SOV`,
+      message: `${projsNoSov.slice(0, 3).map(p => p.name).join(", ")}${projsNoSov.length > 3 ? "…" : ""}. Blocks pay app creation.`,
+      action: { label: "Create SOV", type: "openProject" },
+      nav: { tab: "projects", projectId: projsNoSov[0].id, projTab: "billing" },
+      ts: now.toISOString(),
+    });
+  }
+
+  // 19) No active employees / crew not set up
+  const activeEmpsList = (employees || []).filter(e => e.active !== false && (e.status === "active" || !e.status));
+  if (activeEmpsList.length === 0) {
+    alerts.push({
+      id: `gap_no_crew`,
+      category: "data_gaps",
+      urgency: "critical",
+      icon: "users",
+      title: `No active crew members`,
+      message: `Add crew so they can clock in, request materials, and show up on schedules.`,
+      action: { label: "Add Crew", type: "openTab" },
+      nav: { tab: "timeclock", subTab: "employees" },
+      ts: now.toISOString(),
+    });
+  }
+
+  // 20) Crew members missing hourly rate (breaks labor cost + margin)
+  const empsNoRate = activeEmpsList.filter(e => e.employmentType !== "salary" && (e.hourlyRate == null || Number(e.hourlyRate) <= 0));
+  if (empsNoRate.length > 0) {
+    alerts.push({
+      id: `gap_no_rate_${empsNoRate.length}`,
+      category: "data_gaps",
+      urgency: "warning",
+      icon: "dollar",
+      title: `${empsNoRate.length} crew member${empsNoRate.length !== 1 ? "s" : ""} — no hourly rate`,
+      message: `${empsNoRate.slice(0, 3).map(e => e.name).join(", ")}${empsNoRate.length > 3 ? "…" : ""}. Blocks labor cost tracking.`,
+      action: { label: "Set Rates", type: "openTab" },
+      nav: { tab: "timeclock", subTab: "employees" },
+      ts: now.toISOString(),
+    });
+  }
+
+  // 21) Crew members missing phone (blocks notifications + field contact)
+  const empsNoPhone = activeEmpsList.filter(e => !e.phone || String(e.phone).trim() === "");
+  if (empsNoPhone.length > 0) {
+    alerts.push({
+      id: `gap_no_phone_${empsNoPhone.length}`,
+      category: "data_gaps",
+      urgency: "info",
+      icon: "clipboard",
+      title: `${empsNoPhone.length} crew member${empsNoPhone.length !== 1 ? "s" : ""} — no phone`,
+      message: `${empsNoPhone.slice(0, 3).map(e => e.name).join(", ")}${empsNoPhone.length > 3 ? "…" : ""}. Needed for schedule + delivery alerts.`,
+      action: { label: "Add Phones", type: "openTab" },
+      nav: { tab: "timeclock", subTab: "employees" },
+      ts: now.toISOString(),
+    });
+  }
+
+  // 22) No time entries logged this week across entire company (day 3+)
+  const weekdayIdx = now.getDay(); // 0=Sun, 1=Mon, ...
+  if (activeEmpsList.length > 0 && weekdayIdx >= 3 && weekdayIdx <= 5) {
+    const weekStart = new Date(now);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEntries = (timeEntries || []).filter(te => {
+      const d = parseDate(te.date || te.clockIn);
+      return d && d >= weekStart;
+    });
+    if (weekEntries.length === 0) {
+      alerts.push({
+        id: `gap_no_time_this_week`,
+        category: "data_gaps",
+        urgency: "warning",
+        icon: "clock",
+        title: `No time entries this week`,
+        message: `${activeEmpsList.length} active crew — nothing clocked in. Verify field clock-in is working.`,
+        action: { label: "Open Time Clock", type: "openTab" },
+        nav: { tab: "timeclock" },
+        ts: now.toISOString(),
+      });
+    }
+  }
+
   // Sort: critical first, then warning, then info
   alerts.sort((a, b) => (URGENCY_ORDER[a.urgency] || 9) - (URGENCY_ORDER[b.urgency] || 9));
 
@@ -506,13 +657,13 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
 }
 
 // ── Hook ──
-export function useAlertEngine({ bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices, apBills, accruals, companySettings }) {
+export function useAlertEngine({ bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices, apBills, accruals, companySettings, budgets, sovItems }) {
   // Counter to force re-render when dismiss state changes (localStorage is not reactive)
   const [dismissVer, setDismissVer] = useState(0);
 
   const alerts = useMemo(() =>
-    scanAlerts({ bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices, apBills, accruals, companySettings }),
-    [bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices, apBills, accruals, companySettings]
+    scanAlerts({ bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices, apBills, accruals, companySettings, budgets, sovItems }),
+    [bids, projects, contacts, submittals, rfis, changeOrders, certifications, employees, timeEntries, invoices, apBills, accruals, companySettings, budgets, sovItems]
   );
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -541,7 +692,7 @@ export function useAlertEngine({ bids, projects, contacts, submittals, rfis, cha
   const badgeCount = activeAlerts.length;
 
   const grouped = useMemo(() => {
-    const g = { bids: [], projects: [], team: [] };
+    const g = { data_gaps: [], bids: [], projects: [], team: [] };
     activeAlerts.forEach(a => {
       if (g[a.category]) g[a.category].push(a);
       else g.bids.push(a); // fallback
