@@ -2929,12 +2929,20 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   const fmt = n => "$" + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   const fmtK = n => n >= 1000 ? "$" + (n / 1000).toFixed(1) + "K" : fmt(n);
 
-  const btn = { padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#fff", cursor: "pointer", fontSize: "var(--text-label)", transition: "all 0.2s" };
-  const btnActive = { ...btn, background: "var(--amber)", color: "#000", borderColor: "var(--amber)", fontWeight: "var(--weight-semi)" };
-  const btnDis = { ...btn, opacity: 0.4, cursor: "default" };
+  // Higher-contrast button defaults — the old rgba(255,255,255,0.08) was painful
+  // to read on any theme. Now uses opaque-ish bg with clear border + white text
+  // that survives on both light and dark themes.
+  const btn = { padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)", border: "1px solid rgba(255,255,255,0.35)", background: "rgba(40,48,64,0.85)", color: "#fff", cursor: "pointer", fontSize: "var(--text-label)", fontWeight: 500, transition: "all 0.15s" };
+  const btnActive = { ...btn, background: "var(--amber)", color: "#000", borderColor: "var(--amber)", fontWeight: 700 };
+  const btnDis = { ...btn, opacity: 0.35, cursor: "default" };
 
   return (
-    <div className="flex-col overflow-hidden h-full w-full" style={{ background: "rgba(0,0,0,0.97)" }}>
+    <div className="drawing-viewer-scope flex-col overflow-hidden h-full w-full" style={{ background: "var(--bg, #0a0e1a)" }}>
+      {/* Style the native file inputs — they were rendering as raw white "Choose File" buttons.
+          Scoped to the drawing viewer only so the rest of the app is unaffected. */}
+      <style>{`
+        .drawing-viewer-scope input[type="file"]{display:none!important}
+      `}</style>
 
       {/* ── Top Toolbar ── */}
       <div className="flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.85)" }}>

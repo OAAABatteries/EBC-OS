@@ -295,19 +295,28 @@ export default function TakeoffRoute() {
   // ── No PDF yet — upload prompt ──
   if (!storageUrl && !pdfData) {
     return (
-      <div className="flex-col justify-center gap-sp5 c-white" style={{ alignItems: "center", height: "100vh", background: "var(--bg)" }}>
-        <div className="fs-subtitle fw-bold">{takeoff?.name || "Takeoff"}</div>
-        <div className="c-text2">No drawing uploaded yet</div>
-        <button onClick={() => fileRef.current?.click()}
-          className="rounded-control fs-secondary fw-bold cursor-pointer" style={{ padding: "var(--space-3) var(--space-8)", background: "var(--amber)", color: "#000", border: "none" }}>
-          Upload Drawing PDF
-        </button>
-        <input ref={fileRef} type="file" accept=".pdf" className="hidden"
-          onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) handleUpload(f); }} />
-        <button onClick={handleClose}
-          className="rounded-control c-text2 cursor-pointer" style={{ padding: "var(--space-2) var(--space-5)", background: "transparent", border: "1px solid rgba(255,255,255,0.15)" }}>
-          Back to Estimating
-        </button>
+      <div style={{ minHeight: "100vh", minHeight: "100dvh", background: "var(--bg, #0a0e1a)", display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--space-6)" }}>
+        <style>{`
+          .takeoff-empty-wrap input[type="file"]{display:none!important}
+        `}</style>
+        <div className="takeoff-empty-wrap" style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-card)", padding: "var(--space-10) var(--space-8)", maxWidth: 520, width: "100%", boxShadow: "var(--shadow-lg)", textAlign: "center" }}>
+          <div style={{ fontSize: 48, marginBottom: "var(--space-4)", opacity: 0.7 }}>📐</div>
+          <div style={{ fontSize: "var(--text-title)", fontWeight: 700, color: "var(--text)", marginBottom: "var(--space-2)" }}>{takeoff?.name || "New Takeoff"}</div>
+          <div style={{ fontSize: "var(--text-secondary)", color: "var(--text2)", marginBottom: "var(--space-6)" }}>Upload a drawing PDF to begin measuring scope.</div>
+          <button onClick={() => fileRef.current?.click()}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "var(--space-3) var(--space-6)", background: "var(--amber)", color: "#000", border: "none", borderRadius: "var(--radius-control)", fontSize: "var(--text-card)", fontWeight: 700, cursor: "pointer", minHeight: 48, transition: "transform 0.1s" }}
+            onMouseOver={e => e.currentTarget.style.transform = "scale(1.02)"}
+            onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}>
+            📁 Upload PDF
+          </button>
+          <input ref={fileRef} type="file" accept=".pdf"
+            onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) handleUpload(f); }} />
+          <div style={{ fontSize: "var(--text-label)", color: "var(--text3)", marginTop: "var(--space-3)" }}>Supports plan sets, specs, addenda</div>
+          <button onClick={handleClose}
+            style={{ marginTop: "var(--space-6)", padding: "var(--space-2) var(--space-5)", background: "transparent", color: "var(--text2)", border: "1px solid var(--border)", borderRadius: "var(--radius-control)", cursor: "pointer", fontSize: "var(--text-label)" }}>
+            ← Back to Estimating
+          </button>
+        </div>
       </div>
     );
   }
