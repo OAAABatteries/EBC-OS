@@ -46,6 +46,8 @@ export const hideSplash = async () => {
 };
 
 // Register app lifecycle events
+let _backPressCount = 0;
+let _backPressTimer = null;
 export const registerAppEvents = async (onResume) => {
   if (!isNative()) return;
   try {
@@ -53,11 +55,40 @@ export const registerAppEvents = async (onResume) => {
     App.addListener("appStateChange", ({ isActive }) => {
       if (isActive && onResume) onResume();
     });
-    // Handle Android back button
-    App.addListener("backButton", ({ canGoBack }) => {
-      if (canGoBack) {
-        window.history.back();
+    // Smart Android back button:
+    // 1. If a modal/overlay is open → close it
+    // 2. If a hash route (gc-portal, privacy, takeoff) → return to main app
+    // 3. If history.length > 1 → browser history back
+    // 4. Otherwise → "Press back again to exit" (2s window), then exit
+    App.addListener("backButton", async () => {
+      // Priority 1: Close any open modal overlay
+      const modal = document.querySelector('.modal-overlay');
+      if (modal) {
+        const closeBtn = modal.querySelector('.modal-close');
+        if (closeBtn) { closeBtn.click(); return; }
+        modal.click(); // clicking overlay usually closes it
+        return;
       }
+      // Priority 2: Exit hash routes back to main app
+      if (window.location.hash && window.location.hash !== '#/') {
+        window.location.hash = '';
+        return;
+      }
+      // Priority 3: Browser history
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+      // Priority 4: Exit app with confirmation
+      _backPressCount++;
+      if (_backPressCount >= 2) {
+        try { App.exitApp(); } catch {}
+        return;
+      }
+      // Show toast (use EBC's toast system via custom event)
+      window.dispatchEvent(new CustomEvent('ebc-toast', { detail: { type: 'info', msg: 'Press back again to exit' } }));
+      clearTimeout(_backPressTimer);
+      _backPressTimer = setTimeout(() => { _backPressCount = 0; }, 2000);
     });
   } catch {}
 };

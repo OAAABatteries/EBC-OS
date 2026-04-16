@@ -8,6 +8,7 @@ const GCPortal       = lazy(() => import('./components/GCPortal.jsx'));
 const JobPortal      = lazy(() => import('./components/JobPortal.jsx'));
 const CustomerPortal = lazy(() => import('./components/CustomerPortal.jsx'));
 const TakeoffRoute   = lazy(() => import('./routes/TakeoffRoute.jsx'));
+const PrivacyPolicy  = lazy(() => import('./components/PrivacyPolicy.jsx'));
 
 function Router() {
   const [hash, setHash] = useState(window.location.hash);
@@ -28,6 +29,9 @@ function Router() {
   }
   if (hash.startsWith('#/takeoff/')) {
     return <Suspense fallback={<div className="p-sp10 c-amber" style={{ background: "var(--bg)",minHeight:'100vh' }}>Loading takeoff...</div>}><TakeoffRoute /></Suspense>;
+  }
+  if (hash === '#/privacy' || hash === '#/privacy-policy') {
+    return <Suspense fallback={<div className="p-sp10 c-amber" style={{ background: "var(--bg)",minHeight:'100vh' }}>Loading...</div>}><PrivacyPolicy /></Suspense>;
   }
   return <App />;
 }

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef, Fragment } from "react";
+import { useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef, Fragment } from "react";
 import { styles } from "./styles";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useSyncedState, flushSyncQueue } from "./hooks/useSyncedState";
@@ -509,7 +509,18 @@ function App({ auth, onLogout }) {
         setVendors(initVendors);
         setAPBills(initAPBills);
         setPeriods(initPeriods);
+        setAccruals(initAccruals);
+        setCommitments(initCommitments);
         setEmployees(initEmployees);       // refreshes roster (comp type, rate, role)
+        // v27: cleared all remaining demo numeric data — budgets/SOV/PayApps/schedules/entries
+        setMaterialRequests(initMaterialRequests);
+        setCrewSchedule(initCrewSchedule);
+        setTimeEntries(initTimeEntries);
+        setProductionLogs(initProductionLogs);
+        setDecisionLog(initDecisionLog);
+        setBudgets(initBudgets);
+        setSovItems(initSovItems);
+        setPayApps(initPayApps);
         localStorage.setItem("ebc_data_version", String(DATA_VERSION));
         console.info("[EBC] Data version upgraded to", DATA_VERSION, "— re-seeded all data from constants.js");
       }
@@ -521,6 +532,7 @@ function App({ auth, onLogout }) {
     bids, projects, contacts, submittals, rfis, changeOrders,
     certifications, employees, timeEntries, invoices,
     apBills, accruals, companySettings,
+    budgets, sovItems,
   });
   const { activeAlerts, grouped: alertGroups, badgeCount: alertBadgeCount, dismissAlert, dismissAll } = alertEngine;
 
@@ -615,16 +627,83 @@ function App({ auth, onLogout }) {
   const [notifOpen, setNotifOpen] = useState(false);
   // Jump nav active section tracking
   const [activeSection, setActiveSection] = useState(null);
+  // Tracks which section IDs currently render in the DOM — so we only show tabs
+  // for sections that actually exist (prevents dead buttons that scroll to nothing).
+  const [presentSections, setPresentSections] = useState(() => new Set());
+  // When the user clicks a jump button, pin that section for ~1.2s so the scroll-spy
+  // doesn't fight the click intent (especially for sections the scroller can't reach
+  // naturally, like the last section which sits below the activation line at max scroll).
+  const jumpPinUntilRef = useRef(0);
+  const JUMP_IDS = useMemo(() => ["dash-brief", "dash-actions", "dash-financial", "dash-field", "dash-workforce", "dash-projects", "profit-analysis-section", "dash-cash", "dash-gc"], []);
+  useLayoutEffect(() => {
+    if (tab !== "dashboard") return;
+    const present = new Set(JUMP_IDS.filter(id => document.getElementById(id)));
+    setPresentSections(prev => {
+      if (prev.size === present.size && [...prev].every(x => present.has(x))) return prev;
+      return present;
+    });
+  }); // runs after every render — re-scans DOM as sections appear/disappear
   useEffect(() => {
     if (tab !== "dashboard") return;
-    const ids = ["dash-brief", "dash-actions", "dash-financial", "dash-field", "dash-workforce", "dash-projects", "profit-analysis-section", "dash-cash", "dash-gc"];
-    const observer = new IntersectionObserver((entries) => {
-      const visible = entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-      if (visible.length > 0) setActiveSection(visible[0].target.id);
-    }, { rootMargin: "-80px 0px -60% 0px", threshold: 0.1 });
-    ids.forEach(id => { const el = document.getElementById(id); if (el) observer.observe(el); });
-    return () => observer.disconnect();
-  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (presentSections.size === 0) return;
+    // Some section IDs sit on zone-header anchors (25px tall) instead of full content
+    // wrappers. IntersectionObserver would see multiple tiny strips in-band at once and
+    // sort picks the wrong one. Use scroll position directly: active = last section whose
+    // top has scrolled above the 120px activation line.
+    const ACTIVATION_OFFSET = 120;
+    const elementMap = [...presentSections]
+      .map(id => {
+        const el = document.getElementById(id);
+        return el ? { id, el } : null;
+      })
+      .filter(Boolean);
+    // App scrolls inside <main class="main-content">, not window — listen there.
+    const scroller = document.querySelector(".main-content") || window;
+    let ticking = false;
+    const compute = () => {
+      ticking = false;
+      // Respect click-pin — skip spy updates while a jump click is still settling.
+      if (Date.now() < jumpPinUntilRef.current) return;
+      // Sort by actual DOM top (JUMP_IDS config order may differ from render order,
+      // e.g. when "Cash Position" was moved earlier in the layout).
+      const sorted = elementMap
+        .map(({ id, el }) => ({ id, top: el.getBoundingClientRect().top }))
+        .sort((a, b) => a.top - b.top);
+      let active = sorted[0]?.id || null;
+      for (const { id, top } of sorted) {
+        if (top <= ACTIVATION_OFFSET) active = id;
+        else break;
+      }
+      // Bottom-of-scroll edge case: the last section may sit below the 120px activation
+      // line because the scroller hit its max before the section could reach it. If the
+      // user scrolled all the way down AND the last section's top is in the upper half
+      // of the viewport (clearly visible + prominent), force-activate it.
+      if (scroller !== window && sorted.length > 0) {
+        const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 4;
+        if (atBottom) {
+          const last = sorted[sorted.length - 1];
+          const scrollerRect = scroller.getBoundingClientRect();
+          const lastRelTop = last.top - scrollerRect.top;
+          if (lastRelTop >= 0 && lastRelTop < scroller.clientHeight / 2) {
+            active = last.id;
+          }
+        }
+      }
+      setActiveSection(prev => (prev === active ? prev : active));
+    };
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(compute);
+    };
+    compute();
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      scroller.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [tab, presentSections, JUMP_IDS]);
 
   // ── PWA install prompt (24h cooldown after dismiss) ──
   useEffect(() => {
@@ -637,6 +716,13 @@ function App({ auth, onLogout }) {
 
   // ── toasts ──
   const { toasts, show } = useToast();
+
+  // Listen for native bridge toast events (e.g., Android back-button hint)
+  useEffect(() => {
+    const onNativeToast = (e) => { const { type, msg } = e.detail || {}; if (msg) show(msg, type || "info"); };
+    window.addEventListener("ebc-toast", onNativeToast);
+    return () => window.removeEventListener("ebc-toast", onNativeToast);
+  }, [show]);
 
   // ── network / offline status ──
   const network = useNetworkStatus();
@@ -1136,14 +1222,21 @@ function App({ auth, onLogout }) {
           { id: "profit-analysis-section", label: "Profit", show: dashCfg.showKPIs },
           { id: "dash-cash", label: "Cash", show: userRole === "owner" || userRole === "admin" },
           { id: "dash-gc", label: "GC", show: dashCfg.showKPIs },
-        ].filter(s => s.show);
+        ].filter(s => s.show && presentSections.has(s.id));
         if (JUMP_SECTIONS.length < 3) return null;
         return (
           <div className="flex gap-6 mb-sp4 flex-wrap" style={{ position: "sticky", top: 0, zIndex: 10, background: "var(--bg1)", padding: "var(--space-2) 0", borderBottom: "1px solid var(--border)" }}>
             {JUMP_SECTIONS.map(s => (
               <button key={s.id} className={`btn btn-sm fs-xs ${activeSection === s.id ? "btn-primary" : "btn-ghost"}`}
                 style={{ padding: "var(--space-2) var(--space-3)", borderRadius: "var(--radius-control)" }}
-                onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+                onClick={() => {
+                  // Pin the clicked section as active immediately — the scroll-spy
+                  // may not be able to activate it naturally if its scroll target
+                  // is below the scroller's max (e.g., last section near the bottom).
+                  setActiveSection(s.id);
+                  jumpPinUntilRef.current = Date.now() + 1200;
+                  document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}>
                 {s.label}
               </button>
             ))}
@@ -2355,7 +2448,9 @@ function App({ auth, onLogout }) {
                     const billed = (invoices || []).filter(i => String(i.projectId) === String(p.id) && !i.deletedAt).reduce((s, i) => s + (Number(i.amount) || 0), 0);
                     const burden = companySettings?.laborBurdenMultiplier || 1.35;
                     const costs = computeProjectTotalCost(p.id, p.name, timeEntries, employees, apBills, burden, accruals || []);
-                    const margin = contract > 0 ? Math.round(((contract - costs.total) / contract) * 100) : 0;
+                    // Margin only meaningful once cost data exists — else show "—" instead of misleading 100%
+                    const hasCostData = costs.total > 0;
+                    const margin = hasCostData && contract > 0 ? Math.round(((contract - costs.total) / contract) * 100) : null;
                     const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
                     const crewToday = (teamSchedule || []).filter(s => String(s.projectId) === String(p.id) && s.days?.[todayKey]).length;
                     return (
@@ -2371,7 +2466,7 @@ function App({ auth, onLogout }) {
                             <span style={{ fontSize: "var(--text-tab)" }}>{p.progress || 0}%</span>
                           </div>
                         </td>
-                        <td style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)", color: margin < 20 ? "var(--red)" : margin < 40 ? "var(--amber)" : "var(--green)", fontWeight: "var(--weight-semi)" }}>{margin}%</td>
+                        <td style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)", color: margin === null ? "var(--text3)" : margin < 20 ? "var(--red)" : margin < 40 ? "var(--amber)" : "var(--green)", fontWeight: "var(--weight-semi)" }}>{margin === null ? "\u2014" : `${margin}%`}</td>
                         <td style={{ textAlign: "right", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-tab)", color: "var(--text2)" }}>{costs.laborHours > 0 ? `${Math.round(costs.laborHours)}h` : "\u2014"}</td>
                         <td style={{ textAlign: "center", padding: "var(--space-2) var(--space-3)" }}>{crewToday || "\u2014"}</td>
                       </tr>
@@ -2416,7 +2511,7 @@ function App({ auth, onLogout }) {
 
       {/* ── Profit Analysis — projects below 30% margin ── */}
       {dashCfg.showKPIs && (!collapsedZones.financial || userRole === "owner") && dashActions.profitAlerts.length === 0 && (
-        <div id="dash-profit" className="card dash-card" style={{ borderLeft: "3px solid var(--green)" }}>
+        <div id="profit-analysis-section" className="card dash-card" style={{ borderLeft: "3px solid var(--green)" }}>
           <div className="text-sm font-semi flex-center-gap-6">
             <CheckSquare size={14} style={{ color: "var(--green)" }} /> {t("All active projects above")} {companySettings?.marginAlertThreshold || 25}% {t("margin target")}
           </div>
@@ -5456,8 +5551,14 @@ function App({ auth, onLogout }) {
                 // Rich navigation object from alert engine
                 if (navKey && typeof navKey === "object") {
                   const { tab: destTab, projectId, projTab: destProjTab, bidId, employeeId, subTab: destSubTab } = navKey;
-                  // Switch to the correct main tab
-                  if (destTab) handleTabClick(destTab);
+                  // Switch to the correct main tab (with sub-tab when provided)
+                  if (destTab) {
+                    if (destSubTab && !projectId) {
+                      navigateWithContext(destTab, { subTab: destSubTab });
+                    } else {
+                      handleTabClick(destTab);
+                    }
+                  }
                   // Open specific project modal with sub-tab
                   if (projectId) {
                     const proj = projects.find(p => String(p.id) === String(projectId));
