@@ -1715,13 +1715,18 @@ export function EstimatingTab({ app }) {
         return (
           <div className="card dash-card mt-sp3" style={{ borderLeft: "3px solid var(--blue)" }}>
             <div className="flex-between mb-8">
-              <div className="text-sm font-semi">Sanity Check</div>
+              <div>
+                <div className="text-sm font-semi">Sanity Check</div>
+                {sfSource && sfSource !== "takeoff" && (
+                  <div className="text-xs text-dim mt-2">SF inherited from {sfSource} · type to override</div>
+                )}
+              </div>
               <div className="flex gap-8" style={{ alignItems: "center" }}>
                 <label className="fs-label c-text2 nowrap">Project SF:</label>
                 <input className="form-input" type="number" step="1" style={{ width: 100 }}
                   value={tk.projectSF || ""}
                   onChange={(e) => updateTakeoff(tk.id, { projectSF: parseFloat(e.target.value) || 0 })}
-                  placeholder="0" />
+                  placeholder={projectSfFallback ? String(projectSfFallback) : "0"} />
               </div>
             </div>
             {sf > 0 ? (
