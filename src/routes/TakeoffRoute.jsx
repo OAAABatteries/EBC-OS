@@ -26,8 +26,14 @@ export default function TakeoffRoute() {
     return <div className="p-sp10 c-amber" style={{ background: "var(--bg)", minHeight: "100vh" }}>Redirecting to login...</div>;
   }
 
-  // ── Extract takeoff ID from hash: #/takeoff/:id ──
+  // ── Extract takeoff ID + optional focus params from hash: #/takeoff/:id?m=<measId>&p=<pageKey> ──
   const takeoffId = window.location.hash.replace("#/takeoff/", "").split("?")[0];
+  const focusParams = (() => {
+    const qs = window.location.hash.split("?")[1];
+    if (!qs) return { focusMeasurementId: null, focusPageKey: null };
+    const params = new URLSearchParams(qs);
+    return { focusMeasurementId: params.get("m"), focusPageKey: params.get("p") };
+  })();
 
   // ── Load takeoff + assemblies from localStorage ──
   const [takeoff, setTakeoff] = useState(() => {
@@ -191,6 +197,8 @@ export default function TakeoffRoute() {
   const handleAddToTakeoff = useCallback((payload) => {
     setTakeoff(prev => {
       if (!prev) return prev;
+      // Capture the drawing revision at send-time so audit can answer "which rev were these qtys based on?"
+      const revisionAtEstimate = (prev.revision || 1) + ""; // stringify so future schemes like "A-3" still fit
       const newItem = (it) => ({
         id: "dv_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
         code: it.code,
@@ -207,6 +215,8 @@ export default function TakeoffRoute() {
         sourceBidAreaId: it.bidAreaId || null,
         sourceBidAreaName: it.bidAreaName || "",
         sourceFolderName: it.folderName || "",
+        specSection: it.specSection || "", // estimator fills in later (09 29 00, etc.)
+        revisionAtEstimate, // drawing revision at time of send — answers "based on which rev?"
       });
 
       let updated;
@@ -315,6 +325,8 @@ export default function TakeoffRoute() {
         onTakeoffStateChange={handleStateChange}
         onClose={handleClose}
         onAddToTakeoff={handleAddToTakeoff}
+        focusMeasurementId={focusParams.focusMeasurementId}
+        focusPageKey={focusParams.focusPageKey}
       />
     </div>
   );

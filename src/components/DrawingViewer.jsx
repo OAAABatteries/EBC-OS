@@ -216,7 +216,7 @@ function createCondition(template, index) {
   };
 }
 
-export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToTakeoff, assemblies, initialTakeoffState, onTakeoffStateChange, takeoffId }) {
+export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToTakeoff, assemblies, initialTakeoffState, onTakeoffStateChange, takeoffId, focusMeasurementId = null, focusPageKey = null }) {
   // ── Multi-PDF management ──
   // pdfFiles: [{ name, data (Uint8Array), doc (pdfjs doc), numPages }]
   const [pdfFiles, setPdfFiles] = useState([]);
@@ -232,6 +232,24 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
 
   // Composite page key — unique across PDFs: "pdfIdx:pageNum"
   const pageKey = activePdfIdx + ":" + page;
+
+  // ── Focus-from-URL (deep link from Estimating line items) ──
+  // When TakeoffRoute passes focusPageKey, jump to that sheet once the PDF is ready.
+  // Format: "pdfIdx:pageNum". Runs only on mount + when focus params change.
+  const [flashMeasurementId, setFlashMeasurementId] = useState(null);
+  useEffect(() => {
+    if (!focusPageKey) return;
+    const [idxStr, pgStr] = focusPageKey.split(":");
+    const targetIdx = Number(idxStr);
+    const targetPg = Number(pgStr);
+    if (Number.isFinite(targetIdx)) setActivePdfIdx(targetIdx);
+    if (Number.isFinite(targetPg) && targetPg >= 1) setPage(targetPg);
+    if (focusMeasurementId) {
+      setFlashMeasurementId(focusMeasurementId);
+      const t = setTimeout(() => setFlashMeasurementId(null), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [focusPageKey, focusMeasurementId]);
 
   // ── Shorthand for initial state restoration ──
   const _init = initialTakeoffState || {};

@@ -529,6 +529,14 @@ export function EstimatingTab({ app }) {
       unit: first.unit,
       height: 10,
       diff: 1.0,
+      // Manual-entry items have no drawing source — traceability fields stay empty.
+      sourceMeasurementIds: [],
+      sourceSheets: [],
+      sourceConditionName: "",
+      sourceBidAreaName: "",
+      sourceFolderName: "",
+      specSection: "",          // e.g. "09 29 00" — estimator enters
+      revisionAtEstimate: "",   // populated only when sent from drawing
     };
     updateTakeoff(tkId, (tk) => ({
       ...tk,
@@ -1466,6 +1474,8 @@ export function EstimatingTab({ app }) {
                       <thead>
                         <tr>
                           <th>Assembly</th>
+                          <th style={{ width: 140 }} title="Drawing sheets & measurements this qty came from. Click to jump.">Source</th>
+                          <th style={{ width: 92 }} title="CSI spec section (e.g. 09 29 00)">Spec</th>
                           <th style={{ width: 64 }}>Qty</th>
                           <th style={{ width: 44 }}>Unit</th>
                           <th style={{ width: 56 }}>Height</th>
@@ -1517,14 +1527,56 @@ export function EstimatingTab({ app }) {
                                         {getSubmittalsForCode(item.code).length} SUB
                                       </span>
                                     )}
-                                    {/* Source traceability badge — clicking the line item shows where quantity came from */}
-                                    {(item.sourceMeasurementIds || []).length > 0 && (
-                                      <span className="badge badge-blue fs-xs ml-sp1" title={`Source: ${item.sourceConditionName || "(condition)"}\nBid Area: ${item.sourceBidAreaName || "(none)"}\nMeasurements: ${item.sourceMeasurementIds.length}\nSheets: ${(item.sourceSheets || []).join(", ") || "(none)"}`}>
-                                        {item.sourceMeasurementIds.length}m · {(item.sourceSheets || []).length}sh
-                                      </span>
-                                    )}
                                   </span>
                                 )}
+                              </td>
+                              {/* Source: sheet pills + jump-to-drawing button (deep link w/ measurement id) */}
+                              <td>
+                                {(item.sourceMeasurementIds || []).length > 0 ? (
+                                  <div className="flex flex-wrap gap-sp1" style={{ alignItems: "center" }}>
+                                    {(item.sourceSheets || []).slice(0, 2).map((sk) => (
+                                      <span key={sk} className="badge badge-blue fs-xs" title={`Sheet ${sk}`}>
+                                        {sk}
+                                      </span>
+                                    ))}
+                                    {(item.sourceSheets || []).length > 2 && (
+                                      <span className="c-text3 fs-xs" title={(item.sourceSheets || []).join(", ")}>
+                                        +{(item.sourceSheets || []).length - 2}
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const measId = (item.sourceMeasurementIds || [])[0];
+                                        const pgKey = (item.sourceSheets || [])[0];
+                                        const qp = new URLSearchParams();
+                                        if (measId) qp.set("m", measId);
+                                        if (pgKey) qp.set("p", pgKey);
+                                        const suffix = qp.toString() ? `?${qp.toString()}` : "";
+                                        window.location.hash = `#/takeoff/${tk.id}${suffix}`;
+                                      }}
+                                      className="btn btn-ghost btn-sm fs-xs"
+                                      title={`Jump to drawing: ${item.sourceConditionName || "source"}\nBid Area: ${item.sourceBidAreaName || "(none)"}\n${item.sourceMeasurementIds.length} measurement(s)${item.revisionAtEstimate ? `\nRev at estimate: ${item.revisionAtEstimate}` : ""}`}
+                                      style={{ padding: "2px 6px" }}
+                                    >
+                                      &rarr;
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="c-text3 fs-xs" title="Manually entered \u2014 no drawing link">Manual</span>
+                                )}
+                              </td>
+                              {/* Spec section — editable text; always visible so estimator can fill later */}
+                              <td>
+                                <input
+                                  className="form-input fs-xs"
+                                  type="text"
+                                  value={item.specSection || ""}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(e) => updateLineItem(tk.id, rm.id, item.id, { specSection: e.target.value })}
+                                  placeholder="09 29 00"
+                                  style={{ width: 84 }}
+                                />
                               </td>
                               <td>
                                 {isEditing ? (
@@ -1592,7 +1644,7 @@ export function EstimatingTab({ app }) {
                         })}
                         {(rm.items || []).length === 0 && (
                           <tr>
-                            <td colSpan={12} className="p-sp4 c-text3 text-center">
+                            <td colSpan={14} className="p-sp4 c-text3 text-center">
                               No line items. Click "Add Item" to begin.
                             </td>
                           </tr>
