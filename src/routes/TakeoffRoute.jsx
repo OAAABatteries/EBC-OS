@@ -182,24 +182,73 @@ export default function TakeoffRoute() {
     reader.readAsArrayBuffer(file);
   }, [takeoff]);
 
-  // ── Add line item to takeoff ──
-  const handleAddToTakeoff = useCallback(({ code, qty, unit, label }) => {
+  // ── Add line item(s) to takeoff ──
+  // Now accepts either:
+  //   (a) single item: { code, qty, unit, label } — legacy path
+  //   (b) batch: { __batch: true, items: [{ code, qty, unit, label, bidAreaId, bidAreaName, folderId, folderName, sourceMeasurementIds, sourceSheets, conditionId, conditionName }] }
+  //       — preserves bid-area structure, decimal quantities, and source references
+  //       — creates one room per bidAreaName (or appends to an existing room with that name)
+  const handleAddToTakeoff = useCallback((payload) => {
     setTakeoff(prev => {
       if (!prev) return prev;
-      const targetRoom = (prev.rooms || [])[0];
-      if (!targetRoom) return prev;
-      const updated = {
-        ...prev,
-        rooms: prev.rooms.map(rm => rm.id === targetRoom.id ? {
-          ...rm,
-          items: [...rm.items, {
-            id: "dv_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
-            code,
-            desc: label || assemblies.find(a => a.code === code)?.name || code,
-            qty, unit, height: 10, diff: 1,
-          }]
-        } : rm)
-      };
+      const newItem = (it) => ({
+        id: "dv_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+        code: it.code,
+        desc: it.label || assemblies.find(a => a.code === it.code)?.name || it.code,
+        qty: it.qty,
+        unit: it.unit,
+        height: 10,
+        diff: 1,
+        // NEW: traceability fields — enable "click line item, see source measurements & sheets"
+        sourceMeasurementIds: it.sourceMeasurementIds || [],
+        sourceSheets: it.sourceSheets || [],
+        sourceConditionId: it.conditionId || null,
+        sourceConditionName: it.conditionName || "",
+        sourceBidAreaId: it.bidAreaId || null,
+        sourceBidAreaName: it.bidAreaName || "",
+        sourceFolderName: it.folderName || "",
+      });
+
+      let updated;
+      if (payload && payload.__batch && Array.isArray(payload.items)) {
+        // Group incoming items by bidAreaName (or "General" when unassigned)
+        const byArea = {};
+        payload.items.forEach(it => {
+          const areaName = it.bidAreaName || "General";
+          if (!byArea[areaName]) byArea[areaName] = [];
+          byArea[areaName].push(it);
+        });
+        // Existing rooms by name for merge-by-name behavior
+        const existingByName = new Map((prev.rooms || []).map(rm => [rm.name, rm]));
+        const rooms = [...(prev.rooms || [])];
+        Object.entries(byArea).forEach(([areaName, items]) => {
+          const existing = existingByName.get(areaName);
+          if (existing) {
+            // Append items to existing room
+            const roomIdx = rooms.findIndex(r => r.id === existing.id);
+            rooms[roomIdx] = { ...existing, items: [...(existing.items || []), ...items.map(newItem)] };
+          } else {
+            rooms.push({
+              id: "rm_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+              name: areaName,
+              floor: "",
+              items: items.map(newItem),
+            });
+          }
+        });
+        updated = { ...prev, rooms };
+      } else {
+        // Legacy single-item path
+        const targetRoom = (prev.rooms || [])[0];
+        if (!targetRoom) return prev;
+        updated = {
+          ...prev,
+          rooms: prev.rooms.map(rm => rm.id === targetRoom.id ? {
+            ...rm,
+            items: [...rm.items, newItem(payload)],
+          } : rm),
+        };
+      }
       // Persist
       const all = readLS(STORAGE_KEY_TAKEOFFS) || [];
       const idx = all.findIndex(t => t.id === takeoffId);

@@ -1473,6 +1473,12 @@ export function EstimatingTab({ app }) {
                                         {getSubmittalsForCode(item.code).length} SUB
                                       </span>
                                     )}
+                                    {/* Source traceability badge — clicking the line item shows where quantity came from */}
+                                    {(item.sourceMeasurementIds || []).length > 0 && (
+                                      <span className="badge badge-blue fs-xs ml-sp1" title={`Source: ${item.sourceConditionName || "(condition)"}\nBid Area: ${item.sourceBidAreaName || "(none)"}\nMeasurements: ${item.sourceMeasurementIds.length}\nSheets: ${(item.sourceSheets || []).join(", ") || "(none)"}`}>
+                                        {item.sourceMeasurementIds.length}m · {(item.sourceSheets || []).length}sh
+                                      </span>
+                                    )}
                                   </span>
                                 )}
                               </td>
@@ -1613,6 +1619,101 @@ export function EstimatingTab({ app }) {
           <div className="summary-row total"><span>BID TOTAL</span><span>{fmt(summary.grandTotal)}</span></div>
         </div>
       )}
+
+      {/* ── Sanity Metrics Panel — $/SF, Labor$/SF, Hours/SF with historical comparison ── */}
+      {summary.grandTotal > 0 && (() => {
+        const sf = Number(tk.projectSF || 0);
+        // Gather historical data from projects that have a contract + sf
+        const historicals = (projects || []).filter(p => !p.deletedAt && (p.contract || 0) > 0 && (p.sqft || p.squareFeet || 0) > 0);
+        const getHistoricalValue = (metric) => {
+          if (historicals.length === 0) return null;
+          const values = historicals.map(p => {
+            const psf = Number(p.sqft || p.squareFeet || 0);
+            if (psf <= 0) return null;
+            if (metric === "costPerSF") return (p.contract || 0) / psf;
+            if (metric === "laborPerSF") return ((p.laborSpent || p.laborActual || 0) || (p.contract || 0) * 0.45) / psf;
+            return null;
+          }).filter(v => v !== null && v > 0).sort((a, b) => a - b);
+          if (values.length === 0) return null;
+          return { median: values[Math.floor(values.length / 2)], min: values[0], max: values[values.length - 1], count: values.length };
+        };
+        const costPerSF = sf > 0 ? summary.grandTotal / sf : null;
+        const laborPerSF = sf > 0 ? (summary.labWithBurden || summary.labSub) / sf : null;
+        const avgLabRate = 45; // conservative Houston field rate; will be tunable per project
+        const hoursPerSF = sf > 0 && avgLabRate > 0 ? ((summary.labWithBurden || summary.labSub) / avgLabRate) / sf : null;
+        const histCost = getHistoricalValue("costPerSF");
+        const histLabor = getHistoricalValue("laborPerSF");
+        // Determine color based on ±20% deviation from historical median
+        const checkDeviation = (value, historical) => {
+          if (!historical || !value) return "neutral";
+          const deviation = Math.abs((value - historical.median) / historical.median);
+          if (deviation > 0.30) return "red";     // >30% off
+          if (deviation > 0.20) return "amber";   // 20-30% off
+          return "green";
+        };
+        const costStatus = checkDeviation(costPerSF, histCost);
+        const laborStatus = checkDeviation(laborPerSF, histLabor);
+        return (
+          <div className="card dash-card mt-sp3" style={{ borderLeft: "3px solid var(--blue)" }}>
+            <div className="flex-between mb-8">
+              <div className="text-sm font-semi">Sanity Check</div>
+              <div className="flex gap-8" style={{ alignItems: "center" }}>
+                <label className="fs-label c-text2 nowrap">Project SF:</label>
+                <input className="form-input" type="number" step="1" style={{ width: 100 }}
+                  value={tk.projectSF || ""}
+                  onChange={(e) => updateTakeoff(tk.id, { projectSF: parseFloat(e.target.value) || 0 })}
+                  placeholder="0" />
+              </div>
+            </div>
+            {sf > 0 ? (
+              <div className="grid-auto-180">
+                <div className="activity-tile">
+                  <div className="text-xs text-muted">$ / SF (Total)</div>
+                  <div className="text-lg font-bold" style={{ color: costStatus === "red" ? "var(--red)" : costStatus === "amber" ? "var(--amber)" : "var(--text)" }}>
+                    ${costPerSF?.toFixed(2) || "—"}
+                  </div>
+                  {histCost && (
+                    <div className="text-xs text-dim">
+                      Hist median: ${histCost.median.toFixed(2)} ({histCost.count} proj)
+                      {costStatus === "red" && <span className="text-red"> · Way off</span>}
+                      {costStatus === "amber" && <span className="text-amber"> · Check</span>}
+                      {costStatus === "green" && <span className="text-green"> · In range</span>}
+                    </div>
+                  )}
+                  {!histCost && <div className="text-xs text-dim">No historical data yet</div>}
+                </div>
+                <div className="activity-tile">
+                  <div className="text-xs text-muted">Labor $ / SF</div>
+                  <div className="text-lg font-bold" style={{ color: laborStatus === "red" ? "var(--red)" : laborStatus === "amber" ? "var(--amber)" : "var(--text)" }}>
+                    ${laborPerSF?.toFixed(2) || "—"}
+                  </div>
+                  {histLabor && (
+                    <div className="text-xs text-dim">
+                      Hist median: ${histLabor.median.toFixed(2)}
+                      {laborStatus === "red" && <span className="text-red"> · Way off</span>}
+                      {laborStatus === "amber" && <span className="text-amber"> · Check</span>}
+                      {laborStatus === "green" && <span className="text-green"> · In range</span>}
+                    </div>
+                  )}
+                  {!histLabor && <div className="text-xs text-dim">No historical labor data</div>}
+                </div>
+                <div className="activity-tile">
+                  <div className="text-xs text-muted">Labor Hours / SF</div>
+                  <div className="text-lg font-bold">{hoursPerSF?.toFixed(3) || "—"}</div>
+                  <div className="text-xs text-dim">@ ${avgLabRate}/hr avg rate</div>
+                </div>
+                <div className="activity-tile">
+                  <div className="text-xs text-muted">Labor % of Total</div>
+                  <div className="text-lg font-bold">{summary.grandTotal > 0 ? Math.round(((summary.labWithBurden || summary.labSub) / summary.grandTotal) * 100) : 0}%</div>
+                  <div className="text-xs text-dim">Target: 40-55% for drywall/framing</div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm text-dim p-sp2">Enter Project SF to see $/SF, Labor$/SF, and historical comparison.</div>
+            )}
+          </div>
+        );
+      })()}
 
       {(tk.rooms || []).length > 0 && summary.subtotal === 0 && (
         <div className="rounded-control fs-label mt-sp6 bg-bg3 c-text2" style={{ padding: "var(--space-3) var(--space-4)", border: "1px solid var(--border)" }}>
