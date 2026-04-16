@@ -264,6 +264,8 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
   // Sheet management
   const [sheetNames, setSheetNames] = useState(_init.sheetNames || {});
   const [_sidebarSheetsOpen, _setSidebarSheetsOpen] = useState(true);
+  const [_sidebarMeasOpen, _setSidebarMeasOpen] = useState(false);
+  const [_measFilter, _setMeasFilter] = useState("");
   const [showSheets, setShowSheets] = useState(false);
   const [editingSheet, setEditingSheet] = useState(null);
 
@@ -3552,6 +3554,66 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
                         </span>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Measurements Index — flat filterable list across all sheets, click to jump (Phase 2 #7) */}
+          {(() => {
+            const allMeas = [];
+            Object.entries(measurements || {}).forEach(([pk, arr]) => {
+              (arr || []).forEach(m => {
+                const cond = conditions.find(c => c.id === m.conditionId);
+                allMeas.push({ m, pk, condName: cond?.name || "(unassigned)", condType: cond?.type || m.type });
+              });
+            });
+            if (allMeas.length === 0) return null;
+            const filter = (_measFilter || "").trim().toLowerCase();
+            const visible = filter
+              ? allMeas.filter(x => x.condName.toLowerCase().includes(filter) || x.pk.includes(filter))
+              : allMeas;
+            const fmtMeasVal = (m, type) => {
+              if (type === "count") return `${m.count || 1}`;
+              if (type === "linear") return `${(m.length || 0).toFixed(1)} LF`;
+              if (type === "area") return `${(m.area || 0).toFixed(0)} SF`;
+              return "";
+            };
+            return (
+              <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                <button onClick={() => _setSidebarMeasOpen(!_sidebarMeasOpen)} style={{ ...btn, width: "100%", padding: "var(--space-2) var(--space-3)", borderRadius: 0, border: "none", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "var(--text-label)", fontWeight: 600 }}>
+                  <span className="c-white">Measurements ({allMeas.length})</span>
+                  <span className="c-white fs-xs">{_sidebarMeasOpen ? "▼" : "▶"}</span>
+                </button>
+                {_sidebarMeasOpen && (
+                  <div style={{ padding: "0 var(--space-2) var(--space-2)" }}>
+                    <input
+                      placeholder="Filter by condition or sheet..."
+                      value={_measFilter}
+                      onChange={e => _setMeasFilter(e.target.value)}
+                      className="rounded-control mb-sp1 fs-xs c-white w-full"
+                      style={{ padding: "var(--space-1) var(--space-2)", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)" }}
+                    />
+                    <div style={{ maxHeight: 260, overflow: "auto" }}>
+                      {visible.length === 0 ? (
+                        <div className="fs-xs c-text3" style={{ padding: "var(--space-2)" }}>No matches.</div>
+                      ) : (
+                        visible.map(({ m, pk, condName, condType }) => {
+                          const [idxStr, pgStr] = pk.split(":");
+                          const isFlashing = flashMeasurementId === m.id;
+                          return (
+                            <div key={m.id} onClick={() => { setActivePdfIdx(Number(idxStr)); setPage(Number(pgStr)); }}
+                              style={{ padding: "var(--space-1) var(--space-2)", cursor: "pointer", background: isFlashing ? "rgba(224,148,34,0.35)" : pageKey === pk ? "rgba(224,148,34,0.1)" : "transparent", borderRadius: 3, fontSize: "var(--text-xs)", color: "rgba(255,255,255,0.85)", display: "flex", justifyContent: "space-between", gap: 6, borderLeft: isFlashing ? "2px solid var(--amber)" : "2px solid transparent" }}
+                              title={`${condName} · Sheet ${pk} · ${fmtMeasVal(m, condType)}`}>
+                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{condName}</span>
+                              <span className="c-text2" style={{ flexShrink: 0 }}>{pk}</span>
+                              <span className="c-amber" style={{ flexShrink: 0, minWidth: 44, textAlign: "right" }}>{fmtMeasVal(m, condType)}</span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
