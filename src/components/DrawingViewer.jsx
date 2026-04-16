@@ -3518,16 +3518,15 @@ export function DrawingViewer({ pdfData, storageUrl, fileName, onClose, onAddToT
         <div className="flex-col flex-shrink-0" style={{ width: 260, borderLeft: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.85)" }}>
 
           {/* Sheet Index — collapsible */}
-          {pdfs && pdfs.length > 0 && (() => {
-            const [sheetIdxOpen, setSheetIdxOpen] = [_sidebarSheetsOpen, _setSidebarSheetsOpen];
+          {pdfFiles && pdfFiles.length > 0 && (() => {
             // Build a list of all pages across all PDFs with indicators
             const allSheets = [];
-            pdfs.forEach((pdfDoc, pdfIdx) => {
-              const n = pdfDoc?.numPages || 0;
+            pdfFiles.forEach((pdfFile, pdfIdx) => {
+              const n = pdfFile?.numPages || pdfFile?.doc?.numPages || 0;
               for (let p = 1; p <= n; p++) {
                 const pk = `${pdfIdx}:${p}`;
                 const mCount = (measurements?.[pk] || []).length;
-                const hasCalib = !!scales?.[pk];
+                const hasCalib = !!calibrations?.[pk];
                 const hasCORev = !!revisionDocs?.[pk];
                 const name = sheetNames?.[pk] || `Sheet ${p}`;
                 allSheets.push({ pk, pdfIdx, page: p, name, mCount, hasCalib, hasCORev });
