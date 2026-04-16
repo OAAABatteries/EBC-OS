@@ -63,6 +63,9 @@ const wizardStyles = `
   font-family: var(--font-body);
   position: relative;
   overflow: hidden;
+  /* iOS standalone PWA: respect safe-area so content clears the notch and home indicator */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 .wizard-bg {
   position: absolute;
@@ -97,6 +100,17 @@ const wizardStyles = `
   min-height: 520px;
   display: flex;
   flex-direction: column;
+}
+/* Mobile: let the card fill the screen so there's no dark band top/bottom in PWA standalone */
+@media (max-width: 640px) {
+  .wizard-card {
+    min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 32px);
+    min-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 32px);
+    margin: var(--space-2);
+    padding: 24px 20px 20px;
+    border-radius: 16px;
+    max-width: 100%;
+  }
 }
 
 /* ── Top bar ── */

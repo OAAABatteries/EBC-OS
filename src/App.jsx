@@ -5659,6 +5659,24 @@ function App({ auth, onLogout }) {
                     {t(st.label)}
                   </button>
                 ))}
+                {/* Sticky Settings + Logout at bottom — reachable even when many tabs push the list long */}
+                <div style={{ borderTop: "1px solid var(--border)", marginTop: "var(--space-1)", paddingTop: "var(--space-1)", position: "sticky", bottom: 0, background: "var(--glass-bg)", backdropFilter: "blur(12px)" }}>
+                  {hasAccess(userRole, "settings") && (
+                    <button
+                      className={`nav-item ${tab === "settings" ? "active" : ""}`}
+                      onClick={() => handleTabClick("settings")}
+                    >
+                      ⚙ {t("Settings")}
+                    </button>
+                  )}
+                  <button
+                    className="nav-item"
+                    style={{ color: "var(--red)" }}
+                    onClick={() => { setMoreOpen(false); onLogout(); }}
+                  >
+                    ⎋ {t("Logout")}
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -5707,6 +5725,17 @@ function App({ auth, onLogout }) {
                     {t(st.label)}
                   </button>
                 ))}
+              </div>
+              {/* Mobile Logout — always reachable from the slide-out nav */}
+              <div className="mobile-nav-divider" />
+              <div className="mobile-nav-section">
+                <button
+                  className="mobile-nav-item"
+                  style={{ color: "var(--red)", fontWeight: 600 }}
+                  onClick={() => { setMobileNav(false); onLogout(); }}
+                >
+                  ⎋ {t("Logout")}
+                </button>
               </div>
             </nav>
           </div>
