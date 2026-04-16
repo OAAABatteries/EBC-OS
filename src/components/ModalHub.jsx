@@ -822,7 +822,14 @@ const ModalHub = ({ type, data, app }) => {
               <div className="modal-title">{draft.name}</div>
               <div className="text-xs text-muted">{draft.gc} · {draft.phase} · {draft.pm || "Unassigned"}</div>
             </div>
-            <button className="modal-close" onClick={close}>✕</button>
+            <div className="flex gap-8 flex-center">
+              <button className="btn btn-ghost btn-sm fs-xs" title="Open this project in a new window (side-by-side view)"
+                onClick={() => {
+                  const url = `${window.location.pathname}?popout=project&id=${encodeURIComponent(draft.id)}&tab=${encodeURIComponent(projTab)}`;
+                  window.open(url, `ebc_popout_${draft.id}`, "width=1280,height=900,noopener=no,noreferrer=no");
+                }}>↗ Pop Out</button>
+              <button className="modal-close" onClick={close}>✕</button>
+            </div>
           </div>
 
           {/* Sub-tabs (Phase 4: role-filtered) */}

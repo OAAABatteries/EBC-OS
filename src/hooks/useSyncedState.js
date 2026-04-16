@@ -288,6 +288,27 @@ export function useSyncedState(key, initialValue) {
     fetchData();
   }, [table, lsKey]);
 
+  // 3a. Cross-tab sync — when another tab/window writes to the same localStorage key,
+  // refresh our state immediately. This enables multi-window workflows (pop-out modals,
+  // side-by-side project views) with instant sync instead of waiting for Supabase.
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key !== lsKey || e.newValue === null) return;
+      // Don't re-parse our own writes (storage event doesn't fire in the originating tab,
+      // but guard anyway in case of edge cases)
+      try {
+        const next = JSON.parse(e.newValue);
+        setStored((prev) => {
+          // Skip if unchanged to avoid re-render loops
+          if (JSON.stringify(prev) === e.newValue) return prev;
+          return Array.isArray(next) ? dedup(next) : next;
+        });
+      } catch {}
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [lsKey]);
+
   // 3. Real-time subscription
   useEffect(() => {
     if (!table || !isSupabaseConfigured() || !supabase) return;

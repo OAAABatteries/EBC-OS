@@ -66,6 +66,19 @@ export function DocViewer({ doc, onClose }) {
         <div className="modal-header">
           <h3>{doc.name}</h3>
           <div style={{ display: "flex", gap: 8 }}>
+            <button className="btn btn-ghost btn-sm" title="Open in new window" onClick={() => {
+              // Open data URL directly in a new tab — browser renders PDF/image natively
+              const w = window.open();
+              if (w) {
+                if (doc.name?.toLowerCase().endsWith(".pdf") || (doc.type || "").includes("pdf")) {
+                  w.document.write(`<!DOCTYPE html><html><head><title>${doc.name}</title></head><body style="margin:0"><iframe src="${doc.dataUrl}" style="width:100vw;height:100vh;border:none" /></body></html>`);
+                } else if ((doc.type || "").startsWith("image/")) {
+                  w.document.write(`<!DOCTYPE html><html><head><title>${doc.name}</title></head><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="${doc.dataUrl}" style="max-width:100vw;max-height:100vh;object-fit:contain" /></body></html>`);
+                } else {
+                  w.location.href = doc.dataUrl;
+                }
+              }
+            }}>↗ Pop Out</button>
             <a className="btn btn-ghost btn-sm" href={doc.dataUrl} download={doc.name}>Download</a>
             <button className="modal-close" onClick={onClose}>✕</button>
           </div>

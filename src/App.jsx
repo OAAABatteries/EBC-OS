@@ -608,6 +608,28 @@ function App({ auth, onLogout }) {
   }, []);
   const [modal, setModal] = useState(null);
   const [initialProjTab, setInitialProjTab] = useState("overview");
+  // ── Pop-out URL param handler: /?popout=project&id=xxx&tab=financials ──
+  // Enables multi-window workflows — open a project/CO/invoice in a new window via window.open().
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const popout = params.get("popout");
+    if (!popout) return;
+    const id = params.get("id");
+    const targetTab = params.get("tab");
+    // Delay slightly so projects/etc. are loaded from localStorage
+    const timer = setTimeout(() => {
+      if (popout === "project" && id) {
+        const p = projects.find(pr => String(pr.id) === String(id));
+        if (p) { if (targetTab) setInitialProjTab(targetTab); setModal({ type: "viewProject", data: p }); }
+      } else if (popout === "tab" && id) {
+        setTab(id);
+        if (targetTab) setSubTab(targetTab);
+      }
+      // Clean URL so reload doesn't re-pop-out
+      window.history.replaceState({}, "", window.location.pathname + window.location.hash);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [projects]); // eslint-disable-line react-hooks/exhaustive-deps
   const [moreOpen, setMoreOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [subTab, setSubTab] = useState(null);
@@ -5587,7 +5609,22 @@ function App({ auth, onLogout }) {
             <button
               key={pt.key}
               className={`nav-item ${tab === pt.key ? "active" : ""}`}
-              onClick={() => handleTabClick(pt.key)}
+              onClick={(e) => {
+                // Ctrl+click / Cmd+click / Middle-click → open in new window (multi-window support)
+                if (e.ctrlKey || e.metaKey || e.button === 1) {
+                  e.preventDefault();
+                  window.open(`${window.location.pathname}?popout=tab&id=${encodeURIComponent(pt.key)}`, `ebc_tab_${pt.key}`, "width=1280,height=900");
+                  return;
+                }
+                handleTabClick(pt.key);
+              }}
+              onAuxClick={(e) => {
+                if (e.button === 1) {
+                  e.preventDefault();
+                  window.open(`${window.location.pathname}?popout=tab&id=${encodeURIComponent(pt.key)}`, `ebc_tab_${pt.key}`, "width=1280,height=900");
+                }
+              }}
+              title={`${t(pt.label)} — Ctrl+click (Cmd+click on Mac) to open in new window`}
             >
               {t(pt.label)}
             </button>
