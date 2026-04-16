@@ -1,9 +1,46 @@
 // ═══════════════════════════════════════════════════════════════
 //  EBC-OS · API Utilities
-//  Anthropic Claude API integration
+//
+//  EXTERNAL AI DISABLED BY DEFAULT (Apr 2026)
+//  Per user rule (.claude/memory/feedback_no_external_ai.md):
+//    "No external AI APIs (Claude, OpenAI). All parsing must be
+//     local/heuristic. Only exception: email scanning API."
+//
+//  Every AI function in this file ultimately calls `callClaude`.
+//  By gating callClaude at the source, all 40+ caller sites are
+//  neutralized simultaneously without having to delete each function.
+//
+//  Opt-in: to re-enable external AI, set in localStorage:
+//    localStorage.setItem('ebc_allowExternalAI', 'true')
+//  OR in companySettings JSON:
+//    { "enableExternalAI": true }
+//
+//  When disabled, callClaude throws a friendly error that callers
+//  already handle gracefully (they show the user "AI disabled" or
+//  fall back to their local path).
 // ═══════════════════════════════════════════════════════════════
 
+function externalAiAllowed() {
+  try {
+    // Runtime opt-in via localStorage flag
+    if (typeof localStorage !== "undefined" && localStorage.getItem("ebc_allowExternalAI") === "true") return true;
+    // OR via companySettings in the app bundle (user can flip it in Settings if we ever add the toggle)
+    if (typeof localStorage !== "undefined") {
+      const cs = localStorage.getItem("ebc_companySettings");
+      if (cs) {
+        const parsed = JSON.parse(cs);
+        if (parsed?.enableExternalAI === true) return true;
+      }
+    }
+  } catch {}
+  return false;
+}
+
 export async function callClaude(apiKey, prompt, maxTokens = 1024) {
+  // Enforce no-external-AI rule. Callers already handle thrown errors gracefully.
+  if (!externalAiAllowed()) {
+    throw new Error("External AI is disabled (company policy). Use the local heuristic path or enable in Settings.");
+  }
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
