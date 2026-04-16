@@ -27,11 +27,18 @@ export function saveNotificationPrefs(userId, prefs) {
   localStorage.setItem(PREFS_KEY(userId), JSON.stringify(prefs));
 }
 
+// iOS Safari and some in-app webviews don't define the Notification API at all.
+// Any bare reference throws ReferenceError ("Can't find variable: Notification")
+// before we even get a chance to check it. Use typeof to probe safely.
+const HAS_NOTIFICATION_API = typeof window !== "undefined" && typeof window.Notification !== "undefined";
+const notifPermission = () => HAS_NOTIFICATION_API ? window.Notification.permission : "unsupported";
+const requestNotifPermission = async () => HAS_NOTIFICATION_API ? await window.Notification.requestPermission() : "unsupported";
+
 export function useNotifications() {
   const requestPermission = useCallback(async () => {
-    if (!("Notification" in window)) return "unsupported";
-    if (Notification.permission === "granted") return "granted";
-    return await Notification.requestPermission();
+    if (!HAS_NOTIFICATION_API) return "unsupported";
+    if (notifPermission() === "granted") return "granted";
+    return await requestNotifPermission();
   }, []);
 
   const _post = useCallback((msg) => {
@@ -42,7 +49,7 @@ export function useNotifications() {
   // ── Clock-in reminders (existing) ──
   const scheduleClockReminder = useCallback(
     ({ employeeId, employeeName, scheduledTime, projectName }) => {
-      if (Notification.permission !== "granted") return;
+      if (notifPermission() !== "granted") return;
       _post({ type: "SCHEDULE_CLOCK_REMINDER", employeeId, employeeName, scheduledTime, projectName });
     },
     [_post]
@@ -54,7 +61,7 @@ export function useNotifications() {
 
   // ── Generic notification (immediate) ──
   const sendNotification = useCallback(({ title, body, tag, url }) => {
-    if (Notification.permission !== "granted") return;
+    if (notifPermission() !== "granted") return;
     _post({ type: "SHOW_NOTIFICATION", title, body, tag, url });
   }, [_post]);
 
@@ -102,7 +109,7 @@ export function useNotifications() {
 
   // ── Daily report reminder ──
   const scheduleDailyReportReminder = useCallback(({ employeeId, employeeName, scheduledTime }) => {
-    if (Notification.permission !== "granted") return;
+    if (notifPermission() !== "granted") return;
     _post({ type: "SCHEDULE_DAILY_REPORT_REMINDER", employeeId, employeeName, scheduledTime });
   }, [_post]);
 
@@ -125,7 +132,8 @@ export function useNotifications() {
   const subscribeToPush = useCallback(async (userId) => {
     if (!VAPID_PUBLIC_KEY || !("serviceWorker" in navigator) || !("PushManager" in window)) return null;
     try {
-      const permission = await Notification.requestPermission();
+      if (!HAS_NOTIFICATION_API) return null;
+      const permission = await requestNotifPermission();
       if (permission !== "granted") return null;
 
       const reg = await navigator.serviceWorker.ready;

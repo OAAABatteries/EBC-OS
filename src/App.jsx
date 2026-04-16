@@ -311,9 +311,9 @@ function AuthGate() {
   const handleLogin = useCallback((user) => {
     localStorage.setItem("ebc_auth", JSON.stringify(user));
     setAuth(user);
-    // Request notification permission after login
-    if ("Notification" in window && Notification.permission === "default") {
-      setTimeout(() => Notification.requestPermission(), 2000);
+    // Request notification permission after login — guard with typeof, since iOS Safari lacks the global
+    if (typeof window !== "undefined" && typeof window.Notification !== "undefined" && window.Notification.permission === "default") {
+      setTimeout(() => { try { window.Notification.requestPermission(); } catch {} }, 2000);
     }
   }, []);
 
@@ -3624,8 +3624,15 @@ function App({ auth, onLogout }) {
                   <pre className="pre-wrap-content">{followUpText}</pre>
                   <div className="flex gap-8 mt-8">
                     <button className="btn btn-primary btn-sm" onClick={() => {
-                      navigator.clipboard.writeText(followUpText);
-                      show("Copied to clipboard", "ok");
+                      // Guard for iOS Safari in-app webview + older browsers that lack clipboard API
+                      if (navigator.clipboard?.writeText) {
+                        navigator.clipboard.writeText(followUpText).then(
+                          () => show("Copied to clipboard", "ok"),
+                          () => show("Copy failed — select text manually", "err"),
+                        );
+                      } else {
+                        show("Clipboard unavailable — select text manually", "err");
+                      }
                     }}>{t("Copy Email")}</button>
                     <button className="btn btn-ghost btn-sm" onClick={() => runFollowUp(followUpBid)}>{t("Regenerate")}</button>
                   </div>

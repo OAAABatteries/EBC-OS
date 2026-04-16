@@ -581,7 +581,7 @@ function NotificationSettings({ userId }) {
       return { clockReminders: true, materialUpdates: true, scheduleChanges: true, dailyReportReminder: true, dailyReportTime: "16:30" };
     }
   });
-  const [permission, setPermission] = useState(() => "Notification" in window ? Notification.permission : "unsupported");
+  const [permission, setPermission] = useState(() => (typeof window !== "undefined" && typeof window.Notification !== "undefined") ? window.Notification.permission : "unsupported");
   const [pushSubscribed, setPushSubscribed] = useState(() => {
     try {
       const { useNotifications } = require("../../hooks/useNotifications");
@@ -609,7 +609,8 @@ function NotificationSettings({ userId }) {
   };
 
   const requestPerm = async () => {
-    const result = await Notification.requestPermission();
+    if (typeof window === "undefined" || typeof window.Notification === "undefined") { setPermission("unsupported"); return; }
+    const result = await window.Notification.requestPermission();
     setPermission(result);
   };
 
@@ -630,7 +631,8 @@ function NotificationSettings({ userId }) {
         // Subscribe
         const VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
         if (!VAPID_KEY) { setPushLoading(false); return; }
-        const perm = await Notification.requestPermission();
+        if (typeof window === "undefined" || typeof window.Notification === "undefined") { setPermission("unsupported"); setPushLoading(false); return; }
+        const perm = await window.Notification.requestPermission();
         if (perm !== "granted") { setPermission(perm); setPushLoading(false); return; }
         const reg = await navigator.serviceWorker.ready;
         let sub = await reg.pushManager.getSubscription();
