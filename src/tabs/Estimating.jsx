@@ -1288,13 +1288,23 @@ export function EstimatingTab({ app }) {
       {(() => {
         const docs = tk.documents || [];
         const unack = docs.filter(d => !d.acknowledged);
+        // Inline add — no prompt() (breaks on mobile PWAs). Just append a blank row
+        // with default date; user edits inline. This matches the pattern used by
+        // +Add Area / +Add Alternate / +Add Add-On below.
         const addDoc = (type) => {
-          const number = prompt(`${type === "addendum" ? "Addendum" : type === "bulletin" ? "Bulletin" : type === "rfi" ? "RFI" : "Plans"} number:`, "");
-          if (!number) return;
-          const date = prompt("Date (YYYY-MM-DD):", new Date().toISOString().slice(0, 10)) || "";
-          const notes = prompt("Notes (optional):", "") || "";
-          const newDoc = { id: crypto.randomUUID(), type, number, date, notes, acknowledged: false, createdAt: new Date().toISOString() };
+          const newDoc = {
+            id: crypto.randomUUID(),
+            type,
+            number: "",
+            date: new Date().toISOString().slice(0, 10),
+            notes: "",
+            acknowledged: false,
+            createdAt: new Date().toISOString(),
+          };
           updateTakeoff(tk.id, { documents: [...docs, newDoc] });
+        };
+        const updateDoc = (id, patch) => {
+          updateTakeoff(tk.id, { documents: docs.map(d => d.id === id ? { ...d, ...patch } : d) });
         };
         const toggleAck = (id) => {
           updateTakeoff(tk.id, { documents: docs.map(d => d.id === id ? { ...d, acknowledged: !d.acknowledged, acknowledgedAt: !d.acknowledged ? new Date().toISOString() : null } : d) });
@@ -1332,9 +1342,18 @@ export function EstimatingTab({ app }) {
                     {docs.map(d => (
                       <tr key={d.id} style={{ background: d.acknowledged ? "transparent" : "rgba(239,68,68,0.05)" }}>
                         <td><span className={`badge fs-xs ${d.type === "addendum" ? "badge-red" : d.type === "bulletin" ? "badge-amber" : d.type === "rfi" ? "badge-blue" : "badge-ghost"}`}>{d.type}</span></td>
-                        <td className="fw-semi">{d.number}</td>
-                        <td className="text-xs text-muted">{d.date || "—"}</td>
-                        <td className="text-xs">{d.notes || "—"}</td>
+                        <td>
+                          <input className="form-input" style={{ width: 80, padding: "2px 6px" }} value={d.number || ""}
+                            placeholder="e.g. 1" onChange={(e) => updateDoc(d.id, { number: e.target.value })} />
+                        </td>
+                        <td>
+                          <input type="date" className="form-input" style={{ width: 130, padding: "2px 6px" }}
+                            value={d.date || ""} onChange={(e) => updateDoc(d.id, { date: e.target.value })} />
+                        </td>
+                        <td>
+                          <input className="form-input" style={{ width: "100%", minWidth: 120, padding: "2px 6px" }}
+                            placeholder="Notes (optional)" value={d.notes || ""} onChange={(e) => updateDoc(d.id, { notes: e.target.value })} />
+                        </td>
                         <td>
                           <label style={{ display: "inline-flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
                             <input type="checkbox" checked={d.acknowledged || false} onChange={() => toggleAck(d.id)} />
@@ -1356,15 +1375,9 @@ export function EstimatingTab({ app }) {
 
       {/* Markups moved to Bid Summary section below — takeoff phase is about scope & measurements */}
 
-      {/* ── Gap Analysis (standalone) ── */}
-      <div className="mb-sp4">
-        <button
-          className={`btn ${showScopePanel ? "btn-primary" : "btn-ghost"} btn-sm`}
-          onClick={() => setShowScopePanel(!showScopePanel)}
-        >
-          {showScopePanel ? "Hide Gap Analysis" : "AI Gap Analysis"}
-        </button>
-      </div>
+      {/* Gap Analysis button removed — depends on external AI (gated by company policy).
+          The panel + runGapCheck function remain in code, inert. Restore the button
+          here if you ever flip on companySettings.enableExternalAI. */}
 
       {showScopePanel && (
         <div className="card mb-sp5 p-sp5">
@@ -2032,11 +2045,12 @@ export function EstimatingTab({ app }) {
       {/* PDF options: tax breakout */}
       <div className="takeoff-summary mt-sp4">
         <h3 className="fs-secondary mb-sp3">Proposal PDF Options</h3>
-        <label className="flex fs-label gap-sp2 cursor-pointer">
+        <label className="flex fs-label gap-sp2 cursor-pointer" style={{ alignItems: "center" }}>
           <input
             type="checkbox"
             checked={tk.showTaxBreakout || false}
             onChange={(e) => updateTakeoff(tk.id, { showTaxBreakout: e.target.checked })}
+            style={{ width: 18, height: 18, accentColor: "var(--amber)", cursor: "pointer", flexShrink: 0 }}
           />
           Break out tax on materials separately on proposal
         </label>
