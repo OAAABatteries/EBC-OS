@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { describe, it, expect } from "vitest";
-import { calcItem, calcRoom, calcSummary } from "../../src/utils/estimatingCalc.js";
+import { calcItem, calcRoom, calcSummary, calcQtySums, calcCeilingTotals, classifyRatio, calcLFMetrics } from "../../src/utils/estimatingCalc.js";
 
 // ── Test fixtures ──
 const ASSEMBLIES = [
@@ -237,5 +237,247 @@ describe("calcSummary — Texas commercial convention", () => {
     expect(s.profitAmt).toBe(0);
     expect(s.taxAmt).toBe(0);
     expect(s.grandTotal).toBe(s.subtotal);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// LF Sanity Metrics (drywall/framing — linear-first takeoffs)
+// EBC takeoffs measure walls/CB/CJ/FC in LF. Only RCP uses SF.
+// ─────────────────────────────────────────────────────────────
+
+// Realistic assembly fixtures mirroring src/data/constants.js structure
+const LF_ASSEMBLIES = [
+  { code: "A3", cat: "Walls", unit: "LF", name: '2-1/2" 20ga Partition', matRate: 12.73, labRate: 39.93 },
+  { code: "A4", cat: "Walls", unit: "LF", name: '8" 20ga Partition (1-hr rated)', matRate: 20.36, labRate: 46.43 },
+  { code: "SW1", cat: "Shaft Wall", unit: "LF", name: "Shaft Wall System (1-hr)", matRate: 14.35, labRate: 32.00 },
+  { code: "ACT1", cat: "Ceilings", unit: "SF", name: "2x2 ACT Grid + Tile", matRate: 3.02, labRate: 4.25 },
+  { code: "GC1", cat: "Ceilings", unit: "SF", name: "GWB Suspended Ceiling", matRate: 2.20, labRate: 5.15 },
+  { code: "FD1", cat: "Ceilings", unit: "LF", name: "Furr-Down / Soffit", matRate: 12.50, labRate: 36.00 },
+  { code: "CB", cat: "Profit Add-Ons", unit: "LF", name: "Corner Bead", matRate: 0.85, labRate: 1.20 },
+  { code: "CJ", cat: "Profit Add-Ons", unit: "EA", name: "Control Joints", matRate: 12.00, labRate: 18.00 },
+  { code: "FC", cat: "Profit Add-Ons", unit: "LF", name: "Fire Caulking", matRate: 2.50, labRate: 3.50 },
+  { code: "DF", cat: "Counts", unit: "EA", name: "Door Frame", matRate: 65.00, labRate: 120.00 },
+];
+
+describe("calcQtySums", () => {
+  it("returns zeros for empty takeoff", () => {
+    const r = calcQtySums({ rooms: [] }, LF_ASSEMBLIES);
+    expect(r).toEqual({ wallLF: 0, ratedWallLF: 0, ceilingSF: 0, cbLF: 0, cjEA: 0, fcLF: 0, dfEA: 0, slEA: 0 });
+  });
+
+  it("sums wallLF across multiple wall assemblies and rooms", () => {
+    const tk = {
+      rooms: [
+        { items: [{ code: "A3", qty: 200, height: 10, diff: 1 }] },
+        { items: [{ code: "A3", qty: 150, height: 10, diff: 1 }, { code: "A4", qty: 100, height: 10, diff: 1 }] },
+      ],
+    };
+    const r = calcQtySums(tk, LF_ASSEMBLIES);
+    expect(r.wallLF).toBe(450); // 200 + 150 + 100
+  });
+
+  it("identifies rated walls by name token AND by SW1 code", () => {
+    const tk = {
+      rooms: [{ items: [
+        { code: "A3", qty: 300, height: 10, diff: 1 },  // not rated
+        { code: "A4", qty: 200, height: 10, diff: 1 },  // rated (name has "1-hr")
+        { code: "SW1", qty: 100, height: 10, diff: 1 }, // rated (SW1 code)
+      ] }],
+    };
+    const r = calcQtySums(tk, LF_ASSEMBLIES);
+    expect(r.wallLF).toBe(600);
+    expect(r.ratedWallLF).toBe(300); // A4 + SW1
+  });
+
+  it("only counts cat:Ceilings + unit:SF toward ceilingSF (FD1 is LF, not SF)", () => {
+    const tk = {
+      rooms: [{ items: [
+        { code: "ACT1", qty: 500, height: 10, diff: 1 }, // ceilings SF → counts
+        { code: "GC1", qty: 200, height: 10, diff: 1 },  // ceilings SF → counts
+        { code: "FD1", qty: 80, height: 10, diff: 1 },   // ceilings LF → does NOT count
+      ] }],
+    };
+    const r = calcQtySums(tk, LF_ASSEMBLIES);
+    expect(r.ceilingSF).toBe(700);
+  });
+
+  it("pulls add-on qty by specific code (CB, CJ, FC, DF)", () => {
+    const tk = { rooms: [{ items: [
+      { code: "CB", qty: 45, height: 10, diff: 1 },
+      { code: "CJ", qty: 12, height: 10, diff: 1 },
+      { code: "FC", qty: 30, height: 10, diff: 1 },
+      { code: "DF", qty: 8, height: 10, diff: 1 },
+    ] }] };
+    const r = calcQtySums(tk, LF_ASSEMBLIES);
+    expect(r.cbLF).toBe(45);
+    expect(r.cjEA).toBe(12);
+    expect(r.fcLF).toBe(30);
+    expect(r.dfEA).toBe(8);
+  });
+
+  it("ignores unknown codes and zero/negative qty", () => {
+    const tk = { rooms: [{ items: [
+      { code: "ZZZ", qty: 999, height: 10, diff: 1 },
+      { code: "A3", qty: 0, height: 10, diff: 1 },
+      { code: "A3", qty: -50, height: 10, diff: 1 },
+      { code: "A3", qty: 100, height: 10, diff: 1 },
+    ] }] };
+    const r = calcQtySums(tk, LF_ASSEMBLIES);
+    expect(r.wallLF).toBe(100);
+  });
+});
+
+describe("calcCeilingTotals", () => {
+  it("returns zero for no ceiling items", () => {
+    const tk = { rooms: [{ items: [{ code: "A3", qty: 200, height: 10, diff: 1 }] }] };
+    const r = calcCeilingTotals(tk, LF_ASSEMBLIES);
+    expect(r).toEqual({ mat: 0, lab: 0, total: 0 });
+  });
+
+  it("sums mat + lab only for cat:Ceilings items", () => {
+    const tk = { rooms: [{ items: [
+      { code: "A3", qty: 200, height: 10, diff: 1 },   // wall, excluded
+      { code: "ACT1", qty: 500, height: 10, diff: 1 }, // ceiling, included
+    ] }] };
+    const r = calcCeilingTotals(tk, LF_ASSEMBLIES);
+    // ACT1: 500 × 3.02 = 1510 mat; 500 × 4.25 × 1.0 = 2125 lab
+    expect(r.mat).toBeCloseTo(1510, 2);
+    expect(r.lab).toBeCloseTo(2125, 2);
+    expect(r.total).toBeCloseTo(3635, 2);
+  });
+});
+
+describe("classifyRatio", () => {
+  it("returns neutral for invalid inputs", () => {
+    expect(classifyRatio(null, 0.15)).toBe("neutral");
+    expect(classifyRatio(0.15, 0)).toBe("neutral");
+    expect(classifyRatio(NaN, 0.15)).toBe("neutral");
+  });
+
+  it("green when within ±25% of target (default)", () => {
+    expect(classifyRatio(0.15, 0.15)).toBe("green"); // exact
+    expect(classifyRatio(0.12, 0.15)).toBe("green"); // -20%
+    expect(classifyRatio(0.18, 0.15)).toBe("green"); // +20%
+  });
+
+  it("amber when 25-50% off target", () => {
+    expect(classifyRatio(0.10, 0.15)).toBe("amber"); // -33%
+    expect(classifyRatio(0.22, 0.15)).toBe("amber"); // +47%
+  });
+
+  it("red when >50% off target", () => {
+    expect(classifyRatio(0.05, 0.15)).toBe("red"); // -67%
+    expect(classifyRatio(0.30, 0.15)).toBe("red"); // +100%
+  });
+});
+
+describe("calcLFMetrics", () => {
+  const summary = { grandTotal: 50000, labWithBurden: 25000, labSub: 20000 };
+
+  it("computes $/LF and labor/LF when wallLF > 0", () => {
+    const tk = { rooms: [{ items: [{ code: "A3", qty: 1000, height: 10, diff: 1 }] }] };
+    const r = calcLFMetrics(tk, LF_ASSEMBLIES, summary);
+    expect(r.wall.wallLF).toBe(1000);
+    expect(r.wall.dollarsPerWallLF).toBe(50); // 50000/1000
+    expect(r.wall.laborPerWallLF).toBe(25);
+    // Hours = laborWithBurden / avgRate / wallLF = 25000/45/1000 ≈ 0.556
+    expect(r.wall.hoursPerWallLF).toBeCloseTo(0.5556, 3);
+  });
+
+  it("returns null per-LF metrics when wallLF is zero (ceiling-only takeoff)", () => {
+    const tk = { rooms: [{ items: [{ code: "ACT1", qty: 500, height: 10, diff: 1 }] }] };
+    const r = calcLFMetrics(tk, LF_ASSEMBLIES, summary);
+    expect(r.wall.wallLF).toBe(0);
+    expect(r.wall.dollarsPerWallLF).toBeNull();
+    expect(r.wall.laborPerWallLF).toBeNull();
+    expect(r.wall.hoursPerWallLF).toBeNull();
+  });
+
+  it("CB ratio: green at 15% of wallLF (exact target)", () => {
+    const tk = { rooms: [{ items: [
+      { code: "A3", qty: 1000, height: 10, diff: 1 },
+      { code: "CB", qty: 150, height: 10, diff: 1 },
+    ] }] };
+    const r = calcLFMetrics(tk, LF_ASSEMBLIES, summary);
+    expect(r.ratios.cb.ratio).toBeCloseTo(0.15, 3);
+    expect(r.ratios.cb.status).toBe("green");
+  });
+
+  it("CB ratio: red when way under target (missed corners)", () => {
+    const tk = { rooms: [{ items: [
+      { code: "A3", qty: 1000, height: 10, diff: 1 },
+      { code: "CB", qty: 20, height: 10, diff: 1 }, // 2% — way low
+    ] }] };
+    const r = calcLFMetrics(tk, LF_ASSEMBLIES, summary);
+    expect(r.ratios.cb.status).toBe("red");
+  });
+
+  it("CJ coverage: green when at target (wallLF/30)", () => {
+    const tk = { rooms: [{ items: [
+      { code: "A3", qty: 900, height: 10, diff: 1 }, // expects 30 CJs
+      { code: "CJ", qty: 30, height: 10, diff: 1 },
+    ] }] };
+    const r = calcLFMetrics(tk, LF_ASSEMBLIES, summary);
+    expect(r.ratios.cj.expected).toBe(30);
+    expect(r.ratios.cj.coverage).toBe(1.0);
+    expect(r.ratios.cj.status).toBe("green");
+  });
+
+  it("CJ coverage: red when less than 50% of expected", () => {
+    const tk = { rooms: [{ items: [
+      { code: "A3", qty: 900, height: 10, diff: 1 }, // expects 30
+      { code: "CJ", qty: 10, height: 10, diff: 1 }, // 33% coverage
+    ] }] };
+    const r = calcLFMetrics(tk, LF_ASSEMBLIES, summary);
+    expect(r.ratios.cj.status).toBe("red");
+  });
+
+  it("FC: red when rated walls present but zero FC", () => {
+    const tk = { rooms: [{ items: [
+      { code: "A4", qty: 500, height: 10, diff: 1 }, // rated wall
+      // no FC
+    ] }] };
+    const r = calcLFMetrics(tk, LF_ASSEMBLIES, summary);
+    expect(r.ratios.fc.status).toBe("red");
+    expect(r.ratios.fc.note).toMatch(/rated wall but 0 LF FC/);
+  });
+
+  it("FC: amber when FC present but no rated-wall assemblies detected", () => {
+    const tk = { rooms: [{ items: [
+      { code: "A3", qty: 500, height: 10, diff: 1 }, // not rated
+      { code: "FC", qty: 50, height: 10, diff: 1 },
+    ] }] };
+    const r = calcLFMetrics(tk, LF_ASSEMBLIES, summary);
+    expect(r.ratios.fc.status).toBe("amber");
+    expect(r.ratios.fc.note).toMatch(/no rated-wall assemblies detected/);
+  });
+
+  it("FC: neutral with informative note when no rated walls and no FC", () => {
+    const tk = { rooms: [{ items: [{ code: "A3", qty: 500, height: 10, diff: 1 }] }] };
+    const r = calcLFMetrics(tk, LF_ASSEMBLIES, summary);
+    expect(r.ratios.fc.status).toBe("neutral");
+    expect(r.ratios.fc.note).toMatch(/confirm no 1-hr/);
+  });
+
+  it("ceiling block: computes $/CeilingSF from ceiling-only totals", () => {
+    const tk = { rooms: [{ items: [
+      { code: "A3", qty: 500, height: 10, diff: 1 },     // wall - ignored
+      { code: "ACT1", qty: 1000, height: 10, diff: 1 },  // ceiling
+    ] }] };
+    const r = calcLFMetrics(tk, LF_ASSEMBLIES, summary);
+    expect(r.ceiling.ceilingSF).toBe(1000);
+    // ACT1 at 1000: mat = 1000×3.02 = 3020; lab = 1000×4.25 = 4250; total = 7270
+    expect(r.ceiling.dollarsPerCeilingSF).toBeCloseTo(7.27, 2);
+    expect(r.ceiling.laborPerCeilingSF).toBeCloseTo(4.25, 2);
+  });
+
+  it("DF: provides actual count + typical (wallLF/25) for visual comparison", () => {
+    const tk = { rooms: [{ items: [
+      { code: "A3", qty: 500, height: 10, diff: 1 }, // 20 typical doors
+      { code: "DF", qty: 18, height: 10, diff: 1 },
+    ] }] };
+    const r = calcLFMetrics(tk, LF_ASSEMBLIES, summary);
+    expect(r.ratios.df.actual).toBe(18);
+    expect(r.ratios.df.typical).toBe(20);
   });
 });

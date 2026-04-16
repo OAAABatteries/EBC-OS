@@ -7,7 +7,7 @@ import { uploadTakeoffPdf, downloadTakeoffPdf, getSignedUrl, uploadProjectDrawin
 import { extractPdfText } from "../utils/pdfBidExtractor.js";
 import { parseProposalFromText } from "../utils/proposalImporter.js";
 // Estimating calc primitives extracted for testability (see src/utils/__tests__/estimatingCalc.test.js)
-import { calcItem, calcRoom, calcSummary } from "../utils/estimatingCalc";
+import { calcItem, calcRoom, calcSummary, calcLFMetrics } from "../utils/estimatingCalc";
 import { Upload } from "lucide-react";
 
 /* ── main export ─────────────────────────────────────────────── */
@@ -1712,6 +1712,10 @@ export function EstimatingTab({ app }) {
         };
         const costStatus = checkDeviation(costPerSF, histCost);
         const laborStatus = checkDeviation(laborPerSF, histLabor);
+        // LF-based sanity metrics — the primary check for drywall/framing takeoffs
+        // ($/SF above is a macro/owner-view; $/LF is how the estimator verifies the work)
+        const lfm = calcLFMetrics(tk, assemblies, summary, { avgLabRate });
+        const statusColor = (s) => s === "red" ? "var(--red)" : s === "amber" ? "var(--amber)" : s === "green" ? "var(--green)" : "var(--text)";
         return (
           <div className="card dash-card mt-sp3" style={{ borderLeft: "3px solid var(--blue)" }}>
             <div className="flex-between mb-8">
@@ -1773,7 +1777,108 @@ export function EstimatingTab({ app }) {
                 </div>
               </div>
             ) : (
-              <div className="text-sm text-dim p-sp2">Enter Project SF to see $/SF, Labor$/SF, and historical comparison.</div>
+              <div className="text-sm text-dim p-sp2">Enter Project SF for macro $/SF check. LF metrics below work without it.</div>
+            )}
+
+            {/* ── LF-based sanity block — the primary check for drywall/framing ── */}
+            {lfm.wall.wallLF > 0 && (
+              <div className="mt-sp4" style={{ borderTop: "1px solid var(--border)", paddingTop: "var(--space-3)" }}>
+                <div className="text-xs text-muted mb-8" style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Wall LF Check · {Math.round(lfm.wall.wallLF).toLocaleString()} LF of wall
+                  {lfm.sums.ratedWallLF > 0 && <span className="c-text2"> · {Math.round(lfm.sums.ratedWallLF).toLocaleString()} LF rated</span>}
+                </div>
+                <div className="grid-auto-180">
+                  <div className="activity-tile">
+                    <div className="text-xs text-muted">$ / Wall LF</div>
+                    <div className="text-lg font-bold">${lfm.wall.dollarsPerWallLF?.toFixed(2) || "—"}</div>
+                    <div className="text-xs text-dim">bid total ÷ wall LF</div>
+                  </div>
+                  <div className="activity-tile">
+                    <div className="text-xs text-muted">Labor $ / Wall LF</div>
+                    <div className="text-lg font-bold">${lfm.wall.laborPerWallLF?.toFixed(2) || "—"}</div>
+                    <div className="text-xs text-dim">loaded labor ÷ wall LF</div>
+                  </div>
+                  <div className="activity-tile">
+                    <div className="text-xs text-muted">Hours / Wall LF</div>
+                    <div className="text-lg font-bold">{lfm.wall.hoursPerWallLF?.toFixed(2) || "—"}</div>
+                    <div className="text-xs text-dim">@ ${lfm.wall.avgLabRate}/hr avg rate</div>
+                  </div>
+                  <div className="activity-tile">
+                    <div className="text-xs text-muted">Labor % of Total</div>
+                    <div className="text-lg font-bold">{summary.grandTotal > 0 ? Math.round(((summary.labWithBurden || summary.labSub) / summary.grandTotal) * 100) : 0}%</div>
+                    <div className="text-xs text-dim">Target: 40-55% drywall/framing</div>
+                  </div>
+                </div>
+
+                {/* Coverage ratios — catches forgotten scope */}
+                <div className="text-xs text-muted mt-sp3 mb-8" style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}>Coverage Ratios</div>
+                <div className="grid-auto-180">
+                  <div className="activity-tile">
+                    <div className="text-xs text-muted">Corner Bead</div>
+                    <div className="text-lg font-bold" style={{ color: statusColor(lfm.ratios.cb.status) }}>
+                      {Math.round(lfm.ratios.cb.actual)} LF
+                    </div>
+                    <div className="text-xs text-dim">
+                      {lfm.ratios.cb.ratio !== null ? `${(lfm.ratios.cb.ratio * 100).toFixed(1)}% of wall · target 15%` : "—"}
+                      {lfm.ratios.cb.status === "red" && <span className="text-red"> · Low</span>}
+                      {lfm.ratios.cb.status === "amber" && <span className="text-amber"> · Check</span>}
+                      {lfm.ratios.cb.status === "green" && <span className="text-green"> · OK</span>}
+                    </div>
+                  </div>
+                  <div className="activity-tile">
+                    <div className="text-xs text-muted">Control Joints</div>
+                    <div className="text-lg font-bold" style={{ color: statusColor(lfm.ratios.cj.status) }}>
+                      {Math.round(lfm.ratios.cj.actual)} EA
+                    </div>
+                    <div className="text-xs text-dim">
+                      target {lfm.ratios.cj.expected} · 1 per 30 LF
+                      {lfm.ratios.cj.status === "red" && <span className="text-red"> · Low</span>}
+                      {lfm.ratios.cj.status === "amber" && <span className="text-amber"> · Check</span>}
+                      {lfm.ratios.cj.status === "green" && <span className="text-green"> · OK</span>}
+                    </div>
+                  </div>
+                  <div className="activity-tile">
+                    <div className="text-xs text-muted">Fire Caulk</div>
+                    <div className="text-lg font-bold" style={{ color: statusColor(lfm.ratios.fc.status) }}>
+                      {Math.round(lfm.ratios.fc.actual)} LF
+                    </div>
+                    <div className="text-xs text-dim">
+                      {lfm.ratios.fc.note || "—"}
+                    </div>
+                  </div>
+                  <div className="activity-tile">
+                    <div className="text-xs text-muted">Door Frames</div>
+                    <div className="text-lg font-bold">{Math.round(lfm.ratios.df.actual)} EA</div>
+                    <div className="text-xs text-dim">typical ~{lfm.ratios.df.typical} · verify plan count</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Ceiling (RCP) block — only SF metric that belongs in drywall/framing ── */}
+            {lfm.ceiling.ceilingSF > 0 && (
+              <div className="mt-sp4" style={{ borderTop: "1px solid var(--border)", paddingTop: "var(--space-3)" }}>
+                <div className="text-xs text-muted mb-8" style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Ceiling (RCP) Check · {Math.round(lfm.ceiling.ceilingSF).toLocaleString()} SF
+                </div>
+                <div className="grid-auto-180">
+                  <div className="activity-tile">
+                    <div className="text-xs text-muted">$ / Ceiling SF</div>
+                    <div className="text-lg font-bold">${lfm.ceiling.dollarsPerCeilingSF?.toFixed(2) || "—"}</div>
+                    <div className="text-xs text-dim">ceiling line totals ÷ SF</div>
+                  </div>
+                  <div className="activity-tile">
+                    <div className="text-xs text-muted">Labor $ / Ceiling SF</div>
+                    <div className="text-lg font-bold">${lfm.ceiling.laborPerCeilingSF?.toFixed(2) || "—"}</div>
+                    <div className="text-xs text-dim">ceiling labor ÷ SF</div>
+                  </div>
+                  <div className="activity-tile">
+                    <div className="text-xs text-muted">Ceiling Total</div>
+                    <div className="text-lg font-bold">${Math.round(lfm.ceiling.totals.total).toLocaleString()}</div>
+                    <div className="text-xs text-dim">mat + labor pre-markup</div>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         );
