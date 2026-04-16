@@ -38,19 +38,24 @@ export function calcRoom(room, assemblies) {
 }
 
 /**
- * Compute full bid summary with waste, burden, overhead, profit, and tax.
+ * Compute full bid summary with waste, burden, bond, insurance, overhead, profit, and tax.
  *
  * Texas commercial subcontracting convention:
  * - Waste applies to MATERIAL only
- * - Labor burden (25-40%) applies to LABOR only
+ * - Labor burden (25-40%) applies to LABOR only — workers comp, payroll taxes
+ * - Bond + insurance (GL / builders risk) apply to direct cost (mat+waste + lab+burden)
+ *   as pass-through job costs; overhead + profit then apply on top of those costs.
  * - Overhead + profit apply to pre-tax cost
  * - Sales tax is a pass-through on materials, added AT THE END
+ *
+ * Backward compat: missing bondPct / insurancePct default to 0 → netCost === directCost,
+ * so existing takeoffs without those fields get the identical total they had before.
  *
  * Fixed bugs from the pre-Apr-2026 version:
  * - Waste was being double-counted in the tax base
  * - Overhead + profit cascaded on top of tax (charged markup on pass-through)
  *
- * @param {object} tk - takeoff: { rooms, wastePct, laborBurdenPct, taxRate, overheadPct, profitPct }
+ * @param {object} tk - takeoff: { rooms, wastePct, laborBurdenPct, bondPct, insurancePct, taxRate, overheadPct, profitPct }
  * @param {Array} assemblies
  * @returns Full summary with all intermediate values for UI display.
  */
@@ -67,7 +72,12 @@ export function calcSummary(tk, assemblies) {
   const burdenPct = tk.laborBurdenPct ?? 0;
   const burdenAmt = labSub * (burdenPct / 100);
   const labWithBurden = labSub + burdenAmt;
-  const netCost = matWithWaste + labWithBurden;
+  const directCost = matWithWaste + labWithBurden;
+  // Bond + insurance: pass-through job costs that go into netCost before OH+profit.
+  // Rates are small (0.5-2%) so they participate in markup just like any other cost.
+  const bondAmt = directCost * ((tk.bondPct || 0) / 100);
+  const insuranceAmt = directCost * ((tk.insurancePct || 0) / 100);
+  const netCost = directCost + bondAmt + insuranceAmt;
   const overheadAmt = netCost * ((tk.overheadPct || 0) / 100);
   const costWithOverhead = netCost + overheadAmt;
   const profitAmt = costWithOverhead * ((tk.profitPct || 0) / 100);
@@ -79,6 +89,8 @@ export function calcSummary(tk, assemblies) {
     matSub, labSub, subtotal,
     wasteAmt, matWithWaste,
     burdenAmt, labWithBurden,
+    directCost,
+    bondAmt, insuranceAmt,
     netCost,
     overheadAmt, costWithOverhead,
     profitAmt, costWithProfit,

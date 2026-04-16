@@ -1691,7 +1691,9 @@ export function EstimatingTab({ app }) {
           <div className="flex gap-8 mb-sp3 flex-wrap" style={{ alignItems: "center" }}>
             {[
               { label: "Waste %", key: "wastePct", title: "Applied to materials only" },
-              { label: "Labor Burden %", key: "laborBurdenPct", title: "Payroll taxes, workers comp, insurance — applied to labor only (typically 25-40%)" },
+              { label: "Labor Burden %", key: "laborBurdenPct", title: "Payroll taxes, workers comp — applied to labor only (typically 25-40%)" },
+              { label: "Bond %", key: "bondPct", title: "Performance/payment bond — project-level pass-through applied to direct cost (typically 0.5-1.5%)" },
+              { label: "Insurance %", key: "insurancePct", title: "GL / builders risk / umbrella — applied to direct cost (typically 0.5-2%)" },
               { label: "Tax %", key: "taxRate", title: "Sales tax on materials (pass-through, applied AFTER markup)" },
               { label: "Overhead %", key: "overheadPct", title: "Applied to pre-tax cost" },
               { label: "Profit %", key: "profitPct", title: "Applied to cost+overhead, pre-tax" },
@@ -1712,6 +1714,12 @@ export function EstimatingTab({ app }) {
           <div className="summary-row"><span>Waste on Materials ({tk.wastePct || 0}%)</span><span>{fmt(summary.wasteAmt)}</span></div>
           {(tk.laborBurdenPct || 0) > 0 && (
             <div className="summary-row"><span>Labor Burden ({tk.laborBurdenPct}%)</span><span>{fmt(summary.burdenAmt || 0)}</span></div>
+          )}
+          {(tk.bondPct || 0) > 0 && (
+            <div className="summary-row"><span>Bond ({tk.bondPct}%) <span className="text-xs text-dim">(on direct cost)</span></span><span>{fmt(summary.bondAmt || 0)}</span></div>
+          )}
+          {(tk.insurancePct || 0) > 0 && (
+            <div className="summary-row"><span>Insurance ({tk.insurancePct}%) <span className="text-xs text-dim">(on direct cost)</span></span><span>{fmt(summary.insuranceAmt || 0)}</span></div>
           )}
           <div className="summary-row"><span>Overhead ({tk.overheadPct || 0}%)</span><span>{fmt(summary.overheadAmt)}</span></div>
           <div className="summary-row"><span>Profit ({tk.profitPct || 0}%)</span><span>{fmt(summary.profitAmt)}</span></div>

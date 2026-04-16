@@ -238,6 +238,75 @@ describe("calcSummary — Texas commercial convention", () => {
     expect(s.taxAmt).toBe(0);
     expect(s.grandTotal).toBe(s.subtotal);
   });
+
+  // ── Bond + insurance (Phase 2 #6) ──
+  it("bond is 0 when bondPct missing — backward compat with pre-bond takeoffs", () => {
+    const s = calcSummary(tk(), ASSEMBLIES);
+    expect(s.bondAmt).toBe(0);
+    expect(s.netCost).toBe(s.directCost);
+  });
+
+  it("bond applies to direct cost (mat+waste + lab+burden) BEFORE overhead", () => {
+    // direct cost with no waste/burden = 30,000 → bond 1% = 300
+    const s = calcSummary(tk({ bondPct: 1 }), ASSEMBLIES);
+    expect(s.directCost).toBe(30000);
+    expect(s.bondAmt).toBe(300);
+    expect(s.netCost).toBe(30300);
+    // No OH/profit/tax — grand = netCost
+    expect(s.grandTotal).toBe(30300);
+  });
+
+  it("insurance applies to direct cost just like bond", () => {
+    const s = calcSummary(tk({ insurancePct: 1.5 }), ASSEMBLIES);
+    expect(s.insuranceAmt).toBe(450); // 1.5% of 30,000
+    expect(s.netCost).toBe(30450);
+  });
+
+  it("bond + insurance both apply to same direct cost (not stacked)", () => {
+    const s = calcSummary(tk({ bondPct: 1, insurancePct: 1 }), ASSEMBLIES);
+    // each independently on direct cost 30,000 → 300 + 300 = 600
+    expect(s.bondAmt).toBe(300);
+    expect(s.insuranceAmt).toBe(300);
+    expect(s.netCost).toBe(30600);
+  });
+
+  it("bond participates in overhead + profit markup (treated as job cost)", () => {
+    // direct 30,000 + bond 300 = netCost 30,300
+    // OH 10% = 3,030 → 33,330
+    // profit 8% = 2,666.40 → 35,996.40
+    const s = calcSummary(tk({ bondPct: 1, overheadPct: 10, profitPct: 8 }), ASSEMBLIES);
+    expect(s.netCost).toBe(30300);
+    expect(s.overheadAmt).toBe(3030);
+    expect(s.costWithOverhead).toBe(33330);
+    expect(s.profitAmt).toBeCloseTo(2666.4, 2);
+    expect(s.grandTotal).toBeCloseTo(35996.4, 2);
+  });
+
+  it("full realistic bid WITH bond + insurance: $2M job", () => {
+    // Identical to the original $2M test but with 1% bond + 1% insurance added
+    const big = {
+      rooms: [{ items: [
+        { code: "A1", qty: 40000, height: 10, diff: 1 },
+        { code: "C1", qty: 100000, height: 10, diff: 1 },
+      ]}],
+      wastePct: 5,
+      laborBurdenPct: 30,
+      bondPct: 1,
+      insurancePct: 1,
+      overheadPct: 10,
+      profitPct: 8,
+      taxRate: 6,
+    };
+    const s = calcSummary(big, ASSEMBLIES);
+    // directCost = 2,060,000 (same as before)
+    expect(s.directCost).toBe(2060000);
+    expect(s.bondAmt).toBe(20600);
+    expect(s.insuranceAmt).toBe(20600);
+    expect(s.netCost).toBe(2101200); // directCost + 2 × 20,600
+    // Bond+insurance raise OH base, so final grandTotal strictly greater than no-bond case
+    const baseline = calcSummary({ ...big, bondPct: 0, insurancePct: 0 }, ASSEMBLIES);
+    expect(s.grandTotal).toBeGreaterThan(baseline.grandTotal);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────
