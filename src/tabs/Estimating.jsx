@@ -6,60 +6,9 @@ import { buildScopeLines } from "../utils/scopeBuilder";
 import { uploadTakeoffPdf, downloadTakeoffPdf, getSignedUrl, uploadProjectDrawing, insertProjectDrawing, getDrawingsByBid } from "../lib/supabase";
 import { extractPdfText } from "../utils/pdfBidExtractor.js";
 import { parseProposalFromText } from "../utils/proposalImporter.js";
+// Estimating calc primitives extracted for testability (see src/utils/__tests__/estimatingCalc.test.js)
+import { calcItem, calcRoom, calcSummary } from "../utils/estimatingCalc";
 import { Upload } from "lucide-react";
-
-/* ── helpers ─────────────────────────────────────────────────── */
-
-function calcItem(item, assemblies) {
-  const asm = assemblies.find((a) => a.code === item.code);
-  if (!asm) return { mat: 0, lab: 0, total: 0 };
-  const hf = getHF(item.height || 10);
-  const matTotal = (item.qty || 0) * (asm.matRate || 0) * (item.diff || 1);
-  const labTotal = (item.qty || 0) * (asm.labRate || 0) * hf.f * (item.diff || 1);
-  return { mat: matTotal, lab: labTotal, total: matTotal + labTotal };
-}
-
-function calcRoom(room, assemblies) {
-  let mat = 0, lab = 0;
-  (room.items || []).forEach((it) => {
-    const c = calcItem(it, assemblies);
-    mat += c.mat;
-    lab += c.lab;
-  });
-  return { mat, lab, total: mat + lab };
-}
-
-function calcSummary(tk, assemblies) {
-  // Texas commercial subcontracting convention:
-  // - Waste applies to MATERIAL only (labor doesn't have waste)
-  // - Overhead and profit apply to base cost (pre-tax)
-  // - Sales tax is a pass-through on materials, added LAST, not subject to OH/profit markup
-  // - Bug fixed from prior version that (a) double-counted waste when computing tax base,
-  //   and (b) cascaded OH/profit on top of tax — inflating bids with phantom margin
-  //   on what is legally a pass-through cost.
-  let matSub = 0, labSub = 0;
-  (tk.rooms || []).forEach((rm) => {
-    const c = calcRoom(rm, assemblies);
-    matSub += c.mat;
-    labSub += c.lab;
-  });
-  const subtotal = matSub + labSub;
-  const wasteAmt = matSub * ((tk.wastePct || 0) / 100);           // waste on MATERIAL only
-  const matWithWaste = matSub + wasteAmt;
-  const burdenPct = tk.laborBurdenPct ?? 0;                         // labor burden (optional, defaults 0 for backward compat)
-  const burdenAmt = labSub * (burdenPct / 100);
-  const labWithBurden = labSub + burdenAmt;
-  const netCost = matWithWaste + labWithBurden;                     // true cost pre-markup
-  const overheadAmt = netCost * ((tk.overheadPct || 0) / 100);      // OH on pre-tax cost
-  const costWithOverhead = netCost + overheadAmt;
-  const profitAmt = costWithOverhead * ((tk.profitPct || 0) / 100); // profit on cost+OH
-  const costWithProfit = costWithOverhead + profitAmt;
-  const taxAmt = matWithWaste * ((tk.taxRate || 0) / 100);         // sales tax on material+waste, added AT THE END
-  const grandTotal = costWithProfit + taxAmt;
-  // costWithTax kept for backward-compat rendering; now means "cost before markup, tax-inclusive" (rarely used)
-  const costWithTax = netCost + taxAmt;
-  return { matSub, labSub, subtotal, wasteAmt, burdenAmt, labWithBurden, matWithWaste, netCost, taxAmt, costWithTax, overheadAmt, costWithOverhead, profitAmt, costWithProfit, grandTotal };
-}
 
 /* ── main export ─────────────────────────────────────────────── */
 
