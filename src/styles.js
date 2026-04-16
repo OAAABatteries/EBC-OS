@@ -1,5 +1,31 @@
 // EBC-OS Styles · Glass Aesthetic
 export const styles = `
+/* ── Theme fallback defaults (EBC dark) ──────────────────────────
+   These render before React mounts and applies the selected theme via JS.
+   Prevents FOUC where cards show as unstyled white boxes for the first
+   50-100ms of page load. All values match the "ebc" entry in THEMES. */
+:root{
+  --bg:#0f1a24;--bg2:#152332;--bg3:#1b2d3f;--bg4:#1e2d3b;
+  --border:#263d52;--border2:#345068;
+  --amber:#ff7f21;--amber2:#ff9642;--amber-dim:rgba(255,127,33,0.10);--amber-glow:rgba(255,127,33,0.22);
+  --accent:var(--amber);--accent-dim:var(--amber-dim);
+  --blue:#3b82f6;--blue-dim:rgba(59,130,246,0.10);
+  --green:#10b981;--green-dim:rgba(16,185,129,0.10);
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.10);
+  --yellow:#eab308;--orange:var(--amber);
+  --purple:#8b5cf6;--purple-dim:rgba(139,92,246,0.10);--cyan:#22d3ee;--cyan-dim:rgba(34,211,238,0.10);
+  --text:#e8ecf2;--text2:#8fa4ba;--text3:#6b8399;--text-muted:var(--text3);
+  --text-on-light:#0a0e1a;--text-on-dark:#ffffff;
+  --card:var(--bg2);--border-subtle:var(--border);
+  --logo-tint:#ffffff;
+  --bg2-rgb:21,35,50;
+  --glass-border:rgba(255,255,255,0.06);--glass-bg:rgba(21,35,50,0.78);
+  --font-head:-apple-system,BlinkMacSystemFont,'SF Pro Display','Roboto',system-ui,sans-serif;
+  --font-body:-apple-system,BlinkMacSystemFont,'SF Pro Text','Roboto',system-ui,sans-serif;
+  --font-mono:'SF Mono','IBM Plex Mono',monospace;
+  --shadow:0 2px 12px rgba(0,0,0,0.3);--card-shadow:0 2px 10px rgba(0,0,0,0.2);
+  --shadow-sm:0 1px 4px rgba(0,0,0,0.14);--shadow-md:0 2px 12px rgba(0,0,0,0.30);--shadow-lg:0 4px 32px rgba(0,0,0,0.45);
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body,#root{height:100%;overflow:hidden}
 @supports(padding-top:env(safe-area-inset-top)){#root{height:100dvh}}
