@@ -806,9 +806,25 @@ function App({ auth, onLogout }) {
   const [scopeFilter, setScopeFilter] = useState("All");
 
   // ── theme application ──
+  // Bug fix Apr 2026: theme switch was ONLY setting properties, never removing.
+  // If theme A defined --foo but theme B didn't, --foo kept theme A's value after
+  // the switch (visible as partial theme application — some elements update,
+  // others stay stuck on the old theme's colors).
+  //
+  // Fix: compute the union of all theme variable names, remove every one first,
+  // then apply only what the current theme defines. CSS rules in styles.js :root
+  // provide the fallback defaults for anything not overridden.
   useEffect(() => {
     const t = THEMES[theme] || THEMES.ebc;
+    // Union of every var name across all themes — this is stable across runs
+    const allKeys = new Set();
+    Object.values(THEMES).forEach(theme => { Object.keys(theme.vars || {}).forEach(k => allKeys.add(k)); });
+    // Clear stale values from prior theme
+    allKeys.forEach(k => document.documentElement.style.removeProperty(k));
+    // Apply current theme's values (CSS :root fallbacks in styles.js handle anything not set)
     Object.entries(t.vars).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
+    // Track which theme is active for debugging / tests
+    document.documentElement.setAttribute("data-theme", theme || "ebc");
   }, [theme]);
 
   // ── helpers ──
