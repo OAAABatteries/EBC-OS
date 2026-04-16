@@ -625,6 +625,22 @@ export function scanAlerts({ bids, projects, contacts, submittals, rfis, changeO
     });
   }
 
+  // 23) Projects missing SF (disables $/SF sanity metrics in Estimating)
+  const projsNoSqft = activeProjects.filter(p => !p.sqft || Number(p.sqft) <= 0);
+  if (projsNoSqft.length > 0) {
+    alerts.push({
+      id: `gap_no_sqft_${projsNoSqft.length}`,
+      category: "data_gaps",
+      urgency: "info",
+      icon: "clipboard",
+      title: `${projsNoSqft.length} project${projsNoSqft.length !== 1 ? "s" : ""} — no square footage`,
+      message: `${projsNoSqft.slice(0, 3).map(p => p.name).join(", ")}${projsNoSqft.length > 3 ? "…" : ""}. Needed for $/SF and Labor $/SF sanity metrics.`,
+      action: { label: "Add SF", type: "editProject" },
+      nav: { tab: "projects", projectId: projsNoSqft[0].id, editProject: true },
+      ts: now.toISOString(),
+    });
+  }
+
   // 22) No time entries logged this week across entire company (day 3+)
   const weekdayIdx = now.getDay(); // 0=Sun, 1=Mon, ...
   if (activeEmpsList.length > 0 && weekdayIdx >= 3 && weekdayIdx <= 5) {

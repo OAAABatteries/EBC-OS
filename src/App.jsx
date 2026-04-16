@@ -5572,7 +5572,7 @@ function App({ auth, onLogout }) {
                 setNotifOpen(false);
                 // Rich navigation object from alert engine
                 if (navKey && typeof navKey === "object") {
-                  const { tab: destTab, projectId, projTab: destProjTab, bidId, employeeId, subTab: destSubTab } = navKey;
+                  const { tab: destTab, projectId, projTab: destProjTab, bidId, employeeId, subTab: destSubTab, editProject: wantsEditProject } = navKey;
                   // Switch to the correct main tab (with sub-tab when provided)
                   if (destTab) {
                     if (destSubTab && !projectId) {
@@ -5581,14 +5581,18 @@ function App({ auth, onLogout }) {
                       handleTabClick(destTab);
                     }
                   }
-                  // Open specific project modal with sub-tab
+                  // Open specific project modal with sub-tab (or edit mode)
                   if (projectId) {
                     const proj = projects.find(p => String(p.id) === String(projectId));
                     if (proj) {
-                      // Map hyphenated nav keys to spaced tab names
-                      const tabMap = { "change-orders": "change orders", submittals: "submittals", rfis: "rfis", closeout: "closeout", financials: "financials", team: "team", overview: "overview" };
-                      setInitialProjTab(tabMap[destProjTab] || destProjTab || "overview");
-                      setTimeout(() => setModal({ type: "viewProject", data: { ...proj, lastAccessed: new Date().toISOString() } }), 50);
+                      if (wantsEditProject) {
+                        setTimeout(() => setModal({ type: "editProject", data: { ...proj } }), 50);
+                      } else {
+                        // Map hyphenated nav keys to spaced tab names
+                        const tabMap = { "change-orders": "change orders", submittals: "submittals", rfis: "rfis", closeout: "closeout", financials: "financials", team: "team", overview: "overview" };
+                        setInitialProjTab(tabMap[destProjTab] || destProjTab || "overview");
+                        setTimeout(() => setModal({ type: "viewProject", data: { ...proj, lastAccessed: new Date().toISOString() } }), 50);
+                      }
                     }
                   }
                   // Open specific bid modal

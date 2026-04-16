@@ -3340,6 +3340,18 @@ const ModalHub = ({ type, data, app }) => {
               <label className="form-label">Billed Amount ($)</label>
               <input className="form-input" type="number" value={draft.billed} onChange={e => upd("billed", Number(e.target.value))} />
             </div>
+            <div className="form-group">
+              <label className="form-label">Project SF</label>
+              <input
+                className="form-input"
+                type="number"
+                min="0"
+                value={draft.sqft || ""}
+                onChange={e => upd("sqft", Number(e.target.value) || 0)}
+                placeholder="e.g. 12500"
+              />
+              <div className="text-xs text-dim mt-4">Drives $/SF and Labor $/SF metrics in Estimating.</div>
+            </div>
             {/*
               Est. Labor / Material Cost inputs removed (Slice 2).
               Live cost totals come from computeProjectTotalCost (time entries + AP bills + accruals).
