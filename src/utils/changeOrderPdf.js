@@ -77,12 +77,14 @@ async function loadLogo() {
 /**
  * Generate a professional, GC-ready Change Order PDF.
  *
- * @param {Object}   project    - The project object (name, address, gc, contract)
- * @param {Object}   co         - The change order object
- * @param {Object}   company    - Company info { name, address, phone, email, license }
- * @param {Object[]} projectCOs - All change orders for this project (for "Previous Approved COs")
+ * @param {Object}   project        - The project object (name, address, gc, contract)
+ * @param {Object}   co             - The change order object
+ * @param {Object}   company        - Company info { name, address, phone, email, license }
+ * @param {Object[]} projectCOs     - All change orders for this project (for "Previous Approved COs")
+ * @param {Object}   opts           - { displayNumber } — when set, overrides co.number on the header
+ *                                    (used to keep the PDF in sync with per-project numbering shown in the app)
  */
-export async function generateChangeOrderPdf(project, co, company = {}, projectCOs = []) {
+export async function generateChangeOrderPdf(project, co, company = {}, projectCOs = [], opts = {}) {
   const doc = new jsPDF({ unit: "mm", format: "letter" });
   let y = 0;
 
@@ -92,7 +94,10 @@ export async function generateChangeOrderPdf(project, co, company = {}, projectC
   const companyEmail = company.email   || "abner@ebconstructors.com";
   const companyLicense = company.license || "";
 
-  const coNum  = co.number || `CO-${String(co.id || 1).padStart(3, "0")}`;
+  // Display number — what the PM sees in the app (per-project index). Falls back to stored co.number.
+  // Both are shown in the footer so the GC can cross-ref the internal record if there's a dispute.
+  const coNum  = opts.displayNumber ? `CO #${opts.displayNumber}` : (co.number || `CO-${String(co.id || 1).padStart(3, "0")}`);
+  const coInternalRef = (opts.displayNumber && co.number && co.number !== String(opts.displayNumber)) ? co.number : "";
   const coType = co.type   || "add";
   const coDateRaw = co.date || co.submitted || new Date().toISOString().slice(0, 10);
   // Format as MM/DD/YY
@@ -166,6 +171,55 @@ export async function generateChangeOrderPdf(project, co, company = {}, projectC
   doc.text("CHANGE ORDER", ML + 4, y + 7.5);
   doc.text(safe(coNum), PW - MR - 4, y + 7.5, { align: "right" });
   y += 16;
+
+  // ═══════════════════════════════════════════════════════════
+  //  STATUS STAMP — voided/approved/rejected need loud visual signal
+  //  on the page so a PDF saved from an old snapshot can't be passed
+  //  off as a live document.
+  // ═══════════════════════════════════════════════════════════
+  if (co.status === "deleted") {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(36);
+    doc.setTextColor(239, 68, 68, 0.25); // red, low opacity not supported in jsPDF; use light color
+    doc.setTextColor(245, 180, 180);
+    // Diagonal watermark across the middle of the page (approx)
+    doc.text("VOIDED", PW / 2, PH / 2, { align: "center", angle: -25 });
+    // Also a visible banner at the top of the content
+    doc.setFillColor(...C.red);
+    doc.rect(ML, y, CW, 8, "F");
+    doc.setFontSize(10);
+    doc.setTextColor(...C.white);
+    doc.text(`VOIDED${co.deletedAt ? " on " + String(co.deletedAt).slice(0, 10) : ""}${co.deletedBy ? " by " + co.deletedBy : ""}`, ML + 4, y + 5.5);
+    if (co.deletedReason) {
+      doc.setFontSize(8);
+      doc.text(safe(`Reason: ${co.deletedReason}`), PW - MR - 4, y + 5.5, { align: "right" });
+    }
+    doc.setTextColor(...C.darkGray);
+    y += 12;
+  } else if (co.status === "rejected") {
+    doc.setFillColor(...C.red);
+    doc.rect(ML, y, CW, 8, "F");
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...C.white);
+    doc.text("REJECTED", ML + 4, y + 5.5);
+    if (co.rejectionReason) {
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text(safe(`Reason: ${co.rejectionReason}`), PW - MR - 4, y + 5.5, { align: "right" });
+    }
+    doc.setTextColor(...C.darkGray);
+    y += 12;
+  } else if (co.status === "approved" && co.approved) {
+    doc.setFillColor(...C.green);
+    doc.rect(ML, y, CW, 8, "F");
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...C.white);
+    doc.text(`APPROVED on ${safe(co.approved)}${co.approvedBy ? " by " + safe(co.approvedBy) : ""}`, ML + 4, y + 5.5);
+    doc.setTextColor(...C.darkGray);
+    y += 12;
+  }
 
   // ═══════════════════════════════════════════════════════════
   //  PROJECT & CO INFO GRID
@@ -403,6 +457,17 @@ export async function generateChangeOrderPdf(project, co, company = {}, projectC
   doc.setFontSize(7);
   doc.text("Authorized Signature", ML, y + 22);
   doc.text("Date: _______________", ML, y + 27);
+  // Pre-fill approval stamp on already-approved COs — replaces the blank sig line with
+  // a recorded-approval note so the PDF doesn't look like a pending document to the GC.
+  if (co.status === "approved" && co.approved) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(7);
+    doc.setTextColor(...C.green);
+    const stamp = `Approved in system on ${safe(co.approved)}${co.approvedBy ? " by " + safe(co.approvedBy) : ""}`;
+    doc.text(stamp, ML, y + 14);
+    doc.setTextColor(...C.darkGray);
+    doc.setFont("helvetica", "normal");
+  }
 
   // ── General Contractor side ──
   const gcX = ML + sigW + 20;
@@ -448,8 +513,9 @@ export async function generateChangeOrderPdf(project, co, company = {}, projectC
     doc.setPage(i);
     doc.setFontSize(7);
     doc.setTextColor(...C.medGray);
+    const refSuffix = coInternalRef ? `  (Internal: ${safe(coInternalRef)})` : "";
     doc.text(
-      safe(`${companyName}  |  ${safe(project.name || "Project")}  |  ${coNum}`),
+      safe(`${companyName}  |  ${safe(project.name || "Project")}  |  ${coNum}${refSuffix}`),
       ML, PH - 8
     );
     doc.text(`Page ${i} of ${pageCount}`, PW - MR, PH - 8, { align: "right" });

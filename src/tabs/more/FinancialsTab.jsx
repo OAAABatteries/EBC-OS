@@ -399,6 +399,27 @@ function ChangeOrdersTab({ app }) {
   const [editingCoId, setEditingCoId] = useState(null);
   const [coFilter, setCoFilter] = useState("all"); // all | pending | stuck | missing-date | at-risk
 
+  // Per-project group collapse memory — persists across reloads so PMs can focus on 2-3 projects
+  // without re-collapsing the rest every visit. Keyed by project id; value = true means collapsed.
+  const [collapsedGroups, setCollapsedGroups] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ebc_co_collapsed") || "{}"); } catch { return {}; }
+  });
+  const toggleCollapsed = (pid) => {
+    setCollapsedGroups(prev => {
+      const next = { ...prev, [pid]: !prev[pid] };
+      try { localStorage.setItem("ebc_co_collapsed", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  // Role-based profit visibility — EBC's labor-vs-material split is a margin signal meant for
+  // PM/Admin/Owner eyes. Foremen, supers, crew shouldn't see it (they don't price work, and
+  // sharing the profit stamp on every approved CO is a disclosure risk when phones get passed around).
+  const canSeeProfit = (() => {
+    const r = app.auth?.role;
+    return r === "admin" || r === "owner" || r === "pm";
+  })();
+
   const pName = (pid) => app.projects.find(p => p.id === pid)?.name || "Unknown";
   const badge = (s) => s === "approved" ? "badge-green" : s === "pending" ? "badge-amber" : "badge-red";
   // Labor vs material split — EBC makes ~100% margin on labor, ~0% on material pass-through.
@@ -512,12 +533,16 @@ function ChangeOrdersTab({ app }) {
     const missingDate = list.filter(c => c.status === "approved" && !c.approved).length;
     const atRisk = list.filter(c => rowRisk(c).level === "high").length;
     const oldestPending = pending.reduce((max, c) => { const d = daysOpen(c); return d != null && d > max ? d : max; }, 0);
+    // Voided hidden — count COs that were filtered out of `list` because voided+hidden.
+    // Surfaces the gap in CO numbering ("CO #1, CO #3") as information, not silence.
+    const voidedOnProject = (allByProject[pid] || []).filter(c => c.status === "deleted").length;
+    const voidedHidden = showDeletedCO ? 0 : voidedOnProject;
     const sortedList = [...list].sort((a, b) => {
       const sr = (statusRankForSort[a.status] ?? 9) - (statusRankForSort[b.status] ?? 9);
       if (sr !== 0) return sr;
       return (b.submitted || "").localeCompare(a.submitted || "");
     });
-    return { projectId: Number(pid), proj, list: sortedList, pendingTotal, recognizedTotal, recognizedProfit, missingDate, atRisk, oldestPending };
+    return { projectId: Number(pid), proj, list: sortedList, pendingTotal, recognizedTotal, recognizedProfit, missingDate, atRisk, oldestPending, voidedHidden };
   });
   coGroups.sort((a, b) => {
     if (b.atRisk !== a.atRisk) return b.atRisk - a.atRisk;
@@ -685,13 +710,40 @@ function ChangeOrdersTab({ app }) {
         <div className="section-title">Change Orders</div>
         <div className="flex gap-8">
           <button className="btn btn-ghost btn-sm" onClick={() => {
-            const headers = ["CO #","Project","Description","Amount","Status","Submitted","Approved"];
-            const rows = coFiltered.map(c => [c.number, `"${pName(c.projectId)}"`, `"${(c.desc||'').replace(/"/g,'""')}"`, c.amount, c.status, c.submitted||'', c.approved||'']);
+            // Full portfolio export — includes labor/material/approvedBy so finance can reconcile
+            // margin downstream. Per-project exports (from each group header) use the same columns.
+            const headers = ["CO #","Internal Ref","Project","Description","Amount","Labor","Material","Status","Submitted","Approved","Approved By"];
+            const rows = coFiltered.map(c => [
+              `CO #${perProjectIdx[c.id] || ""}`,
+              c.number || "",
+              `"${pName(c.projectId).replace(/"/g,'""')}"`,
+              `"${(c.desc||'').replace(/"/g,'""')}"`,
+              c.amount || 0,
+              coLabor(c),
+              coMaterial(c),
+              c.status || "",
+              c.submitted || "",
+              c.approved || "",
+              `"${(c.approvedBy || "").replace(/"/g,'""')}"`,
+            ]);
             const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'ebc_change_orders.csv'; a.click(); URL.revokeObjectURL(url);
             app.show("Change orders CSV exported");
           }}>Export CSV</button>
+          {(app.auth?.role === "admin" || app.auth?.role === "owner") && (
+            <button className="btn btn-ghost btn-sm"
+              title="Bulk-import change orders from CSV (opens Settings → Import wizard)"
+              onClick={() => {
+                // Route to the existing CSV Import wizard (lives in Settings). The wizard handles
+                // preview, dedupe-by-number+project, validation, and rollback — no need to rebuild here.
+                app.show("Opening Settings → Import...");
+                if (typeof app.setSelectedTab === "function") app.setSelectedTab("more");
+                if (typeof app.setMoreSubTab === "function") app.setMoreSubTab("settings");
+                // Fallback: hash-based nav if the setters aren't wired
+                setTimeout(() => { window.location.hash = "#more/settings/import"; }, 50);
+              }}>Import CSV</button>
+          )}
           <button className="btn btn-primary btn-sm" onClick={() => { if (!adding) { setEditingCoId(null); const nums = app.changeOrders.map(c => parseInt(c.number)).filter(n => !isNaN(n)); setForm(f => ({ ...f, number: String((nums.length ? Math.max(...nums) : 0) + 1).padStart(3, "0"), attachments: [] })); } setAdding(!adding); }}>+ Add CO</button>
         </div>
       </div>
@@ -702,14 +754,16 @@ function ChangeOrdersTab({ app }) {
           <div className="more-metric-card--p10">
             <div className="text-xs text-muted">Pending ({pendingCOs.length})</div>
             <div className="fw-bold fs-card mt-sp1" style={{ color: "var(--amber)" }}>{app.fmt(pendingTotal)}</div>
-            {pendingLabor !== pendingTotal && (
+            {canSeeProfit && pendingLabor !== pendingTotal && (
               <div className="fs-12 text-muted">≈{app.fmt(pendingLabor)} labor</div>
             )}
           </div>
           <div className="more-metric-card--p10">
             <div className="text-xs text-muted">Approved YTD ({approvedYTD.length})</div>
             <div className="fw-bold fs-card mt-sp1" style={{ color: "var(--green)" }}>{app.fmt(approvedYTDTotal)}</div>
-            <div className="fs-12 text-muted">≈{app.fmt(approvedYTDProfit)} profit</div>
+            {canSeeProfit && (
+              <div className="fs-12 text-muted">≈{app.fmt(approvedYTDProfit)} profit</div>
+            )}
           </div>
           <div className="more-metric-card--p10">
             <div className="text-xs text-muted">Stuck &gt; 30d ({overThirty.length})</div>
@@ -883,8 +937,10 @@ function ChangeOrdersTab({ app }) {
         </div>
       )}
 
-      {/* Filter chips — narrow the set without retyping. Counts reflect the full (pre-chip) search result. */}
+      {/* Filter chips — narrow the set without retyping. Counts reflect the full (pre-chip) search result.
+          The Voided toggle lives here too so the whole filter surface is one row. */}
       {coFiltered.length > 0 && (() => {
+        const voidedCount = (app.changeOrders || []).filter(c => c.status === "deleted" && !c.deletedAt_purged).length;
         const chips = [
           { id: "all", label: "All", count: coFiltered.length, color: null },
           { id: "pending", label: "Pending", count: pendingCOs.length, color: "var(--amber)" },
@@ -893,44 +949,53 @@ function ChangeOrdersTab({ app }) {
           { id: "at-risk", label: "At risk", count: atRiskCount, color: "var(--red)" },
         ];
         return (
-          <div className="flex gap-8 mt-16" style={{ flexWrap: "wrap" }}>
-            {chips.map(c => {
-              const active = coFilter === c.id;
-              const zero = c.count === 0 && c.id !== "all";
-              return (
+          <div className="flex gap-8 mt-16 flex-between" style={{ flexWrap: "wrap" }}>
+            <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
+              {chips.map(c => {
+                const active = coFilter === c.id;
+                const zero = c.count === 0 && c.id !== "all";
+                return (
+                  <button
+                    key={c.id}
+                    className="btn btn-sm"
+                    disabled={zero}
+                    onClick={() => setCoFilter(c.id)}
+                    style={{
+                      background: active ? "var(--brand, #0d3b66)" : "transparent",
+                      color: active ? "white" : (zero ? "var(--text-dim)" : (c.color || "var(--text)")),
+                      border: `1px solid ${active ? "var(--brand, #0d3b66)" : "var(--border, #ddd)"}`,
+                      fontWeight: active ? 700 : 500,
+                      cursor: zero ? "not-allowed" : "pointer",
+                      opacity: zero ? 0.5 : 1,
+                    }}>
+                    {c.label} <span style={{ opacity: 0.8, marginLeft: 4 }}>({c.count})</span>
+                  </button>
+                );
+              })}
+              {voidedCount > 0 && (
                 <button
-                  key={c.id}
                   className="btn btn-sm"
-                  disabled={zero}
-                  onClick={() => setCoFilter(c.id)}
+                  onClick={() => setShowDeletedCO(v => !v)}
+                  title={showDeletedCO ? "Hide voided COs (they stay counted in numbering; gaps are preserved)" : "Reveal voided COs inline with strikethrough"}
                   style={{
-                    background: active ? "var(--brand, #0d3b66)" : "transparent",
-                    color: active ? "white" : (zero ? "var(--text-dim)" : (c.color || "var(--text)")),
-                    border: `1px solid ${active ? "var(--brand, #0d3b66)" : "var(--border, #ddd)"}`,
-                    fontWeight: active ? 700 : 500,
-                    cursor: zero ? "not-allowed" : "pointer",
-                    opacity: zero ? 0.5 : 1,
+                    background: showDeletedCO ? "var(--text-dim, #64748b)" : "transparent",
+                    color: showDeletedCO ? "white" : "var(--text-dim)",
+                    border: `1px solid ${showDeletedCO ? "var(--text-dim, #64748b)" : "var(--border, #ddd)"}`,
+                    fontWeight: showDeletedCO ? 700 : 500,
                   }}>
-                  {c.label} <span style={{ opacity: 0.8, marginLeft: 4 }}>({c.count})</span>
+                  {showDeletedCO ? "Hiding none" : "Show voided"} <span style={{ opacity: 0.8, marginLeft: 4 }}>({voidedCount})</span>
                 </button>
-              );
-            })}
+              )}
+            </div>
+            {coFilter !== "all" && (
+              <div className="fs-12 text-muted">
+                Showing {coDisplayed.length} of {coFiltered.length} ·
+                <button className="btn btn-link btn-sm" style={{ padding: "0 4px" }} onClick={() => setCoFilter("all")}>clear filter</button>
+              </div>
+            )}
           </div>
         );
       })()}
-
-      <div className="flex-between mt-16">
-        <button className={`btn btn-ghost btn-sm ${showDeletedCO ? "btn-active" : ""}`}
-          onClick={() => setShowDeletedCO(v => !v)}>
-          {showDeletedCO ? "Hide Voided" : "Show Voided"}
-        </button>
-        {coFilter !== "all" && (
-          <div className="fs-12 text-muted">
-            Showing {coDisplayed.length} of {coFiltered.length} ·
-            <button className="btn btn-link btn-sm" style={{ padding: "0 4px" }} onClick={() => setCoFilter("all")}>clear filter</button>
-          </div>
-        )}
-      </div>
       <div className="table-wrap mt-8">
         <table className="data-table">
           <thead><tr><th>CO #</th><th>Description</th><th>Amount</th><th>Age</th><th>Risk</th><th>Status</th><th>Submitted</th><th>Approved</th><th></th></tr></thead>
@@ -945,12 +1010,22 @@ function ChangeOrdersTab({ app }) {
             {coGroups.map(g => (
               <Fragment key={`group-${g.projectId}`}>
                 <tr style={{ background: "var(--bg3)", borderTop: "2px solid var(--border)" }}>
-                  <td colSpan={9} style={{ padding: "10px 12px" }}>
+                  <td colSpan={9} style={{ padding: "10px 12px", cursor: "pointer" }}
+                    onClick={() => toggleCollapsed(g.projectId)}
+                    title={collapsedGroups[g.projectId] ? "Click to expand" : "Click to collapse"}>
                     <div className="flex-between" style={{ alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+                        <span className="text-muted" style={{ fontSize: 12, width: 12, display: "inline-block" }}>
+                          {collapsedGroups[g.projectId] ? "▸" : "▾"}
+                        </span>
                         <span style={{ fontSize: "var(--text-section)", fontWeight: 700 }}>{g.proj.name}</span>
                         <span className="fs-12 text-muted">
                           Base {app.fmt(g.proj.contract || 0)} · {g.list.length} CO{g.list.length !== 1 ? "s" : ""}
+                          {g.voidedHidden > 0 && (
+                            <span className="text-muted" style={{ marginLeft: 6, fontStyle: "italic" }}>
+                              + {g.voidedHidden} voided hidden
+                            </span>
+                          )}
                         </span>
                       </div>
                       <div className="fs-12" style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
@@ -960,7 +1035,7 @@ function ChangeOrdersTab({ app }) {
                         {g.recognizedTotal !== 0 && (
                           <span style={{ color: "var(--green)" }}>
                             Recognized {app.fmt(g.recognizedTotal)}
-                            {g.recognizedProfit !== g.recognizedTotal && (
+                            {canSeeProfit && g.recognizedProfit !== g.recognizedTotal && (
                               <span className="text-muted fs-12"> (≈{app.fmt(g.recognizedProfit)} profit)</span>
                             )}
                           </span>
@@ -974,11 +1049,42 @@ function ChangeOrdersTab({ app }) {
                         {g.oldestPending > 14 && (
                           <span className="text-muted">Oldest pending {g.oldestPending}d</span>
                         )}
+                        <button className="btn btn-ghost btn-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Per-project CSV export — mirrors the main Export CSV but scoped to this group.
+                            // Includes labor/material split so finance can reconcile margin downstream.
+                            const headers = ["CO #","Internal Ref","Project","Description","Amount","Labor","Material","Status","Submitted","Approved","Approved By"];
+                            const rows = g.list.map(c => [
+                              `CO #${perProjectIdx[c.id] || ""}`,
+                              c.number || "",
+                              `"${g.proj.name.replace(/"/g,'""')}"`,
+                              `"${(c.desc||'').replace(/"/g,'""')}"`,
+                              c.amount || 0,
+                              coLabor(c),
+                              coMaterial(c),
+                              c.status || "",
+                              c.submitted || "",
+                              c.approved || "",
+                              c.approvedBy || "",
+                            ]);
+                            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+                            const blob = new Blob([csv], { type: 'text/csv' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `ebc_cos_${g.proj.name.replace(/[^a-z0-9]+/gi, '_')}.csv`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            app.show(`${g.proj.name} CSV exported`);
+                          }}
+                          title="Export this project's change orders to CSV"
+                          style={{ fontSize: 11, padding: "2px 8px" }}>CSV</button>
                       </div>
                     </div>
                   </td>
                 </tr>
-                {g.list.map(co => (
+                {!collapsedGroups[g.projectId] && g.list.map(co => (
               <Fragment key={co.id}>
                 <tr style={co.status === "deleted" ? { opacity: 0.5, textDecoration: "line-through" } : {}}>
                   <td title={co.number && co.number !== String(perProjectIdx[co.id]) ? `Internal ref: ${co.number}` : undefined}>
@@ -1082,7 +1188,13 @@ function ChangeOrdersTab({ app }) {
                         const { generateChangeOrderPdf } = await import("../../utils/changeOrderPdf.js");
                         const project = app.projects.find(p => p.id === co.projectId) || { name: "Unknown" };
                         const projectCOs = app.changeOrders.filter(c => c.projectId === co.projectId);
-                        await generateChangeOrderPdf(project, { ...co, description: co.description || co.desc }, app.company || {}, projectCOs);
+                        await generateChangeOrderPdf(
+                          project,
+                          { ...co, description: co.description || co.desc },
+                          app.company || {},
+                          projectCOs,
+                          { displayNumber: perProjectIdx[co.id] }
+                        );
                         app.show("CO PDF exported", "ok");
                       }}>PDF</button>
                     <button className="btn btn-ghost btn-sm btn-table-action"
@@ -1176,22 +1288,26 @@ function ChangeOrdersTab({ app }) {
                           <span className="text-muted">Cumulative COs (approved + this)</span>
                           <span className={impactResult.cumulativeCOPct > 20 ? "text-red fw-bold" : impactResult.cumulativeCOPct > 10 ? "text-amber" : ""}>{impactResult.cumulativeCOPct}%</span>
                         </div>
-                        <div className="flex-between mt-4" style={{ borderTop: "1px dashed var(--border)", paddingTop: 6 }}>
-                          <span className="text-muted">Labor / Material split</span>
-                          <span>
-                            <span style={{ color: "var(--green)" }}>{app.fmt(impactResult.thisLabor)}</span>
-                            <span className="text-muted"> / </span>
-                            <span className="text-muted">{app.fmt(impactResult.thisMaterial)}</span>
-                            <span className="text-muted fs-12"> ({impactResult.laborPct}% labor)</span>
-                          </span>
-                        </div>
-                        <div className="flex-between">
-                          <span className="font-semi">Est. profit impact</span>
-                          <span className="fw-bold" style={{ color: impactResult.thisProfit >= 0 ? "var(--green)" : "var(--red)" }}>
-                            {app.fmt(impactResult.thisProfit)}
-                          </span>
-                        </div>
-                        <div className="fs-12 text-dim" style={{ marginTop: 2 }}>Assumes ~100% margin on self-performed labor, ~0% on material pass-through.</div>
+                        {canSeeProfit && (
+                          <>
+                            <div className="flex-between mt-4" style={{ borderTop: "1px dashed var(--border)", paddingTop: 6 }}>
+                              <span className="text-muted">Labor / Material split</span>
+                              <span>
+                                <span style={{ color: "var(--green)" }}>{app.fmt(impactResult.thisLabor)}</span>
+                                <span className="text-muted"> / </span>
+                                <span className="text-muted">{app.fmt(impactResult.thisMaterial)}</span>
+                                <span className="text-muted fs-12"> ({impactResult.laborPct}% labor)</span>
+                              </span>
+                            </div>
+                            <div className="flex-between">
+                              <span className="font-semi">Est. profit impact</span>
+                              <span className="fw-bold" style={{ color: impactResult.thisProfit >= 0 ? "var(--green)" : "var(--red)" }}>
+                                {app.fmt(impactResult.thisProfit)}
+                              </span>
+                            </div>
+                            <div className="fs-12 text-dim" style={{ marginTop: 2 }}>Assumes ~100% margin on self-performed labor, ~0% on material pass-through.</div>
+                          </>
+                        )}
                       </div>
                       <div className="mt-8">
                         {impactResult.flags.map((f, i) => (

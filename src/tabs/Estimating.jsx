@@ -1670,7 +1670,18 @@ export function EstimatingTab({ app }) {
 
       {/* ── Sanity Metrics Panel — $/SF, Labor$/SF, Hours/SF with historical comparison ── */}
       {summary.grandTotal > 0 && (() => {
-        const sf = Number(tk.projectSF || 0);
+        // Auto-fill SF from a matched project when the estimator hasn't typed one.
+        // Safety: only match when project name is 10+ chars (avoids "1"/"a"/"2026" matching everything).
+        const linkedBidName = (bids?.find(b => b.id === tk.bidId)?.name || tk.name || "").toLowerCase();
+        const matchedProject = (projects || []).find(p => {
+          const pn = (p.name || "").toLowerCase();
+          if (!pn || pn.length < 10) return false;
+          const core = pn.split(" - ")[1] || pn; // "Forney - BSLMC..." → "BSLMC..."
+          return linkedBidName.includes(core.slice(0, 15)) || core.includes(linkedBidName.slice(0, 15));
+        });
+        const projectSfFallback = Number(matchedProject?.sqft || matchedProject?.squareFeet || 0);
+        const sf = Number(tk.projectSF || projectSfFallback || 0);
+        const sfSource = tk.projectSF ? "takeoff" : projectSfFallback ? `project "${matchedProject.name}"` : null;
         // Gather historical data from projects that have a contract + sf
         const historicals = (projects || []).filter(p => !p.deletedAt && (p.contract || 0) > 0 && (p.sqft || p.squareFeet || 0) > 0);
         const getHistoricalValue = (metric) => {

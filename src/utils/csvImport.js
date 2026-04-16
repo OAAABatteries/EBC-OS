@@ -159,6 +159,10 @@ export const IMPORT_SCHEMAS = {
       { key: "projectName", label: "Project Name", required: true, aliases: ["project", "job"] },
       { key: "desc", label: "Description", required: true, aliases: ["description", "scope"] },
       { key: "amount", label: "Amount", type: "number", required: true, aliases: ["value", "cost"] },
+      // Labor / Material split — optional. If only one is provided, the other is inferred
+      // at save time. Both blank → treated as 100% labor (EBC's safe legacy default).
+      { key: "laborAmount", label: "Labor $", type: "number", aliases: ["labor", "laborcost", "laborvalue"] },
+      { key: "materialAmount", label: "Material $", type: "number", aliases: ["material", "materialcost", "materials"] },
       { key: "status", label: "Status", aliases: ["state"], default: "pending" },
       { key: "type", label: "Type", aliases: ["cotype"], default: "add" },
       { key: "date", label: "Date", type: "date", aliases: ["codate"] },
@@ -171,6 +175,15 @@ export const IMPORT_SCHEMAS = {
       if (!row.projectName) errs.push("Project name required");
       if (!row.desc) errs.push("Description required");
       if (row.amount === "" || row.amount === undefined || isNaN(Number(row.amount))) errs.push("Valid amount required");
+      // If either labor/material is provided, both must sum to Amount (±$0.50). Blank-on-both = 100% labor.
+      const hasSplit = (row.laborAmount !== "" && row.laborAmount !== undefined) || (row.materialAmount !== "" && row.materialAmount !== undefined);
+      if (hasSplit) {
+        const l = Number(row.laborAmount || 0);
+        const m = Number(row.materialAmount || 0);
+        const total = Number(row.amount || 0);
+        if (!isFinite(l) || !isFinite(m)) errs.push("Labor/Material must be numbers");
+        else if (Math.abs(total - l - m) > 0.5) errs.push(`Labor + Material (${l + m}) must equal Amount (${total})`);
+      }
       return errs;
     },
   },
